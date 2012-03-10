@@ -171,9 +171,9 @@ QStringList SoundCard::DeviceList(bool typeInput)
             //Ignore device types we don't support
             if (apiInfo->type==paMME
                     || apiInfo->type==paASIO
-                    || apiInfo->type==paDirectSound)
+                    || apiInfo->type==paDirectSound
                     //Mac types
-                   // || apiInfo->type==paCoreAudio)
+                    || apiInfo->type==paCoreAudio)
             {
 
                 if(typeInput && devInfo->maxInputChannels > 0)
