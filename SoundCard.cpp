@@ -168,22 +168,28 @@ QStringList SoundCard::DeviceList(bool typeInput)
 		{
 			devInfo = Pa_GetDeviceInfo(j);
 			//Note: PortAudio must be compiled as ASIO files to enable ASIO4ALL driver support
-			if(typeInput && devInfo->maxInputChannels > 0 && 
-				(apiInfo->type==paMME || apiInfo->type==paASIO || apiInfo->type==paDirectSound))
-			{
-				di = di.sprintf("%2d:%s:%s",Pa_HostApiDeviceIndexToDeviceIndex(i,j),
-					apiInfo->name,devInfo->name);
-				devList << di;
-			}
-			else if(!typeInput && devInfo->maxOutputChannels > 0 && 
-				(apiInfo->type==paMME || apiInfo->type==paASIO || apiInfo->type==paDirectSound))
+            //Ignore device types we don't support
+            if (apiInfo->type==paMME
+                    || apiInfo->type==paASIO
+                    || apiInfo->type==paDirectSound)
+                    //Mac types
+                   // || apiInfo->type==paCoreAudio)
+            {
 
-			{
-				di = di.sprintf("%2d:%s:%s",Pa_HostApiDeviceIndexToDeviceIndex(i,j),
-					apiInfo->name,devInfo->name);
-				devList << di;
-			}
-		}
+                if(typeInput && devInfo->maxInputChannels > 0)
+                {
+                    di = di.sprintf("%2d:%s:%s",Pa_HostApiDeviceIndexToDeviceIndex(i,j),
+                        apiInfo->name,devInfo->name);
+                    devList << di;
+                }
+                else if(!typeInput && devInfo->maxOutputChannels > 0 )
+                {
+                    di = di.sprintf("%2d:%s:%s",Pa_HostApiDeviceIndexToDeviceIndex(i,j),
+                        apiInfo->name,devInfo->name);
+                    devList << di;
+                }
+            }
+        }
 	}
 	Pa_Terminate();
 	return devList;
