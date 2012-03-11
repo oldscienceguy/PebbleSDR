@@ -6,7 +6,7 @@ Modified usb.h to support explicit DLL loading
 
 */
 #include <stdlib.h>
-#include <windows.h>
+//#include <windows.h>
 
 /* 
  * 'interface' is defined somewhere in the Windows header files. This macro 
