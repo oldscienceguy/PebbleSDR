@@ -6,7 +6,7 @@
 #include <QWidget>
 #include <QThread>
 
-#include "ui_smeterwidget.h"
+#include "ui/ui_smeterwidget.h"
 #include "signalstrength.h"
 
 class SMeterWidgetThread;

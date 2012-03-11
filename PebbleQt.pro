@@ -20,6 +20,13 @@ QT += core gui multimedia
 #Make sure to update project version if Qt version is updated in QtCreator
 #Exit code 0x0c0000315 if "Release DLLs" not copied to Debug and Release dirs
 
+#Locataion for MOC files
+#MOC_DIR =
+#Set location to UI auto-generated files so we can get headers from known location
+UI_HEADERS_DIR = $$PWD/UI
+UI_SOURCES_DIR = $$PWD/UI
+
+
 #Should this be predefined somewhere?
 QTDIR = c:/Qt/4.8.0
 #Release install

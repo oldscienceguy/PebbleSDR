@@ -4,7 +4,7 @@
 #include "gpl.h"
 #include <QtCore>
 #include <QDockWidget>
-#include "ui_presets.h"
+#include "ui/ui_presets.h"
 #include "receiverWidget.h"
 #include "demod.h"
 

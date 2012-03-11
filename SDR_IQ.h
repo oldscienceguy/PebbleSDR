@@ -14,7 +14,7 @@ FTDI DLL is also used for Elektor SDR
 #include <QSettings>
 #include "sdr.h"
 #include "cpx.h"
-#include "ui_sdriqoptions.h"
+#include "ui/ui_sdriqoptions.h"
 
 class SDR_IQ;
 class SDR_IQThread;

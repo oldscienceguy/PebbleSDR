@@ -12,7 +12,7 @@ Base class for SDR Receivers
 
 #include "usbutil.h"
 #include "audio.h"
-#include "ui_iqbalanceoptions.h"
+#include "ui/ui_iqbalanceoptions.h"
 
 class Settings; //Can't include settings.h due to circular dependencies
 class Receiver;
