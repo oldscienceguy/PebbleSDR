@@ -83,9 +83,10 @@ public:
 
 private:
 	QSettings *qSettings;
-	usb_dev_handle* hDev;
-	int usbCtrlMsgIn(int request, int value, int index, char *bytes, int size);
-	int usbCtrlMsgOut(int request, int value, int index, char *bytes, int size);
+    libusb_device *dev;
+    libusb_device_handle* hDev;
+    int usbCtrlMsgIn(int request, int value, int index, unsigned char *bytes, int size);
+    int usbCtrlMsgOut(int request, int value, int index, unsigned char *bytes, int size);
 	double SRFreq2Freq(qint32 iFreq);
 	qint32 Freq2SRFreq(double iFreq);
 

@@ -26,15 +26,13 @@ SoftRock::SoftRock(Receiver *_receiver,SDRDEVICE dev,Settings *_settings) : SDR(
 	//Set up libusb
 	if (!isLibUsbLoaded) {
 		//Explicit load.  DLL may not exist on users system, in which case we can only suppoprt non-USB devices like SoftRock Lite
-		if (!LoadLibUsb()) {
+        if (!USBUtil::LoadLibUsb()) {
 			QMessageBox::information(NULL,"Pebble","libusb0 could not be loaded.  SoftRock communication is disabled.");
 		}
 
 	}
-	if (isLibUsbLoaded) {
-		usb_init();
-		usb_find_busses();
-		usb_find_devices();
+    if (!isLibUsbLoaded) {
+        isLibUsbLoaded = USBUtil::InitLibUsb();
 	}
 
 }
@@ -42,15 +40,19 @@ SoftRock::~SoftRock()
 {
 	WriteSettings();
 	if (hDev && isLibUsbLoaded) {
-		usb_release_interface(hDev,0);
-		usb_close(hDev);
+#ifdef LIBUSB_VERSION1
+        libusb_release_interface(hDev,0);
+        USBUtil::CloseDevice(hDev);
+        libusb_exit(NULL);
+#else
+#endif
 	}
 	if (softRockOptions != NULL && softRockOptions->isVisible())
 		softRockOptions->hide();
 }
 void SoftRock::Start()
 {
-	audioInput->Start(GetSampleRate(),0);
+    audioInput->Start(GetSampleRate(),0);
 }
 
 void SoftRock::Stop()
@@ -146,20 +148,17 @@ bool SoftRock::Connect()
 	if (sdrDevice == SR_LITE || !isLibUsbLoaded)
 		return true;
 	int numFound = 0;
-	struct usb_device * dev;
+    int ret;
 	while(true){
-		dev = LibUSB_FindDevice(SR_PID,SR_VID,numFound);
-		if (dev == NULL)
-			return false;
-		hDev = usb_open(dev);
+        hDev = USBUtil::LibUSB_FindAndOpenDevice(SR_PID,SR_VID,numFound);
 		if (hDev == NULL)
 			return false; //No devices match and/or serial number not found
 
 		// Default is config #0, Select config #1 for SoftRock
-		usb_set_configuration(hDev,1);//Not sure what config 1 is yet
+        ret = libusb_set_configuration(hDev,1);//Not sure what config 1 is yet
 
 		// Claim interface #0.
-		usb_claim_interface(hDev,0);
+        ret = libusb_claim_interface(hDev,0);
 
 		//Is it the right serial number?
 		//unsigned serial = dev->descriptor.iSerialNumber; //This is NOT the SoftRock serial number suffix
@@ -167,8 +166,8 @@ bool SoftRock::Connect()
 		if (settings->sdrNumber == -1 || serial == settings->sdrNumber)
 			return true; //We've got it
 		//Not ours, close and keep looking
-		usb_release_interface(hDev,0);
-		usb_close(hDev);
+        ret = libusb_release_interface(hDev,0);
+        USBUtil::CloseDevice(hDev);
 		numFound++;
 	}
 	
@@ -181,8 +180,8 @@ bool SoftRock::Disconnect()
 
 	//usb_reset(hDev); //Same as unplugging and plugging back in
 	if (hDev) {
-		usb_release_interface(hDev,0);
-		usb_close(hDev);
+        libusb_release_interface(hDev,0);
+        USBUtil::CloseDevice(hDev);
 		hDev = NULL;
 	}
 	return true;
@@ -282,27 +281,36 @@ QString SoftRock::GetDeviceName()
 
 
 //Utility functions that each SoftRock command used to send/receive data.  See Firmware.txt
-int SoftRock::usbCtrlMsgIn(int request, int value, int index, char *bytes, int size)
+int SoftRock::usbCtrlMsgIn(int request, int value, int index, unsigned char *bytes, int size)
 {
 	if (sdrDevice == SR_LITE || !isLibUsbLoaded)
 		return size; //No USB, pretend everything is working
-
-	return usb_control_msg(hDev, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_IN,
+#ifdef LIBUSB_VERSION1
+    int ret = USBUtil::ControlMsg(hDev,LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_IN,
+                        request,value,index,bytes,size,500);
+    return ret;
+#else
+    return USBUtil::ControlMsg(hDev, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_IN,
                          request, value, index, bytes, size, 500);
+#endif
 }
 
-int SoftRock::usbCtrlMsgOut(int request, int value, int index, char *bytes, int size)
+int SoftRock::usbCtrlMsgOut(int request, int value, int index, unsigned char *bytes, int size)
 {
 	if (sdrDevice == SR_LITE || !isLibUsbLoaded)
 		return size; //No USB, pretend everything is working
-
-	return usb_control_msg(hDev, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
+#ifdef LIBUSB_VERSION1
+    return USBUtil::ControlMsg(hDev, LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_OUT,
                          request, value, index, bytes, size, 500);
+#else
+    return USBUtil::ControlMsg(hDev, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
+                         request, value, index, bytes, size, 500);
+#endif
 }
 bool SoftRock::Version(short *major, short *minor)
 {
 	qint16 version;
-    int result = usbCtrlMsgIn(0x00, 0x0E00, 0, (char*)&version, sizeof(version));
+    int result = usbCtrlMsgIn(0x00, 0x0E00, 0, (unsigned char*)&version, sizeof(version));
 	// if the return value is 2, the variable version will give the major and minor
 	// version number in the high and low byte.
 	if (result == 2)
@@ -326,7 +334,7 @@ bool SoftRock::SetInputMux(qint16 inpNum)
 	short ddr = 3;  //set bit 0 and bit 1 to output
 	//INP byte has 2 bits set.  If we're output mode, which we are, these are the values to set each bit to
 	qint16 inp;
-	int result = usbCtrlMsgIn(0x15, ddr, inpNum, (char*)&inp, sizeof(inp));
+    int result = usbCtrlMsgIn(0x15, ddr, inpNum, (unsigned char*)&inp, sizeof(inp));
 	return result==sizeof(inp);
 }
 //0x16
@@ -334,7 +342,7 @@ bool SoftRock::SetInputMux(qint16 inpNum)
 bool SoftRock::GetInputMux(qint16 &inpNum)
 {
 	qint16 inp;
-	int result = usbCtrlMsgIn(0x16,0,0,(char*)&inp,sizeof(inp));
+    int result = usbCtrlMsgIn(0x16,0,0,(unsigned char*)&inp,sizeof(inp));
 	if (result == sizeof(inp))
 	{
 		inpNum = inp;
@@ -352,7 +360,7 @@ bool SoftRock::GetAutoBPF(bool &b)
 {
 	//Get the filter data for the 1st (RX) bank and check enabled index
 	quint16 filterCrossOver[16];
-	int result = usbCtrlMsgIn(0x17,0,255,(char*)filterCrossOver,sizeof(filterCrossOver));
+    int result = usbCtrlMsgIn(0x17,0,255,(unsigned char*)filterCrossOver,sizeof(filterCrossOver));
 	if (result == 8) //4 RX filters = 3 cross over points (6 bytes) + 2 bytes for boolean flag
 	{
 		b = filterCrossOver[3] == 1;
@@ -427,7 +435,7 @@ bool SoftRock::SetFrequencyByValue(double dFreq)
 	if (dFreq < SI570_MIN || dFreq > SI570_MAX)
 		return false;
 	qint32 iFreq = Freq2SRFreq(dFreq);
-	int result = usbCtrlMsgOut(0x32, 0, 0, (char*)&iFreq, 4);
+    int result = usbCtrlMsgOut(0x32, 0, 0, (unsigned char*)&iFreq, 4);
 	return result >= 0;
 }
 //0x33
@@ -519,7 +527,7 @@ qint32 SoftRock::Freq2SRFreq(double iFreq)
 double SoftRock::GetLOFrequency()
 {
 	qint32 iFreq = 0;
-	bool res = usbCtrlMsgIn(0x3A, 0, 0, (char*)&iFreq, 4);
+    bool res = usbCtrlMsgIn(0x3A, 0, 0, (unsigned char*)&iFreq, 4);
 	if (res)
 		return SRFreq2Freq(iFreq);
 	else
@@ -545,7 +553,7 @@ bool SoftRock::GetCrystalFrequency()
 bool SoftRock::GetRegisters(short &r7,short &r8, short &r9, short &r10, short &r11, short &r12)
 {
 	char buf[6];
-	int result = usbCtrlMsgIn(0x3f,0,0,(char *)buf,6);
+    int result = usbCtrlMsgIn(0x3f,0,0,(unsigned char *)buf,6);
 	if (result != 0)
 	{
 		r7=buf[0];
@@ -572,7 +580,7 @@ bool SoftRock::GetCPUTemperature()
 int SoftRock::GetSerialNumber()
 {
 	char serialNumber = 0; //Zero to just return
-	int result = usbCtrlMsgIn(0x43, serialNumber, 0, (char *) &serialNumber, sizeof(serialNumber));
+    int result = usbCtrlMsgIn(0x43, serialNumber, 0, (unsigned char *) &serialNumber, sizeof(serialNumber));
 	if (result == 0)
 		return -1;
 	else
@@ -582,7 +590,7 @@ int SoftRock::GetSerialNumber()
 int SoftRock::SetSerialNumber(int _serialNumber)
 {
 	char serialNumber = '0' + _serialNumber; 
-	int result = usbCtrlMsgIn(0x43, serialNumber, 0, (char *) &serialNumber, sizeof(serialNumber));
+    int result = usbCtrlMsgIn(0x43, serialNumber, 0, (unsigned char *) &serialNumber, sizeof(serialNumber));
 	if (result == 0)
 		return -1;
 	else
