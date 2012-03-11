@@ -3,19 +3,14 @@
 #include "gpl.h"
 /*
 Base class for SDR Receivers
-Common support for USB interfaces
-FTDI dlls and .h available at http://www.ftdichip.com
-
 */
 #include <QObject>
 #include <QString>
 #include <QThread>
 #include <QSettings>
 #include <QDialog>
-//Avoid, look for altern to PVOID etc definitions
-#include "windows.h"
-#include "ftd2xx.h" //Is there a cross plaftorm version that doesn't use WINAPI crap
-#include "usb.h" //Libusb
+
+#include "usbutil.h"
 #include "audio.h"
 #include "ui_iqbalanceoptions.h"
 
@@ -62,16 +57,6 @@ public:
 
 	SDRDEVICE GetDevice();
 	void SetDevice(SDRDEVICE m);
-
-	//USB Utilities
-	bool LoadLibUsb();
-	bool LoadFtdi();
-
-	//Returns device # for serialNumber or -1 if not found
-	int FTDI_FindDeviceBySerialNumber(QString serialNumber);
-	int FTDI_FindDeviceByName(QString deviceName);
-	//LibUSB
-	struct usb_device * LibUSB_FindDevice(int PID, int VID, int multiple);
 
 	//Settings
 	void ShowIQOptions();
@@ -148,4 +133,13 @@ private:
 	SDR *sdr;
 	bool doRun;
 	int msSleep;
+};
+
+//Replacement for windows Sleep() function
+class Sleeper : public QThread
+{
+public:
+    static void usleep(unsigned long usecs){QThread::usleep(usecs);}
+    static void msleep(unsigned long msecs){QThread::msleep(msecs);}
+    static void sleep(unsigned long secs){QThread::sleep(secs);}
 };
