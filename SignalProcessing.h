@@ -3,7 +3,7 @@
 #include "gpl.h"
 #include "cpx.h"
 #include <QMutex>
-#include "../fftw3/fftw3.h"
+#include "../fftw-3.3.1/api/fftw3.h"
 
 
 /*
