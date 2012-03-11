@@ -6,8 +6,8 @@
 #define USE_WINDOWS_HID
 #ifdef USE_WINDOWS_HID
 //#include <stdio.h>
-#include <windows.h>
-#include <setupapi.h> //HDEVINFO
+//#include <windows.h>
+//#include <setupapi.h> //HDEVINFO
 //#include <devguid.h>
 //#include <regstr.h>
 //#include <tchar.h>
@@ -125,8 +125,13 @@ private:
 	HANDLE hWrite;
 	HANDLE hRead;
 #else
-	struct usb_device *dev;
+#ifdef LIBUSB_VERSION1
+    libusb_device *dev;
+    libusb_device_handle *hDev;
+#else
+    usb_device *dev;
 	usb_dev_handle* hDev;
+#endif
 	int hidInterfaceNum;
 	int writeEndpoint; //Interupt Write endpoint
 	int readEndpoint;

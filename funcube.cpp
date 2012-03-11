@@ -294,15 +294,13 @@ FunCube::FunCube(Receiver *_receiver, SDRDEVICE dev,Settings *_settings):
 	//Set up libusb
 	if (!isLibUsbLoaded) {
 		//Explicit load.  DLL may not exist on users system, in which case we can only suppoprt non-USB devices like SoftRock Lite
-		if (!LoadLibUsb()) {
+        if (!USBUtil::LoadLibUsb()) {
 			QMessageBox::information(NULL,"Pebble","libusb0 could not be loaded.  SoftRock communication is disabled.");
 		}
 
 	}
 	if (isLibUsbLoaded) {
-		usb_init();
-		usb_find_busses();
-		usb_find_devices();
+        USBUtil::InitLibUsb();
 	}
 #endif
 
@@ -430,7 +428,7 @@ bool FunCube::Connect()
 	//Check all devices that match PID/VID and find single HID interface
 	while (true) {
 		//Keep dev for later use, it has all the descriptor information
-		dev = LibUSB_FindDevice(sPID,sVID,numFound);
+        dev = USBUtil::LibUSB_FindDevice(sPID,sVID,numFound);
 		if (dev == NULL) {
 			logfile<<"FCD: PID-VID not found\n";
 			return false; //No devices match and/or serial number not found
@@ -527,7 +525,7 @@ bool FunCube::Disconnect()
 #else
 	if (hDev != NULL) {
 		usb_release_interface(hDev,hidInterfaceNum);
-		usb_close(hDev);
+        USBUtil::CloseDevice(hDev);
 		hDev = NULL;
 	}
 #endif
