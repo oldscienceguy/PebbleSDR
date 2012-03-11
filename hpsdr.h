@@ -133,8 +133,8 @@ public:
 
 	bool SendConfig();
 
-	int WriteRam(int fx2StartAddr, char *buf, int count);
-	int WriteI2C(int i2c_addr, char byte[], int length);
+    int WriteRam(int fx2StartAddr, unsigned char *buf, int count);
+    int WriteI2C(int i2c_addr, unsigned char byte[], int length);
 
 	bool ResetCPU(bool reset);
 	bool LoadFpga(QString filename);
@@ -160,7 +160,7 @@ public:
 
 private:
 	bool WriteOutputBuffer(char * commandBuf);
-	bool ProcessInputFrame(char *buf, int len);
+    bool ProcessInputFrame(unsigned char *buf, int len);
 
 	//Producer acquires (with block) semDataBuf to make sure there is an empty buffer available
 	//Consumer releases semDataBuf when done processing to make it available
@@ -181,15 +181,23 @@ private:
 
 	CPX outBuffer[2048];
 
+#ifdef LIBUSB_VERSION1
+    libusb_device *dev;
+    libusb_device_handle* hDev;
+    //SDR-Widget testing
+    libusb_device_handle* swhDev; //DG8SAQ protocol
+    libusb_device *swdev;
+
+#else
 	struct usb_device *dev;
 	usb_dev_handle* hDev;
 	//SDR-Widget testing
 	usb_dev_handle* swhDev; //DG8SAQ protocol
-	struct usb_device *swdev;
-
+	struct usb_device *swdev;    
+#endif
 	//Buffer for outbound Ozy  traffic
-	char outputBuffer[BUFSIZE]; //
-	char inputBuffer[BUFSIZE * NUMFRAMES]; //2048 samples
+    unsigned char outputBuffer[BUFSIZE]; //
+    unsigned char inputBuffer[BUFSIZE * NUMFRAMES]; //2048 samples
 
 	QSettings *qSettings;
 	//Settings

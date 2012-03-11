@@ -25,15 +25,13 @@ HPSDR::HPSDR(Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_receiv
 	//Set up libusb
 	if (!isLibUsbLoaded) {
 		//Explicit load.  DLL may not exist on users system, in which case we can only suppoprt non-USB devices like SoftRock Lite
-		if (!LoadLibUsb()) {
+        if (!USBUtil::LoadLibUsb()) {
 			QMessageBox::information(NULL,"Pebble","libusb0 could not be loaded.  SoftRock communication is disabled.");
 		}
 
 	}
 	if (isLibUsbLoaded) {
-		usb_init();
-		usb_find_busses();
-		usb_find_devices();
+        USBUtil::InitLibUsb();
 	}
 
 	producerThread = new SDRProducerThread(this);
@@ -51,15 +49,26 @@ HPSDR::~HPSDR()
 	if (hpsdrOptions != NULL && hpsdrOptions->isVisible())
 		hpsdrOptions->hide();
 
+#ifdef LIBUSB_VERSION1
+    if (hDev && isLibUsbLoaded) {
+        libusb_release_interface(hDev,0);
+        USBUtil::CloseDevice(hDev);
+    }
+    if (swhDev && isLibUsbLoaded) {
+        libusb_release_interface(swhDev,0);
+        USBUtil::CloseDevice(swhDev);
+    }
+
+#else
 	if (hDev && isLibUsbLoaded) {
 		usb_release_interface(hDev,0);
-		usb_close(hDev);
+        USBUtil::CloseDevice(hDev);
 	}
 	if (swhDev && isLibUsbLoaded) {
 		usb_release_interface(swhDev,0);
-		usb_close(swhDev);
+        USBUtil::CloseDevice(swhDev);
 	}
-
+#endif
 }
 
 void HPSDR::ReadSettings()
@@ -130,21 +139,18 @@ void HPSDR::WriteSettings()
 bool HPSDR::Open()
 {
 	//Keep dev for later use, it has all the descriptor information
-	dev = LibUSB_FindDevice(sPID,sVID,0);
-	if (dev == NULL)
-		return false; //No devices match and/or serial number not found
-	hDev = usb_open(dev);
+    hDev = USBUtil::LibUSB_FindAndOpenDevice(sPID,sVID,0);
 	if (hDev == NULL)
 		return false;
 	int result;
 	// Default is config #0, Select config #1 for SoftRock
 	// Can't claim interface if config != 1
-	result = usb_set_configuration(hDev, 1);
+    result = USBUtil::SetConfiguration(hDev, 1);
 	if (result < 0)
 		return false;
 
 	// Claim interface #0.
-	result = usb_claim_interface(hDev,0);
+    result = USBUtil::Claim_interface(hDev,0);
 	if (result < 0)
 		return false;
 	//Some comments say that altinterface needs to be set to use usb_bulk_read, doesn't appear to be the case
@@ -160,10 +166,10 @@ bool HPSDR::Open()
 		swhDev = hDev;
 #else
 		//Get the DG8SAQ device so we can send commands
-		swdev = LibUSB_FindDevice(0x05dc,0x16c0,0);
+        swdev = USBUtil::LibUSB_FindDevice(0x05dc,0x16c0,0);
 		if (swdev == NULL)
 			return false; //No devices match and/or serial number not found
-		swhDev = usb_open(swdev);
+        USBUtil::OpenDevice(swDev,&swhDev);
 		if (swhDev == NULL)
 			return false;
 		int result;
@@ -189,12 +195,12 @@ bool HPSDR::Close()
 	if (hDev) {
 		//Attempting to release interface caused error next time we open().  Why?
 		//result = usb_release_interface(hDev,0);
-		result = usb_close(hDev);
+        result = USBUtil::CloseDevice(hDev);
 		hDev = NULL;
 	}
 #if(0)
 	if (swhDev) {
-		usb_close(swhDev);
+        USBUtil::CloseDevice(swhDev);
 		swhDev = NULL;
 	}
 #endif
@@ -207,11 +213,14 @@ bool HPSDR::Connect()
 	if (!Open())
 		return false;
 	//Testing access to device descriptor strings
-	char sn[256];
-	if (dev->descriptor.iSerialNumber) {
-		int ret = usb_get_string_simple(hDev, dev->descriptor.iSerialNumber, sn, sizeof(sn));
-		if (ret > 0) {
-			qDebug()<<"Serial number :"<<sn;
+    unsigned char sn[256];
+    libusb_device_descriptor desc;
+    libusb_get_device_descriptor(dev,&desc);
+    if (desc.iSerialNumber) {
+        //int ret = usb_get_string_simple(hDev, desc.iSerialNumber, sn, sizeof(sn));
+        int ret = libusb_get_string_descriptor(hDev,desc.iSerialNumber,0,sn,sizeof(sn));
+        if (ret > 0) {
+            qDebug()<<"Serial number :"<<sn;
 		} else {
 			qDebug()<<"No Serial number";
 		}
@@ -259,7 +268,7 @@ bool HPSDR::Connect()
 			return false;
 
 		//Give Ozy a chance to process firmware
-		Sleep(5000); //5 sec delay
+        Sleeper::sleep(5);
 
 		if (!Open())
 			return false;
@@ -357,14 +366,20 @@ void HPSDR::RunProducerThread()
 	//Each frame as 3 sync and 5 C&C bytes, leaving 504 for data
 	//Each sample is 3 bytes(24 bits) x 2 for I and Q plus 2 bytes for Mic-Line
 	//So we get 63 I/Q samples per frame and need 24 frames for 2048 samples
-	int result = usb_bulk_read(hDev, IN_ENDPOINT6, inputBuffer, sizeof(inputBuffer), OZY_TIMEOUT);
-	if (result > 0) {
+    int result;
+#ifdef LIBUSB_VERSION1
+    int actual;
+    result = libusb_bulk_transfer(hDev,IN_ENDPOINT6,inputBuffer,sizeof(inputBuffer),&actual,OZY_TIMEOUT);
+#else
+    result = usb_bulk_read(hDev, IN_ENDPOINT6, inputBuffer, sizeof(inputBuffer), OZY_TIMEOUT);
+#endif
+    if (result > 0) {
 		int remainingBytes = result;
 		int len;
 		int bufPtr = 0;
 		while (remainingBytes > 0){
 			len = (remainingBytes < BUFSIZE) ? remainingBytes : BUFSIZE;
-			ProcessInputFrame(&inputBuffer[bufPtr],len);
+            ProcessInputFrame(&inputBuffer[bufPtr],len);
 			bufPtr += len;
 			remainingBytes -= len;
 		}
@@ -377,7 +392,7 @@ void HPSDR::RunProducerThread()
 
 //Processes each 512 byte frame from inputBuffer
 //len is usually BUFSIZE
-bool HPSDR::ProcessInputFrame(char *buf, int len)
+bool HPSDR::ProcessInputFrame(unsigned char *buf, int len)
 {
 	if(len < BUFSIZE)
 		qDebug()<<"Partial frame received";
@@ -493,10 +508,11 @@ bool HPSDR::SendConfig()
 bool HPSDR::SetSpeed(int speed)
 {
 	if(sdrDevice == SDR::SDRWIDGET) {
-		char buf[8];
+        unsigned char buf[8];
 		//Per Alex 3/12/11 wValue is now 0 and wIndex is speed, switched from earlier version
-		int result = usb_control_msg(hDev, VENDOR_REQ_TYPE_IN, 0x71, 0, speed, buf, sizeof(buf), OZY_TIMEOUT);
-		if (result>0){
+        //int result = usb_control_msg(hDev, VENDOR_REQ_TYPE_IN, 0x71, 0, speed, buf, sizeof(buf), OZY_TIMEOUT);
+        int result = USBUtil::ControlMsg(hDev,VENDOR_REQ_TYPE_IN,0x71,speed,0,buf,sizeof(buf),OZY_TIMEOUT);
+        if (result>0){
 			buf[result]=0x00; //Null term string
 			return true;
 		} else {
@@ -517,8 +533,8 @@ double HPSDR::SetFrequency(double fRequested, double fCurrent)
 		//Convert to DG8SAQ 11:21 format, assume 4 x mult
 		double freq = (fRequested*4) / 1000000;  //Convert to Mhz
 		qint32 iFreq = (qint32)(freq * 0x200000ul);
-
-		int result = usb_control_msg(swhDev, VENDOR_REQ_TYPE_OUT, 0x32, 0, 0, (char*)&iFreq, 4, OZY_TIMEOUT);
+        int result = USBUtil::ControlMsg(hDev,VENDOR_REQ_TYPE_OUT,0x32,0,0,(unsigned char*)&iFreq,4,OZY_TIMEOUT);
+        //int result = usb_control_msg(swhDev, VENDOR_REQ_TYPE_OUT, 0x32, 0, 0, (char*)&iFreq, 4, OZY_TIMEOUT);
 		if (result<0)
 			return fCurrent;
 		else
@@ -702,15 +718,21 @@ bool HPSDR::WriteOutputBuffer(char * commandBuf)
 	outputBuffer[6] = commandBuf[3];
 	outputBuffer[7] = commandBuf[4];
 
-	int result = usb_bulk_write(hDev, OUT_ENDPOINT2, outputBuffer, BUFSIZE, OZY_TIMEOUT);
-	if (result != BUFSIZE) {
+    int result;
+#ifdef LIBUSB_VERSION1
+    int actual;
+    result = libusb_bulk_transfer(hDev,OUT_ENDPOINT2,outputBuffer,BUFSIZE,&actual,OZY_TIMEOUT);
+#else
+    result = usb_bulk_write(hDev, OUT_ENDPOINT2, outputBuffer, BUFSIZE, OZY_TIMEOUT);
+#endif
+    if (result != BUFSIZE) {
 		qDebug()<<"Error writing output buffer";
 		return false;
 	}
 	return true;
 }
 
-int HPSDR::WriteRam(int fx2StartAddr, char *buf, int count)
+int HPSDR::WriteRam(int fx2StartAddr, unsigned char *buf, int count)
 {
 	int bytesWritten = 0;
 	int bytesRemaining = count;
@@ -718,8 +740,10 @@ int HPSDR::WriteRam(int fx2StartAddr, char *buf, int count)
 		bytesRemaining = count - bytesWritten;
 		//Chunk into blocks of MAX_PACKET_SIZE
 		int numBytes = bytesRemaining > MAX_PACKET_SIZE ? MAX_PACKET_SIZE : bytesRemaining;
-		int result = usb_control_msg(hDev, VENDOR_REQ_TYPE_OUT, OZY_WRITE_RAM,
-			fx2StartAddr+bytesWritten, 0, buf+bytesWritten, numBytes, OZY_TIMEOUT);
+        int result = USBUtil::ControlMsg(hDev,VENDOR_REQ_TYPE_OUT,OZY_WRITE_RAM,
+            0, fx2StartAddr+bytesWritten, buf+bytesWritten, numBytes, OZY_TIMEOUT);
+        //int result = usb_control_msg(hDev, VENDOR_REQ_TYPE_OUT, OZY_WRITE_RAM,
+        //	fx2StartAddr+bytesWritten, 0, buf+bytesWritten, numBytes, OZY_TIMEOUT);
 		if (result > 0)
 			bytesWritten += result;
 		else
@@ -731,7 +755,7 @@ int HPSDR::WriteRam(int fx2StartAddr, char *buf, int count)
 //Turns reset mode on/off
 bool HPSDR::ResetCPU(bool reset)
 {
-	char writeBuf;
+    unsigned char writeBuf;
 	writeBuf = reset ? 1:0;
 	int bytesWritten = WriteRam(0xe600,&writeBuf,1);
 	return bytesWritten == 1 ? true:false;
@@ -750,7 +774,8 @@ bool HPSDR::LoadFpga(QString filename)
 	}
 	//Tell Ozy loading FPGA (no data sent)
 	int result;
-	result = usb_control_msg(hDev, VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, 0, FL_BEGIN, NULL, 0, OZY_TIMEOUT);
+    result = USBUtil::ControlMsg(hDev, VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, FL_BEGIN, 0, NULL, 0, OZY_TIMEOUT);
+    //result = usb_control_msg(hDev, VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, 0, FL_BEGIN, NULL, 0, OZY_TIMEOUT);
 	if (result < 0) {
 		rbfFile.close();
 		return false;
@@ -758,10 +783,11 @@ bool HPSDR::LoadFpga(QString filename)
 
 	//Read file and send to Ozy 64bytes at a time
 	int bytesRead = 0;
-	char buf[MAX_PACKET_SIZE];
-	while((bytesRead = rbfFile.read(buf,sizeof(buf))) > 0) {
+    unsigned char buf[MAX_PACKET_SIZE];
+    while((bytesRead = rbfFile.read((char*)buf,sizeof(buf))) > 0) {
 
-		result = usb_control_msg(hDev, VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, 0, FL_XFER, buf, bytesRead, OZY_TIMEOUT);
+        result = USBUtil::ControlMsg(hDev, VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, FL_XFER, 0, buf, bytesRead, OZY_TIMEOUT);
+        //result = usb_control_msg(hDev, VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, 0, FL_XFER, buf, bytesRead, OZY_TIMEOUT);
 		if (result < 0) {
 			rbfFile.close();
 			return false;
@@ -769,7 +795,8 @@ bool HPSDR::LoadFpga(QString filename)
 	}
 	rbfFile.close();
 	//Tell Ozy done with FPGA load
-	result = usb_control_msg(hDev, VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, 0, FL_END, NULL, 0, OZY_TIMEOUT);
+    result = USBUtil::ControlMsg(hDev, VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, FL_END, 0, NULL, 0, OZY_TIMEOUT);
+    //result = usb_control_msg(hDev, VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, 0, FL_END, NULL, 0, OZY_TIMEOUT);
 	if (result < 0)
 		return false;
 	qDebug()<<"FPGA upload complete";
@@ -816,7 +843,7 @@ bool HPSDR::LoadFirmware(QString filename)
 	//Read file and send to Ozy 64bytes at a time
 	int bytesRead = 0;
 	char buf[1030];
-	char writeBuf[256];
+    unsigned char writeBuf[256];
 	int numLine = 0;
 	int dataTuples = 0;
 	int address = 0;
@@ -898,28 +925,29 @@ bool HPSDR::LoadFirmware(QString filename)
 QString HPSDR::GetFirmwareInfo()
 {
 	int index = 0;
-	char bytes[9]; //Version string is 8 char + null
+    unsigned char bytes[9]; //Version string is 8 char + null
 	int size = 8;
-	int result = usb_control_msg(hDev, VENDOR_REQ_TYPE_IN, OZY_SDR1K_CTL, SDR1K_CTL_READ_VERSION, index, bytes, size, OZY_TIMEOUT);
+    int result = USBUtil::ControlMsg(hDev, VENDOR_REQ_TYPE_IN, OZY_SDR1K_CTL, index, SDR1K_CTL_READ_VERSION, bytes, size, OZY_TIMEOUT);
+    //int result = usb_control_msg(hDev, VENDOR_REQ_TYPE_IN, OZY_SDR1K_CTL, SDR1K_CTL_READ_VERSION, index, bytes, size, OZY_TIMEOUT);
 	if (result > 0) {
 		bytes[result] = 0x00; //Null terminate string
-		return bytes;
+        return (char*)bytes;
 	} else {
 		return NULL;
 	}
 }
-int HPSDR::WriteI2C(int i2c_addr, char byte[], int length)
+int HPSDR::WriteI2C(int i2c_addr, unsigned char byte[], int length)
 {
 	if (length < 1 || length > MAX_PACKET_SIZE) {
 		return 0;
 	} else {
-	int result = usb_control_msg(
+    int result = USBUtil::ControlMsg(
 	   hDev,
 	   VENDOR_REQ_TYPE_OUT,
 	   OZY_I2C_WRITE,
-	   i2c_addr,
-	   0,
-	   byte,
+       0,
+       i2c_addr,
+       byte,
 	   length,
 	   OZY_TIMEOUT
 	   );
@@ -934,7 +962,7 @@ bool HPSDR::SetLED(int which, bool on)
 {
 	int val;
 	val = on ? 1:0;
-	int result = usb_control_msg(hDev, VENDOR_REQ_TYPE_OUT, OZY_SET_LED,
-						 val, which, NULL, 0, OZY_TIMEOUT);
+    int result = USBUtil::ControlMsg(hDev, VENDOR_REQ_TYPE_OUT, OZY_SET_LED,
+                         which, val, NULL, 0, OZY_TIMEOUT);
 	return result<0 ? false:true;
 }
