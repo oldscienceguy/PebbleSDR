@@ -44,14 +44,17 @@ int SoundCard::Start(int _inputSampleRate, int _outputSampleRate)
 	inParam->channelCount = 2;
 	inParam->sampleFormat = sampleFormat;
 	//Bug: crashes if latency anything except 0, looks like struct is getting corrupted
-	inParam->suggestedLatency = 0;//Pa_GetDeviceInfo(inParam->device)->defaultLowInputLatency;  //Todo: Understand what this means
-	inParam->hostApiSpecificStreamInfo = NULL;
+    //Update: Mac doesn't like zero and only works with device info
+    //inParam->suggestedLatency = 0;
+    inParam->suggestedLatency = Pa_GetDeviceInfo(inParam->device)->defaultLowInputLatency;  //Todo: Understand what this means
+    inParam->hostApiSpecificStreamInfo = NULL;
 	outParam->device = settings->outputDevice;
 	outParam->channelCount = 2;
 	outParam->sampleFormat = sampleFormat;
 	//Bug: same as above
-	outParam->suggestedLatency = 0;//Pa_GetDeviceInfo(outParam->device)->defaultLowOutputLatency;
-	outParam->hostApiSpecificStreamInfo = NULL;
+    //outParam->suggestedLatency = 0;
+    outParam->suggestedLatency = Pa_GetDeviceInfo(outParam->device)->defaultLowOutputLatency;
+    outParam->hostApiSpecificStreamInfo = NULL;
 
 	if (inputSampleRate != 0) {
 		//We're getting input from sound card
