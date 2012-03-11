@@ -2,6 +2,18 @@ TEMPLATE = app
 TARGET = Pebble
 QT += core gui multimedia
 
+
+#Download PortAudio from portaudio.com , open terminal, ./configure && make
+#portaudio directory is at same level as PebbleII
+
+#Download FFTW from fftw.org, open terminal, build floating point
+#./configure --enable-float
+# make
+#sudo make install
+
+#Header is in api directory, lib is in ./libs directory
+#Or prebuilt fftw from pdb.finkproject.org
+
 #Dev Setup notes
 #To support UNC paths for Parallels, Regedit HKEY_CURRENTUSER/Software/Microsoft/Command Processor
 #and add the value DisableUNCCheck REG_DWORD and set the value to 0 x 1 (Hex).
@@ -71,21 +83,40 @@ PREPROCESS = build.tmpl
 preprocess.name = SubversionBuildNumberUpdate
 preprocess.input = PREPROCESS
 preprocess.output = ../PebbleII/build.h #What make looks at to see if build is needed
-preprocess.depends = ../PebbleII/_svn #Datetime modified changes with every checkin, so this will trigger update
+#preprocess.depends = ../PebbleII/_svn #Datetime modified changes with every checkin, so this will trigger update
 preprocess.CONFIG = no_link #This is required to stop make from trying to compile output
-preprocess.commands = SubWCRev ../PebbleII ../PebbleII/build.tmpl ../PebbleII/build.h
-QMAKE_EXTRA_COMPILERS += preprocess
+#preprocess.commands = SubWCRev ../PebbleII ../PebbleII/build.tmpl ../PebbleII/build.h
+#QMAKE_EXTRA_COMPILERS += preprocess
 
 #QMAKE_PRE_LINK += copy $(DEPENDPATH)/presets.csv $(DESTDIR)
 #QMAKE_POST_LINK
 
+win32 {
 LIBS +=	../PebbleII/PortAudio.lib
 LIBS +=	../fftw3/libfftw3f-3.lib
 #only needed for FCD HID Windows support
 #2/3/12 Use mingw libsetupapi instead of Microsoft Lib
 LIBS += libsetupapi
 #win32:LIBS += C:/Program Files/Microsoft SDKs/Windows/v6.0A/Lib/setupapi.lib"
+}
+macx {
+LIBS += -L$$PWD/../D2XX/bin/10.5-10.7/ -lftd2xx.1.1.0
+LIBS += ../portaudio/lib/.libs/libportaudio.a
+#Portaudio needs mac frameworks, this is how to add them
+LIBS += -framework CoreAudio
+LIBS += -framework AudioToolbox
+LIBS += -framework AudioUnit
+LIBS += -framework CoreServices
+##fftw
+LIBS += -L$$PWD/../fftw-3.3.1/.libs/ -lfftw3f
 
+#Don't know if we need these
+#INCLUDEPATH += ../portaudio/include
+#LIBPATH += ../portaudio/lib
+#INCLUDEPATH adds directories for header file searches
+INCLUDEPATH += $$PWD/../D2XX/bin/10.5-10.7
+DEPENDPATH += $$PWD/../D2XX/bin/10.5-10.7
+}
 #Equal operator required for compiler flag,  not allowed for #define
 DEFINES += \
 	"SIMD=0" #SSE crashing, figure it out later
@@ -127,7 +158,6 @@ HEADERS += \
     ReceiverWidget.h \
     Receiver.h \
     presets.h \
-    portaudio.h \
     pebbleii.h \
     NoiseFilter.h \
     NoiseBlanker.h \
@@ -135,22 +165,21 @@ HEADERS += \
     Mixer.h \
     IIRFilter.h \
     GPL.h \
-    ftd2xx.h \
     FIRFilter.h \
     ElektorSDR.h \
     Demod.h \
     defs.h \
     cpx.h \
     Butterworth.h \
-    build.h \
+	#build.h \
     AGC.h \
     audio.h \
     audioqt.h \
     hpsdr.h \
     fftbasic.h \
 	iqbalance.h \
-    funcube.h \
-    global.h
+    global.h \
+    usbutil.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -184,8 +213,8 @@ SOURCES += \
     hpsdr.cpp \
     fftbasic.cpp \
     iqbalance.cpp \
-    funcube.cpp \
-    global.cpp
+    global.cpp \
+    usbutil.cpp
 
 FORMS += \
     spectrumwidget.ui \
