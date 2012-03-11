@@ -19,7 +19,7 @@ SDR_IQ::SDR_IQ(Receiver *_receiver, SDRDEVICE dev,Settings *settings):SDR(_recei
 	isThreadRunning = false;
 
 	if (!isFtdiLoaded) {
-		if (!LoadFtdi()) {
+        if (!USBUtil::LoadFtdi()) {
 			QMessageBox::information(NULL,"Pebble","ftd2xx.dll could not be loaded.  SDR-IQ communication is disabled.");
 			return;
 		}
@@ -143,7 +143,7 @@ bool SDR_IQ::Connect()
 
 	FT_STATUS ftStatus;
 
-	int deviceNumber = FTDI_FindDeviceByName("SDR-IQ");
+    int deviceNumber = USBUtil::FTDI_FindDeviceByName("SDR-IQ");
 	if (deviceNumber == -1)
 		return false;
 	//Open device
