@@ -26,7 +26,7 @@ ElektorSDR::ElektorSDR(Receiver *_receiver, SDRDEVICE dev,Settings *_settings):S
 	ftWriteBuffer = NULL;
 	elektorOptions = NULL;
 	if (!isFtdiLoaded) {
-		if (!LoadFtdi()) {
+        if (!USBUtil::LoadFtdi()) {
 			QMessageBox::information(NULL,"Pebble","ftd2xx.dll could not be loaded.  Elektor communication is disabled.");
 			return;
 		}
@@ -98,7 +98,7 @@ bool ElektorSDR::Connect()
 
 	//SerialNumber: 0x03694d1c "A6009xER"
 	//Description: 0x03694d2c "FT232R USB UART"
-	int deviceNumber = FTDI_FindDeviceBySerialNumber("A6009xER");
+    int deviceNumber = USBUtil::FTDI_FindDeviceBySerialNumber("A6009xER");
 	if (deviceNumber == -1)
 		return false;  //Didn't find Elektor
 
@@ -677,7 +677,7 @@ void ElektorSDR::ShowOptions()
 #include <Dialogs.hpp>
 #include "main.h"
 #include "communications.h"
-#include "ftd2xx.h"
+#include "../D2XX/bin/ftd2xx.h"
 //---------------------------------------------------------------------------
 
 
