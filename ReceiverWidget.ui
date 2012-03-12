@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>505</width>
-    <height>237</height>
+    <width>523</width>
+    <height>242</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -77,10 +77,10 @@
         <widget class="QWidget" name="verticalLayoutWidget_3">
          <property name="geometry">
           <rect>
-           <x>40</x>
+           <x>38</x>
            <y>0</y>
-           <width>34</width>
-           <height>62</height>
+           <width>31</width>
+           <height>63</height>
           </rect>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -90,7 +90,7 @@
           <item>
            <widget class="QPushButton" name="nixie10mUp">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -98,6 +98,12 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
               <height>10</height>
              </size>
             </property>
@@ -120,10 +126,16 @@
             <property name="enabled">
              <bool>false</bool>
             </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="minimumSize">
              <size>
-              <width>30</width>
-              <height>40</height>
+              <width>0</width>
+              <height>30</height>
              </size>
             </property>
             <property name="numDigits">
@@ -134,7 +146,7 @@
           <item>
            <widget class="QPushButton" name="nixie10mDown">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -142,6 +154,12 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
               <height>10</height>
              </size>
             </property>
@@ -166,8 +184,8 @@
           <rect>
            <x>70</x>
            <y>0</y>
-           <width>34</width>
-           <height>62</height>
+           <width>31</width>
+           <height>64</height>
           </rect>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -177,7 +195,7 @@
           <item>
            <widget class="QPushButton" name="nixie1mUp">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -185,6 +203,12 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
               <height>10</height>
              </size>
             </property>
@@ -207,10 +231,16 @@
             <property name="enabled">
              <bool>false</bool>
             </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="minimumSize">
              <size>
-              <width>30</width>
-              <height>40</height>
+              <width>0</width>
+              <height>30</height>
              </size>
             </property>
             <property name="numDigits">
@@ -221,7 +251,7 @@
           <item>
            <widget class="QPushButton" name="nixie1mDown">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -229,6 +259,12 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
               <height>10</height>
              </size>
             </property>
@@ -253,8 +289,8 @@
           <rect>
            <x>110</x>
            <y>0</y>
-           <width>34</width>
-           <height>62</height>
+           <width>31</width>
+           <height>64</height>
           </rect>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -264,7 +300,7 @@
           <item>
            <widget class="QPushButton" name="nixie100kUp">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -272,6 +308,12 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
               <height>10</height>
              </size>
             </property>
@@ -294,10 +336,16 @@
             <property name="enabled">
              <bool>false</bool>
             </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="minimumSize">
              <size>
-              <width>30</width>
-              <height>40</height>
+              <width>0</width>
+              <height>30</height>
              </size>
             </property>
             <property name="numDigits">
@@ -308,7 +356,7 @@
           <item>
            <widget class="QPushButton" name="nixie100kDown">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -316,6 +364,12 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
               <height>10</height>
              </size>
             </property>
@@ -340,8 +394,8 @@
           <rect>
            <x>140</x>
            <y>0</y>
-           <width>34</width>
-           <height>62</height>
+           <width>31</width>
+           <height>64</height>
           </rect>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -351,7 +405,7 @@
           <item>
            <widget class="QPushButton" name="nixie10kUp">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -359,6 +413,12 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
               <height>10</height>
              </size>
             </property>
@@ -381,10 +441,16 @@
             <property name="enabled">
              <bool>false</bool>
             </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="minimumSize">
              <size>
-              <width>30</width>
-              <height>40</height>
+              <width>0</width>
+              <height>30</height>
              </size>
             </property>
             <property name="numDigits">
@@ -395,7 +461,7 @@
           <item>
            <widget class="QPushButton" name="nixie10kDown">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -403,6 +469,12 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
               <height>10</height>
              </size>
             </property>
@@ -427,8 +499,8 @@
           <rect>
            <x>170</x>
            <y>0</y>
-           <width>34</width>
-           <height>62</height>
+           <width>31</width>
+           <height>64</height>
           </rect>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -438,7 +510,7 @@
           <item>
            <widget class="QPushButton" name="nixie1kUp">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -446,6 +518,12 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
               <height>10</height>
              </size>
             </property>
@@ -468,10 +546,16 @@
             <property name="enabled">
              <bool>false</bool>
             </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="minimumSize">
              <size>
-              <width>30</width>
-              <height>40</height>
+              <width>0</width>
+              <height>30</height>
              </size>
             </property>
             <property name="numDigits">
@@ -482,7 +566,7 @@
           <item>
            <widget class="QPushButton" name="nixie1kDown">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -490,6 +574,12 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
               <height>10</height>
              </size>
             </property>
@@ -514,8 +604,8 @@
           <rect>
            <x>210</x>
            <y>0</y>
-           <width>34</width>
-           <height>62</height>
+           <width>31</width>
+           <height>64</height>
           </rect>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_8">
@@ -525,7 +615,7 @@
           <item>
            <widget class="QPushButton" name="nixie100Up">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -533,6 +623,12 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
               <height>10</height>
              </size>
             </property>
@@ -555,10 +651,16 @@
             <property name="enabled">
              <bool>false</bool>
             </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="minimumSize">
              <size>
-              <width>30</width>
-              <height>40</height>
+              <width>0</width>
+              <height>30</height>
              </size>
             </property>
             <property name="numDigits">
@@ -569,7 +671,7 @@
           <item>
            <widget class="QPushButton" name="nixie100Down">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -577,6 +679,12 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
               <height>10</height>
              </size>
             </property>
@@ -601,8 +709,8 @@
           <rect>
            <x>240</x>
            <y>0</y>
-           <width>34</width>
-           <height>62</height>
+           <width>31</width>
+           <height>64</height>
           </rect>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_9">
@@ -612,7 +720,7 @@
           <item>
            <widget class="QPushButton" name="nixie10Up">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -620,6 +728,12 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
               <height>10</height>
              </size>
             </property>
@@ -642,10 +756,16 @@
             <property name="enabled">
              <bool>false</bool>
             </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="minimumSize">
              <size>
-              <width>30</width>
-              <height>40</height>
+              <width>0</width>
+              <height>30</height>
              </size>
             </property>
             <property name="numDigits">
@@ -656,7 +776,7 @@
           <item>
            <widget class="QPushButton" name="nixie10Down">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -664,6 +784,12 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
               <height>10</height>
              </size>
             </property>
@@ -688,8 +814,8 @@
           <rect>
            <x>270</x>
            <y>0</y>
-           <width>34</width>
-           <height>62</height>
+           <width>32</width>
+           <height>64</height>
           </rect>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout">
@@ -699,7 +825,7 @@
           <item>
            <widget class="QPushButton" name="nixie1Up">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -707,6 +833,12 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
               <height>10</height>
              </size>
             </property>
@@ -719,9 +851,6 @@
             <property name="autoRepeat">
              <bool>true</bool>
             </property>
-            <property name="flat">
-             <bool>false</bool>
-            </property>
            </widget>
           </item>
           <item>
@@ -730,15 +859,15 @@
              <bool>false</bool>
             </property>
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
             <property name="minimumSize">
              <size>
-              <width>30</width>
-              <height>40</height>
+              <width>0</width>
+              <height>30</height>
              </size>
             </property>
             <property name="baseSize">
@@ -755,7 +884,7 @@
           <item>
            <widget class="QPushButton" name="nixie1Down">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -763,6 +892,12 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
               <height>10</height>
              </size>
             </property>
@@ -775,9 +910,6 @@
             <property name="autoRepeat">
              <bool>true</bool>
             </property>
-            <property name="flat">
-             <bool>false</bool>
-            </property>
            </widget>
           </item>
          </layout>
@@ -785,10 +917,10 @@
         <widget class="QWidget" name="verticalLayoutWidget_10">
          <property name="geometry">
           <rect>
-           <x>5</x>
+           <x>6</x>
            <y>0</y>
-           <width>34</width>
-           <height>62</height>
+           <width>31</width>
+           <height>63</height>
           </rect>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_10">
@@ -798,7 +930,7 @@
           <item>
            <widget class="QPushButton" name="nixie100mUp">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -806,6 +938,12 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
               <height>10</height>
              </size>
             </property>
@@ -828,10 +966,16 @@
             <property name="enabled">
              <bool>false</bool>
             </property>
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="minimumSize">
              <size>
-              <width>30</width>
-              <height>40</height>
+              <width>0</width>
+              <height>30</height>
              </size>
             </property>
             <property name="numDigits">
@@ -842,7 +986,7 @@
           <item>
            <widget class="QPushButton" name="nixie100mDown">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
@@ -850,6 +994,12 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
               <height>10</height>
              </size>
             </property>
@@ -894,9 +1044,21 @@
          </property>
          <item>
           <widget class="QRadioButton" name="loButton">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>15</height>
+            </size>
+           </property>
            <property name="font">
             <font>
-             <pointsize>6</pointsize>
+             <pointsize>7</pointsize>
             </font>
            </property>
            <property name="text">
@@ -909,28 +1071,27 @@
          </item>
          <item>
           <widget class="QRadioButton" name="mixButton">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>18</height>
+            </size>
+           </property>
            <property name="font">
             <font>
-             <pointsize>6</pointsize>
+             <pointsize>7</pointsize>
             </font>
            </property>
            <property name="text">
             <string>Mixer</string>
            </property>
           </widget>
-         </item>
-         <item>
-          <spacer name="verticalSpacer_2">
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>20</width>
-             <height>40</height>
-            </size>
-           </property>
-          </spacer>
          </item>
          <item>
           <widget class="QLineEdit" name="directEntry">
@@ -945,6 +1106,11 @@
              <width>80</width>
              <height>16777215</height>
             </size>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>10</pointsize>
+            </font>
            </property>
            <property name="text">
             <string>000,000,000</string>
@@ -1061,7 +1227,7 @@
         </property>
         <property name="font">
          <font>
-          <pointsize>6</pointsize>
+          <pointsize>7</pointsize>
          </font>
         </property>
        </widget>
@@ -1070,7 +1236,7 @@
        <widget class="QLabel" name="label_2">
         <property name="font">
          <font>
-          <pointsize>6</pointsize>
+          <pointsize>7</pointsize>
          </font>
         </property>
         <property name="text">
@@ -1082,7 +1248,7 @@
        <widget class="QRadioButton" name="lpfButton">
         <property name="font">
          <font>
-          <pointsize>6</pointsize>
+          <pointsize>7</pointsize>
          </font>
         </property>
         <property name="text">
@@ -1097,7 +1263,7 @@
        <widget class="QRadioButton" name="anfButton">
         <property name="font">
          <font>
-          <pointsize>6</pointsize>
+          <pointsize>7</pointsize>
          </font>
         </property>
         <property name="text">
@@ -1121,7 +1287,7 @@
        <widget class="QRadioButton" name="nbButton">
         <property name="font">
          <font>
-          <pointsize>6</pointsize>
+          <pointsize>7</pointsize>
          </font>
         </property>
         <property name="text">
@@ -1145,7 +1311,7 @@
        <widget class="QRadioButton" name="nb2Button">
         <property name="font">
          <font>
-          <pointsize>6</pointsize>
+          <pointsize>7</pointsize>
          </font>
         </property>
         <property name="text">
@@ -1211,7 +1377,7 @@
         </property>
         <property name="font">
          <font>
-          <pointsize>7</pointsize>
+          <pointsize>8</pointsize>
          </font>
         </property>
        </widget>
@@ -1233,7 +1399,7 @@
        <widget class="QLabel" name="label_3">
         <property name="font">
          <font>
-          <pointsize>6</pointsize>
+          <pointsize>7</pointsize>
          </font>
         </property>
         <property name="text">
@@ -1258,7 +1424,7 @@
        <widget class="QLabel" name="label">
         <property name="font">
          <font>
-          <pointsize>6</pointsize>
+          <pointsize>7</pointsize>
          </font>
         </property>
         <property name="text">
@@ -1292,7 +1458,7 @@
        <widget class="QRadioButton" name="muteButton">
         <property name="font">
          <font>
-          <pointsize>6</pointsize>
+          <pointsize>7</pointsize>
          </font>
         </property>
         <property name="text">
@@ -1356,7 +1522,7 @@
         </property>
         <property name="font">
          <font>
-          <pointsize>7</pointsize>
+          <pointsize>8</pointsize>
          </font>
         </property>
         <property name="styleSheet">
@@ -1380,7 +1546,7 @@
         </property>
         <property name="font">
          <font>
-          <pointsize>7</pointsize>
+          <pointsize>8</pointsize>
          </font>
         </property>
        </widget>
@@ -1395,7 +1561,7 @@
         </property>
         <property name="font">
          <font>
-          <pointsize>7</pointsize>
+          <pointsize>8</pointsize>
          </font>
         </property>
        </widget>
@@ -1423,7 +1589,7 @@
         </property>
         <property name="font">
          <font>
-          <pointsize>7</pointsize>
+          <pointsize>8</pointsize>
          </font>
         </property>
         <property name="text">
@@ -1441,7 +1607,7 @@
         </property>
         <property name="font">
          <font>
-          <pointsize>7</pointsize>
+          <pointsize>8</pointsize>
          </font>
         </property>
         <property name="text">
