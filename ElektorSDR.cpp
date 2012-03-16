@@ -30,6 +30,8 @@ ElektorSDR::ElektorSDR(Receiver *_receiver, SDRDEVICE dev,Settings *_settings):S
 			QMessageBox::information(NULL,"Pebble","ftd2xx.dll could not be loaded.  Elektor communication is disabled.");
 			return;
 		}
+        isFtdiLoaded = true;
+
 	}
 
 }
