@@ -8,7 +8,7 @@
 #include "ElektorSDR.h"
 #include "sdr_iq.h"
 #include "hpsdr.h"
-//#include "funcube.h"
+#include "funcube.h"
 #include "SoundCard.h"
 #include "Receiver.h"
 
@@ -108,11 +108,11 @@ SDR *SDR::Factory(Receiver *receiver, Settings *settings)
 	case SDR::SDRWIDGET:
 		sdr = new HPSDR(receiver, SDR::SDRWIDGET,settings);
 		break;
-/*
+
 	case SDR::FUNCUBE:
 		sdr = new FunCube(receiver, SDR::FUNCUBE,settings);
 		break;
-*/
+
 	case SDR::HPSDR_TCP:
 	case SDR::NOSDR:
 		sdr = NULL;
@@ -248,7 +248,7 @@ void SDRProducerThread::run()
 {
 	doRun = true;
 	while(doRun) {
-		sdr->RunProducerThread();
+        sdr->RunProducerThread();
 		msleep(msSleep);
 	}
 }
@@ -272,7 +272,7 @@ void SDRConsumerThread::run()
 {
 	doRun = true;
 	while(doRun) {
-		sdr->RunConsumerThread();
+        sdr->RunConsumerThread();
 		msleep(msSleep);
 	}
 }
