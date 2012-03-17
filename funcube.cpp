@@ -1,8 +1,7 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-/*
- Windows HID support derived from FCHID006 source code at funcubedongle.com
- */
+//Uses HIDAPI cross platform source files from http://www.signal11.us/oss/hidapi/
+
 #include "global.h"
 #include "qmessagebox.h"
 #include "qcoreapplication.h"
@@ -285,24 +284,9 @@ FunCube::FunCube(Receiver *_receiver, SDRDEVICE dev,Settings *_settings):
 	QString path = QCoreApplication::applicationDirPath();
 	qSettings = new QSettings(path+"/funcube.ini",QSettings::IniFormat);
 	ReadSettings();
-
-#ifdef USE_WINDOWS_HID
-	hWrite=NULL;
-	hRead=NULL;
-#else
-	hDev = NULL;
-	//Set up libusb
-	if (!isLibUsbLoaded) {
-		//Explicit load.  DLL may not exist on users system, in which case we can only suppoprt non-USB devices like SoftRock Lite
-        if (!USBUtil::LoadLibUsb()) {
-			QMessageBox::information(NULL,"Pebble","libusb0 could not be loaded.  SoftRock communication is disabled.");
-		}
-
-	}
-	if (isLibUsbLoaded) {
-        USBUtil::InitLibUsb();
-	}
-#endif
+    hidDev = NULL;
+    hidDevInfo = NULL;
+    hid_init();
 
 }
 
@@ -312,223 +296,40 @@ FunCube::~FunCube(void)
 	Disconnect();
 	if (fcdOptionsDialog != NULL && fcdOptionsDialog->isVisible())
 		fcdOptionsDialog->hide();
-
+    hid_exit();
 }
 bool FunCube::Connect()
 {
-#ifdef USE_WINDOWS_HID
+
 	//Don't know if we can get this from DDK calls
 	maxPacketSize = 64;
 
-	//ID we're looking for
-	//Todo: Construct from settings
-	QString fcdID = "Vid_04d8&Pid_fb56";
+    hidDevInfo = hid_enumerate(sVID, sPID);
+    if (hidDevInfo == NULL)
+        return false; //Not found
 
-	GUID InterfaceClassGuid = {0x4d1e55b2, 0xf16f, 0x11cf, {0x88, 0xcb, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30}};
+    char *hidPath = strdup(hidDevInfo->path); //Get local copy
+    if (hidPath == NULL)
+        return false;
+    hid_free_enumeration(hidDevInfo);
+    hidDevInfo = NULL;
 
-	// Create a HDEVINFO with all present devices.
-	HDEVINFO hDevInfo = SetupDiGetClassDevs
-	(
-		&InterfaceClassGuid,
-		0, // Enumerator
-		0,
-		DIGCF_PRESENT | DIGCF_DEVICEINTERFACE
-	);
+    if ((hidDev = hid_open_path(hidPath)) == NULL){
+        free(hidPath);
+        return false;
+    }
 
-	if (hDevInfo == INVALID_HANDLE_VALUE) {
-		logfile<<"FCD: Invalid hDevInfo\n";
-		return FALSE;
-	}
-	// Enumerate through all devices in Set.
-	SP_DEVINFO_DATA DeviceInfoData;
-	DeviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
-	for (int i=0;SetupDiEnumDeviceInfo(hDevInfo,i,&DeviceInfoData);i++) {
-		DWORD DataT;
-		QChar *buffer = NULL;
-		DWORD buffersize = 0;
-		bool res = false;
-		while (!res) {
-			//Get HardwareID, first call gets size of buffer, 2nd call should get data
-			res= SetupDiGetDeviceRegistryProperty(
-				hDevInfo,
-				&DeviceInfoData,
-				SPDRP_HARDWAREID,
-				&DataT,
-				(PBYTE)buffer,
-				buffersize,
-				&buffersize
-				);
-			if (res) {
-				break;
-			} else if (GetLastError() == ERROR_INSUFFICIENT_BUFFER){
-				// Change the buffer size.
-				if (buffer){
-					LocalFree(buffer);
-				}
-				// Double the size to avoid problems on
-				// W2k MBCS systems per KB 888609.
-				buffer=(QChar*)LocalAlloc(LPTR,buffersize * 2);
-			}else{
-				logfile<<"FCD: Error getting hardware id string\n";
-				return false;
-			}
-		}
-		//Got a hardware ID, see if it's ours
-		QString tmp = QString(buffer);
-		if(tmp.contains(fcdID,Qt::CaseInsensitive)) {
-			//got PID-VID match
-			SP_DEVICE_INTERFACE_DATA dids;
-
-			dids.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
-			if(!SetupDiEnumDeviceInterfaces(hDevInfo, NULL, &InterfaceClassGuid, i, &dids)){
-				logfile<<"FCD: Failed EnumDeviceInterfaces\n";
-				return false;
-			}
-			SP_DEVICE_INTERFACE_DETAIL_DATA didds;
-			PSP_DEVICE_INTERFACE_DETAIL_DATA pdidds=&didds;
-			DWORD cb;
-
-			pdidds->cbSize=sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
-			SetupDiGetDeviceInterfaceDetail(hDevInfo,&dids,NULL,0,&cb,NULL);
-			if ((pdidds=(SP_DEVICE_INTERFACE_DETAIL_DATA*)malloc(cb))==NULL){
-				logfile<<"FCD: Failed GetDeviceInterfaceDetail\n";
-				return false;
-			}
-			pdidds->cbSize=sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
-			SetupDiGetDeviceInterfaceDetail(hDevInfo,&dids,pdidds,cb,NULL,NULL);
-
-			hWrite=CreateFile(pdidds->DevicePath,GENERIC_WRITE,FILE_SHARE_READ | FILE_SHARE_WRITE,NULL,OPEN_EXISTING,0,0);
-			if (GetLastError()!=ERROR_SUCCESS)
-			{
-				logfile<<"FCD: Failed CreateFile phWrite\n";
-				return false;
-			}
-			hRead=CreateFile(pdidds->DevicePath,GENERIC_READ,FILE_SHARE_READ | FILE_SHARE_WRITE,NULL,OPEN_EXISTING,0,0);
-			if (GetLastError()!=ERROR_SUCCESS)
-			{
-				logfile<<"FCD: Failed CreateFile phRead\n";
-				return false;
-			}
-			//Todo: This needs to be called everywhere we return
-			SetupDiDestroyDeviceInfoList(hDevInfo);
-			return true; //Success
-
-		} else {
-			logfile<<"FCD: "<<tmp<<" : "<<fcdID<<"\n";
-		}
-	}
-	//Todo: This needs to be called everywhere we return
-	//Free all allocs
-	SetupDiDestroyDeviceInfoList(hDevInfo);
-	return false;
-#else
-	int numFound = 0;
-	int result;
-
-	//Check all devices that match PID/VID and find single HID interface
-	while (true) {
-		//Keep dev for later use, it has all the descriptor information
-        dev = USBUtil::LibUSB_FindDevice(sPID,sVID,numFound);
-		if (dev == NULL) {
-			logfile<<"FCD: PID-VID not found\n";
-			return false; //No devices match and/or serial number not found
-		}
-
-		//Find input and output endpoints (see hid-libusb.c in funcube dongle)
-		int numInterfaces = dev->config->bNumInterfaces;
-
-		//2/2/11 There is a problem with the combined device that results in mirror images
-#if(1)
-		if (numInterfaces > 1) {
-			numFound ++;
-			continue; //Skip combined device
-		}
-#endif
-		//Find the HID interface
-		bool foundInput =false;
-		bool foundOutput = false;
-		for (int i=0; i<numInterfaces; i++) {
-			int numAltSettings = dev->config->interface[i].num_altsetting;
-			for (int j=0; j<numAltSettings; j++) {
-				foundInput = foundOutput = false;
-				usb_interface_descriptor ifd = dev->config->interface[i].altsetting[j];
-				if (dev->config->interface[i].altsetting[j].bInterfaceClass == USB_CLASS_HID) {
-					int numEndpoints = ifd.bNumEndpoints;
-					for (int k=0; k<numEndpoints; k++)
-					{
-						usb_endpoint_descriptor epd = ifd.endpoint[k];
-						bool isInterrupt = (epd.bmAttributes & USB_ENDPOINT_TYPE_MASK) == USB_ENDPOINT_TYPE_INTERRUPT;
-						//bool isControl = (epd.bmAttributes & USB_ENDPOINT_TYPE_MASK) == USB_ENDPOINT_TYPE_CONTROL;
-						//bool isBulk = (epd.bmAttributes & USB_ENDPOINT_TYPE_MASK) == USB_ENDPOINT_TYPE_BULK;
-						//bool isIsochronous = (epd.bmAttributes & USB_ENDPOINT_TYPE_MASK) == USB_ENDPOINT_TYPE_ISOCHRONOUS;
-
-						bool isOutput = (epd.bEndpointAddress & USB_ENDPOINT_DIR_MASK) == USB_ENDPOINT_OUT;
-						bool isInput = (epd.bEndpointAddress & USB_ENDPOINT_DIR_MASK) == USB_ENDPOINT_IN;
-
-						if(isInterrupt && isInput) {
-							maxPacketSize = epd.wMaxPacketSize;
-							readEndpoint = epd.bEndpointAddress;
-							foundInput = true;
-						} else if (isInterrupt && isOutput) {
-							writeEndpoint = epd.bEndpointAddress;
-							foundOutput = true;
-						}
-						if (foundInput && foundOutput) {
-							hidInterfaceNum = ifd.bInterfaceNumber;
-							hDev = usb_open(dev);
-							if (hDev == NULL) {
-								logfile << "FCD: usb_open failed\n";
-								return false;
-							}
-							// Can't claim interface if config not set
-							result = usb_set_configuration(hDev, dev->config->bConfigurationValue);
-							if (result < 0){
-								logfile << "FCD: usb_set_configuration failed\n";
-								return false;
-							}
-
-							// Claim interface
-							result = usb_claim_interface(hDev,hidInterfaceNum);
-							if (result < 0) {
-								logfile << "FCD: usb_claim_interface failed\n";
-								return false;
-							}
-#if(1)
-							//If we don't set alt interface, reads from device fail
-							result = usb_set_altinterface(hDev,ifd.bAlternateSetting);
-							if (result < 0) {
-								logfile << "FCD: usb_set_altinterface failed\n";
-								return false;
-							}
-#endif
-							return true;
-						}
-					}
-				}
-			}
-		}
-		numFound++;
-	}
-	logfile<<"FCD: connect failed, no interfaces found\n";
-	return false;
-#endif
+    free(hidPath);
+    return true;
 }
+
+
 
 bool FunCube::Disconnect()
 {
-#ifdef USE_WINDOWS_HID
-	if (hWrite != NULL)
-		CloseHandle(hWrite);
-	if (hRead != NULL)
-		CloseHandle(hRead);
-	hWrite = hRead = NULL;
-#else
-	if (hDev != NULL) {
-		usb_release_interface(hDev,hidInterfaceNum);
-        USBUtil::CloseDevice(hDev);
-		hDev = NULL;
-	}
-#endif
+    //Mac crashes when hid_close is called
+    //if (hidDev != NULL)
+    //    hid_close(hidDev);
 	return true;
 }
 
@@ -583,49 +384,10 @@ void FunCube::Stop()
 #define HID_GET_REPORT 0x01
 #define HID_TIMEOUT 1000 //ms
 
-int FunCube::HIDWrite(char *data, int length)
+int FunCube::HIDWrite(unsigned char *data, int length)
 {
 
-#ifdef USE_WINDOWS_HID
-	if (hWrite == NULL)
-		return -1;
-
-	DWORD bytesWritten = 0;
-	bool res = WriteFile(hWrite,data,length,&bytesWritten,0);
-	if (res)
-		return bytesWritten;
-	else {
-		DWORD err = GetLastError();
-		logfile<<"FCD: WriteFile error "<<err<<"\n";
-		return -1;
-	}
-
-#else
-	if (hDev==NULL)
-		return -1;
-	bool lengthAdj = 0;
-
-	//strip report # when using libusb
-	int report_number = data[0];
-	if (report_number == 0x0) {
-		data++;
-		length--;
-		lengthAdj = 1; //Add back to returned length
-	}
-
-	int bytesWritten = usb_interrupt_write(hDev,
-		writeEndpoint,
-		data,
-		length,
-		HID_TIMEOUT);
-
-	if (bytesWritten < 0) {
-		//Error
-		return bytesWritten;
-	} else {
-		return bytesWritten + lengthAdj;
-	}
-#endif
+    return hid_write(hidDev,data,length);
 }
 
 /*
@@ -634,43 +396,22 @@ int FunCube::HIDWrite(char *data, int length)
  -22	Invalid arg
  -5
  */
-int FunCube::HIDRead(char *data, int length)
+int FunCube::HIDRead(unsigned char *data, int length)
 {
 	memset(data,0x00,length); // Clear out the response buffer
-
-#ifdef USE_WINDOWS_HID
-	if (hRead == NULL)
-		return -1;
-	DWORD bytesRead = 0;
-	char buf[65];
-	bool res = 	ReadFile(hRead,buf,65,&bytesRead,0);
-	if (res) {
-		//Caller does not expect or handle report# returned from windows, but not libusb
-		memcpy(data,&buf[1],bytesRead-1);
-		return bytesRead-1;
-	} else {
-		DWORD err = GetLastError();
-		logfile<<"FCD: ReadFile error "<<err<<"\n";
-
-		return -1;
-	}
-#else
-	if (hDev==NULL)
-		return -1;
-	int bytesRead = usb_interrupt_read(hDev,
-		readEndpoint,
-		data,
-		length,
-		HID_TIMEOUT);
-
-	return bytesRead;
-#endif
+    int bytesRead = hid_read(hidDev,data,length);
+    //Caller does not expect or handle report# returned from windows
+    if (bytesRead > 0) {
+        bytesRead--;
+        memcpy(data,&data[1],bytesRead);
+    }
+    return bytesRead;
 }
 
 //Adapted from fcd.c in FuncubeDongle download
 double FunCube::SetFrequency(double fRequested, double fCurrent)
 {
-	char buf[maxPacketSize+1];
+    unsigned char buf[maxPacketSize+1];
 
 	//Apply correction factor
 	double fCorrected;
@@ -706,7 +447,7 @@ double FunCube::SetFrequency(double fRequested, double fCurrent)
 
 	//Test, read it back to confirm
 	quint8 inBuf[maxPacketSize];
-	result = HIDRead((char*)inBuf,sizeof(inBuf));
+    result = HIDRead((unsigned char*)inBuf,sizeof(inBuf));
 	//We sometimes get timeout errors
 	if (result < 0) {
 		logfile<<"FCD: Frequency read after write error\n";
@@ -729,8 +470,8 @@ double FunCube::SetFrequency(double fRequested, double fCurrent)
 
 bool FunCube::HIDSet(char cmd, unsigned char value)
 {
-	char outBuf[maxPacketSize+1];
-	char inBuf[maxPacketSize];
+    unsigned char outBuf[maxPacketSize+1];
+    unsigned char inBuf[maxPacketSize];
 
 	outBuf[0] = 0; // Report ID, ignored
 	outBuf[1] = cmd;
@@ -752,8 +493,8 @@ bool FunCube::HIDSet(char cmd, unsigned char value)
 
 bool FunCube::HIDGet(char cmd, void *data, int len)
 {
-	char outBuf[maxPacketSize+1]; //HID Write skips report id 0 and adj buffer, so we need +1 to send 64
-	char inBuf[maxPacketSize];
+    unsigned char outBuf[maxPacketSize+1]; //HID Write skips report id 0 and adj buffer, so we need +1 to send 64
+    unsigned char inBuf[maxPacketSize];
 
 	outBuf[0] = 0; // Report ID, ignored
 	outBuf[1] = cmd;
@@ -783,7 +524,7 @@ bool FunCube::HIDGet(char cmd, void *data, int len)
 void FunCube::SetDCCorrection(qint16 cI, qint16 cQ)
 {
 
-	char outBuf[maxPacketSize+1];
+    unsigned char outBuf[maxPacketSize+1];
 	outBuf[0] = 0; // Report ID, ignored
 	outBuf[1] = FCD_HID_CMD_SET_DC_CORR;
 	outBuf[2] = cI;
@@ -802,7 +543,7 @@ void FunCube::SetDCCorrection(qint16 cI, qint16 cQ)
 }
 void FunCube::SetIQCorrection(qint16 phase, quint16 gain)
 {
-	char outBuf[maxPacketSize+1];
+    unsigned char outBuf[maxPacketSize+1];
 	outBuf[0] = 0; // Report ID, ignored
 	outBuf[1] = FCD_HID_CMD_SET_IQ_CORR;
 	outBuf[2] = phase;

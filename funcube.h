@@ -3,16 +3,7 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 
-#define USE_WINDOWS_HID
-#ifdef USE_WINDOWS_HID
-//#include <stdio.h>
-//#include <windows.h>
-//#include <setupapi.h> //HDEVINFO
-//#include <devguid.h>
-//#include <regstr.h>
-//#include <tchar.h>
-#endif
-
+#include "hidapi.h"
 #include "qsettings.h"
 #include "SDR.h"
 #include "ui_funcubeoptions.h"
@@ -85,8 +76,8 @@ private slots:
 
 
 private:
-	int HIDWrite(char *data, int length);
-	int HIDRead(char *data, int length);
+    int HIDWrite(unsigned char *data, int length);
+    int HIDRead(unsigned char *data, int length);
 	bool HIDGet(char cmd, void *data, int len);
 	bool HIDSet(char cmd, unsigned char value);
 
@@ -120,22 +111,8 @@ private:
 	int fcdIQGainCorrection;
 	bool fcdSetFreqHz; //true to use hz, false to set in khz
 
-#ifdef USE_WINDOWS_HID
-	//Windows HID
-	HANDLE hWrite;
-	HANDLE hRead;
-#else
-#ifdef LIBUSB_VERSION1
-    libusb_device *dev;
-    libusb_device_handle *hDev;
-#else
-    usb_device *dev;
-	usb_dev_handle* hDev;
-#endif
-	int hidInterfaceNum;
-	int writeEndpoint; //Interupt Write endpoint
-	int readEndpoint;
-#endif
+    hid_device *hidDev;
+    hid_device_info *hidDevInfo;
 
 	//Device constants
 	static const unsigned short VID=0x04D8;

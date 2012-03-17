@@ -186,7 +186,9 @@ HEADERS += \
     fftbasic.h \
 	iqbalance.h \
     global.h \
-    usbutil.h
+    usbutil.h \
+    funcube.h \
+    hidapi.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -221,7 +223,15 @@ SOURCES += \
     fftbasic.cpp \
     iqbalance.cpp \
     global.cpp \
-    usbutil.cpp
+    usbutil.cpp \
+	funcube.cpp
+
+#HIDAPI
+win32: SOURCES += hid-win.c
+macx: SOURCES += hid-mac.c
+mac:LIBS += /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation \
+	/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit
+win32:LIBS += "C:\\Program Files\\Microsoft SDKs\\Windows\\v7.0\\Lib\\setupapi.lib"
 
 FORMS += \
     spectrumwidget.ui \
