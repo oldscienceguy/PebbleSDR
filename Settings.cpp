@@ -43,7 +43,8 @@ Settings::Settings(void)
 	//sd->receiverBox->addItem("HPSDR TCP",SDR::HPSDR_TCP);
 	sd->receiverBox->addItem("SDR Widget",SDR::SDRWIDGET);
 	sd->receiverBox->addItem("FUNcube Dongle",SDR::FUNCUBE);
-	connect(sd->receiverBox,SIGNAL(currentIndexChanged(int)),this,SLOT(ReceiverChanged(int)));
+    sd->receiverBox->addItem("File",SDR::FILE);
+    connect(sd->receiverBox,SIGNAL(currentIndexChanged(int)),this,SLOT(ReceiverChanged(int)));
 
 	sd->startupBox->addItem("Last Frequency",Settings::LASTFREQ);
 	sd->startupBox->addItem("Set Frequency", Settings::SETFREQ);

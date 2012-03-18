@@ -9,6 +9,7 @@
 #include "sdr_iq.h"
 #include "hpsdr.h"
 #include "funcube.h"
+#include "sdrfile.h"
 #include "SoundCard.h"
 #include "Receiver.h"
 
@@ -112,6 +113,10 @@ SDR *SDR::Factory(Receiver *receiver, Settings *settings)
 	case SDR::FUNCUBE:
 		sdr = new FunCube(receiver, SDR::FUNCUBE,settings);
 		break;
+
+    case SDR::FILE:
+        sdr = new SDRFile(receiver,SDR::FILE, settings);
+        break;
 
 	case SDR::HPSDR_TCP:
 	case SDR::NOSDR:
