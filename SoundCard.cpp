@@ -40,24 +40,18 @@ int SoundCard::Start(int _inputSampleRate, int _outputSampleRate)
 
 	PaStreamParameters *inParam = new PaStreamParameters();
 	PaStreamParameters *outParam = new PaStreamParameters();
-	inParam->device=settings->inputDevice;
-	inParam->channelCount = 2;
-	inParam->sampleFormat = sampleFormat;
-	//Bug: crashes if latency anything except 0, looks like struct is getting corrupted
-    //Update: Mac doesn't like zero and only works with device info
-    //inParam->suggestedLatency = 0;
-    inParam->suggestedLatency = Pa_GetDeviceInfo(inParam->device)->defaultLowInputLatency;  //Todo: Understand what this means
-    inParam->hostApiSpecificStreamInfo = NULL;
-	outParam->device = settings->outputDevice;
-	outParam->channelCount = 2;
-	outParam->sampleFormat = sampleFormat;
-	//Bug: same as above
-    //outParam->suggestedLatency = 0;
-    outParam->suggestedLatency = Pa_GetDeviceInfo(outParam->device)->defaultLowOutputLatency;
-    outParam->hostApiSpecificStreamInfo = NULL;
 
 	if (inputSampleRate != 0) {
 		//We're getting input from sound card
+        inParam->device=settings->inputDevice;
+        inParam->channelCount = 2;
+        inParam->sampleFormat = sampleFormat;
+        //Bug: crashes if latency anything except 0, looks like struct is getting corrupted
+        //Update: Mac doesn't like zero and only works with device info
+        //inParam->suggestedLatency = 0;
+        inParam->suggestedLatency = Pa_GetDeviceInfo(inParam->device)->defaultLowInputLatency;  //Todo: Understand what this means
+        inParam->hostApiSpecificStreamInfo = NULL;
+
 		error = Pa_IsFormatSupported(inParam,NULL,inputSampleRate);
 		if (!error) {
 			error = Pa_OpenStream(&inStream,inParam,NULL,
@@ -67,6 +61,14 @@ int SoundCard::Start(int _inputSampleRate, int _outputSampleRate)
 	}
 	//Can't think of a good reason why output rate would be zero, but ...
 	if (outputSampleRate != 0) {
+        outParam->device = settings->outputDevice;
+        outParam->channelCount = 2;
+        outParam->sampleFormat = sampleFormat;
+        //Bug: same as above
+        //outParam->suggestedLatency = 0;
+        outParam->suggestedLatency = Pa_GetDeviceInfo(outParam->device)->defaultLowOutputLatency;
+        outParam->hostApiSpecificStreamInfo = NULL;
+
 		//For performance reasons, we try to keep output sample rate low.  
 		//Surprisingly, this is a primary issue in higher sample rates, like from SDR-IQ (196k)
 		//See if we have an even divisor we can use for simple decimation
