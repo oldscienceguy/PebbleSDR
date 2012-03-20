@@ -124,7 +124,7 @@ protected:
     virtual void StopConsumerThread();
     virtual void RunConsumerThread();
 
-    bool OpenWavFile(char* fname);
+    bool OpenWavFile(QString fname);
     QFile *wavFile;
     //wav file data structs
     RIFF_CHUNK riff;

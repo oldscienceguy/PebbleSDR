@@ -2,6 +2,7 @@
 #include "Receiver.h"
 #include "Settings.h"
 #include "Demod.h"
+#include "QFileDialog"
 
 void ReadWavTest();
 
@@ -12,15 +13,17 @@ SDRFile::SDRFile(Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_re
     inBuffer = CPXBuf::malloc(framesPerBuffer);
     outBuffer = CPXBuf::malloc(framesPerBuffer);
 
+#if 0
     nco = new NCO(settings->sampleRate,framesPerBuffer);
     nco->SetFrequency(100);
+#endif
 
     wavFile = NULL;
 
     producerThread = new SDRProducerThread(this);
     producerThread->setRefresh(0); //Semaphores will block and wait, no extra delay needed
-    consumerThread = new SDRConsumerThread(this);
-    consumerThread->setRefresh(0);
+    //consumerThread = new SDRConsumerThread(this);
+    //consumerThread->setRefresh(0);
 
 }
 SDRFile::~SDRFile(void)
@@ -30,8 +33,10 @@ SDRFile::~SDRFile(void)
 bool SDRFile::Connect()
 {
     //WIP: Chose file or fixed internal generator
-    //test.wav for now
-    bool res = OpenWavFile("/Users/rlandsman/Documents/SDR/Pebble/PebbleII/PebbleQt-build-desktop-Desktop_Qt_4_8_0_for_GCC__Qt_SDK__Debug/test.wav");
+    QString fileName;
+    //Passing NULL for dir shows current/last directory, which may be inside the mac application bundle
+    fileName = QFileDialog::getOpenFileName(NULL,tr("Open Wave File"), NULL, tr("Wave Files (*.wav)"));
+    bool res = OpenWavFile(fileName);
     if (!res)
         return false;
 
@@ -43,14 +48,18 @@ bool SDRFile::Disconnect()
         wavFile->close();
     return true;
 }
-double SDRFile::SetFrequency(double fRequested,double fCurrent) {return 0;}
+double SDRFile::SetFrequency(double fRequested,double fCurrent)
+{
+    return fRequested;
+}
+
 void SDRFile::ShowOptions() {return;}
 
 void SDRFile::Start()
 {
     //WIP: We don't need both threads, just the producer.  TBD
     //We want the consumer thread to start first, it will block waiting for data from the SDR thread
-    consumerThread->start();
+    //consumerThread->start();
     producerThread->start();
     isThreadRunning = true;
 
@@ -60,21 +69,31 @@ void SDRFile::Stop()
 {
     if (isThreadRunning) {
         producerThread->stop();
-        consumerThread->stop();
+        //consumerThread->stop();
         isThreadRunning = false;
     }
     return;
 }
-double SDRFile::GetStartupFrequency() {return 0;}
+double SDRFile::GetStartupFrequency()
+{
+    return GetSampleRate() / 2.0;
+}
+
 int SDRFile::GetStartupMode()
 {
     return dmLSB;
 }
-double SDRFile::GetHighLimit() {return 0;}
-double SDRFile::GetLowLimit() {return 0;}
+double SDRFile::GetHighLimit()
+{
+    return GetSampleRate();
+}
+double SDRFile::GetLowLimit()
+{
+    return 0;
+}
 //WIP: We really need an adjustable gain
 //For internally generated data, use .5
-double SDRFile::GetGain() {return 0.005;}
+double SDRFile::GetGain() {return 0.010;}
 QString SDRFile::GetDeviceName() {return "SDRFile";}
 int SDRFile::GetSampleRate()
 {
@@ -122,7 +141,7 @@ void SDRFile::StopConsumerThread(){}
 void SDRFile::RunConsumerThread(){}
 
 
-bool SDRFile::OpenWavFile(char* fname)
+bool SDRFile::OpenWavFile(QString fname)
 {
     wavFile = new QFile(fname);
     if (wavFile == NULL) {
