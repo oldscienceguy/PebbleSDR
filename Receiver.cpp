@@ -137,17 +137,17 @@ bool Receiver::On()
 	receiverWidget->SetGain(30,1,100);  //20%
 	receiverWidget->SetSquelch(-100);
 	
-	if (settings->startup == Settings::SETFREQ) {
+    if (sdr->GetDevice() == SDR::FILE || settings->startup == Settings::DEFAULTFREQ) {
+            frequency=sdr->GetStartupFrequency();
+            receiverWidget->SetMode((DEMODMODE)sdr->GetStartupMode());
+        }
+    else if (settings->startup == Settings::SETFREQ) {
 		frequency = settings->startupFreq;
 		receiverWidget->SetMode(dmAM);
 	}
 	else if (settings->startup == Settings::LASTFREQ) {
 		frequency = settings->lastFreq;
 		receiverWidget->SetMode((DEMODMODE)settings->lastMode);
-	}
-	else if (settings->startup == Settings::DEFAULTFREQ) {
-		frequency=sdr->GetStartupFrequency();
-		receiverWidget->SetMode((DEMODMODE)sdr->GetStartupMode());
 	}
 	else {
 		frequency = 10000000;
