@@ -37,6 +37,12 @@ SignalSpectrum::SignalSpectrum(int sr, int ns, Settings *set):
 	//db calibration
     dbOffset  = settings->dbOffset;
 
+    //Setup Goertzels
+    cwGoertzel = new Goertzel(40);
+    cwGoertzel->SetFreqHz(1000,sampleRate);
+
+
+
 
 }
 
@@ -49,6 +55,7 @@ SignalSpectrum::~SignalSpectrum(void)
 	if (window_cpx != NULL) {CPXBuf::free(window_cpx);}
 	if (tmp_cpx != NULL) {CPXBuf::free(tmp_cpx);}
 	if (rawIQ != NULL) {CPXBuf::free(rawIQ);}
+    if (cwGoertzel != NULL) delete cwGoertzel;
 }
 void SignalSpectrum::SetDisplayMode(DISPLAYMODE m)
 {

@@ -5,6 +5,7 @@
 #include "demod.h"
 #include <QMutex>
 #include "settings.h"
+#include "goertzel.h"
 
 class SignalSpectrum :
 	public SignalProcessing
@@ -34,6 +35,8 @@ public:
 	double outBufferOverflowCount;
 
 	Settings *settings;
+
+    Goertzel *cwGoertzel;
 
 private:
 	QMutex mutex;
