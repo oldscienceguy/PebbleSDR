@@ -19,7 +19,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-List of Sources, Algorithms and References:
+List of Sources, Algorithms and References, and thank-you's:
 	Dttsp - GPL License
 		Frank Brikle(ab2kt@arrl.net) & Bob McGwier (rwmcgwier@gmail.com)
 		DTTS Microwave Society, 6 Kathleen Place, Bridgewater, NJ 08807
@@ -37,6 +37,13 @@ List of Sources, Algorithms and References:
 		Latest version available at: http://www.portaudio.com/
 	QT Framework (4.63) - dll's distributed under GPL and LPGL license from Nokia
 		Source code and license details available at http://qt.nokia.com/downloads
+    HIDAPI - Cross platform HIDAPI source code
+        HIDAPI cross platform source files from http://www.signal11.us/oss/hidapi/
+    FTDI - Cross platform USB lib for ftdi and libusb
+        http://www.ftdichip.com/Drivers/D2XX.htm
+    NUE-PSK
+        www.nue-psk.com
+        Source code examples for Goertzel and CW decoding David M.Collins, AD7JT George Heron, N2APB
 
 	Books and Articles
 	"Digital Signal Processing Technology", Doug Smith KF6DX, ARRL 
