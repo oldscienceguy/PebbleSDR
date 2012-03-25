@@ -190,7 +190,8 @@ HEADERS += \
     funcube.h \
     hidapi.h \
     sdrfile.h \
-    goertzel.h
+    goertzel.h \
+    morse.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -228,7 +229,8 @@ SOURCES += \
     usbutil.cpp \
 	funcube.cpp \
     sdrfile.cpp \
-    goertzel.cpp
+    goertzel.cpp \
+    morse.cpp
 
 #HIDAPI
 win32: SOURCES += hid-win.c
