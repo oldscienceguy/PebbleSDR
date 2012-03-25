@@ -117,4 +117,6 @@ private:
 		void nixie10mDownClicked();
 		void nixie100mUpClicked();
 		void nixie100mDownClicked();
+        void nixie1gUpClicked();
+        void nixie1gDownClicked();
 };

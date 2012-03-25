@@ -46,7 +46,8 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	//Testing, may not leave these in live product
 	ui.displayBox->addItem("Post Mixer");
 	ui.displayBox->addItem("Post BandPass");
-	
+    ui.displayBox->addItem("Goertzel");
+
 	//ui.spectrumWidget->setStyleSheet("border: 1px solid white");
 	//Todo: Make lcd glow when on, set up/down button colors, etc
 	//ui.nixie1->setStyleSheet("background: rgba(240, 255, 255, 75%)");
@@ -111,6 +112,8 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	connect(ui.nixie10mDown,SIGNAL(clicked()),this,SLOT(nixie10mDownClicked()));
 	connect(ui.nixie100mUp,SIGNAL(clicked()),this,SLOT(nixie100mUpClicked()));
 	connect(ui.nixie100mDown,SIGNAL(clicked()),this,SLOT(nixie100mDownClicked()));
+    connect(ui.nixie1gUp,SIGNAL(clicked()),this,SLOT(nixie1gUpClicked()));
+    connect(ui.nixie1gDown,SIGNAL(clicked()),this,SLOT(nixie1gDownClicked()));
 
 	//Send widget component events to this class eventFilter
 	ui.nixie1->installEventFilter(this); //So we can grab clicks
@@ -122,7 +125,8 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	ui.nixie1m->installEventFilter(this);
 	ui.nixie10m->installEventFilter(this);
 	ui.nixie100m->installEventFilter(this);
-	ui.directEntry->installEventFilter(this); //So we can grab Enter key
+    ui.nixie1g->installEventFilter(this);
+    ui.directEntry->installEventFilter(this); //So we can grab Enter key
 
 	ui.directEntry->setInputMask("000000000"); //All digits, none required
 
@@ -158,7 +162,10 @@ void ReceiverWidget::displayChanged(int item)
 	case 6:
 		ui.spectrumWidget->plotSelectionChanged(SignalSpectrum::POSTBANDPASS);
 		break;
-	}
+    case 7:
+        ui.spectrumWidget->plotSelectionChanged(SignalSpectrum::GOERTZEL);
+        break;
+    }
 }
 
 void ReceiverWidget::mixerChanged(int m)
@@ -229,6 +236,12 @@ bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
 			frequency = (int)(frequency/100000000)*100000000;
 			SetFrequency(frequency);
 		}
+        else if (o == ui.nixie1g) {
+            tunerStep=1000000000;
+            frequency = (int)(frequency/1000000000)*1000000000;
+            SetFrequency(frequency);
+        }
+
 	}
 	
 	return false; //Allow ojects to see event
@@ -357,9 +370,11 @@ void ReceiverWidget::powerToggled(bool on)
 	ui.nixie1m->setEnabled(on);
 	ui.nixie10m->setStyleSheet(pwrStyle);
 	ui.nixie10m->setEnabled(on);
-	ui.nixie100m->setStyleSheet(pwrStyle);
+    ui.nixie100m->setStyleSheet(pwrStyle);
 	ui.nixie100m->setEnabled(on);
-	
+    ui.nixie1g->setStyleSheet(pwrStyle);
+    ui.nixie1g->setEnabled(on);
+
 	powerOn = on;
 }
 void ReceiverWidget::SetDisplayMode(int dm)
@@ -566,13 +581,16 @@ void ReceiverWidget::nixie10mUpClicked(){SetFrequency(frequency+10000000);}
 void ReceiverWidget::nixie10mDownClicked(){SetFrequency(frequency-10000000);}
 void ReceiverWidget::nixie100mUpClicked(){SetFrequency(frequency+100000000);}
 void ReceiverWidget::nixie100mDownClicked(){SetFrequency(frequency-100000000);}
+void ReceiverWidget::nixie1gUpClicked(){SetFrequency(frequency+1000000000);}
+void ReceiverWidget::nixie1gDownClicked(){SetFrequency(frequency-1000000000);}
 
 void ReceiverWidget::DisplayNumber(double n)
 {
 	ui.directEntry->setText(QString::number(n,'f',0));
 
 	qint32 d = n; //Saves us having to cast to int below to get mod
-	ui.nixie100m->display( (d / 100000000)%10);
+    ui.nixie1g->display( (d / 1000000000)%10);
+    ui.nixie100m->display( (d / 100000000)%10);
 	ui.nixie10m->display( (d / 10000000)%10);
 	ui.nixie1m->display( (d / 1000000)%10);
 	ui.nixie100k->display( (d / 100000)%10);
