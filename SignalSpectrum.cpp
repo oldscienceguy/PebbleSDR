@@ -23,7 +23,7 @@ SignalSpectrum::SignalSpectrum(int sr, int ns, Settings *set):
 	postBandPass = new float[binCount];
 	fft = new FFT(binCount);
 
-	tmp_cpx = CPXBuf::malloc(binCount);
+    tmp_cpx = CPXBuf::malloc(binCount);
 	//Create our window coefficients 
 	window = new float[numSamples];
 	window_cpx = CPXBuf::malloc(numSamples);
@@ -36,14 +36,6 @@ SignalSpectrum::SignalSpectrum(int sr, int ns, Settings *set):
 
 	//db calibration
     dbOffset  = settings->dbOffset;
-
-    //Setup Goertzels
-    cwGoertzel = new Goertzel(40);
-    cwGoertzel->SetFreqHz(1000,sampleRate);
-
-
-
-
 }
 
 SignalSpectrum::~SignalSpectrum(void)
@@ -55,7 +47,6 @@ SignalSpectrum::~SignalSpectrum(void)
 	if (window_cpx != NULL) {CPXBuf::free(window_cpx);}
 	if (tmp_cpx != NULL) {CPXBuf::free(tmp_cpx);}
 	if (rawIQ != NULL) {CPXBuf::free(rawIQ);}
-    if (cwGoertzel != NULL) delete cwGoertzel;
 }
 void SignalSpectrum::SetDisplayMode(DISPLAYMODE m)
 {

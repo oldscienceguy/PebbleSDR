@@ -12,7 +12,7 @@ class SignalSpectrum :
 {
 public:
 	//Moved from spectrumWidget to avoid .h circular ref.  We need to know mode so we can skip non-visible displays
-	enum DISPLAYMODE {SPECTRUM = 0,WATERFALL,IQ,PHASE,NODISPLAY,POSTMIXER,POSTBANDPASS};
+    enum DISPLAYMODE {SPECTRUM = 0,WATERFALL,IQ,PHASE,NODISPLAY,POSTMIXER,POSTBANDPASS};
 
 	SignalSpectrum(int sr, int ns, Settings *set);
 	~SignalSpectrum(void);
@@ -23,6 +23,7 @@ public:
 	void PostBandPass(CPX *in, int size);
 	void MakeSpectrum(CPX *in, float *out, int size); //Use if we just have CPX samples
 	void MakeSpectrum(FFT *fft, float *out); //Used if we already have FFT
+
 	int BinCount() {return binCount;}
 	float *Unprocessed() {return unprocessed;}
 	float *PostMixer() {return postMixer;}
@@ -36,7 +37,6 @@ public:
 
 	Settings *settings;
 
-    Goertzel *cwGoertzel;
 
 private:
 	QMutex mutex;
