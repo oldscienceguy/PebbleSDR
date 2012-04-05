@@ -191,7 +191,8 @@ HEADERS += \
     hidapi.h \
     sdrfile.h \
     goertzel.h \
-    morse.h
+    morse.h \
+    extio.h
 
 SOURCES += \
     spectrumwidget.cpp \
