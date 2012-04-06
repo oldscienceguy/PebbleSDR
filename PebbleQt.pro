@@ -20,8 +20,6 @@ QT += core gui multimedia
 #Make sure to update project version if Qt version is updated in QtCreator
 #Exit code 0x0c0000315 if "Release DLLs" not copied to Debug and Release dirs
 
-#Locataion for MOC files
-#MOC_DIR =
 #Set location to UI auto-generated files so we can get headers from known location
 UI_HEADERS_DIR = $$PWD/UI
 UI_SOURCES_DIR = $$PWD/UI
@@ -29,51 +27,117 @@ UI_SOURCES_DIR = $$PWD/UI
 
 #Should this be predefined somewhere?
 QTDIR = c:/Qt/4.8.0
-#Release install
-#Conditional MUST match the Build Configuration name
-Release {
-#qmake install instructions, add make install to build commands
-installfiles.path = ../Release #Relative to source dir
-installfiles.files = \
-	presets.csv help.htm gpl.h releasenotes.txt \
-	../fftw3/libfftw3f-3.dll \
-	#PennyMerge versions of file
-	../HPSDR/ozy_janus.rbf \
-	../HPSDR/ozyfw-sdr1k.hex \
-	$$QTDIR/mingw/bin/libgcc_s_dw2-1.dll \
-	$$QTDIR/mingw/bin/mingwm10.dll \
-#WARNING: Version of qtcore4.dll in $$QTDIR/bin is missing qt_message_output!
-#Make sure we're always getting the version as built
-        $$QTDIR/bin/qtcore4.dll \
-        $$QTDIR/bin/qtgui4.dll \
-        $$QTDIR/bin/qtmultimedia4.dll \
-	../"Release DLLs"/PortAudio.dll
 
-target.path = ../Release
-INSTALLS += target installfiles
+#Enable this to look at config to debug conditionals. For example: debug and release both show up sometimes
+#message($$CONFIG)
+
+
+#Conditional MUST match the Build Configuration name, Debug or Release or SomeCustomName
+macx {
+	#debug and release may both be defined as .pro file is parsed by make multiple times
+	#This tests for debug as the last item to be defined amoung debug and release
+	CONFIG(debug, debug|release) {
+		DESTDIR = ../MacDebug
+	} else {
+		DESTDIR = ../MacRelease
+	}
+
+	OBJECTS_DIR = $$PWD/MacO
+	#Locataion for MOC files
+	MOC_DIR = $$PWD/MacMoc
+
+	LIBS += -L$$PWD/../D2XX/bin/10.5-10.7/ -lftd2xx.1.1.0
+	LIBS += ../portaudio/lib/.libs/libportaudio.a
+	#Portaudio needs mac frameworks, this is how to add them
+	LIBS += -framework CoreAudio
+	LIBS += -framework AudioToolbox
+	LIBS += -framework AudioUnit
+	LIBS += -framework CoreServices
+	##fftw
+	LIBS += -L$$PWD/../fftw-3.3.1/.libs/ -lfftw3f
+
+	LIBS += /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation \
+		/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit
+
+	#Don't know if we need these
+	#INCLUDEPATH += ../portaudio/include
+	#LIBPATH += ../portaudio/lib
+	#INCLUDEPATH adds directories for header file searches
+	INCLUDEPATH += $$PWD/../D2XX/bin/10.5-10.7
+	DEPENDPATH += $$PWD/../D2XX/bin/10.5-10.7
+
+	#Mac only source files
+	#HIDAPI
+	SOURCES += hid-mac.c
 }
 
-#Debug install
-Debug {
-#qmake install instructions, add make install to build commands
-installfiles.path = ../Debug #Relative to source dir
-installfiles.files = presets.csv help.htm gpl.h \
-	../fftw3/libfftw3f-3.dll \
-	$$QTDIR/mingw/bin/libgcc_s_dw2-1.dll \
-	$$QTDIR/mingw/bin/mingwm10.dll \
-#PennyMerge versions of file
-	../HPSDR/ozy_janus.rbf \
-	../HPSDR/ozyfw-sdr1k.hex \
-#WARNING: Version of qtcore4.dll in $$QTDIR/bin is missing qt_message_output!
-#Make sure we're always getting the version as built
-        $$QTDIR/bin/qtcored4.dll \
-        $$QTDIR/bin/qtguid4.dll \
-        $$QTDIR/bin/qtmultimediad4.dll \
-	../"Release DLLs"/PortAudio.dll
+win32 {
+	OBJECTS_DIR = $$PWD/WinO
+	MOC_DIR = $$PWD/WinMoc
 
-target.path = ../Debug
-INSTALLS += target installfiles
+	LIBS +=	../PebbleII/PortAudio.lib
+	LIBS +=	../fftw3/libfftw3f-3.lib
+	#only needed for FCD HID Windows support
+	#2/3/12 Use mingw libsetupapi instead of Microsoft Lib
+	LIBS += libsetupapi
+	LIBS += C:/Program Files/Microsoft SDKs/Windows/v6.0A/Lib/setupapi.lib
+
+	#Win only source files
+	SOURCES += hid-win.c
+
+	CONFIG(release, debug|release) {
+		DESTDIR = ../WinRelease
+		#Relative to source dir
+		installfiles.path = ../Release
+		installfiles.files = \
+			../fftw3/libfftw3f-3.dll \
+			#PennyMerge versions of file
+			../HPSDR/ozy_janus.rbf \
+			../HPSDR/ozyfw-sdr1k.hex \
+			$$QTDIR/mingw/bin/libgcc_s_dw2-1.dll \
+			$$QTDIR/mingw/bin/mingwm10.dll \
+		#WARNING: Version of qtcore4.dll in $$QTDIR/bin is missing qt_message_output!
+		#Make sure we're always getting the version as built
+				$$QTDIR/bin/qtcore4.dll \
+				$$QTDIR/bin/qtgui4.dll \
+				$$QTDIR/bin/qtmultimedia4.dll \
+			../"Release DLLs"/PortAudio.dll
+
+		#target.path = ../Release
+		INSTALLS += target installfiles
+
+	}
+
+	CONFIG(debug, debug|release) {
+		DESTDIR = ../WinDebug
+		#Relative to source dir
+		installfiles.path = ../Debug
+		installfiles.files = \
+			../fftw3/libfftw3f-3.dll \
+			$$QTDIR/mingw/bin/libgcc_s_dw2-1.dll \
+			$$QTDIR/mingw/bin/mingwm10.dll \
+		#PennyMerge versions of file
+			../HPSDR/ozy_janus.rbf \
+			../HPSDR/ozyfw-sdr1k.hex \
+		#WARNING: Version of qtcore4.dll in $$QTDIR/bin is missing qt_message_output!
+		#Make sure we're always getting the version as built
+				$$QTDIR/bin/qtcored4.dll \
+				$$QTDIR/bin/qtguid4.dll \
+				$$QTDIR/bin/qtmultimediad4.dll \
+			../"Release DLLs"/PortAudio.dll
+
+		target.path = ../Debug
+		INSTALLS += target installfiles
+
+	}
 }
+
+#INSTALLS is called when we manually make -install or add it to the Qt project build steps
+otherfiles.files = presets.csv help.htm gpl.h releasenotes.txt
+
+#We want this to be whatever the release or debug directory is or added to bundle
+otherfiles.path = $$DESTDIR
+INSTALLS += otherfiles
 
 #Build instructions for build.h using build.tmpl
 #doesn't seem to work
@@ -98,32 +162,6 @@ preprocess.CONFIG = no_link #This is required to stop make from trying to compil
 #QMAKE_PRE_LINK += copy $(DEPENDPATH)/presets.csv $(DESTDIR)
 #QMAKE_POST_LINK
 
-win32 {
-LIBS +=	../PebbleII/PortAudio.lib
-LIBS +=	../fftw3/libfftw3f-3.lib
-#only needed for FCD HID Windows support
-#2/3/12 Use mingw libsetupapi instead of Microsoft Lib
-LIBS += libsetupapi
-#win32:LIBS += C:/Program Files/Microsoft SDKs/Windows/v6.0A/Lib/setupapi.lib"
-}
-macx {
-LIBS += -L$$PWD/../D2XX/bin/10.5-10.7/ -lftd2xx.1.1.0
-LIBS += ../portaudio/lib/.libs/libportaudio.a
-#Portaudio needs mac frameworks, this is how to add them
-LIBS += -framework CoreAudio
-LIBS += -framework AudioToolbox
-LIBS += -framework AudioUnit
-LIBS += -framework CoreServices
-##fftw
-LIBS += -L$$PWD/../fftw-3.3.1/.libs/ -lfftw3f
-
-#Don't know if we need these
-#INCLUDEPATH += ../portaudio/include
-#LIBPATH += ../portaudio/lib
-#INCLUDEPATH adds directories for header file searches
-INCLUDEPATH += $$PWD/../D2XX/bin/10.5-10.7
-DEPENDPATH += $$PWD/../D2XX/bin/10.5-10.7
-}
 #Equal operator required for compiler flag,  not allowed for #define
 DEFINES += \
 	"SIMD=0" #SSE crashing, figure it out later
@@ -232,13 +270,6 @@ SOURCES += \
     sdrfile.cpp \
     goertzel.cpp \
     morse.cpp
-
-#HIDAPI
-win32: SOURCES += hid-win.c
-macx: SOURCES += hid-mac.c
-mac:LIBS += /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation \
-	/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit
-win32:LIBS += "C:\\Program Files\\Microsoft SDKs\\Windows\\v7.0\\Lib\\setupapi.lib"
 
 FORMS += \
     spectrumwidget.ui \
