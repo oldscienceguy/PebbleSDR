@@ -1,6 +1,7 @@
 #ifndef GOERTZEL_H
 #define GOERTZEL_H
 
+#include "SignalProcessing.h"
 #include "QtGlobal"
 #include "cpx.h"
 
@@ -28,7 +29,7 @@ const DTMF DTMF_POUND(1477,941);
 const DTMF DTMF_D(1633,941);
 
 struct CTCSS {
-    CTCSS(char *d, float f, float s) {
+    CTCSS(const char *d, float f, float s) {
         strncpy(designation,d,2);
         freq = f;
         spacing = s;
@@ -73,11 +74,14 @@ const CTCSS CTCSS_32("M1",203.5,10.7);
 class Goertzel
 {
 public:
-    Goertzel(int _n);
+    Goertzel();
+    ~Goertzel();
+
     //Sets internal values (coefficient) for freq
-    void SetFreqHz(int freq, int sampleRate);
+    void SetFreqHz(int freq, int sampleRate, int bwHz);
     void SetBinaryThreshold(float t);
-    void FPNextSample(float input);
+    //Processes next sample and returns true if we've accumulated enough for an output change
+    bool FPNextSample(float input);
     void Q15NextSample (float input);
 
     int freqHz;
@@ -85,16 +89,26 @@ public:
     //output values
     CPX cpx;
     float power;
-    float peakPower;
+    float avgPower;
     bool binaryOutput;
     float binaryThreshold; //above is true, below or = is false
 
     //Filter coefficient, calculate with CalcCoefficient or table lookup
     float coeff;
     //#samples we need to process throught filter to get accurate result
-    int blockSize;
+    int samplesPerBin;
+    int timePerBin; //in ms
+
+    //Need function to return all of powerBuf or just next result
+    float GetNextPowerResult();
 
 private:
+    //Circular buffer for saving power readings
+    float *powerBuf;
+    int nextIn;
+    int nextOut;
+    int numPowerResults;
+
     //Internal values per EE Times article
     int k;
     float w;

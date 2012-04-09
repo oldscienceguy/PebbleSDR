@@ -3,19 +3,27 @@
 #include "defs.h"
 #include "QtDebug"
 
-Goertzel::Goertzel(int n)
+#define POWERBUFSIZE 2048
+Goertzel::Goertzel()
 {
-    blockSize = n;
     coeff = 0;
     power = 0;
     binaryOutput = false;
     binaryThreshold = 0;
     delay0 = delay1 = delay2 = 0;
     sampleCount = 0;
-    binWidthHz = 1000;
-    peakPower = 0;
+    binWidthHz = 0;
+    samplesPerBin = 0;
+    avgPower = 0;
+    nextIn = nextOut = numPowerResults = 0;
+    //Todo: How long should this be
+    powerBuf = new float[POWERBUFSIZE];
 }
-
+Goertzel::~Goertzel()
+{
+    if (powerBuf != NULL)
+        free (powerBuf);
+}
 
 /*
 DTMF Tone Pairs to test algorithm
@@ -58,17 +66,32 @@ http://www.eetimes.com/design/embedded/4024443/The-Goertzel-Algorithm
 //fTone is the freq in hz we want to detect
 //SampleRate 48000, 96000, etc
 //Test with Freq from DTMF and sampleRate 8000 and compare with table above
-void Goertzel::SetFreqHz(int f, int sr)
+void Goertzel::SetFreqHz(int fTone, int sr, int bw)
 {
-    freqHz = f;
+    freqHz = fTone;
     sampleRate = sr;
-    //Set blockSize based on sampleRate
-    //binWidthHz = samplingRate / blockSize ie 80hz = 8000/100
-    blockSize = sampleRate / binWidthHz;
+    binWidthHz = bw; //equivalent to filter bandwidth
+    //Set blockSize based on sampleRate and desired filter bandwidth
+    //The more samples we process, the 'sharper' the filter
+    /*
+      From nue-psk
+        # Samples:       80,  64,  50,  40,  32,  20,  16,  10,   8
+        Bandwidth:      100, 125, 160, 200, 250, 400, 500, 800, 1000 Hz.
+
+    */
+    //How many samples do we need to accumulate to get desired bandwidth
+    samplesPerBin = sampleRate / binWidthHz;
+
+    //What is the time, in ms, that each bin represents
+    timePerBin = 1.0/sampleRate * samplesPerBin * 1000;
+
+    //Calc the filter coefficient
     //Round up
-    k = (float)(blockSize * freqHz)/(float)(sampleRate) + 0.5;
-    w = (TWOPI / blockSize) * k;
+    k = (float)(samplesPerBin * freqHz)/(float)(sampleRate) + 0.5;
+    w = (TWOPI / samplesPerBin) * k;
     coeff = 2 * cos(w);
+    qDebug("Goertzel: freq = %d binWidth = %d sampleRate = %d samplesPerBin = %d coefficient = %.12f timePerBin = %d",
+           freqHz,binWidthHz,sampleRate,samplesPerBin,coeff,timePerBin);
     return;
 }
 void Goertzel::SetBinaryThreshold(float t)
@@ -77,11 +100,9 @@ void Goertzel::SetBinaryThreshold(float t)
 }
 
 //FP Math
-void Goertzel::FPNextSample(float sample)
+//Tone detection occurs every Nth sample
+bool Goertzel::FPNextSample(float sample)
 {
-    //test
-    if (sample == 0)
-        return;
     //Internal products - shown for clarity not speed
     float prod1, prod2, prod3;
 
@@ -93,10 +114,11 @@ void Goertzel::FPNextSample(float sample)
 
     //Wikipedia algorithm
     delay0 = sample + coeff * delay1 - delay2;
+
     delay2 = delay1;
     delay1 = delay0;
 
-    if(++sampleCount >= blockSize) {
+    if(++sampleCount >= samplesPerBin) {
         //We've accumulated enough to change output
         sampleCount = 0;
         //Filter output is the total 'energy' in the delay loop
@@ -104,31 +126,50 @@ void Goertzel::FPNextSample(float sample)
 #if 0
         cpx.re = delay1 - delay2 * cos(w);
         cpx.im = delay2 * sin(w);
-        power = cpx.sqrMag();
+        power = cpx.mag();
 #else
         //Simpler way if we don't need re and im data
         power = delay1*delay1 + delay2*delay2 - delay1*delay2*coeff;
 #endif
 
         //qDebug() << "pwr" << power;
-        //We want our threshold to adjust to some percentage of peak
-        //Should adust up and down
-        if (power > peakPower)
-            peakPower = peakPower + 0.10 * power;
-        else if (power < peakPower)
-            peakPower = peakPower - 0.10 * power;
+        //We want our threshold to adjust to some percentage of average
+        avgPower = (power * .01) + (avgPower * 0.99);
 
-        binaryThreshold = peakPower / 2;
+        //Threshold should be some factor of average so we get clear distinction between tone / no tone
+        binaryThreshold = avgPower * 0.75;
 
         if (power > binaryThreshold)
             binaryOutput = true;
         else
             binaryOutput = false;
+
         delay2 = 0;
         delay1 = 0;
+
+        //Save in circular buffer
+        powerBuf[nextIn] = power;
+        nextIn = (nextIn + 1) % POWERBUFSIZE;
+        //Handle the case where we wrap circular buffer without reading results
+        if (numPowerResults < POWERBUFSIZE)
+            numPowerResults++;
+
+        return true;
     }
 
+    return false;
+}
 
+float Goertzel::GetNextPowerResult()
+{
+    //Make sure we never try to get more results than we have
+    if (numPowerResults == 0)
+        return 0.0;
+
+    float power = powerBuf[nextOut];
+    nextOut = (nextOut + 1) % POWERBUFSIZE;
+    numPowerResults--;
+    return power;
 }
 
 //From Nue-PSK
