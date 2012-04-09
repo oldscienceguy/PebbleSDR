@@ -46,7 +46,6 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	//Testing, may not leave these in live product
 	ui.displayBox->addItem("Post Mixer");
 	ui.displayBox->addItem("Post BandPass");
-    ui.displayBox->addItem("Goertzel");
 
 	//ui.spectrumWidget->setStyleSheet("border: 1px solid white");
 	//Todo: Make lcd glow when on, set up/down button colors, etc
@@ -162,9 +161,6 @@ void ReceiverWidget::displayChanged(int item)
 	case 6:
 		ui.spectrumWidget->plotSelectionChanged(SignalSpectrum::POSTBANDPASS);
 		break;
-    case 7:
-        ui.spectrumWidget->plotSelectionChanged(SignalSpectrum::GOERTZEL);
-        break;
     }
 }
 
