@@ -23,6 +23,7 @@
 #include "firfilter.h"
 #include "agc.h"
 #include "iqbalance.h"
+#include "morse.h"
 
 #include "sdr_iq.h"
 
@@ -89,6 +90,7 @@ private:
 	SignalSpectrum *signalSpectrum;
 	AGC *agc;
 	IQBalance *iqBalance;
+    Morse *morse;
 
 
 	double frequency; //Current LO frequency (not mixed)

@@ -53,6 +53,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	agc = NULL;
 	iqBalance = NULL;
 	sdrThread = NULL;
+    morse = NULL;
 
 	//Testing
 	useFreqDomainChain = false;
@@ -119,6 +120,9 @@ bool Receiver::On()
 	//lpFilter->SetHighPass(3000); //Testing 
 	//lpFilter->SetBandPass(50,3000); //Testing
 
+    morse = new Morse(downSampleRate,downSampleFrames);
+    morse->ConnectToUI(receiverWidget->getDataMeter(), receiverWidget->getDataEdit());
+
 	//Testing, time intensive for large # taps, ie @512 we lose chunks of signal
 	//Check post-bandpass spectrum and make just large enough to be effective
 	//64 is too small, 128 is good, ignored if useFFT arg == true
@@ -156,7 +160,7 @@ bool Receiver::On()
 
 	//receiver->SetFrequency(frequency);
 	receiverWidget->SetFrequency(frequency);
-	
+
 	//This should always be last because it starts samples flowing through the processBlocks
     audioOutput->Start(0,downSampleRate);
 	sdr->Start();
@@ -236,6 +240,10 @@ bool Receiver::Off()
 		delete presets;
 		presets = NULL;
 	}
+    if (morse != NULL) {
+        delete morse;
+        morse = NULL;
+    }
 #if(0)
 	if (iqBalanceOptions != NULL) {
 		if (iqBalanceOptions->isVisible()) {
@@ -545,6 +553,10 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 	nextStep = agc->ProcessBlock(nextStep);
 
 	nextStep = demod->ProcessBlock(nextStep);
+
+    //Testing Goertzel
+    nextStep = morse->ProcessBlock(nextStep);
+
 
 	//Testing LPF to get rid of some noise after demod
 	nextStep = lpFilter->ProcessBlock(nextStep);
