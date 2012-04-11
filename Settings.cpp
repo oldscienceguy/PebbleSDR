@@ -29,6 +29,7 @@ Settings::Settings(void)
 	settingsDialog = new QDialog();
 	sd = new Ui::SettingsDialog();
 	sd->setupUi(settingsDialog);
+    sd->serialBox->setFont(medFont);
 	sd->serialBox->addItem("Any",-1);
 	sd->serialBox->addItem("0",0);
 	sd->serialBox->addItem("1",1);
@@ -42,6 +43,7 @@ Settings::Settings(void)
 	sd->serialBox->addItem("9",9);
 	connect(sd->saveButton,SIGNAL(clicked(bool)),this,SLOT(SaveSettings(bool)));
 
+    sd->receiverBox->setFont(medFont);
 	sd->receiverBox->addItem("SR Ensemble",SDR::SR_ENSEMBLE);
 	sd->receiverBox->addItem("SR Ensemble 2M",SDR::SR_ENSEMBLE_2M);
 	sd->receiverBox->addItem("SR Ensemble 4M",SDR::SR_ENSEMBLE_4M);
@@ -57,10 +59,24 @@ Settings::Settings(void)
     sd->receiverBox->addItem("File",SDR::FILE);
     connect(sd->receiverBox,SIGNAL(currentIndexChanged(int)),this,SLOT(ReceiverChanged(int)));
 
+    sd->startupBox->setFont(medFont);
 	sd->startupBox->addItem("Last Frequency",Settings::LASTFREQ);
 	sd->startupBox->addItem("Set Frequency", Settings::SETFREQ);
 	sd->startupBox->addItem("Device Default", Settings::DEFAULTFREQ);
 	connect(sd->startupBox,SIGNAL(currentIndexChanged(int)),this,SLOT(StartupChanged(int)));
+
+    sd->label_2->setFont(medFont);
+    sd->label_3->setFont(medFont);
+    sd->label_4->setFont(medFont);
+    sd->label_5->setFont(medFont);
+    sd->label_6->setFont(medFont);
+    sd->label_7->setFont(medFont);
+    sd->outputBox->setFont(medFont);
+    sd->saveButton->setFont(medFont);
+    sd->serialBox->setFont(medFont);
+    sd->cancelButton->setFont(medFont);
+    sd->sourceBox->setFont(medFont);
+    sd->startupEdit->setFont(medFont);
 
 	ReadSettings();
 }
