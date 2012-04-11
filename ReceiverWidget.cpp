@@ -19,6 +19,10 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	powerOn = false;
 	frequency = 0;
 
+    QFont smFont = receiver->GetSettings()->smFont;
+    QFont medFont = receiver->GetSettings()->medFont;
+    QFont lgFont = receiver->GetSettings()->lgFont;
+
 	QStringList modes;
 	modes << "AM"<<"SAM"<<"FMN"<<"FMW"<<"DSB"<<"LSB"<<"USB"<<"CWL"<<"CWU"<<"DIGL"<<"DIGU"<<"NONE";
 	ui.modeBox->addItems(modes);
@@ -32,6 +36,7 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	settingsMenu->addAction("General",receiver,SLOT(ShowSettings(bool)));
 	settingsMenu->addAction("SDR Device",receiver,SLOT(ShowSdrSettings(bool)));
 	settingsMenu->addAction("IQ Balance",receiver,SLOT(ShowIQBalance(bool)));
+    settingsMenu->setFont(medFont);
 	ui.settingsButton->setMenu(settingsMenu);
 
 	//Pulled from SpoectrumWidget to allow us to display other data in same area
@@ -129,6 +134,27 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 
 	ui.directEntry->setInputMask("000000000"); //All digits, none required
 
+    ui.agcBox->setFont(medFont);
+    ui.agcSlider->setFont(smFont);
+    ui.anfButton->setFont(smFont);
+    ui.gainSlider->setFont(medFont);
+    ui.directEntry->setFont(medFont);
+    ui.label->setFont(medFont);
+    ui.label_2->setFont(smFont);
+    ui.label_3->setFont(medFont);
+    ui.loButton->setFont(smFont);
+    ui.lpfButton->setFont(smFont);
+    ui.mixButton->setFont(smFont);
+    ui.modeBox->setFont(medFont);
+    ui.muteButton->setFont(medFont);
+    ui.nb2Button->setFont(smFont);
+    ui.nbButton->setFont(smFont);
+    ui.powerButton->setFont(medFont);
+    ui.presetsButton->setFont(medFont);
+    ui.settingsButton->setFont(medFont);
+    ui.squelchSlider->setFont(smFont);
+    ui.displayBox->setFont(medFont);
+    ui.filterBox->setFont(medFont);
 }
 
 ReceiverWidget::~ReceiverWidget(void)

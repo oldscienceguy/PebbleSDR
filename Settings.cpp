@@ -15,6 +15,17 @@ Settings::Settings(void)
 
 	//qSetting->endGroup("IQ");
 
+    //Set font size, get from settings eventually, change for 1024x768 vs higher res like 1440x900 (mac)
+    smFont.setFamily("Lucida Grande");
+    smFont.setPointSize(8);
+    medFont.setFamily("Lucida Grande");
+    medFont.setPointSize(10);
+    lgFont.setFamily("Lucida Grande");
+    lgFont.setPointSize(12);
+
+
+
+
 	settingsDialog = new QDialog();
 	sd = new Ui::SettingsDialog();
 	sd->setupUi(settingsDialog);

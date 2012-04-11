@@ -4,6 +4,7 @@
 #include <QSettings>
 #include "ui/ui_Settings.h"
 #include "sdr.h"
+#include "QFont"
 /*
 Encapsulates settings dialog, reading/writing settings file, etc
 */
@@ -37,6 +38,12 @@ public:
 	//Increment for left-right and up-down in spectrum display
 	int leftRightIncrement;
 	int upDownIncrement;
+
+    //Fonts for consisten UI
+    QFont smFont;
+    QFont medFont;
+    QFont lgFont;
+
 
 	public slots:
 
