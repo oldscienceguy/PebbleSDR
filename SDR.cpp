@@ -32,7 +32,7 @@ SDR::SDR(Receiver *_receiver, SDRDEVICE dev,Settings *_settings)
 	sIQBalancePhase=0;
 	sIQBalanceEnable=false;
 	sIQOrder = SDR::IQ;
-	iqBalanceOptions = NULL;
+    iqbo = NULL;
 	iqDialog = NULL;
 }
 
@@ -137,14 +137,14 @@ void SDR::phaseChanged(int v)
 {
 	//v is an integer, convert to fraction -.500 to +.500
 	double newValue = v/1000.0;
-	iqBalanceOptions->phaseLabel->setText("Phase: " + QString::number(newValue));
+    iqbo->phaseLabel->setText("Phase: " + QString::number(newValue));
 	receiver->GetIQBalance()->setPhaseFactor(newValue);
 }
 void SDR::gainChanged(int v)
 {
 	//v is an integer, convert to fraction -.750 to +1.250
 	double newValue = v/1000.0;
-	iqBalanceOptions->gainLabel->setText("Gain: " + QString::number(newValue));
+    iqbo->gainLabel->setText("Gain: " + QString::number(newValue));
 	receiver->GetIQBalance()->setGainFactor(newValue);
 }
 void SDR::enabledChanged(bool b)
@@ -159,8 +159,8 @@ void SDR::resetClicked()
 {
 	receiver->GetIQBalance()->setGainFactor(1);
 	receiver->GetIQBalance()->setPhaseFactor(0);
-	iqBalanceOptions->phaseSlider->setValue(0);
-	iqBalanceOptions->gainSlider->setValue(1000);
+    iqbo->phaseSlider->setValue(0);
+    iqbo->gainSlider->setValue(1000);
 }
 void SDR::saveClicked()
 {
@@ -171,48 +171,62 @@ void SDR::saveClicked()
 //IQ order can be changed in real time, without saving
 void SDR::IQOrderChanged(int i)
 {
-	sIQOrder = (IQORDER)iqBalanceOptions->IQSettings->itemData(i).toInt();
+    sIQOrder = (IQORDER)iqbo->IQSettings->itemData(i).toInt();
 	//Settings are read in real time by soundcard loop, no need to notify
 }
 
 void SDR::ShowIQOptions()
 {
+    QFont smFont = settings->smFont;
+    QFont medFont = settings->medFont;
+    QFont lgFont = settings->lgFont;
 
 	if (iqDialog == NULL) {
-		iqBalanceOptions = new Ui::IQBalanceOptions();
+        iqbo = new Ui::IQBalanceOptions();
 		iqDialog = new QDialog();
-		iqBalanceOptions->setupUi(iqDialog);
+        iqbo->setupUi(iqDialog);
 
-		iqBalanceOptions->IQSettings->addItem("I/Q (normal)",IQ);
-		iqBalanceOptions->IQSettings->addItem("Q/I (swap)",QI);
-		iqBalanceOptions->IQSettings->addItem("I Only",IONLY);
-		iqBalanceOptions->IQSettings->addItem("Q Only",QONLY);
-		connect(iqBalanceOptions->IQSettings,SIGNAL(currentIndexChanged(int)),this,SLOT(IQOrderChanged(int)));
+        iqbo->autoBalanceBox->setFont(medFont);
+        iqbo->enableBalanceBox->setFont(medFont);
+        iqbo->gainLabel->setFont(medFont);
+        iqbo->gainSlider->setFont(medFont);
+        iqbo->label->setFont(medFont);
+        iqbo->phaseLabel->setFont(medFont);
+        iqbo->phaseSlider->setFont(medFont);
+        iqbo->resetButton->setFont(medFont);
+        iqbo->saveButton->setFont(medFont);
+        iqbo->IQSettings->setFont(medFont);
 
-		iqBalanceOptions->phaseSlider->setMaximum(500);
-		iqBalanceOptions->phaseSlider->setMinimum(-500);
+        iqbo->IQSettings->addItem("I/Q (normal)",IQ);
+        iqbo->IQSettings->addItem("Q/I (swap)",QI);
+        iqbo->IQSettings->addItem("I Only",IONLY);
+        iqbo->IQSettings->addItem("Q Only",QONLY);
+        connect(iqbo->IQSettings,SIGNAL(currentIndexChanged(int)),this,SLOT(IQOrderChanged(int)));
 
-		connect(iqBalanceOptions->phaseSlider,SIGNAL(valueChanged(int)),this,SLOT(phaseChanged(int)));
+        iqbo->phaseSlider->setMaximum(500);
+        iqbo->phaseSlider->setMinimum(-500);
 
-		iqBalanceOptions->gainSlider->setMaximum(1250);
-		iqBalanceOptions->gainSlider->setMinimum(750);
+        connect(iqbo->phaseSlider,SIGNAL(valueChanged(int)),this,SLOT(phaseChanged(int)));
 
-		connect(iqBalanceOptions->gainSlider,SIGNAL(valueChanged(int)),this,SLOT(gainChanged(int)));
+        iqbo->gainSlider->setMaximum(1250);
+        iqbo->gainSlider->setMinimum(750);
 
-		connect(iqBalanceOptions->enableBalanceBox,SIGNAL(toggled(bool)),this,SLOT(enabledChanged(bool)));
-		iqBalanceOptions->autoBalanceBox->setEnabled(false); //Not ready yet
-		connect(iqBalanceOptions->autoBalanceBox,SIGNAL(toggled(bool)),this,SLOT(automaticChanged(bool)));
-		connect(iqBalanceOptions->resetButton,SIGNAL(clicked()),this,SLOT(resetClicked()));
+        connect(iqbo->gainSlider,SIGNAL(valueChanged(int)),this,SLOT(gainChanged(int)));
 
-		connect(iqBalanceOptions->saveButton,SIGNAL(clicked()),this,SLOT(saveClicked()));
+        connect(iqbo->enableBalanceBox,SIGNAL(toggled(bool)),this,SLOT(enabledChanged(bool)));
+        iqbo->autoBalanceBox->setEnabled(false); //Not ready yet
+        connect(iqbo->autoBalanceBox,SIGNAL(toggled(bool)),this,SLOT(automaticChanged(bool)));
+        connect(iqbo->resetButton,SIGNAL(clicked()),this,SLOT(resetClicked()));
+
+        connect(iqbo->saveButton,SIGNAL(clicked()),this,SLOT(saveClicked()));
 	}
 
-	iqBalanceOptions->IQSettings->setCurrentIndex(sIQOrder);
-	iqBalanceOptions->phaseSlider->setValue(sIQBalancePhase*1000);
-	iqBalanceOptions->phaseLabel->setText("Phase: " + QString::number(sIQBalancePhase));
-	iqBalanceOptions->gainSlider->setValue(sIQBalanceGain*1000);
-	iqBalanceOptions->gainLabel->setText("Gain: " + QString::number(sIQBalanceGain));
-	iqBalanceOptions->enableBalanceBox->setChecked(sIQBalanceEnable);
+    iqbo->IQSettings->setCurrentIndex(sIQOrder);
+    iqbo->phaseSlider->setValue(sIQBalancePhase*1000);
+    iqbo->phaseLabel->setText("Phase: " + QString::number(sIQBalancePhase));
+    iqbo->gainSlider->setValue(sIQBalanceGain*1000);
+    iqbo->gainLabel->setText("Gain: " + QString::number(sIQBalanceGain));
+    iqbo->enableBalanceBox->setChecked(sIQBalanceEnable);
 
 	iqDialog->show();
 
