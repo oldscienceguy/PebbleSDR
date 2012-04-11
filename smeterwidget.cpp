@@ -44,27 +44,26 @@ void SMeterWidget::updateMeter()
 void SMeterWidget::paintEvent(QPaintEvent *e)
 {
 	//Don't need painter.begin and painter.end with this constructor
-	QPainter painter(this);
+    QPainter painter(this);
 
-	QRect pa = ui.plotArea->frameGeometry(); //relative to parent, including frame
-	int paX = pa.x(); //Upper left corder, relative to widget, ie 0,0
+    QRect pa = ui.plotArea->frameGeometry(); //relative to parent, including frame
+    QRect sa = ui.scaleArea->frameGeometry(); //relative to parent, including frame
+    int paX = pa.x(); //Upper left corder, relative to widget, ie 0,0
 	int paY = pa.y();
 	int mid = pa.width()/2;
 
 	QPen pen;
 	pen.setStyle(Qt::SolidLine);
-	pen.setColor("Blue");
-	pen.setWidth(pa.height());
-	painter.setPen(pen);
 	//Range is -127 to -13db, or a span of 114dB
 	//Draw scale just below plot area
-	painter.setFont(QFont("Arial", 6));
-	int bottom = pa.bottom() + 4;
-	painter.drawText(QPoint(paX,bottom),"S0");
-	painter.drawText(QPoint(paX+mid-4,bottom), "S9");
-	painter.drawText(QPoint(pa.right()-9,bottom),"+60");
+    painter.setFont(QFont("Ludida Grande", 8)); //!!Should get this from settings
+    pen.setColor(Qt::black);;
+    painter.setPen(pen);
+    painter.drawText(sa.bottomLeft(),"S0");
+    painter.drawText(sa.right()/2,sa.bottom(), "S9");
+    painter.drawText(sa.right()-15,sa.bottom(),"+60");
 
-	//What percentate is instValue of span
+    //What percentate is instValue of span
 	float instFValue;
 	if (signalStrength != NULL)
 		instFValue = signalStrength->instFValue();
@@ -80,11 +79,15 @@ void SMeterWidget::paintEvent(QPaintEvent *e)
 	if (plotX <= paX)
 		return; //nothing to draw
 
+    pen.setColor(Qt::blue);
+    pen.setWidth(pa.height()+5);
+    painter.setPen(pen);
+
 	if (percent < .5 )
 	{
 		//Just draw blue
 		//Scale to width of meter
-		painter.drawLine(paX,paY,paX + plotX, paY);
+        painter.drawLine(paX,paY,paX + plotX, paY);
 	} else {
 		//draw blue
 		int tmp = paX+mid;
