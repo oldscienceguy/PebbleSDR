@@ -653,11 +653,30 @@ void ElektorSDR::setAtten2(bool b) {setAttenuator(2);}
 
 void ElektorSDR::ShowOptions()
 {
+    QFont smFont = settings->smFont;
+    QFont medFont = settings->medFont;
+    QFont lgFont = settings->lgFont;
+
 	if (elektorOptions == NULL)
 	{
 		elektorOptions = new QDialog();
 		eo = new Ui::ElektorOptions();
 		eo->setupUi(elektorOptions);
+
+        eo->automaticButton->setFont(medFont);
+        eo->calButton->setFont(medFont);
+        eo->cancelButton->setFont(medFont);
+        eo->mwButton->setFont(medFont);
+        eo->okButton->setFont(medFont);
+        eo->pre1Button->setFont(medFont);
+        eo->pre2Button->setFont(medFont);
+        eo->pre3Button->setFont(medFont);
+        eo->pre4Button->setFont(medFont);
+        eo->swButton->setFont(medFont);
+        eo->tenDbButton->setFont(medFont);
+        eo->twentyDbButton->setFont(medFont);
+        eo->widebandButton->setFont(medFont);
+        eo->zeroDbButton->setFont(medFont);
 		
 		connect(eo->automaticButton,SIGNAL(clicked(bool)),this,SLOT(setInput0(bool)));
 		connect(eo->widebandButton,SIGNAL(clicked(bool)),this,SLOT(setInput0(bool)));

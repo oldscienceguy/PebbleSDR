@@ -602,11 +602,32 @@ void HPSDR::optionsAccepted()
 
 void HPSDR::ShowOptions()
 {
+    QFont smFont = settings->smFont;
+    QFont medFont = settings->medFont;
+    QFont lgFont = settings->lgFont;
+
 	if (hpsdrOptions == NULL)
 	{
 		hpsdrOptions = new QDialog();
 		hpo = new Ui::HPSDROptions();
 		hpo->setupUi(hpsdrOptions);
+
+        hpo->buttonBox->setFont(medFont);
+        hpo->enableDither->setFont(medFont);
+        hpo->enablePreamp->setFont(medFont);
+        hpo->enableRandom->setFont(medFont);
+        hpo->hasExcalibur->setFont(medFont);
+        hpo->hasJanus->setFont(medFont);
+        hpo->hasMercury->setFont(medFont);
+        hpo->hasMetis->setFont(medFont);
+        hpo->hasOzy->setFont(medFont);
+        hpo->hasPenelope->setFont(medFont);
+        hpo->label->setFont(medFont);
+        hpo->mercuryLabel->setFont(medFont);
+        hpo->ozyFX2Label->setFont(medFont);
+        hpo->ozyLabel->setFont(medFont);
+        hpo->penelopeLabel->setFont(medFont);
+        hpo->speedBox->setFont(medFont);
 
 		hpo->speedBox->addItem("48 Khz",0);
 		hpo->speedBox->addItem("96 Khz",1);

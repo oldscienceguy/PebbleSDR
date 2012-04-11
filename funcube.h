@@ -83,7 +83,7 @@ private:
 
 	//Options
 	QDialog *fcdOptionsDialog;
-	Ui::FunCubeOptions *fcdOptions;
+	Ui::FunCubeOptions *fco;
 
 	//FCD Data
 	void ReadFCDOptions();

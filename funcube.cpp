@@ -7,6 +7,7 @@
 #include "qcoreapplication.h"
 #include "funcube.h"
 #include "Demod.h"
+#include "Settings.h"
 
 #define FCD_HID_CMD_QUERY              1 // Returns string with "FCDAPP version"
 
@@ -562,7 +563,7 @@ void FunCube::SetIQCorrection(qint16 phase, quint16 gain)
 
 void FunCube::LNAGainChanged(int s)
 {
-	int v = fcdOptions->LNAGain->itemData(s).toInt();
+    int v = fco->LNAGain->itemData(s).toInt();
 	SetLNAGain(v);
 }
 void FunCube::SetLNAGain(int v)
@@ -575,7 +576,7 @@ void FunCube::SetLNAGain(int v)
 
 void FunCube::LNAEnhanceChanged(int s)
 {
-	int v = fcdOptions->LNAEnhance->itemData(s).toInt();
+    int v = fco->LNAEnhance->itemData(s).toInt();
 	SetLNAEnhance(v);
 }
 void FunCube::SetLNAEnhance(int v)
@@ -596,54 +597,54 @@ void FunCube::SetBand(int v)
 
 void FunCube::BandChanged(int s)
 {
-	int v = fcdOptions->Band->itemData(s).toInt();
+    int v = fco->Band->itemData(s).toInt();
 	SetBand(v);
 	//Change RFFilter options to match band
-	fcdOptions->RFFilter->clear();
+    fco->RFFilter->clear();
 	switch (v) {
 	case 0:
-		fcdOptions->RFFilter->addItem("268mhz LPF",TRFE_LPF268MHZ);
-		fcdOptions->RFFilter->addItem("299mhz LPF",TRFE_LPF299MHZ);
+        fco->RFFilter->addItem("268mhz LPF",TRFE_LPF268MHZ);
+        fco->RFFilter->addItem("299mhz LPF",TRFE_LPF299MHZ);
 		break;
 	case 1:
-		fcdOptions->RFFilter->addItem("509mhz LPF",TRFE_LPF509MHZ);
-		fcdOptions->RFFilter->addItem("656mhz LPF",TRFE_LPF656MHZ);
+        fco->RFFilter->addItem("509mhz LPF",TRFE_LPF509MHZ);
+        fco->RFFilter->addItem("656mhz LPF",TRFE_LPF656MHZ);
 		break;
 	case 2:
-		fcdOptions->RFFilter->addItem("360mhz LPF",TRFE_BPF360MHZ);
-		fcdOptions->RFFilter->addItem("380mhz LPF",TRFE_BPF380MHZ);
-		fcdOptions->RFFilter->addItem("405mhz LPF",TRFE_BPF405MHZ);
-		fcdOptions->RFFilter->addItem("425mhz LPF",TRFE_BPF425MHZ);
-		fcdOptions->RFFilter->addItem("450mhz LPF",TRFE_BPF450MHZ);
-		fcdOptions->RFFilter->addItem("475mhz LPF",TRFE_BPF475MHZ);
-		fcdOptions->RFFilter->addItem("505mhz LPF",TRFE_BPF505MHZ);
-		fcdOptions->RFFilter->addItem("540mhz LPF",TRFE_BPF540MHZ);
-		fcdOptions->RFFilter->addItem("575mhz LPF",TRFE_BPF575MHZ);
-		fcdOptions->RFFilter->addItem("615mhz LPF",TRFE_BPF615MHZ);
-		fcdOptions->RFFilter->addItem("670mhz LPF",TRFE_BPF670MHZ);
-		fcdOptions->RFFilter->addItem("720mhz LPF",TRFE_BPF720MHZ);
-		fcdOptions->RFFilter->addItem("760mhz LPF",TRFE_BPF760MHZ);
-		fcdOptions->RFFilter->addItem("840mhz LPF",TRFE_BPF840MHZ);
-		fcdOptions->RFFilter->addItem("890mhz LPF",TRFE_BPF890MHZ);
-		fcdOptions->RFFilter->addItem("970mhz LPF",TRFE_BPF970MHZ);
+        fco->RFFilter->addItem("360mhz LPF",TRFE_BPF360MHZ);
+        fco->RFFilter->addItem("380mhz LPF",TRFE_BPF380MHZ);
+        fco->RFFilter->addItem("405mhz LPF",TRFE_BPF405MHZ);
+        fco->RFFilter->addItem("425mhz LPF",TRFE_BPF425MHZ);
+        fco->RFFilter->addItem("450mhz LPF",TRFE_BPF450MHZ);
+        fco->RFFilter->addItem("475mhz LPF",TRFE_BPF475MHZ);
+        fco->RFFilter->addItem("505mhz LPF",TRFE_BPF505MHZ);
+        fco->RFFilter->addItem("540mhz LPF",TRFE_BPF540MHZ);
+        fco->RFFilter->addItem("575mhz LPF",TRFE_BPF575MHZ);
+        fco->RFFilter->addItem("615mhz LPF",TRFE_BPF615MHZ);
+        fco->RFFilter->addItem("670mhz LPF",TRFE_BPF670MHZ);
+        fco->RFFilter->addItem("720mhz LPF",TRFE_BPF720MHZ);
+        fco->RFFilter->addItem("760mhz LPF",TRFE_BPF760MHZ);
+        fco->RFFilter->addItem("840mhz LPF",TRFE_BPF840MHZ);
+        fco->RFFilter->addItem("890mhz LPF",TRFE_BPF890MHZ);
+        fco->RFFilter->addItem("970mhz LPF",TRFE_BPF970MHZ);
 		break;
 	case 3:
-		fcdOptions->RFFilter->addItem("1300mhz LPF",TRFE_BPF1300MHZ);
-		fcdOptions->RFFilter->addItem("1320mhz LPF",TRFE_BPF1320MHZ);
-		fcdOptions->RFFilter->addItem("1360mhz LPF",TRFE_BPF1360MHZ);
-		fcdOptions->RFFilter->addItem("1410mhz LPF",TRFE_BPF1410MHZ);
-		fcdOptions->RFFilter->addItem("1445mhz LPF",TRFE_BPF1445MHZ);
-		fcdOptions->RFFilter->addItem("1460mhz LPF",TRFE_BPF1460MHZ);
-		fcdOptions->RFFilter->addItem("1490mhz LPF",TRFE_BPF1490MHZ);
-		fcdOptions->RFFilter->addItem("1530mhz LPF",TRFE_BPF1530MHZ);
-		fcdOptions->RFFilter->addItem("1560mhz LPF",TRFE_BPF1560MHZ);
-		fcdOptions->RFFilter->addItem("1590mhz LPF",TRFE_BPF1590MHZ);
-		fcdOptions->RFFilter->addItem("1640mhz LPF",TRFE_BPF1640MHZ);
-		fcdOptions->RFFilter->addItem("1660mhz LPF",TRFE_BPF1660MHZ);
-		fcdOptions->RFFilter->addItem("1680mhz LPF",TRFE_BPF1680MHZ);
-		fcdOptions->RFFilter->addItem("1700mhz LPF",TRFE_BPF1700MHZ);
-		fcdOptions->RFFilter->addItem("1720mhz LPF",TRFE_BPF1720MHZ);
-		fcdOptions->RFFilter->addItem("1750mhz LPF",TRFE_BPF1750MHZ);
+        fco->RFFilter->addItem("1300mhz LPF",TRFE_BPF1300MHZ);
+        fco->RFFilter->addItem("1320mhz LPF",TRFE_BPF1320MHZ);
+        fco->RFFilter->addItem("1360mhz LPF",TRFE_BPF1360MHZ);
+        fco->RFFilter->addItem("1410mhz LPF",TRFE_BPF1410MHZ);
+        fco->RFFilter->addItem("1445mhz LPF",TRFE_BPF1445MHZ);
+        fco->RFFilter->addItem("1460mhz LPF",TRFE_BPF1460MHZ);
+        fco->RFFilter->addItem("1490mhz LPF",TRFE_BPF1490MHZ);
+        fco->RFFilter->addItem("1530mhz LPF",TRFE_BPF1530MHZ);
+        fco->RFFilter->addItem("1560mhz LPF",TRFE_BPF1560MHZ);
+        fco->RFFilter->addItem("1590mhz LPF",TRFE_BPF1590MHZ);
+        fco->RFFilter->addItem("1640mhz LPF",TRFE_BPF1640MHZ);
+        fco->RFFilter->addItem("1660mhz LPF",TRFE_BPF1660MHZ);
+        fco->RFFilter->addItem("1680mhz LPF",TRFE_BPF1680MHZ);
+        fco->RFFilter->addItem("1700mhz LPF",TRFE_BPF1700MHZ);
+        fco->RFFilter->addItem("1720mhz LPF",TRFE_BPF1720MHZ);
+        fco->RFFilter->addItem("1750mhz LPF",TRFE_BPF1750MHZ);
 		break;
 	}
 	//We're not keeping filter values per band yet, so just set filter to first value
@@ -651,7 +652,7 @@ void FunCube::BandChanged(int s)
 }
 void FunCube::RFFilterChanged(int s)
 {
-	int v = fcdOptions->RFFilter->itemData(s).toInt();
+    int v = fco->RFFilter->itemData(s).toInt();
 	SetRFFilter(v);
 }
 void FunCube::SetRFFilter(int v)
@@ -664,7 +665,7 @@ void FunCube::SetRFFilter(int v)
 
 void FunCube::MixerGainChanged(int s)
 {
-	int v = fcdOptions->MixerGain->itemData(s).toInt();
+    int v = fco->MixerGain->itemData(s).toInt();
 	SetMixerGain(v);
 }
 void FunCube::SetMixerGain(int v)
@@ -677,7 +678,7 @@ void FunCube::SetMixerGain(int v)
 
 void FunCube::BiasCurrentChanged(int s)
 {
-	int v = fcdOptions->BiasCurrent->itemData(s).toInt();
+    int v = fco->BiasCurrent->itemData(s).toInt();
 	SetBiasCurrent(v);
 }
 void FunCube::SetBiasCurrent(int v)
@@ -690,7 +691,7 @@ void FunCube::SetBiasCurrent(int v)
 
 void FunCube::MixerFilterChanged(int s)
 {
-	int v = fcdOptions->MixerFilter->itemData(s).toInt();
+    int v = fco->MixerFilter->itemData(s).toInt();
 	SetMixerFilter(v);
 }
 void FunCube::SetMixerFilter(int v)
@@ -703,7 +704,7 @@ void FunCube::SetMixerFilter(int v)
 
 void FunCube::IFGain1Changed(int s)
 {
-	int v = fcdOptions->IFGain1->itemData(s).toInt();
+    int v = fco->IFGain1->itemData(s).toInt();
 	SetIFGain1(v);
 }
 void FunCube::SetIFGain1(int v)
@@ -716,7 +717,7 @@ void FunCube::SetIFGain1(int v)
 
 void FunCube::IFGain2Changed(int s)
 {
-	int v = fcdOptions->IFGain2->itemData(s).toInt();
+    int v = fco->IFGain2->itemData(s).toInt();
 	SetIFGain2(v);
 }
 void FunCube::SetIFGain2(int v)
@@ -729,7 +730,7 @@ void FunCube::SetIFGain2(int v)
 
 void FunCube::IFGain3Changed(int s)
 {
-	int v = fcdOptions->IFGain3->itemData(s).toInt();
+    int v = fco->IFGain3->itemData(s).toInt();
 	SetIFGain3(v);
 }
 void FunCube::SetIFGain3(int v)
@@ -742,7 +743,7 @@ void FunCube::SetIFGain3(int v)
 
 void FunCube::IFGain4Changed(int s)
 {
-	int v = fcdOptions->IFGain4->itemData(s).toInt();
+    int v = fco->IFGain4->itemData(s).toInt();
 	SetIFGain4(v);
 }
 void FunCube::SetIFGain4(int v)
@@ -755,7 +756,7 @@ void FunCube::SetIFGain4(int v)
 
 void FunCube::IFGain5Changed(int s)
 {
-	int v = fcdOptions->IFGain5->itemData(s).toInt();
+    int v = fco->IFGain5->itemData(s).toInt();
 	SetIFGain5(v);
 }
 void FunCube::SetIFGain5(int v)
@@ -768,7 +769,7 @@ void FunCube::SetIFGain5(int v)
 
 void FunCube::IFGain6Changed(int s)
 {
-	int v = fcdOptions->IFGain6->itemData(s).toInt();
+    int v = fco->IFGain6->itemData(s).toInt();
 	SetIFGain6(v);
 }
 void FunCube::SetIFGain6(int v)
@@ -781,7 +782,7 @@ void FunCube::SetIFGain6(int v)
 
 void FunCube::IFGainModeChanged(int s)
 {
-	int v = fcdOptions->IFGainMode->itemData(s).toInt();
+    int v = fco->IFGainMode->itemData(s).toInt();
 	SetIFGainMode(v);
 }
 void FunCube::SetIFGainMode(int v)
@@ -794,7 +795,7 @@ void FunCube::SetIFGainMode(int v)
 
 void FunCube::IFRCFilterChanged(int s)
 {
-	int v = fcdOptions->IFRCFilter->itemData(s).toInt();
+    int v = fco->IFRCFilter->itemData(s).toInt();
 	SetIFRCFilter(v);
 }
 void FunCube::SetIFRCFilter(int v)
@@ -807,7 +808,7 @@ void FunCube::SetIFRCFilter(int v)
 
 void FunCube::IFFilterChanged(int s)
 {
-	int v = fcdOptions->IFFilter->itemData(s).toInt();
+    int v = fco->IFFilter->itemData(s).toInt();
 	SetIFFilter(v);
 }
 void FunCube::SetIFFilter(int v)
@@ -941,212 +942,255 @@ void FunCube::ReadFCDOptions()
 
 void FunCube::ShowOptions()
 {
+    QFont smFont = settings->smFont;
+    QFont medFont = settings->medFont;
+    QFont lgFont = settings->lgFont;
+
 	if (fcdOptionsDialog == NULL) {
 		fcdOptionsDialog = new QDialog();
-		fcdOptions = new Ui::FunCubeOptions();
-		fcdOptions->setupUi(fcdOptionsDialog);
+        fco = new Ui::FunCubeOptions();
+        fco->setupUi(fcdOptionsDialog);
 
-		fcdOptions->LNAGain->addItem("-5.0db",TLGE_N5_0DB);
-		fcdOptions->LNAGain->addItem("-2.5db",TLGE_N2_5DB);
-		fcdOptions->LNAGain->addItem("+0.0db",TLGE_P0_0DB);
-		fcdOptions->LNAGain->addItem("+2.5db",TLGE_P2_5DB);
-		fcdOptions->LNAGain->addItem("+5.0db",TLGE_P5_0DB);
-		fcdOptions->LNAGain->addItem("+7.5db",TLGE_P7_5DB);
-		fcdOptions->LNAGain->addItem("+10.0db",TLGE_P10_0DB);
-		fcdOptions->LNAGain->addItem("+12.5db",TLGE_P12_5DB);
-		fcdOptions->LNAGain->addItem("+15.0db",TLGE_P15_0DB);
-		fcdOptions->LNAGain->addItem("+17.5db",TLGE_P17_5DB);
-		fcdOptions->LNAGain->addItem("+20.0db",TLGE_P20_0DB);
-		fcdOptions->LNAGain->addItem("+25.0db",TLGE_P25_0DB);
-		fcdOptions->LNAGain->addItem("+30.0db",TLGE_P30_0DB);
-		connect(fcdOptions->LNAGain,SIGNAL(currentIndexChanged(int)),this,SLOT(LNAGainChanged(int)));
+        fco->Band->setFont(medFont);
+        fco->BiasCurrent->setFont(medFont);
+        fco->defaultsButton->setFont(medFont);
+        fco->frequencyLabel->setFont(medFont);
+        fco->IFFilter->setFont(medFont);
+        fco->IFGain1->setFont(medFont);
+        fco->IFGain2->setFont(medFont);
+        fco->IFGain3->setFont(medFont);
+        fco->IFGain4->setFont(medFont);
+        fco->IFGain5->setFont(medFont);
+        fco->IFGain6->setFont(medFont);
+        fco->IFGainMode->setFont(medFont);
+        fco->IFRCFilter->setFont(medFont);
+        fco->label->setFont(medFont);
+        fco->label_10->setFont(medFont);
+        fco->label_11->setFont(medFont);
+        fco->label_12->setFont(medFont);
+        fco->label_13->setFont(medFont);
+        fco->label_14->setFont(medFont);
+        fco->label_15->setFont(medFont);
+        fco->label_16->setFont(medFont);
+        fco->label_2->setFont(medFont);
+        fco->label_3->setFont(medFont);
+        fco->label_4->setFont(medFont);
+        fco->label_5->setFont(medFont);
+        fco->label_6->setFont(medFont);
+        fco->label_7->setFont(medFont);
+        fco->label_8->setFont(medFont);
+        fco->label_9->setFont(medFont);
+        fco->LNAEnhance->setFont(medFont);
+        fco->LNAGain->setFont(medFont);
+        fco->MixerFilter->setFont(medFont);
+        fco->MixerGain->setFont(medFont);
+        fco->RFFilter->setFont(medFont);
+        fco->saveButton->setFont(medFont);
+        fco->versionLabel->setFont(medFont);
 
-		fcdOptions->LNAEnhance->addItem("Off",TLEE_OFF);
-		fcdOptions->LNAEnhance->addItem("0",TLEE_0);
-		fcdOptions->LNAEnhance->addItem("1",TLEE_1);
-		fcdOptions->LNAEnhance->addItem("2",TLEE_2);
-		fcdOptions->LNAEnhance->addItem("3",TLEE_3);
-		connect(fcdOptions->LNAEnhance,SIGNAL(currentIndexChanged(int)),this,SLOT(LNAEnhanceChanged(int)));
 
-		fcdOptions->Band->addItem("VHF II",TBE_VHF2);
-		fcdOptions->Band->addItem("VHF III",TBE_VHF3);
-		fcdOptions->Band->addItem("UHF",TBE_UHF);
-		fcdOptions->Band->addItem("L band",TBE_LBAND);
-		connect(fcdOptions->Band,SIGNAL(currentIndexChanged(int)),this,SLOT(BandChanged(int)));
-		connect(fcdOptions->RFFilter,SIGNAL(currentIndexChanged(int)),this,SLOT(RFFilterChanged(int)));
 
-		fcdOptions->MixerGain->addItem("4db",TMGE_P4_0DB);
-		fcdOptions->MixerGain->addItem("12db",TMGE_P12_0DB);
-		connect(fcdOptions->MixerGain,SIGNAL(currentIndexChanged(int)),this,SLOT(MixerGainChanged(int)));
+        fco->LNAGain->addItem("-5.0db",TLGE_N5_0DB);
+        fco->LNAGain->addItem("-2.5db",TLGE_N2_5DB);
+        fco->LNAGain->addItem("+0.0db",TLGE_P0_0DB);
+        fco->LNAGain->addItem("+2.5db",TLGE_P2_5DB);
+        fco->LNAGain->addItem("+5.0db",TLGE_P5_0DB);
+        fco->LNAGain->addItem("+7.5db",TLGE_P7_5DB);
+        fco->LNAGain->addItem("+10.0db",TLGE_P10_0DB);
+        fco->LNAGain->addItem("+12.5db",TLGE_P12_5DB);
+        fco->LNAGain->addItem("+15.0db",TLGE_P15_0DB);
+        fco->LNAGain->addItem("+17.5db",TLGE_P17_5DB);
+        fco->LNAGain->addItem("+20.0db",TLGE_P20_0DB);
+        fco->LNAGain->addItem("+25.0db",TLGE_P25_0DB);
+        fco->LNAGain->addItem("+30.0db",TLGE_P30_0DB);
+        connect(fco->LNAGain,SIGNAL(currentIndexChanged(int)),this,SLOT(LNAGainChanged(int)));
 
-		fcdOptions->BiasCurrent->addItem("00 L band",TBCE_LBAND);
-		fcdOptions->BiasCurrent->addItem("01",TBCE_1);
-		fcdOptions->BiasCurrent->addItem("10",TBCE_2);
-		fcdOptions->BiasCurrent->addItem("11 V/U band",TBCE_VUBAND);
-		connect(fcdOptions->BiasCurrent,SIGNAL(currentIndexChanged(int)),this,SLOT(BiasCurrentChanged(int)));
+        fco->LNAEnhance->addItem("Off",TLEE_OFF);
+        fco->LNAEnhance->addItem("0",TLEE_0);
+        fco->LNAEnhance->addItem("1",TLEE_1);
+        fco->LNAEnhance->addItem("2",TLEE_2);
+        fco->LNAEnhance->addItem("3",TLEE_3);
+        connect(fco->LNAEnhance,SIGNAL(currentIndexChanged(int)),this,SLOT(LNAEnhanceChanged(int)));
 
-		fcdOptions->MixerFilter->addItem("1.9MHz",TMFE_1_9MHZ);
-		fcdOptions->MixerFilter->addItem("2.3MHz",TMFE_2_3MHZ);
-		fcdOptions->MixerFilter->addItem("2.7MHz",TMFE_2_7MHZ);
-		fcdOptions->MixerFilter->addItem("3.0MHz",TMFE_3_0MHZ);
-		fcdOptions->MixerFilter->addItem("3.4MHz",TMFE_3_4MHZ);
-		fcdOptions->MixerFilter->addItem("3.8MHz",TMFE_3_8MHZ);
-		fcdOptions->MixerFilter->addItem("4.2MHz",TMFE_4_2MHZ);
-		fcdOptions->MixerFilter->addItem("4.6MHz",TMFE_4_6MHZ);
-		fcdOptions->MixerFilter->addItem("27MHz",TMFE_27_0MHZ);
-		connect(fcdOptions->MixerFilter,SIGNAL(currentIndexChanged(int)),this,SLOT(MixerFilterChanged(int)));
+        fco->Band->addItem("VHF II",TBE_VHF2);
+        fco->Band->addItem("VHF III",TBE_VHF3);
+        fco->Band->addItem("UHF",TBE_UHF);
+        fco->Band->addItem("L band",TBE_LBAND);
+        connect(fco->Band,SIGNAL(currentIndexChanged(int)),this,SLOT(BandChanged(int)));
+        connect(fco->RFFilter,SIGNAL(currentIndexChanged(int)),this,SLOT(RFFilterChanged(int)));
 
-		fcdOptions->IFGain1->addItem("-3dB",TIG1E_N3_0DB);
-		fcdOptions->IFGain1->addItem("+6dB",TIG1E_P6_0DB);
-		connect(fcdOptions->IFGain1,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain1Changed(int)));
+        fco->MixerGain->addItem("4db",TMGE_P4_0DB);
+        fco->MixerGain->addItem("12db",TMGE_P12_0DB);
+        connect(fco->MixerGain,SIGNAL(currentIndexChanged(int)),this,SLOT(MixerGainChanged(int)));
 
-		fcdOptions->IFGainMode->addItem("Linearity",TIGME_LINEARITY);
-		fcdOptions->IFGainMode->addItem("Sensitivity",TIGME_SENSITIVITY);
-		connect(fcdOptions->IFGainMode,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGainModeChanged(int)));
+        fco->BiasCurrent->addItem("00 L band",TBCE_LBAND);
+        fco->BiasCurrent->addItem("01",TBCE_1);
+        fco->BiasCurrent->addItem("10",TBCE_2);
+        fco->BiasCurrent->addItem("11 V/U band",TBCE_VUBAND);
+        connect(fco->BiasCurrent,SIGNAL(currentIndexChanged(int)),this,SLOT(BiasCurrentChanged(int)));
 
-		fcdOptions->IFRCFilter->addItem("1.0MHz",TIRFE_1_0MHZ);
-		fcdOptions->IFRCFilter->addItem("1.2MHz",TIRFE_1_2MHZ);
-		fcdOptions->IFRCFilter->addItem("1.8MHz",TIRFE_1_8MHZ);
-		fcdOptions->IFRCFilter->addItem("2.6MHz",TIRFE_2_6MHZ);
-		fcdOptions->IFRCFilter->addItem("3.4MHz",TIRFE_3_4MHZ);
-		fcdOptions->IFRCFilter->addItem("4.4MHz",TIRFE_4_4MHZ);
-		fcdOptions->IFRCFilter->addItem("5.3MHz",TIRFE_5_3MHZ);
-		fcdOptions->IFRCFilter->addItem("6.4MHz",TIRFE_6_4MHZ);
-		fcdOptions->IFRCFilter->addItem("7.7MHz",TIRFE_7_7MHZ);
-		fcdOptions->IFRCFilter->addItem("9.0MHz",TIRFE_9_0MHZ);
-		fcdOptions->IFRCFilter->addItem("10.6MHz",TIRFE_10_6MHZ);
-		fcdOptions->IFRCFilter->addItem("12.4MHz",TIRFE_12_4MHZ);
-		fcdOptions->IFRCFilter->addItem("14.7MHz",TIRFE_14_7MHZ);
-		fcdOptions->IFRCFilter->addItem("17.6MHz",TIRFE_17_6MHZ);
-		fcdOptions->IFRCFilter->addItem("21.0MHz",TIRFE_21_0MHZ);
-		fcdOptions->IFRCFilter->addItem("21.4MHz",TIRFE_21_4MHZ);
-		connect(fcdOptions->IFRCFilter,SIGNAL(currentIndexChanged(int)),this,SLOT(IFRCFilterChanged(int)));
+        fco->MixerFilter->addItem("1.9MHz",TMFE_1_9MHZ);
+        fco->MixerFilter->addItem("2.3MHz",TMFE_2_3MHZ);
+        fco->MixerFilter->addItem("2.7MHz",TMFE_2_7MHZ);
+        fco->MixerFilter->addItem("3.0MHz",TMFE_3_0MHZ);
+        fco->MixerFilter->addItem("3.4MHz",TMFE_3_4MHZ);
+        fco->MixerFilter->addItem("3.8MHz",TMFE_3_8MHZ);
+        fco->MixerFilter->addItem("4.2MHz",TMFE_4_2MHZ);
+        fco->MixerFilter->addItem("4.6MHz",TMFE_4_6MHZ);
+        fco->MixerFilter->addItem("27MHz",TMFE_27_0MHZ);
+        connect(fco->MixerFilter,SIGNAL(currentIndexChanged(int)),this,SLOT(MixerFilterChanged(int)));
 
-		fcdOptions->IFGain2->addItem("0dB",TIG2E_P0_0DB);
-		fcdOptions->IFGain2->addItem("+3dB",TIG2E_P3_0DB);
-		fcdOptions->IFGain2->addItem("+6dB",TIG2E_P6_0DB);
-		fcdOptions->IFGain2->addItem("+9dB",TIG2E_P9_0DB);
-		connect(fcdOptions->IFGain2,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain2Changed(int)));
+        fco->IFGain1->addItem("-3dB",TIG1E_N3_0DB);
+        fco->IFGain1->addItem("+6dB",TIG1E_P6_0DB);
+        connect(fco->IFGain1,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain1Changed(int)));
 
-		fcdOptions->IFGain3->addItem("0dB",TIG3E_P0_0DB);
-		fcdOptions->IFGain3->addItem("+3dB",TIG3E_P3_0DB);
-		fcdOptions->IFGain3->addItem("+6dB",TIG3E_P6_0DB);
-		fcdOptions->IFGain3->addItem("+9dB",TIG3E_P9_0DB);
-		connect(fcdOptions->IFGain3,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain3Changed(int)));
+        fco->IFGainMode->addItem("Linearity",TIGME_LINEARITY);
+        fco->IFGainMode->addItem("Sensitivity",TIGME_SENSITIVITY);
+        connect(fco->IFGainMode,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGainModeChanged(int)));
 
-		fcdOptions->IFGain4->addItem("0dB",TIG4E_P0_0DB);
-		fcdOptions->IFGain4->addItem("+1dB",TIG4E_P1_0DB);
-		fcdOptions->IFGain4->addItem("+2dB",TIG4E_P2_0DB);
-		connect(fcdOptions->IFGain4,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain4Changed(int)));
+        fco->IFRCFilter->addItem("1.0MHz",TIRFE_1_0MHZ);
+        fco->IFRCFilter->addItem("1.2MHz",TIRFE_1_2MHZ);
+        fco->IFRCFilter->addItem("1.8MHz",TIRFE_1_8MHZ);
+        fco->IFRCFilter->addItem("2.6MHz",TIRFE_2_6MHZ);
+        fco->IFRCFilter->addItem("3.4MHz",TIRFE_3_4MHZ);
+        fco->IFRCFilter->addItem("4.4MHz",TIRFE_4_4MHZ);
+        fco->IFRCFilter->addItem("5.3MHz",TIRFE_5_3MHZ);
+        fco->IFRCFilter->addItem("6.4MHz",TIRFE_6_4MHZ);
+        fco->IFRCFilter->addItem("7.7MHz",TIRFE_7_7MHZ);
+        fco->IFRCFilter->addItem("9.0MHz",TIRFE_9_0MHZ);
+        fco->IFRCFilter->addItem("10.6MHz",TIRFE_10_6MHZ);
+        fco->IFRCFilter->addItem("12.4MHz",TIRFE_12_4MHZ);
+        fco->IFRCFilter->addItem("14.7MHz",TIRFE_14_7MHZ);
+        fco->IFRCFilter->addItem("17.6MHz",TIRFE_17_6MHZ);
+        fco->IFRCFilter->addItem("21.0MHz",TIRFE_21_0MHZ);
+        fco->IFRCFilter->addItem("21.4MHz",TIRFE_21_4MHZ);
+        connect(fco->IFRCFilter,SIGNAL(currentIndexChanged(int)),this,SLOT(IFRCFilterChanged(int)));
 
-		fcdOptions->IFGain5->addItem("+3dB",TIG5E_P3_0DB);
-		fcdOptions->IFGain5->addItem("+6dB",TIG5E_P6_0DB);
-		fcdOptions->IFGain5->addItem("+9dB",TIG5E_P9_0DB);
-		fcdOptions->IFGain5->addItem("+12dB",TIG5E_P12_0DB);
-		fcdOptions->IFGain5->addItem("+15dB",TIG5E_P15_0DB);
-		connect(fcdOptions->IFGain5,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain5Changed(int)));
+        fco->IFGain2->addItem("0dB",TIG2E_P0_0DB);
+        fco->IFGain2->addItem("+3dB",TIG2E_P3_0DB);
+        fco->IFGain2->addItem("+6dB",TIG2E_P6_0DB);
+        fco->IFGain2->addItem("+9dB",TIG2E_P9_0DB);
+        connect(fco->IFGain2,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain2Changed(int)));
 
-		fcdOptions->IFGain6->addItem("+3dB",TIG6E_P3_0DB);
-		fcdOptions->IFGain6->addItem("+6dB",TIG6E_P6_0DB);
-		fcdOptions->IFGain6->addItem("+9dB",TIG6E_P9_0DB);
-		fcdOptions->IFGain6->addItem("+12dB",TIG6E_P12_0DB);
-		fcdOptions->IFGain6->addItem("+15dB",TIG6E_P15_0DB);
-		connect(fcdOptions->IFGain6,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain6Changed(int)));
+        fco->IFGain3->addItem("0dB",TIG3E_P0_0DB);
+        fco->IFGain3->addItem("+3dB",TIG3E_P3_0DB);
+        fco->IFGain3->addItem("+6dB",TIG3E_P6_0DB);
+        fco->IFGain3->addItem("+9dB",TIG3E_P9_0DB);
+        connect(fco->IFGain3,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain3Changed(int)));
 
-		fcdOptions->IFFilter->addItem("2.15MHz",TIFE_2_15MHZ);
-		fcdOptions->IFFilter->addItem("2.20MHz",TIFE_2_20MHZ);
-		fcdOptions->IFFilter->addItem("2.24MHz",TIFE_2_24MHZ);
-		fcdOptions->IFFilter->addItem("2.28MHz",TIFE_2_28MHZ);
-		fcdOptions->IFFilter->addItem("2.30MHz",TIFE_2_30MHZ);
-		fcdOptions->IFFilter->addItem("2.40MHz",TIFE_2_40MHZ);
-		fcdOptions->IFFilter->addItem("2.45MHz",TIFE_2_45MHZ);
-		fcdOptions->IFFilter->addItem("2.50MHz",TIFE_2_50MHZ);
-		fcdOptions->IFFilter->addItem("2.55MHz",TIFE_2_55MHZ);
-		fcdOptions->IFFilter->addItem("2.60MHz",TIFE_2_60MHZ);
-		fcdOptions->IFFilter->addItem("2.70MHz",TIFE_2_70MHZ);
-		fcdOptions->IFFilter->addItem("2.75MHz",TIFE_2_75MHZ);
-		fcdOptions->IFFilter->addItem("2.80MHz",TIFE_2_80MHZ);
-		fcdOptions->IFFilter->addItem("2.90MHz",TIFE_2_90MHZ);
-		fcdOptions->IFFilter->addItem("2.95MHz",TIFE_2_95MHZ);
-		fcdOptions->IFFilter->addItem("3.00MHz",TIFE_3_00MHZ);
-		fcdOptions->IFFilter->addItem("3.10MHz",TIFE_3_10MHZ);
-		fcdOptions->IFFilter->addItem("3.20MHz",TIFE_3_20MHZ);
-		fcdOptions->IFFilter->addItem("3.30MHz",TIFE_3_30MHZ);
-		fcdOptions->IFFilter->addItem("3.40MHz",TIFE_3_40MHZ);
-		fcdOptions->IFFilter->addItem("3.60MHz",TIFE_3_60MHZ);
-		fcdOptions->IFFilter->addItem("3.70MHz",TIFE_3_70MHZ);
-		fcdOptions->IFFilter->addItem("3.80MHz",TIFE_3_80MHZ);
-		fcdOptions->IFFilter->addItem("3.90MHz",TIFE_3_90MHZ);
-		fcdOptions->IFFilter->addItem("4.10MHz",TIFE_4_10MHZ);
-		fcdOptions->IFFilter->addItem("4.30MHz",TIFE_4_30MHZ);
-		fcdOptions->IFFilter->addItem("4.40MHz",TIFE_4_40MHZ);
-		fcdOptions->IFFilter->addItem("4.60MHz",TIFE_4_60MHZ);
-		fcdOptions->IFFilter->addItem("4.80MHz",TIFE_4_80MHZ);
-		fcdOptions->IFFilter->addItem("5.00MHz",TIFE_5_00MHZ);
-		fcdOptions->IFFilter->addItem("5.30MHz",TIFE_5_30MHZ);
-		fcdOptions->IFFilter->addItem("5.50MHz",TIFE_5_50MHZ);
-		connect(fcdOptions->IFFilter,SIGNAL(currentIndexChanged(int)),this,SLOT(IFFilterChanged(int)));
+        fco->IFGain4->addItem("0dB",TIG4E_P0_0DB);
+        fco->IFGain4->addItem("+1dB",TIG4E_P1_0DB);
+        fco->IFGain4->addItem("+2dB",TIG4E_P2_0DB);
+        connect(fco->IFGain4,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain4Changed(int)));
 
-		connect(fcdOptions->defaultsButton,SIGNAL(clicked(bool)),this,SLOT(DefaultClicked(bool)));
-		connect(fcdOptions->saveButton,SIGNAL(clicked(bool)),this,SLOT(SaveClicked(bool)));
+        fco->IFGain5->addItem("+3dB",TIG5E_P3_0DB);
+        fco->IFGain5->addItem("+6dB",TIG5E_P6_0DB);
+        fco->IFGain5->addItem("+9dB",TIG5E_P9_0DB);
+        fco->IFGain5->addItem("+12dB",TIG5E_P12_0DB);
+        fco->IFGain5->addItem("+15dB",TIG5E_P15_0DB);
+        connect(fco->IFGain5,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain5Changed(int)));
+
+        fco->IFGain6->addItem("+3dB",TIG6E_P3_0DB);
+        fco->IFGain6->addItem("+6dB",TIG6E_P6_0DB);
+        fco->IFGain6->addItem("+9dB",TIG6E_P9_0DB);
+        fco->IFGain6->addItem("+12dB",TIG6E_P12_0DB);
+        fco->IFGain6->addItem("+15dB",TIG6E_P15_0DB);
+        connect(fco->IFGain6,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain6Changed(int)));
+
+        fco->IFFilter->addItem("2.15MHz",TIFE_2_15MHZ);
+        fco->IFFilter->addItem("2.20MHz",TIFE_2_20MHZ);
+        fco->IFFilter->addItem("2.24MHz",TIFE_2_24MHZ);
+        fco->IFFilter->addItem("2.28MHz",TIFE_2_28MHZ);
+        fco->IFFilter->addItem("2.30MHz",TIFE_2_30MHZ);
+        fco->IFFilter->addItem("2.40MHz",TIFE_2_40MHZ);
+        fco->IFFilter->addItem("2.45MHz",TIFE_2_45MHZ);
+        fco->IFFilter->addItem("2.50MHz",TIFE_2_50MHZ);
+        fco->IFFilter->addItem("2.55MHz",TIFE_2_55MHZ);
+        fco->IFFilter->addItem("2.60MHz",TIFE_2_60MHZ);
+        fco->IFFilter->addItem("2.70MHz",TIFE_2_70MHZ);
+        fco->IFFilter->addItem("2.75MHz",TIFE_2_75MHZ);
+        fco->IFFilter->addItem("2.80MHz",TIFE_2_80MHZ);
+        fco->IFFilter->addItem("2.90MHz",TIFE_2_90MHZ);
+        fco->IFFilter->addItem("2.95MHz",TIFE_2_95MHZ);
+        fco->IFFilter->addItem("3.00MHz",TIFE_3_00MHZ);
+        fco->IFFilter->addItem("3.10MHz",TIFE_3_10MHZ);
+        fco->IFFilter->addItem("3.20MHz",TIFE_3_20MHZ);
+        fco->IFFilter->addItem("3.30MHz",TIFE_3_30MHZ);
+        fco->IFFilter->addItem("3.40MHz",TIFE_3_40MHZ);
+        fco->IFFilter->addItem("3.60MHz",TIFE_3_60MHZ);
+        fco->IFFilter->addItem("3.70MHz",TIFE_3_70MHZ);
+        fco->IFFilter->addItem("3.80MHz",TIFE_3_80MHZ);
+        fco->IFFilter->addItem("3.90MHz",TIFE_3_90MHZ);
+        fco->IFFilter->addItem("4.10MHz",TIFE_4_10MHZ);
+        fco->IFFilter->addItem("4.30MHz",TIFE_4_30MHZ);
+        fco->IFFilter->addItem("4.40MHz",TIFE_4_40MHZ);
+        fco->IFFilter->addItem("4.60MHz",TIFE_4_60MHZ);
+        fco->IFFilter->addItem("4.80MHz",TIFE_4_80MHZ);
+        fco->IFFilter->addItem("5.00MHz",TIFE_5_00MHZ);
+        fco->IFFilter->addItem("5.30MHz",TIFE_5_30MHZ);
+        fco->IFFilter->addItem("5.50MHz",TIFE_5_50MHZ);
+        connect(fco->IFFilter,SIGNAL(currentIndexChanged(int)),this,SLOT(IFFilterChanged(int)));
+
+        connect(fco->defaultsButton,SIGNAL(clicked(bool)),this,SLOT(DefaultClicked(bool)));
+        connect(fco->saveButton,SIGNAL(clicked(bool)),this,SLOT(SaveClicked(bool)));
 
 	}
 
 	//Get current options from device
 	ReadFCDOptions();
 
-	fcdOptions->versionLabel->setText("Version: "+fcdVersion);
+    fco->versionLabel->setText("Version: "+fcdVersion);
 
-	fcdOptions->frequencyLabel->setText("Freq: "+QString::number(fcdFreq,'f',0));
+    fco->frequencyLabel->setText("Freq: "+QString::number(fcdFreq,'f',0));
 
-	int index = fcdOptions->LNAGain->findData(fcdLNAGain);
-	fcdOptions->LNAGain->setCurrentIndex(index);
+    int index = fco->LNAGain->findData(fcdLNAGain);
+    fco->LNAGain->setCurrentIndex(index);
 
-	index = fcdOptions->Band->findData(fcdBand);
-	fcdOptions->Band->setCurrentIndex(index);
+    index = fco->Band->findData(fcdBand);
+    fco->Band->setCurrentIndex(index);
 	BandChanged(index);
 
-	index = fcdOptions->RFFilter->findData(fcdRFFilter);
-	fcdOptions->RFFilter->setCurrentIndex(index);
+    index = fco->RFFilter->findData(fcdRFFilter);
+    fco->RFFilter->setCurrentIndex(index);
 
-	index = fcdOptions->LNAEnhance->findData(fcdLNAEnhance);
-	fcdOptions->LNAEnhance->setCurrentIndex(index);
+    index = fco->LNAEnhance->findData(fcdLNAEnhance);
+    fco->LNAEnhance->setCurrentIndex(index);
 
-	index = fcdOptions->MixerGain->findData(fcdMixerGain);
-	fcdOptions->MixerGain->setCurrentIndex(index);
+    index = fco->MixerGain->findData(fcdMixerGain);
+    fco->MixerGain->setCurrentIndex(index);
 
-	index = fcdOptions->BiasCurrent->findData(fcdBiasCurrent);
-	fcdOptions->BiasCurrent->setCurrentIndex(index);
+    index = fco->BiasCurrent->findData(fcdBiasCurrent);
+    fco->BiasCurrent->setCurrentIndex(index);
 
-	index = fcdOptions->MixerFilter->findData(fcdMixerFilter);
-	fcdOptions->MixerFilter->setCurrentIndex(index);
+    index = fco->MixerFilter->findData(fcdMixerFilter);
+    fco->MixerFilter->setCurrentIndex(index);
 
-	index = fcdOptions->IFGain1->findData(fcdIFGain1);
-	fcdOptions->IFGain1->setCurrentIndex(index);
+    index = fco->IFGain1->findData(fcdIFGain1);
+    fco->IFGain1->setCurrentIndex(index);
 
-	index = fcdOptions->IFGainMode->findData(fcdIFGainMode);
-	fcdOptions->IFGainMode->setCurrentIndex(index);
+    index = fco->IFGainMode->findData(fcdIFGainMode);
+    fco->IFGainMode->setCurrentIndex(index);
 
-	index = fcdOptions->IFRCFilter->findData(fcdIFRCFilter);
-	fcdOptions->IFRCFilter->setCurrentIndex(index);
+    index = fco->IFRCFilter->findData(fcdIFRCFilter);
+    fco->IFRCFilter->setCurrentIndex(index);
 
-	index = fcdOptions->IFGain2->findData(fcdIFGain2);
-	fcdOptions->IFGain2->setCurrentIndex(index);
+    index = fco->IFGain2->findData(fcdIFGain2);
+    fco->IFGain2->setCurrentIndex(index);
 
-	index = fcdOptions->IFGain3->findData(fcdIFGain3);
-	fcdOptions->IFGain3->setCurrentIndex(index);
+    index = fco->IFGain3->findData(fcdIFGain3);
+    fco->IFGain3->setCurrentIndex(index);
 
-	index = fcdOptions->IFFilter->findData(fcdIFFilter);
-	fcdOptions->IFFilter->setCurrentIndex(index);
+    index = fco->IFFilter->findData(fcdIFFilter);
+    fco->IFFilter->setCurrentIndex(index);
 
-	index = fcdOptions->IFGain4->findData(fcdIFGain4);
-	fcdOptions->IFGain4->setCurrentIndex(index);
+    index = fco->IFGain4->findData(fcdIFGain4);
+    fco->IFGain4->setCurrentIndex(index);
 
-	index = fcdOptions->IFGain5->findData(fcdIFGain5);
-	fcdOptions->IFGain5->setCurrentIndex(index);
+    index = fco->IFGain5->findData(fcdIFGain5);
+    fco->IFGain5->setCurrentIndex(index);
 
-	index = fcdOptions->IFGain6->findData(fcdIFGain6);
-	fcdOptions->IFGain6->setCurrentIndex(index);
+    index = fco->IFGain6->findData(fcdIFGain6);
+    fco->IFGain6->setCurrentIndex(index);
 
 	fcdOptionsDialog->show();
 }

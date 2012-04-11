@@ -634,11 +634,28 @@ void SoftRock::serialNumberChanged(int s)
 }
 void SoftRock::ShowOptions()
 {
+    QFont smFont = settings->smFont;
+    QFont medFont = settings->medFont;
+    QFont lgFont = settings->lgFont;
+
 	if (softRockOptions == NULL)
 	{
 		softRockOptions = new QDialog();
 		sro = new Ui::SoftRockOptions();
 		sro->setupUi(softRockOptions);
+
+        sro->automaticButton->setFont(medFont);
+        sro->cancelButton->setFont(medFont);
+        sro->filter0Button->setFont(medFont);
+        sro->filter1Button->setFont(medFont);
+        sro->filter2Button->setFont(medFont);
+        sro->filter3Button->setFont(medFont);
+        sro->label->setFont(medFont);
+        sro->okButton->setFont(medFont);
+        sro->serialBox->setFont(medFont);
+        sro->serialLabel->setFont(medFont);
+        sro->si570Label->setFont(medFont);
+        sro->versionLabel->setFont(medFont);
 
 		sro->serialBox->addItem("0",0);
 		sro->serialBox->addItem("1",1);
@@ -661,6 +678,7 @@ void SoftRock::ShowOptions()
 		connect(sro->serialBox,SIGNAL(currentIndexChanged(int)),this,SLOT(serialNumberChanged(int)));
 
 	}
+
 	//Test: If we can see version then comm to SR is ok
 	short vMaj = 0,vMin = 0;
 	QString ver = "";
