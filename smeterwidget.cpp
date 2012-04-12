@@ -24,6 +24,9 @@ SMeterWidget::SMeterWidget(QWidget *parent)
     QFont medFont("Lucida Grande",9);
     ui.sourceBox->setFont(medFont);
 
+    src = 0;
+    connect(ui.sourceBox,SIGNAL(currentIndexChanged(QString)),this,SLOT(srcSelectionChanged(QString)));
+
 	//Start paint thread
 	smt = new SMeterWidgetThread(this);
 	connect(smt,SIGNAL(repaint()),this,SLOT(updateMeter()));
@@ -34,6 +37,16 @@ SMeterWidget::~SMeterWidget()
 {
 	smt->quit();
 }
+void SMeterWidget::srcSelectionChanged(QString s)
+{
+    if (s=="Avg")
+        src=1;
+    else if (s=="Inst")
+        src=0;
+    else
+        src=2;
+}
+
 void SMeterWidget::setSignalStrength(SignalStrength *ss)
 {
 	signalStrength = ss;
@@ -71,8 +84,14 @@ void SMeterWidget::paintEvent(QPaintEvent *e)
 
     //What percentate is instValue of span
 	float instFValue;
-	if (signalStrength != NULL)
-		instFValue = signalStrength->instFValue();
+    if (signalStrength != NULL) {
+        if (src == 0)
+            instFValue = signalStrength->instFValue();
+        else if (src == 1)
+            instFValue = signalStrength->avgFValue();
+        else
+            instFValue = signalStrength->extFValue();
+    }
 	else
 		instFValue = -127;
 	//gcc int/int = int regardless of var type.
@@ -106,7 +125,26 @@ void SMeterWidget::paintEvent(QPaintEvent *e)
 
 } 
 
-
+SMeterWidgetThread::SMeterWidgetThread(SMeterWidget *m)
+{
+    sm = m;
+    msSleep=100;
+}
+void SMeterWidgetThread::SetRefresh(int ms)
+{
+    msSleep = ms;
+} //Refresh rate in me
+void SMeterWidgetThread::run()
+{
+    for(;;) {
+    //We can't trigger a paint event cross thread, Qt design
+    //But we can trigger a signal which main thread will get and that can trigger repaint
+    //sw->repaint();
+    emit repaint();
+    //Sleep for resolution
+    msleep(msSleep);
+    }
+}
 
 
 

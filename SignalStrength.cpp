@@ -7,6 +7,7 @@ SignalStrength::SignalStrength(int sr, int ns):
 {
 	instValue = 27.0; //If correction = -40, the 27 = -13 or full scale
 	avgValue = -127.0;
+    extValue = -127.0;
 	//Todo: This should be adj per receiver and user should be able to calibrate with known signal
 	//SRV9 -40
 	//SREnsemble 
@@ -66,8 +67,15 @@ float SignalStrength::instFValue() {
 
 float SignalStrength::avgFValue() {
     return avgValue + correction;
-}  
+}
 
+float SignalStrength::extFValue(){
+    return extValue + correction; //with or Without correction?
+}
+void SignalStrength::setExtValue(float v)
+{
+    extValue = v;
+}
 char SignalStrength::instCValue() {
     return (char)(instValue + correction + (float)SPECDBMOFFSET);
 }

@@ -30,29 +30,22 @@ private:
 	void paintEvent(QPaintEvent *e);
 	bool isRunning;
 	SMeterWidgetThread *smt;
+    int src; //Inst, Average, External
 
 	private slots:
 		void updateMeter();
+        void srcSelectionChanged(QString);
 
 };
 class SMeterWidgetThread:public QThread
 	{
 		Q_OBJECT
 		public:
-			SMeterWidgetThread(SMeterWidget *m) {sm = m; msSleep=100;}
-			void SetRefresh(int ms) {msSleep = ms;} //Refresh rate in me
-			void run() {
-				for(;;) {
-				//We can't trigger a paint event cross thread, Qt design
-				//But we can trigger a signal which main thread will get and that can trigger repaint
-				//sw->repaint();
-				emit repaint();
-				//Sleep for resolution
-				msleep(msSleep);
-				}
-			}
+            SMeterWidgetThread(SMeterWidget *m);
+            void SetRefresh(int ms); //Refresh rate in me
+            void run();
 		signals:
-				void repaint();
+            void repaint();
 	private:
 		SMeterWidget * sm;
 		int msSleep;

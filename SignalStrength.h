@@ -13,6 +13,8 @@ public:
 	~SignalStrength(void);
 	float instFValue();
 	float avgFValue();
+    float extFValue();
+    void setExtValue(float v);
 	char instCValue(); //Char representing db?
 	char avgCValue();
 	void setCorrection(const float value);
@@ -22,6 +24,7 @@ public:
 private:
 	float instValue; //Instantaneous value
     float avgValue; //90/10 weighted average
+    float extValue; //Used for other power readings, like goretzel (cw) output
 	float correction; //Constant value to make things fit
 
 };
