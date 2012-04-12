@@ -79,7 +79,7 @@ public slots:
 
 
 protected:
-	Ui_IQBalanceOptions *iqBalanceOptions;
+    Ui_IQBalanceOptions *iqbo;
 	QDialog *iqDialog;
 
 	void ReadSettings(QSettings *settings);
