@@ -17,6 +17,12 @@ SMeterWidget::SMeterWidget(QWidget *parent)
 	//this->setAttribute(Qt::WA_OpaquePaintEvent);
 	//ui.plotArea->setAutoFillBackground(false);
 
+    ui.sourceBox->addItem("Inst");
+    ui.sourceBox->addItem("Avg");
+    ui.sourceBox->addItem("CW");
+    //Get from settings
+    QFont medFont("Lucida Grande",9);
+    ui.sourceBox->setFont(medFont);
 
 	//Start paint thread
 	smt = new SMeterWidgetThread(this);
@@ -49,7 +55,7 @@ void SMeterWidget::paintEvent(QPaintEvent *e)
     QRect pa = ui.plotArea->frameGeometry(); //relative to parent, including frame
     QRect sa = ui.scaleArea->frameGeometry(); //relative to parent, including frame
     int paX = pa.x(); //Upper left corder, relative to widget, ie 0,0
-	int paY = pa.y();
+    int paY = pa.y()+8; //Adj
 	int mid = pa.width()/2;
 
 	QPen pen;
@@ -80,7 +86,7 @@ void SMeterWidget::paintEvent(QPaintEvent *e)
 		return; //nothing to draw
 
     pen.setColor(Qt::blue);
-    pen.setWidth(pa.height()+5);
+    pen.setWidth(pa.height());
     painter.setPen(pen);
 
 	if (percent < .5 )
