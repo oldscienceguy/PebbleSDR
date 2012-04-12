@@ -12,6 +12,7 @@
 #define FCD_HID_CMD_QUERY              1 // Returns string with "FCDAPP version"
 
 #define FCD_HID_CMD_SET_FREQUENCY    100 // Send with 3 byte unsigned little endian frequency in kHz.
+//Not sure if this still works, returns error in firmware 18i
 #define FCD_HID_CMD_SET_FREQUENCY_HZ 101 // Send with 4 byte unsigned little endian frequency in Hz, returns wit actual frequency set in Hz
 #define FCD_HID_CMD_GET_FREQUENCY_HZ 102 // Returns 4 byte unsigned little endian frequency in Hz.
 
@@ -459,7 +460,7 @@ double FunCube::SetFrequency(double fRequested, double fCurrent)
 		//Return actual freq set, which may not be exactly what was requested
 		//Note: Results are too strange to be usable, ie user requests a freq and sees something completely different
 		//Just return fRequested for now
-		fActual = (quint64)inBuf[2]+(((quint64)inBuf[3])<<8)+(((quint64)inBuf[4])<<16)+(((quint64)inBuf[5])<<24);
+        fActual = (quint64)inBuf[1]+(((quint64)inBuf[2])<<8)+(((quint64)inBuf[3])<<16)+(((quint64)inBuf[4])<<24);
 		fActual = fActual / (sOffset/1000000.0);
 		fActual = fRequested;
 	} else {
@@ -511,15 +512,15 @@ bool FunCube::HIDGet(char cmd, void *data, int len)
 		return false; //Read error
 	}
 	//inBuf[0] = cmd we're getting data for
-	//inBuf[1] = 1 if success
-	//inBuf[2] = First data byte
+    //inBuf[1] = First data byte
 	if (inBuf[0] != cmd){
 		logfile<<"FCD: Invalid read response for cmd: "<<cmd<<"\n";
 		return false;
 	}
 
-	int retLen = numBytes-2 < len ? numBytes-2 : len;
-	memcpy(data,&inBuf[2],retLen);
+    //Don't return cmd, strip from buffer
+    int retLen = numBytes-1 < len ? numBytes-1 : len;
+    memcpy(data,&inBuf[1],retLen);
 	return true;
 }
 void FunCube::SetDCCorrection(qint16 cI, qint16 cQ)
