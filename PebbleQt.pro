@@ -69,10 +69,26 @@ macx {
 	#Mac only source files
 	#HIDAPI
 	SOURCES += hid-mac.c
+
+	#INSTALLS is called when we manually make -install or add it to the Qt project build steps
+	otherfiles.files = presets.csv help.htm gpl.h releasenotes.txt
+
+	#We want this to be whatever the release or debug directory is or added to bundle
+	#This will copy the files into the app bundle, same place ini files go
+	otherfiles.path = $$DESTDIR/Pebble.app/Contents/MacOS
+	INSTALLS += otherfiles
+
 }
 
 win32 {
+	CONFIG(debug, debug|release) {
+		DESTDIR = ../WinDebug
+	} else {
+		DESTDIR = ../WinRelease
+	}
+
 	OBJECTS_DIR = $$PWD/WinO
+	#Locataion for MOC files
 	MOC_DIR = $$PWD/WinMoc
 
 	LIBS +=	../PebbleII/PortAudio.lib
@@ -129,15 +145,16 @@ win32 {
 		target.path = ../Debug
 		INSTALLS += target installfiles
 
+		#INSTALLS is called when we manually make -install or add it to the Qt project build steps
+		otherfiles.files = presets.csv help.htm gpl.h releasenotes.txt
+
+		#We want this to be whatever the release or debug directory is or added to bundle
+		otherfiles.path = $$DESTDIR
+		INSTALLS += otherfiles
+
 	}
 }
 
-#INSTALLS is called when we manually make -install or add it to the Qt project build steps
-otherfiles.files = presets.csv help.htm gpl.h releasenotes.txt
-
-#We want this to be whatever the release or debug directory is or added to bundle
-otherfiles.path = $$DESTDIR
-INSTALLS += otherfiles
 
 #Build instructions for build.h using build.tmpl
 #doesn't seem to work
