@@ -15,6 +15,7 @@ Goertzel::Goertzel()
     binWidthHz = 0;
     samplesPerBin = 0;
     avgPower = 0;
+    scale = 1000;
     nextIn = nextOut = numPowerResults = 0;
     //Todo: How long should this be
     powerBuf = new float[POWERBUFSIZE];
@@ -130,6 +131,7 @@ bool Goertzel::FPNextSample(float sample)
 #else
         //Simpler way if we don't need re and im data
         power = delay1*delay1 + delay2*delay2 - delay1*delay2*coeff;
+        power *= scale;
 #endif
 
         //qDebug() << "pwr" << power;

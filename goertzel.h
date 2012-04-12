@@ -113,6 +113,7 @@ private:
     int k;
     float w;
     int binWidthHz;
+    int scale;
 
     //These could be static in FPNextSample, but here for debugging and for use
     //if we try different algorithms
