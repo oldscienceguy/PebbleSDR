@@ -45,7 +45,6 @@ public:
 	SpectrumWidget *getSpectrumWidget() {return ui.spectrumWidget;};
 	SMeterWidget *getSMeterWidget() {return ui.sMeterWidget;};
 
-    QFrame * getDataMeter() {return ui.dataMeter;}
     QTextEdit * getDataEdit() {return ui.dataEdit;}
 
 	public slots:
