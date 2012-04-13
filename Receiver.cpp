@@ -32,7 +32,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	receiverWidget->SetMessage( welcome);
 	//Problem:  If we set general styles, custom widgets don't paint
 	//Until we figure out why, use selectors to prevent cascade
-	QString rwStyle = "QFrame#comboFrame, QFrame#tunerFrame, QFrame#buttonFrame, QFrame#sliderFrame, QFrame#spectrumFrame {background-color: rgb(200, 200, 200);}";
+    QString rwStyle = "QFrame#comboFrame, QFrame#tunerFrame, QFrame#buttonFrame, QFrame#sliderFrame, QFrame#dataFrame, QFrame#spectrumFrame {background-color: rgb(200, 200, 200);}";
 	receiverWidget->setStyleSheet(rwStyle);
 
 	powerOn = false;
@@ -121,7 +121,7 @@ bool Receiver::On()
 	//lpFilter->SetBandPass(50,3000); //Testing
 
     morse = new Morse(downSampleRate,downSampleFrames);
-    morse->ConnectToUI(receiverWidget->getDataMeter(), receiverWidget->getDataEdit());
+    morse->ConnectToUI(this, receiverWidget->getDataEdit());
 
 	//Testing, time intensive for large # taps, ie @512 we lose chunks of signal
 	//Check post-bandpass spectrum and make just large enough to be effective
@@ -142,13 +142,13 @@ bool Receiver::On()
 	receiverWidget->SetSquelch(-100);
 	
     if (sdr->GetDevice() == SDR::FILE || settings->startup == Settings::DEFAULTFREQ) {
-            frequency=sdr->GetStartupFrequency();
-            receiverWidget->SetMode((DEMODMODE)sdr->GetStartupMode());
-        }
+        frequency=sdr->GetStartupFrequency();
+        receiverWidget->SetMode((DEMODMODE)sdr->GetStartupMode());
+    }
     else if (settings->startup == Settings::SETFREQ) {
 		frequency = settings->startupFreq;
-		receiverWidget->SetMode(dmAM);
-	}
+        receiverWidget->SetMode((DEMODMODE)sdr->GetStartupMode());
+    }
 	else if (settings->startup == Settings::LASTFREQ) {
 		frequency = settings->lastFreq;
 		receiverWidget->SetMode((DEMODMODE)settings->lastMode);
@@ -410,7 +410,7 @@ void Receiver::ShowPresets()
 }
 void Receiver::ShowSdrSettings(bool b)
 {
-	if (sdr != NULL)
+    if (sdr != NULL)
 		sdr->ShowOptions();
 }
 
