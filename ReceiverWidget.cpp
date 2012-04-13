@@ -74,6 +74,14 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	wfmFilterOptions << "80000"<<"40000";
 	ui.filterBox->addItems(amFilterOptions); //Default
 
+    ui.dataSelectionBox->addItem("Off",NO_DATA);
+    ui.dataSelectionBox->addItem("Band",BAND_DATA);
+    ui.dataSelectionBox->addItem("CW",CW_DATA);
+    ui.dataSelectionBox->addItem("RTTY",RTTY_DATA);
+    ui.dataSelectionBox->setFont(medFont);
+    connect(ui.dataSelectionBox,SIGNAL(currentIndexChanged(int)),this,SLOT(dataSelectionChanged(int)));
+
+
 	loMode = true;
 	//Set intial gain slider position
 	ui.gainSlider->setValue(50);
@@ -496,6 +504,33 @@ void ReceiverWidget::filterSelectionChanged(QString f)
 
 	receiver->SetFilter(lo,hi);
 }
+
+void ReceiverWidget::dataSelectionChanged(int s)
+{
+    //enums are stored as user data with each menu item
+    dataSelection = (DATA_SELECTION)ui.dataSelectionBox->itemData(s).toInt();
+    receiver->SetDataSelection(dataSelection);
+    if (dataSelection == NO_DATA)
+        ui.dataEdit->clear();
+}
+
+void ReceiverWidget::OutputData(char *d)
+{
+    switch (dataSelection) {
+    case NO_DATA:
+        break;
+    case BAND_DATA:
+        break;
+    case CW_DATA:
+        ui.dataEdit->insertPlainText(d);
+        break;
+    case RTTY_DATA:
+        break;
+    }
+
+
+}
+
 void ReceiverWidget::modeSelectionChanged(QString m) 
 {
 	mode = Demod::StringToMode(m);

@@ -54,6 +54,8 @@ public:
 	void SetLpfEnabled(bool b);
 	void SetMute(bool b);
 	void ShowPresets();
+    void OutputData(char *d);
+    void SetDataSelection(ReceiverWidget::DATA_SELECTION d);
 	Settings * GetSettings() {return settings;}
 	void ProcessBlock(CPX *in, CPX *out, int frameCount);
 	void ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount);
@@ -91,6 +93,7 @@ private:
 	AGC *agc;
 	IQBalance *iqBalance;
     Morse *morse;
+    ReceiverWidget::DATA_SELECTION dataSelection;
 
 
 	double frequency; //Current LO frequency (not mixed)

@@ -121,7 +121,7 @@ bool Receiver::On()
 	//lpFilter->SetBandPass(50,3000); //Testing
 
     morse = new Morse(downSampleRate,downSampleFrames);
-    morse->ConnectToUI(this, receiverWidget->getDataEdit());
+    morse->SetReceiver(this);
 
 	//Testing, time intensive for large # taps, ie @512 we lose chunks of signal
 	//Check post-bandpass spectrum and make just large enough to be effective
@@ -268,6 +268,26 @@ Receiver::~Receiver(void)
 	if (settings != NULL)
 		delete settings;
 }
+void Receiver::SetDataSelection(ReceiverWidget::DATA_SELECTION d)
+{
+    dataSelection = d;
+    switch (d) {
+        case ReceiverWidget::NO_DATA:
+            break;
+        case ReceiverWidget::BAND_DATA:
+            break;
+        case ReceiverWidget::CW_DATA:
+            break;
+        case ReceiverWidget::RTTY_DATA:
+            break;
+    }
+}
+
+void Receiver::OutputData(char *d)
+{
+    receiverWidget->OutputData(d);
+}
+
 bool Receiver::Power(bool on)
 {
 
@@ -555,7 +575,8 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 	nextStep = demod->ProcessBlock(nextStep);
 
     //Testing Goertzel
-    nextStep = morse->ProcessBlock(nextStep);
+    if (dataSelection != ReceiverWidget::NO_DATA)
+        nextStep = morse->ProcessBlock(nextStep);
 
 
 	//Testing LPF to get rid of some noise after demod

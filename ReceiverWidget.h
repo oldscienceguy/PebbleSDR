@@ -26,6 +26,9 @@ class ReceiverWidget:public QWidget
 	Q_OBJECT
 
 public:
+
+    enum DATA_SELECTION {NO_DATA,BAND_DATA,CW_DATA,RTTY_DATA};
+
 	ReceiverWidget(QWidget *parent =0);
 	~ReceiverWidget(void);
 	void SetReceiver (Receiver *r); //Our 'model'
@@ -45,7 +48,10 @@ public:
 	SpectrumWidget *getSpectrumWidget() {return ui.spectrumWidget;};
 	SMeterWidget *getSMeterWidget() {return ui.sMeterWidget;};
 
+    //Remove
     QTextEdit * getDataEdit() {return ui.dataEdit;}
+    void OutputData(char *d);
+
 
 	public slots:
 		void setLoMode(bool b);
@@ -78,6 +84,8 @@ private:
 	DEMODMODE mode;
 	int modeOffset; //make CW +-700 instead of actual freq
 
+    DATA_SELECTION dataSelection;
+
 	QStringList amFilterOptions;
 	QStringList lsbFilterOptions;
 	QStringList diglFilterOptions;
@@ -87,6 +95,7 @@ private:
 
 
 	private slots:
+        void dataSelectionChanged(int s);
 		void agcSliderChanged(int a);
 		void gainSliderChanged(int g);
 		void squelchSliderChanged(int s);
