@@ -2,6 +2,7 @@
 #include "QPainter"
 #include "QDebug"
 #include "QEvent"
+#include "Receiver.h"
 
 /*
   CW Notes for reference
@@ -85,48 +86,15 @@ int Morse::WpmToTcw(int w)
     return tcw;
 }
 
-void Morse::ConnectToUI(QFrame *meter, QTextEdit *edit)
+void Morse::SetReceiver(Receiver *_rcv)
 {
-    uiMeter = meter;
-    uiTextEdit = edit;
-    //We want to handle all events for this UI object, like paint
-    meter->installEventFilter(this);
-
-}
-
-//return true to 'eat' event
-bool Morse::eventFilter(QObject *o, QEvent *e)
-{
-    if (o == uiMeter) {
-        QFrame *m = (QFrame *)o;
-        if (e->type() == QEvent::Paint) {
-            QPainter painter(m);
-            //rect() just returns 0,0,width,height with no offsets or transforms
-            QRect pa = m->rect();
-
-            if (outTone) {
-                //painter.setPen(Qt::blue);
-                //painter.drawText(0,0,"M");
-                painter.fillRect(pa, Qt::blue);
-                uiTextEdit->insertPlainText(outString);
-            }
-            else {
-                //painter.setPen(Qt::red);
-                //painter.drawText(pa, "S");
-                painter.fillRect(pa, Qt::white);
-                uiTextEdit->insertPlainText(outString);
-            }
-            return false;
-        }
-
-    }
-    return false;
+    rcv = _rcv;
 }
 
 CPX * Morse::ProcessBlock(CPX * in)
 {
     bool res;
-    float power,sample;
+    float power,db, sample;
     int markCount,spaceCount;
 
     //If Goretzel is 8k and Receiver is 96k, decimate factor is 12.  Only process every 12th sample
@@ -157,14 +125,16 @@ CPX * Morse::ProcessBlock(CPX * in)
                     outString = "M";
                     outTone = true;
                     toneBufCounter = 0;
-                    uiMeter->repaint();  //Triggers an immediate repaint
+                    //uiTextEdit->repaint();  //Triggers an immediate repaint
+                    rcv->OutputData(outString);
                 } else if (spaceCount == numResultsPerTcw) {
                     //All results are space
                     //1 Tcw, is it letter or word space
                     outString = "S";
                     outTone = false;
                     toneBufCounter = 0;
-                    uiMeter->repaint();  //Triggers an immediate repaint
+                    //uiTextEdit->repaint();  //Triggers an immediate repaint
+                    rcv->OutputData(outString);
                 } else {
                     //Not all the same, shift and try again
                     for (int i=0; i<numResultsPerTcw - 1; i++) {
@@ -172,9 +142,12 @@ CPX * Morse::ProcessBlock(CPX * in)
                     }
                     toneBufCounter --;
                 }
+                power = cwGoertzel->GetNextPowerResult();
+                db = powerToDb(power);
+                rcv->GetSignalStrength()->setExtValue(db);
+
             }
 
-            //power = cwGoertzel->GetNextPowerResult();
             //powerBuf[j] = power;
             //qDebug("G sample / power = %.12f / %.12f",sample,power);
             //qDebug("G MS / average / power = %c / %.12f / %.12f",cwGoertzel->binaryOutput?'M':'S', cwGoertzel->avgPower, power);
@@ -198,6 +171,81 @@ morseChar charLookup[] = {
 };
 
 /*
+the morse table in the ATS3B..
+
+Basically it is an eight bit hex number derived from a binary representation of dits and dahs where 0 represents dit and 1 represents dah
+
+The result is marked with a leading 1 and padded with leading zeros so that it equals eight bits.
+
+EXAMPLE (how the table was derived)
+====================================
+The number 1 is dit dah dah dah dah
+
+That would be 01111.
+
+The beginning point is marked with a leading 1, so that makes it 101111
+
+The result is padded to eight bits with leading zeros, so that would make it into 00101111
+
+The binary number 00101111 converted to hex is 2f
+
+Here is the table:
+
+0 = 3f
+1 = 2f
+2 = 27
+3 = 23
+4 = 21
+5 = 20
+6 = 30
+7 = 38
+8 = 3c
+9 = 3e
+a = 05
+b = 18
+c = 1a
+d = 0c
+e = 02
+f = 12
+g = 0e
+h = 10
+I = 04
+j = 17
+k = 0d
+l = 14
+m = 07
+n = 06
+o = 0f
+p = 16
+q = 1d
+r = 0a
+s = 08
+t = 03
+u = 09
+v = 11
+w = 0b
+x = 1d
+y = 1b
+z = 1c
+/ = 32
+, = 73
+. = 55
+
+
+You can continue to build on to this table for other special characters not listed...
+
+
+Here are a few control characters that dont fit the morse algorithym I provided:
+=====================
+
+end of message marker = ff
+space character       = 00
+
+
+
+
+
+
   For historic purposes: Some source code fragments from my SuperRatt AppleII CW code circa 1983
 
 *TABLE OF CW CODES IN ASCII ORDER FROM $20 TO $3F

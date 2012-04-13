@@ -6,6 +6,8 @@
 #include "qframe"
 #include "QTextEdit"
 
+class Receiver;
+
 //We need to inherit from QObject so we can filter events.
 //Remove if we eventually create a separate 'morse widget' object for UI
 class Morse : public SignalProcessing, QObject
@@ -17,7 +19,7 @@ public:
 
     CPX * ProcessBlock(CPX * in);
 
-    void ConnectToUI(QFrame *_meter,QTextEdit *edit);
+    void SetReceiver(Receiver *_rcv);
 
 
     //Updated by ProcessBlock and holds power levels.
@@ -30,10 +32,7 @@ public:
     int WpmToTcw(int w);
 
 protected:
-    //Temp so we can filter events
-    bool eventFilter(QObject *o, QEvent *e);
-    QFrame *uiMeter;
-    QTextEdit *uiTextEdit;
+    Receiver *rcv;
 
     Goertzel *cwGoertzel;
     int goertzelFreq; //CW tone we're looking for, normally 700hz
