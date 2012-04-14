@@ -575,7 +575,7 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 	nextStep = demod->ProcessBlock(nextStep);
 
     //Testing Goertzel
-    if (dataSelection != ReceiverWidget::NO_DATA)
+    if (dataSelection == ReceiverWidget::CW_DATA)
         nextStep = morse->ProcessBlock(nextStep);
 
 
