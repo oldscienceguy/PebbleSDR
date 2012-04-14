@@ -41,10 +41,14 @@ db tutorial from Steven Smith
 //Convert Power to Db
 float SignalProcessing::powerToDb(float p)
 {
+    //For our purposes -127db is the lowest we'll ever see.  Handle special case of 0 directly
+    if (p==0)
+        return -127;
+
 	//Std equation for decibles is A(db) = 10 * log10(P2/P1) where P1 is measured power and P2 is compared power
     //Voltage = 20 * log10(V2/V1)
 	//  + ALMOSTZERO avoid problem if p==0 but does not impact result
-	return  10.0 * log10(p + ALMOSTZERO);
+    return  10.0 * log10(p + ALMOSTZERO);
 }
 float SignalProcessing::dbToPower(float db)
 {
