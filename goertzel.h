@@ -90,8 +90,12 @@ public:
     CPX cpx;
     float power;
     float avgPower;
+    float peakPower;
     bool binaryOutput;
     float binaryThreshold; //above is true, below or = is false
+    float noiseThreshold; //Ignore results below this level
+    int noiseTimer; //If we get noise for some time, reset all averages, peaks, etc
+    int noiseTimerThreshold; //How much noise triggers a reset.  Specified in block counts
 
     //Filter coefficient, calculate with CalcCoefficient or table lookup
     float coeff;

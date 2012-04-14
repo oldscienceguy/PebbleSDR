@@ -3,6 +3,27 @@
 #include "defs.h"
 #include "QtDebug"
 
+
+/*
+  From SILabs DTMF paper http://www.silabs.com/Support%20Documents/TechnicalDocs/an218.pdf
+
+The Goertzel algorithm works on blocks of ADC samples.
+Samples are processed as they arrive and a result is produced every N samples, where N is the number of samples in each block.
+If the sampling rate is fixed, the block size determines the frequency resolution or “bin width” of the resulting power measurement.
+The example below shows how to calculate the frequency resolution and time required to capture N samples:
+
+Sampling rate: 8 kHz
+Block size (N): 200 samples
+Frequency Resolution: sampling rate/block size = 40 Hz
+Time required to capture N samples: block size/sampling rate = 25 ms
+
+The tradeoff in choosing an appropriate block size is between frequency resolution and the time required to capture a block of samples.
+Increasing the output word rate (decreasing block size) increases the “bin width” of the resulting power measurement.
+The bin width should be chosen to provide enough frequency resolution to differentiate between the DTMF frequencies and be able to detect DTMF tones with reasonable delay.
+See [2] for additional information about choosing a block size.
+
+
+*/
 #define POWERBUFSIZE 2048
 Goertzel::Goertzel()
 {
@@ -10,12 +31,14 @@ Goertzel::Goertzel()
     power = 0;
     binaryOutput = false;
     binaryThreshold = 0;
+    noiseThreshold = 1.0;
     delay0 = delay1 = delay2 = 0;
     sampleCount = 0;
     binWidthHz = 0;
     samplesPerBin = 0;
     avgPower = 0;
-    scale = 1000;
+    peakPower = 0;
+    scale = 100;
     nextIn = nextOut = numPowerResults = 0;
     //Todo: How long should this be
     powerBuf = new float[POWERBUFSIZE];
@@ -93,6 +116,13 @@ void Goertzel::SetFreqHz(int fTone, int sr, int bw)
     coeff = 2 * cos(w);
     qDebug("Goertzel: freq = %d binWidth = %d sampleRate = %d samplesPerBin = %d coefficient = %.12f timePerBin = %d",
            freqHz,binWidthHz,sampleRate,samplesPerBin,coeff,timePerBin);
+
+    power=0;
+    avgPower=0;
+    peakPower=0;
+    binaryOutput=0;
+    noiseTimer = 0;
+    noiseTimerThreshold = 1000 / timePerBin; //1 second for now
     return;
 }
 void Goertzel::SetBinaryThreshold(float t)
@@ -104,17 +134,17 @@ void Goertzel::SetBinaryThreshold(float t)
 //Tone detection occurs every Nth sample
 bool Goertzel::FPNextSample(float sample)
 {
-    //Internal products - shown for clarity not speed
-    float prod1, prod2, prod3;
 
     //TI algorithm
+    //Internal products - shown for clarity not speed
+    //float prod1, prod2, prod3;
     //prod1 = coeff * delay1;
     //delay0 = sample + prod1 - delay2;
     //delay2 = delay1;
     //delay1 = delay0;
 
     //Wikipedia algorithm
-    delay0 = sample + coeff * delay1 - delay2;
+    delay0 = sample + (coeff * delay1) - delay2;
 
     delay2 = delay1;
     delay1 = delay0;
@@ -134,17 +164,40 @@ bool Goertzel::FPNextSample(float sample)
         power *= scale;
 #endif
 
-        //qDebug() << "pwr" << power;
+        /*
+          Several algorithms for determining the threshold
+          1. Explicit: User adjusts slider or something.  Ughh
+          2. Dynamic Median:  Look for lowest and highest power returned over some interval and split
+          3. Dynamic Comparison: Process 2 goertzel filters some freqency apart and compare results.  Signal should only be
+          in one or the other, not both.  Similar to the technique used by SiLabs paper on DTMF detection.
+          If power in 1 filter is 8x greater than sum of all the others, that filter must have a tone
+        */
         //We want our threshold to adjust to some percentage of average
-        avgPower = (power * .01) + (avgPower * 0.99);
+        //Ignore noise
+        if (power > noiseThreshold) {
+            avgPower = (power * .01) + (avgPower * 0.99);
+            if (avgPower > peakPower)
+                peakPower = avgPower;
 
-        //Threshold should be some factor of average so we get clear distinction between tone / no tone
-        binaryThreshold = avgPower * 0.75;
-
-        if (power > binaryThreshold)
-            binaryOutput = true;
-        else
+            //Threshold should be some factor of average so we get clear distinction between tone / no tone
+            binaryThreshold = peakPower * 0.50;
+            if (power > binaryThreshold)
+                binaryOutput = true;
+            else
+                binaryOutput = false;
+        } else {
+            power = 0.0;
             binaryOutput = false;
+            //If noise for some period, reset avgPower and peakPower
+            if (noiseTimer++ > noiseTimerThreshold) {
+                avgPower = 0;
+                peakPower = 0;
+                noiseTimer = 0;
+            }
+        }
+
+
+        qDebug("Binary %d Power: %.12f AvgPower %.12f PeakPower %.12f ",binaryOutput,power,avgPower,peakPower);
 
         delay2 = 0;
         delay1 = 0;
