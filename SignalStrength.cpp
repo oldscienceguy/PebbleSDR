@@ -55,22 +55,31 @@ CPX * SignalStrength::ProcessBlock(CPX *in, int squelch)
 		}
     }
 	
-	instValue = powerToDb(tmp);
+    instValue = powerToDb(tmp) + correction;
 
 	//Weighted average 90/10
     avgValue = 0.9 * avgValue + 0.1 * instValue;
 	return out;
 }
 float SignalStrength::instFValue() {
-    return instValue + correction;
+    if (instValue > -13)
+        return -13.0;
+    else
+        return instValue;
 }
 
 float SignalStrength::avgFValue() {
-    return avgValue + correction;
+    if (avgValue > -13)
+        return -13.0;
+    else
+        return avgValue;
 }
 
 float SignalStrength::extFValue(){
-    return extValue + correction; //with or Without correction?
+    if (extValue > -18)
+        return -18.0;
+    else
+        return extValue; //with or Without correction?
 }
 void SignalStrength::setExtValue(float v)
 {
