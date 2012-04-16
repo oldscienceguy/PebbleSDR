@@ -522,7 +522,8 @@ void ReceiverWidget::OutputData(char *d)
     case BAND_DATA:
         break;
     case CW_DATA:
-        ui.dataEdit->insertPlainText(d);
+        ui.dataEdit->insertPlainText(d); //At cursor
+        ui.dataEdit->moveCursor(QTextCursor::End);
         break;
     case RTTY_DATA:
         break;

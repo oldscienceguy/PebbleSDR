@@ -31,7 +31,7 @@ Goertzel::Goertzel()
     power = 0;
     binaryOutput = false;
     binaryThreshold = 0;
-    noiseThreshold = 1.0;
+    noiseThreshold = 0.5;
     delay0 = delay1 = delay2 = 0;
     sampleCount = 0;
     binWidthHz = 0;
@@ -114,8 +114,8 @@ void Goertzel::SetFreqHz(int fTone, int sr, int bw)
     k = (float)(samplesPerBin * freqHz)/(float)(sampleRate) + 0.5;
     w = (TWOPI / samplesPerBin) * k;
     coeff = 2 * cos(w);
-    qDebug("Goertzel: freq = %d binWidth = %d sampleRate = %d samplesPerBin = %d coefficient = %.12f timePerBin = %d",
-           freqHz,binWidthHz,sampleRate,samplesPerBin,coeff,timePerBin);
+    //qDebug("Goertzel: freq = %d binWidth = %d sampleRate = %d samplesPerBin = %d coefficient = %.12f timePerBin = %d",
+    //       freqHz,binWidthHz,sampleRate,samplesPerBin,coeff,timePerBin);
 
     power=0;
     avgPower=0;
@@ -173,31 +173,39 @@ bool Goertzel::FPNextSample(float sample)
           If power in 1 filter is 8x greater than sum of all the others, that filter must have a tone
         */
         //We want our threshold to adjust to some percentage of average
-        //Ignore noise
+        //Ignore noise - We need some way to make noiseThreshold dynamic also
+        avgPower = (power * .01) + (avgPower * 0.99);
         if (power > noiseThreshold) {
-            avgPower = (power * .01) + (avgPower * 0.99);
-            if (avgPower > peakPower)
+            if (avgPower > peakPower) {
+                //When we get a stronger signal, move our noise and binary thresholds to keep up
                 peakPower = avgPower;
 
-            //Threshold should be some factor of average so we get clear distinction between tone / no tone
-            binaryThreshold = peakPower * 0.50;
+                //Threshold should be some factor of average so we get clear distinction between tone / no tone
+                binaryThreshold = peakPower * 0.50;
+
+                noiseThreshold = peakPower * 0.05;
+            }
             if (power > binaryThreshold)
                 binaryOutput = true;
             else
                 binaryOutput = false;
+            noiseTimer = 0; //Start looking for noise again
         } else {
             power = 0.0;
             binaryOutput = false;
             //If noise for some period, reset avgPower and peakPower
             if (noiseTimer++ > noiseTimerThreshold) {
-                avgPower = 0;
+                //No tones and no signal above noiseThreshold for some time
+                //Reset noiseThreshold to averagePower and keep checking
+                noiseThreshold = avgPower;
                 peakPower = 0;
                 noiseTimer = 0;
             }
         }
 
 
-        qDebug("Binary %d Power: %.12f AvgPower %.12f PeakPower %.12f ",binaryOutput,power,avgPower,peakPower);
+        //qDebug("Binary %d Power: %2.12f AvgPower %2.12f BinaryThreshold %2.12f NoiseThreshold %2.12f",
+        //      binaryOutput,power,avgPower,binaryThreshold,noiseThreshold);
 
         delay2 = 0;
         delay1 = 0;
@@ -220,7 +228,6 @@ float Goertzel::GetNextPowerResult()
     //Make sure we never try to get more results than we have
     if (numPowerResults == 0)
         return 0.0;
-
     float power = powerBuf[nextOut];
     nextOut = (nextOut + 1) % POWERBUFSIZE;
     numPowerResults--;

@@ -40,7 +40,44 @@
   If we tried to use Goertzel directly on a 96k sample rate, we would need to process 9600 samples to get a 100ms block!!!
   So to make Goertzel practical, we will need to decimate to a lower rate, like 8k
 
+
+  Wikipedia reference  http://en.wikipedia.org/wiki/Morse_code
+
+    International Morse code is composed of five elements:
+
+    short mark, dot or 'dit' (·) — 'dot duration' is one unit long
+    longer mark, dash or 'dah' (–) — three units long
+    inter-element gap between the dots and dashes within a character — one dot duration or one unit long
+    short gap (between letters) — three units long
+    medium gap (between words) — seven units long
+
+    or as binary
+
+    short mark, dot or 'dit' (·) — 1
+    longer mark, dash or 'dah' (–) — 111
+    intra-character gap (between the dots and dashes within a character) — 0
+    short gap (between letters) — 000
+    medium gap (between words) — 0000000
+    Note that this method assumes that dits and dahs are always separated by dot duration gaps, and that gaps are always separated by dits and dahs.
+
+             1         2         3         4         5         6         7         8
+    12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
+
+    M------   O----------   R------   S----   E       C----------   O----------   D------   E
+    ===.===...===.===.===...=.===.=...=.=.=...=.......===.=.===.=...===.===.===...===.=.=...=
+       ^               ^    ^       ^             ^
+       |              dah  dit      |             |
+    symbol space                letter space    word space
+
+
 */
+
+//Relative lengths of elements in Tcw terms
+#define DOT_TCW 1
+#define DASH_TCW 3
+#define CHARSPACE_TCW 3
+#define ELEMENTSPACE_TCW 1
+#define WORDSPACE_TCW 7
 
 Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
 {
@@ -55,7 +92,8 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
     maxWPM = 60;
     wpm = 30;
     //binwidth for maxWPM = 60 is 200hz
-    cwGoertzel->SetFreqHz(goertzelFreq,goertzelSampleRate,200);
+    //User should set maxWPM and we should calculate binWidth, sharper = more accurate
+    cwGoertzel->SetFreqHz(goertzelFreq,goertzelSampleRate,100);
 
     //Number of goertzel results we need for a reliable tcw
     numResultsPerTcw = WpmToTcw(wpm) / cwGoertzel->timePerBin;
@@ -68,6 +106,10 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
     toneBufCounter = 0;
 
     outString ="";
+
+    countingState = NOT_COUNTING;
+    markCount = 0;
+    spaceCount = 0;
 
 }
 
@@ -94,20 +136,87 @@ void Morse::SetReceiver(Receiver *_rcv)
 CPX * Morse::ProcessBlock(CPX * in)
 {
     bool res;
+    bool isMark;
     float power,db, sample;
-    int markCount,spaceCount;
 
     //If Goretzel is 8k and Receiver is 96k, decimate factor is 12.  Only process every 12th sample
     for (int i=0, j=0; i<numSamples; i=i+decimateFactor, j++) {
         sample = in[i].re;
         res = cwGoertzel->FPNextSample(sample);
         if (res) {
+            //Update sMeter
+            power = cwGoertzel->GetNextPowerResult();
+            db = powerToDb(power);
+            rcv->GetSignalStrength()->setExtValue(db);
+
+            isMark = cwGoertzel->binaryOutput;
+
+            switch (countingState) {
+            case NOT_COUNTING:
+                //Initial state when we're looking for something to start syncing with
+                if (isMark) {
+                    //Start counting
+                    countingState = MARK_COUNTING;
+                    markCount = 1;
+                    spaceCount = 0;
+                }
+                break;
+            case MARK_COUNTING:
+                if (isMark) {
+                    markCount++;
+                    //Is it too long?
+                } else {
+                    //We have a transition from mark to space
+                    //Is markCount long enough? if not, do we ignore space and continue with looking for mark?
+                    if (markCount > numResultsPerTcw * DOT_TCW) {
+                        //Valid, is it long enough for dash?
+                        if (markCount > numResultsPerTcw * DASH_TCW) {
+                            rcv->OutputData("-");
+
+                        } else {
+                            rcv->OutputData(".");
+                        }
+                        markCount = 0;
+                        spaceCount = 1;
+                        countingState = SPACE_COUNTING;
+
+                    } else {
+                        //markCount too short
+                        //Reset state and start over
+                        countingState = NOT_COUNTING;
+                        markCount = 0;
+                        spaceCount = 0;
+                    }
+
+                }
+                break;
+            case SPACE_COUNTING:
+                if (!isMark) {
+                    spaceCount++;
+                } else {
+                    //Transition from space to mark
+                    //Is spaceCount long enough
+                    if (spaceCount > numResultsPerTcw * ELEMENTSPACE_TCW) {
+
+                    } else {
+                        //Too short
+                        countingState = NOT_COUNTING;
+                        markCount = 0;
+                        spaceCount = 0;
+                    }
+                }
+                //Is space long
+                break;
+            }
+
+#if 0
             //We have accumulated enough samples to get output of Goertzel
             //Store last N tones
             if (toneBufCounter < toneBufSize) {
                 toneBuf[toneBufCounter] = cwGoertzel->binaryOutput;
                 toneBufCounter++;
             }
+            qDebug("Tone %d",cwGoertzel->binaryOutput);
 
             if (toneBufCounter > numResultsPerTcw) {
                 //We need at least numResultsPerTcw results
@@ -125,7 +234,6 @@ CPX * Morse::ProcessBlock(CPX * in)
                     outString = "M";
                     outTone = true;
                     toneBufCounter = 0;
-                    //uiTextEdit->repaint();  //Triggers an immediate repaint
                     rcv->OutputData(outString);
                 } else if (spaceCount == numResultsPerTcw) {
                     //All results are space
@@ -133,7 +241,6 @@ CPX * Morse::ProcessBlock(CPX * in)
                     outString = "S";
                     outTone = false;
                     toneBufCounter = 0;
-                    //uiTextEdit->repaint();  //Triggers an immediate repaint
                     rcv->OutputData(outString);
                 } else {
                     //Not all the same, shift and try again
@@ -142,12 +249,8 @@ CPX * Morse::ProcessBlock(CPX * in)
                     }
                     toneBufCounter --;
                 }
-                power = cwGoertzel->GetNextPowerResult();
-                db = powerToDb(power);
-                rcv->GetSignalStrength()->setExtValue(db);
-
             }
-
+#endif
             //powerBuf[j] = power;
             //qDebug("G sample / power = %.12f / %.12f",sample,power);
             //qDebug("G MS / average / power = %c / %.12f / %.12f",cwGoertzel->binaryOutput?'M':'S', cwGoertzel->avgPower, power);
@@ -160,92 +263,284 @@ CPX * Morse::ProcessBlock(CPX * in)
 }
 
 struct morseChar {
-    quint16 binaryValue; //'0'=did '1'=dash
-    unsigned char letter;
-    const char* elements;
+    const char* ascii;
+    quint16 binaryValue; //'1' = start '0'=dit '1'=dash
+    const char* dotDash;
 };
 
-morseChar charLookup[] = {
-    {0x00,'E',"."},
-    {0x01,'T',"-"},
+//Same encoding as my SuperRatt code in 1983, see 6502 asm code extract below
+// TABLE OF CW CODES IN ASCII ORDER FROM 0x20 TO 0x5F
+// 1ST HIGH BIT IN # SIGNALS START OF CODE
+// 0=DOT 1=DASH
+//
+
+morseChar morseAsciiOrder[] = {
+    {" ", 0x00, "na"}, //Space Ascii 0x20
+    {"!", 0x6b, "— · — · — —"},
+    {"\"",0x52, "· — · · — ·"},
+    {"#", 0x00, "na"},
+    {"$", 0x89, "· · · — · · —"},
+    {"%", 0x00, "na"},
+    {"&", 0x28, "· — · · ·"},
+    {"\'",0x5e, "· — — — — ·"},
+    {"(", 0x36, "— · — — ·"},
+    {")", 0x6D, "— · — — · —"},
+    {"*", 0x00, "na"},
+    {"+", 0x2a, "· — · — ·"},
+    {",", 0x73, "— — · · — —"},
+    {"-", 0x61, "— · · · · —"},
+    {".", 0x55, "· — · — · —"},
+    {"/", 0x32, "— · · — ·"}, //Ascii 0x2f
+
+    {"0", 0x3f, "— — — — —"},
+    {"1", 0x2f, "· — — — —"},
+    {"2", 0x27, "· · — — —"},
+    {"3", 0x23, "· · · — —"},
+    {"4", 0x21, "· · · · —"},
+    {"5", 0x20, "· · · · ·"},
+    {"6", 0x30, "— · · · ·"},
+    {"7", 0x38, "— — · · ·"},
+    {"8", 0x3c, "— — — · ·"},
+    {"9", 0x3e, "— — — — ·"}, //Ascii 0x39
+
+    {":", 0x78, "— — — · · ·"},
+    {";", 0x6A, "— · — · — ·"}, //Also 'Starting signal'
+    {"<", 0x00, "na"},
+    {"=", 0x31, "— · · · —"},
+    {">", 0x00, "na"},
+    {"?", 0x4c, "· · — — · ·"},
+    {"@", 0x5a, "· — — · — ·"},
+
+    {"a", 0x05, "· —"}, //Ascii 0x41
+    {"b", 0x18, "— · · ·"},
+    {"c", 0x1a, "— · — ·"},
+    {"d", 0x0c, "— · ·"},
+    {"e", 0x02, "·"},
+    {"f", 0x12, "· · — ·"},
+    {"g", 0x0e, "— — ·"},
+    {"h", 0x10, "· · · ·"},
+    {"i", 0x04, "· ·"},
+    {"j", 0x17, "· — — —"},
+    {"k", 0x0d, "— · —"}, //Also 'Invitation to transmit'
+    {"l", 0x14, "· — · ·"},
+    {"m", 0x07, "— —"},
+    {"n", 0x06, "— ·"},
+    {"o", 0x0f, "— — —"},
+    {"p", 0x16, "· — — ·"},
+    {"q", 0x1d, "— — · —"},
+    {"r", 0x0a, "· — ·"},
+    {"s", 0x08, "· · ·"},
+    {"t", 0x03, "—"},
+    {"u", 0x09, "· · —"},
+    {"v", 0x11, "· · · —"},
+    {"w", 0x0b, "· — —"},
+    {"x", 0x1d, "— · · —"},
+    {"y", 0x1b, "— · — —"},
+    {"z", 0x1c, "— — · ·"},
+    {"[", 0x00, "na"},
+    {"\\",0x00, "na"},
+    {"]", 0x00, "na"},
+    {"^", 0x00, "na"},
+    {"_", 0x4d, "· · — — · —"},
+
+    //Prosigns, no interletter spacing http://en.wikipedia.org/wiki/Prosigns_for_Morse_Code
+    {"(ER)", 0x100, "· · · · · · · ·"}, //Error
+    {"(SN)", 0x22, "· · · - · "}, //Understood
+    {"(AA)", 0x15, "· - · -"}, //AA CR/LF
+    {"(BT)", 0x31, "- · · · -"}, //2 LF or new paragraph
+    {"(CL)", 0x1a4, "- · - · · - · ·"}, //Going off air
+    {"(CT)", 0x35, "- · - · -"}, //Start copying (same as KA)
+    {"(DT)", 0x67, "- · · - - -"}, //Shift to Wabun code
+    {"(KN)", 0x36, "- · - - ·"}, //Invitation to a specific station to transmit, compared to K which is general
+    {"(SOS)",0x238, "· · · - - - · · ·"},
+    {"(BK)", 0xc5, "- . . . - . -"}, //Break (Bk)
+    {"(AR)", 0x2a, ". - . - ."}, //End of Message (AR), sometimes shown as '+'
+    {"(SK)", 0x45, ". . . - . -"}, //End of QSO (SK) or End of Work
+    {"(AS)", 0x28, ". - . . ."}, // Please Wait (AS)
+
+    //Special abreviations http://en.wikipedia.org/wiki/Morse_code_abbreviations
+    //Supposed to have inter-letter spacing, but often sent as single 'letter'
+    //Add other abrevaitions later
+
+    //Non English extensions (TBD from Wikipedia)
+
+
+
 };
+
+//Converts morse as binary (high order bit always 1 followed by 0 for dot and 1 for dash) to ascii
+const char * Morse::MorseToAscii(quint16 morse)
+{
+    //Non optimized
+    for (int i=0; i<sizeof(morseAsciiOrder); i++) {
+        if (morseAsciiOrder[i].binaryValue == morse)
+            return morseAsciiOrder[i].ascii;
+    }
+
+}
+const char * Morse::MorseToDotDash(quint16 morse)
+{
+    //Non optimized
+    for (int i=0; i<sizeof(morseAsciiOrder); i++) {
+        if (morseAsciiOrder[i].binaryValue == morse)
+            return morseAsciiOrder[i].dotDash;
+    }
+
+}
 
 /*
-the morse table in the ATS3B..
+  Abbreviations, assume letter space between char or not?
+AA	All after (used after question mark to request a repetition)
+AB	All before (similarly)
+ARRL	American Radio Relay League
+ABT	About
+ADR	Address
+AGN	Again
+ANT	Antenna
+ARND	Around
+BCI	Broadcast interference
+BK	Break (to pause transmission of a message, say)
+BN	All between
+BTR	Better
+BUG	Semiautomatic mechanical key
+BURO	Bureau (usually used in the phrase PLS QSL VIA BURO, "Please send QSL card via my local/national QSL bureau")
+B4	Before
+C	Yes; correct
+CBA	Callbook address
+CFM	Confirm
+CK	Check
+CL	Clear (I am closing my station)
+CLG	Calling
+CQ	Calling any station
+CQD	Original International Distress Call, fell out of use before 1915
+CS	Callsign
+CTL	Control
+CUD	Could
+CUL	See you later
+CUZ	Because
+CW	Continuous wave (i.e., radiotelegraph)
+CX	Conditions
+DE	From (or "this is")
+DN	Down
+DR	Dear
+DSW	Goodbye (Russian: до свидания [Do svidanya])
+DX	Distance (sometimes refers to long distance contact), foreign countries
+EMRG	Emergency
+ENUF	Enough
+ES	And
+FB	Fine business (Analogous to "OK")
+FCC	Federal Communications Commission
+FER	For
+FM	From
+FREQ	Frequency
+FWD	Forward
+GA	Good afternoon or Go ahead (depending on context)
+GE	Good evening
+GG	Going
+GL	Good luck
+GM	Good morning
+GN	Good night
+GND	Ground (ground potential)
+GUD	Good
+GX	Ground
+HEE	Humour intended (often repeated, e.g. HEE HEE)
+HI	Humour intended (possibly derived from HEE)
+HR	Here, hear
+HV	Have
+HW	How
+II	I say again
+IMP	Impedance
+K	Over
+KN	Over; only the station named should respond (e.g. W7PTH DE W1AW KN)
+LID	Poor operator
+MILS	Milliamperes
+MNI	Many
+MSG	Message
+N	No; nine
+NIL	Nothing
+NM	Name
+NR	Number
+NW	Now
+NX	Noise; noisy
+OB	Old boy
+OC	Old chap
+OM	Old man (any male amateur radio operator is an OM regardless of age)
+OO	Official observer
+OP	Operator
+OT	Old timer
+OTC	Old timers club (ARRL-sponsored organization for radio amateurs first licensed 20 or more years ago)
+OOTC	Old old timers club (organization for those whose first two-way radio contact occurred 40 or more years ago; separate from OTC and ARRL)
+PLS	Please
+PSE	Please
+PWR	Power
+PX	Prefix
+QCWA	Quarter Century Wireless Association (organization for radio amateurs who have been licensed 25 or more years)
+R	Are; received as transmitted (origin of "Roger"), or decimal point (depending on context)
+RCVR	Receiver (radio)
+RFI	Radio Frequency Interference
+RIG	Radio apparatus
+RPT	Repeat or report (depending on context)
+RPRT	Report
+RST	Signal report format (Readability-Signal Strength-Tone)
+RTTY	Radioteletype
+RX	Receiver, radio
+SAE	Self-addressed envelope
+SASE	Self-addressed, stamped envelope
+SED	Said
+SEZ	Says
+SFR	So far (proword)
+SIG	Signal or signature
+SIGS	Signals
+SK	Out (proword), end of contact
+SK	Silent Key (a deceased radio amateur)
+SKED	Schedule
+SMS	Short message service
+SN	Soon
+SNR	Signal-to-noise ratio
+SRI	Sorry
+SSB	Single sideband
+STN	Station
+T	Zero (usually an elongated dah)
+TEMP	Temperature
+TFC	Traffic
+TKS	Thanks
+TMW	Tomorrow
+TNX	Thanks
+TT	That
+TU	Thank you
+TVI	Television interference
+TX	Transmit, transmitter
+TXT	Text
+U	You
+UR	Your or You're (depending on context)
+URS	Yours
+VX	Voice; phone
+VY	Very
+W	Watts
+WA	Word after
+WB	Word before
+WC	Wilco
+WDS	Words
+WID	With
+WKD	Worked
+WKG	Working
+WL	Will
+WUD	Would
+WTC	Whats the craic? (Irish Language: [Conas atá tú?])
+WX	Weather
+XCVR	Transceiver
+XMTR	Transmitter
+XYL	Wife (ex-YL)
+YF	Wife
+YL	Young lady (originally an unmarried female operator, now used for any female)
+ZX	Zero beat
+73	Best regards
+88	Love and kisses
+[edit]
 
-Basically it is an eight bit hex number derived from a binary representation of dits and dahs where 0 represents dit and 1 represents dah
+*/
 
-The result is marked with a leading 1 and padded with leading zeros so that it equals eight bits.
-
-EXAMPLE (how the table was derived)
-====================================
-The number 1 is dit dah dah dah dah
-
-That would be 01111.
-
-The beginning point is marked with a leading 1, so that makes it 101111
-
-The result is padded to eight bits with leading zeros, so that would make it into 00101111
-
-The binary number 00101111 converted to hex is 2f
-
-Here is the table:
-
-0 = 3f
-1 = 2f
-2 = 27
-3 = 23
-4 = 21
-5 = 20
-6 = 30
-7 = 38
-8 = 3c
-9 = 3e
-a = 05
-b = 18
-c = 1a
-d = 0c
-e = 02
-f = 12
-g = 0e
-h = 10
-I = 04
-j = 17
-k = 0d
-l = 14
-m = 07
-n = 06
-o = 0f
-p = 16
-q = 1d
-r = 0a
-s = 08
-t = 03
-u = 09
-v = 11
-w = 0b
-x = 1d
-y = 1b
-z = 1c
-/ = 32
-, = 73
-. = 55
-
-
-You can continue to build on to this table for other special characters not listed...
-
-
-Here are a few control characters that dont fit the morse algorithym I provided:
-=====================
-
-end of message marker = ff
-space character       = 00
-
-
-
-
-
-
+/*
   For historic purposes: Some source code fragments from my SuperRatt AppleII CW code circa 1983
 
 *TABLE OF CW CODES IN ASCII ORDER FROM $20 TO $3F

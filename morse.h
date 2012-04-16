@@ -31,6 +31,10 @@ public:
     //Returns tcw in ms for any given WPM
     int WpmToTcw(int w);
 
+    const char * MorseToAscii(quint16 morse);
+    const char * MorseToDotDash(quint16 morse);
+
+
 protected:
     Receiver *rcv;
 
@@ -51,6 +55,13 @@ protected:
     bool fixedWPM;
     int wpm;
     int numResultsPerTcw;
+
+    //Are we counting to see if we have a dot/dash mark or a element/word space
+    enum {NOT_COUNTING, MARK_COUNTING, SPACE_COUNTING} countingState;
+    enum {LETTER,WORD,SPACE} elementState;
+    int markCount;
+    int spaceCount;
+
 
 };
 
