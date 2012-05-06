@@ -79,11 +79,15 @@
 #define ELEMENTSPACE_TCW 1
 #define WORDSPACE_TCW 7
 
+#define MIN_DOT_COUNT 4
+
 Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
 {
     //Setup Goertzel
-    cwGoertzel = new Goertzel();
+    cwGoertzel = new Goertzel(sr, fc);
     //Process Goertzel at 8k sample rate
+    //!!4-27-12 changing this to 16k should dynamically change everything and still work, but it doesn't
+    //Check for hard dependencies on 8k in code
     goertzelSampleRate = 8000;
     goertzelFreq = 700;
 
@@ -93,23 +97,31 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
     wpm = 30;
     //binwidth for maxWPM = 60 is 200hz
     //User should set maxWPM and we should calculate binWidth, sharper = more accurate
-    cwGoertzel->SetFreqHz(goertzelFreq,goertzelSampleRate,100);
+    toneBufSize = cwGoertzel->SetFreqHz(goertzelFreq, 200, goertzelSampleRate);
+
+    //Max length for mark and space
+    maxMarkCount = 2000 / cwGoertzel->timePerBin;
+    maxSpaceCount = 5000 / cwGoertzel->timePerBin;
 
     //Number of goertzel results we need for a reliable tcw
-    numResultsPerTcw = WpmToTcw(wpm) / cwGoertzel->timePerBin;
+    //numResultsPerTcw = WpmToTcw(wpm) / cwGoertzel->timePerBin;
+
+    //Start with min 4 results per dot/tcw
+    SetElementLengths(MIN_DOT_COUNT);
+
 
     decimateFactor = sampleRate / goertzelSampleRate;
     powerBufSize = numSamples / decimateFactor;
-    toneBufSize = numResultsPerTcw * 2; //2x larger than needed
     powerBuf = new float[powerBufSize];
     toneBuf = new bool[toneBufSize];
     toneBufCounter = 0;
 
-    outString ="";
+    outString = "";
 
     countingState = NOT_COUNTING;
     markCount = 0;
     spaceCount = 0;
+    countsPerDashThreshold = MIN_DOT_COUNT;
 
 }
 
@@ -127,25 +139,188 @@ int Morse::WpmToTcw(int w)
     int tcw = 60.0 / (w * 50) * 1000;
     return tcw;
 }
+//Returns wpm for any given tcw (in ms)
+int Morse::TcwToWpm(int t)
+{
+    int wpm = 1200/t;
+    return wpm;
+}
+
+//d is count of number of goertzel results for shortest element, ie dot
+void Morse::SetElementLengths(int d)
+{
+    if (d < MIN_DOT_COUNT)
+        d = MIN_DOT_COUNT; //Smallest possible dot count
+
+    countsPerDot = countsPerDot * 0.70 + d * 0.30;
+    //Never below minimum
+    if (countsPerDot < MIN_DOT_COUNT)
+        countsPerDot = MIN_DOT_COUNT;
+
+    countsPerDash = countsPerDot * DASH_TCW;
+    countsPerElementSpace = countsPerDot * ELEMENTSPACE_TCW;
+    countsPerCharSpace = countsPerDot * CHARSPACE_TCW;
+    countsPerWordSpace = countsPerDot * WORDSPACE_TCW;
+
+    //Dash threshold midway between dot and dash len
+    countsPerDashThreshold = countsPerDot * 2;
+
+    //qDebug("CountsPerDashThreshold %d",countsPerDashThreshold);
+    shortestCounter = 0;
+
+}
 
 void Morse::SetReceiver(Receiver *_rcv)
 {
     rcv = _rcv;
 }
 
+CPX * Morse::ProcessBlockSuperRatt(CPX *in)
+{
+    bool isMark;
+    int lastSpaceCount;
+
+    cwGoertzel->ProcessBlock(in,toneBuf);
+
+    //toneBuf now has binary results, decode
+    //If Goretzel is 8k and Receiver is 96k, decimate factor is 12.  Only process every 12th sample
+    for (int i=0; i<toneBufSize; i++) {
+        isMark = toneBuf[i];
+
+        //Update sMeter
+        //db = powerToDb(power);
+        //rcv->GetSignalStrength()->setExtValue(db);
+        if (isMark)
+            //rcv->GetSignalStrength()->setExtValue(-13); //Full scale
+            rcv->receiverWidget->DataBit(true);
+        else
+            //rcv->GetSignalStrength()->setExtValue(-127); //0
+            rcv->receiverWidget->DataBit(false);
+
+        switch (countingState) {
+        case NOT_COUNTING:
+            //Initial state when we're looking for something to start syncing with
+            lastChar = 0;
+            if (isMark) {
+                //Start counting
+                countingState = MARK_COUNTING;
+                markCount = 1;
+                spaceCount = 0;
+            }
+            break;
+        case MARK_COUNTING:
+            if (isMark) {
+                markCount++;
+                //Is it too long?
+                if (markCount > maxMarkCount) {
+                    countingState = NOT_COUNTING;
+                    markCount = 0;
+                    spaceCount = 0;
+                }
+            } else {
+                //We have a transition from mark to space
+                //Dynamic WPM
+                if (markCount < countsPerDot) {
+                    //Update average whenever we dot length is decreasing or we have a dash
+                    //SetWPM(markCount);
+                    //Count is too shart for dot,
+                    markCount = 0;
+                    spaceCount = 0;
+                    countingState = NOT_COUNTING;
+                } else {
+                    //We want to keep countsPerAverageDot midway between current dot and dash length
+                    if (markCount > countsPerDashThreshold) {
+                        //Assume Dash
+                        element = 1;
+                        pendingElement = true;
+                        //Update whenever we think we have a dash
+                        SetElementLengths(markCount / DASH_TCW);
+
+                    } else {
+                        //Dot
+                        element = 0;
+                        pendingElement = true;
+                        //Weight dots * 2 so countsPerAverageDot is midrange between dot and dash
+                        SetElementLengths(markCount);
+
+                    }
+                    countingState = SPACE_COUNTING;
+                    markCount = 0;
+                    spaceCount = 1;
+                }
+            }
+            break;
+        case SPACE_COUNTING:
+            if (!isMark) {
+                spaceCount++;
+                lastSpaceCount = spaceCount;
+            } else {
+                //Transition from space to mark
+                countingState = MARK_COUNTING;
+                markCount = 1;
+                lastSpaceCount = spaceCount;
+                spaceCount = 0;
+            }
+            //Is space long enough to build char or output something?
+            if (lastSpaceCount >= countsPerElementSpace) {
+                //Process any pending elements
+                if (pendingElement) {
+                    //If we haven't started a char, set hob
+                    if (lastChar == 0)
+                        lastChar = 1;
+                    lastChar = lastChar << 1; //Shift left to make room
+                    lastChar = lastChar | element; //Set lob
+                    pendingChar = true;
+                    pendingElement = false;
+                    pendingWord = false;
+                }
+            }
+            if (lastSpaceCount >= countsPerCharSpace) {
+                //Process char
+                if (pendingChar) {
+                    //qDebug("%d",lastChar);
+                    rcv->OutputData(MorseToAscii(lastChar));
+                    lastChar = 0;
+                    pendingChar = false;
+                    pendingWord = true;
+                }
+            }
+            if (lastSpaceCount >= countsPerWordSpace) {
+                //Process word
+                if (pendingWord) {
+                    rcv->OutputData(" ");
+                    pendingWord = false;
+                }
+            }
+            if (lastSpaceCount > maxSpaceCount) {
+                //Output last char?
+                //Reset
+                countingState = NOT_COUNTING;
+                markCount = 0;
+                spaceCount = 0;
+                pendingElement = pendingChar = pendingWord = false;
+            }
+
+            break;
+        }
+    }
+    return in;
+}
+
 CPX * Morse::ProcessBlock(CPX * in)
 {
+    return ProcessBlockSuperRatt(in);
+
     bool res;
     bool isMark;
-    float power,db, sample;
+    float db;
+    float power;
 
     //If Goretzel is 8k and Receiver is 96k, decimate factor is 12.  Only process every 12th sample
     for (int i=0, j=0; i<numSamples; i=i+decimateFactor, j++) {
-        sample = in[i].re;
-        res = cwGoertzel->FPNextSample(sample);
+        //res = cwGoertzel->NewSample(in[i], power);
         if (res) {
             //Update sMeter
-            power = cwGoertzel->GetNextPowerResult();
             db = powerToDb(power);
             rcv->GetSignalStrength()->setExtValue(db);
 
@@ -167,10 +342,13 @@ CPX * Morse::ProcessBlock(CPX * in)
                     //Is it too long?
                 } else {
                     //We have a transition from mark to space
+                    //Dynamic WPM
+                    //Look for repeated dot length 3 times then set new countsPer...
+
                     //Is markCount long enough? if not, do we ignore space and continue with looking for mark?
-                    if (markCount > numResultsPerTcw * DOT_TCW) {
+                    if (markCount > countsPerDot) {
                         //Valid, is it long enough for dash?
-                        if (markCount > numResultsPerTcw * DASH_TCW) {
+                        if (markCount > countsPerDash) {
                             rcv->OutputData("-");
 
                         } else {
@@ -196,7 +374,12 @@ CPX * Morse::ProcessBlock(CPX * in)
                 } else {
                     //Transition from space to mark
                     //Is spaceCount long enough
-                    if (spaceCount > numResultsPerTcw * ELEMENTSPACE_TCW) {
+                    if (spaceCount > countsPerElementSpace) {
+                        if (spaceCount > countsPerWordSpace) {
+
+                        } else if (spaceCount > countsPerCharSpace) {
+
+                        }
 
                     } else {
                         //Too short
@@ -376,6 +559,7 @@ const char * Morse::MorseToAscii(quint16 morse)
         if (morseAsciiOrder[i].binaryValue == morse)
             return morseAsciiOrder[i].ascii;
     }
+    return "*"; //error
 
 }
 const char * Morse::MorseToDotDash(quint16 morse)
@@ -385,7 +569,7 @@ const char * Morse::MorseToDotDash(quint16 morse)
         if (morseAsciiOrder[i].binaryValue == morse)
             return morseAsciiOrder[i].dotDash;
     }
-
+    return "*"; //Error
 }
 
 /*

@@ -74,31 +74,31 @@ const CTCSS CTCSS_32("M1",203.5,10.7);
 class Goertzel
 {
 public:
-    Goertzel();
+    Goertzel(int _sampleRate, int _numSamples);
     ~Goertzel();
 
     //Sets internal values (coefficient) for freq
-    void SetFreqHz(int freq, int sampleRate, int bwHz);
+
+    int SetFreqHz(int _freq, int _bwHz, int _goertzelSampleRate);
     void SetBinaryThreshold(float t);
     //Processes next sample and returns true if we've accumulated enough for an output change
-    bool FPNextSample(float input);
-    void Q15NextSample (float input);
+    bool NewSample(float s, float &p);
 
     int freqHz;
-    int sampleRate;
+    int gSampleRate;
     //output values
     CPX cpx;
-    float power;
-    float avgPower;
+    float avgTonePower;
+    float avgNoisePower;
     float peakPower;
     bool binaryOutput;
+    bool lastBinaryOutput;
+
     float binaryThreshold; //above is true, below or = is false
     float noiseThreshold; //Ignore results below this level
     int noiseTimer; //If we get noise for some time, reset all averages, peaks, etc
     int noiseTimerThreshold; //How much noise triggers a reset.  Specified in block counts
 
-    //Filter coefficient, calculate with CalcCoefficient or table lookup
-    float coeff;
     //#samples we need to process throught filter to get accurate result
     int samplesPerBin;
     int timePerBin; //in ms
@@ -106,18 +106,35 @@ public:
     //Need function to return all of powerBuf or just next result
     float GetNextPowerResult();
 
+    //toneBuf is returned with bool values indicating tone/no-tone
+    CPX * ProcessBlock(CPX *in, bool *toneBuf);
+
+
 private:
+    int sampleRate; //Source
+    int numSamples; //Source
+    int decimateFactor;
+    int numToneResults;
+
+    //Filter coefficient, calculate with CalcCoefficient or table lookup
+    float realW;
+    float imagW;
+    float w;
+
+    bool CalcThreshold_MinMax(float p);
+    bool CalcThreshold_Average(float p);
+    int resultCounter;
+
     //Circular buffer for saving power readings
-    float *powerBuf;
-    int nextIn;
-    int nextOut;
-    int numPowerResults;
+    DelayLine *powerBuf;
+    int powerBufSize;
 
     //Internal values per EE Times article
     int k;
-    float w;
     int binWidthHz;
     int scale;
+
+    float *window; //Precalculated array of window values for specified freq,
 
     //These could be static in FPNextSample, but here for debugging and for use
     //if we try different algorithms
@@ -127,6 +144,14 @@ private:
     float delay0;
     float delay1;
     float delay2;
+
+    float maxPower;
+    float minPower;
+
+    float maxSample;
+    float minSample;
+
+
 
 };
 

@@ -18,6 +18,7 @@ public:
     ~Morse();
 
     CPX * ProcessBlock(CPX * in);
+    CPX * ProcessBlockSuperRatt(CPX * in);
 
     void SetReceiver(Receiver *_rcv);
 
@@ -30,6 +31,11 @@ public:
 
     //Returns tcw in ms for any given WPM
     int WpmToTcw(int w);
+    //Returns wpm for any given tcw
+    int TcwToWpm(int t);
+
+    //Sets WPM and related conters
+    void SetElementLengths(int dotCount);
 
     const char * MorseToAscii(quint16 morse);
     const char * MorseToDotDash(quint16 morse);
@@ -48,7 +54,7 @@ protected:
     int toneBufCounter;
 
     //Temp for painting
-    char *outString;
+    const char *outString;
     bool outTone;
 
     int maxWPM; //Determines bin resolution
@@ -61,7 +67,24 @@ protected:
     enum {LETTER,WORD,SPACE} elementState;
     int markCount;
     int spaceCount;
+    int maxMarkCount; //Timeout values
+    int maxSpaceCount;
 
+    //In 'counts' of goertzel results.  N counts = 1 tcw
+    int countsPerDashThreshold; //Temp counts per dot to see if we need to reset wpm
+    int shortestCounter;
+
+    int countsPerDot;
+    int countsPerDash;
+    int countsPerElementSpace; //Between dots and dashes
+    int countsPerCharSpace; //Between char of a word
+    int countsPerWordSpace; //Between words
+
+    bool pendingElement; //True if unprocessed element
+    bool pendingChar;
+    bool pendingWord;
+    int element; //1 if dash, 0 if dot
+    unsigned char lastChar;
 
 };
 
