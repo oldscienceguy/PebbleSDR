@@ -283,7 +283,7 @@ void Receiver::SetDataSelection(ReceiverWidget::DATA_SELECTION d)
     }
 }
 
-void Receiver::OutputData(char *d)
+void Receiver::OutputData(const char *d)
 {
     receiverWidget->OutputData(d);
 }

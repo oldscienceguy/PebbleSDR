@@ -54,7 +54,7 @@ public:
 	void SetLpfEnabled(bool b);
 	void SetMute(bool b);
 	void ShowPresets();
-    void OutputData(char *d);
+    void OutputData(const char *d);
     void SetDataSelection(ReceiverWidget::DATA_SELECTION d);
 	Settings * GetSettings() {return settings;}
 	void ProcessBlock(CPX *in, CPX *out, int frameCount);
@@ -63,7 +63,8 @@ public:
 	SignalStrength *GetSignalStrength() {return signalStrength;}
 	SignalSpectrum *GetSignalSpectrum() {return signalSpectrum;}
 	IQBalance *GetIQBalance(){return iqBalance;}
-	public slots:
+    ReceiverWidget *receiverWidget;
+    public slots:
 		void Restart();
 		void ShowIQBalance(bool b);
 		void ShowSettings(bool b);
@@ -80,7 +81,6 @@ private:
 	Settings *settings;
 	Presets *presets;
 	//SoftRock *softRock;
-	ReceiverWidget *receiverWidget;
 	QMainWindow *mainWindow;
 	SDR *sdr;
 	Audio *audioOutput;
