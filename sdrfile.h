@@ -107,6 +107,9 @@ public:
     void ShowOptions();
     void Start();
     void Stop();
+    void ReadSettings();
+    void WriteSettings();
+
     double GetStartupFrequency();
     int GetStartupMode();
     double GetHighLimit();
@@ -116,6 +119,8 @@ public:
     int GetSampleRate();
 
 protected:
+    QSettings *qSettings;
+
     CPX *inBuffer;
     CPX *outBuffer;
     int framesPerBuffer;

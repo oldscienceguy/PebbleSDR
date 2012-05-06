@@ -8,6 +8,9 @@ void ReadWavTest();
 
 SDRFile::SDRFile(Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_receiver, dev,_settings)
 {
+    QString path = QCoreApplication::applicationDirPath();
+    qSettings = new QSettings(path+"/sdrfile.ini",QSettings::IniFormat);
+    ReadSettings();
 
     framesPerBuffer = settings->framesPerBuffer;
     inBuffer = CPXBuf::malloc(framesPerBuffer);
@@ -74,6 +77,24 @@ void SDRFile::Stop()
     }
     return;
 }
+
+void SDRFile::ReadSettings()
+{
+    SDR::ReadSettings(qSettings);
+#if 0
+    sStartup = qSettings->value("Startup",162450000).toDouble();
+    sLow = qSettings->value("Low",60000000).toDouble();
+    sHigh = qSettings->value("High",1700000000).toDouble();
+    sStartupMode = qSettings->value("StartupMode",dmFMN).toInt();
+    sGain = qSettings->value("Gain",0.05).toDouble();
+#endif
+}
+
+void SDRFile::WriteSettings()
+{
+
+}
+
 double SDRFile::GetStartupFrequency()
 {
     return GetSampleRate() / 2.0;
@@ -104,6 +125,43 @@ int SDRFile::GetSampleRate()
     else
         return 96000;
 }
+
+#if 0
+Add test tone ie, freq (700) and offset(10000)
+Add optional noise generator
+
+/** Generates a tone of the specified frequency
+*  Gotten from: http://groups.google.com/groups?hl=en&lr=&ie=UTF-8&oe=UTF-8&safe=off&selm=3c641e%243jn%40uicsl.csl.uiuc.edu
+*/
+float *makeTone(int samplerate, float frequency, int length, float gain=1.0) {
+    //y(n) = 2 * cos(A) * y(n-1) - y(n-2)
+    //A= (frequency of interest) * 2 * PI / (sampling frequency)
+    //A is in radians.
+    // frequency of interest MUST be <= 1/2 the sampling frequency.
+    float *tone = new float[length];
+    float A = frequency*2*PI/samplerate;
+
+    for (int i=0; i<length; i++) {
+    if (i > 1) tone[i]= 2*cos(A)*tone[i-1] - tone[i-2];
+    else if (i > 0) tone[i] = 2*cos(A)*tone[i-1] - (cos(A));
+    else tone[i] = 2*cos(A)*cos(A) - cos(2*A);
+    }
+
+    for (int i=0; i<length; i++) tone[i] = tone[i]*gain;
+
+    return tone;
+}
+
+/** adds whitenoise to a sample */
+void *addNoise(float *sample, int length, float gain=1.0) {
+    for (int i=0; i<length; i++) sample[i] += (2*(rand()/(float)RAND_MAX)-1)*gain;
+}
+
+
+
+#endif
+
+
 
 void SDRFile::StopProducerThread(){}
 void SDRFile::RunProducerThread()
