@@ -1654,7 +1654,7 @@
      <property name="minimumSize">
       <size>
        <width>0</width>
-       <height>30</height>
+       <height>40</height>
       </size>
      </property>
      <property name="maximumSize">
@@ -1678,9 +1678,15 @@
       </property>
       <item>
        <widget class="QTextEdit" name="dataEdit">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="minimumSize">
          <size>
-          <width>400</width>
+          <width>450</width>
           <height>0</height>
          </size>
         </property>
@@ -1698,19 +1704,64 @@
        </widget>
       </item>
       <item>
-       <widget class="QComboBox" name="dataSelectionBox">
-        <property name="maximumSize">
+       <spacer name="horizontalSpacer_5">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Expanding</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
          <size>
-          <width>16777215</width>
-          <height>18</height>
+          <width>40</width>
+          <height>20</height>
          </size>
         </property>
-        <property name="font">
-         <font>
-          <pointsize>8</pointsize>
-         </font>
+       </spacer>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <property name="spacing">
+         <number>-1</number>
         </property>
-       </widget>
+        <property name="topMargin">
+         <number>2</number>
+        </property>
+        <property name="bottomMargin">
+         <number>2</number>
+        </property>
+        <item>
+         <widget class="QProgressBar" name="dataBar">
+          <property name="maximumSize">
+           <size>
+            <width>75</width>
+            <height>18</height>
+           </size>
+          </property>
+          <property name="value">
+           <number>0</number>
+          </property>
+          <property name="textVisible">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="dataSelectionBox">
+          <property name="maximumSize">
+           <size>
+            <width>75</width>
+            <height>18</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>8</pointsize>
+           </font>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </widget>

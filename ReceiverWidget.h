@@ -50,7 +50,8 @@ public:
 
     //Remove
     QTextEdit * getDataEdit() {return ui.dataEdit;}
-    void OutputData(char *d);
+    void OutputData(const char *d);
+    void DataBit(bool onOff);
 
 
 	public slots:

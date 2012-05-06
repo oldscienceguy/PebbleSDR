@@ -514,7 +514,16 @@ void ReceiverWidget::dataSelectionChanged(int s)
         ui.dataEdit->clear();
 }
 
-void ReceiverWidget::OutputData(char *d)
+//Change to DataPower so we can use as real time tuner
+void ReceiverWidget::DataBit(bool onOff)
+{
+    if (onOff)
+        ui.dataBar->setValue(100);
+    else
+        ui.dataBar->setValue(0);
+}
+
+void ReceiverWidget::OutputData(const char *d)
 {
     switch (dataSelection) {
     case NO_DATA:
