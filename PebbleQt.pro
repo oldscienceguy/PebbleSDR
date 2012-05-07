@@ -247,7 +247,8 @@ HEADERS += \
     sdrfile.h \
     goertzel.h \
     morse.h \
-    extio.h
+    extio.h \
+    rtl2832.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -286,7 +287,8 @@ SOURCES += \
 	funcube.cpp \
     sdrfile.cpp \
     goertzel.cpp \
-    morse.cpp
+    morse.cpp \
+    rtl2832.cpp
 
 FORMS += \
     spectrumwidget.ui \
