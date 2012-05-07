@@ -10,6 +10,7 @@
 #include "hpsdr.h"
 #include "funcube.h"
 #include "sdrfile.h"
+#include "rtl2832.h"
 #include "SoundCard.h"
 #include "Receiver.h"
 
@@ -118,7 +119,11 @@ SDR *SDR::Factory(Receiver *receiver, Settings *settings)
         sdr = new SDRFile(receiver,SDR::FILE, settings);
         break;
 
-	case SDR::HPSDR_TCP:
+    case SDR::DVB_T:
+        sdr = new RTL2832(receiver,SDR::DVB_T, settings);
+        break;
+
+    case SDR::HPSDR_TCP:
 	case SDR::NOSDR:
 		sdr = NULL;
 		break;

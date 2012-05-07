@@ -57,6 +57,7 @@ Settings::Settings(void)
 	sd->receiverBox->addItem("SDR Widget",SDR::SDRWIDGET);
 	sd->receiverBox->addItem("FUNcube Dongle",SDR::FUNCUBE);
     sd->receiverBox->addItem("File",SDR::FILE);
+    sd->receiverBox->addItem("DVB-T",SDR::DVB_T);
     connect(sd->receiverBox,SIGNAL(currentIndexChanged(int)),this,SLOT(ReceiverChanged(int)));
 
     sd->startupBox->setFont(medFont);

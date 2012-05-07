@@ -30,7 +30,7 @@ public:
 		SR_ENSEMBLE_4M, SR_ENSEMBLE_6M, SR_ENSEMBLE_LF,
 		ELEKTOR, ELEKTOR_PA, SDR_IQ,
 		HPSDR_USB, HPSDR_TCP, SDRWIDGET, FUNCUBE,
-        NOSDR, FILE};
+        NOSDR, FILE, DVB_T};
 	typedef enum IQORDER {IQ,QI,IONLY,QONLY} IQORDER;
 
 	SDR(Receiver *receiver, SDRDEVICE dev, Settings *_settings);
