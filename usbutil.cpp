@@ -2,6 +2,7 @@
 
 USBUtil::USBUtil()
 {
+    timeout = 1000; //default timeout in ms
 }
 
 //Returns device # for serialNumber or -1 if not found
@@ -59,6 +60,11 @@ int USBUtil::FTDI_FindDeviceByName(QString deviceName)
 
     }
     return deviceNumber;
+}
+
+bool USBUtil::LibUSBInit()
+{
+    return USBUtil::InitLibUsb();
 }
 
 bool USBUtil::InitLibUsb()
@@ -122,6 +128,18 @@ int USBUtil::ControlMsg(libusb_device_handle *hDev,
     return = usb_control_msg(hDev,reqType, req, value, data, index, length, timeout);
 
 #endif
+}
+
+int USBUtil::LibUSBControlMsg(uint8_t reqType, uint8_t req, uint16_t value, uint16_t index, unsigned char *data, uint16_t length, unsigned int timeout)
+{
+    return USBUtil::ControlMsg(hDev,reqType,req,value,index,data,length,timeout);
+}
+
+//WIP to replace static functions with instance methods, call static for now
+void USBUtil::LibUSBFindAndOpenDevice(int PID, int VID, int multiple)
+{
+    hDev = USBUtil::LibUSB_FindAndOpenDevice(PID,VID,multiple);
+
 }
 
 //Assumes InitLibUsb already called
@@ -198,4 +216,78 @@ libusb_device_handle * USBUtil::LibUSB_FindAndOpenDevice(int PID, int VID, int m
 
     return NULL; //Nothing found
 #endif
+}
+
+//Dumps device info to debug for now
+void USBUtil::ListDevices()
+{
+    libusb_device *dev; //Our device (hopefully)
+    libusb_device **devs; //List of all the devices found
+    libusb_device_handle *hDev;
+
+    unsigned char mfg[256]; //string buffer
+    unsigned char prod[256]; //string buffer
+
+    int cnt = libusb_get_device_list(NULL,&devs);
+    if (cnt < 0) {
+        qDebug("No Devices Found");
+        return;
+    }
+    int i=0;
+    while ((dev = devs[i++]) != NULL) {
+        libusb_device_descriptor desc;
+        int r = libusb_get_device_descriptor(dev, &desc);
+        if (r < 0) {
+            libusb_free_device_list(devs,1);
+            qDebug("Failed to get descriptor");
+            return;
+        }
+        //Get ascii string for mfg descriptor
+        USBUtil::OpenDevice(dev,&hDev);
+        libusb_get_string_descriptor_ascii(hDev,desc.iManufacturer,mfg,sizeof(mfg));
+        libusb_get_string_descriptor_ascii(hDev,desc.iProduct,prod,sizeof(prod));
+        qDebug("%s %s Class %d VID 0x%x PID 0x%x",mfg, prod, desc.bDeviceClass, desc.idVendor,desc.idProduct);
+        USBUtil::CloseDevice(hDev);
+    }
+
+    libusb_free_device_list(devs,1);
+    return;
+
+}
+
+//Utility function to read array
+bool USBUtil::LibUSBReadArray(quint16 index, quint16 address, unsigned char *data, quint16 length)
+{
+    quint8 reqType = LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_IN;
+    quint8 req = 0;
+    return LibUSBControlMsg(reqType,req,address,index,data,length,timeout);
+}
+
+//Writes array
+bool USBUtil::LibUSBWriteArray(quint16 index, quint16 address, unsigned char*data, quint16 length)
+{
+    quint8 reqType = LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_OUT;
+    quint8 req = 0;
+    return LibUSBControlMsg(reqType,req,address,index,data,length,timeout);
+}
+
+//Writes a 1 or 2 byte register
+bool USBUtil::LibUSBWriteReg(quint16 index, quint16 address, quint16 value, quint16 length)
+{
+    unsigned char data[2];
+    quint8 reqType = LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_OUT;
+    quint8 req = 0;
+
+    //Transfer value into data buffer in right order
+    if (length == 1) {
+        //Single byte in data[0], data[1] doesn't matter
+        data[0] = value & 0xff;
+        data[1] = value & 0xff;
+    } else {
+        //2 bytes:  HOB in data[0], LOB in data[1]
+        data[0] = value >> 8; //Shift hob to lob
+        data[1] = value & 0xff; //mask hob so lob is all that's left
+    }
+
+    return LibUSBControlMsg(reqType,req,address,index,data,length,timeout);
 }
