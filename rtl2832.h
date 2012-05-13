@@ -35,10 +35,10 @@ private:
     int RTL_WriteArray(quint8 block, quint16 addr, quint8 *array, quint8 len);
     bool RTL_WriteReg(quint16 block, quint16 address, quint16 value, quint16 length);
     bool DemodWriteReg(quint16 page, quint16 address, quint16 value, quint16 length);
-    void InitTuner(int frequency);
+    void InitTuner();
     void SetI2CRepeater(bool on);
 
-    void InitRTL();
+    void RTL_Init();
     bool E4000_Init();
     bool E4000_I2CReadByte(quint8 addr, quint8 *byte);
     bool E4000_I2CWriteByte(quint8 addr, quint8 byte);
@@ -48,13 +48,24 @@ private:
     bool E4000_Qpeak();
     bool E4000_DCoffloop();
     bool E4000_GainControlinit();
-
-
+    bool E4000_SetBandwidthHz(unsigned long bandwidthHz);
+    bool E4000_IFFilter(int bandwidth);
+    bool E4000_SetRfFreqHz(unsigned long RfFreqHz);
+    bool E4000_GainManual();
+    bool E4000_GainFreq(int freq);
+    bool E4000_PLL(int ref_clk, int freq);
+    bool E4000_LNAFilter(int Freq);
+    bool E4000_FreqBand(int Freq);
+    bool E4000_DCoffLUT();
+    bool E4000_GainControlAuto();
+    bool E4000_Sensitivity(int Freq, int bandwidth);
+    bool E4000_Linearity(int Freq, int bandwidth);
+    bool E4000_Nominal(int Freq, int bandwidth);
 
     QSettings *qSettings;
     USBUtil *usb;
 
-    quint32 crystalFrequency;
+    quint32 crystalFreqHz;
 
     virtual void StopProducerThread();
     virtual void RunProducerThread();
