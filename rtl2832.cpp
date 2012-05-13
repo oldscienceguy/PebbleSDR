@@ -6,7 +6,7 @@
   - Steve Markgraf <steve@steve-m.de> for rtl-sdr
   - rtl2832_2836_2840...zip which appears to be source code for linuxTV and supports numerous tuners
   - rtl2831-r2-891128e7c333
-  - osmo-sdr firmware
+  - osmo-sdr firmware tuner_e4k.c is considered latest and best (not using yet)
 */
 
 enum usb_reg {
@@ -411,6 +411,86 @@ void RTL2832::InitTuner()
 
 //E4000 Derived multiple versions of tuner_e4000.c
 #define E4K_I2C_ADDR		0xc8
+//From osmo-sdr tuner_e4k.h
+enum e4k_reg {
+    E4K_REG_MASTER1		= 0x00,
+    E4K_REG_MASTER2		= 0x01,
+    E4K_REG_MASTER3		= 0x02,
+    E4K_REG_MASTER4		= 0x03,
+    E4K_REG_MASTER5		= 0x04,
+    E4K_REG_CLK_INP		= 0x05,
+    E4K_REG_REF_CLK		= 0x06,
+    E4K_REG_SYNTH1		= 0x07,
+    E4K_REG_SYNTH2		= 0x08,
+    E4K_REG_SYNTH3		= 0x09,
+    E4K_REG_SYNTH4		= 0x0a,
+    E4K_REG_SYNTH5		= 0x0b,
+    E4K_REG_SYNTH6		= 0x0c,
+    E4K_REG_SYNTH7		= 0x0d,
+    E4K_REG_SYNTH8		= 0x0e,
+    E4K_REG_SYNTH9		= 0x0f,
+    E4K_REG_FILT1		= 0x10,
+    E4K_REG_FILT2		= 0x11,
+    E4K_REG_FILT3		= 0x12,
+    // gap
+    E4K_REG_GAIN1		= 0x14,
+    E4K_REG_GAIN2		= 0x15,
+    E4K_REG_GAIN3		= 0x16,
+    E4K_REG_GAIN4		= 0x17,
+    // gap
+    E4K_REG_AGC1		= 0x1a,
+    E4K_REG_AGC2		= 0x1b,
+    E4K_REG_AGC3		= 0x1c,
+    E4K_REG_AGC4		= 0x1d,
+    E4K_REG_AGC5		= 0x1e,
+    E4K_REG_AGC6		= 0x1f,
+    E4K_REG_AGC7		= 0x20,
+    E4K_REG_AGC8		= 0x21,
+    // gap
+    E4K_REG_AGC11		= 0x24,
+    E4K_REG_AGC12		= 0x25,
+    // gap
+    E4K_REG_DC1		= 0x29,
+    E4K_REG_DC2		= 0x2a,
+    E4K_REG_DC3		= 0x2b,
+    E4K_REG_DC4		= 0x2c,
+    E4K_REG_DC5		= 0x2d,
+    E4K_REG_DC6		= 0x2e,
+    E4K_REG_DC7		= 0x2f,
+    E4K_REG_DC8		= 0x30,
+    // gap
+    E4K_REG_QLUT0		= 0x50,
+    E4K_REG_QLUT1		= 0x51,
+    E4K_REG_QLUT2		= 0x52,
+    E4K_REG_QLUT3		= 0x53,
+    // gap
+    E4K_REG_ILUT0		= 0x60,
+    E4K_REG_ILUT1		= 0x61,
+    E4K_REG_ILUT2		= 0x62,
+    E4K_REG_ILUT3		= 0x63,
+    // gap
+    E4K_REG_DCTIME1		= 0x70,
+    E4K_REG_DCTIME2		= 0x71,
+    E4K_REG_DCTIME3		= 0x72,
+    E4K_REG_DCTIME4		= 0x73,
+    E4K_REG_PWM1		= 0x74,
+    E4K_REG_PWM2		= 0x75,
+    E4K_REG_PWM3		= 0x76,
+    E4K_REG_PWM4		= 0x77,
+    E4K_REG_BIAS		= 0x78,
+    E4K_REG_CLKOUT_PWDN	= 0x7a,
+    E4K_REG_CHFILT_CALIB	= 0x7b,
+    E4K_REG_I2C_REG_ADDR	= 0x7d,
+    // Unknown registers used in code
+    E4K_UNKNOWN1 = 0x7e,
+    E4K_UNKNOWN2 = 0x82,
+    E4K_UNKNOWN3 = 0x86,
+    E4K_UNKNOWN4 = 0x87,
+    E4K_UNKNOWN5 = 0x88,
+    E4K_UNKNOWN6 = 0x9f,
+    E4K_UNKNOWN7 = 0xa3
+};
+
 
 bool RTL2832::E4000_Init()
 {
@@ -476,20 +556,20 @@ bool RTL2832::E4000_ResetTuner()
 
     byte = 64;
     // For dummy I2C command, don't check executing status.
-    E4000_I2CWriteByte (0x02,byte);
-    if (!E4000_I2CWriteByte (0x02,byte))
+    E4000_I2CWriteByte (E4K_REG_MASTER3,byte);
+    if (!E4000_I2CWriteByte (E4K_REG_MASTER3,byte))
         return false;
 
     byte = 0;
-    if (!E4000_I2CWriteByte (0x09,byte))
+    if (!E4000_I2CWriteByte (E4K_REG_SYNTH3,byte))
         return false;
 
     byte = 0;
-    if (!E4000_I2CWriteByte (0x05,byte))
+    if (!E4000_I2CWriteByte (E4K_REG_CLK_INP,byte))
         return false;
 
     byte = 7;
-    if (!E4000_I2CWriteByte (0x00,byte))
+    if (!E4000_I2CWriteByte (E4K_REG_MASTER1,byte))
         return false;
 
     return true;
@@ -498,7 +578,7 @@ bool RTL2832::E4000_ResetTuner()
 *  Function: Tunerclock
 *
 *  Detailed Description:
-*  The function configures the E4000 clock. (Register 0x06, 0x7a).
+*  The function configures the E4000 clock. (Register E4K_REG_REF_CLK, E4K_REG_CLKOUT_PWDN).
 *  Function disables the clock - values can be modified to enable if required.
 \****************************************************************************/
 
@@ -507,11 +587,11 @@ bool RTL2832::E4000_TunerClock()
     quint8 byte;
 
     byte = 0;
-    if (!E4000_I2CWriteByte(0x06,byte))
+    if (!E4000_I2CWriteByte(E4K_REG_REF_CLK,byte))
         return false;
 
     byte = 150;
-    if (!E4000_I2CWriteByte(0x7a,byte))
+    if (!E4000_I2CWriteByte(E4K_REG_CLKOUT_PWDN,byte))
     //**Modify commands above with value required if output clock is required,
         return false;
 
@@ -522,7 +602,7 @@ bool RTL2832::E4000_TunerClock()
 *
 *  Detailed Description:
 *  The function configures the E4000 gains.
-*  Also sigma delta controller. (Register 0x82).
+*  Also sigma delta controller. (Register E4K_UNKNOWN2).
 *
 \****************************************************************************/
 
@@ -532,18 +612,18 @@ bool RTL2832::E4000_Qpeak()
 
     writearray[0] = 1;
     writearray[1] = 254;
-    if (!E4000_I2CWriteArray(0x7e,writearray,2))
+    if (!E4000_I2CWriteArray(E4K_UNKNOWN1,writearray,2))
         return false;
 
-    if (!E4000_I2CWriteByte (0x82,0))
+    if (!E4000_I2CWriteByte (E4K_UNKNOWN2,0))
         return false;
 
-    if (!E4000_I2CWriteByte (0x24,5))
+    if (!E4000_I2CWriteByte (E4K_REG_AGC11,5))
         return false;
 
     writearray[0] = 32;
     writearray[1] = 1;
-    if (!E4000_I2CWriteArray(0x87,writearray,2))
+    if (!E4000_I2CWriteArray(E4K_UNKNOWN4,writearray,2))
         return false;
 
     return true;
@@ -553,7 +633,7 @@ bool RTL2832::E4000_Qpeak()
 *  Function: DCoffloop
 *
 *  Detailed Description:
-*  Populates DC offset LUT. (Registers 0x2d, 0x70, 0x71).
+*  Populates DC offset LUT. (Registers E4K_REG_DC5, E4K_REG_DCTIME1, E4K_REG_DCTIME2).
 *  Turns on DC offset LUT and time varying DC offset.
 \****************************************************************************/
 bool RTL2832::E4000_DCoffloop()
@@ -561,14 +641,14 @@ bool RTL2832::E4000_DCoffloop()
     unsigned char writearray[5];
 
     //writearray[0]=0;
-    //I2CWriteByte(pTuner, 200,0x73,writearray[0]);
+    //I2CWriteByte(pTuner, 200,E4K_REG_DCTIME4,writearray[0]);
     writearray[0] = 31;
-    if (!E4000_I2CWriteByte(0x2d,writearray[0]))
+    if (!E4000_I2CWriteByte(E4K_REG_DC5,writearray[0]))
         return false;
 
     writearray[0] = 1;
     writearray[1] = 1;
-    if (!E4000_I2CWriteArray(0x70,writearray,2))
+    if (!E4000_I2CWriteArray(E4K_REG_DCTIME1,writearray,2))
         return false;
 
     return true;
@@ -578,8 +658,8 @@ bool RTL2832::E4000_DCoffloop()
 *  Function: GainControlinit
 *
 *  Detailed Description:
-*  Configures gain control mode. (Registers 0x1d, 0x1e, 0x1f, 0x20, 0x21,
-*  0x1a, 0x74h, 0x75h).
+*  Configures gain control mode. (Registers E4K_REG_AGC4, E4K_REG_AGC5, E4K_REG_AGC6, E4K_REG_AGC7, E4K_REG_AGC8,
+*  E4K_REG_AGC1, E4K_REG_PWM1, E4K_REG_PWM2).
 *  User may wish to modify values depending on usage scenario.
 *  Routine configures LNA: autonomous gain control
 *  IF PWM gain control.
@@ -596,10 +676,10 @@ bool RTL2832::E4000_GainControlinit()
     unsigned char sum=255;
 
     writearray[0] = 23;
-    if (!E4000_I2CWriteByte(0x1a,writearray[0]))
+    if (!E4000_I2CWriteByte(E4K_REG_AGC1,writearray[0]))
         return false;
 
-    if (!E4000_I2CReadByte(0x1b,read1))
+    if (!E4000_I2CReadByte(E4K_REG_AGC2,read1))
         return false;
 
     writearray[0] = 16;
@@ -607,15 +687,15 @@ bool RTL2832::E4000_GainControlinit()
     writearray[2] = 26;
     writearray[3] = 15;
     writearray[4] = 167;
-    if (!E4000_I2CWriteArray(0x1d,writearray,5))
+    if (!E4000_I2CWriteArray(E4K_REG_AGC4,writearray,5))
         return false;
 
     writearray[0] = 81;
-    if (!E4000_I2CWriteByte(0x86,writearray[0]))
+    if (!E4000_I2CWriteByte(E4K_UNKNOWN3,writearray[0]))
         return false;
 
     //For Realtek - gain control logic
-    if (!E4000_I2CReadByte(0x1b,read1))
+    if (!E4000_I2CReadByte(E4K_REG_AGC2,read1))
         return false;
 
     if(read1[0]<=sum)
@@ -623,21 +703,10 @@ bool RTL2832::E4000_GainControlinit()
         sum=read1[0];
     }
 
-    if (!E4000_I2CWriteByte(0x1f,writearray[2]))
+    if (!E4000_I2CWriteByte(E4K_REG_AGC6,writearray[2]))
         return false;
 
-    if (!E4000_I2CReadByte(0x1b,read1))
-        return false;
-
-    if(read1[0] <= sum)
-    {
-        sum=read1[0];
-    }
-
-    if (!E4000_I2CWriteByte(0x1f,writearray[2]))
-        return false;
-
-    if (!E4000_I2CReadByte(0x1b,read1))
+    if (!E4000_I2CReadByte(E4K_REG_AGC2,read1))
         return false;
 
     if(read1[0] <= sum)
@@ -645,10 +714,10 @@ bool RTL2832::E4000_GainControlinit()
         sum=read1[0];
     }
 
-    if (!E4000_I2CWriteByte(0x1f,writearray[2]))
+    if (!E4000_I2CWriteByte(E4K_REG_AGC6,writearray[2]))
         return false;
 
-    if (!E4000_I2CReadByte(0x1b,read1))
+    if (!E4000_I2CReadByte(E4K_REG_AGC2,read1))
         return false;
 
     if(read1[0] <= sum)
@@ -656,10 +725,21 @@ bool RTL2832::E4000_GainControlinit()
         sum=read1[0];
     }
 
-    if (!E4000_I2CWriteByte(0x1f,writearray[2]))
+    if (!E4000_I2CWriteByte(E4K_REG_AGC6,writearray[2]))
         return false;
 
-    if (!E4000_I2CReadByte(0x1b,read1))
+    if (!E4000_I2CReadByte(E4K_REG_AGC2,read1))
+        return false;
+
+    if(read1[0] <= sum)
+    {
+        sum=read1[0];
+    }
+
+    if (!E4000_I2CWriteByte(E4K_REG_AGC6,writearray[2]))
+        return false;
+
+    if (!E4000_I2CReadByte(E4K_REG_AGC2,read1))
         return false;
 
     if (read1[0]<=sum)
@@ -668,7 +748,7 @@ bool RTL2832::E4000_GainControlinit()
     }
 
     writearray[0]=sum;
-    if (!E4000_I2CWriteByte(0x1b,writearray[0]))
+    if (!E4000_I2CWriteByte(E4K_REG_AGC2,writearray[0]))
         return false;
 
     return true;
@@ -698,7 +778,7 @@ bool RTL2832::E4000_SetBandwidthHz(unsigned long BandwidthHz)
 *  Function: IFfilter
 *
 *  Detailed Description:
-*  The function configures the E4000 IF filter. (Register 0x11,0x12).
+*  The function configures the E4000 IF filter. (Register E4K_REG_FILT2,E4K_REG_FILT3).
 *
 \****************************************************************************/
 bool RTL2832::E4000_IFFilter(int bandwidth)
@@ -873,7 +953,7 @@ bool RTL2832::E4000_IFFilter(int bandwidth)
         writearray[0]=0;
         writearray[1]=32;
     }
-    if (!E4000_I2CWriteArray(0x11,writearray,2))
+    if (!E4000_I2CWriteArray(E4K_REG_FILT2,writearray,2))
         return false;
 
     return true;
@@ -928,15 +1008,15 @@ bool RTL2832::E4000_GainManual()
     quint8 byte;
 
     byte=0;
-    if (!E4000_I2CWriteByte(0x1a,byte))
+    if (!E4000_I2CWriteByte(E4K_REG_AGC1,byte))
         return false;
 
     byte = 0;
-    if (!E4000_I2CWriteByte (0x09,byte))
+    if (!E4000_I2CWriteByte (E4K_REG_SYNTH3,byte))
         return false;
 
     byte = 0;
-    if (!E4000_I2CWriteByte (0x05,byte))
+    if (!E4000_I2CWriteByte (E4K_REG_CLK_INP,byte))
         return false;
 
     return true;
@@ -947,7 +1027,7 @@ bool RTL2832::E4000_GainManual()
 *
 *  Detailed Description:
 *  The function configures the E4000 gains vs. freq
-*  0xa3 to 0xa7. Also 0x24.
+*  E4K_UNKNOWN7 to 0xa7. Also E4K_REG_AGC11.
 *
 \****************************************************************************/
 bool RTL2832::E4000_GainFreq(int Freq)
@@ -978,29 +1058,29 @@ bool RTL2832::E4000_GainFreq(int Freq)
         writearray[3] = 0x21;
         writearray[4] = 0x94;
     }
-    if (!E4000_I2CWriteArray(0xa3,writearray,5))
+    if (!E4000_I2CWriteArray(E4K_UNKNOWN7,writearray,5))
         return false;
 
     if (Freq<=350000)
     {
         writearray[0] = 94;
         writearray[1] = 6;
-        if (!E4000_I2CWriteArray(0x9f,writearray,2))
+        if (!E4000_I2CWriteArray(E4K_UNKNOWN6,writearray,2))
             return false;
 
         writearray[0] = 0;
-        if (!E4000_I2CWriteArray(0x88,writearray,1))
+        if (!E4000_I2CWriteArray(E4K_UNKNOWN5,writearray,1))
             return false;
     }
     else
     {
         writearray[0] = 127;
         writearray[1] = 7;
-        if (!E4000_I2CWriteArray(0x9f,writearray,2))
+        if (!E4000_I2CWriteArray(E4K_UNKNOWN6,writearray,2))
             return false;
 
         writearray[0] = 1;
-        if (!E4000_I2CWriteArray(0x88,writearray,1))
+        if (!E4000_I2CWriteArray(E4K_UNKNOWN5,writearray,1))
             return false;
     }
 
@@ -1011,7 +1091,7 @@ bool RTL2832::E4000_GainFreq(int Freq)
 *  Function: PLL
 *
 *  Detailed Description:
-*  Configures E4000 PLL divider & sigma delta. 0x0d,0x09, 0x0a, 0x0b).
+*  Configures E4000 PLL divider & sigma delta. E4K_REG_SYNTH7,E4K_REG_SYNTH3, E4K_REG_SYNTH4, E4K_REG_SYNTH5).
 *
 \****************************************************************************/
 bool RTL2832::E4000_PLL(int Ref_clk, int Freq)
@@ -1103,7 +1183,7 @@ bool RTL2832::E4000_PLL(int Ref_clk, int Freq)
     SigDel3 = SigDel - (256 * SigDel2);
     writearray[1]= (unsigned char)SigDel3;
     writearray[3]=(unsigned char)0;
-    if (!E4000_I2CWriteArray(0x09,writearray,5))
+    if (!E4000_I2CWriteArray(E4K_REG_SYNTH3,writearray,5))
         return false;
 
     if (Freq<=82900)
@@ -1317,10 +1397,10 @@ bool RTL2832::E4000_PLL(int Ref_clk, int Freq)
         writearray[2]=7;
     }
 
-    if (!E4000_I2CWriteByte (0x07,writearray[2]))
+    if (!E4000_I2CWriteByte (E4K_REG_SYNTH1,writearray[2]))
         return false;
 
-    if (!E4000_I2CWriteByte (0x05,writearray[0]))
+    if (!E4000_I2CWriteByte (E4K_REG_CLK_INP,writearray[0]))
         return false;
 
     return true;
@@ -1330,7 +1410,7 @@ bool RTL2832::E4000_PLL(int Ref_clk, int Freq)
 *  Function: LNAfilter
 *
 *  Detailed Description:
-*  The function configures the E4000 LNA filter. (Register 0x10).
+*  The function configures the E4000 LNA filter. (Register E4K_REG_FILT1).
 *
 \****************************************************************************/
 
@@ -1466,7 +1546,7 @@ bool RTL2832::E4000_LNAFilter(int Freq)
     {
         byte=15;
     }
-    if (!E4000_I2CWriteByte (0x10,byte))
+    if (!E4000_I2CWriteByte (E4K_REG_FILT1,byte))
         return false;
 
     return true;
@@ -1476,7 +1556,7 @@ bool RTL2832::E4000_LNAFilter(int Freq)
 *  Function: freqband
 *
 *  Detailed Description:
-*  Configures the E4000 frequency band. (Registers 0x07, 0x78).
+*  Configures the E4000 frequency band. (Registers E4K_REG_SYNTH1, E4K_REG_BIAS).
 *
 \****************************************************************************/
 bool RTL2832::E4000_FreqBand(int Freq)
@@ -1486,29 +1566,29 @@ bool RTL2832::E4000_FreqBand(int Freq)
     if (Freq<=140000)
     {
         byte = 3;
-        if (!E4000_I2CWriteByte(0x78,byte))
+        if (!E4000_I2CWriteByte(E4K_REG_BIAS,byte))
             return false;
     }
     else if (Freq<=350000)
     {
         byte = 3;
-        if (!E4000_I2CWriteByte(0x78,byte))
+        if (!E4000_I2CWriteByte(E4K_REG_BIAS,byte))
             return false;
     }
     else if (Freq<=1000000)
     {
         byte = 3;
-        if (!E4000_I2CWriteByte(0x78,byte))
+        if (!E4000_I2CWriteByte(E4K_REG_BIAS,byte))
             return false;
     }
     else
     {
         byte = 7;
-        if (!E4000_I2CWriteByte(0x07,byte))
+        if (!E4000_I2CWriteByte(E4K_REG_SYNTH1,byte))
             return false;
 
         byte = 0;
-        if (!E4000_I2CWriteByte(0x78,byte))
+        if (!E4000_I2CWriteByte(E4K_REG_BIAS,byte))
             return false;
     }
 
@@ -1519,7 +1599,7 @@ bool RTL2832::E4000_FreqBand(int Freq)
 *  Function: DCoffLUT
 *
 *  Detailed Description:
-*  Populates DC offset LUT. (Registers 0x50 - 0x53, 0x60 - 0x63).
+*  Populates DC offset LUT. (Registers E4K_REG_QLUT0 - E4K_REG_QLUT3, E4K_REG_ILUT0 - E4K_REG_ILUT3).
 *
 \****************************************************************************/
 bool RTL2832::E4000_DCoffLUT()
@@ -1536,24 +1616,24 @@ bool RTL2832::E4000_DCoffLUT()
     writearray[0] = 0;
     writearray[1] = 126;
     writearray[2] = 36;
-    if (!E4000_I2CWriteArray(0x15,writearray,3))
+    if (!E4000_I2CWriteArray(E4K_REG_GAIN2,writearray,3))
         return false;
 
     // Sets mixer & IF stage 1 gain = 00 and IF stg 2+ to max gain.
     writearray[0] = 1;
-    if (!E4000_I2CWriteByte(0x29,writearray[0]))
+    if (!E4000_I2CWriteByte(E4K_REG_DC1,writearray[0]))
         return false;
 
     // Instructs a DC offset calibration.
-    if (!E4000_I2CReadByte(0x2a,read1))
+    if (!E4000_I2CReadByte(E4K_REG_DC2,read1))
         return false;
 
     IOFF=read1[0];
-    if (!E4000_I2CReadByte(0x2b,read1))
+    if (!E4000_I2CReadByte(E4K_REG_DC3,read1))
         return false;
 
     QOFF=read1[0];
-    if (!E4000_I2CReadByte(0x2c,read1))
+    if (!E4000_I2CReadByte(E4K_REG_DC4,read1))
         return false;
 
     RANGE1=read1[0];
@@ -1570,34 +1650,34 @@ bool RTL2832::E4000_DCoffLUT()
     QRANGE = (read1[0] - RANGE1) / 16;
 
     writearray[0] = (IRANGE * 64) + IOFF;
-    if (!E4000_I2CWriteByte(0x60,writearray[0]))
+    if (!E4000_I2CWriteByte(E4K_REG_ILUT0,writearray[0]))
         return false;
 
     writearray[0] = (QRANGE * 64) + QOFF;
-    if (!E4000_I2CWriteByte(0x50,writearray[0]))
+    if (!E4000_I2CWriteByte(E4K_REG_QLUT0,writearray[0]))
         return false;
 
     // Populate DC offset LUT
     writearray[0] = 0;
     writearray[1] = 127;
-    if (!E4000_I2CWriteArray(0x15,writearray,2))
+    if (!E4000_I2CWriteArray(E4K_REG_GAIN2,writearray,2))
         return false;
 
     // Sets mixer & IF stage 1 gain = 01 leaving IF stg 2+ at max gain.
     writearray[0]= 1;
-    if (!E4000_I2CWriteByte(0x29,writearray[0]))
+    if (!E4000_I2CWriteByte(E4K_REG_DC1,writearray[0]))
         return false;
 
     // Instructs a DC offset calibration.
-    if (!E4000_I2CReadByte(0x2a,read1))
+    if (!E4000_I2CReadByte(E4K_REG_DC2,read1))
         return false;
 
     IOFF=read1[0];
-    if (!E4000_I2CReadByte(0x2b,read1))
+    if (!E4000_I2CReadByte(E4K_REG_DC3,read1))
         return false;
 
     QOFF=read1[0];
-    if (!E4000_I2CReadByte(0x2c,read1))
+    if (!E4000_I2CReadByte(E4K_REG_DC4,read1))
         return false;
 
     RANGE1=read1[0];
@@ -1614,33 +1694,33 @@ bool RTL2832::E4000_DCoffLUT()
     QRANGE = (read1[0] - RANGE1) / 16;
 
     writearray[0] = (IRANGE * 64) + IOFF;
-    if (!E4000_I2CWriteByte(0x61,writearray[0]))
+    if (!E4000_I2CWriteByte(E4K_REG_ILUT1,writearray[0]))
         return false;
 
     writearray[0] = (QRANGE * 64) + QOFF;
-    if (!E4000_I2CWriteByte(0x51,writearray[0]))
+    if (!E4000_I2CWriteByte(E4K_REG_QLUT1,writearray[0]))
         return false;
 
     // Populate DC offset LUT
     writearray[0] = 1;
-    if (!E4000_I2CWriteByte(0x15,writearray[0]))
+    if (!E4000_I2CWriteByte(E4K_REG_GAIN2,writearray[0]))
         return false;
 
     // Sets mixer & IF stage 1 gain = 11 leaving IF stg 2+ at max gain.
     writearray[0] = 1;
-    if (!E4000_I2CWriteByte(0x29,writearray[0]))
+    if (!E4000_I2CWriteByte(E4K_REG_DC1,writearray[0]))
         return false;
 
     // Instructs a DC offset calibration.
-    if (!E4000_I2CReadByte(0x2a,read1))
+    if (!E4000_I2CReadByte(E4K_REG_DC2,read1))
         return false;
 
     IOFF=read1[0];
-    if (!E4000_I2CReadByte(0x2b,read1))
+    if (!E4000_I2CReadByte(E4K_REG_DC3,read1))
         return false;
 
     QOFF=read1[0];
-    if (!E4000_I2CReadByte(0x2c,read1))
+    if (!E4000_I2CReadByte(E4K_REG_DC4,read1))
         return false;
 
     RANGE1 = read1[0];
@@ -1656,33 +1736,33 @@ bool RTL2832::E4000_DCoffLUT()
     IRANGE = RANGE1;
     QRANGE = (read1[0] - RANGE1) / 16;
     writearray[0] = (IRANGE * 64) + IOFF;
-    if (!E4000_I2CWriteByte(0x63,writearray[0]))
+    if (!E4000_I2CWriteByte(E4K_REG_ILUT3,writearray[0]))
         return false;
 
     writearray[0] = (QRANGE * 64) + QOFF;
-    if (!E4000_I2CWriteByte(0x53,writearray[0]))
+    if (!E4000_I2CWriteByte(E4K_REG_QLUT3,writearray[0]))
         return false;
 
     // Populate DC offset LUT
     writearray[0] = 126;
-    if (!E4000_I2CWriteByte(0x16,writearray[0]))
+    if (!E4000_I2CWriteByte(E4K_REG_GAIN3,writearray[0]))
         return false;
 
     // Sets mixer & IF stage 1 gain = 11 leaving IF stg 2+ at max gain.
     writearray[0] = 1;
-    if (!E4000_I2CWriteByte(0x29,writearray[0]))
+    if (!E4000_I2CWriteByte(E4K_REG_DC1,writearray[0]))
         return false;
 
     // Instructs a DC offset calibration.
-    if (!E4000_I2CReadByte(0x2a,read1))
+    if (!E4000_I2CReadByte(E4K_REG_DC2,read1))
         return false;
     IOFF=read1[0];
 
-    if (!E4000_I2CReadByte(0x2b,read1))
+    if (!E4000_I2CReadByte(E4K_REG_DC3,read1))
         return false;
     QOFF=read1[0];
 
-    if (!E4000_I2CReadByte(0x2c,read1))
+    if (!E4000_I2CReadByte(E4K_REG_DC4,read1))
         return false;
     RANGE1=read1[0];
 
@@ -1699,11 +1779,11 @@ bool RTL2832::E4000_DCoffLUT()
     QRANGE = (read1[0] - RANGE1) / 16;
 
     writearray[0]=(IRANGE * 64) + IOFF;
-    if (!E4000_I2CWriteByte(0x62,writearray[0]))
+    if (!E4000_I2CWriteByte(E4K_REG_ILUT2,writearray[0]))
         return false;
 
     writearray[0] = (QRANGE * 64) + QOFF;
-    if (!E4000_I2CWriteByte(0x52,writearray[0]))
+    if (!E4000_I2CWriteByte(E4K_REG_QLUT2,writearray[0]))
         return false;
     // Populate DC offset LUT
 
@@ -1714,7 +1794,7 @@ bool RTL2832::E4000_DCoffLUT()
 *  Function: GainControlinit
 *
 *  Detailed Description:
-*  Configures gain control mode. (Registers 0x1a)
+*  Configures gain control mode. (Registers E4K_REG_AGC1)
 *
 \****************************************************************************/
 bool RTL2832::E4000_GainControlAuto()
@@ -1722,7 +1802,7 @@ bool RTL2832::E4000_GainControlAuto()
     quint8 byte;
 
     byte = 23;
-    if (!E4000_I2CWriteByte(0x1a,byte))
+    if (!E4000_I2CWriteByte(E4K_REG_AGC1,byte))
         return false;
 
     return true;
@@ -1752,7 +1832,7 @@ bool RTL2832::E4000_Sensitivity(int Freq, int bandwidth)
     {
         writearray[0] = 0x05;
     }
-    if (!E4000_I2CWriteArray(0x24,writearray,1))
+    if (!E4000_I2CWriteArray(E4K_REG_AGC11,writearray,1))
         return false;
 
     IF_BW = bandwidth / 2;
@@ -1776,7 +1856,7 @@ bool RTL2832::E4000_Sensitivity(int Freq, int bandwidth)
         writearray[0]=0xf8;
         writearray[1]=0x07;
     }
-    if (!E4000_I2CWriteArray(0x11,writearray,2))
+    if (!E4000_I2CWriteArray(E4K_REG_FILT2,writearray,2))
         return false;
 
     return true;
@@ -1804,7 +1884,7 @@ bool RTL2832::E4000_Linearity(int Freq, int bandwidth)
     {
         writearray[0] = 0x01;
     }
-    if (!E4000_I2CWriteArray(0x24,writearray,1))
+    if (!E4000_I2CWriteArray(E4K_REG_AGC11,writearray,1))
         return false;
 
     IF_BW = bandwidth / 2;
@@ -1828,7 +1908,7 @@ bool RTL2832::E4000_Linearity(int Freq, int bandwidth)
         writearray[0]=0xfa;
         writearray[1]=0x0a;
     }
-    if (!E4000_I2CWriteArray(0x11,writearray,2))
+    if (!E4000_I2CWriteArray(E4K_REG_FILT2,writearray,2))
         return false;
 
     return true;
@@ -1855,7 +1935,7 @@ bool RTL2832::E4000_Nominal(int Freq, int bandwidth)
     {
         writearray[0] = 0x01;
     }
-    if (!E4000_I2CWriteArray(0x24,writearray,1))
+    if (!E4000_I2CWriteArray(E4K_REG_AGC11,writearray,1))
         return false;
 
     IF_BW = bandwidth / 2;
@@ -1879,7 +1959,7 @@ bool RTL2832::E4000_Nominal(int Freq, int bandwidth)
         writearray[0]=0xf8;
         writearray[1]=0x07;
     }
-    if (!E4000_I2CWriteArray(0x11,writearray,2))
+    if (!E4000_I2CWriteArray(E4K_REG_FILT2,writearray,2))
         return false;
 
     return true;
