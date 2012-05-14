@@ -1,5 +1,7 @@
 #include "rtl2832.h"
 #include "Demod.h"
+#include "Settings.h"
+#include "Receiver.h"
 
 /*
   Derived From and credit to:
@@ -46,6 +48,11 @@ enum blocks {
     IICB			= 6
 };
 
+#define DEFAULT_CRYSTAL_FREQUENCY 28800000
+
+//Should be 48000?
+#define DEFAULT_SAMPLE_RATE 2048000
+//#define DEFAULT_SAMPLE_RATE 48000
 
 //Driver file?? 20101202_linux_install_package.rar
 //See osmo_sdr tuner_e4k.c
@@ -60,10 +67,25 @@ RTL2832::RTL2832 (Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_r
     qSettings = new QSettings(path+"/dvb_t.ini",QSettings::IniFormat);
     ReadSettings();
 
-    crystalFreqHz = 28800000;
+    crystalFreqHz = DEFAULT_CRYSTAL_FREQUENCY;
+    //RTL2832 samples from 900001 to 3200000 sps (900ksps to 3.2msps)
+    //1 msps seems to be optimal according to boards
+    //We have to decimate from rtl rate to our rate for everything to work
+    rtlSampleRate = 1000000; //1msps
+    sampleRate = settings->sampleRate;
+    rtlDecimate = rtlSampleRate / sampleRate;
 
     usb = new USBUtil();
     usb->LibUSBInit();
+
+    framesPerBuffer = settings->framesPerBuffer;
+
+    inBuffer = CPXBuf::malloc(framesPerBuffer);
+    outBuffer = CPXBuf::malloc(framesPerBuffer);
+
+    //2 bytes per sample, framesPerBuffer samples after decimate
+    producerBufferSize = framesPerBuffer * 2 * rtlDecimate;
+    producerBuffer = new unsigned char[producerBufferSize];
 
     producerThread = new SDRProducerThread(this);
     producerThread->setRefresh(0); //Semaphores will block and wait, no extra delay needed
@@ -75,7 +97,12 @@ RTL2832::RTL2832 (Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_r
 
 RTL2832::~RTL2832(void)
 {
-
+    if (inBuffer != NULL)
+        free (inBuffer);
+    if (outBuffer != NULL)
+        free (outBuffer);
+    if (producerBuffer != NULL)
+        free (producerBuffer);
 }
 
 //Different for each rtl2832 device, read from settings file eventually
@@ -125,27 +152,23 @@ bool RTL2832::Disconnect()
 
 double RTL2832::SetFrequency(double fRequested, double fCurrent)
 {
-    if (E4000_SetRfFreqHz(fRequested))
+    bool ret;
+    //Not clear if we need to set i2c repeater
+    if (!SetI2CRepeater(true))
+        return fCurrent;
+    ret = E4000_SetRfFreqHz(fRequested);
+    if (!SetI2CRepeater(false))
+        return fCurrent;
+    if (ret)
         return fRequested;
     else
         return fCurrent;
+
 }
 
 void RTL2832::ShowOptions()
 {
 }
-
-#if 0
-int demod::read_samples(unsigned char* buffer, uint32_t buffer_size, int* bytes_read, int timeout /*= -1*/)
-{
-    assert(buffer);
-    assert(buffer_size > 0);
-    assert(bytes_read);
-
-    return libusb_bulk_transfer(m_devh, 0x81, buffer, buffer_size, bytes_read, ((timeout < 0) ? m_params.default_timeout : timeout));
-}
-
-#endif
 
 bool RTL2832::RTL_WriteReg(quint16 block, quint16 address, quint16 value, quint16 length)
 {
@@ -184,79 +207,117 @@ int RTL2832::RTL_WriteArray(quint8 block, quint16 addr, quint8 *array, quint8 le
 }
 
 
-void RTL2832::RTL_Init()
+#define RTL2832_FIR_COEFF_COUNT 20
+
+bool RTL2832::RTL_Init()
 {
-    bool res;
 
 
-#if 0
     /* default FIR coefficients used for DAB/FM by the Windows driver,
      * the DVB driver uses different ones */
-    static uint8_t default_fir_coeff[RTL2832_FIR_COEFF_COUNT] = {
+    static quint8 default_fir_coeff[RTL2832_FIR_COEFF_COUNT] = {
         0xca, 0xdc, 0xd7, 0xd8, 0xe0, 0xf2, 0x0e, 0x35, 0x06, 0x50,
         0x9c, 0x0d, 0x71, 0x11, 0x14, 0x71, 0x74, 0x19, 0x41, 0x00,
     };
-#endif
 
     //USB Init
-    res = RTL_WriteReg(USBB, USB_SYSCTL, 0x09, 1);
-    res = RTL_WriteReg(USBB, USB_EPA_MAXPKT, 0x0002, 2);
-    res = RTL_WriteReg(USBB, USB_EPA_CTL, 0x1002, 2);
+    if (!RTL_WriteReg(USBB, USB_SYSCTL, 0x09, 1))
+        return false;
+
+    if (!RTL_WriteReg(USBB, USB_EPA_MAXPKT, 0x0002, 2))
+        return false;
+
+    if (!RTL_WriteReg(USBB, USB_EPA_CTL, 0x1002, 2))
+        return false;
 
     //Power On Demod
-    res = RTL_WriteReg(SYSB, DEMOD_CTL_1, 0x22, 1);
-    res = RTL_WriteReg(SYSB, DEMOD_CTL, 0xe8, 1);
+    if (!RTL_WriteReg(SYSB, DEMOD_CTL_1, 0x22, 1))
+        return false;
+
+    if (!RTL_WriteReg(SYSB, DEMOD_CTL, 0xe8, 1))
+        return false;
 
     //reset demod (bit 3, soft_rst)
-    res = DemodWriteReg(1, 0x01, 0x14, 1);
-    res = DemodWriteReg(1, 0x01, 0x10, 1);
+    if (!DemodWriteReg(1, 0x01, 0x14, 1))
+        return false;
+
+    if (!DemodWriteReg(1, 0x01, 0x10, 1))
+        return false;
 
     //disable spectrum inversion and adjacent channel rejection
-    res = DemodWriteReg(1, 0x15, 0x00, 1);
-    res = DemodWriteReg(1, 0x16, 0x0000, 2);
+    if (!DemodWriteReg(1, 0x15, 0x00, 1))
+        return false;
+
+    if (!DemodWriteReg(1, 0x16, 0x0000, 2))
+        return false;
 
     //set IF-frequency to 0 Hz
-    res = DemodWriteReg(1, 0x19, 0x0000, 2);
-
+    if (!DemodWriteReg(1, 0x19, 0x0000, 2))
+        return false;
 #if 0
     //If we want to set customer FIR coefficients, goes here
-    uint8_t* fir_coeff = (m_params.use_custom_fir_coefficients ? m_params.fir_coeff : default_fir_coeff);
+    quint8 *fir_coeff = default_fir_coeff;
 
     /* set FIR coefficients */
-    for (i = 0; i < RTL2832_FIR_COEFF_COUNT; i++)
-        res = DemodWriteReg(1, 0x1c + i, fir_coeff[i], 1);
-
-    res = DemodWriteRegg(0, 0x19, 0x25, 1);
+    for (int i = 0; i < RTL2832_FIR_COEFF_COUNT; i++)
+        if (!DemodWriteReg(1, 0x1c + i, fir_coeff[i], 1))
+            return false;
 #endif
 
+    if (!DemodWriteReg(0, 0x19, 0x25, 1))
+        return false;
+
+
     /* init FSM state-holding register */
-    res = DemodWriteReg(1, 0x93, 0xf0, 1);
+    if (!DemodWriteReg(1, 0x93, 0xf0, 1))
+        return false;
 
     /* disable AGC (en_dagc, bit 0) */
-    res = DemodWriteReg(1, 0x11, 0x00, 1);
+    if (!DemodWriteReg(1, 0x11, 0x00, 1))
+        return false;
 
     /* disable PID filter (enable_PID = 0) */
-    res = DemodWriteReg(0, 0x61, 0x60, 1);
+    if (!DemodWriteReg(0, 0x61, 0x60, 1))
+        return false;
 
     /* opt_adc_iq = 0, default ADC_I/ADC_Q datapath */
-    res = DemodWriteReg(0, 0x06, 0x80, 1);
+    if (!DemodWriteReg(0, 0x06, 0x80, 1))
+        return false;
 
     /* Enable Zero-IF mode (en_bbin bit), DC cancellation (en_dc_est),
      * IQ estimation/compensation (en_iq_comp, en_iq_est) */
-    res = DemodWriteReg(1, 0xb1, 0x1b, 1);
+    if (!DemodWriteReg(1, 0xb1, 0x1b, 1))
+        return false;
 
+    return true;
 }
 
 void RTL2832::Start()
 {
-    RTL_Init();
-    SetSampleRate(48000);
-    InitTuner();
+    if (!RTL_Init()) {
+        qDebug("RTL_Init failed");
+        return;
+    }
+    //Check this, what is sample rate?
+    if (!SetSampleRate(rtlSampleRate)) {
+        qDebug("SetSampleRate failed");
+        return;
+    }
+    if (!InitTuner()) {
+        qDebug("Init Tuner failed");
+        return;
+    }
     //SetFrequency();;
 
     /* reset endpoint before we start reading */
-    RTL_WriteReg(USBB, USB_EPA_CTL, 0x1002, 2);
-    RTL_WriteReg(USBB, USB_EPA_CTL, 0x0000, 2);
+    if (!RTL_WriteReg(USBB, USB_EPA_CTL, 0x1002, 2)) {
+        qDebug("Reset endpoint failes");
+        return;
+    }
+    if (!RTL_WriteReg(USBB, USB_EPA_CTL, 0x0000, 2)) {
+        qDebug("Reset endpoint failes");
+        return;
+    }
 
 
     //WIP: We don't need both threads, just the producer.  TBD
@@ -282,22 +343,41 @@ void RTL2832::Stop()
 
 void RTL2832::RunProducerThread()
 {
+    CPX sample;
+    double fpSample;
     int bytesRead;
     int timeout = 3000;
-    int bufferSize = 2048;
-    unsigned char *buffer = new unsigned char[bufferSize];
     //What is endpoint 0x81?
-    int err = libusb_bulk_transfer(usb->hDev, 0x81, buffer, bufferSize, &bytesRead, timeout);
-    if (err < 0)
+    int err = libusb_bulk_transfer(usb->hDev, 0x81, producerBuffer, producerBufferSize, &bytesRead, timeout);
+    if (err < 0) {
+        //-7 LIBUSB_ERROR_TIMEOUT
+        //-5 LIBUSB_ERROR_NOT_FOUND
+        //-8 LIBUSB_ERROR_OVERFLOW
+        //-9 LIBUSB_ERROR_PIPE
         qDebug("Bulk transfer error %d",err);
-    else {
-        for (int i=0; i<bytesRead; i++)
-        {
-            qDebug("0x%x",buffer[i]);
-        }
-
+        return;
     }
-
+    if (bytesRead < producerBufferSize) {
+        qDebug("Under read");
+        return;
+    }
+    //RTL I/Q samples are 8bit unsigned 0-256
+    //Todo: Handle case where we don't get enough data for full buffer
+    for (int i=0,j=0; i<framesPerBuffer; i++, j+=rtlDecimate) {
+        //Every nth sample from producer buffer
+        fpSample = (double)producerBuffer[j];
+        fpSample -= 127;
+        fpSample /= 127.0;
+        fpSample *= 0.01;
+        sample.re = fpSample;
+        fpSample = (double)producerBuffer[j+1];
+        fpSample -= 127;
+        fpSample /= 127.0;
+        fpSample *= 0.01;
+        sample.im = fpSample;
+        inBuffer[i] = sample;
+    }
+    receiver->ProcessBlock(inBuffer,outBuffer,framesPerBuffer);
 }
 
 void RTL2832::StopConsumerThread()
@@ -318,7 +398,7 @@ void RTL2832::WriteSettings()
 
 double RTL2832::GetStartupFrequency()
 {
-    return 107500000;
+    return 162450000;
 }
 
 int RTL2832::GetStartupMode()
@@ -328,12 +408,12 @@ int RTL2832::GetStartupMode()
 
 double RTL2832::GetHighLimit()
 {
-    return 1000000000;
+    return 1700000000;  //1.7ghz
 }
 
 double RTL2832::GetLowLimit()
 {
-    return 60000000;
+    return 64000000; //64mhz
 }
 
 double RTL2832::GetGain()
@@ -348,19 +428,19 @@ QString RTL2832::GetDeviceName()
 
 int RTL2832::GetSampleRate()
 {
-    return 48000; //Hard code for now
+    return sampleRate;
 }
 
 void RTL2832::StopProducerThread()
 {
 }
 
-void RTL2832::SetSampleRate(quint32 sampleRate)
+//NOTE: This is the RTL sample rate NOT Pebble, RTL samples too fast for Pebble to keep up directly
+bool RTL2832::SetSampleRate(quint32 sampleRate)
 {
     quint16 tmp;
     quint32 rsamp_ratio;
     double real_rate;
-    bool ret;
 
     //check for the maximum rate the resampler supports
     if (sampleRate > 3200000)
@@ -374,21 +454,30 @@ void RTL2832::SetSampleRate(quint32 sampleRate)
     //qDebug("Setting sample rate: %.3f Hz\n", real_rate);
 
     tmp = (rsamp_ratio >> 16);
-    ret = DemodWriteReg(1, 0x9f, tmp, 2);
+    if (!DemodWriteReg(1, 0x9f, tmp, 2))
+        return false;
     tmp = rsamp_ratio & 0xffff;
-    ret = DemodWriteReg(1, 0xa1, tmp, 2);
+    if (!DemodWriteReg(1, 0xa1, tmp, 2))
+        return false;
+    return true;
 }
 
-void RTL2832::SetI2CRepeater(bool on)
+bool RTL2832::SetI2CRepeater(bool on)
 {
-    DemodWriteReg(1, 0x01, on ? 0x18 : 0x10, 1);
+    return DemodWriteReg(1, 0x01, on ? 0x18 : 0x10, 1);
 }
 
-void RTL2832::InitTuner()
+bool RTL2832::InitTuner()
 {
-    SetI2CRepeater(true);
-    E4000_Init();
-    E4000_SetBandwidthHz(8000000);
+    if (!SetI2CRepeater(true))
+        return false;
+    if (!E4000_Init())
+        return false;
+    if (!E4000_SetBandwidthHz(8000000))
+        return false;
+    //if (!E4000_SetRfFreqHz(162450000))
+    //    return false;
+
 #if 0
 
     switch (tuner_type) {
@@ -406,7 +495,9 @@ void RTL2832::InitTuner()
 
     printf("Tuned to %i Hz\n", frequency);
 #endif
-    SetI2CRepeater(false);
+    if (!SetI2CRepeater(false))
+        return false;
+    return true;
 }
 
 //E4000 Derived multiple versions of tuner_e4000.c

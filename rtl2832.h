@@ -25,20 +25,29 @@ public:
     double GetGain();
     QString GetDeviceName();
     int GetSampleRate();
-    void SetSampleRate(quint32 sampleRate);
+    bool SetSampleRate(quint32 sampleRate);
 
 
 private:
+    CPX *inBuffer;
+    CPX *outBuffer;
+    unsigned char* producerBuffer;
+    int producerBufferSize;
+    int framesPerBuffer;
+    quint32 rtlSampleRate;
+    quint32 sampleRate; //Pebble rate from settings or rtl option box eventually
+    quint16 rtlDecimate;
+
     bool RTL_I2CRead(quint8 addr, quint8 *buffer, int len);
     int RTL_I2CWrite(quint8 i2c_addr, quint8 *buffer, int len);
     bool RTL_ReadArray(quint8 block, quint16 addr, quint8 *array, quint8 len);
     int RTL_WriteArray(quint8 block, quint16 addr, quint8 *array, quint8 len);
     bool RTL_WriteReg(quint16 block, quint16 address, quint16 value, quint16 length);
     bool DemodWriteReg(quint16 page, quint16 address, quint16 value, quint16 length);
-    void InitTuner();
-    void SetI2CRepeater(bool on);
+    bool InitTuner();
+    bool SetI2CRepeater(bool on);
 
-    void RTL_Init();
+    bool RTL_Init();
     bool E4000_Init();
     bool E4000_I2CReadByte(quint8 addr, quint8 *byte);
     bool E4000_I2CWriteByte(quint8 addr, quint8 byte);
