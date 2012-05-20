@@ -28,7 +28,7 @@
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 
-#include <libusb.h>
+#include "../d2xx/libusb/libusb/libusb.h"
 
 /*
  * All libusb callback functions should be marked with the LIBUSB_CALL macro

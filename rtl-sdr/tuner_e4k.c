@@ -22,8 +22,8 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <reg_field.h>
-#include <tuner_e4k.h>
+#include "reg_field.h"
+#include "tuner_e4k.h"
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
