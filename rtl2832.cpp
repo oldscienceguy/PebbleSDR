@@ -67,13 +67,19 @@ RTL2832::RTL2832 (Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_r
     qSettings = new QSettings(path+"/dvb_t.ini",QSettings::IniFormat);
     ReadSettings();
 
-    crystalFreqHz = DEFAULT_CRYSTAL_FREQUENCY;
+    //crystalFreqHz = DEFAULT_CRYSTAL_FREQUENCY;
     //RTL2832 samples from 900001 to 3200000 sps (900ksps to 3.2msps)
     //1 msps seems to be optimal according to boards
     //We have to decimate from rtl rate to our rate for everything to work
     rtlSampleRate = 1000000; //1msps
     sampleRate = settings->sampleRate;
-    rtlDecimate = rtlSampleRate / sampleRate;
+    //Make rtlSample rate closs to 1msps but with even decimate
+    rtlDecimate = 1000000 / sampleRate;
+    rtlSampleRate = sampleRate * rtlDecimate;
+
+    rtlFrequency = 162400000;
+    rtlGain = -10; // tenths of a dB
+
 
     usb = new USBUtil();
     usb->LibUSBInit();
@@ -84,11 +90,11 @@ RTL2832::RTL2832 (Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_r
     outBuffer = CPXBuf::malloc(framesPerBuffer);
 
     //2 bytes per sample, framesPerBuffer samples after decimate
-    producerBufferSize = framesPerBuffer * 2 * rtlDecimate;
+    producerBufferSize = framesPerBuffer * rtlDecimate * 2;
     producerBuffer = new unsigned char[producerBufferSize];
 
     producerThread = new SDRProducerThread(this);
-    producerThread->setRefresh(0); //Semaphores will block and wait, no extra delay needed
+    producerThread->setRefresh(5);
     //consumerThread = new SDRConsumerThread(this);
     //consumerThread->setRefresh(0);
 
@@ -111,6 +117,27 @@ RTL2832::~RTL2832(void)
 
 bool RTL2832::Connect()
 {
+    int device_count;
+    int dev_index = 0; //Assume we only have 1 RTL2832 device for now
+    dev = NULL;
+    device_count = rtlsdr_get_device_count();
+    if (!device_count) {
+        qDebug("No supported devices found.");
+        return false;
+    }
+
+    for (int i = 0; i < device_count; i++)
+        qDebug("%s",rtlsdr_get_device_name(i));
+
+    //rtlsdr_get_device_name(dev_index));
+
+    if (rtlsdr_open(&dev, dev_index) < 0) {
+        qDebug("Failed to open rtlsdr device #%d", dev_index);
+        return false;
+    }
+
+    return true;
+#if 0
     //For testing
     //USBUtil::ListDevices();
 
@@ -142,16 +169,28 @@ bool RTL2832::Connect()
     }
 
     return false;
-
+#endif
 }
 
 bool RTL2832::Disconnect()
 {
+    rtlsdr_close(dev);
+    dev = NULL;
     return true;
 }
 
 double RTL2832::SetFrequency(double fRequested, double fCurrent)
 {
+    /* Set the frequency */
+    if (rtlsdr_set_center_freq(dev, rtlFrequency) < 0) {
+        qDebug("WARNING: Failed to set center freq.");
+        rtlFrequency = fCurrent;
+    } else {
+    rtlFrequency = fRequested;
+    }
+    return rtlFrequency;
+
+#if 0
     bool ret;
     //Not clear if we need to set i2c repeater
     if (!SetI2CRepeater(true))
@@ -161,8 +200,11 @@ double RTL2832::SetFrequency(double fRequested, double fCurrent)
         return fCurrent;
     if (ret)
         return fRequested;
-    else
+    else {
+        //qDebug("Error setting frequency");
         return fCurrent;
+    }
+#endif
 
 }
 
@@ -170,6 +212,186 @@ void RTL2832::ShowOptions()
 {
 }
 
+
+void RTL2832::Start()
+{
+    /* Set the sample rate */
+    if (rtlsdr_set_sample_rate(dev, rtlSampleRate) < 0) {
+        qDebug("WARNING: Failed to set sample rate.");
+        return;
+    }
+
+#if 0
+    /* Set the frequency */
+    if (rtlsdr_set_center_freq(dev, rtlFrequency) < 0) {
+        qDebug("WARNING: Failed to set center freq.");
+        return;
+    }
+#endif
+
+    /* Set the tuner gain */
+    if (rtlsdr_set_tuner_gain(dev, rtlGain) < 0) {
+        qDebug("WARNING: Failed to set tuner gain.");
+        return;
+    }
+
+    /* Reset endpoint before we start reading from it (mandatory) */
+    if (rtlsdr_reset_buffer(dev) < 0) {
+        qDebug("WARNING: Failed to reset buffers.");
+        return;
+    }
+
+#if 0
+    if (!RTL_Init()) {
+        qDebug("RTL_Init failed");
+        return;
+    }
+    //Check this, what is sample rate?
+    if (!SetSampleRate(rtlSampleRate)) {
+        qDebug("SetSampleRate failed");
+        return;
+    }
+    if (!InitTuner()) {
+        qDebug("Init Tuner failed");
+        return;
+    }
+    //SetFrequency();;
+
+    /* reset endpoint before we start reading */
+    if (!RTL_WriteReg(USBB, USB_EPA_CTL, 0x1002, 2)) {
+        qDebug("Reset endpoint failes");
+        return;
+    }
+    if (!RTL_WriteReg(USBB, USB_EPA_CTL, 0x0000, 2)) {
+        qDebug("Reset endpoint failes");
+        return;
+    }
+#endif
+
+    //WIP: We don't need both threads, just the producer.  TBD
+    //We want the consumer thread to start first, it will block waiting for data from the SDR thread
+    //consumerThread->start();
+    producerThread->start();
+    isThreadRunning = true;
+
+    return;
+
+}
+
+void RTL2832::Stop()
+{
+    if (isThreadRunning) {
+        producerThread->stop();
+        //consumerThread->stop();
+        isThreadRunning = false;
+    }
+    return;
+
+}
+
+void RTL2832::RunProducerThread()
+{
+    CPX sample;
+    double fpSample;
+    int bytesRead;
+    int timeout = 3000;
+#if 0
+    //What is endpoint 0x81?
+    int err = libusb_bulk_transfer(usb->hDev, 0x81, producerBuffer, producerBufferSize, &bytesRead, timeout);
+    if (err < 0) {
+        //-7 LIBUSB_ERROR_TIMEOUT
+        //-5 LIBUSB_ERROR_NOT_FOUND
+        //-8 LIBUSB_ERROR_OVERFLOW
+        //-9 LIBUSB_ERROR_PIPE
+        qDebug("Bulk transfer error %d",err);
+        return;
+    }
+#endif
+    if (rtlsdr_read_sync(dev, producerBuffer, producerBufferSize, &bytesRead) < 0) {
+        qDebug("Sync transfer error");
+        return;
+    }
+
+    if (bytesRead < producerBufferSize) {
+        qDebug("Under read");
+        return;
+    }
+    //RTL I/Q samples are 8bit unsigned 0-256
+    //Todo: Handle case where we don't get enough data for full buffer
+    int bufInc = rtlDecimate * 2;
+    for (int i=0,j=0; i<framesPerBuffer; i++, j+=bufInc) {
+        //Every nth sample from producer buffer
+        fpSample = (double)producerBuffer[j];
+        fpSample -= 127.0;
+        fpSample /= 127.0;
+        fpSample *= 0.001;
+        sample.re = fpSample;
+        fpSample = (double)producerBuffer[j+1];
+        fpSample -= 127.0;
+        fpSample /= 127.0;
+        fpSample *= 0.001;
+        sample.im = fpSample;
+        inBuffer[i] = sample;
+    }
+    receiver->ProcessBlock(inBuffer,outBuffer,framesPerBuffer);
+}
+
+void RTL2832::StopConsumerThread()
+{
+}
+
+void RTL2832::RunConsumerThread()
+{
+}
+
+void RTL2832::ReadSettings()
+{
+}
+
+void RTL2832::WriteSettings()
+{
+}
+
+double RTL2832::GetStartupFrequency()
+{
+    return 162450000;
+}
+
+int RTL2832::GetStartupMode()
+{
+    return dmFMN;
+}
+
+double RTL2832::GetHighLimit()
+{
+    return 1700000000;  //1.7ghz
+}
+
+double RTL2832::GetLowLimit()
+{
+    return 64000000; //64mhz
+}
+
+double RTL2832::GetGain()
+{
+    return 1.0;
+}
+
+QString RTL2832::GetDeviceName()
+{
+    return "DVB-T";
+}
+
+int RTL2832::GetSampleRate()
+{
+    return sampleRate;
+}
+
+void RTL2832::StopProducerThread()
+{
+}
+
+#if 0
 bool RTL2832::RTL_WriteReg(quint16 block, quint16 address, quint16 value, quint16 length)
 {
     quint16 index = (block << 8) | 0x10;
@@ -292,148 +514,6 @@ bool RTL2832::RTL_Init()
     return true;
 }
 
-void RTL2832::Start()
-{
-    if (!RTL_Init()) {
-        qDebug("RTL_Init failed");
-        return;
-    }
-    //Check this, what is sample rate?
-    if (!SetSampleRate(rtlSampleRate)) {
-        qDebug("SetSampleRate failed");
-        return;
-    }
-    if (!InitTuner()) {
-        qDebug("Init Tuner failed");
-        return;
-    }
-    //SetFrequency();;
-
-    /* reset endpoint before we start reading */
-    if (!RTL_WriteReg(USBB, USB_EPA_CTL, 0x1002, 2)) {
-        qDebug("Reset endpoint failes");
-        return;
-    }
-    if (!RTL_WriteReg(USBB, USB_EPA_CTL, 0x0000, 2)) {
-        qDebug("Reset endpoint failes");
-        return;
-    }
-
-
-    //WIP: We don't need both threads, just the producer.  TBD
-    //We want the consumer thread to start first, it will block waiting for data from the SDR thread
-    //consumerThread->start();
-    producerThread->start();
-    isThreadRunning = true;
-
-    return;
-
-}
-
-void RTL2832::Stop()
-{
-    if (isThreadRunning) {
-        producerThread->stop();
-        //consumerThread->stop();
-        isThreadRunning = false;
-    }
-    return;
-
-}
-
-void RTL2832::RunProducerThread()
-{
-    CPX sample;
-    double fpSample;
-    int bytesRead;
-    int timeout = 3000;
-    //What is endpoint 0x81?
-    int err = libusb_bulk_transfer(usb->hDev, 0x81, producerBuffer, producerBufferSize, &bytesRead, timeout);
-    if (err < 0) {
-        //-7 LIBUSB_ERROR_TIMEOUT
-        //-5 LIBUSB_ERROR_NOT_FOUND
-        //-8 LIBUSB_ERROR_OVERFLOW
-        //-9 LIBUSB_ERROR_PIPE
-        qDebug("Bulk transfer error %d",err);
-        return;
-    }
-    if (bytesRead < producerBufferSize) {
-        qDebug("Under read");
-        return;
-    }
-    //RTL I/Q samples are 8bit unsigned 0-256
-    //Todo: Handle case where we don't get enough data for full buffer
-    for (int i=0,j=0; i<framesPerBuffer; i++, j+=rtlDecimate) {
-        //Every nth sample from producer buffer
-        fpSample = (double)producerBuffer[j];
-        fpSample -= 127;
-        fpSample /= 127.0;
-        fpSample *= 0.01;
-        sample.re = fpSample;
-        fpSample = (double)producerBuffer[j+1];
-        fpSample -= 127;
-        fpSample /= 127.0;
-        fpSample *= 0.01;
-        sample.im = fpSample;
-        inBuffer[i] = sample;
-    }
-    receiver->ProcessBlock(inBuffer,outBuffer,framesPerBuffer);
-}
-
-void RTL2832::StopConsumerThread()
-{
-}
-
-void RTL2832::RunConsumerThread()
-{
-}
-
-void RTL2832::ReadSettings()
-{
-}
-
-void RTL2832::WriteSettings()
-{
-}
-
-double RTL2832::GetStartupFrequency()
-{
-    return 162450000;
-}
-
-int RTL2832::GetStartupMode()
-{
-    return dmFMN;
-}
-
-double RTL2832::GetHighLimit()
-{
-    return 1700000000;  //1.7ghz
-}
-
-double RTL2832::GetLowLimit()
-{
-    return 64000000; //64mhz
-}
-
-double RTL2832::GetGain()
-{
-    return 1.0;
-}
-
-QString RTL2832::GetDeviceName()
-{
-    return "DVB-T";
-}
-
-int RTL2832::GetSampleRate()
-{
-    return sampleRate;
-}
-
-void RTL2832::StopProducerThread()
-{
-}
 
 //NOTE: This is the RTL sample rate NOT Pebble, RTL samples too fast for Pebble to keep up directly
 bool RTL2832::SetSampleRate(quint32 sampleRate)
@@ -471,6 +551,7 @@ bool RTL2832::InitTuner()
 {
     if (!SetI2CRepeater(true))
         return false;
+
     if (!E4000_Init())
         return false;
     if (!E4000_SetBandwidthHz(8000000))
@@ -2056,4 +2137,5 @@ bool RTL2832::E4000_Nominal(int Freq, int bandwidth)
     return true;
 }
 
+#endif
 

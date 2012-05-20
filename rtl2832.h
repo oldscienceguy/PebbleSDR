@@ -2,6 +2,7 @@
 #define RTL2832_H
 
 #include "SDR.h"
+#include "rtl-sdr/rtl-sdr.h"
 
 class RTL2832 : public SDR
 {
@@ -34,10 +35,15 @@ private:
     unsigned char* producerBuffer;
     int producerBufferSize;
     int framesPerBuffer;
+    quint16 rtlGain; //in 10ths of a db
+    quint32 rtlFrequency;
     quint32 rtlSampleRate;
     quint32 sampleRate; //Pebble rate from settings or rtl option box eventually
     quint16 rtlDecimate;
 
+    rtlsdr_dev_t *dev;
+
+#if 0
     bool RTL_I2CRead(quint8 addr, quint8 *buffer, int len);
     int RTL_I2CWrite(quint8 i2c_addr, quint8 *buffer, int len);
     bool RTL_ReadArray(quint8 block, quint16 addr, quint8 *array, quint8 len);
@@ -70,11 +76,13 @@ private:
     bool E4000_Sensitivity(int Freq, int bandwidth);
     bool E4000_Linearity(int Freq, int bandwidth);
     bool E4000_Nominal(int Freq, int bandwidth);
+    quint32 crystalFreqHz;
+
+#endif
 
     QSettings *qSettings;
     USBUtil *usb;
 
-    quint32 crystalFreqHz;
 
     virtual void StopProducerThread();
     virtual void RunProducerThread();

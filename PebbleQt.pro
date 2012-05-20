@@ -248,7 +248,14 @@ HEADERS += \
     goertzel.h \
     morse.h \
     extio.h \
-    rtl2832.h
+    rtl2832.h \
+    rtl-sdr/rtl-sdr.h \
+    rtl-sdr/tuner_fc2580.h \
+    rtl-sdr/tuner_fc0013.h \
+    rtl-sdr/tuner_fc0012.h \
+    rtl-sdr/tuner_e4k.h \
+    rtl-sdr/rtlsdr_i2c.h \
+    rtl-sdr/rtl-sdr_export.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -288,7 +295,12 @@ SOURCES += \
     sdrfile.cpp \
     goertzel.cpp \
     morse.cpp \
-    rtl2832.cpp
+    rtl2832.cpp \
+    rtl-sdr/rtl-sdr.c \
+    rtl-sdr/tuner_fc2580.c \
+    rtl-sdr/tuner_fc0013.c \
+    rtl-sdr/tuner_fc0012.c \
+    rtl-sdr/tuner_e4k.c
 
 FORMS += \
     spectrumwidget.ui \
