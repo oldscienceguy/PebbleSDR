@@ -93,6 +93,14 @@ enum e4k_reg {
 	E4K_REG_CHFILT_CALIB	= 0x7b,
 	E4K_REG_I2C_REG_ADDR	= 0x7d,
 	// FIXME
+    // RAL added: Unknown registers used in code
+     E4K_UNKNOWN1 = 0x7e,
+     E4K_UNKNOWN2 = 0x82,
+     E4K_UNKNOWN3 = 0x86,
+     E4K_UNKNOWN4 = 0x87,
+     E4K_UNKNOWN5 = 0x88,
+     E4K_UNKNOWN6 = 0x9f,
+     E4K_UNKNOWN7 = 0xa3
 };
 
 #define E4K_MASTER1_RESET	(1 << 0)
