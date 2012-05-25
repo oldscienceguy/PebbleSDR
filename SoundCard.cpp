@@ -261,14 +261,27 @@ void SoundCard::SendToOutput(CPX *out)
 {
 	float *outPtr;
 	outPtr = outStreamBuffer;
+    float temp;
 
 	//We may have to skip samples to reduce rate to match audio out, decimate set when we
 	//opened stream
 	int numSamples = framesPerBuffer / decimate;
 	for (int i=0;i<numSamples;i++)
 	{
-		*outPtr++ = out[i*decimate].re;
-		*outPtr++ = out[i*decimate].im;
+        temp = out[i*decimate].re;
+        //Cap at -1 to +1 to make sure we don't overdrive
+        if (temp >.9999)
+            temp = .9999;
+        else if (temp < -.9999)
+            temp = -.9999;
+        *outPtr++ = temp;
+        temp = out[i*decimate].im;
+        //Cap at -1 to +1 to make sure we don't overdrive
+        if (temp >.9999)
+            temp = .9999;
+        else if (temp < -.9999)
+            temp = -.9999;
+        *outPtr++ = temp;
 	}
 
 	//Note we use frameCount, not #bytes in outStreamBuffer.  WriteStream knows format
