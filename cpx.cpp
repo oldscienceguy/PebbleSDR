@@ -55,6 +55,30 @@ float CPX::phase()
 }
 
 //CPXBuf
+CPXBuf::CPXBuf(int _size)
+{
+    size = _size;
+    int msz = sizeof(CPX) * size;
+    if (SIMD) {
+        cpxBuffer = (CPX*)fftwf_malloc(msz);
+    } else {
+        cpxBuffer = (CPX*)std::malloc(msz);
+    }
+}
+CPXBuf::~CPXBuf()
+{
+    if (cpxBuffer != NULL) {
+        if (SIMD)
+            fftwf_free(cpxBuffer);
+        else
+            std::free (cpxBuffer);
+    }
+}
+void CPXBuf::Clear()
+{
+    memset(cpxBuffer,0,sizeof(CPX) * size);
+}
+
 CPX *CPXBuf::malloc(int size)
 {
 	int msz = sizeof(CPX) * size;
@@ -153,7 +177,112 @@ float CPXBuf::peakPower(CPX *in, int size)
 	float maxPower = 0.0;
 	for (int i=0; i<size; i++)
 		maxPower = std::max(in[i].sqrMag(),maxPower);
-	return maxPower;
+    return maxPower;
+}
+
+void CPXBuf::Scale(CPX *out, float a)
+{
+    if(SIMD)
+        return SSEScaleCPX(out,cpxBuffer,a,size);
+
+    for (int i=0; i<size; i++)
+        out[i] = cpxBuffer[i].scale(a);
+
+}
+
+void CPXBuf::Add(CPX *out, CPX *in2)
+{
+    if (SIMD)
+        return SSEAddCPX(out,cpxBuffer,in2,size);
+
+    for (int i=0; i<size; i++)
+        out[i] = cpxBuffer[i] + in2[i];
+
+}
+
+void CPXBuf::Mult(CPX *out, CPX *in2)
+{
+    if(SIMD)
+        return SSEMultCPX(out,cpxBuffer,in2,size);
+
+    for (int i=0; i<size; i++)
+        out[i] = cpxBuffer[i] * in2[i];
+
+}
+
+void CPXBuf::Mag(CPX *out)
+{
+    if (SIMD)
+        return SSEMagCPX(out, cpxBuffer, size);
+    for (int i=0; i<size; i++){
+        out[i].re = cpxBuffer[i].mag();
+        out[i].im = cpxBuffer[i].re;
+    }
+
+}
+
+void CPXBuf::SqrMag(CPX *out)
+{
+    if (SIMD)
+        return SSESqMagCPX(out, cpxBuffer, size);
+    for (int i = 0; i < size; i++) {
+        out[i].re = cpxBuffer[i].sqrMag();
+        out[i].im = cpxBuffer[i].re; //Keet this for ref?
+    }
+
+}
+
+void CPXBuf::Decimate(CPX *out, int by)
+{
+    for (int i = 0, j = 0; i < size; i+=by, j++)
+    {
+        out[j] = cpxBuffer[i];
+    }
+
+}
+
+float CPXBuf::Norm()
+{
+    float sum = 0.0;
+    for (int i=0; i<size; i++)
+        sum += cpxBuffer[i].sqrMag();
+    return sqrt(sum/size);
+
+}
+
+float CPXBuf::NormSqr()
+{
+    float sum = 0.0;
+    for (int i=0; i<size; i++)
+        sum += cpxBuffer[i].sqrMag();
+    return sum;
+
+}
+
+float CPXBuf::Peak()
+{
+    float maxMag=0.0;
+    for (int i=0; i<size; i++)
+        maxMag = std::max(cpxBuffer[i].mag(),maxMag);
+    return maxMag;
+
+}
+
+float CPXBuf::PeakPower()
+{
+    float maxPower = 0.0;
+    for (int i=0; i<size; i++)
+        maxPower = std::max(cpxBuffer[i].sqrMag(),maxPower);
+    return maxPower;
+
+}
+
+CPXBuf &CPXBuf::operator +(CPXBuf a)
+{
+    CPXBuf out(size);
+    for (int i=0; i<size; i++)
+        out.Cpx(i) = cpxBuffer[i] + a.Cpx(i);
+    return out;
 }
 
 #if (SIMD)

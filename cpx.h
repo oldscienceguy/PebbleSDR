@@ -88,6 +88,50 @@ public:
 class CPXBuf
 {
 public:
+    CPXBuf(int _size);
+    ~CPXBuf(void);
+    void Clear();
+    CPX * Ptr() {return cpxBuffer;}
+    //Returning a reference allows these to be used as lvalues (assignment) or rvalues (data)
+    inline CPX & Cpx(int i) {return cpxBuffer[i];}
+    inline float & Re(int i) {return cpxBuffer[i].re;}
+    inline float & Im(int i) {return cpxBuffer[i].im;}
+
+    //Don't use array operator which won't work on CPXBuf *, use Cpx() instead
+    //inline CPX & operator [](int i) {return cpxBuffer[i];}
+
+    inline void Copy(CPX *out)
+        {memcpy(out,cpxBuffer,sizeof(CPX) * size);}
+
+    //scales in by a and returns in out, SIMD enabled
+    void Scale(CPX * out, float a);
+
+    //adds in + in2 and returns in out, SIMD enabled
+    void Add(CPX * out, CPX *in2);
+    inline CPXBuf &operator + (CPXBuf a);
+
+    //SIMD enabled
+    void Mult(CPX * out, CPX *in2);
+
+    //out.re = mag, out.im = original out.re SIMD enabled
+    void Mag(CPX *out);
+
+    //out.re = sqrMag, out.im = original out.reSIMD enabled
+    void SqrMag(CPX *out);
+
+    //Copy every N samples from in to out
+    void Decimate(CPX *out, int by);
+
+    //Hypot version of norm
+    float Norm();
+
+    //Squared version of norm
+    float NormSqr();
+
+    //Return max mag()
+    float Peak();
+    float PeakPower();
+
 	//Static for now
 	//Returns 16byte aligned pointer if SIMD math enabled, you must use CPXBuf::free(...) to delete
 	static CPX *malloc(int size);
@@ -119,7 +163,9 @@ public:
 	static float peak(CPX *in, int size);
 	static float peakPower(CPX *in, int size);
 
-
+private:
+    CPX *cpxBuffer;
+    int size;
 
 
 };
