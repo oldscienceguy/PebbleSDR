@@ -167,13 +167,16 @@ void Demod::SimpleFM(CPX *in, CPX *out)
 void Demod::SimpleFM2(CPX *in, CPX *out)
 {
 	CPX prod;
-	for (int i=1;i<numSamples;i++)
+    //Based on phase delta between samples, so we always need last sample from previous run
+    static CPX lastCpx(0,0);
+    for (int i=0; i<numSamples; i++)
 	{
 		//The angle between to subsequent samples can be calculated by multiplying one by the complex conjugate of the other
 		//and then calculating the phase (arg() or atan()) of the complex product
-		prod = in[i] * in[i-1].conj();
+        prod = in[i] * lastCpx.conj();
 		//Scale demod output to match am, usb, etc range
 		out[i].re = out[i].im = prod.phase() / 100;
+        lastCpx = in[i];
 	}
 }
 
