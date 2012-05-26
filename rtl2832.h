@@ -33,8 +33,8 @@ public:
 private:
     double sampleGain; //Factor to normalize output
 
-    CPX *inBuffer;
-    CPX *outBuffer;
+    CPXBuf *inBuffer;
+    CPXBuf *outBuffer;
 
     int numDataBufs; //Producer/Consumer buffers
     unsigned char **producerBuffer; //Array of buffers

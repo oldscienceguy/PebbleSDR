@@ -103,8 +103,8 @@ RTL2832::RTL2832 (Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_r
 
     framesPerBuffer = settings->framesPerBuffer;
 
-    inBuffer = CPXBuf::malloc(framesPerBuffer);
-    outBuffer = CPXBuf::malloc(framesPerBuffer);
+    inBuffer = new CPXBuf(framesPerBuffer);
+    outBuffer = new CPXBuf(framesPerBuffer);
 
     numDataBufs = 50;
     //2 bytes per sample, framesPerBuffer samples after decimate
@@ -127,9 +127,9 @@ RTL2832::RTL2832 (Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_r
 RTL2832::~RTL2832(void)
 {
     if (inBuffer != NULL)
-        free (inBuffer);
+        delete (inBuffer);
     if (outBuffer != NULL)
-        free (outBuffer);
+        delete (outBuffer);
     if (producerBuffer != NULL) {
         for (int i=0; i<numDataBufs; i++)
             free (producerBuffer[i]);
@@ -343,8 +343,8 @@ void RTL2832::RunConsumerThread()
         fpSampleIm /= 127.0;
         fpSampleIm *= sampleGain;
 
-        inBuffer[i].re = fpSampleRe;
-        inBuffer[i].im = fpSampleIm;
+        inBuffer->Re(i) = fpSampleRe;
+        inBuffer->Im(i) = fpSampleIm;
     }
 
     //We're done with databuf, so we can release before we call ProcessBlock
@@ -353,7 +353,7 @@ void RTL2832::RunConsumerThread()
     semNumFreeBuffers->release();
 
     if (receiver != NULL)
-        receiver->ProcessBlock(inBuffer,outBuffer,framesPerBuffer);
+        receiver->ProcessBlock(inBuffer->Ptr(),outBuffer->Ptr(),framesPerBuffer);
 
 
 }
