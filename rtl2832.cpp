@@ -70,13 +70,32 @@ RTL2832::RTL2832 (Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_r
     //RTL2832 samples from 900001 to 3200000 sps (900ksps to 3.2msps)
     //1 msps seems to be optimal according to boards
     //We have to decimate from rtl rate to our rate for everything to work
-    sampleRate = 48000; //settings->sampleRate;
+    sampleRate = 192000; //settings->sampleRate;
     //Make rtlSample rate close to 1msps but with even decimate
-    rtlDecimate = 1000000 / sampleRate;
-    rtlSampleRate = sampleRate * rtlDecimate;
+    //Test with higher sps, seems to work better
+    /*
+      RTL2832 sample rate likes to be 2048, 1024 or an even quotient of 28.8mhz
+      Other rates may cause intermittent sync problems (rat-a-tat noise)
+      2048000 is the default rate for DAB and FM
+      3.20 (28.8 / 9)
+      2.88 (28.8 / 10)
+      2.40 (28.8 / 12)
+      1.80 (28.8 / 16)
+      1.44 (28.8 / 20) even dec at 48 and 96k
+       .96 (28.8 / 30)
+    */
+    rtlSampleRate = 1.44e6;
+    rtlDecimate = rtlSampleRate / sampleRate;
 
     rtlFrequency = 162400000;
+
+    //Valid gain values (in tenths of a dB) for the E4000 tuner:
+    //-10, 15, 40, 65, 90, 115, 140, 165, 190,
+    //215, 240, 290, 340, 420, 430, 450, 470, 490
+
     rtlGain = -10; // tenths of a dB
+
+    sampleGain = .005; //Matched with rtlGain
 
     //Not using this anymore?  Remove
     usb = new USBUtil();
@@ -87,7 +106,7 @@ RTL2832::RTL2832 (Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_r
     inBuffer = CPXBuf::malloc(framesPerBuffer);
     outBuffer = CPXBuf::malloc(framesPerBuffer);
 
-    numDataBufs = 100;
+    numDataBufs = 50;
     //2 bytes per sample, framesPerBuffer samples after decimate
     producerBufferSize = framesPerBuffer * rtlDecimate * 2;
     producerBuffer = new unsigned char *[numDataBufs];
@@ -133,8 +152,8 @@ bool RTL2832::Connect()
         return false;
     }
 
-    for (int i = 0; i < device_count; i++)
-        qDebug("%s",rtlsdr_get_device_name(i));
+    //for (int i = 0; i < device_count; i++)
+    //    qDebug("%s",rtlsdr_get_device_name(i));
 
     //rtlsdr_get_device_name(dev_index));
 
@@ -189,7 +208,7 @@ bool RTL2832::Disconnect()
 double RTL2832::SetFrequency(double fRequested, double fCurrent)
 {
     /* Set the frequency */
-    if (rtlsdr_set_center_freq(dev, rtlFrequency) < 0) {
+    if (rtlsdr_set_center_freq(dev, fRequested) < 0) {
         qDebug("WARNING: Failed to set center freq.");
         rtlFrequency = fCurrent;
     } else {
@@ -271,9 +290,13 @@ void RTL2832::RunProducerThread()
     //This will block if we don't have any free data buffers to use, pending consumer thread releasing
     semNumFreeBuffers->acquire();
 
+#if 0
+    //Debugging to watch producer/consumer overflow
+    //Todo:  Add back-pressure to reduce sample rate if not keeping up
     int available = semNumFreeBuffers->available();
     if ( available < (numDataBufs -5))
         qDebug("Producer %d",available);
+#endif
 
     if (rtlsdr_read_sync(dev, producerBuffer[nextProducerDataBuf], producerBufferSize, &bytesRead) < 0) {
         qDebug("Sync transfer error");
@@ -313,12 +336,13 @@ void RTL2832::RunConsumerThread()
         fpSampleRe = (double)producerBuffer[nextConsumerDataBuf][j];
         fpSampleRe -= 127.0;
         fpSampleRe /= 127.0;
-        fpSampleRe *= 0.001;
+        fpSampleRe *= sampleGain;
 
         fpSampleIm = (double)producerBuffer[nextConsumerDataBuf][j+1];
         fpSampleIm -= 127.0;
         fpSampleIm /= 127.0;
-        fpSampleIm *= 0.001;
+        fpSampleIm *= sampleGain;
+
         inBuffer[i].re = fpSampleRe;
         inBuffer[i].im = fpSampleIm;
     }

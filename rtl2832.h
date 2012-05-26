@@ -27,10 +27,12 @@ public:
     double GetGain();
     QString GetDeviceName();
     int GetSampleRate();
-    bool SetSampleRate(quint32 sampleRate);
+    //bool SetSampleRate(quint32 sampleRate);
 
 
 private:
+    double sampleGain; //Factor to normalize output
+
     CPX *inBuffer;
     CPX *outBuffer;
 
