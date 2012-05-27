@@ -2,6 +2,7 @@ TEMPLATE = app
 TARGET = Pebble
 QT += core gui multimedia
 
+#Download & install FTDI D2XX drivers from http://www.ftdichip.com/Drivers/D2XX.htm
 
 #Download PortAudio from portaudio.com , open terminal, ./configure && make
 #portaudio directory is at same level as PebbleII
