@@ -256,7 +256,10 @@ HEADERS += \
     rtl-sdr/tuner_fc0012.h \
     rtl-sdr/tuner_e4k.h \
     rtl-sdr/rtlsdr_i2c.h \
-    rtl-sdr/rtl-sdr_export.h
+    rtl-sdr/rtl-sdr_export.h \
+    filters/fir.h \
+    filters/filtercoef.h \
+    filters/iir.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -301,7 +304,9 @@ SOURCES += \
     rtl-sdr/tuner_fc2580.c \
     rtl-sdr/tuner_fc0013.c \
     rtl-sdr/tuner_fc0012.c \
-    rtl-sdr/tuner_e4k.c
+    rtl-sdr/tuner_e4k.c \
+    filters/fir.cpp \
+    filters/iir.cpp
 
 FORMS += \
     spectrumwidget.ui \
