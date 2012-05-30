@@ -74,18 +74,20 @@ RTL2832::RTL2832 (Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_r
     //Make rtlSample rate close to 1msps but with even decimate
     //Test with higher sps, seems to work better
     /*
-      RTL2832 sample rate likes to be 2048, 1024 or an even quotient of 28.8mhz
-      Other rates may cause intermittent sync problems (rat-a-tat noise)
+      RTL2832 sample rate likes to be 2.048, 1.024 or an even quotient of 28.8mhz
+      Other rates may cause intermittent sync problems
       2048000 is the default rate for DAB and FM
       3.20 (28.8 / 9)
       2.88 (28.8 / 10)
       2.40 (28.8 / 12)
       1.80 (28.8 / 16)
       1.44 (28.8 / 20) even dec at 48 and 96k
+      1.20 (28.8 / 24)
+      1.152 (28.8 / 25) 192k * 6 - This is our best rate convert to 192k effective rate
        .96 (28.8 / 30)
     */
-    rtlSampleRate = 1.44e6;
-    rtlDecimate = rtlSampleRate / sampleRate;
+    rtlSampleRate = 1.152e6;
+    rtlDecimate = rtlSampleRate / sampleRate; //Should be 6 for 1.152 and 192k sampleRate
 
     rtlFrequency = 162400000;
 
@@ -331,7 +333,33 @@ void RTL2832::RunConsumerThread()
 
     //RTL I/Q samples are 8bit unsigned 0-256
     int bufInc = rtlDecimate * 2;
+    int decMult = 1; //1=8bit, 2=9bit, 3=10bit for rtlDecimate = 6 and sampleRate = 192k
+    int decNorm = 128 * decMult;
+    double decAvg = rtlDecimate / decMult; //Double the range = 1 bit of sample size
     for (int i=0,j=0; i<framesPerBuffer; i++, j+=bufInc) {
+#if 1
+        //We are significantly oversampling, so we can use decimation to increase dynamic range
+        //See http://www.actel.com/documents/Improve_ADC_WP.pdf as one example
+        //We take N (rtlDecimate) samples and create one result
+        fpSampleRe = fpSampleIm = 0.0;
+        for (int k = 0; k < bufInc; k+=2) {
+            fpSampleRe += (double)producerBuffer[nextConsumerDataBuf][j + k];
+            fpSampleIm += (double)producerBuffer[nextConsumerDataBuf][j + k + 1];
+        }
+        //If we average, we get a better sample
+        //But if we average with a smaller number, we increase range of samples
+        //Instead of 8bit 0-255, we get 9bit 0-511
+        //Testing assuming rtlDecmiate = 6
+        fpSampleRe = fpSampleRe / decAvg; //Effectively increasing dynamic range
+        fpSampleRe -= decNorm;
+        fpSampleRe /= decNorm;
+        fpSampleRe *= sampleGain;
+        fpSampleIm = fpSampleIm / decAvg;
+        fpSampleIm -= decNorm;
+        fpSampleIm /= decNorm;
+        fpSampleIm *= sampleGain;
+#else
+        //Oringal simple decimation - no increase in dynamic range
         //Every nth sample from producer buffer
         fpSampleRe = (double)producerBuffer[nextConsumerDataBuf][j];
         fpSampleRe -= 127.0;
@@ -342,7 +370,7 @@ void RTL2832::RunConsumerThread()
         fpSampleIm -= 127.0;
         fpSampleIm /= 127.0;
         fpSampleIm *= sampleGain;
-
+#endif
         inBuffer->Re(i) = fpSampleRe;
         inBuffer->Im(i) = fpSampleIm;
     }
