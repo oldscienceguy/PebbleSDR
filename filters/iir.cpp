@@ -179,6 +179,9 @@ void CIir::ProcessFilter(int InLength, TYPEREAL* InBuf, TYPEREAL* OutBuf)
 	}
 }
 
+//RL: Sample rate must be > 2x frequency or filter will be unstable/oscillate
+//RL: To check coeeficients, see http://www.earlevel.com/main/2010/12/20/biquad-calculator/
+
 /////////////////////////////////////////////////////////////////////////////////
 //	Process InLength InBuf[] samples and place in OutBuf[]
 //Complex version
@@ -187,7 +190,6 @@ void CIir::ProcessFilter(int InLength, TYPECPX* InBuf, TYPECPX* OutBuf)
 {
 	for(int i=0; i<InLength; i++)
 	{
-        //RL Something causes this to go to inf then nan when used with 19k fm notch filter (demod.cpp)
         TYPEREAL w0a = InBuf[i].re - m_A1*m_w1a - m_A2*m_w2a;
         OutBuf[i].re =m_B0*w0a + m_B1*m_w1a + m_B2*m_w2a;
 		m_w2a = m_w1a;
