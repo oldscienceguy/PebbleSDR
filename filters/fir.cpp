@@ -531,6 +531,17 @@ CDecimateBy2::CDecimateBy2(int len,const TYPEREAL* pCoef )
 	}
 }
 
+CDecimateBy2::~CDecimateBy2()
+{
+    //Crashes
+#if 0
+    if(m_pHBFirRBuf)
+        delete m_pHBFirRBuf;
+    if(m_pHBFirCBuf)
+        delete m_pHBFirCBuf;
+#endif
+}
+
 //////////////////////////////////////////////////////////////////////
 // Half band filter and decimate by 2 function.
 // Two restrictions on this routine:

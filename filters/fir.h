@@ -66,8 +66,8 @@ class CDecimateBy2
 {
 public:
 	CDecimateBy2(int len, const TYPEREAL* pCoef);
-	~CDecimateBy2(){if(m_pHBFirRBuf) delete m_pHBFirRBuf; if(m_pHBFirCBuf) delete m_pHBFirCBuf;}
-	int DecBy2(int InLength, TYPEREAL* pInData, TYPEREAL* pOutData);
+    ~CDecimateBy2();
+    int DecBy2(int InLength, TYPEREAL* pInData, TYPEREAL* pOutData);
 	int DecBy2(int InLength, TYPECPX* pInData, TYPECPX* pOutData);
 	TYPEREAL* m_pHBFirRBuf;
 	TYPECPX* m_pHBFirCBuf;
