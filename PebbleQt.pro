@@ -259,7 +259,11 @@ HEADERS += \
     rtl-sdr/rtl-sdr_export.h \
     filters/fir.h \
     filters/filtercoef.h \
-    filters/iir.h
+    filters/iir.h \
+    demod/wfmdemod.h \
+    demod/rbdsconstants.h \
+    demod/downconvert.h \
+    demod/rdsdecode.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -306,7 +310,10 @@ SOURCES += \
     rtl-sdr/tuner_fc0012.c \
     rtl-sdr/tuner_e4k.c \
     filters/fir.cpp \
-    filters/iir.cpp
+    filters/iir.cpp \
+    demod/wfmdemod.cpp \
+    demod/downconvert.cpp \
+    demod/rdsdecode.cpp
 
 FORMS += \
     spectrumwidget.ui \
