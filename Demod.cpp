@@ -6,7 +6,7 @@
 Demod::Demod(int sr, int ns) :
 	SignalProcessing(sr,ns)   
 {   
-    setDemodMode(dmAM);
+    setDemodMode(dmAM, sampleRate, sampleRate);
 	
 	//SAM config
 	samLoLimit = -2000 * TWOPI/sampleRate; //PLL range
@@ -24,49 +24,62 @@ Demod::Demod(int sr, int ns) :
 	pllPhase = 0.0;  //Tracks ref sig in PLL
 	pllFrequency = 0.0;
 
-	fmAfc = 0.0;
+    fmDCOffset = 0.0;
 	fmIPrev = 0.0;
 	fmQPrev = 0.0;
 
 	amDc = 0.0;
 	amSmooth = 0.0;
+
+    //Decimation filters - 47tap half-band
+    decBy2A = new CDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
+    decBy2B = new CDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
+    decBy2C = new CDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
+    decBy2D = new CDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
 }
 
 Demod::~Demod()
 {
+#if 0
+    //Destructors seg fault
+    delete decBy2A;
+    delete decBy2B;
+    delete decBy2C;
+    delete decBy2D;
+#endif
 }
 
-CPX * Demod::ProcessBlock(CPX * in)
+//We can get called with anything up to maxSamples, depending on earlier decimation steps
+CPX * Demod::ProcessBlock(CPX * in, int bufSize)
 {
-	//float tmp;
 
     switch(mode) {
         case dmAM: // AM
-			//SimpleAM(in,out);
-			SimpleAMSmooth(in,out); //Sounds slightly better
+            //SimpleAM(in,out, bufSize);
+            SimpleAMSmooth(in,out, bufSize); //Sounds slightly better
             break;
         case dmSAM: // SAM
-            PllSAM(in, out);
+            PllSAM(in, out, bufSize);
             break;
         case dmFMN: // FMN
 			//SimpleFM(in,out);
-			SimpleFM2(in,out);
-			//PllFMN(in,out);
+            SimpleFM2(in,out, bufSize); //5/12 Working well for NFM
+            //PllFMN(in,out, bufSize); //5/12, working but FM2 sounds better, try hp filter like CuteSDR
             break;
         case dmFMW: // FMW
-			//SimpleFM2(in,out);
-			PllFMW(in,out);
+            //SimpleFM2(in,out, bufSize);
+            FMMono(in,out, bufSize);
             break;
 
 		//We've already filtered the undesired sideband @ BPFilter
 		//So we don't need additional demod
 		//
 		case dmUSB:
-			//SimpleUSB(in,out); //Only if we still have both sidebands
+            //SimpleUSB(in,out,bufSize); //Only if we still have both sidebands
 			//break;
 		
 		case dmLSB:
-			//SimpleLSB(in,out); //Only if we still have both sidebands
+            //SimpleLSB(in,out, bufSize); //Only if we still have both sidebands
 			//break;
 
 		//Passthrough, no demod
@@ -77,7 +90,7 @@ CPX * Demod::ProcessBlock(CPX * in)
 	return out;
 }
 
-void Demod::SimpleAM(CPX *in, CPX *out)
+void Demod::SimpleAM(CPX *in, CPX *out, int _numSamples)
 {
 	float tmp;
 	for (int i=0;i<numSamples;i++)
@@ -91,7 +104,7 @@ void Demod::SimpleAM(CPX *in, CPX *out)
 	}
 }
 //dttsp algorithm with smoothing
-void Demod::SimpleAMSmooth(CPX *in, CPX *out)
+void Demod::SimpleAMSmooth(CPX *in, CPX *out, int _numSamples)
 {
 	double current;
 	for (int i = 0; i < numSamples; i++)
@@ -105,7 +118,7 @@ void Demod::SimpleAMSmooth(CPX *in, CPX *out)
 	}
 
 }
-void Demod::SimpleUSB(CPX *in, CPX *out)
+void Demod::SimpleUSB(CPX *in, CPX *out, int _numSamples)
 {
 	float tmp;
 	for (int i=0;i<numSamples;i++)
@@ -114,7 +127,7 @@ void Demod::SimpleUSB(CPX *in, CPX *out)
 		out[i].re = out[i].im = tmp;
 	}
 }
-void Demod::SimpleLSB(CPX *in, CPX *out)
+void Demod::SimpleLSB(CPX *in, CPX *out, int _numSamples)
 {
 	float tmp;
 	for (int i=0;i<numSamples;i++)
@@ -123,7 +136,7 @@ void Demod::SimpleLSB(CPX *in, CPX *out)
 		out[i].re = out[i].im = tmp;
 	}
 }
-void Demod::SimplePhase(CPX *in, CPX *out)
+void Demod::SimplePhase(CPX *in, CPX *out, int _numSamples)
 {
 	float tmp;
 	for (int i=0;i<numSamples;i++)
@@ -143,7 +156,7 @@ Ip & Qp are the previous sample, I & Q are the current sample
 2) (Q * Ip - I * Qp) / (I^2 + Q^2)
 3) (Q * Ip + I * Qp) / (I^2 + Q^2) //COMMAND by Andy Talbot RSGB, haven't tested adding vs sub yet
 */
-void Demod::SimpleFM(CPX *in, CPX *out)
+void Demod::SimpleFM(CPX *in, CPX *out, int _numSamples)
 {
 	float tmp;
 	float I,Q; //To make things more readable
@@ -164,7 +177,7 @@ void Demod::SimpleFM(CPX *in, CPX *out)
 }
 //From Doug Smith QEX article, Eq 21,  based on phase delta
 //From Erio Blossom FM article in Linux Journal Sept 2004
-void Demod::SimpleFM2(CPX *in, CPX *out)
+void Demod::SimpleFM2(CPX *in, CPX *out, int _numSamples)
 {
 	CPX prod;
     //Based on phase delta between samples, so we always need last sample from previous run
@@ -181,7 +194,7 @@ void Demod::SimpleFM2(CPX *in, CPX *out)
 }
 
 //dttsp PLL algorithm
-CPX Demod::PLL(CPX sig, float loLimit, float hiLimit)
+CPX Demod::PLL(CPX sig, float loLimit, float hiLimit, int _numSamples)
 {
 	CPX z;
 	CPX delay;
@@ -222,12 +235,12 @@ CPX Demod::PLL(CPX sig, float loLimit, float hiLimit)
 
 	return delay;
 }
-void Demod::PllSAM(  CPX * in, CPX * out ) 
+void Demod::PllSAM(  CPX * in, CPX * out, int bufSize )
 {
 	CPX delay;
 
     for (int i = 0; i < numSamples; i++) {
-		delay = PLL(in[i],samLoLimit,samHiLimit);
+        delay = PLL(in[i],samLoLimit,samHiLimit, bufSize);
 		//Basic am demod
         samLockCurrent = 0.999f * samLockCurrent + 0.001f * fabs(delay.im);
         samLockPrevious = samLockCurrent;
@@ -237,45 +250,242 @@ void Demod::PllSAM(  CPX * in, CPX * out )
     }
 }
 
+/*
+  FM Peak Deviation is max freq change above and below the carrier
+  FM applications use peak deviations based on channel spacing
+  75 kHz (200 kHz spacing) FM Broadcast leaves 25khz between channel on hi and lo side of carrier
+  5 kHz (25 kHz spacing) NBFM
+  2.25 kHz (12.5 kHz spacing) NBFM like FRS, Amateur, etc
+  2 kHz (8.33 kHz spacing) NBFM
+*/
 //Uses Doug Smith phase delta equations
 //PLL algorithm from dttsp
-void Demod::PllFMN(  CPX * in, CPX * out ) 
+//See CuteSDR by Moe Wheatley for similar examples
+/*
+  I think this is the way this works
+  PLL tries to follow the changing frequency of the input signal
+  The amount of correction for each sample is the frequency change
+*/
+void Demod::PllFMN(  CPX * in, CPX * out, int _numSamples )
 {
-    float cvt = ((0.45 * sampleRate) / ONEPI) / fmBandwidth;
+    //All these can be calculated once, not each call
+    //time constant for DC removal filter
+    const float fmDcAlpha = (1.0 - exp(-1.0 / (sampleRate * 0.001)) );
+    const float fmPllZeta = .707;  //PLL Loop damping factor
+    const float fmPllBW = fmBandwidth /2;// 3000.0;
+    float norm = TWOPI/sampleRate;	//to normalize Hz to radians
+
+    //Original alpha/beta calculations
+    //pllAlpha = 0.3 * fmBandwidth * TWOPI/sampleRate;
+    //pllBeta = pllAlpha * pllAlpha * 0.25;
+
+    const float fmPllAlpha = 2.0 * fmPllZeta * fmPllBW * norm;
+    const float fmPllBeta = (fmPllAlpha * fmPllAlpha) / (4.0 * fmPllZeta * fmPllZeta);
+
+    const float fmPllRange = fmPllBW; //15000.0;	//maximum deviation limit of PLL
+    const float fmPllLoLimit = -fmPllRange * norm; //PLL will not be allowed to exceed this range
+    const float fmPllHiLimit = fmPllRange * norm;
+
+
+    CPX pllNCO; //PLL NCO current value
+    CPX delay;
+    float phaseError;
 
     for (int i = 0; i < numSamples; i++) {
-		PLL(in[i],fmLoLimit,fmHiLimit);
-        fmAfc = 0.9999 * fmAfc + 0.0001 * pllFrequency;
-		out[i].re  = out[i].im = (pllFrequency - fmAfc) * cvt / 100;
+        //Todo: See if we can use NCO here
+        //This is the generated signal to sync with (NCO)
+        pllNCO.re = cos(pllPhase);
+        pllNCO.im = sin(pllPhase);
+
+        //Shift signal by PLL.  Should be same as CPX operator * ie pll * in[i]
+        delay.re = pllNCO.re * in[i].re - pllNCO.im * in[i].im;
+        delay.im = pllNCO.re * in[i].im + pllNCO.im * in[i].re;
+
+        // same as -atan2(tmp.im, tmp.re), but with special handling in cpx class
+        phaseError = -delay.phase();
+        //phaseError = -atan2(delay.im,delay.re);
+
+        //phaseError is the delta from last sample, ie demod value.  Rest is cleanup
+        pllFrequency += fmPllBeta * phaseError;
+
+        //Keep the PLL within our limits
+        if (pllFrequency < fmPllLoLimit)
+            pllFrequency = fmPllLoLimit;
+        if (pllFrequency > fmPllHiLimit)
+            pllFrequency = fmPllHiLimit;
+
+        //Next value for NCO
+        pllPhase += pllFrequency + fmPllAlpha * phaseError;
+
+        //LP filter the NCO frequency term to get DC offset value
+        fmDCOffset = (1.0 - fmDcAlpha) * fmDCOffset + fmDcAlpha * pllFrequency;
+        //Change in frequency - dc term is our demodulated output
+        out[i].re = out[i].im = (pllFrequency - fmDCOffset);
+
+    }
+    //fmod will keep pllPhase <= TWOPI
+    pllPhase = fmod(pllPhase, TWOPI);
+
+}
+
+//CuteSDR algorithm
+void Demod::FMMono( CPX * in, CPX * out, int bufSize)
+{
+
+    //LP filter to elimate everything above FM bandwidth
+    //Only if sample width high enough (2x) for 75khz filter to work
+    if (sourceSampleRate >= 2*75000)
+        fmMonoLPFilter.ProcessFilter(bufSize, in, in);
+
+#if 0
+    CPX d0;
+    static CPX d1;
+
+    for (int i=0; i<bufSize; i++)
+    {
+        //Condensed version of FM2 algorithm comparing sample with previous sample
+        d0 = in[i];
+        out[i].re = out[i].im = atan2( (d1.re*d0.im - d0.re*d1.im), (d1.re*d0.re + d1.im*d0.im));
+        d1 = d0;
+    }
+#else
+    SimpleFM2(in,out, bufSize);
+#endif
+
+    //The sample rate for all these post demod filters has to be at least 2x sample rate
+    //or filter will not work or will be unstable (oscilate)
+    //Decimate to 48k for performance, max 384k sourceRate
+    //Dec factors must be multiples of 2
+    //Dec filters need to be kept separate, ie can't use the same filter in a loop N times
+    switch (postFM1Dec) {
+    case 2:
+        decBy2A->DecBy2(bufSize,out,out);
+        bufSize /= 2;
+        break;
+
+    case 4:
+        decBy2A->DecBy2(bufSize,out,out);
+        bufSize /= 2;
+        decBy2B->DecBy2(bufSize,out,out);
+        bufSize /= 2;
+        break;
+
+    case 8:
+        decBy2A->DecBy2(bufSize,out,out);
+        bufSize /= 2;
+        decBy2B->DecBy2(bufSize,out,out);
+        bufSize /= 2;
+        decBy2C->DecBy2(bufSize,out,out);
+        bufSize /= 2;
+
+        break;
+    }
+
+    //19khz notch filter to get rid of pilot
+    fmPilotNotchFilter.ProcessFilter(bufSize, out, out);	//notch out 19KHz pilot
+
+    //15khz low pass filter to cut off audio >15khz
+    fmAudioLPFilter.ProcessFilter(bufSize, out, out);
+
+
+    //50 or 75uSec de-emphasis one pole filter
+    FMDeemphasisFilter(bufSize, out,out);
+
+#if 1
+    // Moe's decimate and filter class
+    decBy2D->DecBy2(bufSize,out,out);
+#else
+    for(int i=0,j=0; i<bufSize; i+=postFM2Dec,j++)
+        out[j] = out[i];
+#endif
+}
+
+/*
+  FM Stereo notes
+  FM stereo channels are L+R and L-R so mono receivers can just get the L+R channel
+  Add the L-R to L+R to get left channel
+  Sub the L-R from L+R to get right channel
+  L+R channel is modulated directly 30-15khz baseband
+  L-R channel is modulated on Double Sideband Supressed Carrier 38khz at 23khz to 53khz
+  19khz pilot tone is used to get correct phase for 38khz supressed carrier
+
+  FM Spectrum summary
+  30hz - 15khz  L+R
+  23khz - 38khz L-R lower sideband
+  38khz         Dbl SB suppressed carrier
+  38khz - 53khx L-R upper sideband
+  57khz         RDBS
+  58.65khz - 76.65khz   Directband
+  92khz Audos subcarrier
+
+*/
+void Demod::FMStereo(CPX * in, CPX * out, int _numSamples)
+{
+
+}
+
+/*
+  1 pole filter to delete high freq 'boost' (pre-emphasis) added before transmission
+*/
+void Demod::FMDeemphasisFilter(int _bufSize, CPX *in, CPX *out)
+{
+    int bufSize = _bufSize;
+
+    static float avgRe = 0.0;
+    static float avgIm = 0.0;
+
+    for(int i=0; i<bufSize; i++)
+    {
+        avgRe = (1.0-fmDeemphasisAlpha)*avgRe + fmDeemphasisAlpha*in[i].re;
+        avgIm = (1.0-fmDeemphasisAlpha)*avgIm + fmDeemphasisAlpha*in[i].im;
+        out[i].re = avgRe*2.0;
+        out[i].im = avgIm*2.0;
     }
 }
 
-//Not working yet.  Can't just use FMN with wider BPF, I think we have to do more post-demod processing
-//To get signal separated from stereo channel information
-void Demod::PllFMW(  CPX * in, CPX * out ) 
-{
-	SimpleFM(in,out);
-	//CPXBuf::copy(out, in, numSamples);
-}
-
-void Demod::setDemodMode(DEMODMODE _mode) 
+void Demod::setDemodMode(DEMODMODE _mode, int _sourceSampleRate, int _audioSampleRate)
 {
     mode = _mode;
+    sourceSampleRate = _sourceSampleRate;
+    audioSampleRate = _audioSampleRate;
+    //Post FMW demod steps are all at 48k min sample rate
+    postFM1Dec = sourceSampleRate / postFMSampleRate;
+    postFM2Dec = postFMSampleRate / audioSampleRate;
+
 	pllFrequency = 0.0;
-	pllPhase = 0.0;
-	if (mode == dmSAM) {
-		alpha = 0.3 * samBandwidth * TWOPI/sampleRate;
-        beta = alpha * alpha * 0.25;
-		samLockCurrent = 0.5;
-		samLockPrevious = 1.0;
-		samDc = 0.0;
-	} else if (mode == dmFMN || mode == dmFMW) {
-		alpha = 0.3 * fmBandwidth * TWOPI/sampleRate;
-        beta = alpha * alpha * 0.25;
-		fmAfc = 0.0;
-	} else {
-		alpha = 0.3 * 500.0 * TWOPI / sampleRate;
-		beta = alpha * alpha * 0.25;
+    pllPhase = 0.0;
+    switch (mode) {
+        case dmSAM:
+            alpha = 0.3 * samBandwidth * TWOPI/sampleRate;
+            beta = alpha * alpha * 0.25;
+            samLockCurrent = 0.5;
+            samLockPrevious = 1.0;
+            samDc = 0.0;
+            break;
+        case dmFMN:
+            alpha = 0.3 * fmBandwidth * TWOPI/sampleRate;
+            beta = alpha * alpha * 0.25;
+            fmDCOffset = 0.0;
+            break;
+        case dmFMW:
+            //Moe Wheatley filters
+            //IIR filter freq * 2 must be below sampleRate or algorithm won't work
+            fmMonoLPFilter.InitLP(75000,1.0,sourceSampleRate);
+            //FIR version
+            //fmMonoLPFilter.InitLPFilter(0, 1.0, 60.0, 75000, 1.4*75000.0, sourceSampleRate); //FIR version
+            //Create narrow BP filter around 19KHz pilot tone with Q=500
+            fmPilotBPFilter.InitBP(19000, 500, postFMSampleRate);
+            //create LP filter to roll off audio
+            fmAudioLPFilter.InitLPFilter(0, 1.0, 60.0, 15000.0, 1.4*15000.0, postFMSampleRate);
+            //create 19KHz pilot notch filter with Q=5
+            fmPilotNotchFilter.InitBR(19000, 5, postFMSampleRate);
+
+            fmDeemphasisAlpha = (1.0-exp(-1.0/(sourceSampleRate * usDeemphasisTime)) );
+
+            break;
+        default:
+            alpha = 0.3 * 500.0 * TWOPI / sampleRate;
+            beta = alpha * alpha * 0.25;
 	}
 
 }
