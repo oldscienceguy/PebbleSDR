@@ -24,6 +24,7 @@
 #include "agc.h"
 #include "iqbalance.h"
 #include "morse.h"
+#include "filters/fir.h"
 
 #include "sdr_iq.h"
 
@@ -54,7 +55,6 @@ public:
 	void SetLpfEnabled(bool b);
 	void SetMute(bool b);
 	void ShowPresets();
-    void OutputData(const char *d);
     void SetDataSelection(ReceiverWidget::DATA_SELECTION d);
 	Settings * GetSettings() {return settings;}
 	void ProcessBlock(CPX *in, CPX *out, int frameCount);
@@ -69,6 +69,7 @@ public:
 		void ShowIQBalance(bool b);
 		void ShowSettings(bool b);
 		void ShowSdrSettings(bool b);
+        void OutputData(const char *d);
 
 private:
 	FFT *fft;
@@ -104,6 +105,16 @@ private:
 	int downSampleRate;
 	int downSampleFrames;
 	FIRFilter *downSampleFilter;
+
+    //Use CuteSDR decimation filters for downsampling
+    int decimate1SampleRate;
+    CDecimateBy2 *decimate1;
+    int decimate2SampleRate;
+    CDecimateBy2 *decmiate2;
+    int decimate3SampleRate;
+    CDecimateBy2 *decimate3;
+    int decimate4SampleRate;
+    CDecimateBy2 *decimate4;
 
 	float gain;
 	double sdrGain;

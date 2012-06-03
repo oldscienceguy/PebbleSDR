@@ -8,11 +8,13 @@
 #include "hpsdr.h"
 #include "signalprocessing.h"
 #include "audioqt.h"
+
 /*
 Core receiver logic, coordinates soundcard, fft, demod, etc
 */
 Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 {
+
 	//Read ini file or set defaults if no ini file exists
 	settings = new Settings();
 	connect(settings,SIGNAL(Restart()),this,SLOT(Restart()));
@@ -73,6 +75,9 @@ bool Receiver::On()
 	}
 	
 	downSampleFactor = 1;
+    //Get undecimated sample rate from RTL2832 and decimate here vs in SDR
+    //For FMStereo, initial rate should be close to 300k
+    decimate1SampleRate = 300000;
 	sampleRate = downSampleRate = sdr->GetSampleRate();
 	framesPerBuffer = downSampleFrames = settings->framesPerBuffer;
 
@@ -108,7 +113,10 @@ bool Receiver::On()
 	//These steps work on downSample rates
 
 	//Init demod with defaults
-	demod = new Demod(downSampleRate,downSampleFrames);
+    //Demod uses variable frame size, up to framesPerBuffer
+    //Demod can also run at different sample rates, high for FMW and lower for rest
+    //Todo: How to handle this for filters which need explicit sample rate
+    demod = new Demod(downSampleRate,framesPerBuffer);
 	//WIP, testing QT audio as alternative to PortAudio
 	//audioOutput = new AudioQT(this,sampleRate,framesPerBuffer,settings);
 	audioOutput = new SoundCard(this,downSampleRate,downSampleFrames,settings);
@@ -315,6 +323,8 @@ double Receiver::SetFrequency(double fRequested, double fCurrent)
 {
 	if (sdr==NULL)
 		return 0;
+    demod->ResetDemod();
+
 	//There's a problem with 'popping' when we are scrolling freq up and down
 	//Especially in large increments
 	//si570 supports 'smooth tuning' which changes freq without stopping and starting the chip
@@ -343,7 +353,7 @@ double Receiver::SetFrequency(double fRequested, double fCurrent)
 void Receiver::SetMode(DEMODMODE m)
 {
 	if(demod != NULL) {
-		demod->setDemodMode(m);
+        demod->SetDemodMode(m, sampleRate, downSampleRate);
 		settings->lastMode = m;
 	}
 }	
@@ -397,8 +407,10 @@ void Receiver::SetSquelch(int s)
 }
 void Receiver::SetMixer(int f)
 {
-	if (mixer != NULL)
+    if (mixer != NULL) {
 		mixer->SetFrequency(f);
+        demod->ResetDemod();
+    }
 }
 
 void Receiver::ShowIQBalance(bool b)
@@ -510,6 +522,13 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 {
 	CPX *nextStep = in;
 
+    /*
+      3 step decimation
+      1. Decimate to max spectrum, ie RTL2832 samples at >1msps
+      2. Decimate to pre demod steps
+      3. Decimate to demod steps
+      4. Decimate to final audio
+    */
 	//Adj IQ to get 90deg phase and I==Q gain
 	nextStep = iqBalance->ProcessBlock(nextStep);
 
@@ -542,46 +561,69 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 	 24khz	FMN, DRM
 	 48khz	FMW
 	 */
-	//Filter above downSampleRate so we don't get aliases
-	if (settings->postMixerDecimate && downSampleFactor != 1){
-		//We need to worry about aliasing, so LP filter to match downSample
-		nextStep = downSampleFilter->ProcessBlock(nextStep);
-		for(int i=0,j=0; i<framesPerBuffer; i+=downSampleFactor,j++)
-			nextStep[j] = nextStep[i];
-	}
+    /*
+      Problem: Broadcast Stereo FM has a freq deviation of 75khz or 150khz bandwidth
+      At baseband, this is 0-150khz and should have a minimum sample rate of 300k per Nyquist
+      When we decimate and filter, we lose most of the signal!
+      This is not a problem for NBFM or other signals which don't have such a large bandwidth
 
-	//float pre = SignalProcessing::TotalPower(nextStep,frameCount);
-	nextStep = bpFilter->ProcessBlock(nextStep);
-	//Crude AGC, too much fluctuation
-	//CPXBuf::scale(nextStep,nextStep,pre/post,frameCount);
-	signalSpectrum->PostBandPass(nextStep,downSampleFrames);
+      Solution, decimate before demod to get to 300k where sampleRate > 300k, after demod where sampleRate <300k
+    */
 
-	//If squelch is set, and we're below threshold and should set output to zero
-	//Do this in SignalStrength, since that's where we're calculating average signal strength anyway
-	nextStep = signalStrength->ProcessBlock(nextStep, squelch);
+    if (demod->DemodMode() == dmFMMono || demod->DemodMode() == dmFMStereo) {
+        //These steps are NOT at downSamplerate
+        //Special handling for wide band fm
 
-	//Tune only mode, no demod or output
-	if (demod->demodMode() == dmNONE){
-		CPXBuf::clear(out,downSampleFrames);
-		return;
-	}
-	nextStep = noiseFilter->ProcessBlock(nextStep);
+        //Do we need bandPass filter or handle in demod?
+        nextStep = demod->ProcessBlock(nextStep,framesPerBuffer);
 
-    //nr->ProcessBlock(out, in, size);
-	//float post = SignalProcessing::totalPower(nextStep,framesPerBuffer); 
+        //Demod wil Decimate to audio output rate
 
-	nextStep = agc->ProcessBlock(nextStep);
+    } else {
+        //Filter above downSampleRate so we don't get aliases
+        if (settings->postMixerDecimate && downSampleFactor != 1){
+            //We need to worry about aliasing, so LP filter to match downSample
+            nextStep = downSampleFilter->ProcessBlock(nextStep);
+            for(int i=0,j=0; i<framesPerBuffer; i+=downSampleFactor,j++)
+                nextStep[j] = nextStep[i];
+        }
 
-	nextStep = demod->ProcessBlock(nextStep);
+        //float pre = SignalProcessing::TotalPower(nextStep,frameCount);
+        nextStep = bpFilter->ProcessBlock(nextStep);
+        //Crude AGC, too much fluctuation
+        //CPXBuf::scale(nextStep,nextStep,pre/post,frameCount);
+        signalSpectrum->PostBandPass(nextStep,downSampleFrames);
 
-    //Testing Goertzel
-    if (dataSelection == ReceiverWidget::CW_DATA)
-        nextStep = morse->ProcessBlock(nextStep);
+        //If squelch is set, and we're below threshold and should set output to zero
+        //Do this in SignalStrength, since that's where we're calculating average signal strength anyway
+        nextStep = signalStrength->ProcessBlock(nextStep, squelch);
+
+        //Tune only mode, no demod or output
+        if (demod->DemodMode() == dmNONE){
+            CPXBuf::clear(out,downSampleFrames);
+            return;
+        }
+        nextStep = noiseFilter->ProcessBlock(nextStep);
+
+        //nr->ProcessBlock(out, in, size);
+        //float post = SignalProcessing::totalPower(nextStep,framesPerBuffer);
+
+        nextStep = agc->ProcessBlock(nextStep);
+
+        nextStep = demod->ProcessBlock(nextStep, downSampleFrames);
+
+        /*
+          Todo: Add post demod FFT to check FM stereo and other composite formats
+        */
+
+        //Testing Goertzel
+        if (dataSelection == ReceiverWidget::CW_DATA)
+            nextStep = morse->ProcessBlock(nextStep);
 
 
-	//Testing LPF to get rid of some noise after demod
-	nextStep = lpFilter->ProcessBlock(nextStep);
-
+        //Testing LPF to get rid of some noise after demod
+        nextStep = lpFilter->ProcessBlock(nextStep);
+    }
 	// apply volume setting
 	//Todo: gain should be a factor of slider, receiver, filter, and mode, and should be normalized
 	//	so changing anything other than slider doesn't impact overall volume.
@@ -628,7 +670,7 @@ void Receiver::ProcessBlockFreqDomain(CPX *in, CPX *out, int frameCount)
 	for(int i=0,j=0; i<framesPerBuffer; i+=downSampleFactor,j++)
 		nextStep[j] = nextStep[i];
 
-	nextStep = demod->ProcessBlock(nextStep);
+    nextStep = demod->ProcessBlock(nextStep,downSampleFrames);
 
 
 	if (mute)
