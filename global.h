@@ -6,6 +6,8 @@
 #include "QDebug"
 #include "QFile"
 
+class Receiver;
+
 class Global
 {
 public:
@@ -13,6 +15,8 @@ public:
 	~Global();
 
 	QDebug *pLogfile;
+    Receiver *receiver;
+
 private:
 	QFile *file;
 };
