@@ -2,11 +2,13 @@
 #include "gpl.h"
 #include "Demod.h"
 #include <string.h>
+#include "global.h"
+#include "Receiver.h"
 
 Demod::Demod(int sr, int ns) :
 	SignalProcessing(sr,ns)   
 {   
-    setDemodMode(dmAM, sampleRate, sampleRate);
+    SetDemodMode(dmAM, sampleRate, sampleRate);
 	
 	//SAM config
 	samLoLimit = -2000 * TWOPI/sampleRate; //PLL range
@@ -36,6 +38,12 @@ Demod::Demod(int sr, int ns) :
     decBy2B = new CDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
     decBy2C = new CDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
     decBy2D = new CDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
+
+    //Testing
+    wfmDemod = new CWFmDemod(sampleRate);
+    ResetDemod();
+
+    connect(this,SIGNAL(OutputData(const char *)),global->receiver,SLOT(OutputData(const char *)));
 }
 
 Demod::~Demod()
@@ -66,9 +74,12 @@ CPX * Demod::ProcessBlock(CPX * in, int bufSize)
             SimpleFM2(in,out, bufSize); //5/12 Working well for NFM
             //PllFMN(in,out, bufSize); //5/12, working but FM2 sounds better, try hp filter like CuteSDR
             break;
-        case dmFMW: // FMW
+        case dmFMMono: // FMW
             //SimpleFM2(in,out, bufSize);
             FMMono(in,out, bufSize);
+            break;
+        case dmFMStereo:
+            FMStereo(in,out,bufSize);
             break;
 
 		//We've already filtered the undesired sideband @ BPFilter
@@ -331,21 +342,28 @@ void Demod::PllFMN(  CPX * in, CPX * out, int _numSamples )
 //CuteSDR algorithm
 void Demod::FMMono( CPX * in, CPX * out, int bufSize)
 {
+#if 1
+    bufSize = wfmDemod->ProcessDataMono(bufSize,in,out);
+    //Dec to audio rate
+    decBy2D->DecBy2(bufSize,out,out);
+    return;
+#endif
 
     //LP filter to elimate everything above FM bandwidth
     //Only if sample width high enough (2x) for 75khz filter to work
     if (sourceSampleRate >= 2*75000)
         fmMonoLPFilter.ProcessFilter(bufSize, in, in);
 
-#if 0
+#if 1
     CPX d0;
     static CPX d1;
 
     for (int i=0; i<bufSize; i++)
     {
         //Condensed version of FM2 algorithm comparing sample with previous sample
+        //Note: Have to divide by 100 to get signal in right range, different than CuteSDR
         d0 = in[i];
-        out[i].re = out[i].im = atan2( (d1.re*d0.im - d0.re*d1.im), (d1.re*d0.re + d1.im*d0.im));
+        out[i].re = out[i].im = atan2( (d1.re*d0.im - d0.re*d1.im), (d1.re*d0.re + d1.im*d0.im))/100;
         d1 = d0;
     }
 #else
@@ -419,8 +437,37 @@ void Demod::FMMono( CPX * in, CPX * out, int bufSize)
   92khz Audos subcarrier
 
 */
-void Demod::FMStereo(CPX * in, CPX * out, int _numSamples)
+void Demod::FMStereo(CPX * in, CPX * out, int bufSize)
 {
+    bufSize = wfmDemod->ProcessDataStereo(bufSize,in,out);
+    //Dec to audio rate
+    decBy2D->DecBy2(bufSize,out,out);
+
+    //Do we have stereo lock
+    int pilotLock =0;
+    if (wfmDemod->GetStereoLock(&pilotLock))
+        rdsUpdate = true;
+
+    //This only updates when something there's new data and its different than last, when do we reset display
+    tRDS_GROUPS rdsGroups;
+    if (wfmDemod->GetNextRdsGroupData(&rdsGroups)) {
+        //We have new data, is it valid
+        if (rdsGroups.BlockA != 0) {
+            rdsDecode.DecodeRdsGroup(&rdsGroups);
+            //If changed since last call, update
+            if (rdsDecode.GetRdsString(rdsString))
+                rdsUpdate = true;
+            if (rdsDecode.GetRdsCallString(rdsCallString))
+                rdsUpdate = true;
+        }
+    }
+    if (rdsUpdate) {
+        //Formatted string for output windows
+        sprintf(rdsBuf,"%s %s %s",pilotLock ? "Stereo" : "      ", rdsCallString, rdsString);
+        emit OutputData(rdsBuf);
+
+    }
+    return;
 
 }
 
@@ -443,7 +490,7 @@ void Demod::FMDeemphasisFilter(int _bufSize, CPX *in, CPX *out)
     }
 }
 
-void Demod::setDemodMode(DEMODMODE _mode, int _sourceSampleRate, int _audioSampleRate)
+void Demod::SetDemodMode(DEMODMODE _mode, int _sourceSampleRate, int _audioSampleRate)
 {
     mode = _mode;
     sourceSampleRate = _sourceSampleRate;
@@ -467,7 +514,14 @@ void Demod::setDemodMode(DEMODMODE _mode, int _sourceSampleRate, int _audioSampl
             beta = alpha * alpha * 0.25;
             fmDCOffset = 0.0;
             break;
-        case dmFMW:
+        case dmFMMono:
+        case dmFMStereo:
+            //FM Stereo testing
+            if (wfmDemod->SetSampleRate(sourceSampleRate,true) != postFMSampleRate)
+            //Should be decimated to 48k postFMSampleRate
+                qDebug("WFM PostFM Sample Rate incorrect");
+            rdsDecode.DecodeReset(true);
+
             //Moe Wheatley filters
             //IIR filter freq * 2 must be below sampleRate or algorithm won't work
             fmMonoLPFilter.InitLP(75000,1.0,sourceSampleRate);
@@ -490,9 +544,19 @@ void Demod::setDemodMode(DEMODMODE _mode, int _sourceSampleRate, int _audioSampl
 
 }
 
-DEMODMODE Demod::demodMode() const 
+DEMODMODE Demod::DemodMode() const
 {
     return mode;
+}
+
+//Reset RDS and any other decoders after frequency change
+void Demod::ResetDemod()
+{
+    rdsDecode.DecodeReset(true);
+    rdsCallString[0] = 0;
+    rdsString[0] = 0;
+    rdsBuf[0] = 0;
+    rdsUpdate = true; //Update display next loop
 }
 
 DEMODMODE Demod::StringToMode(QString m)
@@ -502,8 +566,9 @@ DEMODMODE Demod::StringToMode(QString m)
 	else if (m == "LSB") return dmLSB;
 	else if (m == "USB") return dmUSB;
 	else if (m == "DSB") return dmDSB;
-	else if (m == "FMW") return dmFMW;
-	else if (m == "FMN") return dmFMN;
+    else if (m == "FM-Mono") return dmFMMono;
+    else if (m == "FM-Stereo") return dmFMStereo;
+    else if (m == "FMN") return dmFMN;
 	else if (m == "CWL") return dmCWL;
 	else if (m == "CWU") return dmCWU;
 	else if (m == "DIGL") return dmDIGL;
@@ -518,8 +583,9 @@ QString Demod::ModeToString(DEMODMODE dm)
 	else if (dm == dmLSB) return "LSB";
 	else if (dm == dmUSB) return "USB";
 	else if (dm == dmDSB) return "DSB";
-	else if (dm == dmFMW) return "FMW";
-	else if (dm == dmFMN) return "FMN";
+    else if (dm == dmFMMono) return "FM-Mono";
+    else if (dm == dmFMStereo) return "FM-Stereo";
+    else if (dm == dmFMN) return "FMN";
 	else if (dm == dmCWL) return "CWL";
 	else if (dm == dmCWU) return "CWU";
 	else if (dm == dmDIGL) return "DIGL";

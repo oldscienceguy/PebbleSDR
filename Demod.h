@@ -1,17 +1,21 @@
 #pragma once
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
+#include "QObject"
 #include "signalprocessing.h"
 #include <iostream>
 #include <QString>
 #include "filters/fir.h"
 #include "filters/iir.h"
+#include "demod/wfmdemod.h"
+#include "demod/rdsdecode.h"
 
 enum DEMODMODE {
     dmAM,
     dmSAM,
     dmFMN,
-    dmFMW,
+    dmFMMono,
+    dmFMStereo,
     dmDSB,
     dmLSB,
     dmUSB,
@@ -24,19 +28,37 @@ enum DEMODMODE {
 
 class Demod : public SignalProcessing
 {
+    //Note:  If moc complier is not called, delete Makefile so it can be regenerated
+    Q_OBJECT
+
 public:
     Demod(int samplerate, int size); 
 	~Demod();
 
     CPX * ProcessBlock(CPX * in, int _numSamples);
-    DEMODMODE demodMode() const;
-    void setDemodMode(DEMODMODE mode, int _sourceSampleRate, int _audioSampleRate);
+    DEMODMODE DemodMode() const;
+    void ResetDemod(); //Resets all data decoders, called after frequency change from receiver
+    void SetDemodMode(DEMODMODE mode, int _sourceSampleRate, int _audioSampleRate);
 	static DEMODMODE StringToMode(QString m);
 	static QString ModeToString(DEMODMODE dm);
+
+signals:
+    //We can't call receiver->OutputData directly because we're running in a different thread
+    //Signals and Slots solve the problem
+    void OutputData(const char *);
 
 private:
     DEMODMODE mode;
     
+    //Testing
+    CWFmDemod *wfmDemod;
+    CRdsDecode rdsDecode;
+    char rdsBuf[256]; //Formatted RDS string for output
+    char rdsCallString[10];
+    char rdsString[128]; //Max RDS string
+    bool rdsUpdate; //true if we need to update display
+
+
     void FMDeemphasisFilter(int _bufSize, CPX *in, CPX *out);
     float fmDeemphasisAlpha;
     static const float usDeemphasisTime = 75E-6; //Use for US & Korea FM
