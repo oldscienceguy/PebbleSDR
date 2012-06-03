@@ -4,7 +4,7 @@
 #include "cpx.h"
 #include <QMutex>
 #include "../fftw-3.3.1/api/fftw3.h"
-
+#include "QObject"
 
 /*
 
@@ -69,8 +69,10 @@ private:
 
 };
 
-class SignalProcessing
+class SignalProcessing : public QObject
 {
+    Q_OBJECT
+
 public:
 	SignalProcessing(int sr, int fc);
 	~SignalProcessing(void);
