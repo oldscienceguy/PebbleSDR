@@ -10,7 +10,7 @@ class Receiver;
 
 //We need to inherit from QObject so we can filter events.
 //Remove if we eventually create a separate 'morse widget' object for UI
-class Morse : public SignalProcessing, QObject
+class Morse : public SignalProcessing
 {
 
 public:
