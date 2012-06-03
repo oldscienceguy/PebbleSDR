@@ -37,6 +37,7 @@ public:
 	void SetMode(DEMODMODE m); 
 	void SetDisplayMode(int dm);
 	int GetDisplayMode();
+    void SetDataMode(int _dataMode);
 	void SetGain(int g, int min = 10, int max = 100);
 	void SetAgcGainTop(int g);
 	void SetSquelch(int s);

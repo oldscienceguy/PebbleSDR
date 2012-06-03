@@ -24,7 +24,7 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     QFont lgFont = receiver->GetSettings()->lgFont;
 
 	QStringList modes;
-	modes << "AM"<<"SAM"<<"FMN"<<"FMW"<<"DSB"<<"LSB"<<"USB"<<"CWL"<<"CWU"<<"DIGL"<<"DIGU"<<"NONE";
+    modes << "AM"<<"SAM"<<"FMN"<<"FM-Mono"<<"FM-Stereo"<<"DSB"<<"LSB"<<"USB"<<"CWL"<<"CWU"<<"DIGL"<<"DIGU"<<"NONE";
 	ui.modeBox->addItems(modes);
 
 	QStringList agcModes;
@@ -71,7 +71,7 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	diglFilterOptions << "2400" << "1200" << "500" << "250" ;
 	cwFilterOptions << "1800" << "1200" << "500" << "250" ; //overlap with lsb at wide end
 	fmFilterOptions << "10000" << "7000" ;
-	wfmFilterOptions << "80000"<<"40000";
+    //wfmFilterOptions << "80000"<<"40000";
 	ui.filterBox->addItems(amFilterOptions); //Default
 
     ui.dataSelectionBox->addItem("Off",NO_DATA);
@@ -80,7 +80,7 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     ui.dataSelectionBox->addItem("RTTY",RTTY_DATA);
     ui.dataSelectionBox->setFont(medFont);
     connect(ui.dataSelectionBox,SIGNAL(currentIndexChanged(int)),this,SLOT(dataSelectionChanged(int)));
-
+    SetDataMode((BAND_DATA));
 
 	loMode = true;
 	//Set intial gain slider position
@@ -414,7 +414,12 @@ void ReceiverWidget::SetDisplayMode(int dm)
 }
 int ReceiverWidget::GetDisplayMode()
 {
-	return ui.displayBox->currentIndex();
+    return ui.displayBox->currentIndex();
+}
+
+void ReceiverWidget::SetDataMode(int _dataMode)
+{
+    ui.dataSelectionBox->setCurrentIndex(_dataMode);
 }
 //Tuning display can drive LO or Mixer depending on selection
 void ReceiverWidget::setLoMode(bool b)
@@ -491,7 +496,8 @@ void ReceiverWidget::filterSelectionChanged(QString f)
 		lo=-filter;
 		hi= -200;
 		break;
-	case dmFMW:
+    case dmFMMono:
+    case dmFMStereo:
 	case dmFMN:
 		lo=-filter/2;
 		hi= filter/2;
@@ -527,8 +533,13 @@ void ReceiverWidget::OutputData(const char *d)
 {
     switch (dataSelection) {
     case NO_DATA:
+        //Display version information, help, etc
         break;
     case BAND_DATA:
+        //FM RDS initially
+        //No scroll, static display
+        ui.dataEdit->clear(); //Look for faster way
+        ui.dataEdit->setText(d);
         break;
     case CW_DATA:
         ui.dataEdit->insertPlainText(d); //At cursor
@@ -586,12 +597,15 @@ void ReceiverWidget::modeSelectionChanged(QString m)
 	{
 		ui.filterBox->addItems(fmFilterOptions);	
 	}
-	else if (mode == dmFMW)
+    else if (mode == dmFMMono)
 	{
 		ui.filterBox->addItems(this->wfmFilterOptions);
 	}
+    else if (mode == dmFMStereo)
+    {
+        ui.filterBox->addItems(this->wfmFilterOptions);
+    }
 
-	
 	ui.spectrumWidget->SetMode(mode);
 	receiver->SetMode(mode);
 	ui.filterBox->blockSignals(false);
