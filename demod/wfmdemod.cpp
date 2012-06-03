@@ -44,7 +44,7 @@
 
 //#define FMDEMOD_GAIN 8000.0
 //RL Pebble needs much smaller values, else overloads
-#define FMDEMOD_GAIN .01
+#define FMDEMOD_GAIN .001
 
 #define PILOTPLL_RANGE 20.0	//maximum deviation limit of PLL
 #define PILOTPLL_BW 10.0	//natural frequency ~loop bandwidth
@@ -168,13 +168,13 @@ TYPEREAL CWFmDemod::SetSampleRate(TYPEREAL samplerate, bool USver)
 		m_pDecBy2A = new CDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
 		m_OutRate /= 2.0;
 	}
-qDebug()<<"WFW Rates = "<<m_SampleRate <<m_OutRate;
+//qDebug()<<"WFW Rates = "<<m_SampleRate <<m_OutRate;
 
 	//set Stereo Pilot phase adjustment values based on sample rate
 	// compensation function is a straight line approximation with
 	// form y = Mx + B
 	m_PilotPhaseAdjust = PHASE_ADJ_M*m_SampleRate + PHASE_ADJ_B;
-qDebug()<<"PhaseAdj = "<< m_PilotPhaseAdjust;
+//qDebug()<<"PhaseAdj = "<< m_PilotPhaseAdjust;
 
 	m_MonoLPFilter.InitLP(75000, 1.0, m_SampleRate);
 
@@ -199,7 +199,7 @@ qDebug()<<"PhaseAdj = "<< m_PilotPhaseAdjust;
 
 	m_RdsOutputRate = m_RdsDownConvert.SetDataRate(m_SampleRate, 8000.0);
 	m_RdsDownConvert.SetFrequency(-RDS_FREQUENCY);	//set up to shift 57KHz RDS down to baseband and decimate
-qDebug()<<"RDS Rate = "<< m_RdsOutputRate;
+//qDebug()<<"RDS Rate = "<< m_RdsOutputRate;
 
 	InitRds(m_RdsOutputRate);
 
@@ -644,7 +644,7 @@ void CWFmDemod::ProcessNewRdsBit(int bit)
 						m_CurrentBlock = BLOCK_A;
 						m_BlockErrors = 0;
 						m_DecodeState = STATE_GROUPDECODE;
-qDebug()<<"RDS Blk Sync";
+//qDebug()<<"RDS Blk Sync";
 					}
 					else
 						m_CurrentBlock++;
