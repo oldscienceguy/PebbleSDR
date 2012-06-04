@@ -8,14 +8,15 @@
 #ifndef DATATYPES_H
 #define DATATYPES_H
 
-#include <QtGui/QApplication>
-#include <math.h>
+//#include <math.h>
+#include "qmath.h"
+#include "cpx.h"
 
 
 //define single or double precision reals and complex types
 typedef float tSReal;
 typedef double tDReal;
-
+#if 0
 typedef struct _sCplx
 {
 	tSReal re;
@@ -27,7 +28,7 @@ typedef struct _dCplx
 	tDReal re;
 	tDReal im;
 }tDComplex;
-
+#endif
 typedef struct _isCplx
 {
 	qint16 re;
@@ -35,14 +36,18 @@ typedef struct _isCplx
 }tStereo16;
 
 
-#define TYPEREAL tDReal
-#define TYPECPX	tDComplex
+//#define TYPEREAL tDReal
+#define TYPEREAL double
+//#define TYPECPX	tDComplex
+#define TYPECPX	CPX
 #define TYPESTEREO16 tStereo16
 #define TYPEMONO16 qint16
 
 //#define K_2PI (8.0*atan(1))	//maybe some compilers are't too smart to optimize out
-#define K_2PI (2.0 * 3.14159265358979323846)
-#define K_PI (3.14159265358979323846)
+//#define K_2PI (2.0 * 3.14159265358979323846)
+//#define K_PI (3.14159265358979323846)
+#define K_2PI TWOPI
+#define K_PI PI
 #define K_PI4 (K_PI/4.0)
 #define K_PI2 (K_PI/2.0)
 #define K_3PI4 (3.0*K_PI4)
