@@ -263,7 +263,9 @@ HEADERS += \
     demod/wfmdemod.h \
     demod/rbdsconstants.h \
     demod/downconvert.h \
-    demod/rdsdecode.h
+    demod/rdsdecode.h \
+    filters/fractresampler.h \
+    filters/datatypes.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -313,7 +315,8 @@ SOURCES += \
     filters/iir.cpp \
     demod/wfmdemod.cpp \
     demod/downconvert.cpp \
-    demod/rdsdecode.cpp
+    demod/rdsdecode.cpp \
+    filters/fractresampler.cpp
 
 FORMS += \
     spectrumwidget.ui \
