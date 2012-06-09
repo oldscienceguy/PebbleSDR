@@ -72,7 +72,7 @@ macx {
 	SOURCES += hid-mac.c
 
 	#INSTALLS is called when we manually make -install or add it to the Qt project build steps
-	otherfiles.files = presets.csv help.htm gpl.h releasenotes.txt
+	otherfiles.files = bands.csv presets.csv help.htm gpl.h releasenotes.txt
 
 	#We want this to be whatever the release or debug directory is or added to bundle
 	#This will copy the files into the app bundle, same place ini files go
@@ -147,7 +147,7 @@ win32 {
 		INSTALLS += target installfiles
 
 		#INSTALLS is called when we manually make -install or add it to the Qt project build steps
-		otherfiles.files = presets.csv help.htm gpl.h releasenotes.txt
+		otherfiles.files = bands.csv presets.csv help.htm gpl.h releasenotes.txt
 
 		#We want this to be whatever the release or debug directory is or added to bundle
 		otherfiles.path = $$DESTDIR
@@ -204,7 +204,8 @@ OTHER_FILES += \
     Help.htm \
     Firmware.txt \
     build.tmpl \
-    ReleaseNotes.txt
+    ReleaseNotes.txt \
+    bands.csv
 
 HEADERS += \
     usb.h \
