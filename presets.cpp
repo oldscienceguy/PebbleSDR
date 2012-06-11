@@ -45,6 +45,8 @@ Presets::Presets(ReceiverWidget *w, QWidget *parent)
 	ui.tableWidget->horizontalHeader()->setFont(tableFont);
 
 	presetsFile = QCoreApplication::applicationDirPath()+"/presets.csv";
+    bandsFile = QCoreApplication::applicationDirPath()+"/bands.csv";
+    ReadBands();
 
 	Read();
 
@@ -87,7 +89,114 @@ void Presets::CreateTable(double low, double high)
 		}
 	}
 	ui.tableWidget->setSortingEnabled(true);
-	ui.tableWidget->sortByColumn(0,Qt::AscendingOrder);
+    ui.tableWidget->sortByColumn(0,Qt::AscendingOrder);
+}
+
+//WARNING: CSV file must have cr/lf endings
+//Mac Excel does not save in this format.  On Mac, use TextWrangler and choose Windows EOL
+bool Presets::ReadBands()
+{
+    QFile file(bandsFile);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        return false;
+
+    QTextStream in(&file);
+    QString line;
+    QStringList parts;
+    //How many lines in file
+    numBands = 0;
+    while (!in.atEnd())
+    {
+        //This sometimes reads whole file as one line
+        line = in.readLine();
+        numBands++;
+    }
+    if (numBands <= 1) {
+        //bands.csv must have at least on line plus header
+        file.close();
+        return false;
+    }
+    //1st line is header, don't count
+    numBands--;
+    //Reset stream
+    in.seek(0);
+    //Allocate buffer
+    bands = new Preset[numBands];
+    double low;
+    //Read file into memory, throw away header line
+    line = in.readLine();
+    //qDebug("Bands: %s",line);
+    parts = line.split(",");
+    if (parts.count() != 7) {
+        file.close();
+        return false; //Not right # columns
+    }
+
+
+
+    for (int i=0; i<numBands; i++)
+    {
+        line = in.readLine();
+        //Need to handle escaped delimiters, delimiters in string quotes
+        parts = line.split(",");
+        if (parts.count() != 7)
+            continue; //Skip invalid line, should have 7 elements
+        //Low freq must have a valid value
+        bands[i].low = parts[B_LOW].toDouble();
+        bands[i].high = parts[B_HIGH].toDouble();
+        bands[i].tune = parts[B_TUNE].toDouble();
+        bands[i].name = parts[B_NAME];
+        bands[i].type = StringToPresetType(parts[B_TYPE]);
+        bands[i].mode = Demod::StringToMode(parts[B_MODE]);
+        bands[i].notes = parts[B_NOTES];
+    }
+    file.close();
+    return true;
+}
+
+Preset *Presets::FindBand(double freq)
+{
+    if (bands == NULL)
+        return NULL;
+
+    //Brute force, first only for now
+    for (int i=0; i<numBands; i++) {
+        if (freq >= bands[i].low && freq <= bands[i].high)
+            return &bands[i];
+    }
+    return NULL;
+}
+
+bool Presets::ReadStations()
+{
+    return false;
+}
+
+Preset *Presets::FindStation(double currentFreq)
+{
+    return NULL;
+}
+
+bool Presets::ReadPresets()
+{
+    return false;
+}
+
+Preset *Presets::FindPreset(double currentFreq)
+{
+    return NULL;
+}
+
+Preset::TYPE Presets::StringToPresetType(QString s)
+{
+    if (s.compare("HAM",Qt::CaseInsensitive)==0)
+        return Preset::HAM;
+    else if (s.compare("SW", Qt::CaseInsensitive)==0)
+        return Preset::SW;
+    else if (s.compare("SCANNER",Qt::CaseInsensitive)==0)
+        return Preset::SCANNER;
+
+    return Preset::OTHER;
 }
 void Presets::cellClicked(int r, int c)
 {
@@ -365,7 +474,7 @@ Preset::Preset()
 	low=0.0;
 	high=0.0;
 	mode = dmAM;
-	schedule = QDateTime();
+    //schedule = QDateTime();
 }
 Preset::~Preset()
 {

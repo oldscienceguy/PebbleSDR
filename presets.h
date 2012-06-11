@@ -11,13 +11,19 @@
 class Preset
 {
 public:
+    //ALL only used for menu, not in csv
+    enum TYPE {ALL,HAM,SW,SCANNER,OTHER};
 	Preset();
 	~Preset();
 	QString name;
 	double low; //Band range, or single frequency
 	double high;
+    double tune; //Default freq when user switches to band
+    TYPE type;
 	DEMODMODE mode;
-	QDateTime schedule; //Switch to a preset at specified time, or what's available now
+    //For Station source like EIBI
+    QDateTime startTime;
+    QDateTime endTime;
 	QString notes;
 };
 
@@ -26,19 +32,43 @@ class Presets : public QDockWidget
 	Q_OBJECT
 
 public:
+    //Bands.csv column order
+    //Low	High	Tune	Name	Type	Mode	Notes
+    enum BTYPE {B_LOW = 0,B_HIGH,B_TUNE,B_NAME,B_TYPE,B_MODE,B_NOTES};
+
 	static const int GROW_PRESETS = 1;
 	Presets(ReceiverWidget *rw,QWidget * parent = 0);
 	~Presets();
 	void CreateTable(double low, double high);
+    bool ReadBands();
+    //Returns record(s) that match current frequency
+    Preset *FindBand(double currentFreq);
+    Preset *GetBands() {return bands;}
+    int GetNumBands() {return numBands;}
 
+    bool ReadStations();
+    Preset *FindStation(double currentFreq);
+
+    bool ReadPresets();
+    Preset *FindPreset(double currentFreq);
+
+    Preset::TYPE StringToPresetType(QString s);  //Converts string from file to type
 private:
-	Preset *presets; //Array of presets, with some room at end for growth
+    QString presetsFile;
+    Preset *presets; //Array of presets, with some room at end for growth
 	int numPresets; //Number of presets
 	int presetsLen; //Actual size of presets array
 
+    QString bandsFile;
+    Preset *bands;
+    int numBands;
+
+    QString stationsFile;
+    Preset *stations;
+    int numStations;
+
 	Ui::PresetsDockWidget ui;
 	ReceiverWidget *rw;
-	QString presetsFile;
 	void Save();
 	void Read();
 	//Sets columns, row height, and anything else that is common to all rows
