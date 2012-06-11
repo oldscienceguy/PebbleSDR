@@ -55,6 +55,8 @@ public:
 	void SetLpfEnabled(bool b);
 	void SetMute(bool b);
 	void ShowPresets();
+    Presets *GetPresets() {return presets;}
+
     void SetDataSelection(ReceiverWidget::DATA_SELECTION d);
 	Settings * GetSettings() {return settings;}
 	void ProcessBlock(CPX *in, CPX *out, int frameCount);
@@ -70,6 +72,7 @@ public:
 		void ShowSettings(bool b);
 		void ShowSdrSettings(bool b);
         void OutputData(const char *d);
+        void OutputData (QString s);
 
 private:
 	FFT *fft;

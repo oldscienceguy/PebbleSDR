@@ -89,6 +89,16 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 
 	modeOffset = 0;
 
+    //Band setup.  Presets must have already been read in
+    ui.bandType->clear();
+    ui.bandType->addItem("ALL",Preset::ALL);
+    ui.bandType->addItem("HAM",Preset::HAM);
+    ui.bandType->addItem("SW",Preset::SW);
+    ui.bandType->addItem("SCANNER",Preset::SCANNER);
+    ui.bandType->addItem("OTHER",Preset::OTHER);
+    connect(ui.bandType,SIGNAL(currentIndexChanged(int)),this,SLOT(bandTypeChanged(int)));
+    connect(ui.bandCombo,SIGNAL(currentIndexChanged(int)),this,SLOT(bandChanged(int)));
+
 	connect(ui.loButton,SIGNAL(toggled(bool)),this,SLOT(setLoMode(bool)));
 	connect(ui.powerButton,SIGNAL(toggled(bool)),this,SLOT(powerToggled(bool)));
 	connect(ui.anfButton,SIGNAL(toggled(bool)),this,SLOT(anfButtonToggled(bool)));
@@ -352,6 +362,8 @@ DEMODMODE ReceiverWidget::GetMode()
 void ReceiverWidget::powerToggled(bool on) 
 {
 	QString pwrStyle = "";
+    powerOn = on;
+
 	if (on) {
 		if (!receiver->Power(true)) {
 			ui.powerButton->setChecked(false); //Turn power button back off
@@ -366,6 +378,7 @@ void ReceiverWidget::powerToggled(bool on)
 
 		ui.displayBox->setCurrentIndex(receiver->GetSettings()->lastDisplayMode); //Initial display mode
 		ui.spectrumWidget->plotSelectionChanged((SignalSpectrum::DISPLAYMODE)receiver->GetSettings()->lastDisplayMode);
+        ui.bandType->setCurrentIndex(Preset::HAM);
 
 		ui.spectrumWidget->Run(true);
 		ui.sMeterWidget->Run(true);
@@ -405,7 +418,6 @@ void ReceiverWidget::powerToggled(bool on)
     ui.nixie1g->setStyleSheet(pwrStyle);
     ui.nixie1g->setEnabled(on);
 
-	powerOn = on;
 }
 void ReceiverWidget::SetDisplayMode(int dm)
 {
@@ -679,7 +691,91 @@ void ReceiverWidget::DisplayNumber(double n)
 	ui.nixie1k->display( (d / 1000)%10);
 	ui.nixie100->display( (d / 100)%10);
 	ui.nixie10->display( (d /10) % 10);
-	ui.nixie1->display( (d % 10));
+    ui.nixie1->display( (d % 10));
+}
+
+void ReceiverWidget::bandTypeChanged(int s)
+{
+    if (!powerOn)
+        return; //bands aren't loaded until power on
+
+    //enums are stored as user data with each menu item
+    Preset::TYPE type = (Preset::TYPE)ui.bandType->itemData(s).toInt();
+    //Populate bandCombo with type
+    //Turn off signals
+    ui.bandCombo->blockSignals(true);
+    ui.bandCombo->clear();
+    Preset *bands = receiver->GetPresets()->GetBands();
+    int numBands = receiver->GetPresets()->GetNumBands();
+    double freq;
+    QString buf;
+    for (int i=0; i<numBands; i++) {
+        if (bands[i].type == type  || type==Preset::ALL) {
+            freq = bands[i].tune;
+            //If no specific tune freq for band select, use low
+            if (freq == 0)
+                freq = bands[i].low;
+            //Is freq within lo/hi range of SDR?  If not ignore
+            if (freq >= lowFrequency && freq <= highFrequency) {
+                //What a ridiculous way to get to char* from QString for sprintf
+                buf.sprintf("%s : %.4f to %.4f",bands[i].name.toUtf8().constData(),bands[i].low/1000000,bands[i].high/1000000);
+                ui.bandCombo->addItem(buf,i);
+            }
+        }
+    }
+    //Clear selection so we don't show something that doesn't match frequency
+    ui.bandCombo->setCurrentIndex(-1);
+    //ui.bandCombo->setEditText("Choose a band");
+    ui.bandCombo->blockSignals(false);
+}
+
+void ReceiverWidget::bandChanged(int s)
+{
+    if (!powerOn)
+        return;
+    Preset *bands = receiver->GetPresets()->GetBands();
+
+    int bandIndex = ui.bandCombo->itemData(s).toInt();
+    double freq = bands[bandIndex].tune;
+    //If no specific tune freq for band select, use low
+    if (freq == 0)
+        freq = bands[bandIndex].low;
+    DEMODMODE mode = bands[bandIndex].mode;
+
+    SetFrequency(freq);
+    SetMode(mode);
+
+}
+
+void ReceiverWidget::DisplayBand(double freq)
+{
+    if (!powerOn)
+        return;
+
+    Preset *bands = receiver->GetPresets()->GetBands();
+    if (bands == NULL)
+        return;
+
+    //Reset bandType to ALL
+    ui.bandType->setCurrentIndex(Preset::ALL);
+    //Find band
+
+    int bandIndex;
+    int numBands = receiver->GetPresets()->GetNumBands();
+
+    //Brute force, first only for now
+    for (int i=0; i<numBands; i++) {
+        if (freq >= bands[i].low && freq <= bands[i].high) {
+            bandIndex = i;
+            break; //out of for
+        }
+    }
+
+    int index = ui.bandCombo->findData(bandIndex);
+    ui.bandCombo->blockSignals(true); //Just select band to display, don't reset freq to band
+    ui.bandCombo->setCurrentIndex(index);
+    ui.bandCombo->blockSignals(false);
+
 }
 
 

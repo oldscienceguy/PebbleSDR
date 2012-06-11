@@ -21,6 +21,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 
 	mainWindow = main;
 	receiverWidget = rw;
+
 	//ReceiverWidget link back
 	receiverWidget->SetReceiver(this);
 	QStringList welcome;
@@ -34,7 +35,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	receiverWidget->SetMessage( welcome);
 	//Problem:  If we set general styles, custom widgets don't paint
 	//Until we figure out why, use selectors to prevent cascade
-    QString rwStyle = "QFrame#comboFrame, QFrame#tunerFrame, QFrame#buttonFrame, QFrame#sliderFrame, QFrame#dataFrame, QFrame#spectrumFrame {background-color: rgb(200, 200, 200);}";
+    QString rwStyle = "QFrame#comboFrame, QFrame#tunerFrame, QFrame#buttonFrame, QFrame#sliderFrame, QFrame#dataFrame, QFrame#spectrumFrame, QFrame#bandFrame {background-color: rgb(200, 200, 200);}";
 	receiverWidget->setStyleSheet(rwStyle);
 
 	powerOn = false;
@@ -94,7 +95,7 @@ bool Receiver::On()
 		downSampleFilter->setEnabled(true);
 	}
 
-	presets = new Presets(receiverWidget);
+    presets = new Presets(receiverWidget);
 
 	//These steps work on full sample rates
 	noiseBlanker = new NoiseBlanker(sampleRate,framesPerBuffer);
@@ -295,6 +296,10 @@ void Receiver::OutputData(const char *d)
 {
     receiverWidget->OutputData(d);
 }
+void Receiver::OutputData(QString s)
+{
+    receiverWidget->OutputData(s.toAscii());
+}
 
 bool Receiver::Power(bool on)
 {
@@ -347,6 +352,10 @@ double Receiver::SetFrequency(double fRequested, double fCurrent)
 		soundCard->Restart();
 #endif
 	frequency = actual;
+
+    //Update band info
+    receiverWidget->DisplayBand(actual);
+
 	return actual;
 }
 //Sets demod modes and default bandpass filter for each mode

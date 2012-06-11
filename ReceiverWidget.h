@@ -54,6 +54,7 @@ public:
     void OutputData(const char *d);
     void DataBit(bool onOff);
 
+    void DisplayBand(double freq);
 
 	public slots:
 		void setLoMode(bool b);
@@ -97,6 +98,8 @@ private:
 
 
 	private slots:
+        void bandTypeChanged(int s);
+        void bandChanged(int s);
         void dataSelectionChanged(int s);
 		void agcSliderChanged(int a);
 		void gainSliderChanged(int g);
