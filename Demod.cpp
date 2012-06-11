@@ -72,13 +72,13 @@ CPX * Demod::ProcessBlock(CPX * in, int bufSize)
         case dmFMN: // FMN
 			//SimpleFM(in,out);
             SimpleFM2(in,out, bufSize); //5/12 Working well for NFM
-            //PllFMN(in,out, bufSize); //5/12, working but FM2 sounds better, try hp filter like CuteSDR
+            //PllFMN(in,out, bufSize); //6/8/12 Scaled output, now sounds better than SimpleFM2
             break;
         case dmFMMono: // FMW
-            //SimpleFM2(in,out, bufSize);
             FMMono(in,out, bufSize);
             break;
         case dmFMStereo:
+            //Will only work if sample rate is at least 192k
             FMStereo(in,out,bufSize);
             break;
 
@@ -167,6 +167,14 @@ Ip & Qp are the previous sample, I & Q are the current sample
 2) (Q * Ip - I * Qp) / (I^2 + Q^2)
 3) (Q * Ip + I * Qp) / (I^2 + Q^2) //COMMAND by Andy Talbot RSGB, haven't tested adding vs sub yet
 */
+
+/*
+  Another comment on FM from compDSP
+    That is a pretty heavyweight method. Here is more efficient way:
+    FM Output = I*dQ/dt - Q*dI/dt
+    You may have to take care about the input amplitude limiting.
+*/
+
 void Demod::SimpleFM(CPX *in, CPX *out, int _numSamples)
 {
 	float tmp;
@@ -317,7 +325,7 @@ void Demod::PllFMN(  CPX * in, CPX * out, int _numSamples )
         //phaseError = -atan2(delay.im,delay.re);
 
         //phaseError is the delta from last sample, ie demod value.  Rest is cleanup
-        pllFrequency += fmPllBeta * phaseError;
+        pllFrequency += fmPllBeta * phaseError / 100;  //Scale down to avoid overlaod
 
         //Keep the PLL within our limits
         if (pllFrequency < fmPllLoLimit)
