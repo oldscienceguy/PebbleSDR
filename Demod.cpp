@@ -104,7 +104,8 @@ CPX * Demod::ProcessBlock(CPX * in, int bufSize)
 void Demod::SimpleAM(CPX *in, CPX *out, int _numSamples)
 {
 	float tmp;
-	for (int i=0;i<numSamples;i++)
+    int ns = _numSamples;
+    for (int i=0;i<ns;i++)
 	{
 		//Just return the magnitude of each sample
 		//tmp = sqrt(in[i].re * in[i].re + in[i].im * in[i].im);
@@ -118,7 +119,9 @@ void Demod::SimpleAM(CPX *in, CPX *out, int _numSamples)
 void Demod::SimpleAMSmooth(CPX *in, CPX *out, int _numSamples)
 {
 	double current;
-	for (int i = 0; i < numSamples; i++)
+    int ns = _numSamples;
+
+    for (int i = 0; i < ns; i++)
 	{
 		current = in[i].mag();
 		//Smooth with weighted average
@@ -132,7 +135,9 @@ void Demod::SimpleAMSmooth(CPX *in, CPX *out, int _numSamples)
 void Demod::SimpleUSB(CPX *in, CPX *out, int _numSamples)
 {
 	float tmp;
-	for (int i=0;i<numSamples;i++)
+    int ns = _numSamples;
+
+    for (int i=0;i<ns;i++)
 	{
 		tmp = in[i].re  + in[i].im;
 		out[i].re = out[i].im = tmp;
@@ -141,7 +146,9 @@ void Demod::SimpleUSB(CPX *in, CPX *out, int _numSamples)
 void Demod::SimpleLSB(CPX *in, CPX *out, int _numSamples)
 {
 	float tmp;
-	for (int i=0;i<numSamples;i++)
+    int ns = _numSamples;
+
+    for (int i=0;i<ns;i++)
 	{
 		tmp = in[i].re  - in[i].im;
 		out[i].re = out[i].im = tmp;
@@ -150,7 +157,9 @@ void Demod::SimpleLSB(CPX *in, CPX *out, int _numSamples)
 void Demod::SimplePhase(CPX *in, CPX *out, int _numSamples)
 {
 	float tmp;
-	for (int i=0;i<numSamples;i++)
+    int ns = _numSamples;
+
+    for (int i=0;i<ns;i++)
 	{
 		tmp = tan(in[i].re  / in[i].im);
 		out[i].re = out[i].im = tmp;
@@ -179,7 +188,9 @@ void Demod::SimpleFM(CPX *in, CPX *out, int _numSamples)
 {
 	float tmp;
 	float I,Q; //To make things more readable
-	for (int i=0;i<numSamples;i++)
+    int ns = _numSamples;
+
+    for (int i=0;i<ns;i++)
 	{
 		I = in[i].re;
 		Q = in[i].im;
@@ -188,7 +199,7 @@ void Demod::SimpleFM(CPX *in, CPX *out, int _numSamples)
 		//tmp = (Q * Ip - I * Qp) / (I * I + Q * Q);
 
 		//Output volume is very low, scaling by even 100 doesn't do anything?
-		out[i].re = out[i].im = tmp/100;
+        out[i].re = out[i].im = tmp * .0005;
 		fmIPrev = I;
 		fmQPrev = Q;
 	}
@@ -199,15 +210,17 @@ void Demod::SimpleFM(CPX *in, CPX *out, int _numSamples)
 void Demod::SimpleFM2(CPX *in, CPX *out, int _numSamples)
 {
 	CPX prod;
+    int ns = _numSamples;
+
     //Based on phase delta between samples, so we always need last sample from previous run
     static CPX lastCpx(0,0);
-    for (int i=0; i<numSamples; i++)
+    for (int i=0; i<ns; i++)
 	{
 		//The angle between to subsequent samples can be calculated by multiplying one by the complex conjugate of the other
 		//and then calculating the phase (arg() or atan()) of the complex product
         prod = in[i] * lastCpx.conj();
 		//Scale demod output to match am, usb, etc range
-		out[i].re = out[i].im = prod.phase() / 100;
+        out[i].re = out[i].im = prod.phase() *.0005;
         lastCpx = in[i];
 	}
 }
@@ -218,6 +231,8 @@ CPX Demod::PLL(CPX sig, float loLimit, float hiLimit, int _numSamples)
 	CPX z;
 	CPX delay;
     float difference;
+    int ns = _numSamples;
+
 	//Todo: See if we can use NCO here
 	//This is the generated signal to sync with
     z.re = cos(pllPhase);
@@ -258,7 +273,7 @@ void Demod::PllSAM(  CPX * in, CPX * out, int bufSize )
 {
 	CPX delay;
 
-    for (int i = 0; i < numSamples; i++) {
+    for (int i = 0; i < bufSize; i++) {
         delay = PLL(in[i],samLoLimit,samHiLimit, bufSize);
 		//Basic am demod
         samLockCurrent = 0.999f * samLockCurrent + 0.001f * fabs(delay.im);
@@ -287,6 +302,8 @@ void Demod::PllSAM(  CPX * in, CPX * out, int bufSize )
 */
 void Demod::PllFMN(  CPX * in, CPX * out, int _numSamples )
 {
+    int ns = _numSamples;
+
     //All these can be calculated once, not each call
     //time constant for DC removal filter
     const float fmDcAlpha = (1.0 - exp(-1.0 / (sampleRate * 0.001)) );
@@ -310,7 +327,7 @@ void Demod::PllFMN(  CPX * in, CPX * out, int _numSamples )
     CPX delay;
     float phaseError;
 
-    for (int i = 0; i < numSamples; i++) {
+    for (int i = 0; i < ns; i++) {
         //Todo: See if we can use NCO here
         //This is the generated signal to sync with (NCO)
         pllNCO.re = cos(pllPhase);
@@ -350,6 +367,7 @@ void Demod::PllFMN(  CPX * in, CPX * out, int _numSamples )
 //CuteSDR algorithm
 void Demod::FMMono( CPX * in, CPX * out, int bufSize)
 {
+
 #if 1
     bufSize = wfmDemod->ProcessDataMono(bufSize,in,out);
     //Dec to audio rate
