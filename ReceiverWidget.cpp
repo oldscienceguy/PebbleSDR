@@ -332,6 +332,10 @@ void ReceiverWidget::SetFrequency(double f)
 	//frequency is what's displayed, ie combination of loFrequency and mixer (if any)
 	frequency=newFreq;
 	DisplayNumber(frequency);
+    //Update band info
+    DisplayBand(frequency);
+
+
 }
 double ReceiverWidget::GetFrequency()
 {

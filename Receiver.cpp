@@ -60,6 +60,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 
 	//Testing
 	useFreqDomainChain = false;
+
 }
 bool Receiver::On()
 {
@@ -352,9 +353,6 @@ double Receiver::SetFrequency(double fRequested, double fCurrent)
 		soundCard->Restart();
 #endif
 	frequency = actual;
-
-    //Update band info
-    receiverWidget->DisplayBand(actual);
 
 	return actual;
 }
