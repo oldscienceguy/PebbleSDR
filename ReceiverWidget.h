@@ -96,8 +96,11 @@ private:
 	QStringList fmFilterOptions;
 	QStringList wfmFilterOptions;
 
+    //Band currently selected, used to detect when band changes as a result of freq change
+    int currentBandIndex;
 
 	private slots:
+        void stationChanged(int s);
         void bandTypeChanged(int s);
         void bandChanged(int s);
         void dataSelectionChanged(int s);
