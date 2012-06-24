@@ -46,7 +46,11 @@ Presets::Presets(ReceiverWidget *w, QWidget *parent)
 
 	presetsFile = QCoreApplication::applicationDirPath()+"/presets.csv";
     bandsFile = QCoreApplication::applicationDirPath()+"/bands.csv";
+    stationsFile = QCoreApplication::applicationDirPath()+"/eibi.csv";
+
+    //Bands MUST be read before stations!!
     ReadBands();
+    ReadStations();
 
 	Read();
 
@@ -70,6 +74,12 @@ Presets::Presets(ReceiverWidget *w, QWidget *parent)
 Presets::~Presets()
 {
 
+    if (stations != NULL)
+        delete [] stations;
+    if (bands != NULL)
+        delete [] bands;
+    if (presets != NULL)
+        delete [] presets;
 }
 //Creates table, with presets filtered to range
 void Presets::CreateTable(double low, double high)
@@ -92,23 +102,74 @@ void Presets::CreateTable(double low, double high)
     ui.tableWidget->sortByColumn(0,Qt::AscendingOrder);
 }
 
+//Utility function for CSV
+//Handle EOL as 0x0d, 0x0a, both in any order
+//Qt doesn't handle this case with standard readLine
+QString Presets::csvReadLine(QFile *file)
+{
+    char byte;
+    QString line;
+    while (!file->atEnd()) {
+        file->read(&byte,1);
+        if (byte == 0x0d || byte == 0x0a)
+            return line;
+        line.append(byte);
+    }
+    return NULL;
+}
+
+//Same as QString split, except handles quoted delimters
+QStringList Presets::csvSplit(QString line, char split)
+{
+    QStringList list;
+    int len = line.length();
+    bool inQuote = false;
+    int pos=0;
+    int start = 0;
+    char c;
+    while (pos < len) {
+        c = line.at(pos).toAscii();
+        //Todo: strip quotes, handle escaped quotes within quotes, other csv exceptions
+        if (c == '"') {
+            inQuote = !inQuote;
+        }
+        if (!inQuote && c == split) {
+            if (start == pos)
+                list.append(""); //Empty
+            else
+                list.append(line.mid(start,pos-start));
+            pos++;
+            start = pos;
+        } else {
+            pos++;
+        }
+    }
+    //Grab trailing part
+    if (start == pos)
+        list.append(""); //Empty
+    else
+        list.append(line.mid(start,pos-start));
+
+    //Strip quotes
+    list.replaceInStrings("\"","");
+
+    return list;
+}
+
 //WARNING: CSV file must have cr/lf endings
 //Mac Excel does not save in this format.  On Mac, use TextWrangler and choose Windows EOL
 bool Presets::ReadBands()
 {
     QFile file(bandsFile);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+    if (!file.open(QIODevice::ReadOnly))// | QIODevice::Text))
         return false;
 
-    QTextStream in(&file);
     QString line;
     QStringList parts;
     //How many lines in file
     numBands = 0;
-    while (!in.atEnd())
+    while ((line = csvReadLine(&file)) != NULL)
     {
-        //This sometimes reads whole file as one line
-        line = in.readLine();
         numBands++;
     }
     if (numBands <= 1) {
@@ -119,14 +180,14 @@ bool Presets::ReadBands()
     //1st line is header, don't count
     numBands--;
     //Reset stream
-    in.seek(0);
+    file.seek(0);
     //Allocate buffer
-    bands = new Preset[numBands];
+    bands = new Band[numBands];
     double low;
     //Read file into memory, throw away header line
-    line = in.readLine();
+    line = csvReadLine(&file);
     //qDebug("Bands: %s",line);
-    parts = line.split(",");
+    parts = csvSplit(line);
     if (parts.count() != 7) {
         file.close();
         return false; //Not right # columns
@@ -136,43 +197,146 @@ bool Presets::ReadBands()
 
     for (int i=0; i<numBands; i++)
     {
-        line = in.readLine();
+        line = csvReadLine(&file);
         //Need to handle escaped delimiters, delimiters in string quotes
-        parts = line.split(",");
+        parts = csvSplit(line);
         if (parts.count() != 7)
             continue; //Skip invalid line, should have 7 elements
         //Low freq must have a valid value
-        bands[i].low = parts[B_LOW].toDouble();
-        bands[i].high = parts[B_HIGH].toDouble();
-        bands[i].tune = parts[B_TUNE].toDouble();
-        bands[i].name = parts[B_NAME];
-        bands[i].type = StringToPresetType(parts[B_TYPE]);
-        bands[i].mode = Demod::StringToMode(parts[B_MODE]);
-        bands[i].notes = parts[B_NOTES];
+        bands[i].low = parts[Band::C_LOW].toDouble();
+        bands[i].high = parts[Band::C_HIGH].toDouble();
+        bands[i].tune = parts[Band::C_TUNE].toDouble();
+        bands[i].name = parts[Band::C_NAME];
+        bands[i].bType = StringToBandType(parts[Band::C_BANDTYPE]);
+        bands[i].mode = Demod::StringToMode(parts[Band::C_MODE]);
+        bands[i].notes = parts[Band::C_NOTES];
+        bands[i].stations = NULL;
+        bands[i].numStations = 0;
+        bands[i].bandIndex = i; //back ref to position in bands[]
     }
     file.close();
     return true;
 }
 
-Preset *Presets::FindBand(double freq)
+Band *Presets::FindBand(double freq)
 {
     if (bands == NULL)
         return NULL;
 
     //Brute force, first only for now
     for (int i=0; i<numBands; i++) {
-        if (freq >= bands[i].low && freq <= bands[i].high)
+        if (freq >= bands[i].low && freq < bands[i].high)
             return &bands[i];
     }
     return NULL;
 }
+int Presets::FindBandIndex(double freq)
+{
+    if (bands == NULL)
+        return NULL;
+
+    //Brute force, first only for now
+    for (int i=0; i<numBands; i++) {
+        if (freq >= bands[i].low && freq < bands[i].high)
+            return i;
+    }
+    return -1;
+}
 
 bool Presets::ReadStations()
 {
-    return false;
+    //Bands MUST be read first
+    if (bands == NULL)
+        return false;
+
+    QFile file(stationsFile);
+    if (!file.open(QIODevice::ReadOnly))// | QIODevice::Text))
+        return false;
+
+    QString line;
+    QStringList parts;
+    //How many lines in file
+    numStations = 0;
+    while ((line = csvReadLine(&file)) != NULL)
+    {
+        numStations++;
+    }
+    if (numStations <= 1) {
+        //bands.csv must have at least on line plus header
+        file.close();
+        return false;
+    }
+    //1st line is header, don't count
+    numStations--;
+    //Reset stream
+    file.seek(0);
+    //Allocate buffer
+    stations = new Station[numStations];
+    //Read file into memory, throw away header line
+    line = csvReadLine(&file);
+    //qDebug("Bands: %s",line);
+    parts = csvSplit(line, ';');
+    //Header has an extra ';' in file, don't check exact count, just min
+    if (parts.count() < 11) {
+        file.close();
+        return false; //Not right # columns
+    }
+
+
+    int bandIndex;
+    for (int i=0; i<numStations; i++)
+    {
+        line = csvReadLine(&file);
+        //Need to handle escaped delimiters, delimiters in string quotes
+        parts = csvSplit(line, ';');
+
+        if (parts.count() != 11)
+            continue; //Skip invalid line, should have 7 elements
+
+        stations[i].freq = parts[Station::KHZ].toDouble()*1000;
+        stations[i].time = parts[Station::TIME];
+        stations[i].days = parts[Station::DAYS];
+        stations[i].itu = parts[Station::ITU];
+        stations[i].station = parts[Station::STATION];
+        stations[i].language = parts[Station::LNG];
+        stations[i].target = parts[Station::TARGET];
+        stations[i].remarks = parts[Station::REMARKS];
+        stations[i].p = parts[Station::P];
+        stations[i].start = parts[Station::START];
+        stations[i].stop = parts[Station::STOP];
+
+        //Find band for each station
+        bandIndex = FindBandIndex(stations[i].freq);
+        stations[i].bandIndex = bandIndex;
+        if (bandIndex != -1) {
+            //Count # stations per band, we'll assign in next step
+            bands[bandIndex].numStations ++;
+        }
+    }
+
+
+    for (int i=0; i<numBands; i++) {
+        bands[i].stations = new int[bands[i].numStations];
+        bands[i].numStations = 0; //Will be re-incremented as we add below
+    }
+
+    //One more pass to assign stations to bands
+    int stationIndex = 0;
+    for (int i=0; i<numStations; i++) {
+        bandIndex = stations[i].bandIndex;
+        if (bandIndex != -1) {
+            //Add to stations[] in band
+            stationIndex = bands[bandIndex].numStations++;
+            bands[bandIndex].stations[stationIndex] = i;
+        }
+    }
+
+    file.close();
+    return true;
+
 }
 
-Preset *Presets::FindStation(double currentFreq)
+Station *Presets::FindStation(double currentFreq)
 {
     return NULL;
 }
@@ -187,16 +351,16 @@ Preset *Presets::FindPreset(double currentFreq)
     return NULL;
 }
 
-Preset::TYPE Presets::StringToPresetType(QString s)
+Band::BANDTYPE Presets::StringToBandType(QString s)
 {
     if (s.compare("HAM",Qt::CaseInsensitive)==0)
-        return Preset::HAM;
+        return Band::HAM;
     else if (s.compare("SW", Qt::CaseInsensitive)==0)
-        return Preset::SW;
+        return Band::SW;
     else if (s.compare("SCANNER",Qt::CaseInsensitive)==0)
-        return Preset::SCANNER;
+        return Band::SCANNER;
 
-    return Preset::OTHER;
+    return Band::OTHER;
 }
 void Presets::cellClicked(int r, int c)
 {
@@ -386,31 +550,29 @@ void Presets::Read()
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
 		return;
 
-	QTextStream in(&file);
 	QString line;
 	QStringList parts;
 	//How many lines in file
 	numPresets = 0;
 	int numLines = 0;
-	while (!in.atEnd())
+    while ((line=csvReadLine(&file)) != NULL)
 	{
-		line = in.readLine();
 		numLines++;
 	}
 	//1st line is header, don't count
 	numLines--;
 	//Reset stream
-	in.seek(0);
+    file.seek(0);
 	//Allocate buffer and extra space
 	presetsLen = numLines + GROW_PRESETS;
 	presets = new Preset[presetsLen];
 	double low;
 	//Read file into memory, throw away header line
-	in.readLine();
+    line = csvReadLine(&file);
 	for (int i=0; i<numLines; i++)
 	{
-		line = in.readLine();
-		parts = line.split(",");
+        line = csvReadLine(&file);
+        parts = csvSplit(line);
 		if (parts.count() < 2) 
 			continue; //Skip invalid line, we need at least name and low freq
 		//Low freq must have a valid value
@@ -477,5 +639,20 @@ Preset::Preset()
     //schedule = QDateTime();
 }
 Preset::~Preset()
+{
+}
+
+Band::Band()
+{
+}
+Band::~Band()
+{
+    if (stations != NULL)
+        free (stations);
+}
+Station::Station()
+{
+}
+Station::~Station()
 {
 }
