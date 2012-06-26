@@ -740,6 +740,9 @@ void ReceiverWidget::bandTypeChanged(int s)
     ui.bandCombo->setCurrentIndex(-1);
     //ui.bandCombo->setEditText("Choose a band");
     ui.bandCombo->blockSignals(false);
+    ui.stationCombo->blockSignals(true);
+    ui.stationCombo->clear();
+    ui.stationCombo->blockSignals(false);
 }
 
 void ReceiverWidget::bandChanged(int s)
@@ -787,13 +790,13 @@ void ReceiverWidget::DisplayBand(double freq)
         //If band has changed, update station list to match band
         if (currentBandIndex != band->bandIndex) {
             //List of stations per band should be setup when we read eibi.csv
+            ui.stationCombo->blockSignals(true); //Don't trigger stationChanged() every addItem
             ui.stationCombo->clear();
             int stationIndex;
             Station *stations = presets->GetStations();
             Station station;
             QString str;
             QString lastStation;
-            ui.stationCombo->blockSignals(true); //Don't trigger stationChanged() every addItem
             for (int i=0; i<band->numStations; i++) {
                 stationIndex = band->stations[i];
                 station = stations[stationIndex];
