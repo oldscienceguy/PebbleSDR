@@ -39,6 +39,10 @@ public:
 	int leftRightIncrement;
 	int upDownIncrement;
 
+    int iqGain; //Normalize device so incoming IQ levels are consistent
+
+    int selectedSDR;
+
     //Fonts for consisten UI
     QFont smFont;
     QFont medFont;
@@ -46,6 +50,7 @@ public:
 
 
 	public slots:
+    void ResetAllSettings(bool b);
 
 signals:
 	//Settings changed, turn off and restart with new settings
@@ -56,6 +61,19 @@ private:
 	Ui::SettingsDialog *sd;
 	QSettings *qSettings;
 	void ReadSettings();
+    void SetupSDRBlock(QComboBox *serialBox, QComboBox *receiverBox, QComboBox *sampleRateBox,
+                       QComboBox *startupBox, QComboBox *sourceBox, QComboBox *outputBox);
+
+    //Values from ini file.  Public settings are for currently selected (1-4) SDR device
+    SDR::SDRDEVICE ini_sdrDevice[4];
+    int ini_sdrNumber[4]; //For SoftRocks, selects last digit in serial number
+    int ini_sampleRate[4];
+    STARTUP ini_startup[4];
+    double ini_startupFreq[4];
+    int ini_inputDevice[4];
+    int ini_outputDevice[4];
+    int ini_iqGain[4];
+
 
 private slots:
 	void StartupChanged(int);

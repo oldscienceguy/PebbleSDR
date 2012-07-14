@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>379</width>
-    <height>162</height>
+    <width>471</width>
+    <height>263</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,8 +17,8 @@
    <property name="geometry">
     <rect>
      <x>13</x>
-     <y>130</y>
-     <width>351</width>
+     <y>227</y>
+     <width>448</width>
      <height>43</height>
     </rect>
    </property>
@@ -28,6 +28,21 @@
     </font>
    </property>
    <layout class="QHBoxLayout">
+    <item>
+     <widget class="QPushButton" name="resetAllButton">
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Reset All Settings</string>
+      </property>
+      <property name="autoDefault">
+       <bool>false</bool>
+      </property>
+     </widget>
+    </item>
     <item>
      <spacer>
       <property name="font">
@@ -56,6 +71,9 @@
       <property name="text">
        <string>Save</string>
       </property>
+      <property name="autoDefault">
+       <bool>false</bool>
+      </property>
      </widget>
     </item>
     <item>
@@ -68,216 +86,872 @@
       <property name="text">
        <string>Cancel</string>
       </property>
+      <property name="autoDefault">
+       <bool>false</bool>
+      </property>
      </widget>
     </item>
    </layout>
   </widget>
-  <widget class="QComboBox" name="sourceBox">
-   <property name="geometry">
-    <rect>
-     <x>50</x>
-     <y>66</y>
-     <width>294</width>
-     <height>18</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>7</pointsize>
-    </font>
-   </property>
-  </widget>
   <widget class="QLabel" name="label_2">
    <property name="geometry">
     <rect>
-     <x>10</x>
-     <y>70</y>
-     <width>46</width>
-     <height>13</height>
+     <x>217</x>
+     <y>4</y>
+     <width>53</width>
+     <height>16</height>
     </rect>
    </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="text">
-    <string>Source</string>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="outputBox">
-   <property name="geometry">
-    <rect>
-     <x>50</x>
-     <y>96</y>
-     <width>294</width>
-     <height>18</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>7</pointsize>
-    </font>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_3">
-   <property name="geometry">
-    <rect>
-     <x>12</x>
-     <y>100</y>
-     <width>46</width>
-     <height>13</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>7</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>Output</string>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="receiverBox">
-   <property name="geometry">
-    <rect>
-     <x>50</x>
-     <y>6</y>
-     <width>94</width>
-     <height>18</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>7</pointsize>
-    </font>
+    <string>I/Q Gain</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_4">
    <property name="geometry">
     <rect>
-     <x>10</x>
-     <y>10</y>
+     <x>68</x>
+     <y>6</y>
      <width>46</width>
      <height>13</height>
     </rect>
    </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="text">
     <string>Receiver</string>
    </property>
   </widget>
-  <widget class="QComboBox" name="startupBox">
-   <property name="geometry">
-    <rect>
-     <x>50</x>
-     <y>38</y>
-     <width>94</width>
-     <height>18</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>7</pointsize>
-    </font>
-   </property>
-  </widget>
   <widget class="QLabel" name="label_5">
    <property name="geometry">
     <rect>
-     <x>9</x>
-     <y>40</y>
+     <x>291</x>
+     <y>4</y>
      <width>46</width>
      <height>16</height>
     </rect>
    </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="text">
     <string>Startup</string>
    </property>
   </widget>
-  <widget class="QLineEdit" name="startupEdit">
-   <property name="geometry">
-    <rect>
-     <x>180</x>
-     <y>38</y>
-     <width>83</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>7</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string/>
-   </property>
-  </widget>
   <widget class="QLabel" name="label_6">
    <property name="geometry">
     <rect>
-     <x>150</x>
-     <y>40</y>
+     <x>387</x>
+     <y>4</y>
      <width>32</width>
      <height>16</height>
     </rect>
    </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="text">
     <string>Freq</string>
    </property>
   </widget>
-  <widget class="QComboBox" name="serialBox">
-   <property name="enabled">
-    <bool>true</bool>
-   </property>
+  <widget class="QLabel" name="label_7">
    <property name="geometry">
     <rect>
-     <x>180</x>
-     <y>6</y>
-     <width>57</width>
-     <height>18</height>
+     <x>166</x>
+     <y>4</y>
+     <width>39</width>
+     <height>16</height>
     </rect>
    </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
-   <property name="currentIndex">
-    <number>-1</number>
+   <property name="text">
+    <string>Serial#</string>
    </property>
   </widget>
-  <widget class="QLabel" name="label_7">
+  <widget class="QFrame" name="frame_2">
    <property name="geometry">
     <rect>
-     <x>149</x>
-     <y>10</y>
+     <x>8</x>
+     <y>33</y>
+     <width>453</width>
+     <height>44</height>
+    </rect>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::StyledPanel</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Raised</enum>
+   </property>
+   <widget class="QComboBox" name="receiverBox1">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>3</y>
+      <width>122</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="startupBox1">
+    <property name="geometry">
+     <rect>
+      <x>263</x>
+      <y>3</y>
+      <width>94</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="startupEdit1">
+    <property name="geometry">
+     <rect>
+      <x>360</x>
+      <y>5</y>
+      <width>83</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="sourceBox1">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>22</y>
+      <width>170</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="outputBox1">
+    <property name="geometry">
+     <rect>
+      <x>266</x>
+      <y>24</y>
+      <width>181</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="serialBox1">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>150</x>
+      <y>3</y>
+      <width>57</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+    <property name="currentIndex">
+     <number>-1</number>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="sampleRateBox1">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>206</x>
+      <y>23</y>
+      <width>57</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+    <property name="currentIndex">
+     <number>-1</number>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="iqGain1">
+    <property name="geometry">
+     <rect>
+      <x>214</x>
+      <y>4</y>
+      <width>45</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="minimum">
+     <number>-99</number>
+    </property>
+   </widget>
+   <widget class="QRadioButton" name="sdrEnabledButton">
+    <property name="geometry">
+     <rect>
+      <x>6</x>
+      <y>14</y>
+      <width>19</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>16</width>
+      <height>16</height>
+     </size>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QLabel" name="label_8">
+   <property name="geometry">
+    <rect>
+     <x>68</x>
+     <y>18</y>
      <width>46</width>
      <height>13</height>
     </rect>
    </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="text">
-    <string>Serial#</string>
+    <string>Source</string>
    </property>
+  </widget>
+  <widget class="QLabel" name="label_9">
+   <property name="geometry">
+    <rect>
+     <x>292</x>
+     <y>20</y>
+     <width>46</width>
+     <height>13</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>Output</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_10">
+   <property name="geometry">
+    <rect>
+     <x>217</x>
+     <y>17</y>
+     <width>65</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>SampleRate</string>
+   </property>
+  </widget>
+  <widget class="QFrame" name="frame_3">
+   <property name="geometry">
+    <rect>
+     <x>9</x>
+     <y>79</y>
+     <width>453</width>
+     <height>44</height>
+    </rect>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::StyledPanel</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Raised</enum>
+   </property>
+   <widget class="QComboBox" name="receiverBox2">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>3</y>
+      <width>122</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="startupBox2">
+    <property name="geometry">
+     <rect>
+      <x>263</x>
+      <y>3</y>
+      <width>94</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="startupEdit2">
+    <property name="geometry">
+     <rect>
+      <x>360</x>
+      <y>5</y>
+      <width>83</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="sourceBox2">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>22</y>
+      <width>170</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="outputBox2">
+    <property name="geometry">
+     <rect>
+      <x>266</x>
+      <y>24</y>
+      <width>181</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="serialBox2">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>150</x>
+      <y>3</y>
+      <width>57</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+    <property name="currentIndex">
+     <number>-1</number>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="sampleRateBox2">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>206</x>
+      <y>23</y>
+      <width>57</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+    <property name="currentIndex">
+     <number>-1</number>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="iqGain2">
+    <property name="geometry">
+     <rect>
+      <x>214</x>
+      <y>4</y>
+      <width>45</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="minimum">
+     <number>-99</number>
+    </property>
+   </widget>
+   <widget class="QRadioButton" name="sdrEnabledButton_3">
+    <property name="geometry">
+     <rect>
+      <x>6</x>
+      <y>14</y>
+      <width>19</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>16</width>
+      <height>16</height>
+     </size>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QFrame" name="frame_4">
+   <property name="geometry">
+    <rect>
+     <x>9</x>
+     <y>126</y>
+     <width>453</width>
+     <height>44</height>
+    </rect>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::StyledPanel</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Raised</enum>
+   </property>
+   <widget class="QComboBox" name="receiverBox3">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>3</y>
+      <width>122</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="startupBox3">
+    <property name="geometry">
+     <rect>
+      <x>263</x>
+      <y>3</y>
+      <width>94</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="startupEdit3">
+    <property name="geometry">
+     <rect>
+      <x>360</x>
+      <y>5</y>
+      <width>83</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="sourceBox3">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>22</y>
+      <width>170</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="outputBox3">
+    <property name="geometry">
+     <rect>
+      <x>266</x>
+      <y>24</y>
+      <width>181</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="serialBox3">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>150</x>
+      <y>3</y>
+      <width>57</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+    <property name="currentIndex">
+     <number>-1</number>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="sampleRateBox3">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>206</x>
+      <y>23</y>
+      <width>57</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+    <property name="currentIndex">
+     <number>-1</number>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="iqGain3">
+    <property name="geometry">
+     <rect>
+      <x>214</x>
+      <y>4</y>
+      <width>45</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="minimum">
+     <number>-99</number>
+    </property>
+   </widget>
+   <widget class="QRadioButton" name="sdrEnabledButton_4">
+    <property name="geometry">
+     <rect>
+      <x>6</x>
+      <y>14</y>
+      <width>19</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>16</width>
+      <height>16</height>
+     </size>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QFrame" name="frame_5">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>174</y>
+     <width>453</width>
+     <height>44</height>
+    </rect>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::StyledPanel</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Raised</enum>
+   </property>
+   <widget class="QComboBox" name="receiverBox4">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>3</y>
+      <width>122</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="startupBox4">
+    <property name="geometry">
+     <rect>
+      <x>263</x>
+      <y>3</y>
+      <width>94</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="startupEdit4">
+    <property name="geometry">
+     <rect>
+      <x>360</x>
+      <y>5</y>
+      <width>83</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="sourceBox4">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>22</y>
+      <width>170</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="outputBox4">
+    <property name="geometry">
+     <rect>
+      <x>266</x>
+      <y>24</y>
+      <width>181</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="serialBox4">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>150</x>
+      <y>3</y>
+      <width>57</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+    <property name="currentIndex">
+     <number>-1</number>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="sampleRateBox4">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>206</x>
+      <y>23</y>
+      <width>57</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+    <property name="currentIndex">
+     <number>-1</number>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="iqGain4">
+    <property name="geometry">
+     <rect>
+      <x>214</x>
+      <y>4</y>
+      <width>45</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="minimum">
+     <number>-99</number>
+    </property>
+   </widget>
+   <widget class="QRadioButton" name="sdrEnabledButton_5">
+    <property name="geometry">
+     <rect>
+      <x>6</x>
+      <y>14</y>
+      <width>19</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>16</width>
+      <height>16</height>
+     </size>
+    </property>
+   </widget>
   </widget>
  </widget>
  <resources/>
