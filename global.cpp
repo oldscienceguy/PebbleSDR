@@ -13,6 +13,9 @@ Global::Global()
 		pLogfile = new QDebug(file);
 		*pLogfile << "Pebble log file\n";
 	}
+    //SVN keyword substitution must be turned on for this to updated
+    //Check in this file on every external release to update
+    revision = "$Rev$";
 }
 Global::~Global()
 {
