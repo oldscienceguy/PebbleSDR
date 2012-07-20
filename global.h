@@ -16,6 +16,7 @@ public:
 
 	QDebug *pLogfile;
     Receiver *receiver;
+    char *revision;
 
 private:
 	QFile *file;
