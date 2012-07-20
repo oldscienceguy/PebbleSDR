@@ -7,6 +7,7 @@
 #include "QFile"
 
 class Receiver;
+class Settings;
 
 class Global
 {
@@ -17,6 +18,7 @@ public:
 	QDebug *pLogfile;
     Receiver *receiver;
     char *revision;
+    Settings *settings;
 
 private:
 	QFile *file;
