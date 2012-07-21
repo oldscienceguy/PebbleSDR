@@ -24,22 +24,22 @@ Settings::Settings(void)
     lgFont.setFamily("Lucida Grande");
     lgFont.setPointSize(12);
 
-    selectedSDR = 0; //1st block by default
-
-
+    selectedSDR = 0;
 
 	settingsDialog = new QDialog();
 	sd = new Ui::SettingsDialog();
 	sd->setupUi(settingsDialog);
 
-    SetupSDRBlock(sd->serialBox1,sd->receiverBox1, sd->sampleRateBox1, sd->startupBox1, sd->sourceBox1, sd->outputBox1);
-    SetupSDRBlock(sd->serialBox2,sd->receiverBox2, sd->sampleRateBox2, sd->startupBox2, sd->sourceBox2, sd->outputBox2);
-    SetupSDRBlock(sd->serialBox3,sd->receiverBox3, sd->sampleRateBox3, sd->startupBox3, sd->sourceBox3, sd->outputBox3);
-    SetupSDRBlock(sd->serialBox4,sd->receiverBox4, sd->sampleRateBox4, sd->startupBox4, sd->sourceBox4, sd->outputBox4);
+    settingsDialog->setWindowTitle("Pebble Settings");
 
     sd->saveButton->setFont(medFont);
     sd->cancelButton->setFont(medFont);
     sd->resetAllButton->setFont(medFont);
+
+    connect(sd->sdrEnabledButton1,SIGNAL(clicked()),this,SLOT(SelectedSDRChanged()));
+    connect(sd->sdrEnabledButton2,SIGNAL(clicked()),this,SLOT(SelectedSDRChanged()));
+    connect(sd->sdrEnabledButton3,SIGNAL(clicked()),this,SLOT(SelectedSDRChanged()));
+    connect(sd->sdrEnabledButton4,SIGNAL(clicked()),this,SLOT(SelectedSDRChanged()));
 
     connect(sd->saveButton,SIGNAL(clicked(bool)),this,SLOT(SaveSettings(bool)));
     connect(sd->resetAllButton,SIGNAL(clicked(bool)),this,SLOT(ResetAllSettings(bool)));
@@ -56,22 +56,8 @@ Settings::~Settings(void)
 	delete sd;
 }
 
-void Settings::SetupSDRBlock(QComboBox *serialBox, QComboBox *receiverBox, QComboBox *sampleRateBox, QComboBox *startupBox, QComboBox *sourceBox, QComboBox *outputBox)
+void Settings::SetupRecieverBox(QComboBox *receiverBox)
 {
-    serialBox->setFont(medFont);
-    serialBox->addItem("Any",-1);
-    serialBox->addItem("0",0);
-    serialBox->addItem("1",1);
-    serialBox->addItem("2",2);
-    serialBox->addItem("3",3);
-    serialBox->addItem("4",4);
-    serialBox->addItem("5",5);
-    serialBox->addItem("6",6);
-    serialBox->addItem("7",7);
-    serialBox->addItem("8",8);
-    serialBox->addItem("9",9);
-    serialBox->setFont(medFont);
-
     receiverBox->setFont(medFont);
     receiverBox->addItem("SR Ensemble",SDR::SR_ENSEMBLE);
     receiverBox->addItem("SR Ensemble 2M",SDR::SR_ENSEMBLE_2M);
@@ -87,119 +73,19 @@ void Settings::SetupSDRBlock(QComboBox *serialBox, QComboBox *receiverBox, QComb
     receiverBox->addItem("FUNcube Dongle",SDR::FUNCUBE);
     receiverBox->addItem("File",SDR::FILE);
     receiverBox->addItem("DVB-T",SDR::DVB_T);
+
     connect(receiverBox,SIGNAL(currentIndexChanged(int)),this,SLOT(ReceiverChanged(int)));
-
-    sampleRateBox->blockSignals(true);
-    sampleRateBox->addItem("48k",48000);
-    sampleRateBox->addItem("96k",96000);
-    sampleRateBox->addItem("192k",192000);
-    sampleRateBox->addItem("384k",384000);
-    sampleRateBox->blockSignals(false);
-    sampleRateBox->setFont(medFont);
-    //connect
-
-    startupBox->setFont(medFont);
-    startupBox->addItem("Last Frequency",Settings::LASTFREQ);
-    startupBox->addItem("Set Frequency", Settings::SETFREQ);
-    startupBox->addItem("Device Default", Settings::DEFAULTFREQ);
-    connect(startupBox,SIGNAL(currentIndexChanged(int)),this,SLOT(StartupChanged(int)));
-
-    sourceBox->setFont(medFont);
-    outputBox->setFont(medFont);
 
 }
 
 void Settings::ShowSettings()
 {
     sd->startupEdit1->setFont(medFont);
-    sd->startupEdit1->setText(QString::number(this->ini_startupFreq[0],'f',0));
-    sd->startupEdit2->setFont(medFont);
-    sd->startupEdit2->setText(QString::number(this->ini_startupFreq[1],'f',0));
-    sd->startupEdit3->setFont(medFont);
-    sd->startupEdit3->setText(QString::number(this->ini_startupFreq[2],'f',0));
-    sd->startupEdit4->setFont(medFont);
-    sd->startupEdit4->setText(QString::number(this->ini_startupFreq[3],'f',0));
 
-#if 0
-	if (startup == SETFREQ)
-		sd->startupEdit->setEnabled(true);
-	else
-		sd->startupEdit->setEnabled(false);
-#endif
-
-	//Audio devices may have been plugged or unplugged, refresh list on each show
-	QStringList inputDevices = SoundCard::DeviceList(true);
-	QStringList outputDevices = SoundCard::DeviceList(false);
-	//Adding items triggers selection, block signals until list is complete
-    sd->sourceBox1->blockSignals(true);
-    sd->sourceBox2->blockSignals(true);
-    sd->sourceBox3->blockSignals(true);
-    sd->sourceBox4->blockSignals(true);
-
-    sd->sourceBox1->clear();
-    sd->sourceBox2->clear();
-    sd->sourceBox3->clear();
-    sd->sourceBox4->clear();
-    int id;
-	for (int i=0; i<inputDevices.count(); i++)
-	{
-		id = inputDevices[i].left(2).toInt();
-        sd->sourceBox1->addItem(inputDevices[i].mid(3),id);
-        sd->sourceBox2->addItem(inputDevices[i].mid(3),id);
-        sd->sourceBox3->addItem(inputDevices[i].mid(3),id);
-        sd->sourceBox4->addItem(inputDevices[i].mid(3),id);
-        if (id == ini_inputDevice[0])
-            sd->sourceBox1->setCurrentIndex(i);
-        if (id == ini_inputDevice[1])
-            sd->sourceBox2->setCurrentIndex(i);
-        if (id == ini_inputDevice[2])
-            sd->sourceBox3->setCurrentIndex(i);
-        if (id == ini_inputDevice[3])
-            sd->sourceBox4->setCurrentIndex(i);
-
-
-	}
-    sd->sourceBox1->blockSignals(false);
-    sd->sourceBox2->blockSignals(false);
-    sd->sourceBox3->blockSignals(false);
-    sd->sourceBox4->blockSignals(false);
-
-    sd->outputBox1->blockSignals(true);
-    sd->outputBox2->blockSignals(true);
-    sd->outputBox3->blockSignals(true);
-    sd->outputBox4->blockSignals(true);
-
-    sd->outputBox1->clear();
-    sd->outputBox2->clear();
-    sd->outputBox3->clear();
-    sd->outputBox4->clear();
-
-    for (int i=0; i<outputDevices.count(); i++)
-	{
-		id = outputDevices[i].left(2).toInt();
-        sd->outputBox1->addItem(outputDevices[i].mid(3),id);
-        sd->outputBox2->addItem(outputDevices[i].mid(3),id);
-        sd->outputBox3->addItem(outputDevices[i].mid(3),id);
-        sd->outputBox4->addItem(outputDevices[i].mid(3),id);
-        if (id == ini_outputDevice[0])
-            sd->outputBox1->setCurrentIndex(i);
-        if (id == ini_outputDevice[1])
-            sd->outputBox2->setCurrentIndex(i);
-        if (id == ini_outputDevice[2])
-            sd->outputBox3->setCurrentIndex(i);
-        if (id == ini_outputDevice[3])
-            sd->outputBox4->setCurrentIndex(i);
-
-	}
-    sd->outputBox1->blockSignals(false);
-    sd->outputBox2->blockSignals(false);
-    sd->outputBox3->blockSignals(false);
-    sd->outputBox4->blockSignals(false);
-
-    sd->iqGain1->setValue(ini_iqGain[0]);
-    sd->iqGain2->setValue(ini_iqGain[1]);
-    sd->iqGain3->setValue(ini_iqGain[2]);
-    sd->iqGain4->setValue(ini_iqGain[3]);
+    SetupRecieverBox(sd->receiverBox1);
+    SetupRecieverBox(sd->receiverBox2);
+    SetupRecieverBox(sd->receiverBox3);
+    SetupRecieverBox(sd->receiverBox4);
 
     int cur;
     cur = sd->receiverBox1->findData(ini_sdrDevice[0]);
@@ -211,49 +97,195 @@ void Settings::ShowSettings()
     cur = sd->receiverBox4->findData(ini_sdrDevice[3]);
     sd->receiverBox4->setCurrentIndex(cur);
 
-    cur = sd->sampleRateBox1->findData(ini_sampleRate[0]);
-    sd->sampleRateBox1->setCurrentIndex(cur);
-    cur = sd->sampleRateBox2->findData(ini_sampleRate[1]);
-    sd->sampleRateBox2->setCurrentIndex(cur);
-    cur = sd->sampleRateBox3->findData(ini_sampleRate[2]);
-    sd->sampleRateBox3->setCurrentIndex(cur);
-    cur = sd->sampleRateBox4->findData(ini_sampleRate[3]);
-    sd->sampleRateBox4->setCurrentIndex(cur);
 
-    cur = sd->startupBox1->findData(ini_startup[0]);
-    sd->startupBox1->setCurrentIndex(cur);
-    cur = sd->startupBox2->findData(ini_startup[1]);
-    sd->startupBox2->setCurrentIndex(cur);
-    cur = sd->startupBox3->findData(ini_startup[2]);
-    sd->startupBox3->setCurrentIndex(cur);
-    cur = sd->startupBox4->findData(ini_startup[3]);
-    sd->startupBox4->setCurrentIndex(cur);
+    sd->serialBox1->setFont(medFont);
+    sd->serialBox1->addItem("Any",-1);
+    sd->serialBox1->addItem("0",0);
+    sd->serialBox1->addItem("1",1);
+    sd->serialBox1->addItem("2",2);
+    sd->serialBox1->addItem("3",3);
+    sd->serialBox1->addItem("4",4);
+    sd->serialBox1->addItem("5",5);
+    sd->serialBox1->addItem("6",6);
+    sd->serialBox1->addItem("7",7);
+    sd->serialBox1->addItem("8",8);
+    sd->serialBox1->addItem("9",9);
+    sd->serialBox1->setFont(medFont);
 
-	//Serial box only applies to SoftRocks for now
-	ReceiverChanged(0); //Enable/disable
-    sd->serialBox1->setCurrentIndex(ini_sdrNumber[0]+1);
-    sd->serialBox2->setCurrentIndex(ini_sdrNumber[1]+1);
-    sd->serialBox3->setCurrentIndex(ini_sdrNumber[2]+1);
-    sd->serialBox4->setCurrentIndex(ini_sdrNumber[3]+1);
+    sd->sampleRateBox1->blockSignals(true);
+    sd->sampleRateBox1->addItem("48k",48000);
+    sd->sampleRateBox1->addItem("96k",96000);
+    sd->sampleRateBox1->addItem("192k",192000);
+    sd->sampleRateBox1->addItem("384k",384000);
+    sd->sampleRateBox1->blockSignals(false);
+    sd->sampleRateBox1->setFont(medFont);
+    //connect
 
-	//QSettings
-	settingsDialog->show();
-}
-void Settings::StartupChanged(int i)
-{
+    sd->startupBox1->setFont(medFont);
+    sd->startupBox1->addItem("Last Frequency",Settings::LASTFREQ);
+    sd->startupBox1->addItem("Set Frequency", Settings::SETFREQ);
+    sd->startupBox1->addItem("Device Default", Settings::DEFAULTFREQ);
+    connect(sd->startupBox1,SIGNAL(currentIndexChanged(int)),this,SLOT(StartupChanged(int)));
+
+    sd->sourceBox1->setFont(medFont);
+    sd->outputBox1->setFont(medFont);
+
+
 #if 0
-	startup = (STARTUP)sd->startupBox->itemData(i).toInt();
 	if (startup == SETFREQ)
 		sd->startupEdit->setEnabled(true);
 	else
 		sd->startupEdit->setEnabled(false);
 #endif
+
+	//Audio devices may have been plugged or unplugged, refresh list on each show
+    inputDevices = SoundCard::DeviceList(true);
+    outputDevices = SoundCard::DeviceList(false);
+
+    SetOptionsForSDR(selectedSDR); //Make sure fields are loaded
+    SelectedSDRChanged(selectedSDR);
+
+	//QSettings
+	settingsDialog->show();
+}
+
+//If called from connect, s will = -1
+//Otherwise s = button to select
+void Settings::SelectedSDRChanged(int s)
+{
+    //Save previous settings
+    SaveSettings(true);
+
+    //If s == -1, then called from connect link and we need to figure out selection
+    if (s == -1) {
+        if (sd->sdrEnabledButton1->isChecked())
+            s = 0;
+        else if (sd->sdrEnabledButton2->isChecked())
+            s = 1;
+        else if (sd->sdrEnabledButton3->isChecked())
+            s = 2;
+        else if (sd->sdrEnabledButton4->isChecked())
+            s = 3;
+    }
+
+    //s now has selection
+    selectedSDR = s;
+    //Load the options for selected SDR
+    SetOptionsForSDR(selectedSDR);
+
+    sd->receiverBox1->setEnabled(false);
+    sd->receiverBox2->setEnabled(false);
+    sd->receiverBox3->setEnabled(false);
+    sd->receiverBox4->setEnabled(false);
+
+    switch (selectedSDR)
+    {
+    case 0:
+        sd->receiverBox1->setEnabled(true);
+        sd->sdrEnabledButton1->setChecked(true);
+
+        break;
+    case 1:
+        sd->receiverBox2->setEnabled(true);
+        sd->sdrEnabledButton2->setChecked(true);
+
+        break;
+    case 2:
+        sd->receiverBox3->setEnabled(true);
+        sd->sdrEnabledButton3->setChecked(true);
+
+        break;
+    case 3:
+        sd->receiverBox4->setEnabled(true);
+        sd->sdrEnabledButton4->setChecked(true);
+
+        break;
+    }
+
+
+}
+
+void Settings::SetOptionsForSDR(int s)
+{
+    //Adding items triggers selection, block signals until list is complete
+    sd->sourceBox1->blockSignals(true);
+    sd->sourceBox1->clear();
+    int id;
+    //Input devices may be restricted form some SDRs
+    for (int i=0; i<inputDevices.count(); i++)
+    {
+        id = inputDevices[i].left(2).toInt();
+        sd->sourceBox1->addItem(inputDevices[i].mid(3),id);
+        if (id == ini_inputDevice[s])
+            sd->sourceBox1->setCurrentIndex(i);
+    }
+    sd->sourceBox1->blockSignals(false);
+
+    sd->outputBox1->blockSignals(true);
+    sd->outputBox1->clear();
+    for (int i=0; i<outputDevices.count(); i++)
+    {
+        id = outputDevices[i].left(2).toInt();
+        sd->outputBox1->addItem(outputDevices[i].mid(3),id);
+        if (id == ini_outputDevice[s])
+            sd->outputBox1->setCurrentIndex(i);
+    }
+    sd->outputBox1->blockSignals(false);
+
+    sd->iqGain1->setValue(ini_iqGain[s]);
+
+    int cur;
+    cur = sd->sampleRateBox1->findData(ini_sampleRate[s]);
+    sd->sampleRateBox1->setCurrentIndex(cur);
+
+    cur = sd->startupBox1->findData(ini_startup[s]);
+    sd->startupBox1->setCurrentIndex(cur);
+
+    StartupChanged(cur);
+
+    //Serial box only applies to SoftRocks for now
+    ReceiverChanged(0); //Enable/disable
+    sd->serialBox1->setCurrentIndex(ini_sdrNumber[s]+1);
+
+}
+
+void Settings::StartupChanged(int i)
+{
+
+    startup = (STARTUP)sd->startupBox1->itemData(i).toInt();
+    sd->startupEdit1->setText(QString::number(this->ini_startupFreq[selectedSDR],'f',0));
+    if (startup == SETFREQ) {
+        sd->startupEdit1->setEnabled(true);
+    }
+    else {
+        sd->startupEdit1->setEnabled(false);
+    }
+
 }
 void Settings::ReceiverChanged(int i)
 {
-#if 0
-	int cur = sd->receiverBox->currentIndex();
-	SDR::SDRDEVICE dev = (SDR::SDRDEVICE)sd->receiverBox->itemData(cur).toInt();
+    int cur;
+    SDR::SDRDEVICE dev;
+    switch (selectedSDR)
+    {
+    case 0:
+        cur = sd->receiverBox1->currentIndex();
+        dev = (SDR::SDRDEVICE)sd->receiverBox1->itemData(cur).toInt();
+        break;
+    case 1:
+        cur = sd->receiverBox2->currentIndex();
+        dev = (SDR::SDRDEVICE)sd->receiverBox2->itemData(cur).toInt();
+        break;
+    case 2:
+        cur = sd->receiverBox3->currentIndex();
+        dev = (SDR::SDRDEVICE)sd->receiverBox3->itemData(cur).toInt();
+        break;
+    case 3:
+        cur = sd->receiverBox4->currentIndex();
+        dev = (SDR::SDRDEVICE)sd->receiverBox4->itemData(cur).toInt();
+        break;
+    }
+
 
 	//Reset to default
     //!!sd->serialBox->setCurrentIndex(0);
@@ -262,27 +294,30 @@ void Settings::ReceiverChanged(int i)
 	//Serial box only applies to SoftRocks for now
 	if (dev == SDR::SR_ENSEMBLE||dev==SDR::SR_ENSEMBLE_2M||dev==SDR::SR_ENSEMBLE_4M||
         dev==SDR::SR_ENSEMBLE_6M || dev==SDR::SR_ENSEMBLE_LF || dev==SDR::SR_V9)
-		sd->serialBox->setEnabled(true);
+        sd->serialBox1->setEnabled(true);
 	else
-		sd->serialBox->setEnabled(false);
-#endif
+        sd->serialBox1->setEnabled(false);
 }
+
 void Settings::ReadSettings()
 {
 	//Read settings from ini file or set defaults
 	//Todo: Make strings constants
 	//If we don' specify a group, "General" is assumed
+
+    selectedSDR = qSettings->value("selectedSDR",0).toInt();
+
     ini_startup[0] = (STARTUP)qSettings->value("Startup1", 0).toInt();
     ini_startup[1] = (STARTUP)qSettings->value("Startup2", 0).toInt();
     ini_startup[2] = (STARTUP)qSettings->value("Startup3", 0).toInt();
     ini_startup[3] = (STARTUP)qSettings->value("Startup4", 0).toInt();
-    startup = ini_startup[0]; //!!
+    startup = ini_startup[selectedSDR];
 
     ini_startupFreq[0] = qSettings->value("StartupFreq1", 10000000).toDouble();
     ini_startupFreq[1] = qSettings->value("StartupFreq2", 10000000).toDouble();
     ini_startupFreq[2] = qSettings->value("StartupFreq3", 10000000).toDouble();
     ini_startupFreq[3] = qSettings->value("StartupFreq4", 10000000).toDouble();
-    startupFreq = ini_startupFreq[0]; //!!
+    startupFreq = ini_startupFreq[selectedSDR];
 
 	lastFreq = qSettings->value("LastFreq", 10000000).toDouble();
 
@@ -290,19 +325,19 @@ void Settings::ReadSettings()
     ini_inputDevice[1] = qSettings->value("InputDevice2", SoundCard::DefaultInputDevice()).toInt();
     ini_inputDevice[2] = qSettings->value("InputDevice3", SoundCard::DefaultInputDevice()).toInt();
     ini_inputDevice[3] = qSettings->value("InputDevice4", SoundCard::DefaultInputDevice()).toInt();
-    inputDevice = ini_inputDevice[0]; //!!
+    inputDevice = ini_inputDevice[selectedSDR];
 
     ini_outputDevice[0] = qSettings->value("OutputDevice1", SoundCard::DefaultOutputDevice()).toInt();
     ini_outputDevice[1] = qSettings->value("OutputDevice2", SoundCard::DefaultOutputDevice()).toInt();
     ini_outputDevice[2] = qSettings->value("OutputDevice3", SoundCard::DefaultOutputDevice()).toInt();
     ini_outputDevice[3] = qSettings->value("OutputDevice4", SoundCard::DefaultOutputDevice()).toInt();
-    outputDevice = ini_outputDevice[0]; //!!
+    outputDevice = ini_outputDevice[selectedSDR];
 
     ini_sampleRate[0] = qSettings->value("SampleRate1", 48000).toInt();
     ini_sampleRate[1] = qSettings->value("SampleRate2", 48000).toInt();
     ini_sampleRate[2] = qSettings->value("SampleRate3", 48000).toInt();
     ini_sampleRate[3] = qSettings->value("SampleRate4", 48000).toInt();
-    sampleRate = ini_sampleRate[0]; //!!
+    sampleRate = ini_sampleRate[selectedSDR];
 
 	decimateLimit = qSettings->value("DecimateLimit", 24000).toInt();
 	postMixerDecimate = qSettings->value("PostMixerDecimate",true).toBool();
@@ -313,18 +348,19 @@ void Settings::ReadSettings()
     ini_sdrDevice[1] = (SDR::SDRDEVICE)qSettings->value("sdrDevice2", SDR::SR_V9).toInt();
     ini_sdrDevice[2] = (SDR::SDRDEVICE)qSettings->value("sdrDevice3", SDR::SR_V9).toInt();
     ini_sdrDevice[3] = (SDR::SDRDEVICE)qSettings->value("sdrDevice4", SDR::SR_V9).toInt();
-    sdrDevice = ini_sdrDevice[0]; //!!Replace with sdrselection
+    sdrDevice = ini_sdrDevice[selectedSDR];
 
     ini_sdrNumber[0] = qSettings->value("sdrNumber1",-1).toInt();
     ini_sdrNumber[1] = qSettings->value("sdrNumber2",-1).toInt();
     ini_sdrNumber[2] = qSettings->value("sdrNumber3",-1).toInt();
     ini_sdrNumber[3] = qSettings->value("sdrNumber4",-1).toInt();
-    sdrNumber = ini_sdrNumber[0]; //!!Replace with sdrselection
+    sdrNumber = ini_sdrNumber[selectedSDR];
 
     ini_iqGain[0] = qSettings->value("iqGain1",0).toInt();
     ini_iqGain[1] = qSettings->value("iqGain2",0).toInt();
     ini_iqGain[2] = qSettings->value("iqGain3",0).toInt();
     ini_iqGain[3] = qSettings->value("iqGain4",0).toInt();
+    iqGain = ini_iqGain[selectedSDR];
 
     dbOffset = qSettings->value("dbOffset",-70).toFloat();
 	lastMode = qSettings->value("LastMode",0).toInt();
@@ -337,23 +373,14 @@ void Settings::ReadSettings()
 void Settings::SaveSettings(bool b)
 {
     int cur;
+
+    //SelectedSdr is already set, save current values
+
     cur = sd->sourceBox1->currentIndex();
-    ini_inputDevice[0] = sd->sourceBox1->itemData(cur).toInt();
-    cur = sd->sourceBox2->currentIndex();
-    ini_inputDevice[1] = sd->sourceBox2->itemData(cur).toInt();
-    cur = sd->sourceBox3->currentIndex();
-    ini_inputDevice[2] = sd->sourceBox3->itemData(cur).toInt();
-    cur = sd->sourceBox4->currentIndex();
-    ini_inputDevice[3] = sd->sourceBox4->itemData(cur).toInt();
+    ini_inputDevice[selectedSDR] = sd->sourceBox1->itemData(cur).toInt();
 
     cur = sd->outputBox1->currentIndex();
-    ini_outputDevice[0] = sd->outputBox1->itemData(cur).toInt();
-    cur = sd->outputBox2->currentIndex();
-    ini_outputDevice[1] = sd->outputBox2->itemData(cur).toInt();
-    cur = sd->outputBox3->currentIndex();
-    ini_outputDevice[2] = sd->outputBox3->itemData(cur).toInt();
-    cur = sd->outputBox4->currentIndex();
-    ini_outputDevice[3] = sd->outputBox4->itemData(cur).toInt();
+    ini_outputDevice[selectedSDR] = sd->outputBox1->itemData(cur).toInt();
 
     cur = sd->receiverBox1->currentIndex();
     ini_sdrDevice[0] = (SDR::SDRDEVICE)sd->receiverBox1->itemData(cur).toInt();
@@ -365,45 +392,21 @@ void Settings::SaveSettings(bool b)
     ini_sdrDevice[3] = (SDR::SDRDEVICE)sd->receiverBox4->itemData(cur).toInt();
 
     cur = sd->serialBox1->currentIndex();
-    ini_sdrNumber[0] = sd->serialBox1->itemData(cur).toInt();
-    cur = sd->serialBox2->currentIndex();
-    ini_sdrNumber[1] = sd->serialBox2->itemData(cur).toInt();
-    cur = sd->serialBox3->currentIndex();
-    ini_sdrNumber[2] = sd->serialBox3->itemData(cur).toInt();
-    cur = sd->serialBox4->currentIndex();
-    ini_sdrNumber[3] = sd->serialBox4->itemData(cur).toInt();
+    ini_sdrNumber[selectedSDR] = sd->serialBox1->itemData(cur).toInt();
 
     cur = sd->sampleRateBox1->currentIndex();
-    ini_sampleRate[0] = sd->sampleRateBox1->itemData(cur).toInt();
-    cur = sd->sampleRateBox2->currentIndex();
-    ini_sampleRate[1] = sd->sampleRateBox2->itemData(cur).toInt();
-    cur = sd->sampleRateBox3->currentIndex();
-    ini_sampleRate[2] = sd->sampleRateBox3->itemData(cur).toInt();
-    cur = sd->sampleRateBox4->currentIndex();
-    ini_sampleRate[3] = sd->sampleRateBox4->itemData(cur).toInt();
+    ini_sampleRate[selectedSDR] = sd->sampleRateBox1->itemData(cur).toInt();
 
     cur = sd->startupBox1->currentIndex();
-    ini_startup[0] = (STARTUP)sd->startupBox1->itemData(cur).toInt();
-    cur = sd->startupBox2->currentIndex();
-    ini_startup[1] = (STARTUP)sd->startupBox2->itemData(cur).toInt();
-    cur = sd->startupBox3->currentIndex();
-    ini_startup[2] = (STARTUP)sd->startupBox3->itemData(cur).toInt();
-    cur = sd->startupBox4->currentIndex();
-    ini_startup[3] = (STARTUP)sd->startupBox4->itemData(cur).toInt();
+    ini_startup[selectedSDR] = (STARTUP)sd->startupBox1->itemData(cur).toInt();
+    ini_startupFreq[selectedSDR] = sd->startupEdit1->text().toDouble();
 
-    ini_iqGain[0] = sd->iqGain1->value();
-    ini_iqGain[1] = sd->iqGain2->value();
-    ini_iqGain[2] = sd->iqGain3->value();
-    ini_iqGain[3] = sd->iqGain4->value();
+    ini_iqGain[selectedSDR] = sd->iqGain1->value();
 
-    ini_startupFreq[0] = sd->startupEdit1->text().toDouble();
-    ini_startupFreq[1] = sd->startupEdit2->text().toDouble();
-    ini_startupFreq[2] = sd->startupEdit3->text().toDouble();
-    ini_startupFreq[3] = sd->startupEdit4->text().toDouble();
 
 	WriteSettings();
     ReadSettings();
-	emit Restart();
+    //emit Restart();
 }
 //Save to disk
 void Settings::WriteSettings()
@@ -459,6 +462,8 @@ void Settings::WriteSettings()
 	qSettings->setValue("FramesPerBuffer",framesPerBuffer);
 	qSettings->setValue("LeftRightIncrement",leftRightIncrement);
 	qSettings->setValue("UpDownIncrement",upDownIncrement);
+
+    qSettings->setValue("selectedSDR",selectedSDR);
 
 	qSettings->sync();
 }

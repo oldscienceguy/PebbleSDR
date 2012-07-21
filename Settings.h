@@ -61,8 +61,8 @@ private:
 	Ui::SettingsDialog *sd;
 	QSettings *qSettings;
 	void ReadSettings();
-    void SetupSDRBlock(QComboBox *serialBox, QComboBox *receiverBox, QComboBox *sampleRateBox,
-                       QComboBox *startupBox, QComboBox *sourceBox, QComboBox *outputBox);
+    void SetOptionsForSDR(int s);
+    void SetupRecieverBox(QComboBox *receiverBox);
 
     //Values from ini file.  Public settings are for currently selected (1-4) SDR device
     SDR::SDRDEVICE ini_sdrDevice[4];
@@ -74,11 +74,14 @@ private:
     int ini_outputDevice[4];
     int ini_iqGain[4];
 
+    QStringList inputDevices;
+    QStringList outputDevices;
 
 private slots:
 	void StartupChanged(int);
 	void SaveSettings(bool b);
 	void ReceiverChanged(int i);
+    void SelectedSDRChanged(int s = -1);
 
 
 };
