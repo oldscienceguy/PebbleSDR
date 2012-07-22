@@ -56,6 +56,7 @@ public:
 	void SetMute(bool b);
 	void ShowPresets();
     Presets *GetPresets() {return presets;}
+    bool GetPowerOn() {return powerOn;}
 
     void SetDataSelection(ReceiverWidget::DATA_SELECTION d);
 	Settings * GetSettings() {return settings;}

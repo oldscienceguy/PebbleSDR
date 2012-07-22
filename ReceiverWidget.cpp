@@ -31,6 +31,7 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	agcModes << "OFF" << "SLOW" << "MED" << "FAST" << "LONG";
 	ui.agcBox->addItems(agcModes);
 
+#if 0
 	QMenu *settingsMenu = new QMenu();
 	//Shortcut, does connect(...triggered(bool) ...)
 	settingsMenu->addAction("General",receiver,SLOT(ShowSettings(bool)));
@@ -38,6 +39,8 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	settingsMenu->addAction("IQ Balance",receiver,SLOT(ShowIQBalance(bool)));
     settingsMenu->setFont(medFont);
 	ui.settingsButton->setMenu(settingsMenu);
+#endif
+    connect(ui.settingsButton,SIGNAL(clicked(bool)),receiver,SLOT(ShowSettings(bool)));
 
 	//Pulled from SpoectrumWidget to allow us to display other data in same area
 	//Station Information

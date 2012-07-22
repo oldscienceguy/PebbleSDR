@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>483</width>
-    <height>305</height>
+    <height>279</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,8 +16,8 @@
   <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
-     <x>10</x>
-     <y>246</y>
+     <x>11</x>
+     <y>229</y>
      <width>467</width>
      <height>43</height>
     </rect>
@@ -96,10 +96,10 @@
   <widget class="QFrame" name="frame_2">
    <property name="geometry">
     <rect>
-     <x>7</x>
-     <y>112</y>
+     <x>8</x>
+     <y>111</y>
      <width>470</width>
-     <height>73</height>
+     <height>111</height>
     </rect>
    </property>
    <property name="frameShape">
@@ -354,13 +354,173 @@
      <string>IQ Order</string>
     </property>
    </widget>
+   <widget class="QComboBox" name="serialBox1">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>410</x>
+      <y>45</y>
+      <width>57</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>7</pointsize>
+     </font>
+    </property>
+    <property name="currentIndex">
+     <number>-1</number>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="iqEnableBalance">
+    <property name="geometry">
+     <rect>
+      <x>2</x>
+      <y>70</y>
+      <width>111</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Enable I/Q Balance</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="iqBalancePhaseLabel">
+    <property name="geometry">
+     <rect>
+      <x>351</x>
+      <y>90</y>
+      <width>71</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Phase: 0.123</string>
+    </property>
+   </widget>
+   <widget class="QSlider" name="iqBalanceGain">
+    <property name="geometry">
+     <rect>
+      <x>124</x>
+      <y>70</y>
+      <width>155</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="minimum">
+     <number>-500</number>
+    </property>
+    <property name="maximum">
+     <number>500</number>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+   </widget>
+   <widget class="QSlider" name="iqBalancePhase">
+    <property name="geometry">
+     <rect>
+      <x>302</x>
+      <y>70</y>
+      <width>155</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="minimum">
+     <number>-500</number>
+    </property>
+    <property name="maximum">
+     <number>500</number>
+    </property>
+    <property name="singleStep">
+     <number>1</number>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+   </widget>
+   <widget class="QLabel" name="iqBalanceGainLabel">
+    <property name="geometry">
+     <rect>
+      <x>177</x>
+      <y>90</y>
+      <width>75</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Gain: 0.123</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="iqBalanceReset">
+    <property name="geometry">
+     <rect>
+      <x>262</x>
+      <y>88</y>
+      <width>59</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Reset</string>
+    </property>
+   </widget>
+   <zorder>startupBox1</zorder>
+   <zorder>sourceBox1</zorder>
+   <zorder>outputBox1</zorder>
+   <zorder>sampleRateBox1</zorder>
+   <zorder>iqGain1</zorder>
+   <zorder>label_8</zorder>
+   <zorder>label_9</zorder>
+   <zorder>label_2</zorder>
+   <zorder>label_10</zorder>
+   <zorder>label_5</zorder>
+   <zorder>startupEdit1</zorder>
+   <zorder>IQSettings</zorder>
+   <zorder>label_11</zorder>
+   <zorder>serialBox1</zorder>
+   <zorder></zorder>
+   <zorder>iqEnableBalance</zorder>
+   <zorder>iqBalancePhaseLabel</zorder>
+   <zorder>iqBalanceGain</zorder>
+   <zorder>iqBalancePhase</zorder>
+   <zorder>iqBalanceGainLabel</zorder>
+   <zorder>iqBalanceReset</zorder>
   </widget>
   <widget class="QFrame" name="frame">
    <property name="geometry">
     <rect>
      <x>6</x>
      <y>16</y>
-     <width>459</width>
+     <width>470</width>
      <height>90</height>
     </rect>
    </property>
@@ -506,27 +666,27 @@
      </font>
     </property>
    </widget>
-  </widget>
-  <widget class="QComboBox" name="serialBox1">
-   <property name="enabled">
-    <bool>true</bool>
-   </property>
-   <property name="geometry">
-    <rect>
-     <x>426</x>
-     <y>216</y>
-     <width>57</width>
-     <height>18</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>7</pointsize>
-    </font>
-   </property>
-   <property name="currentIndex">
-    <number>-1</number>
-   </property>
+   <widget class="QPushButton" name="sdrOptionsButton">
+    <property name="geometry">
+     <rect>
+      <x>298</x>
+      <y>1</y>
+      <width>157</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>SDR Options (must be on)</string>
+    </property>
+    <property name="autoDefault">
+     <bool>false</bool>
+    </property>
+   </widget>
   </widget>
  </widget>
  <resources/>

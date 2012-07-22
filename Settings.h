@@ -42,6 +42,10 @@ public:
 
     double iqGain; //Normalize device so incoming IQ levels are consistent
     IQORDER iqOrder;
+    //Image rejection (iqbalance) factors for this device
+    double iqBalanceGain;
+    double iqBalancePhase;
+    bool iqBalanceEnable;
 
     int selectedSDR;
 
@@ -76,6 +80,9 @@ private:
     int ini_outputDevice[4];
     double ini_iqGain[4];
     IQORDER ini_iqOrder[4];
+    double ini_iqBalanceGain[4];
+    double ini_iqBalancePhase[4];
+    bool ini_iqBalanceEnable[4];
 
     QStringList inputDevices;
     QStringList outputDevices;
@@ -87,5 +94,10 @@ private slots:
     void SelectedSDRChanged(int s = -1);
     void IQGainChanged(double i);
     void IQOrderChanged(int);
+    void ShowSDRSettings();
+    void BalancePhaseChanged(int v);
+    void BalanceGainChanged(int v);
+    void BalanceEnabledChanged(bool b);
+    void BalanceReset();
 
 };

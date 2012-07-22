@@ -1,9 +1,11 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
+#include "global.h"
 #include "QMessageBox"
 #include "Settings.h"
 #include "soundcard.h"
 #include "demod.h" //For DEMODMODE
+#include "Receiver.h"
 
 Settings::Settings(void)
 {
@@ -88,6 +90,27 @@ Settings::Settings(void)
     connect(sd->saveButton,SIGNAL(clicked(bool)),this,SLOT(SaveSettings(bool)));
     connect(sd->resetAllButton,SIGNAL(clicked(bool)),this,SLOT(ResetAllSettings(bool)));
 
+    connect(sd->sdrOptionsButton,SIGNAL(clicked()),this,SLOT(ShowSDRSettings()));
+
+    sd->iqEnableBalance->setFont(medFont);
+    sd->iqBalanceGainLabel->setFont(medFont);
+    sd->iqBalanceGain->setFont(medFont);
+    sd->iqBalancePhaseLabel->setFont(medFont);
+    sd->iqBalancePhase->setFont(medFont);
+
+    sd->iqBalancePhase->setMaximum(500);
+    sd->iqBalancePhase->setMinimum(-500);
+    connect(sd->iqBalancePhase,SIGNAL(valueChanged(int)),this,SLOT(BalancePhaseChanged(int)));
+
+    sd->iqBalanceGain->setMaximum(1250);
+    sd->iqBalanceGain->setMinimum(750);
+    connect(sd->iqBalanceGain,SIGNAL(valueChanged(int)),this,SLOT(BalanceGainChanged(int)));
+
+    connect(sd->iqEnableBalance,SIGNAL(toggled(bool)),this,SLOT(BalanceEnabledChanged(bool)));
+
+    sd->iqBalanceReset->setFont(medFont);
+    connect(sd->iqBalanceReset,SIGNAL(clicked()),this,SLOT(BalanceReset()));
+
 	ReadSettings();
 }
 
@@ -148,8 +171,16 @@ void Settings::ShowSettings()
     SetOptionsForSDR(selectedSDR); //Make sure fields are loaded
     SelectedSDRChanged(selectedSDR);
 
+    //SDR options only available when powered on so we can read device data
+    sd->sdrOptionsButton->setEnabled(global->receiver->GetPowerOn());
+
 	//QSettings
 	settingsDialog->show();
+}
+
+void Settings::ShowSDRSettings()
+{
+    global->receiver->ShowSdrSettings(true);
 }
 
 //Show realtime changes so we can see gain
@@ -161,6 +192,39 @@ void Settings::IQGainChanged(double i)
 void Settings::IQOrderChanged(int i)
 {
     iqOrder = (IQORDER)sd->IQSettings->itemData(i).toInt();
+}
+
+void Settings::BalancePhaseChanged(int v)
+{
+    //v is an integer, convert to fraction -.500 to +.500
+    double newValue = v/1000.0;
+    sd->iqBalancePhaseLabel->setText("Phase: " + QString::number(newValue));
+    iqBalancePhase = newValue;
+
+    //receiver->GetIQBalance()->setPhaseFactor(newValue);
+}
+
+void Settings::BalanceGainChanged(int v)
+{
+    //v is an integer, convert to fraction -.750 to +1.250
+    double newValue = v/1000.0;
+    sd->iqBalanceGainLabel->setText("Gain: " + QString::number(newValue));
+    iqBalanceGain = newValue;
+
+    //receiver->GetIQBalance()->setGainFactor(newValue);
+}
+
+void Settings::BalanceEnabledChanged(bool b)
+{
+    iqBalanceEnable = b;
+
+    //receiver->GetIQBalance()->setEnabled(b);
+}
+
+void Settings::BalanceReset()
+{
+    sd->iqBalanceGain->setValue(1000);
+    sd->iqBalancePhase->setValue(0);
 }
 
 //If called from connect, s will = -1
@@ -248,6 +312,10 @@ void Settings::SetOptionsForSDR(int s)
 
     sd->iqGain1->setValue(ini_iqGain[s]);
     sd->IQSettings->setCurrentIndex(ini_iqOrder[s]);
+
+    sd->iqBalanceGain->setValue(ini_iqBalanceGain[s] * 1000);
+    sd->iqBalancePhase->setValue(ini_iqBalancePhase[s] * 1000);
+    sd->iqEnableBalance->setChecked(ini_iqBalanceEnable[s]);
 
     int cur;
     cur = sd->sampleRateBox1->findData(ini_sampleRate[s]);
@@ -383,6 +451,21 @@ void Settings::ReadSettings()
     ini_iqOrder[3] = (IQORDER)qSettings->value("IQOrder4", Settings::IQ).toInt();
     iqOrder = ini_iqOrder[selectedSDR];
 
+    ini_iqBalanceGain[0] = qSettings->value("iqBalanceGain1",1).toDouble();
+    ini_iqBalanceGain[1] = qSettings->value("iqBalanceGain2",1).toDouble();
+    ini_iqBalanceGain[2] = qSettings->value("iqBalanceGain3",1).toDouble();
+    ini_iqBalanceGain[3] = qSettings->value("iqBalanceGain4",1).toDouble();
+
+    ini_iqBalancePhase[0] = qSettings->value("iqBalancePhase1",0).toDouble();
+    ini_iqBalancePhase[1] = qSettings->value("iqBalancePhase2",0).toDouble();
+    ini_iqBalancePhase[2] = qSettings->value("iqBalancePhase3",0).toDouble();
+    ini_iqBalancePhase[3] = qSettings->value("iqBalancePhase4",0).toDouble();
+
+    ini_iqBalanceEnable[0] = qSettings->value("iqBalanceEnable1",false).toBool();
+    ini_iqBalanceEnable[1] = qSettings->value("iqBalanceEnable2",false).toBool();
+    ini_iqBalanceEnable[2] = qSettings->value("iqBalanceEnable3",false).toBool();
+    ini_iqBalanceEnable[3] = qSettings->value("iqBalanceEnable4",false).toBool();
+
     dbOffset = qSettings->value("dbOffset",-70).toFloat();
 	lastMode = qSettings->value("LastMode",0).toInt();
 	lastDisplayMode = qSettings->value("LastDisplayMode",0).toInt();
@@ -425,6 +508,10 @@ void Settings::SaveSettings(bool b)
     ini_iqGain[selectedSDR] = sd->iqGain1->value();
     cur = sd->IQSettings->currentIndex();
     ini_iqOrder[selectedSDR] =  (IQORDER)sd->IQSettings->itemData(cur).toInt();
+
+    ini_iqBalanceGain[selectedSDR] = sd->iqBalanceGain->value() / 1000.0;
+    ini_iqBalancePhase[selectedSDR] = sd->iqBalancePhase->value() / 1000.0;
+    ini_iqBalanceEnable[selectedSDR] = sd->iqEnableBalance->isChecked();
 
 
 	WriteSettings();
@@ -480,6 +567,21 @@ void Settings::WriteSettings()
     qSettings->setValue("IQOrder2", ini_iqOrder[1]);
     qSettings->setValue("IQOrder3", ini_iqOrder[2]);
     qSettings->setValue("IQOrder4", ini_iqOrder[3]);
+
+    qSettings->setValue("iqBalanceGain1", ini_iqBalanceGain[0]);
+    qSettings->setValue("iqBalanceGain2", ini_iqBalanceGain[1]);
+    qSettings->setValue("iqBalanceGain3", ini_iqBalanceGain[2]);
+    qSettings->setValue("iqBalanceGain4", ini_iqBalanceGain[3]);
+
+    qSettings->setValue("iqBalancePhase1", ini_iqBalancePhase[0]);
+    qSettings->setValue("iqBalancePhase2", ini_iqBalancePhase[1]);
+    qSettings->setValue("iqBalancePhase3", ini_iqBalancePhase[2]);
+    qSettings->setValue("iqBalancePhase4", ini_iqBalancePhase[3]);
+
+    qSettings->setValue("iqBalanceEnable1", ini_iqBalanceEnable[0]);
+    qSettings->setValue("iqBalanceEnable2", ini_iqBalanceEnable[1]);
+    qSettings->setValue("iqBalanceEnable3", ini_iqBalanceEnable[2]);
+    qSettings->setValue("iqBalanceEnable4", ini_iqBalanceEnable[3]);
 
     //No UI Settings, only in file
 	qSettings->setValue("dbOffset",dbOffset);
