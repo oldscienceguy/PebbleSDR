@@ -18,6 +18,7 @@ public:
 	void ShowSettings();
 	void WriteSettings();
 	typedef enum STARTUP {SETFREQ = 0, LASTFREQ, DEFAULTFREQ} STARTUP;
+    typedef enum IQORDER {IQ,QI,IONLY,QONLY} IQORDER;
 
 	//Hack, these should eventually be access methods
 	STARTUP startup;
@@ -39,7 +40,8 @@ public:
 	int leftRightIncrement;
 	int upDownIncrement;
 
-    int iqGain; //Normalize device so incoming IQ levels are consistent
+    double iqGain; //Normalize device so incoming IQ levels are consistent
+    IQORDER iqOrder;
 
     int selectedSDR;
 
@@ -72,7 +74,8 @@ private:
     double ini_startupFreq[4];
     int ini_inputDevice[4];
     int ini_outputDevice[4];
-    int ini_iqGain[4];
+    double ini_iqGain[4];
+    IQORDER ini_iqOrder[4];
 
     QStringList inputDevices;
     QStringList outputDevices;
@@ -82,6 +85,7 @@ private slots:
 	void SaveSettings(bool b);
 	void ReceiverChanged(int i);
     void SelectedSDRChanged(int s = -1);
-
+    void IQGainChanged(double i);
+    void IQOrderChanged(int);
 
 };

@@ -35,11 +35,55 @@ Settings::Settings(void)
     sd->saveButton->setFont(medFont);
     sd->cancelButton->setFont(medFont);
     sd->resetAllButton->setFont(medFont);
+    sd->startupEdit1->setFont(medFont);
+
+    SetupRecieverBox(sd->receiverBox1);
+    SetupRecieverBox(sd->receiverBox2);
+    SetupRecieverBox(sd->receiverBox3);
+    SetupRecieverBox(sd->receiverBox4);
+
+    sd->serialBox1->setFont(medFont);
+    sd->serialBox1->addItem("Any",-1);
+    sd->serialBox1->addItem("0",0);
+    sd->serialBox1->addItem("1",1);
+    sd->serialBox1->addItem("2",2);
+    sd->serialBox1->addItem("3",3);
+    sd->serialBox1->addItem("4",4);
+    sd->serialBox1->addItem("5",5);
+    sd->serialBox1->addItem("6",6);
+    sd->serialBox1->addItem("7",7);
+    sd->serialBox1->addItem("8",8);
+    sd->serialBox1->addItem("9",9);
+
+    sd->sampleRateBox1->addItem("48k",48000);
+    sd->sampleRateBox1->addItem("96k",96000);
+    sd->sampleRateBox1->addItem("192k",192000);
+    sd->sampleRateBox1->addItem("384k",384000);
+    sd->sampleRateBox1->setFont(medFont);
+
+    sd->startupBox1->setFont(medFont);
+    sd->startupBox1->addItem("Last Frequency",Settings::LASTFREQ);
+    sd->startupBox1->addItem("Set Frequency", Settings::SETFREQ);
+    sd->startupBox1->addItem("Device Default", Settings::DEFAULTFREQ);
+    connect(sd->startupBox1,SIGNAL(currentIndexChanged(int)),this,SLOT(StartupChanged(int)));
+
+    sd->IQSettings->setFont(medFont);
+    sd->IQSettings->addItem("I/Q (normal)",IQ);
+    sd->IQSettings->addItem("Q/I (swap)",QI);
+    sd->IQSettings->addItem("I Only",IONLY);
+    sd->IQSettings->addItem("Q Only",QONLY);
+    connect(sd->IQSettings,SIGNAL(currentIndexChanged(int)),this,SLOT(IQOrderChanged(int)));
+
+    sd->sourceBox1->setFont(medFont);
+    sd->outputBox1->setFont(medFont);
+
 
     connect(sd->sdrEnabledButton1,SIGNAL(clicked()),this,SLOT(SelectedSDRChanged()));
     connect(sd->sdrEnabledButton2,SIGNAL(clicked()),this,SLOT(SelectedSDRChanged()));
     connect(sd->sdrEnabledButton3,SIGNAL(clicked()),this,SLOT(SelectedSDRChanged()));
     connect(sd->sdrEnabledButton4,SIGNAL(clicked()),this,SLOT(SelectedSDRChanged()));
+
+    connect(sd->iqGain1,SIGNAL(valueChanged(double)),this,SLOT(IQGainChanged(double)));
 
     connect(sd->saveButton,SIGNAL(clicked(bool)),this,SLOT(SaveSettings(bool)));
     connect(sd->resetAllButton,SIGNAL(clicked(bool)),this,SLOT(ResetAllSettings(bool)));
@@ -80,13 +124,6 @@ void Settings::SetupRecieverBox(QComboBox *receiverBox)
 
 void Settings::ShowSettings()
 {
-    sd->startupEdit1->setFont(medFont);
-
-    SetupRecieverBox(sd->receiverBox1);
-    SetupRecieverBox(sd->receiverBox2);
-    SetupRecieverBox(sd->receiverBox3);
-    SetupRecieverBox(sd->receiverBox4);
-
     int cur;
     cur = sd->receiverBox1->findData(ini_sdrDevice[0]);
     sd->receiverBox1->setCurrentIndex(cur);
@@ -96,40 +133,6 @@ void Settings::ShowSettings()
     sd->receiverBox3->setCurrentIndex(cur);
     cur = sd->receiverBox4->findData(ini_sdrDevice[3]);
     sd->receiverBox4->setCurrentIndex(cur);
-
-
-    sd->serialBox1->setFont(medFont);
-    sd->serialBox1->addItem("Any",-1);
-    sd->serialBox1->addItem("0",0);
-    sd->serialBox1->addItem("1",1);
-    sd->serialBox1->addItem("2",2);
-    sd->serialBox1->addItem("3",3);
-    sd->serialBox1->addItem("4",4);
-    sd->serialBox1->addItem("5",5);
-    sd->serialBox1->addItem("6",6);
-    sd->serialBox1->addItem("7",7);
-    sd->serialBox1->addItem("8",8);
-    sd->serialBox1->addItem("9",9);
-    sd->serialBox1->setFont(medFont);
-
-    sd->sampleRateBox1->blockSignals(true);
-    sd->sampleRateBox1->addItem("48k",48000);
-    sd->sampleRateBox1->addItem("96k",96000);
-    sd->sampleRateBox1->addItem("192k",192000);
-    sd->sampleRateBox1->addItem("384k",384000);
-    sd->sampleRateBox1->blockSignals(false);
-    sd->sampleRateBox1->setFont(medFont);
-    //connect
-
-    sd->startupBox1->setFont(medFont);
-    sd->startupBox1->addItem("Last Frequency",Settings::LASTFREQ);
-    sd->startupBox1->addItem("Set Frequency", Settings::SETFREQ);
-    sd->startupBox1->addItem("Device Default", Settings::DEFAULTFREQ);
-    connect(sd->startupBox1,SIGNAL(currentIndexChanged(int)),this,SLOT(StartupChanged(int)));
-
-    sd->sourceBox1->setFont(medFont);
-    sd->outputBox1->setFont(medFont);
-
 
 #if 0
 	if (startup == SETFREQ)
@@ -147,6 +150,17 @@ void Settings::ShowSettings()
 
 	//QSettings
 	settingsDialog->show();
+}
+
+//Show realtime changes so we can see gain
+void Settings::IQGainChanged(double i)
+{
+    iqGain = i;
+}
+//IQ order can be changed in real time, without saving
+void Settings::IQOrderChanged(int i)
+{
+    iqOrder = (IQORDER)sd->IQSettings->itemData(i).toInt();
 }
 
 //If called from connect, s will = -1
@@ -233,6 +247,7 @@ void Settings::SetOptionsForSDR(int s)
     sd->outputBox1->blockSignals(false);
 
     sd->iqGain1->setValue(ini_iqGain[s]);
+    sd->IQSettings->setCurrentIndex(ini_iqOrder[s]);
 
     int cur;
     cur = sd->sampleRateBox1->findData(ini_sampleRate[s]);
@@ -307,10 +322,10 @@ void Settings::ReadSettings()
 
     selectedSDR = qSettings->value("selectedSDR",0).toInt();
 
-    ini_startup[0] = (STARTUP)qSettings->value("Startup1", 0).toInt();
-    ini_startup[1] = (STARTUP)qSettings->value("Startup2", 0).toInt();
-    ini_startup[2] = (STARTUP)qSettings->value("Startup3", 0).toInt();
-    ini_startup[3] = (STARTUP)qSettings->value("Startup4", 0).toInt();
+    ini_startup[0] = (STARTUP)qSettings->value("Startup1", DEFAULTFREQ).toInt();
+    ini_startup[1] = (STARTUP)qSettings->value("Startup2", DEFAULTFREQ).toInt();
+    ini_startup[2] = (STARTUP)qSettings->value("Startup3", DEFAULTFREQ).toInt();
+    ini_startup[3] = (STARTUP)qSettings->value("Startup4", DEFAULTFREQ).toInt();
     startup = ini_startup[selectedSDR];
 
     ini_startupFreq[0] = qSettings->value("StartupFreq1", 10000000).toDouble();
@@ -356,11 +371,17 @@ void Settings::ReadSettings()
     ini_sdrNumber[3] = qSettings->value("sdrNumber4",-1).toInt();
     sdrNumber = ini_sdrNumber[selectedSDR];
 
-    ini_iqGain[0] = qSettings->value("iqGain1",0).toInt();
-    ini_iqGain[1] = qSettings->value("iqGain2",0).toInt();
-    ini_iqGain[2] = qSettings->value("iqGain3",0).toInt();
-    ini_iqGain[3] = qSettings->value("iqGain4",0).toInt();
+    ini_iqGain[0] = qSettings->value("iqGain1",1).toDouble();
+    ini_iqGain[1] = qSettings->value("iqGain2",1).toDouble();
+    ini_iqGain[2] = qSettings->value("iqGain3",1).toDouble();
+    ini_iqGain[3] = qSettings->value("iqGain4",1).toDouble();
     iqGain = ini_iqGain[selectedSDR];
+
+    ini_iqOrder[0] = (IQORDER)qSettings->value("IQOrder1", Settings::IQ).toInt();
+    ini_iqOrder[1] = (IQORDER)qSettings->value("IQOrder2", Settings::IQ).toInt();
+    ini_iqOrder[2] = (IQORDER)qSettings->value("IQOrder3", Settings::IQ).toInt();
+    ini_iqOrder[3] = (IQORDER)qSettings->value("IQOrder4", Settings::IQ).toInt();
+    iqOrder = ini_iqOrder[selectedSDR];
 
     dbOffset = qSettings->value("dbOffset",-70).toFloat();
 	lastMode = qSettings->value("LastMode",0).toInt();
@@ -402,6 +423,8 @@ void Settings::SaveSettings(bool b)
     ini_startupFreq[selectedSDR] = sd->startupEdit1->text().toDouble();
 
     ini_iqGain[selectedSDR] = sd->iqGain1->value();
+    cur = sd->IQSettings->currentIndex();
+    ini_iqOrder[selectedSDR] =  (IQORDER)sd->IQSettings->itemData(cur).toInt();
 
 
 	WriteSettings();
@@ -452,6 +475,11 @@ void Settings::WriteSettings()
     qSettings->setValue("iqGain2",ini_iqGain[1]);
     qSettings->setValue("iqGain3",ini_iqGain[2]);
     qSettings->setValue("iqGain4",ini_iqGain[3]);
+
+    qSettings->setValue("IQOrder1", ini_iqOrder[0]);
+    qSettings->setValue("IQOrder2", ini_iqOrder[1]);
+    qSettings->setValue("IQOrder3", ini_iqOrder[2]);
+    qSettings->setValue("IQOrder4", ini_iqOrder[3]);
 
     //No UI Settings, only in file
 	qSettings->setValue("dbOffset",dbOffset);
