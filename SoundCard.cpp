@@ -3,6 +3,14 @@
 #include "SoundCard.h"
 #include "receiver.h"
 
+/*
+  Notes:
+  7/14/12: Mac coreaudiod went into high CPU spin, 25% instead of normal 2.5%.
+    Problem was corrupt .plist files in Lib/Preferences/Audio
+    Delete com.apple.audio.DeviceSettings.plist and com.apple.audio.SystemSettings.plist and restart
+    Files should be re-created and problem goes away.
+
+*/
 SoundCard::SoundCard(Receiver *r, int sr, int fpb, Settings *s)
 {
 	settings = s;
@@ -43,7 +51,7 @@ int SoundCard::Start(int _inputSampleRate, int _outputSampleRate)
 
 	if (inputSampleRate != 0) {
 		//We're getting input from sound card
-        inParam->device=settings->inputDevice;
+        inParam->device = settings->inputDevice;
         inParam->channelCount = 2;
         inParam->sampleFormat = sampleFormat;
         //Bug: crashes if latency anything except 0, looks like struct is getting corrupted
@@ -52,8 +60,8 @@ int SoundCard::Start(int _inputSampleRate, int _outputSampleRate)
         inParam->suggestedLatency = Pa_GetDeviceInfo(inParam->device)->defaultLowInputLatency;  //Todo: Understand what this means
         inParam->hostApiSpecificStreamInfo = NULL;
 
-		error = Pa_IsFormatSupported(inParam,NULL,inputSampleRate);
-		if (!error) {
+        error = Pa_IsFormatSupported(inParam,NULL,inputSampleRate);
+        if (!error) {
 			error = Pa_OpenStream(&inStream,inParam,NULL,
 				inputSampleRate,framesPerBuffer,paNoFlag,&SoundCard::streamCallback,this );
 			error = Pa_StartStream(inStream);
@@ -181,13 +189,15 @@ QStringList SoundCard::DeviceList(bool typeInput)
                     || apiInfo->type==paCoreAudio)
             {
 
-                if(typeInput && devInfo->maxInputChannels > 0)
+                //Ignore input and output devices that only have 1 channel
+                //We need stereo in for I/Q
+                if(typeInput && devInfo->maxInputChannels > 1)
                 {
                     di = di.sprintf("%2d:%s:%s",Pa_HostApiDeviceIndexToDeviceIndex(i,j),
                         apiInfo->name,devInfo->name);
                     devList << di;
                 }
-                else if(!typeInput && devInfo->maxOutputChannels > 0 )
+                else if(!typeInput && devInfo->maxOutputChannels > 1)
                 {
                     di = di.sprintf("%2d:%s:%s",Pa_HostApiDeviceIndexToDeviceIndex(i,j),
                         apiInfo->name,devInfo->name);
@@ -252,7 +262,7 @@ int SoundCard::streamCallback(
 		sc->inBuffer[i]=CPX(I,Q);
 	}
 	//ProcessBlock handles all receive chain and ouput
-	sc->receiver->ProcessBlock(sc->inBuffer,sc->outBuffer,frameCount);
+    sc->receiver->ProcessBlock(sc->inBuffer,sc->outBuffer,frameCount);
 
 	return paContinue;
 }
