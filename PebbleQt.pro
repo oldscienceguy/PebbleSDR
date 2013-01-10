@@ -85,6 +85,7 @@ macx {
 	#We want this to be whatever the release or debug directory is or added to bundle
 	#This will copy the files into the app bundle, same place ini files go
 	otherfiles.path = $${DESTDIR}/Pebble.app/Contents/MacOS
+	#message($${otherfiles.path})
 	INSTALLS += otherfiles
 
 }
@@ -318,7 +319,6 @@ SOURCES += \
     goertzel.cpp \
     morse.cpp \
     rtl2832.cpp \
-    rtl-sdr/rtl-sdr.c \
     rtl-sdr/tuner_fc2580.c \
     rtl-sdr/tuner_fc0013.c \
     rtl-sdr/tuner_fc0012.c \
