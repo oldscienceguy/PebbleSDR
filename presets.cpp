@@ -128,7 +128,8 @@ QStringList Presets::csvSplit(QString line, char split)
     int start = 0;
     char c;
     while (pos < len) {
-        c = line.at(pos).toAscii();
+        //c = line.at(pos).toAscii();
+        c = line.at(pos).toLatin1();
         //Todo: strip quotes, handle escaped quotes within quotes, other csv exceptions
         if (c == '"') {
             inQuote = !inQuote;
