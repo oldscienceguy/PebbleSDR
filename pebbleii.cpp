@@ -6,7 +6,7 @@
 Global *global;
 
 //Qt::FramelessWindowHint is interesting, but requires us to create our own close, resize, etc
-PebbleII::PebbleII(QWidget *parent, Qt::WFlags flags)
+PebbleII::PebbleII(QWidget *parent, Qt::WindowFlags flags)
 : QMainWindow(parent,flags)
 {
 	ui.setupUi(this);

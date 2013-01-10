@@ -11,7 +11,7 @@ class PebbleII : public QMainWindow
 	Q_OBJECT
 
 public:
-	PebbleII(QWidget *parent = 0, Qt::WFlags flags = 0);
+    PebbleII(QWidget *parent = 0, Qt::WindowFlags flags = 0);
 	~PebbleII();
 	public slots:
 		//none

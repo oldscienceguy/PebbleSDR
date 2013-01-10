@@ -18,8 +18,8 @@ AudioQT::AudioQT(Receiver *r,int sr, int fpb, Settings *s)
 	//Test ouput only
 	qaDevice = QAudioDeviceInfo::defaultOutputDevice();
 
-	qaFormat.setFrequency(sr);
-	qaFormat.setChannels(2);
+    qaFormat.setSampleRate(sr);
+    qaFormat.setChannelCount(2);
 	qaFormat.setSampleSize(16);
 	qaFormat.setCodec("audio/pcm");
 	qaFormat.setByteOrder(QAudioFormat::LittleEndian);
