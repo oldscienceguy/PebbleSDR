@@ -1,6 +1,9 @@
 TEMPLATE = app
 TARGET = Pebble
-QT += core gui multimedia
+#QT5 requires explicit add of Widgets to add QtWidgets which was in QtGui in earlier releases
+QT += widgets core gui multimedia
+
+#Download & install QT 5.0 from http://qt-project.org
 
 #Download & install FTDI D2XX drivers from http://www.ftdichip.com/Drivers/D2XX.htm
 
@@ -21,9 +24,14 @@ QT += core gui multimedia
 #Make sure to update project version if Qt version is updated in QtCreator
 #Exit code 0x0c0000315 if "Release DLLs" not copied to Debug and Release dirs
 
+#RTL2832 original source code: git clone git://git.osmocom.org/rtl-sdr.git
+#Copy relevant files to Pebble source tree and make sure attribution comments are not removed
+
 #Set location to UI auto-generated files so we can get headers from known location
-UI_HEADERS_DIR = $$PWD/UI
-UI_SOURCES_DIR = $$PWD/UI
+message("PWD = "$${PWD})
+UI_DIR = $${PWD}/UI
+RCC_DIR = $${PWD}/UI
+message("UI_HEADERS = "$${UI_DIR})
 
 
 #Should this be predefined somewhere?
@@ -43,11 +51,11 @@ macx {
 		DESTDIR = ../MacRelease
 	}
 
-	OBJECTS_DIR = $$PWD/MacO
+	OBJECTS_DIR = $${PWD}/MacO
 	#Locataion for MOC files
-	MOC_DIR = $$PWD/MacMoc
+	MOC_DIR = $${PWD}/MacMoc
 
-	LIBS += -L$$PWD/../D2XX/bin/10.5-10.7/ -lftd2xx.1.1.0
+	LIBS += -L$${PWD}/../D2XX/bin/10.5-10.7/ -lftd2xx.1.1.0
 	LIBS += ../portaudio/lib/.libs/libportaudio.a
 	#Portaudio needs mac frameworks, this is how to add them
 	LIBS += -framework CoreAudio
@@ -55,7 +63,7 @@ macx {
 	LIBS += -framework AudioUnit
 	LIBS += -framework CoreServices
 	##fftw
-	LIBS += -L$$PWD/../fftw-3.3.1/.libs/ -lfftw3f
+	LIBS += -L$${PWD}/../fftw-3.3.1/.libs/ -lfftw3f
 
 	LIBS += /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation \
 		/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit
@@ -64,8 +72,8 @@ macx {
 	#INCLUDEPATH += ../portaudio/include
 	#LIBPATH += ../portaudio/lib
 	#INCLUDEPATH adds directories for header file searches
-	INCLUDEPATH += $$PWD/../D2XX/bin/10.5-10.7
-	DEPENDPATH += $$PWD/../D2XX/bin/10.5-10.7
+	INCLUDEPATH += $${PWD}/../D2XX/bin/10.5-10.7
+	DEPENDPATH += $${PWD}/../D2XX/bin/10.5-10.7
 
 	#Mac only source files
 	#HIDAPI
@@ -76,7 +84,7 @@ macx {
 
 	#We want this to be whatever the release or debug directory is or added to bundle
 	#This will copy the files into the app bundle, same place ini files go
-	otherfiles.path = $$DESTDIR/Pebble.app/Contents/MacOS
+	otherfiles.path = $${DESTDIR}/Pebble.app/Contents/MacOS
 	INSTALLS += otherfiles
 
 }
@@ -268,7 +276,8 @@ HEADERS += \
     demod/downconvert.h \
     demod/rdsdecode.h \
     filters/fractresampler.h \
-    filters/datatypes.h
+    filters/datatypes.h \
+    rtl-sdr/tuner_r820t.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -319,7 +328,9 @@ SOURCES += \
     demod/wfmdemod.cpp \
     demod/downconvert.cpp \
     demod/rdsdecode.cpp \
-    filters/fractresampler.cpp
+    filters/fractresampler.cpp \
+    rtl-sdr/tuner_r820t.c \
+    rtl-sdr/librtlsdr.c
 
 FORMS += \
     spectrumwidget.ui \
