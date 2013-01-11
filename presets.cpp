@@ -2,6 +2,7 @@
 #include "gpl.h"
 #include "presets.h"
 #include <QMenu>
+#include <QMessageBox>
 
 enum COL {REC=0,EDIT,NAME,FREQ,MODE,NOTES};
 Presets::Presets(ReceiverWidget *w, QWidget *parent)
@@ -53,9 +54,16 @@ Presets::Presets(ReceiverWidget *w, QWidget *parent)
     bandsFile = path + "/PebbleData/bands.csv";
     stationsFile = path + "/PebbleData/eibi.csv";
 
+    bands = NULL;
+    stations = NULL;
+    presets = NULL;
+
     //Bands MUST be read before stations!!
-    ReadBands();
-    ReadStations();
+    if (!ReadBands()) {
+        QMessageBox::information(NULL,"Pebble","No bands.csv file!");
+    } else if(!ReadStations()) {
+        QMessageBox::information(NULL,"Pebble","No eibi.csv file!");
+    }
 
 	Read();
 
@@ -180,6 +188,7 @@ bool Presets::ReadBands()
     }
     if (numBands <= 1) {
         //bands.csv must have at least on line plus header
+        numBands = 0;
         file.close();
         return false;
     }
