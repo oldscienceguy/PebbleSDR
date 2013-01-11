@@ -9,6 +9,8 @@
   - rtl2832_2836_2840...zip which appears to be source code for linuxTV and supports numerous tuners
   - rtl2831-r2-891128e7c333
   - osmo-sdr firmware tuner_e4k.c is considered latest and best (not using yet)
+  Latest rtl-sdr source: git clone git://git.osmocom.org/rtl-sdr.git
+  http://sdr.osmocom.org/trac/wiki/rtl-sdr
 */
 
 enum usb_reg {
@@ -70,7 +72,7 @@ RTL2832::RTL2832 (Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_r
     //RTL2832 samples from 900001 to 3200000 sps (900ksps to 3.2msps)
     //1 msps seems to be optimal according to boards
     //We have to decimate from rtl rate to our rate for everything to work
-    sampleRate = 192000; //settings->sampleRate;
+    sampleRate = settings->sampleRate;
     //Make rtlSample rate close to 1msps but with even decimate
     //Test with higher sps, seems to work better
     /*
@@ -404,14 +406,55 @@ int RTL2832::GetStartupMode()
     return dmFMN;
 }
 
+/*
+Elonics E4000	 52 - 2200 MHz with a gap from 1100 MHz to 1250 MHz (varies)
+Rafael Micro R820T	24 - 1766 MHz
+Fitipower FC0013	22 - 1100 MHz (FC0013B/C, FC0013G has a separate L-band input, which is unconnected on most sticks)
+Fitipower FC0012	22 - 948.6 MHz
+FCI FC2580	146 - 308 MHz and 438 - 924 MHz (gap in between)
+*/
 double RTL2832::GetHighLimit()
 {
-    return 1700000000;  //1.7ghz
+    if (dev==NULL)
+        return 1700000000;
+
+    switch (rtlsdr_get_tuner_type(dev)) {
+        case RTLSDR_TUNER_E4000:
+            return 2200000000;
+        case RTLSDR_TUNER_FC0012:
+            return 948600000;
+        case RTLSDR_TUNER_FC0013:
+            return 1100000000;
+        case RTLSDR_TUNER_FC2580:
+            return 146000000;
+        case RTLSDR_TUNER_R820T:
+            return 1766000000;
+        default:
+            return 1700000000;
+    }
+
 }
 
 double RTL2832::GetLowLimit()
 {
-    return 64000000; //64mhz
+    if (dev==NULL)
+        return 64000000;
+
+    switch (rtlsdr_get_tuner_type(dev)) {
+        case RTLSDR_TUNER_E4000:
+            return 52000000;
+        case RTLSDR_TUNER_FC0012:
+            return 22000000;
+        case RTLSDR_TUNER_FC0013:
+            return 22000000;
+        case RTLSDR_TUNER_FC2580:
+            return 146000000;
+        case RTLSDR_TUNER_R820T:
+            return 24000000;
+        default:
+            return 64000000;
+    }
+
 }
 
 double RTL2832::GetGain()
@@ -421,7 +464,23 @@ double RTL2832::GetGain()
 
 QString RTL2832::GetDeviceName()
 {
-    return "DVB-T";
+    if (dev==NULL)
+        return "No Device Found";
+
+    switch (rtlsdr_get_tuner_type(dev)) {
+        case RTLSDR_TUNER_E4000:
+            return "RTL2832-E4000";
+        case RTLSDR_TUNER_FC0012:
+            return "RTL2832-FC0012";
+        case RTLSDR_TUNER_FC0013:
+            return "RTL2832-FC0013";
+        case RTLSDR_TUNER_FC2580:
+            return "RTL2832-FC2580";
+        case RTLSDR_TUNER_R820T:
+            return "RTL2832-R820T";
+        default:
+            return "RTL2832-Unknown";
+    }
 }
 
 int RTL2832::GetSampleRate()
