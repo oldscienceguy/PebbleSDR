@@ -58,30 +58,7 @@ public:
 	SDRDEVICE GetDevice();
 	void SetDevice(SDRDEVICE m);
 
-	//Settings
-	void ShowIQOptions();
-	//Image rejection (iqbalance) factors for this device
-	double sIQBalanceGain;
-	double sIQBalancePhase;
-	bool sIQBalanceEnable;
-	IQORDER sIQOrder;
-
-
-public slots:
-	//IQBalance
-	void phaseChanged(int v);
-	void gainChanged(int v);
-	void enabledChanged(bool b);
-	void automaticChanged(bool b);
-	void resetClicked();
-	void saveClicked();
-	void IQOrderChanged(int);
-
-
 protected:
-    Ui_IQBalanceOptions *iqbo;
-	QDialog *iqDialog;
-
 	void ReadSettings(QSettings *settings);
 	void WriteSettings(QSettings *settings);
 
