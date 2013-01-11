@@ -139,7 +139,7 @@ void Settings::SetupRecieverBox(QComboBox *receiverBox)
     receiverBox->addItem("SDR Widget",SDR::SDRWIDGET);
     receiverBox->addItem("FUNcube Dongle",SDR::FUNCUBE);
     receiverBox->addItem("File",SDR::FILE);
-    receiverBox->addItem("DVB-T",SDR::DVB_T);
+    receiverBox->addItem("RTL2832 Family",SDR::DVB_T);
 
     connect(receiverBox,SIGNAL(currentIndexChanged(int)),this,SLOT(ReceiverChanged(int)));
 
@@ -201,7 +201,9 @@ void Settings::BalancePhaseChanged(int v)
     sd->iqBalancePhaseLabel->setText("Phase: " + QString::number(newValue));
     iqBalancePhase = newValue;
 
-    //receiver->GetIQBalance()->setPhaseFactor(newValue);
+    if (!global->receiver->GetPowerOn())
+        return;
+    global->receiver->GetIQBalance()->setPhaseFactor(newValue);
 }
 
 void Settings::BalanceGainChanged(int v)
@@ -210,15 +212,18 @@ void Settings::BalanceGainChanged(int v)
     double newValue = v/1000.0;
     sd->iqBalanceGainLabel->setText("Gain: " + QString::number(newValue));
     iqBalanceGain = newValue;
-
-    //receiver->GetIQBalance()->setGainFactor(newValue);
+    //Update in realtime
+    if (!global->receiver->GetPowerOn())
+        return;
+    global->receiver->GetIQBalance()->setGainFactor(newValue);
 }
 
 void Settings::BalanceEnabledChanged(bool b)
 {
     iqBalanceEnable = b;
-
-    //receiver->GetIQBalance()->setEnabled(b);
+    if (!global->receiver->GetPowerOn())
+        return;
+    global->receiver->GetIQBalance()->setEnabled(b);
 }
 
 void Settings::BalanceReset()
