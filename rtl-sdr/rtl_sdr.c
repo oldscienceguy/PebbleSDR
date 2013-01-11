@@ -21,12 +21,14 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 
 #ifndef _WIN32
 #include <unistd.h>
 #else
 #include <Windows.h>
+#include <io.h>
+#include <fcntl.h>
+#include "getopt/getopt.h"
 #endif
 
 #include "rtl-sdr.h"
@@ -38,25 +40,21 @@
 #define MAXIMAL_BUF_LENGTH		(256 * 16384)
 
 static int do_exit = 0;
+static uint32_t bytes_to_read = 0;
 static rtlsdr_dev_t *dev = NULL;
 
 void usage(void)
 {
-	#ifdef _WIN32
-	fprintf(stderr,"rtl-sdr, an I/Q recorder for RTL2832 based USB-sticks\n\n"
-		"Usage:\t rtl-sdr-win.exe [device_index] [samplerate in kHz] "
-		"[gain] [frequency in Hz] [filename]\n");
-	#else
 	fprintf(stderr,
-		"rtl-sdr, an I/Q recorder for RTL2832 based DVB-T receivers\n\n"
+		"rtl_sdr, an I/Q recorder for RTL2832 based DVB-T receivers\n\n"
 		"Usage:\t -f frequency_to_tune_to [Hz]\n"
 		"\t[-s samplerate (default: 2048000 Hz)]\n"
 		"\t[-d device_index (default: 0)]\n"
-		"\t[-g tuner_gain (default: -1dB)]\n"
+		"\t[-g gain (default: 0 for auto)]\n"
 		"\t[-b output_block_size (default: 16 * 16384)]\n"
+		"\t[-n number of samples to read (default: 0, infinite)]\n"
 		"\t[-S force sync output (default: async)]\n"
 		"\tfilename (a '-' dumps samples to stdout)\n\n");
-#endif
 	exit(1);
 }
 
@@ -84,10 +82,22 @@ static void sighandler(int signum)
 static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 {
 	if (ctx) {
+		if (do_exit)
+			return;
+
+		if ((bytes_to_read > 0) && (bytes_to_read < len)) {
+			len = bytes_to_read;
+			do_exit = 1;
+			rtlsdr_cancel_async(dev);
+		}
+
 		if (fwrite(buf, 1, len, (FILE*)ctx) != len) {
 			fprintf(stderr, "Short write, samples lost, exiting!\n");
 			rtlsdr_cancel_async(dev);
 		}
+
+		if (bytes_to_read > 0)
+			bytes_to_read -= len;
 	}
 }
 
@@ -99,7 +109,7 @@ int main(int argc, char **argv)
 	char *filename = NULL;
 	int n_read;
 	int r, opt;
-	int i, gain = -10; // tenths of a dB
+	int i, gain = 0;
 	int sync_mode = 0;
 	FILE *file;
 	uint8_t *buffer;
@@ -108,8 +118,9 @@ int main(int argc, char **argv)
 	uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
 	uint32_t out_block_size = DEFAULT_BUF_LENGTH;
 	int device_count;
-#ifndef _WIN32
-	while ((opt = getopt(argc, argv, "d:f:g:s:b:S::")) != -1) {
+	char vendor[256], product[256], serial[256];
+
+	while ((opt = getopt(argc, argv, "d:f:g:s:b:n:S::")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = atoi(optarg);
@@ -118,13 +129,16 @@ int main(int argc, char **argv)
 			frequency = (uint32_t)atof(optarg);
 			break;
 		case 'g':
-			gain = (int)(atof(optarg) * 10);
+			gain = (int)(atof(optarg) * 10); /* tenths of a dB */
 			break;
 		case 's':
 			samp_rate = (uint32_t)atof(optarg);
 			break;
 		case 'b':
 			out_block_size = (uint32_t)atof(optarg);
+			break;
+		case 'n':
+			bytes_to_read = (uint32_t)atof(optarg) * 2;
 			break;
 		case 'S':
 			sync_mode = 1;
@@ -140,15 +154,7 @@ int main(int argc, char **argv)
 	} else {
 		filename = argv[optind];
 	}
-#else
-	if(argc <6)
-		usage();
-	dev_index = atoi(argv[1]);
-	samp_rate = atoi(argv[2])*1000;
-	gain=(int)(atof(argv[3]) * 10);
-	frequency = atoi(argv[4]);
-	filename = argv[5];
-#endif
+
 	if(out_block_size < MINIMAL_BUF_LENGTH ||
 	   out_block_size > MAXIMAL_BUF_LENGTH ){
 		fprintf(stderr,
@@ -169,13 +175,14 @@ int main(int argc, char **argv)
 	}
 
 	fprintf(stderr, "Found %d device(s):\n", device_count);
-	for (i = 0; i < device_count; i++)
-		fprintf(stderr, "  %d:  %s\n", i, rtlsdr_get_device_name(i));
+	for (i = 0; i < device_count; i++) {
+		rtlsdr_get_device_usb_strings(i, vendor, product, serial);
+		fprintf(stderr, "  %d:  %s, %s, SN: %s\n", i, vendor, product, serial);
+	}
 	fprintf(stderr, "\n");
 
 	fprintf(stderr, "Using device %d: %s\n",
-		dev_index,
-		rtlsdr_get_device_name(dev_index));
+		dev_index, rtlsdr_get_device_name(dev_index));
 
 	r = rtlsdr_open(&dev, dev_index);
 	if (r < 0) {
@@ -205,15 +212,30 @@ int main(int argc, char **argv)
 	else
 		fprintf(stderr, "Tuned to %u Hz.\n", frequency);
 
-	/* Set the tuner gain */
-	r = rtlsdr_set_tuner_gain(dev, gain);
-	if (r < 0)
-		fprintf(stderr, "WARNING: Failed to set tuner gain.\n");
-	else
-		fprintf(stderr, "Tuner gain set to %f dB.\n", gain/10.0);
+	if (0 == gain) {
+		 /* Enable automatic gain */
+		r = rtlsdr_set_tuner_gain_mode(dev, 0);
+		if (r < 0)
+			fprintf(stderr, "WARNING: Failed to enable automatic gain.\n");
+	} else {
+		/* Enable manual gain */
+		r = rtlsdr_set_tuner_gain_mode(dev, 1);
+		if (r < 0)
+			fprintf(stderr, "WARNING: Failed to enable manual gain.\n");
+
+		/* Set the tuner gain */
+		r = rtlsdr_set_tuner_gain(dev, gain);
+		if (r < 0)
+			fprintf(stderr, "WARNING: Failed to set tuner gain.\n");
+		else
+			fprintf(stderr, "Tuner gain set to %f dB.\n", gain/10.0);
+	}
 
 	if(strcmp(filename, "-") == 0) { /* Write samples to stdout */
 		file = stdout;
+#ifdef _WIN32
+		_setmode(_fileno(stdin), _O_BINARY);
+#endif
 	} else {
 		file = fopen(filename, "wb");
 		if (!file) {
@@ -236,6 +258,11 @@ int main(int argc, char **argv)
 				break;
 			}
 
+			if ((bytes_to_read > 0) && (bytes_to_read < (uint32_t)n_read)) {
+				n_read = bytes_to_read;
+				do_exit = 1;
+			}
+
 			if (fwrite(buffer, 1, n_read, file) != (size_t)n_read) {
 				fprintf(stderr, "Short write, samples lost, exiting!\n");
 				break;
@@ -245,6 +272,9 @@ int main(int argc, char **argv)
 				fprintf(stderr, "Short read, samples lost, exiting!\n");
 				break;
 			}
+
+			if (bytes_to_read > 0)
+				bytes_to_read -= n_read;
 		}
 	} else {
 		fprintf(stderr, "Reading samples in async mode...\n");
