@@ -69,14 +69,16 @@ bool Receiver::On()
 
 	sdr = SDR::Factory(this, settings);
 
-	QApplication::activeWindow()->setWindowTitle("Pebble: " + sdr->GetDeviceName());
 
 	if (!sdr->Connect()){
 		QMessageBox::information(NULL,"Pebble","No Receiver connected to USB");
 		Off();
 		return false;
 	}
-	
+
+    //Don't set title until we connect.  Some drivers handle multiple devices (RTL2832) and we need connection data
+    QApplication::activeWindow()->setWindowTitle("Pebble: " + sdr->GetDeviceName());
+
 	downSampleFactor = 1;
     //Get undecimated sample rate from RTL2832 and decimate here vs in SDR
     //For FMStereo, initial rate should be close to 300k
@@ -104,9 +106,9 @@ bool Receiver::On()
 	signalSpectrum = new SignalSpectrum(sampleRate,framesPerBuffer,settings);
 	mixer = new Mixer(sampleRate, framesPerBuffer);
 	iqBalance = new IQBalance(sampleRate,framesPerBuffer);
-	iqBalance->setEnabled(sdr->sIQBalanceEnable);
-	iqBalance->setGainFactor(sdr->sIQBalanceGain);
-	iqBalance->setPhaseFactor(sdr->sIQBalancePhase);
+    iqBalance->setEnabled(settings->iqBalanceEnable);
+    iqBalance->setGainFactor(settings->iqBalanceGain);
+    iqBalance->setPhaseFactor(settings->iqBalancePhase);
 
 	//Testing with frequency domain receive chain
 	//fft must be large enough to avoid circular convolution for filtering
@@ -300,7 +302,8 @@ void Receiver::OutputData(const char *d)
 }
 void Receiver::OutputData(QString s)
 {
-    receiverWidget->OutputData(s.toAscii());
+    //receiverWidget->OutputData(s.toAscii());  //toAscii deprecated
+    receiverWidget->OutputData(s.toLatin1());
 }
 
 bool Receiver::Power(bool on)
@@ -419,12 +422,6 @@ void Receiver::SetMixer(int f)
 		mixer->SetFrequency(f);
         demod->ResetDemod();
     }
-}
-
-void Receiver::ShowIQBalance(bool b)
-{
-	if (sdr != NULL)
-		sdr->ShowIQOptions();
 }
 
 void Receiver::ShowSettings(bool b)

@@ -69,7 +69,6 @@ public:
     ReceiverWidget *receiverWidget;
     public slots:
 		void Restart();
-		void ShowIQBalance(bool b);
 		void ShowSettings(bool b);
 		void ShowSdrSettings(bool b);
         void OutputData(const char *d);
