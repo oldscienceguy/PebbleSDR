@@ -13,7 +13,12 @@ Settings::Settings(void)
 	//Scope::UserScope puts file C:\Users\...\AppData\Roaming\N1DDY
 	//Scope::SystemScope puts file c:\ProgramData\n1ddy
 	QString path = QCoreApplication::applicationDirPath();
-	qSettings = new QSettings(path+"/pebble.ini",QSettings::IniFormat);
+#ifdef Q_OS_MAC
+        //Pebble.app/contents/macos = 25
+        path.chop(25);
+#endif
+
+    qSettings = new QSettings(path+"/PebbleData/pebble.ini",QSettings::IniFormat);
 	//qSettings->beginGroup("IQ");
 
 	//qSetting->endGroup("IQ");

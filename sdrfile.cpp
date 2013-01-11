@@ -9,7 +9,12 @@ void ReadWavTest();
 SDRFile::SDRFile(Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_receiver, dev,_settings)
 {
     QString path = QCoreApplication::applicationDirPath();
-    qSettings = new QSettings(path+"/sdrfile.ini",QSettings::IniFormat);
+#ifdef Q_OS_MAC
+        //Pebble.app/contents/macos = 25
+        path.chop(25);
+#endif
+
+    qSettings = new QSettings(path+"/PebbleData/sdrfile.ini",QSettings::IniFormat);
     ReadSettings();
 
     framesPerBuffer = settings->framesPerBuffer;

@@ -65,7 +65,11 @@ enum blocks {
 RTL2832::RTL2832 (Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_receiver, dev,_settings)
 {
     QString path = QCoreApplication::applicationDirPath();
-    qSettings = new QSettings(path+"/rtl2832.ini",QSettings::IniFormat);
+#ifdef Q_OS_MAC
+        //Pebble.app/contents/macos = 25
+        path.chop(25);
+#endif
+    qSettings = new QSettings(path+"/PebbleData/rtl2832.ini",QSettings::IniFormat);
     ReadSettings();
 
     //crystalFreqHz = DEFAULT_CRYSTAL_FREQUENCY;

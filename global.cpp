@@ -6,7 +6,12 @@
 Global::Global()
 {
 	QString path = QCoreApplication::applicationDirPath();
-	file = new QFile(path+"/pebblelog.txt");
+#ifdef Q_OS_MAC
+        //Pebble.app/contents/macos = 25
+        path.chop(25);
+#endif
+
+    file = new QFile(path+"/PebbleData/pebblelog.txt");
 	bool res = file->open(QIODevice::Unbuffered | QIODevice::Truncate | QIODevice::WriteOnly | QIODevice::Text);
 	pLogfile = NULL;
 	if (res) {

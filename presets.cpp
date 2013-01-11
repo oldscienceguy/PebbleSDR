@@ -44,9 +44,14 @@ Presets::Presets(ReceiverWidget *w, QWidget *parent)
 	ui.tableWidget->setFont(tableFont);
 	ui.tableWidget->horizontalHeader()->setFont(tableFont);
 
-	presetsFile = QCoreApplication::applicationDirPath()+"/presets.csv";
-    bandsFile = QCoreApplication::applicationDirPath()+"/bands.csv";
-    stationsFile = QCoreApplication::applicationDirPath()+"/eibi.csv";
+    QString path = QCoreApplication::applicationDirPath();
+#ifdef Q_OS_MAC
+        //Pebble.app/contents/macos = 25
+        path.chop(25);
+#endif
+    presetsFile = path + "/PebbleData/presets.csv";
+    bandsFile = path + "/PebbleData/bands.csv";
+    stationsFile = path + "/PebbleData/eibi.csv";
 
     //Bands MUST be read before stations!!
     ReadBands();

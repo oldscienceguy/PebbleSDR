@@ -19,7 +19,12 @@ Derived from:
 ElektorSDR::ElektorSDR(Receiver *_receiver, SDRDEVICE dev,Settings *_settings):SDR(_receiver, dev,_settings)
 {
 	QString path = QCoreApplication::applicationDirPath();
-	qSettings = new QSettings(path+"/elektor.ini",QSettings::IniFormat);
+#ifdef Q_OS_MAC
+        //Pebble.app/contents/macos = 25
+        path.chop(25);
+#endif
+
+    qSettings = new QSettings(path+"/PebbleData/elektor.ini",QSettings::IniFormat);
 	ReadSettings();
 
 	ftHandle = NULL;

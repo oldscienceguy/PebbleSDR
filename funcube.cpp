@@ -284,7 +284,12 @@ FunCube::FunCube(Receiver *_receiver, SDRDEVICE dev,Settings *_settings):
 	fcdOptionsDialog = NULL;
 
 	QString path = QCoreApplication::applicationDirPath();
-	qSettings = new QSettings(path+"/funcube.ini",QSettings::IniFormat);
+#ifdef Q_OS_MAC
+        //Pebble.app/contents/macos = 25
+        path.chop(25);
+#endif
+
+    qSettings = new QSettings(path+"/PebbleData/funcube.ini",QSettings::IniFormat);
 	ReadSettings();
     hidDev = NULL;
     hidDevInfo = NULL;

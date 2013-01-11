@@ -14,7 +14,12 @@ SoftRock::SoftRock(Receiver *_receiver,SDRDEVICE dev,Settings *_settings) : SDR(
 	//Scope::UserScope puts file C:\Users\...\AppData\Roaming\N1DDY
 	//Scope::SystemScope puts file c:\ProgramData\n1ddy
 	QString path = QCoreApplication::applicationDirPath();
-	qSettings = new QSettings(path+"/softrock.ini",QSettings::IniFormat);
+#ifdef Q_OS_MAC
+        //Pebble.app/contents/macos = 25
+        path.chop(25);
+#endif
+
+    qSettings = new QSettings(path+"/PebbleData/softrock.ini",QSettings::IniFormat);
 	ReadSettings();
 
 	//Note: This uses libusb 0.1 not 1.0

@@ -43,6 +43,9 @@ QTDIR = c:/Qt/4.8.0
 
 #Conditional MUST match the Build Configuration name, Debug or Release or SomeCustomName
 macx {
+	#This will stop the creation of a Mac package (default) and just create a unix bin if we need to for testing
+	#CONFIG-=app_bundle
+
 	#debug and release may both be defined as .pro file is parsed by make multiple times
 	#This tests for debug as the last item to be defined amoung debug and release
 	CONFIG(debug, debug|release) {
@@ -84,7 +87,9 @@ macx {
 
 	#We want this to be whatever the release or debug directory is or added to bundle
 	#This will copy the files into the app bundle, same place ini files go
-	otherfiles.path = $${DESTDIR}/Pebble.app/Contents/MacOS
+	#otherfiles.path = $${DESTDIR}/Pebble.app/Contents/MacOS
+	#QMake will create folder in path if they don't exist
+	otherfiles.path = $${DESTDIR}/PebbleData
 	#message($${otherfiles.path})
 	INSTALLS += otherfiles
 

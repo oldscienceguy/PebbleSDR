@@ -19,7 +19,12 @@ HPSDR::HPSDR(Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_receiv
 	penelopeFW=0;
 
 	QString path = QCoreApplication::applicationDirPath();
-	qSettings = new QSettings(path+"/hpsdr.ini",QSettings::IniFormat);
+#ifdef Q_OS_MAC
+        //Pebble.app/contents/macos = 25
+        path.chop(25);
+#endif
+
+    qSettings = new QSettings(path+"/PebbleData/hpsdr.ini",QSettings::IniFormat);
 	ReadSettings();
 
 	//Set up libusb
@@ -786,8 +791,12 @@ bool HPSDR::LoadFpga(QString filename)
 {
 	qDebug()<<"Loading FPGA";
 	QString path = QCoreApplication::applicationDirPath();
+#ifdef Q_OS_MAC
+        //Pebble.app/contents/macos = 25
+        path.chop(25);
+#endif
 
-	QFile rbfFile(path + "/" + filename);
+    QFile rbfFile(path + "/PebbleData/" + filename);
 	//QT assumes binary unless we add QIODevice::Text
 	if (!rbfFile.open(QIODevice::ReadOnly)) {
 		qDebug()<<"FPGA file not found";
@@ -858,7 +867,12 @@ bool HPSDR::LoadFirmware(QString filename)
 	qDebug()<<"Loading firmware";
 
 	QString path = QCoreApplication::applicationDirPath();
-	QFile rbfFile(path + "/" + filename);
+#ifdef Q_OS_MAC
+        //Pebble.app/contents/macos = 25
+        path.chop(25);
+#endif
+
+    QFile rbfFile(path + "/PebbleData" + filename);
 	if (!rbfFile.open(QIODevice::ReadOnly))
 		return false;
 	//Read file and send to Ozy 64bytes at a time
