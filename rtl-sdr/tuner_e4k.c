@@ -1,10 +1,15 @@
-/* (C) 2011-2012 by Harald Welte <laforge@gnumonks.org>
+/*
+ * Elonics E4000 tuner driver
+ *
+ * (C) 2011-2012 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2012 by Sylvain Munaut <tnt@246tNt.com>
+ * (C) 2012 by Hoernchen <la@tfc-server.de>
  *
  * All Rights Reserved
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or
+ * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
@@ -360,7 +365,7 @@ static int is_fvco_valid(uint32_t fvco_z)
 	/* check if the resulting fosc is valid */
 	if (fvco_z/1000 < E4K_FVCO_MIN_KHZ ||
 	    fvco_z/1000 > E4K_FVCO_MAX_KHZ) {
-		fprintf(stderr, "Fvco %u invalid\n", fvco_z);
+		fprintf(stderr, "[E4K] Fvco %u invalid\n", fvco_z);
 		return 0;
 	}
 
@@ -370,7 +375,7 @@ static int is_fvco_valid(uint32_t fvco_z)
 static int is_fosc_valid(uint32_t fosc)
 {
 	if (fosc < MHZ(16) || fosc > MHZ(30)) {
-		fprintf(stderr, "Fosc %u invalid\n", fosc);
+		fprintf(stderr, "[E4K] Fosc %u invalid\n", fosc);
 		return 0;
 	}
 
@@ -380,7 +385,7 @@ static int is_fosc_valid(uint32_t fosc)
 static int is_z_valid(uint32_t z)
 {
 	if (z > 255) {
-		fprintf(stderr, "Z %u invalid\n", z);
+		fprintf(stderr, "[E4K] Z %u invalid\n", z);
 		return 0;
 	}
 
@@ -447,6 +452,9 @@ static int e4k_band_set(struct e4k_state *e4k, enum e4k_band band)
 		break;
 	}
 
+	/* workaround: if we don't reset this register before writing to it,
+	 * we get a gap between 325-350 MHz */
+	rc = e4k_reg_set_mask(e4k, E4K_REG_SYNTH1, 0x06, 0);
 	rc = e4k_reg_set_mask(e4k, E4K_REG_SYNTH1, 0x06, band << 1);
 	if (rc >= 0)
 		e4k->band = band;
@@ -484,7 +492,7 @@ uint32_t e4k_compute_pll_params(struct e4k_pll_params *oscp, uint32_t fosc, uint
 		}
 	}
 
-	//fprintf(stderr, "Fint=%u, R=%u\n", intended_flo, r);
+	//fprintf(stderr, "[E4K] Fint=%u, R=%u\n", intended_flo, r);
 
 	/* flo(max) = 1700MHz, R(max) = 48, we need 64bit! */
 	intended_fvco = (uint64_t)intended_flo * r;
@@ -570,7 +578,7 @@ int e4k_tune_freq(struct e4k_state *e4k, uint32_t freq)
 	/* check PLL lock */
 	rc = e4k_reg_read(e4k, E4K_REG_SYNTH1);
 	if (!(rc & 0x01)) {
-		fprintf(stderr, "[E4K] PLL not locked!\n");
+		fprintf(stderr, "[E4K] PLL not locked for %u Hz!\n", freq);
 		return -1;
 	}
 
@@ -617,6 +625,7 @@ static const uint8_t if_stage_gain_len[] = {
 };
 
 static const struct reg_field if_stage_gain_regs[] = {
+	{ 0, 0, 0 },
 	{ E4K_REG_GAIN3, 0, 1 },
 	{ E4K_REG_GAIN3, 1, 2 },
 	{ E4K_REG_GAIN3, 3, 2 },
@@ -667,7 +676,12 @@ int e4k_set_enh_gain(struct e4k_state *e4k, int32_t gain)
 		}
 	}
 	e4k_reg_set_mask(e4k, E4K_REG_AGC11, 0x7, 0);
-	return 0;
+
+	/* special case: 0 = off*/
+	if(0 == gain)
+		return 0;
+	else
+		return -EINVAL;
 }
 
 int e4k_enable_manual_gain(struct e4k_state *e4k, uint8_t manual)
@@ -708,9 +722,9 @@ static int find_stage_gain(uint8_t stage, int8_t val)
 }
 
 /*! \brief Set the gain of one of the IF gain stages
- *  \param[e4k] handle to the tuner chip
- *  \param [stage] numbere of the stage (1..6)
- *  \param [value] gain value in dBm
+ *  \param [e4k] handle to the tuner chip
+ *  \param [stage] number of the stage (1..6)
+ *  \param [value] gain value in dB
  *  \returns 0 on success, negative in case of error
  */
 int e4k_if_gain_set(struct e4k_state *e4k, uint8_t stage, int8_t value)
@@ -724,7 +738,7 @@ int e4k_if_gain_set(struct e4k_state *e4k, uint8_t stage, int8_t value)
 		return rc;
 
 	/* compute the bit-mask for the given gain field */
-	field = &if_stage_gain_regs[stage-1];
+	field = &if_stage_gain_regs[stage];
 	mask = width2mask[field->width] << field->shift;
 
 	return e4k_reg_set_mask(e4k, field->reg, mask, rc << field->shift);
@@ -787,7 +801,7 @@ int e4k_manual_dc_offset(struct e4k_state *e4k, int8_t iofs, int8_t irange, int8
 }
 
 /*! \brief Perform a DC offset calibration right now
- *  \param[e4k] handle to the tuner chip
+ *  \param [e4k] handle to the tuner chip
  */
 int e4k_dc_offset_calibrate(struct e4k_state *e4k)
 {
@@ -853,7 +867,7 @@ int e4k_dc_offset_gen_table(struct e4k_state *e4k)
 		range_i = range & 0x3;
 		range_q = (range >> 4) & 0x3;
 
-		fprintf(stderr, "Table %u I=%u/%u, Q=%u/%u\n",
+		fprintf(stderr, "[E4K] Table %u I=%u/%u, Q=%u/%u\n",
 			i, range_i, offs_i, range_q, offs_q);
 
 		/* write into the table */
