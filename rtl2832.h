@@ -53,7 +53,7 @@ private:
 
 
     int framesPerBuffer;
-    quint16 rtlGain; //in 10ths of a db
+    qint16 rtlGain; //in 10ths of a db
     quint32 rtlFrequency;
     quint32 rtlSampleRate;
     quint32 sampleRate; //Pebble rate from settings or rtl option box eventually

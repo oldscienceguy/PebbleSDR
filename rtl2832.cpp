@@ -65,7 +65,7 @@ enum blocks {
 RTL2832::RTL2832 (Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_receiver, dev,_settings)
 {
     QString path = QCoreApplication::applicationDirPath();
-    qSettings = new QSettings(path+"/dvb_t.ini",QSettings::IniFormat);
+    qSettings = new QSettings(path+"/rtl2832.ini",QSettings::IniFormat);
     ReadSettings();
 
     //crystalFreqHz = DEFAULT_CRYSTAL_FREQUENCY;
@@ -92,12 +92,6 @@ RTL2832::RTL2832 (Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_r
     rtlDecimate = rtlSampleRate / sampleRate; //Should be 6 for 1.152 and 192k sampleRate
 
     rtlFrequency = 162400000;
-
-    //Valid gain values (in tenths of a dB) for the E4000 tuner:
-    //-10, 15, 40, 65, 90, 115, 140, 165, 190,
-    //215, 240, 290, 340, 420, 430, 450, 470, 490
-
-    rtlGain = -10; // tenths of a dB
 
     sampleGain = .005; //Matched with rtlGain
 
@@ -130,6 +124,8 @@ RTL2832::RTL2832 (Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_r
 
 RTL2832::~RTL2832(void)
 {
+    WriteSettings();
+
     if (inBuffer != NULL)
         delete (inBuffer);
     if (outBuffer != NULL)
@@ -229,6 +225,8 @@ void RTL2832::ShowOptions()
 
 void RTL2832::Start()
 {
+    int r;
+
     /* Set the sample rate */
     if (rtlsdr_set_sample_rate(dev, rtlSampleRate) < 0) {
         qDebug("WARNING: Failed to set sample rate.");
@@ -244,9 +242,32 @@ void RTL2832::Start()
 #endif
 
     /* Set the tuner gain */
-    if (rtlsdr_set_tuner_gain(dev, rtlGain) < 0) {
-        qDebug("WARNING: Failed to set tuner gain.");
-        return;
+    //Added support for automatic gain from rtl-sdr.c
+    if (rtlGain == 0) {
+         /* Enable automatic gain */
+        r = rtlsdr_set_tuner_gain_mode(dev, 0);
+        if (r < 0) {
+            qDebug("WARNING: Failed to enable automatic gain.");
+            return;
+        } else {
+            qDebug("Automatic gain set");
+        }
+    } else {
+        /* Enable manual gain */
+        r = rtlsdr_set_tuner_gain_mode(dev, 1);
+        if (r < 0) {
+            qDebug("WARNING: Failed to enable manual gain.");
+            return;
+        }
+
+        /* Set the tuner gain */
+        r = rtlsdr_set_tuner_gain(dev, rtlGain);
+        if (r < 0) {
+            qDebug("WARNING: Failed to set tuner gain.");
+            return;
+        }else {
+            qDebug("Tuner gain set to %f dB.", rtlGain/10.0);
+        }
     }
 
     /* Reset endpoint before we start reading from it (mandatory) */
@@ -390,10 +411,21 @@ void RTL2832::RunConsumerThread()
 
 void RTL2832::ReadSettings()
 {
+    SDR::ReadSettings(qSettings);
+    //Valid gain values (in tenths of a dB) for the E4000 tuner:
+    //-10, 15, 40, 65, 90, 115, 140, 165, 190,
+    //215, 240, 290, 340, 420, 430, 450, 470, 490
+    //0 for automatic gain
+    rtlGain = qSettings->value("RtlGain",0).toInt(); //0=automatic
+
 }
 
 void RTL2832::WriteSettings()
 {
+    SDR::WriteSettings(qSettings);
+    qSettings->setValue("RtlGain",rtlGain);
+    qSettings->sync();
+
 }
 
 double RTL2832::GetStartupFrequency()
