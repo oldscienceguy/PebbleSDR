@@ -3,26 +3,8 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include <QtCore>
-#include <QDockWidget>
-#include "ui/ui_presets.h"
 #include "receiverWidget.h"
 #include "demod.h"
-
-class Preset
-{
-public:
-	Preset();
-	~Preset();
-	QString name;
-	double low; //Band range, or single frequency
-	double high;
-    double tune; //Default freq when user switches to band
-	DEMODMODE mode;
-    //For Station source like EIBI
-    QDateTime startTime;
-    QDateTime endTime;
-	QString notes;
-};
 
 /*
     EIBI CSV format - semi-colon delimted file
@@ -106,16 +88,15 @@ public:
 };
 
 
-class Presets : public QDockWidget
+class Presets
 {
-	Q_OBJECT
+    //Q_OBJECT
 
 public:
 
 	static const int GROW_PRESETS = 1;
-	Presets(ReceiverWidget *rw,QWidget * parent = 0);
+    Presets(ReceiverWidget *rw);
 	~Presets();
-	void CreateTable(double low, double high);
     bool ReadBands();
     //Returns record(s) that match current frequency
     Band *FindBand(double currentFreq); //Return a Band object
@@ -127,10 +108,9 @@ public:
     Station *FindStation(double currentFreq);
     Station *GetStations(){return stations;}
 
-    bool ReadPresets();
-    Preset *FindPreset(double currentFreq);
-
     Band::BANDTYPE StringToBandType(QString s);  //Converts string from file to type
+
+    void SaveMemoryCSV();
 
 private:
     QString csvReadLine(QFile *file);
@@ -140,37 +120,21 @@ private:
     QString memoryFile;
     int numMemory;
 
-    Preset *presets; //Array of presets, with some room at end for growth
-	int numPresets; //Number of presets
-	int presetsLen; //Actual size of presets array
+    Station *memories;
 
     QString bandsFile;
     Band *bands;
     int numBands;
 
-    void AddStation(int i, QStringList parts);
+    void AddStation(Station *s, int i, QStringList parts);
 
     QString eibiFile;
     int numEibi;
 
-    Station *stations;
+    Station *stations; //eibi.csv + memory.csv
     int numStations;
 
-	Ui::PresetsDockWidget ui;
 	ReceiverWidget *rw;
-	void Save();
-	void Read();
-	//Sets columns, row height, and anything else that is common to all rows
-	void NewRow(int row, int index, Preset p);
-	bool editMode; //True if we're editing entries, false if we're selecting them to set freq
-	int editRow; //Row being edited, limit clicks to this row
-	QBrush editBrush; 
-	private slots:
-		void cellClicked(int row, int col);
-		void newClicked(bool b);
-		void saveClicked(bool b);
-		void editClicked(bool b);
-		void deleteClicked(bool b);
 };
 
 #endif // PRESETS_H

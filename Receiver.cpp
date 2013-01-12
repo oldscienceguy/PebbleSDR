@@ -245,14 +245,6 @@ bool Receiver::Off()
 		delete iqBalance;
 		iqBalance=NULL;
 	}
-	if (presets != NULL) {
-		if (presets->isVisible()) {
-			//presets->setHidden(true);
-			mainWindow->removeDockWidget(presets);	
-		}
-		delete presets;
-		presets = NULL;
-	}
     if (morse != NULL) {
         delete morse;
         morse = NULL;
@@ -430,20 +422,6 @@ void Receiver::ShowSettings(bool b)
 }
 void Receiver::ShowPresets()
 {
-	//Toggle on/off, use for SDR Options
-	if (presets != NULL) {
-		if (presets->isVisible()) {
-			//presets->setHidden(true);
-			mainWindow->removeDockWidget(presets);
-		} else {
-			//Only show presets supported by selected SDR
-			if (sdr!=NULL) {
-				presets->CreateTable(sdr->GetLowLimit(), sdr->GetHighLimit());
-				mainWindow->addDockWidget(Qt::RightDockWidgetArea,presets);
-				presets->show();
-			}
-		}
-	}
 }
 void Receiver::ShowSdrSettings(bool b)
 {
