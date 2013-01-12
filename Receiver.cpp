@@ -30,7 +30,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	welcome <<
 		"\"Sometimes a little pebble is all you need...\"" <<
         global->revision <<
-        "Copyright 2010,2012 Richard Landsman N1DDY (pebblesdr@gmail.com)" <<
+        "Copyright 2010, 2011, 2012, 2013 Richard Landsman N1DDY (pebblesdr@gmail.com)" <<
 		"Licensed under GPL.  See PebbleGPL.txt";
 
 	receiverWidget->SetMessage( welcome);

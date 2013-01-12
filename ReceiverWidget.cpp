@@ -722,6 +722,9 @@ void ReceiverWidget::bandTypeChanged(int s)
     ui.bandCombo->blockSignals(true);
     ui.bandCombo->clear();
     Band *bands = receiver->GetPresets()->GetBands();
+    if (bands == NULL)
+        return;
+
     int numBands = receiver->GetPresets()->GetNumBands();
     double freq;
     QString buf;
@@ -752,7 +755,10 @@ void ReceiverWidget::bandChanged(int s)
 {
     if (!powerOn || s==-1) //-1 means we're just clearing selection
         return;
+
     Band *bands = receiver->GetPresets()->GetBands();
+    if (bands == NULL)
+        return;
 
     int bandIndex = ui.bandCombo->itemData(s).toInt();
     double freq = bands[bandIndex].tune;

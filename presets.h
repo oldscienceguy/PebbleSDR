@@ -121,7 +121,7 @@ public:
     Band *FindBand(double currentFreq); //Return a Band object
     int FindBandIndex(double currentFreq); // Returns index of band in bands[]
     Band *GetBands() {return bands;}
-    int GetNumBands() {return numBands;}
+    int GetNumBands();
 
     bool ReadStations();
     Station *FindStation(double currentFreq);
@@ -134,9 +134,12 @@ public:
 
 private:
     QString csvReadLine(QFile *file);
+    int csvCountLines(QFile *file);
     QStringList csvSplit(QString line, char split = ',');
 
-    QString presetsFile;
+    QString memoryFile;
+    int numMemory;
+
     Preset *presets; //Array of presets, with some room at end for growth
 	int numPresets; //Number of presets
 	int presetsLen; //Actual size of presets array
@@ -145,7 +148,11 @@ private:
     Band *bands;
     int numBands;
 
-    QString stationsFile;
+    void AddStation(int i, QStringList parts);
+
+    QString eibiFile;
+    int numEibi;
+
     Station *stations;
     int numStations;
 

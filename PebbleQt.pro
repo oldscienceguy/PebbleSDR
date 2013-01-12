@@ -161,7 +161,7 @@ win32 {
 		INSTALLS += target installfiles
 
 		#INSTALLS is called when we manually make -install or add it to the Qt project build steps
-		otherfiles.files = eibireadme.txt eibi.csv bands.csv presets.csv help.htm gpl.h releasenotes.txt
+		otherfiles.files = eibireadme.txt eibi.csv bands.csv memory.csv help.htm gpl.h releasenotes.txt
 
 		#We want this to be whatever the release or debug directory is or added to bundle
 		otherfiles.path = $$DESTDIR
@@ -213,15 +213,14 @@ DEFINES += \
 #QMAKE_LFLAGS += -static-libgcc
 
 OTHER_FILES += \
-    Qt4VSPropertySheet.props \
-    presets.csv \
     Help.htm \
     Firmware.txt \
     build.tmpl \
     ReleaseNotes.txt \
     bands.csv \
     eibi.csv \
-    eibireadme.txt
+    eibireadme.txt \
+    memory.csv
 
 HEADERS += \
     usb.h \

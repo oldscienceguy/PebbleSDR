@@ -50,9 +50,9 @@ Presets::Presets(ReceiverWidget *w, QWidget *parent)
         //Pebble.app/contents/macos = 25
         path.chop(25);
 #endif
-    presetsFile = path + "/PebbleData/presets.csv";
+    memoryFile = path + "/PebbleData/memory.csv";
     bandsFile = path + "/PebbleData/bands.csv";
-    stationsFile = path + "/PebbleData/eibi.csv";
+    eibiFile = path + "/PebbleData/eibi.csv";
 
     bands = NULL;
     stations = NULL;
@@ -61,11 +61,12 @@ Presets::Presets(ReceiverWidget *w, QWidget *parent)
     //Bands MUST be read before stations!!
     if (!ReadBands()) {
         QMessageBox::information(NULL,"Pebble","No bands.csv file!");
-    } else if(!ReadStations()) {
+    }
+    else if(!ReadStations()) {
         QMessageBox::information(NULL,"Pebble","No eibi.csv file!");
     }
 
-	Read();
+    //Read();
 
 	editMode = false;
 #if (0)
@@ -128,7 +129,33 @@ QString Presets::csvReadLine(QFile *file)
             return line;
         line.append(byte);
     }
-    return NULL;
+    //Handle end of file
+    if (line.length() > 0)
+        return line;
+    else
+        return NULL;
+}
+//Counts lines for mac or win EOL standard
+int Presets::csvCountLines(QFile *file)
+{
+    char byte;
+    int lineCount = 0;
+    int charCount = 0;
+    file->seek(0); //Start at beginning
+    while (!file->atEnd()) {
+        file->read(&byte,1);
+        charCount++;
+        if (byte == 0x0d || byte == 0x0a) {
+            lineCount++;
+            charCount=0;
+        }
+    }
+    //If last line has character, but no EOL
+    if (charCount > 0)
+        lineCount ++;
+
+    file->seek(0);
+    return lineCount;
 }
 
 //Same as QString split, except handles quoted delimters
@@ -181,11 +208,7 @@ bool Presets::ReadBands()
     QString line;
     QStringList parts;
     //How many lines in file
-    numBands = 0;
-    while ((line = csvReadLine(&file)) != NULL)
-    {
-        numBands++;
-    }
+    numBands = csvCountLines(&file);
     if (numBands <= 1) {
         //bands.csv must have at least on line plus header
         numBands = 0;
@@ -235,7 +258,7 @@ bool Presets::ReadBands()
 
 Band *Presets::FindBand(double freq)
 {
-    if (bands == NULL)
+    if (bands == NULL || freq==0)
         return NULL;
 
     //Brute force, first only for now
@@ -247,8 +270,8 @@ Band *Presets::FindBand(double freq)
 }
 int Presets::FindBandIndex(double freq)
 {
-    if (bands == NULL)
-        return NULL;
+    if (bands == NULL || freq==0)
+        return -1;
 
     //Brute force, first only for now
     for (int i=0; i<numBands; i++) {
@@ -258,85 +281,132 @@ int Presets::FindBandIndex(double freq)
     return -1;
 }
 
+int Presets::GetNumBands()
+{
+    if (bands == NULL)
+        return 0;
+    else
+        return numBands;
+}
+
+/*
+ * Read all stations and memory into master 'stations' array
+ *
+ */
+
 bool Presets::ReadStations()
 {
     //Bands MUST be read first
     if (bands == NULL)
         return false;
 
-    QFile file(stationsFile);
-    if (!file.open(QIODevice::ReadOnly))// | QIODevice::Text))
+    QFile fEibi(eibiFile);
+    if (!fEibi.open(QIODevice::ReadOnly))// | QIODevice::Text))
         return false;
-
-    QString line;
-    QStringList parts;
     //How many lines in file
-    numStations = 0;
-    while ((line = csvReadLine(&file)) != NULL)
-    {
-        numStations++;
-    }
-    if (numStations <= 1) {
+    numEibi = csvCountLines(&fEibi);
+    if (numEibi <= 1) {
         //bands.csv must have at least on line plus header
-        file.close();
+        numEibi = 0;
+        fEibi.close();
         return false;
     }
     //1st line is header, don't count
-    numStations--;
+    numEibi--;
     //Reset stream
-    file.seek(0);
+    fEibi.seek(0);
+
+    QFile fMemory(memoryFile);
+    if (!fMemory.open(QIODevice::ReadOnly))// | QIODevice::Text))
+        return false;
+    //How many lines in file
+    numMemory = csvCountLines(&fMemory);
+    if (numMemory <= 1) {
+        //bands.csv must have at least on line plus header
+        numMemory = 0;
+        fMemory.close();
+        return false;
+    }
+    //1st line is header, don't count
+    numMemory--;
+    //Reset stream
+    fMemory.seek(0);
+
+    QString line;
+    QStringList parts;
+
     //Allocate buffer
+    numStations = numEibi + numMemory;
     stations = new Station[numStations];
+
     //Read file into memory, throw away header line
-    line = csvReadLine(&file);
+    line = csvReadLine(&fEibi);
     //qDebug("Bands: %s",line);
     parts = csvSplit(line, ';');
     //Header has an extra ';' in file, don't check exact count, just min
     if (parts.count() < 11) {
-        file.close();
+        fEibi.close();
         return false; //Not right # columns
     }
 
-
     int bandIndex;
-    for (int i=0; i<numStations; i++)
+    int stationIndex;
+
+    //Process eibi.csv file first.  Then can be updated with new downloads
+    for (int i=0; i<numEibi; i++)
     {
-        line = csvReadLine(&file);
+        line = csvReadLine(&fEibi);
         //Need to handle escaped delimiters, delimiters in string quotes
         parts = csvSplit(line, ';');
 
         if (parts.count() != 11)
             continue; //Skip invalid line, should have 7 elements
 
-        stations[i].freq = parts[Station::KHZ].toDouble()*1000;
-        stations[i].time = parts[Station::TIME];
-        stations[i].days = parts[Station::DAYS];
-        stations[i].itu = parts[Station::ITU];
-        stations[i].station = parts[Station::STATION];
-        stations[i].language = parts[Station::LNG];
-        stations[i].target = parts[Station::TARGET];
-        stations[i].remarks = parts[Station::REMARKS];
-        stations[i].p = parts[Station::P];
-        stations[i].start = parts[Station::START];
-        stations[i].stop = parts[Station::STOP];
+        stationIndex = i;
+        AddStation(stationIndex,parts);
 
         //Find band for each station
-        bandIndex = FindBandIndex(stations[i].freq);
-        stations[i].bandIndex = bandIndex;
+        bandIndex = FindBandIndex(stations[stationIndex].freq);
+        stations[stationIndex].bandIndex = bandIndex;
         if (bandIndex != -1) {
             //Count # stations per band, we'll assign in next step
             bands[bandIndex].numStations ++;
         }
     }
 
+    //Add our own memory.csv file entries
+    //Throw away 1st line
+    line = csvReadLine(&fMemory);
+    for (int i=0; i<numMemory; i++)
+    {
+        line = csvReadLine(&fMemory);
+        //Need to handle escaped delimiters, delimiters in string quotes
+        parts = csvSplit(line, ','); //Comma for memory.csv
 
+        if (parts.count() != 11)
+            continue; //Skip invalid line, should have 7 elements
+
+        //Merge on end of station list
+        stationIndex = numEibi + i;
+        AddStation(stationIndex,parts);
+
+        //Find band for each station
+        bandIndex = FindBandIndex(stations[stationIndex].freq);
+        stations[stationIndex].bandIndex = bandIndex;
+        if (bandIndex != -1) {
+            //Count # stations per band, we'll assign in next step
+            bands[bandIndex].numStations ++;
+        }
+    }
+
+    //Allocate memory for station array in each band
     for (int i=0; i<numBands; i++) {
         bands[i].stations = new int[bands[i].numStations];
         bands[i].numStations = 0; //Will be re-incremented as we add below
     }
 
     //One more pass to assign stations to bands
-    int stationIndex = 0;
+    stationIndex = 0;
     for (int i=0; i<numStations; i++) {
         bandIndex = stations[i].bandIndex;
         if (bandIndex != -1) {
@@ -346,8 +416,25 @@ bool Presets::ReadStations()
         }
     }
 
-    file.close();
+    fEibi.close();
+    fMemory.close();
     return true;
+
+}
+
+void Presets::AddStation(int i, QStringList parts)
+{
+    stations[i].freq = parts[Station::KHZ].toDouble()*1000;
+    stations[i].time = parts[Station::TIME];
+    stations[i].days = parts[Station::DAYS];
+    stations[i].itu = parts[Station::ITU];
+    stations[i].station = parts[Station::STATION];
+    stations[i].language = parts[Station::LNG];
+    stations[i].target = parts[Station::TARGET];
+    stations[i].remarks = parts[Station::REMARKS];
+    stations[i].p = parts[Station::P];
+    stations[i].start = parts[Station::START];
+    stations[i].stop = parts[Station::STOP];
 
 }
 
@@ -561,7 +648,7 @@ void Presets::saveClicked(bool b)
 
 void Presets::Read()
 {
-	QFile file(presetsFile);
+    QFile file(memoryFile);
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
 		return;
 
@@ -612,7 +699,7 @@ void Presets::Read()
 void Presets::Save()
 {
 
-	QFile file(presetsFile);
+    QFile file(memoryFile);
      if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
          return;
 
@@ -659,6 +746,12 @@ Preset::~Preset()
 
 Band::Band()
 {
+    low = 0;
+    high = 0;
+    tune = 0;
+    stations = NULL;
+    bandIndex = -1;
+    numStations = 0;
 }
 Band::~Band()
 {
@@ -667,6 +760,8 @@ Band::~Band()
 }
 Station::Station()
 {
+    freq = 0;
+    bandIndex = -1;
 }
 Station::~Station()
 {
