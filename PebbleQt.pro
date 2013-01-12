@@ -343,7 +343,6 @@ FORMS += \
     Settings.ui \
     SDRIQOptions.ui \
     ReceiverWidget.ui \
-    presets.ui \
     pebbleii.ui \
     ElektorOptions.ui \
     hpsdrOptions.ui \
