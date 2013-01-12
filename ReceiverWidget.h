@@ -8,6 +8,7 @@
 #include "demod.h"
 //#include "receiver.h" //Compiler error, maybe gets confused with ui_ReceiverWidget
 class Receiver; //include receiver.h in cpp file
+class Presets;
 
 /*
 Took me a long time to figure out how to create a custom widget in Qt Designer and use it
@@ -86,6 +87,7 @@ private:
 	bool powerOn;
 	DEMODMODE mode;
 	int modeOffset; //make CW +-700 instead of actual freq
+    Presets *presets;
 
     DATA_SELECTION dataSelection;
 
@@ -110,7 +112,6 @@ private:
 		void modeSelectionChanged(QString item);
 		void filterSelectionChanged(QString item);
 		void displayChanged(int item);
-		void presetsClicked(bool b);
 		void mixerChanged(int m);
 		void anfButtonToggled(bool b);
 		void nbButtonToggled(bool b);
@@ -118,6 +119,9 @@ private:
 		void agcBoxChanged(int item);
 		void lpfButtonToggled(bool b);
 		void muteButtonToggled(bool b);
+        void addMemoryButtonClicked();
+        void findStationButtonClicked();
+
 		void nixie1UpClicked();
 		void nixie1DownClicked();
 		void nixie10UpClicked();

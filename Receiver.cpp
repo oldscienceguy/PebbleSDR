@@ -420,9 +420,7 @@ void Receiver::ShowSettings(bool b)
 {
 	settings->ShowSettings();
 }
-void Receiver::ShowPresets()
-{
-}
+
 void Receiver::ShowSdrSettings(bool b)
 {
     if (sdr != NULL)

@@ -3,6 +3,7 @@
 #include <QPalette>
 #include <QMenu>
 #include <QKeyEvent>
+#include <QMessageBox>
 #include "ReceiverWidget.h"
 #include "receiver.h"
 
@@ -15,6 +16,7 @@ ReceiverWidget::ReceiverWidget(QWidget *parent):QWidget(parent)
 void ReceiverWidget::SetReceiver(Receiver *r)
 {
 	receiver = r;
+    presets = NULL;
 
 	powerOn = false;
 	frequency = 0;
@@ -119,8 +121,9 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	connect(ui.agcSlider,SIGNAL(valueChanged(int)),this,SLOT(agcSliderChanged(int)));
 	connect(ui.squelchSlider,SIGNAL(valueChanged(int)),this,SLOT(squelchSliderChanged(int)));
 	connect(ui.spectrumWidget,SIGNAL(mixerChanged(int)),this,SLOT(mixerChanged(int)));
-	connect(ui.presetsButton,SIGNAL(clicked(bool)),this,SLOT(presetsClicked(bool)));
 	connect(ui.displayBox,SIGNAL(currentIndexChanged(int)),this,SLOT(displayChanged(int)));
+    connect(ui.addMemoryButton,SIGNAL(clicked()),this,SLOT(addMemoryButtonClicked()));
+    connect(ui.findStationButton,SIGNAL(clicked()),this,SLOT(findStationButtonClicked()));
 
 	connect(ui.nixie1Up,SIGNAL(clicked()),this,SLOT(nixie1UpClicked()));
 	connect(ui.nixie1Down,SIGNAL(clicked()),this,SLOT(nixie1DownClicked()));
@@ -174,7 +177,6 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     ui.nb2Button->setFont(smFont);
     ui.nbButton->setFont(smFont);
     ui.powerButton->setFont(medFont);
-    ui.presetsButton->setFont(medFont);
     ui.settingsButton->setFont(medFont);
     ui.squelchSlider->setFont(smFont);
     ui.displayBox->setFont(medFont);
@@ -182,6 +184,8 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     ui.stationCombo->setFont(medFont);
     ui.bandCombo->setFont(medFont);
     ui.bandType->setFont(medFont);
+    ui.addMemoryButton->setFont(smFont);
+    ui.findStationButton->setFont(smFont);
 }
 
 ReceiverWidget::~ReceiverWidget(void)
@@ -385,6 +389,8 @@ void ReceiverWidget::powerToggled(bool on)
 			ui.powerButton->setChecked(false); //Turn power button back off
 			return; //Error setting up receiver
 		}
+        //Presets are only loaded when receiver is on
+        presets = receiver->GetPresets();
 
 		//Create style in Qt Designer style editor, then paste here
 		pwrStyle = "background-color: qlineargradient(spread:pad, x1:0.471, y1:0, x2:0.483, y2:0.982955, stop:0 rgba(255, 243, 72, 255), stop:0.778409 rgba(255, 247, 221, 255))";
@@ -403,6 +409,8 @@ void ReceiverWidget::powerToggled(bool on)
 	} else {
 		//Turning power off, shut down receiver widget display BEFORE telling receiver to clean up
 		//Objects
+        presets = NULL;
+
 		ui.spectrumWidget->Run(false);
 		ui.sMeterWidget->Run(false);
 		//We have to make sure that widgets are stopped before cleaning up supporting objects
@@ -486,8 +494,26 @@ void ReceiverWidget::lpfButtonToggled(bool b)
 }
 void ReceiverWidget::muteButtonToggled(bool b)
 {
-	receiver->SetMute(b);
+    receiver->SetMute(b);
 }
+
+void ReceiverWidget::addMemoryButtonClicked()
+{
+    if (presets == NULL)
+        return;
+
+    if (presets->AddMemory(frequency,"????","Added from Pebble"))
+        QMessageBox::information(NULL,"Add Memory","Frequency added to memories.csv. Edit file and toggle power to re-load");
+    else
+        QMessageBox::information(NULL,"Add Memory","Add Memory Failed!");
+}
+
+void ReceiverWidget::findStationButtonClicked()
+{
+    QMessageBox::information(NULL,"Test","Find Station not implemented yet");
+
+}
+
 void ReceiverWidget::filterSelectionChanged(QString f)
 {
 	int filter = f.toInt();
@@ -712,7 +738,7 @@ void ReceiverWidget::DisplayNumber(double n)
 
 void ReceiverWidget::bandTypeChanged(int s)
 {
-    if (!powerOn)
+    if (!powerOn || presets==NULL)
         return; //bands aren't loaded until power on
 
     //enums are stored as user data with each menu item
@@ -721,11 +747,11 @@ void ReceiverWidget::bandTypeChanged(int s)
     //Turn off signals
     ui.bandCombo->blockSignals(true);
     ui.bandCombo->clear();
-    Band *bands = receiver->GetPresets()->GetBands();
+    Band *bands = presets->GetBands();
     if (bands == NULL)
         return;
 
-    int numBands = receiver->GetPresets()->GetNumBands();
+    int numBands = presets->GetNumBands();
     double freq;
     QString buf;
     for (int i=0; i<numBands; i++) {
@@ -753,10 +779,10 @@ void ReceiverWidget::bandTypeChanged(int s)
 
 void ReceiverWidget::bandChanged(int s)
 {
-    if (!powerOn || s==-1) //-1 means we're just clearing selection
+    if (!powerOn || s==-1 || presets==NULL) //-1 means we're just clearing selection
         return;
 
-    Band *bands = receiver->GetPresets()->GetBands();
+    Band *bands = presets->GetBands();
     if (bands == NULL)
         return;
 
@@ -777,9 +803,9 @@ void ReceiverWidget::bandChanged(int s)
 
 void ReceiverWidget::stationChanged(int s)
 {
-    if (!powerOn)
+    if (!powerOn || presets==NULL)
         return;
-    Station *stations = receiver->GetPresets()->GetStations();
+    Station *stations = presets->GetStations();
     int stationIndex = ui.stationCombo->itemData(s).toInt();
     double freq = stations[stationIndex].freq;
     SetFrequency(freq);
@@ -788,10 +814,9 @@ void ReceiverWidget::stationChanged(int s)
 
 void ReceiverWidget::DisplayBand(double freq)
 {
-    if (!powerOn)
+    if (!powerOn || presets==NULL)
         return;
 
-    Presets *presets = receiver->GetPresets();
     Band *band = presets->FindBand(freq);
 
     //If we didn't find a band, clear
@@ -833,10 +858,4 @@ void ReceiverWidget::DisplayBand(double freq)
         ui.stationCombo->clear(); //No stations
         currentBandIndex = -1;
     }
-}
-
-
-void ReceiverWidget::presetsClicked(bool b)
-{
-	receiver->ShowPresets();
 }

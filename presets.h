@@ -111,6 +111,8 @@ public:
     Band::BANDTYPE StringToBandType(QString s);  //Converts string from file to type
 
     void SaveMemoryCSV();
+    //Add current freq to memories
+    bool AddMemory(double freq, QString station, QString note);
 
 private:
     QString csvReadLine(QFile *file);
@@ -119,6 +121,7 @@ private:
 
     QString memoryFile;
     int numMemory;
+    int maxMemory; //max size of memories array
 
     Station *memories;
 

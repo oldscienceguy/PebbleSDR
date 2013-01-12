@@ -250,11 +250,13 @@ bool Presets::ReadStations()
     if (numMemory <= 1) {
         //bands.csv must have at least on line plus header
         numMemory = 0;
+        maxMemory = 0;
         fMemory.close();
         return false;
     }
     //1st line is header, don't count
     numMemory--;
+    maxMemory = numMemory + 50; //Room to save new memories from UI
     //Reset stream
     fMemory.seek(0);
 
@@ -264,7 +266,7 @@ bool Presets::ReadStations()
     //Allocate buffer
     numStations = numEibi + numMemory;
     stations = new Station[numStations];
-    memories = new Station[numMemory];
+    memories = new Station[maxMemory];  //More than we need
 
     //Read file into memory, throw away header line
     line = csvReadLine(&fEibi);
@@ -400,6 +402,16 @@ Band::~Band()
 Station::Station()
 {
     freq = 0;
+    time = "";
+    days = "";
+    itu = "";
+    station = "";
+    language = "";
+    target = "";
+    remarks = "";
+    p = "";
+    start = "";
+    stop = "";
     bandIndex = -1;
 }
 Station::~Station()
@@ -421,7 +433,9 @@ void Presets::SaveMemoryCSV()
      out << "kHz:75,Time(UTC):93,Days:59,ITU:49,Station:20,Lng:49,Target:62,Remarks:135,P:35,Start:60,Stop:60\n";
      for (int i=0; i<numMemory; i++)
      {
-         out << memories[i].freq / 1000.0; //khz
+         //Not writing decimal
+         double temp = memories[i].freq / 1000.0;
+         out << QString::number(temp,'f',3);  //Limit to 3 decimal places
          out << ",";
          out << memories[i].time;
          out << ",";
@@ -447,4 +461,19 @@ void Presets::SaveMemoryCSV()
             out << "\n";
      }
      file.close();
+}
+
+bool Presets::AddMemory(double freq, QString station, QString note)
+{
+    if (numMemory == maxMemory)
+        return false; //No more room at the inn
+    Station *s = &memories[numMemory]; //Next empty memory
+    s->freq = freq;
+    s->station = station;
+    s->remarks = note;
+
+    numMemory++;
+    SaveMemoryCSV();
+
+    return true;
 }
