@@ -83,7 +83,7 @@ macx {
 	SOURCES += hid-mac.c
 
 	#INSTALLS is called when we manually make -install or add it to the Qt project build steps
-	otherfiles.files = eibireadme.txt eibi.csv bands.csv presets.csv help.htm gpl.h releasenotes.txt
+	otherfiles.files = eibireadme.txt eibi.csv bands.csv memory.csv help.htm gpl.h releasenotes.txt
 
 	#We want this to be whatever the release or debug directory is or added to bundle
 	#This will copy the files into the app bundle, same place ini files go
