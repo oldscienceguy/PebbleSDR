@@ -60,7 +60,9 @@ macx {
 	#Locataion for MOC files
 	MOC_DIR = $${PWD}/MacMoc
 
-	LIBS += -L$${PWD}/../D2XX/bin/10.5-10.7/ -lftd2xx.1.1.0
+	#dylib
+	LIBS += -L$${PWD}/../D2XX/bin/10.5-10.7/ -lftd2xx.1.2.2
+	#static lib
 	LIBS += ../portaudio/lib/.libs/libportaudio.a
 	#Portaudio needs mac frameworks, this is how to add them
 	LIBS += -framework CoreAudio
@@ -103,12 +105,12 @@ macx {
 	#3rd arg is the actual executable to patch
 	#Add this command to QtCreator make steps or use QMAKE_POST_LINK below
 	#install_name_tool -change /usr/local/lib/libftd2xx.1.1.0.dylib @executable_path/../Frameworks/libftd2xx.1.1.0.dylib pebble.app/contents/macos/pebble
-	QMAKE_POST_LINK += install_name_tool -change /usr/local/lib/libftd2xx.1.1.0.dylib @executable_path/../Frameworks/libftd2xx.1.1.0.dylib $${DESTDIR}/pebble.app/contents/macos/pebble
+	QMAKE_POST_LINK += install_name_tool -change /usr/local/lib/libftd2xx.1.2.2.dylib @executable_path/../Frameworks/libftd2xx.1.2.2.dylib $${DESTDIR}/pebble.app/contents/macos/pebble
 
-	frameworks.files = $${PWD}/../D2XX/bin/10.5-10.7/libftd2xx.1.1.0.dylib
+	#We may need to copy ftd2xx.cfg with value ConfigFlags=0x40000000
+	frameworks.files = $${PWD}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
 	frameworks.path = $${DESTDIR}/Pebble.app/Contents/Frameworks
 	INSTALLS += frameworks
-
 
 }
 
