@@ -105,12 +105,43 @@ macx {
 	#3rd arg is the actual executable to patch
 	#Add this command to QtCreator make steps or use QMAKE_POST_LINK below
 	#install_name_tool -change /usr/local/lib/libftd2xx.1.1.0.dylib @executable_path/../Frameworks/libftd2xx.1.1.0.dylib pebble.app/contents/macos/pebble
-	QMAKE_POST_LINK += install_name_tool -change /usr/local/lib/libftd2xx.1.2.2.dylib @executable_path/../Frameworks/libftd2xx.1.2.2.dylib $${DESTDIR}/pebble.app/contents/macos/pebble
 
 	#We may need to copy ftd2xx.cfg with value ConfigFlags=0x40000000
-	frameworks.files = $${PWD}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
-	frameworks.path = $${DESTDIR}/Pebble.app/Contents/Frameworks
-	INSTALLS += frameworks
+	ftd2xx.files += $${PWD}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
+	ftd2xx.commands += install_name_tool -change /usr/local/lib/libftd2xx.1.2.2.dylib @executable_path/../Frameworks/libftd2xx.1.2.2.dylib $${DESTDIR}/pebble.app/contents/macos/pebble
+	ftd2xx.path = $${DESTDIR}/Pebble.app/Contents/Frameworks
+	INSTALLS += ftd2xx
+
+	#Qt files
+	qt1.files += /Users/rlandsman/Qt5.0.0/5.0.0/clang_64/lib/QtMultimedia.framework/Versions/5/QtMultimedia
+	qt1.commands += install_name_tool -change /Users/rlandsman/Qt5.0.0/5.0.0/clang_64/lib/QtMultimedia.framework/Versions/5/QtMultimedia @executable_path/../Frameworks/QtMultimedia $${DESTDIR}/pebble.app/contents/macos/pebble
+	qt1.path = $${DESTDIR}/Pebble.app/Contents/Frameworks
+	INSTALLS += qt1
+
+	qt2.files += /Users/rlandsman/Qt5.0.0/5.0.0/clang_64/lib/QtGui.framework/Versions/5/QtGui
+	qt2.commands += install_name_tool -change /Users/rlandsman/Qt5.0.0/5.0.0/clang_64/lib/QtGui.framework/Versions/5/QtGui @executable_path/../Frameworks/QtGui $${DESTDIR}/pebble.app/contents/macos/pebble
+	qt2.path = $${DESTDIR}/Pebble.app/Contents/Frameworks
+	INSTALLS += qt2
+
+	qt3.files += /Users/rlandsman/Qt5.0.0/5.0.0/clang_64/lib/QtCore.framework/Versions/5/QtCore
+	qt3.commands += install_name_tool -change /Users/rlandsman/Qt5.0.0/5.0.0/clang_64/lib/QtCore.framework/Versions/5/QtCore @executable_path/../Frameworks/QtCore $${DESTDIR}/pebble.app/contents/macos/pebble
+	qt3.path = $${DESTDIR}/Pebble.app/Contents/Frameworks
+	INSTALLS += qt3
+
+	qt4.files += /Users/rlandsman/Qt5.0.0/5.0.0/clang_64/lib/QtNetwork.framework/Versions/5/QtNetwork
+	qt4.commands += install_name_tool -change /Users/rlandsman/Qt5.0.0/5.0.0/clang_64/lib/QtNetwork.framework/Versions/5/QtNetwork @executable_path/../Frameworks/QtNetwork $${DESTDIR}/pebble.app/contents/macos/pebble
+	qt4.path = $${DESTDIR}/Pebble.app/Contents/Frameworks
+	INSTALLS += qt4
+
+	qt5.files += /Users/rlandsman/Qt5.0.0/5.0.0/clang_64/lib/QtWidgets.framework/Versions/5/QtWidgets
+	qt5.commands += install_name_tool -change /Users/rlandsman/Qt5.0.0/5.0.0/clang_64/lib/QtWidgets.framework/Versions/5/QtWidgets @executable_path/../Frameworks/QtWidgets $${DESTDIR}/pebble.app/contents/macos/pebble
+	qt5.path = $${DESTDIR}/Pebble.app/Contents/Frameworks
+	INSTALLS += qt5
+
+	#
+	# Check to see if these are standard OS files
+	# /usr/lib/libstdc++.6.dylib
+	# /usr/lib/libSystem.B.dylib
 
 }
 
