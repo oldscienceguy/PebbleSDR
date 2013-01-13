@@ -6,6 +6,8 @@ QT += widgets core gui multimedia
 #Download & install QT 5.0 from http://qt-project.org
 
 #Download & install FTDI D2XX drivers from http://www.ftdichip.com/Drivers/D2XX.htm
+#V 1.2.0 4/25/11
+#V 1.2.2 10/30/12
 
 #Download PortAudio from portaudio.com , open terminal, ./configure && make
 #portaudio directory is at same level as PebbleII
@@ -92,6 +94,21 @@ macx {
 	otherfiles.path = $${DESTDIR}/PebbleData
 	#message($${otherfiles.path})
 	INSTALLS += otherfiles
+
+	#Experiment to get .dylib files in package for easier user install
+	#To find all dependent dylib: otool -L ./Pebble.app/contents/macos/pebble >> dylib.txt
+	#1st arg is the path and name of dylib as shown from otool ouput
+	#2nd arg starts with @executable_path which expands to (path to bundle)/pebble.app/contents/macos
+	#Up one dir to Frameworks which is where we copy .dylib files
+	#3rd arg is the actual executable to patch
+	#Add this command to QtCreator make steps or use QMAKE_POST_LINK below
+	#install_name_tool -change /usr/local/lib/libftd2xx.1.1.0.dylib @executable_path/../Frameworks/libftd2xx.1.1.0.dylib pebble.app/contents/macos/pebble
+	QMAKE_POST_LINK += install_name_tool -change /usr/local/lib/libftd2xx.1.1.0.dylib @executable_path/../Frameworks/libftd2xx.1.1.0.dylib $${DESTDIR}/pebble.app/contents/macos/pebble
+
+	frameworks.files = $${PWD}/../D2XX/bin/10.5-10.7/libftd2xx.1.1.0.dylib
+	frameworks.path = $${DESTDIR}/Pebble.app/Contents/Frameworks
+	INSTALLS += frameworks
+
 
 }
 
