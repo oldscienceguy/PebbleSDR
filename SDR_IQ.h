@@ -119,7 +119,7 @@ public:
 	unsigned CaptureBlocks(unsigned numBlocks);
 	unsigned StartCapture();
 	unsigned StopCapture();
-	unsigned ReadResponse(int expectedType);
+    int ReadResponse(int expectedType);
 	bool ReadDataBlock(CPX cpxBuf[], unsigned cpxBufSize);
 	void FlushDataBlocks();
 
@@ -138,7 +138,7 @@ private:
 	CPX *outBuffer;
 	int inBufferSize;
 	BYTE *readBuf;
-	int readBufSize;
+    BYTE *producerReadBuf; //Exclusively for producer thread to avoid possible buffer contention with main thread
 	//SDR overrides
 	void StopProducerThread();
 	void RunProducerThread();
@@ -147,13 +147,20 @@ private:
 
 	int msTimeOut;
 
-	//WIP
-	#define NUMDATABUFS 100
-	short dataBuf[NUMDATABUFS][4096];
-	int nextDataBuf;
-	int lastDataBuf;
-	QSemaphore semDataBuf; //Init to NUMDATABUFS
-	QSemaphore semDataReady;
+    static const int numDataBufs = 50; //Producer/Consumer buffers
+
+    short **dataBuf;
+    int nextProducerDataBuf;
+    int nextConsumerDataBuf;
+    /*
+      NumFreeBuffers starts at NUMDATABUFS and is decremented (acquire()) everytime the producer thread has new data.
+      If it ever gets to zero, it will block forever and program will hang until consumer thread catches up.
+      NumFreeBuffers is incremented (release()) in consumer thread when a buffer has been processed and can be reused.
+
+
+    */
+    QSemaphore *semNumFreeBuffers; //Init to NUMDATABUFS
+    QSemaphore *semNumFilledBuffers;
 	bool dataBufOverflow;
 	void ProcessDataBlocks();
 

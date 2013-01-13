@@ -8,14 +8,19 @@
 SDR_IQ::SDR_IQ(Receiver *_receiver, SDRDEVICE dev,Settings *settings):SDR(_receiver, dev,settings)
 {
 	QString path = QCoreApplication::applicationDirPath();
-	qSettings = new QSettings(path+"/sdriq.ini",QSettings::IniFormat);
+#ifdef Q_OS_MAC
+        //Pebble.app/contents/macos = 25
+        path.chop(25);
+#endif
+
+    qSettings = new QSettings(path+"/PebbleData/sdriq.ini",QSettings::IniFormat);
 	ReadSettings();
 
 	ftHandle = NULL;
 	sdrIQOptions = NULL;
 	inBuffer = NULL;
 	outBuffer = NULL;
-	readBuf = NULL;
+    readBuf = producerReadBuf = NULL;
 	isThreadRunning = false;
 
 	if (!isFtdiLoaded) {
@@ -23,7 +28,12 @@ SDR_IQ::SDR_IQ(Receiver *_receiver, SDRDEVICE dev,Settings *settings):SDR(_recei
 			QMessageBox::information(NULL,"Pebble","ftd2xx.dll could not be loaded.  SDR-IQ communication is disabled.");
 			return;
 		}
-	}
+        isFtdiLoaded = true;
+    }
+
+    dataBuf = new short *[numDataBufs];
+    for (int i=0; i<numDataBufs; i++)
+        dataBuf[i] = new short[4096];
 
 	//Todo: SDR-IQ has fixed block size 2048, are we going to support variable size or just force
 	inBufferSize = 2048; //settings->framesPerBuffer;
@@ -31,6 +41,9 @@ SDR_IQ::SDR_IQ(Receiver *_receiver, SDRDEVICE dev,Settings *settings):SDR(_recei
 	outBuffer = CPXBuf::malloc(inBufferSize);
 	//Max data block we will ever read is dataBlockSize
 	readBuf = new BYTE[dataBlockSize];
+    producerReadBuf = new BYTE[dataBlockSize];
+    semNumFreeBuffers = NULL;
+    semNumFilledBuffers = NULL;
 
 	producerThread = new SDRProducerThread(this);
 	producerThread->setRefresh(0); //Semaphores will block and wait, no extra delay needed
@@ -55,6 +68,13 @@ SDR_IQ::~SDR_IQ(void)
 		CPXBuf::free(outBuffer);
 	if (readBuf != NULL)
 		free (readBuf);
+    if (producerReadBuf != NULL)
+        free (producerReadBuf);
+    if (dataBuf != NULL) {
+        for (int i=0; i<numDataBufs; i++)
+            free (dataBuf[i]);
+        free (dataBuf);
+    }
 }
 void SDR_IQ::ReadSettings()
 {
@@ -89,21 +109,28 @@ void SDR_IQ::Start()
 	if (!isFtdiLoaded)
 		return;
 
-	//Init semaphores
-	//How do we reset a semaphore
-	semDataBuf.release(NUMDATABUFS);
-	//int tmp = semDataBuf.available();
+    //Start out with all producer buffers available
+    if (semNumFreeBuffers != NULL)
+        delete semNumFreeBuffers;
+    semNumFreeBuffers = new QSemaphore(numDataBufs);
 
-	//We want the consumer thread to start first, it will block waiting for data from the SDR thread
-	consumerThread->start();
-	producerThread->start();
-	isThreadRunning = true;
+    if (semNumFilledBuffers != NULL)
+        delete semNumFilledBuffers;
+    //Init with zero available
+    semNumFilledBuffers = new QSemaphore(0);
+
+    nextProducerDataBuf = nextConsumerDataBuf = 0;
+
+    //We want the consumer thread to start first, it will block waiting for data from the SDR thread
+    consumerThread->start();
+    producerThread->start();
+    isThreadRunning = true;
 
 	//Set bandwidth first, takes a while and returns lots of garbage ACKs
-	SetBandwidth((SDR_IQ::BANDWIDTH)sBandwidth);
+    SetBandwidth((SDR_IQ::BANDWIDTH)sBandwidth);
 	//We're going to get back over 256 ACKs, eat em before continuing 
 	//Otherwise we fill up data buffers while processing acks
-	FlushDataBlocks();
+    FlushDataBlocks();
 
 	//Get basic Device Information for later use, name, version, etc
 	bool result = RequestTargetName();
@@ -120,7 +147,7 @@ void SDR_IQ::Start()
 	SetRFGain(sRFGain);
 
 	//Finally ready to start getting data samples
-	StartCapture();
+    StartCapture();
 
 }
 void SDR_IQ::Stop()
@@ -146,6 +173,7 @@ bool SDR_IQ::Connect()
     int deviceNumber = USBUtil::FTDI_FindDeviceByName("SDR-IQ");
 	if (deviceNumber == -1)
 		return false;
+
 	//Open device
 	if (ftHandle == NULL) 
 	{
@@ -156,13 +184,19 @@ bool SDR_IQ::Connect()
 		}
 	}
 
-	ftStatus = FT_ResetDevice(ftHandle);
+    ftStatus = FT_ResetDevice(ftHandle);
 	//Make sure driver buffers are empty
-	ftStatus = FT_Purge(ftHandle,FT_PURGE_RX | FT_PURGE_TX);
-	ftStatus = FT_SetTimeouts(ftHandle,150,150);
-	//SDR sends a 0 on startup, clear it out of buffer
+    ftStatus = FT_Purge(ftHandle,FT_PURGE_RX | FT_PURGE_TX);
+    ftStatus = FT_SetTimeouts(ftHandle,500,500);
+    //Testing: Increase size of internal buffers from default 4096
+    //ftStatus = FT_SetUSBParameters(ftHandle,8192,8192);
+
+
+    //SDR sends a 0 on startup, clear it out of buffer
 	DWORD bytesReturned;
 	ftStatus = FT_Read(ftHandle,readBuf,1,&bytesReturned);
+    if (ftStatus != FT_OK) //Don't care how many bytes actually got read
+        return false;
 
 	return true;
 }
@@ -324,7 +358,7 @@ double SDR_IQ::GetFrequency()
 
 double SDR_IQ::SetFrequency(double freq, double fCurrent)
 {
-	if (!isFtdiLoaded)
+    if (!isFtdiLoaded)
 		return freq;
 
 	if (freq==0)
@@ -599,10 +633,9 @@ unsigned SDR_IQ::StartCapture()
 	FT_STATUS ftStatus;
 	BYTE writeBuf[8] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x02, 0x00, 0x00};
 	DWORD bytesWritten;
-	ftStatus = FT_Write(ftHandle,(LPVOID)writeBuf,sizeof(writeBuf),&bytesWritten);
+    ftStatus = FT_Write(ftHandle,(LPVOID)writeBuf,sizeof(writeBuf),&bytesWritten);
 	if (ftStatus != FT_OK)
 		return -1;
-	nextDataBuf = lastDataBuf = 0;
 	return 0;
 }
 
@@ -621,7 +654,9 @@ unsigned SDR_IQ::StopCapture()
 	return 0;
 }
 
-unsigned SDR_IQ::ReadResponse(int expectedType)
+//Called from Producer thread
+//Returns bytesReturned or -1 if error
+int SDR_IQ::ReadResponse(int expectedType)
 {
 	if (!isFtdiLoaded)
 		return -1;
@@ -630,94 +665,116 @@ unsigned SDR_IQ::ReadResponse(int expectedType)
     FT_STATUS ftStatus;
 
 	DWORD bytesReturned;
+
 	//FT_Read blocks until bytes are ready or timeout, which wastes time
 	//Check to make sure we've got bytes ready before proceeding
 	ftStatus = FT_GetQueueStatus(ftHandle,&bytesReturned);
 	if (ftStatus != FT_OK || bytesReturned < 2)
+        //We get a lot of this initially as there's no data to return until rcv gets set up
 		return 0;
 
 	//Note, this assumes that we're in sync with stream
 	//Read 16 bit Header which contains message length and type
-    ftStatus = FT_Read(ftHandle, readBuf, 2, &bytesReturned);
+    ftStatus = FT_Read(ftHandle, producerReadBuf, 2, &bytesReturned);
 	if (ftStatus != FT_OK || bytesReturned != 2){
 		//mutex.unlock();
 		return -1;
 	}
+
 	//Get 13bit message length, mask 3 high order bits of 2nd byte
-	int type = readBuf[1]>>5; //Get 3 high order bits
-	int length = readBuf[0] + (readBuf[1] & 0x1f) * 0x100;
+    //Example from problem response rb = 0x01 0x03
+    //rb[0] = 0000 0001 rb[1] = 000 0011
+    //type is 0 and length is 769
+    int type = producerReadBuf[1]>>5; //Get 3 high order bits
+    int length = producerReadBuf[0] + (producerReadBuf[1] & 0x1f) * 0x100;
+
 	if (type == 0x04 && length==0) {
+
 		//Add DataBuf to circular buffer
 		//Special case to allow 2048 samples per block
-		//13bit length field only allows 0-8191 total length and we need 0 to 8193
+        //When length==0 it means to read 8192 bytes
+        //Largest value in a 13bit field is 8191 and we need length of 8192
 		length = 8192; 
 		//int tmp = semDataBuf.available();
-		//Acquire a dataBuf
-		semDataBuf.acquire();
-		ftStatus = FT_Read(ftHandle,dataBuf[nextDataBuf],length,&bytesReturned);
-		if (bytesReturned != 8192)
-			return -1;
+        //This will block if we don't have any free data buffers to use, pending consumer thread releasing
+        semNumFreeBuffers->acquire();
+
+        ftStatus = FT_Read(ftHandle,dataBuf[nextProducerDataBuf],length,&bytesReturned);
+
+        if (ftStatus != FT_OK || bytesReturned != 8192) {
+            //Lost data
+            semNumFreeBuffers->release(); //Put back what we acquired
+            return -1;
+        }
+
 		//Circular buffer of dataBufs
-		nextDataBuf = (nextDataBuf +1 ) % NUMDATABUFS;
-		//Give a dataBuf to process thread
-		semDataReady.release();
+        nextProducerDataBuf = (nextProducerDataBuf +1 ) % numDataBufs;
+
+        //Increment the number of data buffers that are filled so consumer thread can access
+        semNumFilledBuffers->release();
 		return 0;
 	}
-		
-	length -= 2; //length include 2 byte header which we've already read
 
-	if (length==0)
+    if (length <= 2 || length > 8192)
 		//Receive a 2 byte NAK nothing else to read
 		return -1;
+    else
+        //Length can never be zero
+        length -= 2; //length includes 2 byte header which we've already read
 
-	ftStatus = FT_Read(ftHandle, readBuf, length, &bytesReturned);
+    //BUG: We always get a type 0 with length 769(-2) early in the startup sequence
+    //readBuf is filled with 0x01 0x03 (repeated)
+    //FT_Read fails in this case because there are actually no more bytes to read
+    //See if we this is ack, nak, or something else that needs special casing
+    //Trace back and see what last FT_Write was?
+    ftStatus = FT_Read(ftHandle, producerReadBuf, length, &bytesReturned);
 
 	if (ftStatus != FT_OK || bytesReturned != (unsigned)length){
 		//mutex.unlock();
         return -1;
 	}
 
-	int itemCode;
+    int itemCode = producerReadBuf[0] | producerReadBuf[1]<<8;
+    //qDebug()<<"Type ="<<type<<" ItemCode = "<<itemCode;
 	switch (type)
 	{
 	//Response to Set or Request Current Control Item
 	case 0x00:
-		itemCode = readBuf[0] | readBuf[1]<<8;
-		switch (itemCode)
+        switch (itemCode)
 		{
 		case 0x0001: //Target Name
-			targetName = QString((char*)&readBuf[2]);
+            targetName = QString((char*)&producerReadBuf[2]);
 			break;
 		case 0x0002: //Serial Number
-			serialNumber = QString((char*)&readBuf[2]);
+            serialNumber = QString((char*)&producerReadBuf[2]);
 			break;
 		case 0x0003: //Interface Version
-			interfaceVersion = (unsigned)(readBuf[2] + readBuf[3] * 256);
+            interfaceVersion = (unsigned)(producerReadBuf[2] + producerReadBuf[3] * 256);
 			break;
 		case 0x0004: //Hardware/Firmware Version
-			if (readBuf[2] == 0x00)
-				bootcodeVersion = (unsigned)(readBuf[3] + readBuf[4] * 256);
-			else if (readBuf[2] == 0x01)
-				firmwareVersion = (unsigned)(readBuf[3] + readBuf[4] * 256);
+            if (producerReadBuf[2] == 0x00)
+                bootcodeVersion = (unsigned)(producerReadBuf[3] + producerReadBuf[4] * 256);
+            else if (producerReadBuf[2] == 0x01)
+                firmwareVersion = (unsigned)(producerReadBuf[3] + producerReadBuf[4] * 256);
 			break;
 		case 0x0005: //Status/Error Code
-			statusCode = (unsigned)(readBuf[2]);
+            statusCode = (unsigned)(producerReadBuf[2]);
 			break;
 		case 0x0006: //Status String
-			statusString = QString((char*)&readBuf[4]);
+            statusString = QString((char*)&producerReadBuf[4]);
 			break;
 		case 0x0018: //Receiver Control
-			lastReceiverCommand = readBuf[3];
+            lastReceiverCommand = producerReadBuf[3];
 			//More to get if we really need it
 			break;
 		case 0x0020: //Receiver Frequency
-			receiverFrequency = (double) readBuf[3] + readBuf[4] * 0x100 + readBuf[5] * 0x10000 + readBuf[6] * 0x1000000;
+            receiverFrequency = (double) producerReadBuf[3] + producerReadBuf[4] * 0x100 + producerReadBuf[5] * 0x10000 + producerReadBuf[6] * 0x1000000;
 			break;
 		case 0x0038: //RF Gain - values are 0 to -30
-			rfGain = (qint8)readBuf[3];
+            rfGain = (qint8)producerReadBuf[3];
 			break;
 		case 0x0040: //IF Gain - values are all 8bit
-			ifGain = (qint8)readBuf[3];
+            ifGain = (qint8)producerReadBuf[3];
 			break;
 		case 0x00B0: //A/D Input Sample Rate
 			break;
@@ -738,6 +795,7 @@ unsigned SDR_IQ::ReadResponse(int expectedType)
 	//Target Data Item 0
 	case 0x04:
 		//Should never get here, data blocks handled in separate thread
+        qDebug()<<"Should never get to case 0x04 in ReadResponse()";
 		break;
 	//Target Data Item 1 (not used in SDR-IQ)
 	case 0x05:
@@ -755,18 +813,19 @@ unsigned SDR_IQ::ReadResponse(int expectedType)
 	return bytesReturned;
 
 }
-//This is called from a separate thread
+//This is called from Consumer thread
 void SDR_IQ::ProcessDataBlocks()
 {
 	//BYTE ackBuf[] = {0x03,0x60,0x00}; //Ack data block 0
 	//DWORD bytesWritten;
 	//FT_STATUS ftStatus;
 	float I,Q;
-	//Wait for data
-	semDataReady.acquire();
+    //Wait for data to be available from producer
+    semNumFilledBuffers->acquire();
+
 	//If this is 0, we're keeping up with incoming rate
 	//If between 1-9, we have underflow
-	int overflow = semDataReady.available();
+    int overflow = semNumFilledBuffers->available();
 	if (overflow > 1)
 		dataBufOverflow = true;
 
@@ -787,7 +846,7 @@ void SDR_IQ::ProcessDataBlocks()
 		*/
 		//I = *(short *)(&readBuf[j]);
 		//DataBuf is [] of shorts, not bytes
-		I = (short)dataBuf[lastDataBuf][j];
+        I = (short)dataBuf[nextConsumerDataBuf][j];
 		//Convert to float: div by 32767 for -1 to 1, 
 		I /= (32767.0); 
 		//SoundCard levels approx 0.02 at 50% mic
@@ -797,7 +856,7 @@ void SDR_IQ::ProcessDataBlocks()
 
 
 		//Q = *(short *)(&readBuf[j+2]);
-		Q = (short)dataBuf[lastDataBuf][j+1];
+        Q = (short)dataBuf[nextConsumerDataBuf][j+1];
 		Q /= (32767.0);
 
 		//IQ appear to be reversed
@@ -807,17 +866,18 @@ void SDR_IQ::ProcessDataBlocks()
 		//qDebug() << minI << "-" << maxI;
 
 	}
+
 	//Not sure if this is required for SDR-IQ, but it is for SDR-14
 	//Send Ack
 	//FT_Write(sdr_iq->ftHandle,ackBuf,sizeof(ackBuf),&bytesWritten);
 	
 	//We're done with databuf, so we can release before we call ProcessBlock
 	//Update lastDataBuf & release dataBuf
-	lastDataBuf = (lastDataBuf +1 ) % NUMDATABUFS;
-	semDataBuf.release();
+    nextConsumerDataBuf = (nextConsumerDataBuf +1 ) % numDataBufs;
+    semNumFreeBuffers->release();
 
 	if (receiver != NULL)
-		receiver->ProcessBlock(inBuffer,outBuffer,inBufferSize);
+        receiver->ProcessBlock(inBuffer,outBuffer,inBufferSize);
 }
 
 void SDR_IQ::FlushDataBlocks()
@@ -830,7 +890,7 @@ void SDR_IQ::FlushDataBlocks()
 
     do
         ftStatus = FT_Read(ftHandle, readBuf, 1, &bytesReturned);
-    while (bytesReturned > 0);
+    while (ftStatus == FT_OK && bytesReturned > 0);
 }
 
 void SDR_IQ::StopProducerThread()
@@ -840,7 +900,8 @@ void SDR_IQ::StopProducerThread()
 
 void SDR_IQ::RunProducerThread()
 {
-	ReadResponse(0x04);
+    if (ReadResponse(0x04) == -1)
+        qDebug()<<"Error in SDR-IQ ReadResponse"; //Error
 }
 
 void SDR_IQ::StopConsumerThread()
@@ -850,7 +911,7 @@ void SDR_IQ::StopConsumerThread()
 
 void SDR_IQ::RunConsumerThread()
 {
-	ProcessDataBlocks();
+    ProcessDataBlocks();
 }
 
 //Dialog Stuff
@@ -896,11 +957,29 @@ void SDR_IQ::bandwidthChanged(int i)
 }
 void SDR_IQ::ShowOptions()
 {
+    QFont smFont = settings->smFont;
+    QFont medFont = settings->medFont;
+    QFont lgFont = settings->lgFont;
+
 	if (sdrIQOptions == NULL)
 	{
 		sdrIQOptions = new QDialog();
 		iqo = new Ui::SDRIQOptions();
 		iqo->setupUi(sdrIQOptions);
+
+        iqo->bandwidthBox->setFont(medFont);
+        iqo->bootLabel->setFont(medFont);
+        iqo->cancelButton->setFont(medFont);
+        iqo->firmwareLabel->setFont(medFont);
+        iqo->ifGainBox->setFont(medFont);
+        iqo->interfaceVersionLabel->setFont(medFont);
+        iqo->label->setFont(medFont);
+        iqo->label_2->setFont(medFont);
+        iqo->label_3->setFont(medFont);
+        iqo->nameLabel->setFont(medFont);
+        iqo->okButton->setFont(medFont);
+        iqo->rfGainBox->setFont(medFont);
+        iqo->serialNumberLabel->setFont(medFont);
 
 		iqo->rfGainBox->addItem("  0db");
 		iqo->rfGainBox->addItem("-10db");
