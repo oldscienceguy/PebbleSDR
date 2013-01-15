@@ -101,6 +101,8 @@ private:
     //Band currently selected, used to detect when band changes as a result of freq change
     int currentBandIndex;
 
+    bool showUtcTime;
+
 	private slots:
         void stationChanged(int s);
         void bandTypeChanged(int s);
@@ -142,4 +144,8 @@ private:
 		void nixie100mDownClicked();
         void nixie1gUpClicked();
         void nixie1gDownClicked();
+
+        void showTime();
+        void utcClockButtonClicked();
+        void localClockButtonClicked();
 };

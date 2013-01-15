@@ -4,6 +4,7 @@
 #include <QMenu>
 #include <QKeyEvent>
 #include <QMessageBox>
+#include <QLCDNumber>
 #include "ReceiverWidget.h"
 #include "receiver.h"
 
@@ -186,6 +187,25 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     ui.bandType->setFont(medFont);
     ui.addMemoryButton->setFont(smFont);
     ui.findStationButton->setFont(smFont);
+
+    //Clock
+    //Todo: Match bold black look of nixie
+    QPalette palette;
+    palette.setColor(QPalette::WindowText,Qt::black);
+    ui.clockWidget->setPalette(palette);
+    ui.clockWidget->setSegmentStyle(QLCDNumber::Flat);
+    //Same as power on background
+    ui.clockWidget->setStyleSheet("background-color: qlineargradient(spread:pad, x1:0.471, y1:0, x2:0.483, y2:0.982955, stop:0 rgba(255, 243, 72, 255), stop:0.778409 rgba(255, 247, 221, 255))");
+
+    connect(ui.utcClockButton,SIGNAL(clicked()),this,SLOT(utcClockButtonClicked()));
+    connect(ui.localClockButton,SIGNAL(clicked()),this,SLOT(localClockButtonClicked()));
+    utcClockButtonClicked();
+
+    //Does clockTimer need to be a member?
+    QTimer *clockTimer = new QTimer(this);
+    connect(clockTimer, SIGNAL(timeout()), this, SLOT(showTime()));
+    clockTimer->start(1000);
+    showTime();
 }
 
 ReceiverWidget::~ReceiverWidget(void)
@@ -718,6 +738,38 @@ void ReceiverWidget::nixie100mUpClicked(){SetFrequency(frequency+100000000);}
 void ReceiverWidget::nixie100mDownClicked(){SetFrequency(frequency-100000000);}
 void ReceiverWidget::nixie1gUpClicked(){SetFrequency(frequency+1000000000);}
 void ReceiverWidget::nixie1gDownClicked(){SetFrequency(frequency-1000000000);}
+
+void ReceiverWidget::utcClockButtonClicked()
+{
+   showUtcTime = true;
+   ui.utcClockButton->setFlat(false);
+   ui.localClockButton->setFlat(true);
+   showTime();
+}
+
+void ReceiverWidget::localClockButtonClicked()
+{
+    showUtcTime = false;
+    ui.utcClockButton->setFlat(true);
+    ui.localClockButton->setFlat(false);
+    showTime();
+}
+
+void ReceiverWidget::showTime()
+{
+    //Add Day of the week
+    QDateTime time;
+    if (showUtcTime)
+        time = QDateTime::currentDateTimeUtc();
+    else
+        time = QDateTime::currentDateTime();
+    QString text = time.toString("hh:mm");
+    //text = "23:59"; //For testing
+    if ((time.time().second() % 2) == 0)
+        text[2] = ' ';
+    ui.clockWidget->display(text);
+
+}
 
 void ReceiverWidget::DisplayNumber(double n)
 {
