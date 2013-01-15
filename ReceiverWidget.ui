@@ -1521,8 +1521,8 @@
         <widget class="QRadioButton" name="mixButton">
          <property name="geometry">
           <rect>
-           <x>2</x>
-           <y>43</y>
+           <x>46</x>
+           <y>22</y>
            <width>45</width>
            <height>18</height>
           </rect>
@@ -1536,7 +1536,7 @@
          <property name="minimumSize">
           <size>
            <width>0</width>
-           <height>18</height>
+           <height>15</height>
           </size>
          </property>
          <property name="font">
@@ -1551,8 +1551,8 @@
         <widget class="QLineEdit" name="directEntry">
          <property name="geometry">
           <rect>
-           <x>43</x>
-           <y>28</y>
+           <x>3</x>
+           <y>43</y>
            <width>81</width>
            <height>20</height>
           </rect>
@@ -1575,7 +1575,10 @@
           </font>
          </property>
          <property name="text">
-          <string>1,000,000.000</string>
+          <string/>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
          </property>
         </widget>
         <widget class="SMeterWidget" name="sMeterWidget" native="true">
@@ -1604,6 +1607,24 @@
            <width>16777215</width>
            <height>25</height>
           </size>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_4">
+         <property name="geometry">
+          <rect>
+           <x>88</x>
+           <y>46</y>
+           <width>25</width>
+           <height>16</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>9</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>kHz</string>
          </property>
         </widget>
        </widget>

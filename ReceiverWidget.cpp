@@ -160,7 +160,7 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     ui.nixie1g->installEventFilter(this);
     ui.directEntry->installEventFilter(this); //So we can grab Enter key
 
-	ui.directEntry->setInputMask("000000000"); //All digits, none required
+    ui.directEntry->setInputMask("0000000.000"); //All digits, none required
 
     ui.agcBox->setFont(medFont);
     ui.agcSlider->setFont(smFont);
@@ -257,6 +257,8 @@ bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
 				keyEvent->key() == Qt::Key_Return) {
 				double freq = QString(ui.directEntry->text()).toDouble();
                 if (freq > 0) {
+                    //Freq is in kHx
+                    freq *= 1000.0;
                     //Direct is always LO mode
                     setLoMode(true);
 					SetFrequency(freq);
@@ -773,7 +775,8 @@ void ReceiverWidget::showTime()
 
 void ReceiverWidget::DisplayNumber(double n)
 {
-	ui.directEntry->setText(QString::number(n,'f',0));
+    //Direct entry disply in khz
+    ui.directEntry->setText(QString::number(n / 1000.0,'f',3));
 
 	qint32 d = n; //Saves us having to cast to int below to get mod
     ui.nixie1g->display( (d / 1000000000)%10);
