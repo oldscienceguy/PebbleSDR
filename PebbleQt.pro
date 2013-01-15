@@ -87,15 +87,15 @@ macx {
 	SOURCES += hid-mac.c
 
 	#INSTALLS is called when we manually make -install or add it to the Qt project build steps
-	otherfiles.files = eibireadme.txt eibi.csv bands.csv memory.csv help.htm gpl.h releasenotes.txt
+	pebbleData.files = eibireadme.txt eibi.csv bands.csv memory.csv Help.htm gpl.h ReleaseNotes.txt
 
 	#We want this to be whatever the release or debug directory is or added to bundle
 	#This will copy the files into the app bundle, same place ini files go
-	#otherfiles.path = $${DESTDIR}/Pebble.app/Contents/MacOS
+	#pebbleData.path = $${DESTDIR}/Pebble.app/Contents/MacOS
 	#QMake will create folder in path if they don't exist
-	otherfiles.path = $${DESTDIR}/PebbleData
-	#message($${otherfiles.path})
-	INSTALLS += otherfiles
+	pebbleData.path = $${DESTDIR}/PebbleData
+	#message($${pebbleData.path})
+	INSTALLS += pebbleData
 
 	# Get .dylib files in package for easier user install
 	# See http://qt-project.org/doc/qt-5.0/qtdoc/deployment-mac.html
@@ -111,7 +111,7 @@ macx {
 	#install_name_tool -change /usr/local/lib/libftd2xx.1.1.0.dylib @executable_path/../Frameworks/libftd2xx.1.1.0.dylib pebble.app/contents/macos/pebble
 
 	#macdeployqt replaces all the install detail below and handles Qt and any non-system dylibs
-	QMAKE_POST_LINK += macdeployqt $${DESTDIR}/Pebble.app
+	QMAKE_POST_LINK += macdeployqt $${DESTDIR}/Pebble.app -no-plugins
 
 	#We may need to copy ftd2xx.cfg with value ConfigFlags=0x40000000
 	#ftd2xx.files += $${PWD}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
@@ -218,11 +218,11 @@ win32 {
 		INSTALLS += target installfiles
 
 		#INSTALLS is called when we manually make -install or add it to the Qt project build steps
-		otherfiles.files = eibireadme.txt eibi.csv bands.csv memory.csv help.htm gpl.h releasenotes.txt
+		pebbleData.files = eibireadme.txt eibi.csv bands.csv memory.csv Help.htm gpl.h ReleaseNotes.txt
 
 		#We want this to be whatever the release or debug directory is or added to bundle
-		otherfiles.path = $$DESTDIR
-		INSTALLS += otherfiles
+		pebbleData.path = $$DESTDIR
+		INSTALLS += pebbleData
 
 	}
 }
@@ -277,7 +277,8 @@ OTHER_FILES += \
     bands.csv \
     eibi.csv \
     eibireadme.txt \
-    memory.csv
+    memory.csv \
+	FrequencyList-SantaCruz.csv
 
 HEADERS += \
     usb.h \
