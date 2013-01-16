@@ -368,8 +368,35 @@ void Presets::AddStation(Station *s, int i, QStringList parts)
 
 }
 
-Station *Presets::FindStation(double currentFreq)
+/*
+ * Options
+ * Exact Match
+ * Within N khz
+ * First match
+ * All matches
+ */
+Station *Presets::FindStation(double currentFreq, int fRange)
 {
+    //Only check at kHz level
+    double fKhz = trunc(currentFreq / 1000);
+    double fKhzTemp;
+    Band *b = FindBand(currentFreq);
+    int stationIndex;
+    Station *s;
+
+    if (b == NULL)
+        return NULL;
+    int numS = b->numStations;
+    for (int i=0; i < numS; i++) {
+        stationIndex = b->stations[i];
+        if (stationIndex < 0)
+            continue; //Invalid
+        s = &stations[stationIndex];
+        //Check if within range
+        fKhzTemp = trunc(s->freq / 1000);
+        if ((fKhz >= fKhzTemp - fRange) && (fKhz <= fKhzTemp + fRange))
+            return s;
+    }
     return NULL;
 }
 

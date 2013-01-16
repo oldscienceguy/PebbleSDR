@@ -105,7 +105,7 @@ public:
     int GetNumBands();
 
     bool ReadStations();
-    Station *FindStation(double currentFreq);
+    Station *FindStation(double currentFreq, int fRange = 0);
     Station *GetStations(){return stations;}
 
     Band::BANDTYPE StringToBandType(QString s);  //Converts string from file to type

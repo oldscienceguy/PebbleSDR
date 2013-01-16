@@ -532,7 +532,15 @@ void ReceiverWidget::addMemoryButtonClicked()
 
 void ReceiverWidget::findStationButtonClicked()
 {
-    QMessageBox::information(NULL,"Test","Find Station not implemented yet");
+    //Search all stations in current band looking for match or close (+/- N  khz)
+    //Display in station box, message box, or band info area?
+    Station * s = presets->FindStation(frequency,2); // +/- 2khz
+    QString str;
+    if (s != NULL) {
+        str = QString("%1 %2 %3").arg(QString::number(s->freq/1000.0,'f',3), s->station, s->remarks);
+        QMessageBox::information(NULL,"Find Station",str);
+    }
+
 
 }
 
