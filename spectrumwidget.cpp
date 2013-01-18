@@ -11,7 +11,43 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 {
 	ui.setupUi(this);
 
-	spectrumOffset=0;
+
+    ui.displayBox->addItem("Spectrum");
+    ui.displayBox->addItem("Waterfall");
+    ui.displayBox->addItem("I/Q");
+    ui.displayBox->addItem("Phase");
+    ui.displayBox->addItem("Off");
+    //Testing, may not leave these in live product
+    ui.displayBox->addItem("Post Mixer");
+    ui.displayBox->addItem("Post BandPass");
+    ui.displayBox->setCurrentIndex(-1);
+
+    connect(ui.displayBox,SIGNAL(currentIndexChanged(int)),this,SLOT(displayChanged(int)));
+
+    //Sets db offset
+    ui.dbOffsetBox->addItem("Offset -40",-40);
+    ui.dbOffsetBox->addItem("Offset -30",-30);
+    ui.dbOffsetBox->addItem("Offset -20",-20);
+    ui.dbOffsetBox->addItem("Offset -10",-10);
+    ui.dbOffsetBox->addItem("Offset 0",0);
+    ui.dbOffsetBox->addItem("Offset +10",+10);
+    ui.dbOffsetBox->addItem("Offset +20",+20);
+    ui.dbOffsetBox->addItem("Offset +30",+30);
+    ui.dbOffsetBox->setCurrentIndex(4);
+    connect(ui.dbOffsetBox,SIGNAL(currentIndexChanged(int)),this,SLOT(dbOffsetChanged(int)));
+    spectrumOffset=0;
+
+    ui.dbGainBox->addItem("Gain: 0.50x",0.50);
+    ui.dbGainBox->addItem("Gain: 0.75x",0.75);
+    ui.dbGainBox->addItem("Gain: 1.00x",1.00); //Default
+    ui.dbGainBox->addItem("Gain: 1.25x",1.25);
+    ui.dbGainBox->addItem("Gain: 1.50x",1.50);
+    ui.dbGainBox->addItem("Gain: 2.00x",2.00);
+    ui.dbGainBox->addItem("Gain: 2.50x",2.50);
+    ui.dbGainBox->addItem("Gain: 3.00x",3.00);
+    ui.dbGainBox->setCurrentIndex(2);
+    connect(ui.dbGainBox,SIGNAL(currentIndexChanged(int)),this,SLOT(dbGainChanged(int)));
+    spectrumGain = 1;
 
 	spectrumMode=SignalSpectrum::SPECTRUM;
 
@@ -25,10 +61,31 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 	//Set focus policy so we get key strokes
 	setFocusPolicy(Qt::StrongFocus); //Focus can be set by click or tab
 
+    dbMax = 0;      //S Unit of 60 = -13db so we should never see greater than 0
+    dbMin = -150; //Smallest value returned by fft->FreqDomainToMagnitude
+
+    //Spectrum power is converted to 8bit int for display
+    //This array maps the colors for each power level
+    //Technique from CuteSDR
+    for( int i=0; i<256; i++)
+    {
+        if( (i<43) )
+            spectrumColors[i].setRgb( 0,0, 255*(i)/43);
+        if( (i>=43) && (i<87) )
+            spectrumColors[i].setRgb( 0, 255*(i-43)/43, 255 );
+        if( (i>=87) && (i<120) )
+            spectrumColors[i].setRgb( 0,255, 255-(255*(i-87)/32));
+        if( (i>=120) && (i<154) )
+            spectrumColors[i].setRgb( (255*(i-120)/33), 255, 0);
+        if( (i>=154) && (i<217) )
+            spectrumColors[i].setRgb( 255, 255 - (255*(i-154)/62), 0);
+        if( (i>=217)  )
+            spectrumColors[i].setRgb( 255, 0, 128*(i-217)/38);
+    }
+
 	//Start paint thread
 	st = new SpectrumThread(this);
 	connect(st,SIGNAL(repaint()),this,SLOT(updateSpectrum()));
-	connect(ui.offsetSlider,SIGNAL(valueChanged(int)),this,SLOT(offsetSliderChanged(int)));
 	//st->start();
 	isRunning = false;
 }
@@ -41,11 +98,20 @@ SpectrumWidget::~SpectrumWidget()
 }
 void SpectrumWidget::Run(bool r)
 {
+    //Global is not initialized in constructor
+    ui.displayBox->setFont(global->settings->medFont);
+    ui.dbOffsetBox->setFont(global->settings->medFont);
+    ui.dbGainBox->setFont(global->settings->medFont);
+
 	if (r) {
+        ui.displayBox->setCurrentIndex(global->settings->lastDisplayMode); //Initial display mode
+
 		st->start();
 		isRunning = true;
 	}
 	else {
+        ui.displayBox->setCurrentIndex(-1);
+
 		st->stop();
 		isRunning =false;
 		signalSpectrum = NULL;
@@ -130,16 +196,14 @@ void SpectrumWidget::updateSpectrum()
 {
 	repaint();
 }
-void SpectrumWidget::offsetSliderChanged(int v)
-{
-	spectrumOffset=v;
-	repaint();
-}
+
 void SpectrumWidget::plotSelectionChanged(SignalSpectrum::DISPLAYMODE mode)
 {
 	if (signalSpectrum != NULL) {
 		signalSpectrum->SetDisplayMode(mode);
 	}
+    global->settings->lastDisplayMode = mode;
+
 	//We may want different refresh rates for different modes
 	if (mode==SignalSpectrum::WATERFALL)
 		st->SetRefresh(50);//Fast enough so we don't perceive flicker
@@ -158,7 +222,7 @@ void SpectrumWidget::SetSignalSpectrum(SignalSpectrum *s)
 		leftRightIncrement = s->settings->leftRightIncrement;
 	}
 }
-//
+// Diplays frequency cursor and filter range
 void SpectrumWidget::paintCursor(int x1, int y1, QPainter &painter, QColor color)
 {
 	QPen pen;
@@ -166,35 +230,34 @@ void SpectrumWidget::paintCursor(int x1, int y1, QPainter &painter, QColor color
 	pen.setWidth(1);
 	pen.setColor(color);
 	painter.setPen(pen);
-	painter.drawLine(x1,0,x1, y1);
+    painter.drawLine(x1,0,x1, y1); //Extend line into label frame
 
-	//Show bandpass filter range
-	QRect fr = ui.plotFrame->geometry(); //relative to parent
+    //Show bandpass filter range in labelFrame
+    QRect fr = ui.labelFrame->geometry(); //relative to parent
 	int hzPerPixel = sampleRate / fr.width();
 	int xLo = x1 + loFilter/hzPerPixel;
 	int xHi = x1 + hiFilter/hzPerPixel;
-	int y2 = y1+3;
-	pen.setWidth(4);
+    int y2 = fr.y() + 3; //Top of label frame
+    pen.setWidth(1);
 	pen.setColor(Qt::black);
 	//pen.setBrush(Qt::Dense5Pattern);
 	painter.setPen(pen); //If we don't set pen again, changes have no effect
 	painter.drawLine(xLo,y2,xHi,y2);
+    painter.drawLine(x1,fr.y(),x1, fr.y()+5); //small vert cursor in label frame
+
 }
 
 void SpectrumWidget::paintEvent(QPaintEvent *e)
 {
 	QPainter painter(this);
-	QRect fr = ui.plotFrame->geometry(); //relative to parent
-	int wHeight = fr.height(); //Plot area height
-	int wWidth = fr.width()-2;
-	//Never got window/viewport to work right, use translate instead.  Simpler
-	//painter.setWindow(10,10,fr.width(),fr.height());
-	//painter.setViewport(fr.x(),fr.y(),fr.width(),fr.height());
+    QRect plotFr = ui.plotFrame->geometry(); //relative to parent
+    int plotHeight = plotFr.height(); //Plot area height
+    int plotWidth = plotFr.width();
 
 	//Make all painter coordinates 0,0 relative to plotFrame
 	//0,0 will be translated to 4,4 etc
 	//Correction to deal with raised frame?  Shouldn't have to do this, but ...
-	painter.translate(fr.x(),fr.y()-2);
+    painter.translate(plotFr.x(),plotFr.y());
 
 	if (!isRunning)
 	{
@@ -215,7 +278,7 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 	painter.setFont(QFont("Arial", 7,QFont::Normal));
 	painter.setPen(Qt::red);
 	if (signalSpectrum->inBufferOverflowCount > 0)
-		painter.drawText(wWidth-20,10,"over");
+        painter.drawText(plotWidth-20,10,"over");
 	if (signalSpectrum->inBufferUnderflowCount > 0)
 		painter.drawText(0,10,"under");
 	painter.setPen(Qt::black);
@@ -225,46 +288,68 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 	//p2.setX(20);p2.setY(20);
 
 	//Draw scale
-#if(0)
-	//Show simple +/- range
-	QString range = QString::number((sampleRate/2000),'f',0);
-	painter.drawText(0,wHeight+12, "-"+range+"k");
-	painter.drawText(wWidth-20,wHeight+12, "+"+range+"k");
-#else
-	//Show actual frequency range
+    //labelRect X,Y will be relative to 0.0
+    QRect labelRect = ui.labelFrame->geometry();
+    //This makes logical 0,0 map to left,upper of labelFrame
+    painter.resetTransform();
+    painter.translate(labelRect.x(),labelRect.y());
+
+    painter.setPen(Qt::black);
+    painter.setFont(global->settings->smFont);
+
+    //Show actual hi/lo frequency range
 	double loRange = (loFreq - sampleRate/2)/1000;
 	double midRange = loFreq/1000;
 	double hiRange = (loFreq + sampleRate/2)/1000;
 	QString loText = QString::number(loRange,'f',0);
 	QString midText = QString::number(midRange,'f',0);
 	QString hiText = QString::number(hiRange,'f',0);
-	painter.setFont(QFont("Arial", 7,QFont::Bold));
-	painter.drawText(-2,wHeight+12, loText+"k");
-	painter.drawText(wWidth/2 - 15,wHeight+12, midText+"k");
-	painter.drawText(wWidth - 15,wHeight+12, hiText+"k");
-#endif
-	int inc;
-	//Tics
-	for (int i=0; i<=10; i++){
-		inc = wWidth * i * 0.05;
-		painter.drawLine(inc,wHeight+3,inc, wHeight+2);
-		painter.drawLine(wWidth - inc,wHeight+3,wWidth - inc, wHeight+2);
+    painter.drawText(0,labelRect.height()-2, loText+"k");
+    painter.drawText(labelRect.width()/2 - 15,labelRect.height()-2, midText+"k");
+    painter.drawText(labelRect.width() - 35,labelRect.height()-2, hiText+"k");
 
+	//Tics
+    //Draw center tick, then on either side
+    int labelMid = labelRect.width()/2;
+    int numTicks = labelMid / 10; //1 tick every N pixel regardless of spectrum width
+    int inc = labelMid / numTicks;
+
+    painter.drawLine(labelMid,5,labelMid,2);
+    for (int i=0; i<=numTicks; i++){
+        painter.drawLine(labelMid - i*inc,3, labelMid - i*inc, 2);
+        painter.drawLine(labelMid + i*inc,3, labelMid + i*inc, 2);
 	}
 
+    //Draw spectrum colors centered at bottom of label pane
+    if (spectrumMode == SignalSpectrum::WATERFALL) {
+        for (int i=0; i<256; i++) {
+            painter.setPen(spectrumColors[i]);
+            painter.drawPoint(labelMid - 128 + i,labelRect.height()-2);
+            painter.drawPoint(labelMid - 128 + i,labelRect.height()-1);
+        }
+    }
+    painter.resetTransform();  //If we don't call this, translate gets confused
+    painter.translate(plotFr.x(),plotFr.y());
+
 	//In case we try to paint beyond plotFrame, set this AFTER area outside plotFrame has been painted
-	painter.setClipRegion(fr);
+    //painter.setClipRegion(fr); //This prevents us from painting into the labelFrame with new ui, so skip
+
 	//scale samples to # pixels we have available
-	double fStep = (double)signalSpectrum->BinCount() / wWidth;
+    double fStep = (double)signalSpectrum->BinCount() / plotWidth;
 
 	//Calculate y scaling
-	float dbMax = -13; //+60db
-	float dbMin = -127; //S0=-127
-	float dbRange = fabs(dbMax - dbMin);
-	//As offset increases, so should scale so we see details
-	float y_scale = (float)(wHeight) / dbRange;
+    /*
+     * We keep db between dbMin and dbMax at all times (0 and dbRange when zero based
+     * dbZeroAdj is the amount we add to any db to make sure it's zero to dbRange
+     */
+    double dbZeroAdj = abs(dbMin); //Adj to get to zero base
+    double dbRange = abs(dbMax - dbMin);
+    //qDebug("dbZero %f dbRange %f",dbZeroAdj, dbRange);
 
-	int db = 0;
+    //Scale dbRange to number of pixels we have
+    float y_scale = (float)(plotHeight) / dbRange;
+
+    double db = 0;
 	int plotX = 0;
 	int plotY = 0;
 	float *spectrum = NULL;
@@ -298,38 +383,45 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 	//Show mixer cursor, fMixer varies from -f..0..+f, make it zero based and scale
 	int cursor = fMixer+(sampleRate/2);
 	if (spectrumMode == SignalSpectrum::SPECTRUM || spectrumMode == SignalSpectrum::WATERFALL) 
-		cursor = ((float)cursor/sampleRate) * wWidth; //Percentate * width
+        cursor = ((float)cursor/sampleRate) * plotWidth; //Percentate * width
 	else
-		cursor = 0.5 * wWidth; //Cursor doesn't move in other modes, keep centered
+        cursor = 0.5 * plotWidth; //Cursor doesn't move in other modes, keep centered
 
 	if (spectrumMode == SignalSpectrum::SPECTRUM)
 	{
 		//Paint cursor
-		paintCursor(cursor,wHeight, painter, Qt::black);
+        paintCursor(cursor,plotHeight, painter, Qt::black);
 
 		painter.setPen(Qt::blue);
-		for (int i=0; i<fr.width(); i++)
+        for (int i=0; i<plotFr.width(); i++)
 		{
 			plotX = i;
-			db=0;
 
 			//Taking average results in spectrum not being displayed correctly due to 'chunks'
 			//Just use every Nth sample and throw away the rest
-			db = spectrum[(int)(i * fStep)];
+            //We should only be getting values from -150 to 60 in spectrum array
+            //but occasionally we get a garbage value which I think is caused by spectrum thread running while spectrum array is being update
+            //Rather than lock, we'll just bound the results and ignore
+            db = qBound(dbMin, (double)spectrum[(int)(i * fStep)], dbMax);
 
-			//Make relative to min_dBm
-			db -= dbMin;
+            //Make relative to zero.
+            db = qBound(dbMin, db + spectrumOffset, dbMax);
+            db = qBound(0.0, db + dbZeroAdj, dbRange);  //ensure zero base
+            db = qBound(0.0, db * spectrumGain, dbRange);
+
+            //Test
+            //if (db < 0 || db > dbRange)
+            //    qDebug("Spectrum db value out of range. dbRange:%f, rawDb:%f db:%f",dbRange,rawDb,db);
+
 			//scale to fit our smaller Y axis
 			db *= y_scale;
-			//apply gain 0-50 -> 1.0 to 2.0
-			db *= 1 + (float)(spectrumOffset / 25.0) ; //Rename spectrumGain
 
-			//and subtract noise floor (user adj)
-			//db += spectrumOffset;
 			//Vertical line from base of widget to height in db
-			db = wHeight - db;
-			if (db > wHeight) db = wHeight;
-			painter.drawLine(plotX,wHeight,plotX,db);
+            db = plotHeight - db; //Make rel to bottom of frame
+            if (db > plotHeight)
+                db = plotHeight;  //Min
+
+            painter.drawLine(plotX,plotHeight,plotX,db);
 		}
 	} else if (spectrumMode == SignalSpectrum::WATERFALL ||
 			   spectrumMode == SignalSpectrum::POSTMIXER  ||
@@ -338,53 +430,49 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 		//plotArea has to be created after layout has done it's work, not in constructor
 		//Todo: Find a post layout event and more
 		if (plotArea == NULL) {
-			//QRect pf = this->ui.plotFrame->frameGeometry();
-			plotArea = new QImage(fr.width(),fr.height(),QImage::Format_RGB16);
-			plotArea->fill(0);
-		} else if (plotArea->width() != fr.width() || plotArea->height() != fr.height()) {
+            plotArea = new QPixmap(plotFr.width(),plotFr.height());
+            plotArea->fill(Qt::black);
+        } else if (plotArea->width() != plotFr.width() || plotArea->height() != plotFr.height()) {
 			//Window resized
 			delete plotArea;
-			plotArea = new QImage(fr.width(),fr.height(),QImage::Format_RGB16);
-			plotArea->fill(0);
+            plotArea = new QPixmap(plotFr.width(),plotFr.height());
+            plotArea->fill(Qt::black);
 		}
-		//Scroll to create new line
-		//for (int i = wHeight-1; i > 0; i--)
-		//	memcpy((QRgb*)plotArea->scanLine(i),(QRgb*)plotArea->scanLine(i-1),plotArea->bytesPerLine());
-		//Lets try 1 move instead of line by line
-		//WARNING: memcpy is not guaranteed to handle overlapped regions and in fact fails with some gcc options
-		memmove((QRgb*)plotArea->scanLine(1),(QRgb*)plotArea->scanLine(0),plotArea->bytesPerLine()*(plotArea->height()-1));
+        //Scroll fr rect 1 pixel to create new line
+        //plotArea->scroll(0,1,0,0, fr.width(), fr.height()); //This has to be done before attaching painter
+        plotArea->scroll(0,1,plotFr); //This has to be done before attaching painter
+
+        QPainter plotPainter(plotArea);
 
 		//Color code each bin and draw line
 		QColor plotColor;
+        int colorScale = (256/dbRange); //scale from dbRange to 0-255
+
 		for (int i=0; i<plotArea->width(); i++)
 		{
 			plotX = i;
 			plotY = 0;
-			db=0;
 
-			db = spectrum[(int)(i * fStep)];
+            db = qBound(dbMin, (double)spectrum[(int)(i * fStep)], dbMax);
 
-			//Make relative to min_dBm
-			db -= dbMin;
-			//apply gain 0-50 -> 1.0 to 2.0
-			db *= 1 + (float)(spectrumOffset / 25.0) ; //Rename spectrumGain
+            //Make relative to zero.
+            db = qBound(dbMin, db + spectrumOffset, dbMax);
+            db = qBound(0.0, db + dbZeroAdj, dbRange);  //ensure zero base
+            db = qBound(0.0, db * spectrumGain, dbRange);
 
-			//Select color
-			if (db >= 35)
-				plotColor.setRgb(255,0,0); 
-			else if (db >= 30 && db < 35)
-				plotColor.setRgb(0,255,0);
-			else if (db >= 25 && db < 30)
-				plotColor.setRgb(0,0,255);
-			else 
-				plotColor.setRgb(0,0,0);
-			//painter.drawPoint(plotX,plotY);
-			//We might be able to use a scanLine here if this is too slow
-			plotArea->setPixel(plotX,plotY,plotColor.rgb());
+            db = qBound(0.0, db * colorScale, 255.0); //Force 0-255
+
+            int colorIndex = db;
+            plotColor = spectrumColors[colorIndex];
+
+            plotPainter.setPen(plotColor);
+            plotPainter.drawPoint(plotX,plotY);
+
 		}
-		painter.drawImage(0,0,*plotArea);
+        painter.drawPixmap(0,0,plotFr.width(),plotFr.height(),*plotArea);
+
 		//Draw cursor on top of image
-		paintCursor(cursor,wHeight, painter, Qt::white);
+        paintCursor(cursor,plotHeight, painter, Qt::white);
 	}
 	else if (spectrumMode == SignalSpectrum::IQ || spectrumMode == SignalSpectrum::PHASE)
 	{
@@ -396,10 +484,10 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 		IPen.setColor(Qt::red);
 		QPen.setColor(Qt::blue);
 		//apply gain 0-50
-		int gain = 5000 + (float)(spectrumOffset * 1000) ; //Rename spectrumGain
+        int gain = (spectrumGain * 5000);
 
 		//int offset = -25; //hack
-		int offset = wHeight * -0.5;
+        int offset = plotHeight * -0.5;
 
 		int zoom = 1;
 		//rawIQ[0].re = rawIQ[0].re * gain - offset;
@@ -407,7 +495,7 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 		CPX last = rawIQ[0];
 		int nxtSample = 1;
 		float ISamp,QSamp;
-		for (int i=zoom; i<fr.width()-1; i += zoom)
+        for (int i=zoom; i<plotFr.width()-1; i += zoom)
 		{
 			ISamp = rawIQ[nxtSample].re * gain - offset;
 			QSamp = rawIQ[nxtSample].im * gain - offset;
@@ -433,7 +521,46 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 	} 
 	else
 	{
-		painter.eraseRect(fr);
+        painter.eraseRect(plotFr);
 	}
 }
 
+void SpectrumWidget::displayChanged(int item)
+{
+    switch (item)
+    {
+    case 0:
+        plotSelectionChanged(SignalSpectrum::SPECTRUM);
+        break;
+    case 1:
+        plotSelectionChanged(SignalSpectrum::WATERFALL);
+        break;
+    case 2:
+        plotSelectionChanged(SignalSpectrum::IQ);
+        break;
+    case 3:
+        plotSelectionChanged(SignalSpectrum::PHASE);
+        break;
+    case 4:
+        plotSelectionChanged(SignalSpectrum::NODISPLAY);
+        break;
+    case 5:
+        plotSelectionChanged(SignalSpectrum::POSTMIXER);
+        break;
+    case 6:
+        plotSelectionChanged(SignalSpectrum::POSTBANDPASS);
+        break;
+    }
+}
+
+void SpectrumWidget::dbOffsetChanged(int s)
+{
+    spectrumOffset = ui.dbOffsetBox->itemData(s).toInt();
+    repaint();
+}
+
+void SpectrumWidget::dbGainChanged(int s)
+{
+    spectrumGain = ui.dbGainBox->itemData(s).toDouble();
+    repaint();
+}

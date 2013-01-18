@@ -36,9 +36,11 @@ public:
 signals:
 		//User clicked in spectrum
 		void mixerChanged(int m);
-		private slots:
-			void offsetSliderChanged(int v);
 
+		private slots:
+            void displayChanged(int item);
+            void dbOffsetChanged(int i);
+            void dbGainChanged(int t);
 private:
 	SignalSpectrum *signalSpectrum; //Source of spectrum data
 	float *averageSpectrum; 
@@ -63,7 +65,8 @@ private:
 	double loFreq;
 	int loFilter; //Used to display bandpass
 	int hiFilter;
-	int spectrumOffset;
+    double spectrumOffset;
+    double spectrumGain;
 	SignalSpectrum::DISPLAYMODE spectrumMode;
 	int sampleRate;
 	DEMODMODE demodMode;
@@ -72,7 +75,13 @@ private:
 	//QString *message;
 	QStringList message;
 
-	QImage *plotArea;
+    QPixmap *plotArea;
+
+    double dbMax;
+    double dbMin;
+    QColor spectrumColors[256];
+
+
 };
 
 	class SpectrumThread:public QThread
