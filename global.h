@@ -19,6 +19,7 @@ public:
     Receiver *receiver;
     char *revision;
     Settings *settings;
+    const static double MIN_DB = -150; //Smallest db we'll return from FFT
 
 private:
 	QFile *file;
