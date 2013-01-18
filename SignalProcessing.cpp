@@ -2,6 +2,7 @@
 #include "gpl.h"
 #include "SignalProcessing.h"
 #include "string.h"
+#include "global.h"
 
 SignalProcessing::SignalProcessing(int sr, int ns)
 {
@@ -287,8 +288,11 @@ void FFT::FreqDomainToMagnitude(CPX * freqBuf, int size, float baseline, float c
     }
 
 	//Convert to db and order correctly
+    //Limit output to -150db to 60db
 	for (int i=0, j = size/2; i < size/2; i++, j++) {
-		fbr[i] = 10.0 * log10((buf[j]).sqrMag() + baseline) + correction;
-		fbr[j] = 10.0 * log10((buf[i]).sqrMag() + baseline) + correction;
+        fbr[i] = qBound(-150.0, 10.0 * log10((buf[j]).sqrMag() + baseline) + correction, 60.0); //global->MIN_DB);
+
+        fbr[j] = qBound(-150.0, 10.0 * log10((buf[i]).sqrMag() + baseline) + correction, 60.0); //global->MIN_DB);
+
     }
 }
