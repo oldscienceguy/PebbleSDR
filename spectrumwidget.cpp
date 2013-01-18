@@ -102,6 +102,7 @@ void SpectrumWidget::Run(bool r)
     ui.displayBox->setFont(global->settings->medFont);
     ui.dbOffsetBox->setFont(global->settings->medFont);
     ui.dbGainBox->setFont(global->settings->medFont);
+    ui.cursorLabel->setFont(global->settings->medFont);
 
 	if (r) {
         ui.displayBox->setCurrentIndex(global->settings->lastDisplayMode); //Initial display mode
@@ -130,7 +131,68 @@ void SpectrumWidget::enterEvent ( QEvent * event )
 }
 void SpectrumWidget::leaveEvent(QEvent *event)
 {
-	clearFocus();
+    clearFocus();
+}
+
+//Todo: Move resize logic out of paint and capture here
+void SpectrumWidget::resizeEvent(QResizeEvent *event)
+{
+    event->ignore(); //We don't handle
+}
+
+//Todo: Track cursor and display freq in cursorLabel
+//Need a way to move LO to lower or upper range.  Maybe doubleClick or drag?
+void SpectrumWidget::mouseMoveEvent(QMouseEvent *event)
+{
+    event->ignore(); //Let someone else handle it
+}
+
+//Todo: Implement scrolling frequency changes
+void SpectrumWidget::wheelEvent(QWheelEvent *event)
+{
+    Q_UNUSED(event);  //Suppress warnings, use everywhere!
+    //Only in plotFrame
+    QRect pf = this->ui.plotFrame->geometry();
+    if (!pf.contains(event->pos()))
+            return;
+
+    QPoint angleDelta = event->angleDelta();
+    int freq = fMixer;
+
+    if (angleDelta.ry() == 0) {
+        if (angleDelta.rx() > 0) {
+            //Scroll Right
+            freq+= 100;
+            emit mixerChanged(freq);
+        } else if (angleDelta.rx() < 0) {
+            //Scroll Left
+            freq-= 100;
+            emit mixerChanged(freq);
+
+        }
+    } else if (angleDelta.rx() == 0) {
+        if (angleDelta.ry() > 0) {
+            //Scroll Down
+            freq-= 1000;
+            emit mixerChanged(freq);
+
+        } else if (angleDelta.ry() < 0) {
+            //Scroll Up
+            freq+= 1000;
+            emit mixerChanged(freq);
+        }
+    }
+    // neg==left pos==right
+    //qDebug("Angle delta rx %d",event->angleDelta().rx());  //Left to right
+    // neg==up pos==down
+    //qDebug("Angle delta ry %d",event->angleDelta().ry());  //Up Down
+
+    //Buttons held during scroll
+    //if (event->buttons()==Qt::RightButton)
+    //event->angleDelta on all platforms
+    //event->pos widget relative mouse coordinates
+    //event->ignore(); //Let someone else handle it
+    event->accept(); //We handled it
 }
 
 void SpectrumWidget::keyPressEvent(QKeyEvent *event)

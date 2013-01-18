@@ -146,7 +146,7 @@
           <widget class="QComboBox" name="displayBox">
            <property name="maximumSize">
             <size>
-             <width>16777215</width>
+             <width>80</width>
              <height>18</height>
             </size>
            </property>
@@ -161,7 +161,7 @@
           <widget class="QComboBox" name="dbGainBox">
            <property name="maximumSize">
             <size>
-             <width>16777215</width>
+             <width>80</width>
              <height>18</height>
             </size>
            </property>
@@ -176,7 +176,7 @@
           <widget class="QComboBox" name="dbOffsetBox">
            <property name="maximumSize">
             <size>
-             <width>16777215</width>
+             <width>80</width>
              <height>18</height>
             </size>
            </property>

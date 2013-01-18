@@ -59,6 +59,10 @@ private:
 	void keyPressEvent (QKeyEvent *event); //Change mixer with arrows
 	void enterEvent ( QEvent *event );
 	void leaveEvent (QEvent *event);
+    void resizeEvent(QResizeEvent* event);
+    void mouseMoveEvent(QMouseEvent* event);
+    void wheelEvent( QWheelEvent * event );
+
 
 	//Show mixer freq
 	int fMixer;
