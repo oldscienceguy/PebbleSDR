@@ -264,7 +264,6 @@ void Receiver::Close()
 {
 	Off();
 	//Save any run time settings
-	settings->lastDisplayMode = receiverWidget->GetDisplayMode();
 	settings->lastFreq = frequency;
 	settings->WriteSettings();
 }

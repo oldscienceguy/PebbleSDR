@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>540</width>
+    <width>551</width>
     <height>277</height>
    </rect>
   </property>
@@ -2024,6 +2024,12 @@
    </item>
    <item>
     <widget class="QFrame" name="spectrumFrame">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="minimumSize">
       <size>
        <width>0</width>
@@ -2202,21 +2208,6 @@
       <property name="bottomMargin">
        <number>2</number>
       </property>
-      <item>
-       <widget class="QComboBox" name="displayBox">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>18</height>
-         </size>
-        </property>
-        <property name="font">
-         <font>
-          <pointsize>8</pointsize>
-         </font>
-        </property>
-       </widget>
-      </item>
       <item>
        <spacer name="horizontalSpacer_2">
         <property name="orientation">

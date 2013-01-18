@@ -36,8 +36,6 @@ public:
 	void SetFrequency(double f);
 	double GetFrequency();
 	void SetMode(DEMODMODE m); 
-	void SetDisplayMode(int dm);
-	int GetDisplayMode();
     void SetDataMode(int _dataMode);
 	void SetGain(int g, int min = 10, int max = 100);
 	void SetAgcGainTop(int g);
@@ -113,7 +111,6 @@ private:
 		void squelchSliderChanged(int s);
 		void modeSelectionChanged(QString item);
 		void filterSelectionChanged(QString item);
-		void displayChanged(int item);
 		void mixerChanged(int m);
 		void anfButtonToggled(bool b);
 		void nbButtonToggled(bool b);

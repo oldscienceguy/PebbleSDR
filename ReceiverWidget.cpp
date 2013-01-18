@@ -45,19 +45,6 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 #endif
     connect(ui.settingsButton,SIGNAL(clicked(bool)),receiver,SLOT(ShowSettings(bool)));
 
-	//Pulled from SpoectrumWidget to allow us to display other data in same area
-	//Station Information
-	//Presets
-	// etc
-	ui.displayBox->addItem("Spectrum"); 
-	ui.displayBox->addItem("Waterfall");
-	ui.displayBox->addItem("I/Q");
-	ui.displayBox->addItem("Phase");
-	ui.displayBox->addItem("Off");
-	//Testing, may not leave these in live product
-	ui.displayBox->addItem("Post Mixer");
-	ui.displayBox->addItem("Post BandPass");
-
 	//ui.spectrumWidget->setStyleSheet("border: 1px solid white");
 	//Todo: Make lcd glow when on, set up/down button colors, etc
 	//ui.nixie1->setStyleSheet("background: rgba(240, 255, 255, 75%)");
@@ -122,7 +109,6 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	connect(ui.agcSlider,SIGNAL(valueChanged(int)),this,SLOT(agcSliderChanged(int)));
 	connect(ui.squelchSlider,SIGNAL(valueChanged(int)),this,SLOT(squelchSliderChanged(int)));
 	connect(ui.spectrumWidget,SIGNAL(mixerChanged(int)),this,SLOT(mixerChanged(int)));
-	connect(ui.displayBox,SIGNAL(currentIndexChanged(int)),this,SLOT(displayChanged(int)));
     connect(ui.addMemoryButton,SIGNAL(clicked()),this,SLOT(addMemoryButtonClicked()));
     connect(ui.findStationButton,SIGNAL(clicked()),this,SLOT(findStationButtonClicked()));
 
@@ -180,7 +166,6 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     ui.powerButton->setFont(medFont);
     ui.settingsButton->setFont(medFont);
     ui.squelchSlider->setFont(smFont);
-    ui.displayBox->setFont(medFont);
     ui.filterBox->setFont(medFont);
     ui.stationCombo->setFont(medFont);
     ui.bandCombo->setFont(medFont);
@@ -197,6 +182,9 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     //Same as power on background
     ui.clockWidget->setStyleSheet("background-color: qlineargradient(spread:pad, x1:0.471, y1:0, x2:0.483, y2:0.982955, stop:0 rgba(255, 243, 72, 255), stop:0.778409 rgba(255, 247, 221, 255))");
 
+    ui.utcClockButton->setFont(smFont);
+    ui.localClockButton->setFont(smFont);
+
     connect(ui.utcClockButton,SIGNAL(clicked()),this,SLOT(utcClockButtonClicked()));
     connect(ui.localClockButton,SIGNAL(clicked()),this,SLOT(localClockButtonClicked()));
     utcClockButtonClicked();
@@ -211,34 +199,6 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 ReceiverWidget::~ReceiverWidget(void)
 {
 	
-}
-
-void ReceiverWidget::displayChanged(int item)
-{
-	switch (item)
-	{
-	case 0:
-		ui.spectrumWidget->plotSelectionChanged(SignalSpectrum::SPECTRUM);
-		break;
-	case 1:
-		ui.spectrumWidget->plotSelectionChanged(SignalSpectrum::WATERFALL);
-		break;
-	case 2:
-		ui.spectrumWidget->plotSelectionChanged(SignalSpectrum::IQ);
-		break;
-	case 3:
-		ui.spectrumWidget->plotSelectionChanged(SignalSpectrum::PHASE);
-		break;
-	case 4:
-		ui.spectrumWidget->plotSelectionChanged(SignalSpectrum::NODISPLAY);
-		break;
-	case 5:
-		ui.spectrumWidget->plotSelectionChanged(SignalSpectrum::POSTMIXER);
-		break;
-	case 6:
-		ui.spectrumWidget->plotSelectionChanged(SignalSpectrum::POSTBANDPASS);
-		break;
-    }
 }
 
 void ReceiverWidget::mixerChanged(int m)
@@ -420,7 +380,6 @@ void ReceiverWidget::powerToggled(bool on)
 		ui.sMeterWidget->setSignalStrength(receiver->GetSignalStrength());
 		ui.spectrumWidget->SetSignalSpectrum(receiver->GetSignalSpectrum());
 
-		ui.displayBox->setCurrentIndex(receiver->GetSettings()->lastDisplayMode); //Initial display mode
 		ui.spectrumWidget->plotSelectionChanged((SignalSpectrum::DISPLAYMODE)receiver->GetSettings()->lastDisplayMode);
         ui.bandType->setCurrentIndex(Band::HAM);
 
@@ -464,15 +423,6 @@ void ReceiverWidget::powerToggled(bool on)
     ui.nixie1g->setStyleSheet(pwrStyle);
     ui.nixie1g->setEnabled(on);
 
-}
-void ReceiverWidget::SetDisplayMode(int dm)
-{
-	ui.displayBox->setCurrentIndex(dm); 
-	ui.spectrumWidget->plotSelectionChanged((SignalSpectrum::DISPLAYMODE)dm);
-}
-int ReceiverWidget::GetDisplayMode()
-{
-    return ui.displayBox->currentIndex();
 }
 
 void ReceiverWidget::SetDataMode(int _dataMode)
