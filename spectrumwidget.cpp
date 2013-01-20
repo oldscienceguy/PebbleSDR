@@ -330,6 +330,9 @@ void SpectrumWidget::SetSignalSpectrum(SignalSpectrum *s)
 // Diplays frequency cursor and filter range
 void SpectrumWidget::paintCursor(int x1, int y1, QPainter &painter, QColor color)
 {
+    //We should save and restore painter because we're mucking with it here
+    //Todo: how?
+
 	QPen pen;
 	pen.setStyle(Qt::SolidLine);
 	pen.setWidth(1);
@@ -363,7 +366,6 @@ void SpectrumWidget::paintCursor(int x1, int y1, QPainter &painter, QColor color
     //painter.translate(freqFr.x(),freqFr.y());
     painter.setFont(global->settings->medFont);
     painter.drawText(freqFr.bottomLeft(),label);
-
 }
 
 void SpectrumWidget::paintEvent(QPaintEvent *e)
@@ -508,9 +510,6 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 
 	if (spectrumMode == SignalSpectrum::SPECTRUM)
 	{
-		//Paint cursor
-        paintCursor(cursor,plotHeight, painter, Qt::black);
-
 		painter.setPen(Qt::blue);
         for (int i=0; i<plotFr.width(); i++)
 		{
@@ -542,6 +541,10 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 
             painter.drawLine(plotX,plotHeight,plotX,db);
 		}
+        //Paint cursor last because painter changes - hack
+        paintCursor(cursor,plotHeight, painter, Qt::black);
+
+
 	} else if (spectrumMode == SignalSpectrum::WATERFALL ||
 			   spectrumMode == SignalSpectrum::POSTMIXER  ||
 			   spectrumMode == SignalSpectrum::POSTBANDPASS){
