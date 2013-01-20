@@ -58,8 +58,6 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 	lastSpectrum = NULL;
 
 	fMixer = 0;
-	//Set focus policy so we get key strokes
-	setFocusPolicy(Qt::StrongFocus); //Focus can be set by click or tab
 
     dbMax = 0;      //S Unit of 60 = -13db so we should never see greater than 0
     dbMin = -150; //Smallest value returned by fft->FreqDomainToMagnitude
@@ -82,6 +80,16 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
         if( (i>=217)  )
             spectrumColors[i].setRgb( 255, 0, 128*(i-217)/38);
     }
+
+    //Turns on mouse events without requiring button press
+    //This does not work if plotFrame is set in code or if both plotFrame and it's parent widgetFrame are set in code
+    //But if I set in the designer poperty editor (all in hierarchy have to be set), we get events
+    //Maybe a Qt bug related to where they get set
+    //ui.widgetFrame->setMouseTracking(true);
+    //ui.plotFrame->setMouseTracking(true);
+
+    //Set focus policy so we get key strokes
+    setFocusPolicy(Qt::StrongFocus); //Focus can be set by click or tab
 
 	//Start paint thread
 	st = new SpectrumThread(this);
@@ -127,11 +135,15 @@ void SpectrumWidget::SetMessage(QStringList s)
 //We need to set focus when mouse is in spectrum so we get keyboard events
 void SpectrumWidget::enterEvent ( QEvent * event )  
 {
-	setFocus();
+    //This forces focus if another ui element has it, ie frequency direct entry
+    //Seems to affect entire widget however, not just plot frame
+    ui.plotFrame->setFocus();
+    event->accept();
 }
 void SpectrumWidget::leaveEvent(QEvent *event)
 {
-    clearFocus();
+    ui.plotFrame->clearFocus();
+    event->accept();
 }
 
 //Todo: Move resize logic out of paint and capture here
@@ -140,11 +152,29 @@ void SpectrumWidget::resizeEvent(QResizeEvent *event)
     event->ignore(); //We don't handle
 }
 
-//Todo: Track cursor and display freq in cursorLabel
-//Need a way to move LO to lower or upper range.  Maybe doubleClick or drag?
+//Returns freq under mouse cursor at x,y
+//Called from paint
+double SpectrumWidget::GetMouseFreq()
+{
+    QPoint mp = QCursor::pos(); //Current mouse position in global coordinates
+    mp = mapFromGlobal(mp); //Convert to widget relative
+    QRect pf = this->ui.plotFrame->geometry();
+    if (!pf.contains(mp))
+        return 0.0;
+
+    //Find freq at cursor
+    QSize sz = pf.size();
+    int m = mp.x() - pf.x(); //make zero relative
+    m = (float)sampleRate * m / sz.width();
+    m -= sampleRate / 2; //make +/- relative
+    return loFreq + m;
+}
+
+//Track cursor and display freq in cursorLabel
+//Here for reference.  Abandoned and replaced with direct access to current cursor position in paint
 void SpectrumWidget::mouseMoveEvent(QMouseEvent *event)
 {
-    event->ignore(); //Let someone else handle it
+    event->ignore();
 }
 
 //Todo: Implement scrolling frequency changes
@@ -195,6 +225,16 @@ void SpectrumWidget::wheelEvent(QWheelEvent *event)
     event->accept(); //We handled it
 }
 
+void SpectrumWidget::hoverEnter(QHoverEvent *event)
+{
+    event->ignore(); //Let someone else handle it
+
+}
+void SpectrumWidget::hoverLeave(QHoverEvent *event)
+{
+    event->ignore();
+}
+
 void SpectrumWidget::keyPressEvent(QKeyEvent *event)
 {
 	int key = event->key();
@@ -218,25 +258,28 @@ void SpectrumWidget::keyPressEvent(QKeyEvent *event)
 		emit mixerChanged(m);
 		break;
 	}
+    event->accept();
 }
 void SpectrumWidget::mousePressEvent ( QMouseEvent * event ) 
 {
 	if (!isRunning || signalSpectrum == NULL)
 		return;
+    QRect pf = this->ui.plotFrame->geometry();
+    if (!pf.contains(event->pos()))
+            return;
 
 	//Is the click in plotFrame?
 	int mX = event->x();
 	int mY = event->y();
-	QRect pf = this->ui.plotFrame->geometry();
-	if (pf.contains(mX,mY))
-	{
-		QSize sz = pf.size();
-		int m = mX - pf.x(); //make zero relative
-		m = (float)sampleRate * m / sz.width();
-		m -= sampleRate/2; //make +/- relative
+    QSize sz = pf.size();
+    int m = mX - pf.x(); //make zero relative
+    m = (float)sampleRate * m / sz.width();
+    m -= sampleRate/2; //make +/- relative
 
-		emit mixerChanged(m);
-	}
+    //New delta from LO frequency
+    emit mixerChanged(m);
+
+    event->accept();
 }
 void SpectrumWidget::SetMode(DEMODMODE m)
 {
@@ -306,6 +349,20 @@ void SpectrumWidget::paintCursor(int x1, int y1, QPainter &painter, QColor color
 	painter.setPen(pen); //If we don't set pen again, changes have no effect
 	painter.drawLine(xLo,y2,xHi,y2);
     painter.drawLine(x1,fr.y(),x1, fr.y()+5); //small vert cursor in label frame
+
+    QString label;
+    mouseFreq = GetMouseFreq();
+    if (mouseFreq > 0)
+        label.sprintf("%.3f kHz",mouseFreq / 1000.0);
+    else
+        label = "";
+
+    QRect freqFr = ui.cursorLabel->geometry();
+    QRect ctrlFr = ui.controlFrame->geometry();
+    painter.translate(ctrlFr.x(),ctrlFr.y()); //Relative to labelFrame
+    //painter.translate(freqFr.x(),freqFr.y());
+    painter.setFont(global->settings->medFont);
+    painter.drawText(freqFr.bottomLeft(),label);
 
 }
 

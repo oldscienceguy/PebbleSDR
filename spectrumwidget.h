@@ -5,6 +5,7 @@
 #include <QWidget>
 #include <QThread>
 #include <QImage>
+#include <QHoverEvent>
 
 #include "cpx.h"
 #include "ui/ui_spectrumwidget.h"
@@ -29,7 +30,7 @@ public:
 	void SetMessage(QStringList s);
 	void SetSignalSpectrum(SignalSpectrum *s);
 
-	public slots:
+public slots:
 		void updateSpectrum(); //For use by thread to trigger repaint
 		void plotSelectionChanged(SignalSpectrum::DISPLAYMODE m);
 
@@ -62,11 +63,14 @@ private:
     void resizeEvent(QResizeEvent* event);
     void mouseMoveEvent(QMouseEvent* event);
     void wheelEvent( QWheelEvent * event );
-
+    void hoverEnter(QHoverEvent *event);
+    void hoverLeave(QHoverEvent *event);
 
 	//Show mixer freq
 	int fMixer;
 	double loFreq;
+    double mouseFreq; //Freq under mouse pointer
+
 	int loFilter; //Used to display bandpass
 	int hiFilter;
     double spectrumOffset;
@@ -85,6 +89,7 @@ private:
     double dbMin;
     QColor spectrumColors[256];
 
+    double GetMouseFreq();
 
 };
 

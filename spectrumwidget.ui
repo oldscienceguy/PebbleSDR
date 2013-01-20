@@ -201,26 +201,24 @@
           </spacer>
          </item>
          <item>
-          <widget class="QLabel" name="cursorLabel">
+          <widget class="QFrame" name="cursorLabel">
            <property name="minimumSize">
             <size>
-             <width>100</width>
+             <width>80</width>
              <height>0</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>16777215</width>
+             <width>80</width>
              <height>18</height>
             </size>
            </property>
-           <property name="font">
-            <font>
-             <pointsize>8</pointsize>
-            </font>
+           <property name="frameShape">
+            <enum>QFrame::NoFrame</enum>
            </property>
-           <property name="text">
-            <string>--------------------</string>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
            </property>
           </widget>
          </item>
