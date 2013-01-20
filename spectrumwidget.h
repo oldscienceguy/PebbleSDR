@@ -37,6 +37,7 @@ public slots:
 signals:
 		//User clicked in spectrum
 		void mixerChanged(int m);
+        void mixerChanged(int m, bool changeLO);
 
 		private slots:
             void displayChanged(int item);

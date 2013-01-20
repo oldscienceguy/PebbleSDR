@@ -109,6 +109,7 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	connect(ui.agcSlider,SIGNAL(valueChanged(int)),this,SLOT(agcSliderChanged(int)));
 	connect(ui.squelchSlider,SIGNAL(valueChanged(int)),this,SLOT(squelchSliderChanged(int)));
 	connect(ui.spectrumWidget,SIGNAL(mixerChanged(int)),this,SLOT(mixerChanged(int)));
+    connect(ui.spectrumWidget,SIGNAL(mixerChanged(int,bool)),this,SLOT(mixerChanged(int,bool)));
     connect(ui.addMemoryButton,SIGNAL(clicked()),this,SLOT(addMemoryButtonClicked()));
     connect(ui.findStationButton,SIGNAL(clicked()),this,SLOT(findStationButtonClicked()));
 
@@ -205,6 +206,13 @@ void ReceiverWidget::mixerChanged(int m)
 {
 	SetFrequency(loFrequency + m);
 }
+
+void ReceiverWidget::mixerChanged(int m, bool b)
+{
+    setLoMode(b);
+    SetFrequency(loFrequency + m);
+}
+
 //Filters all nixie events
 bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
 {
@@ -433,15 +441,16 @@ void ReceiverWidget::SetDataMode(int _dataMode)
 void ReceiverWidget::setLoMode(bool b)
 {
 	loMode = b;
-	if (loMode)
+    if (loMode)
 	{
-		//LO Mode
-		ui.loButton->setChecked(true); //Make sure button is toggled if called from presets
-		mixer=0;
+        //LO Mode
+        ui.loButton->setChecked(true); //Make sure button is toggled if called from presets
+        mixer=0;
 		receiver->SetMixer(mixer);
 		SetFrequency(loFrequency);
 	} else {
 		//Mixer Mode
+        ui.mixButton->setChecked(true);
 	}
 }
 void ReceiverWidget::anfButtonToggled(bool b)

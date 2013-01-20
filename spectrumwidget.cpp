@@ -167,7 +167,7 @@ double SpectrumWidget::GetMouseFreq()
     int m = mp.x() - pf.x(); //make zero relative
     m = (float)sampleRate * m / sz.width();
     m -= sampleRate / 2; //make +/- relative
-    return loFreq + m;
+    return m;
 }
 
 //Track cursor and display freq in cursorLabel
@@ -268,17 +268,24 @@ void SpectrumWidget::mousePressEvent ( QMouseEvent * event )
     if (!pf.contains(event->pos()))
             return;
 
-	//Is the click in plotFrame?
-	int mX = event->x();
-	int mY = event->y();
-    QSize sz = pf.size();
-    int m = mX - pf.x(); //make zero relative
-    m = (float)sampleRate * m / sz.width();
-    m -= sampleRate/2; //make +/- relative
+    Qt::MouseButton button = event->button();
+    // Mac: Qt::ControlModifier == Command Key
+    // Mac: Qt::AltModifer == Option(Alt) Key
+    // Mac: Qt::MetaModifier == Control Key
 
-    //New delta from LO frequency
-    emit mixerChanged(m);
+    Qt::KeyboardModifiers modifiers = event->modifiers(); //Keyboard modifiers
+    double deltaFreq = GetMouseFreq();
 
+    if (button == Qt::LeftButton) {
+        if( modifiers == Qt::NoModifier)
+            emit mixerChanged(deltaFreq, false); //Mixer mode
+        else if (modifiers == Qt::AltModifier)
+            emit mixerChanged(deltaFreq, true); //Mac Option same as Right Click
+
+    } else if (button == Qt::RightButton) {
+        if (modifiers == Qt::NoModifier)
+            emit mixerChanged(deltaFreq, true); //LO mode
+    }
     event->accept();
 }
 void SpectrumWidget::SetMode(DEMODMODE m)
@@ -354,7 +361,7 @@ void SpectrumWidget::paintCursor(int x1, int y1, QPainter &painter, QColor color
     painter.drawLine(x1,fr.y(),x1, fr.y()+5); //small vert cursor in label frame
 
     QString label;
-    mouseFreq = GetMouseFreq();
+    mouseFreq = GetMouseFreq() + loFreq;
     if (mouseFreq > 0)
         label.sprintf("%.3f kHz",mouseFreq / 1000.0);
     else

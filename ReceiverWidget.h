@@ -112,7 +112,8 @@ private:
 		void modeSelectionChanged(QString item);
 		void filterSelectionChanged(QString item);
 		void mixerChanged(int m);
-		void anfButtonToggled(bool b);
+        void mixerChanged(int m, bool b);
+        void anfButtonToggled(bool b);
 		void nbButtonToggled(bool b);
 		void nb2ButtonToggled(bool b);
 		void agcBoxChanged(int item);
