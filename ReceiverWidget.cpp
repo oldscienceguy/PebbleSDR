@@ -7,6 +7,7 @@
 #include <QLCDNumber>
 #include "ReceiverWidget.h"
 #include "receiver.h"
+#include "global.h"
 
 ReceiverWidget::ReceiverWidget(QWidget *parent):QWidget(parent)
 {
@@ -313,31 +314,38 @@ void ReceiverWidget::SetFrequency(double f)
 	if (highFrequency > 0 && f > highFrequency){
 		return;
 	}
-	double newFreq;
 
 	if (loMode)
 	{
 		//Ask the receiver if requested freq is within limits and step size
 		//Set actual frequency to next higher or lower step
 		//Receiver is set with modeOffset, but we keep display at what was actually set
-		newFreq = receiver->SetFrequency(f + modeOffset, frequency ) - modeOffset;
-		loFrequency=newFreq;
+        loFrequency = receiver->SetFrequency(f + modeOffset, frequency ) - modeOffset;
+        frequency = loFrequency;
 		mixer = 0;
 		receiver->SetMixer(mixer);
-		ui.spectrumWidget->SetMixer(mixer,loFrequency); //Spectrum tracks mixer
 
 	} else {
 		//Mixer is delta between what's displayed and last LO Frequency
 		mixer = f - loFrequency;
 		//Check limits
-		mixer = mixer < lowMixer ? lowMixer : (mixer > highMixer ? highMixer : mixer);
-		newFreq=loFrequency+mixer;
-		receiver->SetMixer(mixer + modeOffset);
-		ui.spectrumWidget->SetMixer(mixer,loFrequency); //Spectrum tracks mixer
+        //mixer = mixer < lowMixer ? lowMixer : (mixer > highMixer ? highMixer : mixer);
+        if (mixer < lowMixer || mixer > highMixer) {
+            setLoMode(true); //Switch to LO mode, resets mixer etc
+            //Set LO to new freq and contine
+            loFrequency = receiver->SetFrequency(f + modeOffset, loFrequency );
+            frequency = loFrequency;
+            //Back to Mixer mode
+            setLoMode(false);
+        } else {
+            //LoFreq not changing, just displayed freq
+            frequency = loFrequency + mixer;
+            receiver->SetMixer(mixer + modeOffset);
+        }
 	}
 	//frequency is what's displayed, ie combination of loFrequency and mixer (if any)
-	frequency=newFreq;
 	DisplayNumber(frequency);
+    ui.spectrumWidget->SetMixer(mixer,frequency); //Spectrum tracks mixer
     //Update band info
     DisplayBand(frequency);
 
