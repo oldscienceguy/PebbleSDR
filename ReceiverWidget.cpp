@@ -196,6 +196,7 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     connect(clockTimer, SIGNAL(timeout()), this, SLOT(showTime()));
     clockTimer->start(1000);
     showTime();
+
 }
 
 ReceiverWidget::~ReceiverWidget(void)
@@ -217,6 +218,79 @@ void ReceiverWidget::mixerChanged(int m, bool b)
 //Filters all nixie events
 bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
 {
+    if (o->inherits("QLCDNumber")) {
+        QLCDNumber *num = (QLCDNumber *) o;
+
+        if (e->type() == QEvent::Enter) {
+            num->setFocus();
+            //Change something to indicate focus
+            return true;
+        } else if (e->type() == QEvent::Leave) {
+            num->clearFocus();
+            return true;
+        } else if (e->type() == QEvent::KeyPress) {
+            //Direct number entry on nixie
+            QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
+            int key =  keyEvent->key();
+            if (key >= '0' && key <= '9') {
+                num->display(key - '0');
+                double d = GetNixieNumber();
+                SetFrequency(d);
+                //Set freq on each digit entry?
+                //Or let user keep typing in direct entry fashion, moving focus as necessary?
+                return true;
+            } else if (key == Qt::Key_Up) {
+                int v = qBound(0.0, num->value() + 1, 9.0);
+                num->display(v);
+                double d = GetNixieNumber();
+                SetFrequency(d);
+                return true;
+            } else if (key == Qt::Key_Down) {
+                int v = qBound(0.0, num->value() - 1, 9.0);
+                num->display(v);
+                double d = GetNixieNumber();
+                SetFrequency(d);
+                return true;
+            }
+        } else if (e->type() == QEvent::MouseButtonRelease) {
+            //Clicking on a digit sets tuning step and resets lower digits to zero
+            if (o == ui.nixie1) {
+                tunerStep=1;
+            }
+            else if (o == ui.nixie10) {
+                tunerStep=10;
+            }
+            else if (o == ui.nixie100) {
+                tunerStep=100;
+            }
+            else if (o == ui.nixie1k) {
+                tunerStep=1000;
+            }
+            else if (o == ui.nixie10k) {
+                tunerStep=10000;
+            }
+            else if (o == ui.nixie100k) {
+                tunerStep=100000;
+            }
+            else if (o == ui.nixie1m) {
+                tunerStep=1000000;
+            }
+            else if (o == ui.nixie10m) {
+                tunerStep=10000000;
+            }
+            else if (o == ui.nixie100m) {
+                tunerStep=100000000;
+            }
+            else if (o == ui.nixie1g) {
+                tunerStep=1000000000;
+            }
+
+            frequency = (int)(frequency/tunerStep) * tunerStep;
+            SetFrequency(frequency);
+
+            return true;
+        }
+    }
 	//Handle enter from direct entry freq box
 	if (o == ui.directEntry) {
 		if (e->type() == QEvent::KeyPress) {
@@ -231,67 +305,15 @@ bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
                     //Direct is always LO mode
                     setLoMode(true);
 					SetFrequency(freq);
+                    return true;
                 }
 			}
-			//return true; //Eat event
 		}
-		return false; //Don't consume event
 	}
-	//Clicking on a digit sets tuning step and resets lower digits to zero
-	if (e->type() == QEvent::MouseButtonRelease)
-	{
-		if (o == ui.nixie1) {
-			tunerStep=1;
-		}
-		else if (o == ui.nixie10) {
-			tunerStep=10;
-			frequency = (int)(frequency/10)*10;
-			SetFrequency(frequency);
-		}
-		else if (o == ui.nixie100) {
-			tunerStep=100;
-			frequency = (int)(frequency/100)*100;
-			SetFrequency(frequency);
-		}
-		else if (o == ui.nixie1k) {
-			tunerStep=1000;
-			frequency = (int)(frequency/1000)*1000;
-			SetFrequency(frequency);
-		}
-		else if (o == ui.nixie10k) {
-			tunerStep=10000;
-			frequency = (int)(frequency/10000)*10000;
-			SetFrequency(frequency);
-		}
-		else if (o == ui.nixie100k) {
-			tunerStep=100000;
-			frequency = (int)(frequency/100000)*100000;
-			SetFrequency(frequency);
-		}
-		else if (o == ui.nixie1m) {
-			tunerStep=1000000;
-			frequency = (int)(frequency/1000000)*1000000;
-			SetFrequency(frequency);
-		}
-		else if (o == ui.nixie10m) {
-			tunerStep=10000000;
-			frequency = (int)(frequency/10000000)*10000000;
-			SetFrequency(frequency);
-		}
-		else if (o == ui.nixie100m) {
-			tunerStep=100000000;
-			frequency = (int)(frequency/100000000)*100000000;
-			SetFrequency(frequency);
-		}
-        else if (o == ui.nixie1g) {
-            tunerStep=1000000000;
-            frequency = (int)(frequency/1000000000)*1000000000;
-            SetFrequency(frequency);
-        }
 
-	}
-	
 	return false; //Allow ojects to see event
+    //or
+    //return QObject::eventFilter(o,e);
 }
 
 
@@ -308,10 +330,13 @@ void ReceiverWidget::SetFrequency(double f)
 {
 	//if low and high are 0 or -1, ignore for now
 	if (lowFrequency > 0 && f < lowFrequency) {
-		//Beep or do something
+        //qApp->beep(); //Doesn't work on mac
+        DisplayNixieNumber(frequency); //Restore display
 		return;
 	}
 	if (highFrequency > 0 && f > highFrequency){
+        //qApp->beep();
+        DisplayNixieNumber(frequency);
 		return;
 	}
 
@@ -344,7 +369,7 @@ void ReceiverWidget::SetFrequency(double f)
         }
 	}
 	//frequency is what's displayed, ie combination of loFrequency and mixer (if any)
-	DisplayNumber(frequency);
+    DisplayNixieNumber(frequency);
     ui.spectrumWidget->SetMixer(mixer,frequency); //Spectrum tracks mixer
     //Update band info
     DisplayBand(frequency);
@@ -748,7 +773,27 @@ void ReceiverWidget::showTime()
 
 }
 
-void ReceiverWidget::DisplayNumber(double n)
+//Returns the number displayed by all the nixies
+double ReceiverWidget::GetNixieNumber()
+{
+    double v = 0;
+
+    v += ui.nixie1g->value() *   1000000000;
+    v += ui.nixie100m->value() * 100000000;
+    v += ui.nixie10m->value() *  10000000;
+    v += ui.nixie1m->value() *   1000000;
+    v += ui.nixie100k->value() * 100000;
+    v += ui.nixie10k->value() *  10000;
+    v += ui.nixie1k->value() *   1000;
+    v += ui.nixie100->value() *  100;
+    v += ui.nixie10->value() *   10;
+    v += ui.nixie1->value() *    1;
+
+    return v;
+}
+
+//Updates all the nixies to display a number
+void ReceiverWidget::DisplayNixieNumber(double n)
 {
     //Direct entry disply in khz
     ui.directEntry->setText(QString::number(n / 1000.0,'f',3));

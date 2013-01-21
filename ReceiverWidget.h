@@ -67,7 +67,10 @@ protected:
 
 private:
 	Receiver *receiver;
-	void DisplayNumber(double d);
+
+    void DisplayNixieNumber(double d);
+    double GetNixieNumber();
+
 	Ui::ReceiverWidget ui;
 	//Converts value to separate digits and updates display
 	int tunerStep;
