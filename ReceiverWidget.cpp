@@ -289,6 +289,36 @@ bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
             SetFrequency(frequency);
 
             return true;
+        } else if (e->type() == QEvent::Wheel) {
+            //Same logic as in spectrum widget
+            QWheelEvent *wheelEvent = static_cast<QWheelEvent *>(e);
+
+            QPoint angleDelta = wheelEvent->angleDelta();
+
+            if (angleDelta.ry() == 0) {
+                if (angleDelta.rx() > 0) {
+                    //Scroll Right
+                    frequency += 100;
+                    SetFrequency(frequency);
+                } else if (angleDelta.rx() < 0) {
+                    //Scroll Left
+                    frequency -= 100;
+                    SetFrequency(frequency);
+
+                }
+            } else if (angleDelta.rx() == 0) {
+                if (angleDelta.ry() > 0) {
+                    //Scroll Down
+                    frequency -= 1000;
+                    SetFrequency(frequency);
+
+                } else if (angleDelta.ry() < 0) {
+                    //Scroll Up
+                    frequency += 1000;
+                    SetFrequency(frequency);
+                }
+            }
+            return true;
         }
     }
 	//Handle enter from direct entry freq box
