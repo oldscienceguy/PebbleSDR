@@ -400,7 +400,7 @@ void ReceiverWidget::SetFrequency(double f)
 	}
 	//frequency is what's displayed, ie combination of loFrequency and mixer (if any)
     DisplayNixieNumber(frequency);
-    ui.spectrumWidget->SetMixer(mixer,frequency); //Spectrum tracks mixer
+    ui.spectrumWidget->SetMixer(mixer,loFrequency); //Spectrum tracks mixer
     //Update band info
     DisplayBand(frequency);
 

@@ -43,6 +43,7 @@ signals:
             void displayChanged(int item);
             void dbOffsetChanged(int i);
             void dbGainChanged(int t);
+            void zoomChanged(int item);
 private:
 	SignalSpectrum *signalSpectrum; //Source of spectrum data
 	float *averageSpectrum; 
@@ -51,9 +52,11 @@ private:
 	int upDownIncrement;
 	int leftRightIncrement;
 
+    double zoom; //Percentage of total spectrum to display
+
 	SpectrumThread *st;
 	Ui::SpectrumWidgetClass ui;
-	void paintCursor(int x1, int y1, QPainter &painter, QColor color);
+    void paintCursor(QColor color);
 
 	//Event overrides
 	void paintEvent(QPaintEvent *event);
@@ -91,6 +94,8 @@ private:
     QColor spectrumColors[256];
 
     double GetMouseFreq();
+    double GetXYFreq(int x, int y);
+
 
 };
 
