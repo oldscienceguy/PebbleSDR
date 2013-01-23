@@ -92,6 +92,9 @@ SDR *SDR::Factory(Receiver *receiver, Settings *settings)
 	case SDR::FUNCUBE:
 		sdr = new FunCube(receiver, SDR::FUNCUBE,settings);
 		break;
+    case SDR::FUNCUBE_PLUS:
+        sdr = new FunCube(receiver, SDR::FUNCUBE_PLUS,settings);
+        break;
 
     case SDR::FILE:
         sdr = new SDRFile(receiver,SDR::FILE, settings);

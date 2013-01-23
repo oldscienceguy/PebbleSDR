@@ -143,6 +143,7 @@ void Settings::SetupRecieverBox(QComboBox *receiverBox)
     //receiverBox->addItem("HPSDR TCP",SDR::HPSDR_TCP);
     receiverBox->addItem("SDR Widget",SDR::SDRWIDGET);
     receiverBox->addItem("FUNcube Dongle",SDR::FUNCUBE);
+    receiverBox->addItem("FUNcube Dongle Plus",SDR::FUNCUBE_PLUS);
     receiverBox->addItem("File",SDR::FILE);
     receiverBox->addItem("RTL2832 Family",SDR::DVB_T);
 
