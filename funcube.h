@@ -115,23 +115,32 @@ private:
     hid_device_info *hidDevInfo;
 
 	//Device constants
-	static const unsigned short VID=0x04D8;
-	static const unsigned short PID=0xFB56;
-	int maxPacketSize;
+    static const unsigned short VID = 0x04D8; //Vendor ID is same for FCD Pro and FCD Pro Plus
+    static const unsigned short FCD_PID = 0xFB56;
+    static const unsigned short FCD_PLUS_PID = 0xFB31;
+    int maxPacketSize;
 
 	void ReadSettings();
 	void WriteSettings();
 	QSettings *qSettings;
 	//Settings
-	double sStartup;
-	double sLow;
-	double sHigh;
-	int sStartupMode;
-	double sGain;
+    double sFCDStartup;
+    double sFCDPlusStartup;
+
+    double sFCDLow;
+    double sFCDPlusLow;
+    double sFCDHigh;
+    double sFCDPlusHigh;
+
+    int sFCDStartupMode;
+    int sFCDPlusStartupMode;
+
+    double sGain;
 	double sOffset; //Frequency offset
 	//LibUSB PID VID to look for
-	int sPID;
-	int sVID;
+    int sFCD_PID;
+    int sFCD_PLUS_PID;
+    int sVID;
 
 
 

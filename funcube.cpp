@@ -9,59 +9,63 @@
 #include "Demod.h"
 #include "Settings.h"
 
-#define FCD_HID_CMD_QUERY              1 // Returns string with "FCDAPP version"
+// * = FCD PLUS
+#define FCD_HID_CMD_QUERY              1 // * Returns string with "FCDAPP version"
 
-#define FCD_HID_CMD_SET_FREQUENCY    100 // Send with 3 byte unsigned little endian frequency in kHz.
+#define FCD_HID_CMD_SET_FREQUENCY    100 // * Send with 3 byte unsigned little endian frequency in kHz.
 //Not sure if this still works, returns error in firmware 18i
-#define FCD_HID_CMD_SET_FREQUENCY_HZ 101 // Send with 4 byte unsigned little endian frequency in Hz, returns wit actual frequency set in Hz
-#define FCD_HID_CMD_GET_FREQUENCY_HZ 102 // Returns 4 byte unsigned little endian frequency in Hz.
+#define FCD_HID_CMD_SET_FREQUENCY_HZ 101 // * Send with 4 byte unsigned little endian frequency in Hz, returns wit actual frequency set in Hz
+#define FCD_HID_CMD_GET_FREQUENCY_HZ 102 // * Returns 4 byte unsigned little endian frequency in Hz.
 
 #define FCD_HID_CMD_GET_IF_RSSI      104 // Returns 1 byte unsigned IF RSSI, -35dBm ~=0, -10dBm ~=70.
 #define FCD_HID_CMD_GET_PLL_LOCK     105 // Returns 1 bit, true if locked
-
 #define FCD_HID_CMD_SET_DC_CORR      106 // Send with 2 byte signed I DC correction followed by 2 byte signed Q DC correction. 0 is the default centre value.
 #define FCD_HID_CMD_GET_DC_CORR      107 // Returns 2 byte signed I DC correction followed by 2 byte signed Q DC correction. 0 is the default centre value.
 #define FCD_HID_CMD_SET_IQ_CORR      108 // Send with 2 byte signed phase correction followed by 2 byte unsigned gain correction. 0 is the default centre value for phase correction, 32768 is the default centre value for gain.
 #define FCD_HID_CMD_GET_IQ_CORR      109 // Returns 2 byte signed phase correction followed by 2 byte unsigned gain correction. 0 is the default centre value for phase correction, 32768 is the default centre value for gain.
 
-#define FCD_HID_CMD_SET_LNA_GAIN     110 // Send a 1 byte value, see enums for reference
+#define FCD_HID_CMD_SET_LNA_GAIN     110 // * Send a 1 byte value, see enums for reference
 #define FCD_HID_CMD_SET_LNA_ENHANCE  111
 #define FCD_HID_CMD_SET_BAND         112
-#define FCD_HID_CMD_SET_RF_FILTER    113
-#define FCD_HID_CMD_SET_MIXER_GAIN   114
+#define FCD_HID_CMD_SET_RF_FILTER    113 // * Send one byte enum, see TUNERRFFILTERENUM
+#define FCD_HID_CMD_SET_MIXER_GAIN   114 // * Send one byte, 1 on, 0 of
 #define FCD_HID_CMD_SET_BIAS_CURRENT 115
 #define FCD_HID_CMD_SET_MIXER_FILTER 116
-#define FCD_HID_CMD_SET_IF_GAIN1     117
+#define FCD_HID_CMD_SET_IF_GAIN1     117 // * Send one byte value, valid value 0 to 59 (dB)
 #define FCD_HID_CMD_SET_IF_GAIN_MODE 118
 #define FCD_HID_CMD_SET_IF_RC_FILTER 119
 #define FCD_HID_CMD_SET_IF_GAIN2     120
 #define FCD_HID_CMD_SET_IF_GAIN3     121
-#define FCD_HID_CMD_SET_IF_FILTER    122
+#define FCD_HID_CMD_SET_IF_FILTER    122 // * Send one byte enum, see TUNERIFFILTERENUM
 #define FCD_HID_CMD_SET_IF_GAIN4     123
 #define FCD_HID_CMD_SET_IF_GAIN5     124
 #define FCD_HID_CMD_SET_IF_GAIN6     125
+#define FCD_HID_CMD_SET_BIAS_TEE     126 // * PLUS ONLY Send one byte, 1 on, 0 off
 
-#define FCD_HID_CMD_GET_LNA_GAIN     150 // Retrieve a 1 byte value, see enums for reference
+
+#define FCD_HID_CMD_GET_LNA_GAIN     150 // * Retrieve a 1 byte value, see enums for reference
 #define FCD_HID_CMD_GET_LNA_ENHANCE  151
 #define FCD_HID_CMD_GET_BAND         152
-#define FCD_HID_CMD_GET_RF_FILTER    153
-#define FCD_HID_CMD_GET_MIXER_GAIN   154
+#define FCD_HID_CMD_GET_RF_FILTER    153 // * Returns one byte enum, see TUNERRFFILTERENUM
+#define FCD_HID_CMD_GET_MIXER_GAIN   154 // * Returns one byte, 1 on, 0 off
 #define FCD_HID_CMD_GET_BIAS_CURRENT 155
 #define FCD_HID_CMD_GET_MIXER_FILTER 156
-#define FCD_HID_CMD_GET_IF_GAIN1     157
+#define FCD_HID_CMD_GET_IF_GAIN1     157 // * Returns one byte value, valid value 0 to 59 (dB)
 #define FCD_HID_CMD_GET_IF_GAIN_MODE 158
 #define FCD_HID_CMD_GET_IF_RC_FILTER 159
 #define FCD_HID_CMD_GET_IF_GAIN2     160
 #define FCD_HID_CMD_GET_IF_GAIN3     161
-#define FCD_HID_CMD_GET_IF_FILTER    162
+#define FCD_HID_CMD_GET_IF_FILTER    162 // * Returns one byte enum, see TUNERIFFILTERENUM
 #define FCD_HID_CMD_GET_IF_GAIN4     163
 #define FCD_HID_CMD_GET_IF_GAIN5     164
 #define FCD_HID_CMD_GET_IF_GAIN6     165
+#define FCD_HID_CMD_GET_BIAS_TEE     166 // * PLUS ONLY Returns one byte, 1 on, 0 off
+
 
 #define FCD_HID_CMD_I2C_SEND_BYTE    200
 #define FCD_HID_CMD_I2C_RECEIVE_BYTE 201
 
-#define FCD_RESET                    255 // Reset to bootloader
+#define FCD_RESET                    255 // * Reset to bootloader
 
 typedef enum
 {
@@ -99,46 +103,61 @@ typedef enum
 
 typedef enum
 {
-  // Band 0, VHF II
-  TRFE_LPF268MHZ=0,
-  TRFE_LPF299MHZ=8,
-  // Band 1, VHF III
-  TRFE_LPF509MHZ=0,
-  TRFE_LPF656MHZ=8,
-  // Band 2, UHF
-  TRFE_BPF360MHZ=0,
-  TRFE_BPF380MHZ=1,
-  TRFE_BPF405MHZ=2,
-  TRFE_BPF425MHZ=3,
-  TRFE_BPF450MHZ=4,
-  TRFE_BPF475MHZ=5,
-  TRFE_BPF505MHZ=6,
-  TRFE_BPF540MHZ=7,
-  TRFE_BPF575MHZ=8,
-  TRFE_BPF615MHZ=9,
-  TRFE_BPF670MHZ=10,
-  TRFE_BPF720MHZ=11,
-  TRFE_BPF760MHZ=12,
-  TRFE_BPF840MHZ=13,
-  TRFE_BPF890MHZ=14,
-  TRFE_BPF970MHZ=15,
-  // Band 2, L band
-  TRFE_BPF1300MHZ=0,
-  TRFE_BPF1320MHZ=1,
-  TRFE_BPF1360MHZ=2,
-  TRFE_BPF1410MHZ=3,
-  TRFE_BPF1445MHZ=4,
-  TRFE_BPF1460MHZ=5,
-  TRFE_BPF1490MHZ=6,
-  TRFE_BPF1530MHZ=7,
-  TRFE_BPF1560MHZ=8,
-  TRFE_BPF1590MHZ=9,
-  TRFE_BPF1640MHZ=10,
-  TRFE_BPF1660MHZ=11,
-  TRFE_BPF1680MHZ=12,
-  TRFE_BPF1700MHZ=13,
-  TRFE_BPF1720MHZ=14,
-  TRFE_BPF1750MHZ=15
+    //FCD
+    // Band 0, VHF II
+    TRFE_LPF268MHZ=0,
+    TRFE_LPF299MHZ=8,
+    // Band 1, VHF III
+    TRFE_LPF509MHZ=0,
+    TRFE_LPF656MHZ=8,
+    // Band 2, UHF
+    TRFE_BPF360MHZ=0,
+    TRFE_BPF380MHZ=1,
+    TRFE_BPF405MHZ=2,
+    TRFE_BPF425MHZ=3,
+    TRFE_BPF450MHZ=4,
+    TRFE_BPF475MHZ=5,
+    TRFE_BPF505MHZ=6,
+    TRFE_BPF540MHZ=7,
+    TRFE_BPF575MHZ=8,
+    TRFE_BPF615MHZ=9,
+    TRFE_BPF670MHZ=10,
+    TRFE_BPF720MHZ=11,
+    TRFE_BPF760MHZ=12,
+    TRFE_BPF840MHZ=13,
+    TRFE_BPF890MHZ=14,
+    TRFE_BPF970MHZ=15,
+    // Band 2, L band
+    TRFE_BPF1300MHZ=0,
+    TRFE_BPF1320MHZ=1,
+    TRFE_BPF1360MHZ=2,
+    TRFE_BPF1410MHZ=3,
+    TRFE_BPF1445MHZ=4,
+    TRFE_BPF1460MHZ=5,
+    TRFE_BPF1490MHZ=6,
+    TRFE_BPF1530MHZ=7,
+    TRFE_BPF1560MHZ=8,
+    TRFE_BPF1590MHZ=9,
+    TRFE_BPF1640MHZ=10,
+    TRFE_BPF1660MHZ=11,
+    TRFE_BPF1680MHZ=12,
+    TRFE_BPF1700MHZ=13,
+    TRFE_BPF1720MHZ=14,
+    TRFE_BPF1750MHZ=15,
+
+    //FCD PLUS
+    TRFE_0_4=0,
+    TRFE_4_8=1,
+    TRFE_8_16=2,
+    TRFE_16_32=3,
+    TRFE_32_75=4,
+    TRFE_75_125=5,
+    TRFE_125_250=6,
+    TRFE_145=7,
+    TRFE_410_875=8,
+    TRFE_435=9,
+    TRFE_875_2000=10
+
 } TUNERRFFILTERENUM;
 
 typedef enum
@@ -225,38 +244,49 @@ typedef enum
 
 typedef enum
 {
-  TIFE_5_50MHZ=0,
-  TIFE_5_30MHZ=1,
-  TIFE_5_00MHZ=2,
-  TIFE_4_80MHZ=3,
-  TIFE_4_60MHZ=4,
-  TIFE_4_40MHZ=5,
-  TIFE_4_30MHZ=6,
-  TIFE_4_10MHZ=7,
-  TIFE_3_90MHZ=8,
-  TIFE_3_80MHZ=9,
-  TIFE_3_70MHZ=10,
-  TIFE_3_60MHZ=11,
-  TIFE_3_40MHZ=12,
-  TIFE_3_30MHZ=13,
-  TIFE_3_20MHZ=14,
-  TIFE_3_10MHZ=15,
-  TIFE_3_00MHZ=16,
-  TIFE_2_95MHZ=17,
-  TIFE_2_90MHZ=18,
-  TIFE_2_80MHZ=19,
-  TIFE_2_75MHZ=20,
-  TIFE_2_70MHZ=21,
-  TIFE_2_60MHZ=22,
-  TIFE_2_55MHZ=23,
-  TIFE_2_50MHZ=24,
-  TIFE_2_45MHZ=25,
-  TIFE_2_40MHZ=26,
-  TIFE_2_30MHZ=27,
-  TIFE_2_28MHZ=28,
-  TIFE_2_24MHZ=29,
-  TIFE_2_20MHZ=30,
-  TIFE_2_15MHZ=31
+    TIFE_5_50MHZ=0,
+    TIFE_5_30MHZ=1,
+    TIFE_5_00MHZ=2,
+    TIFE_4_80MHZ=3,
+    TIFE_4_60MHZ=4,
+    TIFE_4_40MHZ=5,
+    TIFE_4_30MHZ=6,
+    TIFE_4_10MHZ=7,
+    TIFE_3_90MHZ=8,
+    TIFE_3_80MHZ=9,
+    TIFE_3_70MHZ=10,
+    TIFE_3_60MHZ=11,
+    TIFE_3_40MHZ=12,
+    TIFE_3_30MHZ=13,
+    TIFE_3_20MHZ=14,
+    TIFE_3_10MHZ=15,
+    TIFE_3_00MHZ=16,
+    TIFE_2_95MHZ=17,
+    TIFE_2_90MHZ=18,
+    TIFE_2_80MHZ=19,
+    TIFE_2_75MHZ=20,
+    TIFE_2_70MHZ=21,
+    TIFE_2_60MHZ=22,
+    TIFE_2_55MHZ=23,
+    TIFE_2_50MHZ=24,
+    TIFE_2_45MHZ=25,
+    TIFE_2_40MHZ=26,
+    TIFE_2_30MHZ=27,
+    TIFE_2_28MHZ=28,
+    TIFE_2_24MHZ=29,
+    TIFE_2_20MHZ=30,
+    TIFE_2_15MHZ=31,
+
+    //PLUS
+    TIFE_200KHZ=0,
+    TIFE_300KHZ=1,
+    TIFE_600KHZ=2,
+    TIFE_1536KHZ=3,
+    TIFE_5MHZ=4,
+    TIFE_6MHZ=5,
+    TIFE_7MHZ=6,
+    TIFE_8MHZ=7
+
 } TUNERIFFILTERENUM;
 
 typedef enum
@@ -289,7 +319,11 @@ FunCube::FunCube(Receiver *_receiver, SDRDEVICE dev,Settings *_settings):
         path.chop(25);
 #endif
 
-    qSettings = new QSettings(path+"/PebbleData/funcube.ini",QSettings::IniFormat);
+    if (sdrDevice == SDR::FUNCUBE)
+        qSettings = new QSettings(path+"/PebbleData/funcube.ini",QSettings::IniFormat);
+    else
+        qSettings = new QSettings(path+"/PebbleData/funcube_plus.ini",QSettings::IniFormat);
+
 	ReadSettings();
     hidDev = NULL;
     hidDevInfo = NULL;
@@ -311,7 +345,11 @@ bool FunCube::Connect()
 	//Don't know if we can get this from DDK calls
 	maxPacketSize = 64;
 
-    hidDevInfo = hid_enumerate(sVID, sPID);
+    if (sdrDevice == SDR::FUNCUBE)
+        hidDevInfo = hid_enumerate(sVID, sFCD_PID);
+    else
+        hidDevInfo = hid_enumerate(sVID, sFCD_PLUS_PID);
+
     if (hidDevInfo == NULL)
         return false; //Not found
 
@@ -334,9 +372,10 @@ bool FunCube::Connect()
 
 bool FunCube::Disconnect()
 {
-    //Mac crashes when hid_close is called
-    //if (hidDev != NULL)
-    //    hid_close(hidDev);
+    //Mac sometimes crashes when hid_close is called, but we need it
+    if (hidDev != NULL)
+        hid_close(hidDev);
+    hidDev = NULL;
 	return true;
 }
 
@@ -352,26 +391,28 @@ void FunCube::Start()
 	//First thing HID does is read all values
 	//ReadFCDOptions();
 
-	SetDCCorrection(fcdDCICorrection,fcdDCQCorrection);
-	SetIQCorrection(fcdIQPhaseCorrection,fcdIQGainCorrection);
+    if (sdrDevice == SDR::FUNCUBE) {
+        SetDCCorrection(fcdDCICorrection,fcdDCQCorrection);
+        SetIQCorrection(fcdIQPhaseCorrection,fcdIQGainCorrection);
 
-	//Set device with current options
-	SetLNAGain(fcdLNAGain);
-	SetLNAEnhance(fcdLNAEnhance);
-	SetBand(fcdBand);
-	SetRFFilter(fcdRFFilter);
-	SetMixerGain(fcdMixerGain);
-	SetBiasCurrent(fcdBiasCurrent);
-	SetMixerFilter(fcdMixerFilter);
-	SetIFGain1(fcdIFGain1);
-	SetIFGain2(fcdIFGain2);
-	SetIFGain3(fcdIFGain3);
-	SetIFGain4(fcdIFGain4);
-	SetIFGain5(fcdIFGain5);
-	SetIFGain6(fcdIFGain6);
-	SetIFGainMode(fcdIFGainMode);
-	SetIFRCFilter(fcdIFRCFilter);
-	SetIFFilter(fcdIFFilter);
+        //Set device with current options
+        SetLNAGain(fcdLNAGain);
+        SetLNAEnhance(fcdLNAEnhance);
+        SetBand(fcdBand);
+        SetRFFilter(fcdRFFilter);
+        SetMixerGain(fcdMixerGain);
+        SetBiasCurrent(fcdBiasCurrent);
+        SetMixerFilter(fcdMixerFilter);
+        SetIFGain1(fcdIFGain1);
+        SetIFGain2(fcdIFGain2);
+        SetIFGain3(fcdIFGain3);
+        SetIFGain4(fcdIFGain4);
+        SetIFGain5(fcdIFGain5);
+        SetIFGain6(fcdIFGain6);
+        SetIFGainMode(fcdIFGainMode);
+        SetIFRCFilter(fcdIFRCFilter);
+        SetIFFilter(fcdIFFilter);
+    }
 
 	if (audioInput != NULL)
 		audioInput->Start(GetSampleRate(),0);
@@ -418,6 +459,11 @@ int FunCube::HIDRead(unsigned char *data, int length)
 //Adapted from fcd.c in FuncubeDongle download
 double FunCube::SetFrequency(double fRequested, double fCurrent)
 {
+    if (sdrDevice == SDR::FUNCUBE_PLUS) {
+        //Reject tuning in gap
+        if (fRequested > 260000000 && fRequested < 410000000)
+            return fCurrent;
+    }
     unsigned char buf[maxPacketSize+1];
 
 	//Apply correction factor
@@ -516,13 +562,15 @@ bool FunCube::HIDGet(char cmd, void *data, int len)
 		logfile<<"FCD: HIDGet-Read after Write error\n";
 		return false; //Read error
 	}
+#if 0
+    // FCD Plus fails this test
 	//inBuf[0] = cmd we're getting data for
     //inBuf[1] = First data byte
 	if (inBuf[0] != cmd){
 		logfile<<"FCD: Invalid read response for cmd: "<<cmd<<"\n";
 		return false;
 	}
-
+#endif
     //Don't return cmd, strip from buffer
     int retLen = numBytes-1 < len ? numBytes-1 : len;
     memcpy(data,&inBuf[1],retLen);
@@ -530,6 +578,8 @@ bool FunCube::HIDGet(char cmd, void *data, int len)
 }
 void FunCube::SetDCCorrection(qint16 cI, qint16 cQ)
 {
+    if (sdrDevice == SDR::FUNCUBE_PLUS)
+        return; //Not supported yet
 
     unsigned char outBuf[maxPacketSize+1];
 	outBuf[0] = 0; // Report ID, ignored
@@ -550,6 +600,9 @@ void FunCube::SetDCCorrection(qint16 cI, qint16 cQ)
 }
 void FunCube::SetIQCorrection(qint16 phase, quint16 gain)
 {
+    if (sdrDevice == SDR::FUNCUBE_PLUS)
+        return; //Not supported yet
+
     unsigned char outBuf[maxPacketSize+1];
 	outBuf[0] = 0; // Report ID, ignored
 	outBuf[1] = FCD_HID_CMD_SET_IQ_CORR;
@@ -587,6 +640,9 @@ void FunCube::LNAEnhanceChanged(int s)
 }
 void FunCube::SetLNAEnhance(int v)
 {
+    if (sdrDevice == SDR::FUNCUBE_PLUS)
+        return; //Not supported yet
+
 	if (v<0)
 		v = TLEE_OFF;
 	HIDSet(FCD_HID_CMD_SET_LNA_ENHANCE,v);
@@ -595,6 +651,9 @@ void FunCube::SetLNAEnhance(int v)
 
 void FunCube::SetBand(int v)
 {
+    if (sdrDevice == SDR::FUNCUBE_PLUS)
+        return; //Not supported yet
+
 	if (v<0)
 		v = TBE_VHF2;
 	HIDSet(FCD_HID_CMD_SET_BAND,v);
@@ -689,6 +748,9 @@ void FunCube::BiasCurrentChanged(int s)
 }
 void FunCube::SetBiasCurrent(int v)
 {
+    if (sdrDevice == SDR::FUNCUBE_PLUS)
+        return; //Not supported yet
+
 	if (v<0)
 		v = TBCE_LBAND;
 	HIDSet(FCD_HID_CMD_SET_BIAS_CURRENT,v);
@@ -702,6 +764,9 @@ void FunCube::MixerFilterChanged(int s)
 }
 void FunCube::SetMixerFilter(int v)
 {
+    if (sdrDevice == SDR::FUNCUBE_PLUS)
+        return; //Not supported yet
+
 	if (v<0)
 		v = TMFE_1_9MHZ;
 	HIDSet(FCD_HID_CMD_SET_MIXER_FILTER,v);
@@ -728,6 +793,9 @@ void FunCube::IFGain2Changed(int s)
 }
 void FunCube::SetIFGain2(int v)
 {
+    if (sdrDevice == SDR::FUNCUBE_PLUS)
+        return; //Not supported yet
+
 	if (v<0)
 		v = TIG2E_P0_0DB;
 	HIDSet(FCD_HID_CMD_SET_IF_GAIN2,v);
@@ -741,6 +809,9 @@ void FunCube::IFGain3Changed(int s)
 }
 void FunCube::SetIFGain3(int v)
 {
+    if (sdrDevice == SDR::FUNCUBE_PLUS)
+        return; //Not supported yet
+
 	if (v<0)
 		v = TIG3E_P0_0DB;
 	HIDSet(FCD_HID_CMD_SET_IF_GAIN3,v);
@@ -754,6 +825,9 @@ void FunCube::IFGain4Changed(int s)
 }
 void FunCube::SetIFGain4(int v)
 {
+    if (sdrDevice == SDR::FUNCUBE_PLUS)
+        return; //Not supported yet
+
 	if (v<0)
 		v = TIG4E_P0_0DB;
 	HIDSet(FCD_HID_CMD_SET_IF_GAIN4,v);
@@ -767,6 +841,9 @@ void FunCube::IFGain5Changed(int s)
 }
 void FunCube::SetIFGain5(int v)
 {
+    if (sdrDevice == SDR::FUNCUBE_PLUS)
+        return; //Not supported yet
+
 	if (v<0)
 		v = TIG5E_P3_0DB;
 	HIDSet(FCD_HID_CMD_SET_IF_GAIN5,v);
@@ -780,6 +857,9 @@ void FunCube::IFGain6Changed(int s)
 }
 void FunCube::SetIFGain6(int v)
 {
+    if (sdrDevice == SDR::FUNCUBE_PLUS)
+        return; //Not supported yet
+
 	if (v<0)
 		v = TIG6E_P3_0DB;
 	HIDSet(FCD_HID_CMD_SET_IF_GAIN6,v);
@@ -793,6 +873,9 @@ void FunCube::IFGainModeChanged(int s)
 }
 void FunCube::SetIFGainMode(int v)
 {
+    if (sdrDevice == SDR::FUNCUBE_PLUS)
+        return; //Not supported yet
+
 	if (v<0)
 		v = TIGME_LINEARITY;
 	HIDSet(FCD_HID_CMD_SET_IF_GAIN_MODE,v);
@@ -806,6 +889,9 @@ void FunCube::IFRCFilterChanged(int s)
 }
 void FunCube::SetIFRCFilter(int v)
 {
+    if (sdrDevice == SDR::FUNCUBE_PLUS)
+        return; //Not supported yet
+
 	if (v<0)
 		v = TIRFE_1_0MHZ;
 	HIDSet(FCD_HID_CMD_SET_IF_RC_FILTER,v);
@@ -859,90 +945,133 @@ void FunCube::ReadFCDOptions()
 	bool res = HIDGet(FCD_HID_CMD_QUERY,data,sizeof(data));
 	if (res)
 		fcdVersion = (char*)data;
-	res = HIDGet(FCD_HID_CMD_GET_IQ_CORR,data,sizeof(data));
-	if (res) {
-		fcdIQPhaseCorrection = (qint16)data[0];
-		fcdIQPhaseCorrection += (qint16)data[1]<<8;
-		fcdIQGainCorrection = (quint16)data[2];
-		fcdIQGainCorrection += (quint16)data[3]<<8;
-	}
-	res = HIDGet(FCD_HID_CMD_GET_DC_CORR,data,sizeof(data));
-	if (res) {
-		fcdDCICorrection = (quint16)data[0];
-		fcdDCICorrection += (quint16)data[1]<<8;
-		fcdDCQCorrection = (quint16)data[2];
-		fcdDCQCorrection += (quint16)data[3]<<8;
-	}
 
-	res = HIDGet(FCD_HID_CMD_GET_FREQUENCY_HZ,data,sizeof(data));
-	if (res) {
+    if (sdrDevice == SDR::FUNCUBE) {
+        res = HIDGet(FCD_HID_CMD_GET_IQ_CORR,data,sizeof(data));
+        if (res) {
+            fcdIQPhaseCorrection = (qint16)data[0];
+            fcdIQPhaseCorrection += (qint16)data[1]<<8;
+            fcdIQGainCorrection = (quint16)data[2];
+            fcdIQGainCorrection += (quint16)data[3]<<8;
+        }
+    }
+
+    if (sdrDevice == SDR::FUNCUBE) {
+        res = HIDGet(FCD_HID_CMD_GET_DC_CORR,data,sizeof(data));
+        if (res) {
+            fcdDCICorrection = (quint16)data[0];
+            fcdDCICorrection += (quint16)data[1]<<8;
+            fcdDCQCorrection = (quint16)data[2];
+            fcdDCQCorrection += (quint16)data[3]<<8;
+        }
+    }
+
+    res = HIDGet(FCD_HID_CMD_GET_FREQUENCY_HZ,data,sizeof(data));
+    if (res) {
 		fcdFreq = (quint64)data[0]+(((quint64)data[1])<<8)+(((quint64)data[2])<<16)+(((quint64)data[3])<<24);
 		fcdFreq = fcdFreq / (sOffset/1000000.0);
 	}
+
 	res = HIDGet(FCD_HID_CMD_GET_LNA_GAIN,data,sizeof(data));
 	if (res) {
 		fcdLNAGain=data[0];
 	}
-	res = HIDGet(FCD_HID_CMD_GET_BAND,data,sizeof(data));
-	if (res) {
-		fcdBand=data[0];
-	}
+
+    if (sdrDevice == SDR::FUNCUBE) {
+        res = HIDGet(FCD_HID_CMD_GET_BAND,data,sizeof(data));
+        if (res) {
+            fcdBand=data[0];
+        }
+    }
+
 	res = HIDGet(FCD_HID_CMD_GET_RF_FILTER,data,sizeof(data));
 	if (res) {
 		fcdRFFilter=data[0];
 	}
-	res = HIDGet(FCD_HID_CMD_GET_LNA_ENHANCE,data,sizeof(data));
-	if (res) {
-		fcdLNAEnhance=data[0];
-	}
+
+    if (sdrDevice == SDR::FUNCUBE) {
+        res = HIDGet(FCD_HID_CMD_GET_LNA_ENHANCE,data,sizeof(data));
+        if (res) {
+            fcdLNAEnhance=data[0];
+        }
+    }
 	res = HIDGet(FCD_HID_CMD_GET_MIXER_GAIN,data,sizeof(data));
 	if (res) {
 		fcdMixerGain=data[0];
 	}
-	res = HIDGet(FCD_HID_CMD_GET_BIAS_CURRENT,data,sizeof(data));
-	if (res) {
-		fcdBiasCurrent=data[0];
-	}
-	res = HIDGet(FCD_HID_CMD_GET_MIXER_FILTER,data,sizeof(data));
-	if (res) {
-		fcdMixerFilter=data[0];
-	}
+
+    if (sdrDevice == SDR::FUNCUBE) {
+        res = HIDGet(FCD_HID_CMD_GET_BIAS_CURRENT,data,sizeof(data));
+        if (res) {
+            fcdBiasCurrent=data[0];
+        }
+    }
+
+    if (sdrDevice == SDR::FUNCUBE) {
+        res = HIDGet(FCD_HID_CMD_GET_MIXER_FILTER,data,sizeof(data));
+        if (res) {
+            fcdMixerFilter=data[0];
+        }
+    }
+
 	res = HIDGet(FCD_HID_CMD_GET_IF_GAIN1,data,sizeof(data));
 	if (res) {
 		fcdIFGain1=data[0];
 	}
-	res = HIDGet(FCD_HID_CMD_GET_IF_GAIN_MODE,data,sizeof(data));
-	if (res) {
-		fcdIFGainMode=data[0];
-	}
-	res = HIDGet(FCD_HID_CMD_GET_IF_RC_FILTER,data,sizeof(data));
-	if (res) {
-		fcdIFRCFilter=data[0];
-	}
-	res = HIDGet(FCD_HID_CMD_GET_IF_GAIN2,data,sizeof(data));
-	if (res) {
-		fcdIFGain2=data[0];
-	}
-	res = HIDGet(FCD_HID_CMD_GET_IF_GAIN3,data,sizeof(data));
-	if (res) {
-		fcdIFGain3=data[0];
-	}
+
+    if (sdrDevice == SDR::FUNCUBE) {
+        res = HIDGet(FCD_HID_CMD_GET_IF_GAIN_MODE,data,sizeof(data));
+        if (res) {
+            fcdIFGainMode=data[0];
+        }
+    }
+
+    if (sdrDevice == SDR::FUNCUBE) {
+        res = HIDGet(FCD_HID_CMD_GET_IF_RC_FILTER,data,sizeof(data));
+        if (res) {
+            fcdIFRCFilter=data[0];
+        }
+    }
+
+    if (sdrDevice == SDR::FUNCUBE) {
+        res = HIDGet(FCD_HID_CMD_GET_IF_GAIN2,data,sizeof(data));
+        if (res) {
+            fcdIFGain2=data[0];
+        }
+    }
+
+    if (sdrDevice == SDR::FUNCUBE) {
+        res = HIDGet(FCD_HID_CMD_GET_IF_GAIN3,data,sizeof(data));
+        if (res) {
+            fcdIFGain3=data[0];
+        }
+    }
+
 	res = HIDGet(FCD_HID_CMD_GET_IF_FILTER,data,sizeof(data));
 	if (res) {
 		fcdIFFilter=data[0];
 	}
-	res = HIDGet(FCD_HID_CMD_GET_IF_GAIN4,data,sizeof(data));
-	if (res) {
-		fcdIFGain4=data[0];
-	}
-	res = HIDGet(FCD_HID_CMD_GET_IF_GAIN5,data,sizeof(data));
-	if (res) {
-		fcdIFGain5=data[0];
-	}
-	res = HIDGet(FCD_HID_CMD_GET_IF_GAIN6,data,sizeof(data));
-	if (res) {
-		fcdIFGain6=data[0];
-	}
+
+    if (sdrDevice == SDR::FUNCUBE) {
+        res = HIDGet(FCD_HID_CMD_GET_IF_GAIN4,data,sizeof(data));
+        if (res) {
+            fcdIFGain4=data[0];
+        }
+    }
+
+    if (sdrDevice == SDR::FUNCUBE) {
+        res = HIDGet(FCD_HID_CMD_GET_IF_GAIN5,data,sizeof(data));
+        if (res) {
+            fcdIFGain5=data[0];
+        }
+    }
+
+    if (sdrDevice == SDR::FUNCUBE) {
+        res = HIDGet(FCD_HID_CMD_GET_IF_GAIN6,data,sizeof(data));
+        if (res) {
+            fcdIFGain6=data[0];
+        }
+    }
 
 }
 
@@ -1203,22 +1332,34 @@ void FunCube::ShowOptions()
 
 double FunCube::GetStartupFrequency()
 {
-	return sStartup;
+    if (sdrDevice == SDR::FUNCUBE)
+        return sFCDStartup;
+    else
+        return sFCDPlusStartup;
 }
 
 int FunCube::GetStartupMode()
 {
-	return sStartupMode;
+    if (sdrDevice == SDR::FUNCUBE)
+        return sFCDStartupMode;
+    else
+        return sFCDPlusStartupMode;
 }
 
 double FunCube::GetHighLimit()
 {
-	return sHigh;
+    if (sdrDevice == SDR::FUNCUBE)
+        return sFCDHigh;
+    else
+        return sFCDPlusHigh;
 }
 
 double FunCube::GetLowLimit()
 {
-	return sLow;
+    if (sdrDevice == SDR::FUNCUBE)
+        return sFCDLow;
+    else
+        return sFCDPlusLow;
 }
 
 double FunCube::GetGain()
@@ -1228,23 +1369,36 @@ double FunCube::GetGain()
 
 QString FunCube::GetDeviceName()
 {
-	return "FUNCube Dongle";
+    if (sdrDevice == SDR::FUNCUBE)
+        return "FUNCube Dongle";
+    else
+        return "FunCube Dongle Plus";
 }
 
 int FunCube::GetSampleRate()
 {
-	return 96000; //Fixed by device
+    if (sdrDevice == SDR::FUNCUBE)
+        return 96000; //Fixed by device
+    else
+        return 192000;
 }
 void FunCube::ReadSettings()
 {
 	SDR::ReadSettings(qSettings);
-	sStartup = qSettings->value("Startup",162450000).toDouble();
-	sLow = qSettings->value("Low",60000000).toDouble();
-	sHigh = qSettings->value("High",1700000000).toDouble();
-	sStartupMode = qSettings->value("StartupMode",dmFMN).toInt();
-	sGain = qSettings->value("Gain",0.05).toDouble();
-	sPID = qSettings->value("PID",0xFB56).toInt();
-	sVID = qSettings->value("VID",0x04D8).toInt();
+    sFCDStartup = qSettings->value("FCDStartup",162450000).toDouble();
+    sFCDPlusStartup = qSettings->value("FCDPlusStartup",10000000).toDouble();
+    //FCD official range is 64 to 1.7 with no gaps
+    sFCDLow = qSettings->value("FCDLow",60000000).toDouble();
+    sFCDHigh = qSettings->value("FCDHigh",1700000000).toDouble();
+    //FCDPlus 240mhz to 420mhz gap is not handled
+    sFCDPlusLow = qSettings->value("FCDPlusLow",150000).toDouble();
+    sFCDPlusHigh = qSettings->value("FCDPlusHigh",1900000000).toDouble();
+    sFCDStartupMode = qSettings->value("FCDStartupMode",dmFMN).toInt();
+    sFCDPlusStartupMode = qSettings->value("FCDPlusStartupMode",dmAM).toInt();
+    sGain = qSettings->value("Gain",0.05).toDouble();
+    sFCD_PID = qSettings->value("FCD_PID",FCD_PID).toInt();
+    sFCD_PLUS_PID = qSettings->value("FCD_PLUS_PID",FCD_PLUS_PID).toInt();
+    sVID = qSettings->value("VID",VID).toInt();
 	sOffset = qSettings->value("Offset",999885.0).toDouble();
 	//All settings default to -1 which will force the device default values to be set
 	fcdLNAGain = qSettings->value("LNAGain",-1).toInt();
@@ -1252,7 +1406,7 @@ void FunCube::ReadSettings()
 	fcdBand = qSettings->value("Band",-1).toInt();
 	fcdRFFilter = qSettings->value("RFFilter",-1).toInt();
 	fcdMixerGain = qSettings->value("MixerGain",-1).toInt();
-	fcdBiasCurrent = qSettings->value("BiasCurrent",-1).toInt();
+    fcdBiasCurrent = qSettings->value("BiasCurrent",-1).toInt();
 	fcdMixerFilter = qSettings->value("MixerFilter",-1).toInt();
 	fcdIFGain1 = qSettings->value("IFGain1",-1).toInt();
 	fcdIFGain2 = qSettings->value("IFGain2",-1).toInt();
@@ -1273,13 +1427,18 @@ void FunCube::ReadSettings()
 void FunCube::WriteSettings()
 {
 	SDR::WriteSettings(qSettings);
-	qSettings->setValue("Startup",sStartup);
-	qSettings->setValue("Low",sLow);
-	qSettings->setValue("High",sHigh);
-	qSettings->setValue("StartupMode",sStartupMode);
-	qSettings->setValue("Gain",sGain);
-	qSettings->setValue("PID",sPID);
-	qSettings->setValue("VID",sVID);
+    qSettings->setValue("FCDStartup",sFCDStartup);
+    qSettings->setValue("FCDPlusStartup",sFCDPlusStartup);
+    qSettings->setValue("FCDLow",sFCDLow);
+    qSettings->setValue("FCDHigh",sFCDHigh);
+    qSettings->setValue("FCDPlusLow",sFCDPlusLow);
+    qSettings->setValue("FCDPlusHigh",sFCDPlusHigh);
+    qSettings->setValue("FCDStartupMode",sFCDStartupMode);
+    qSettings->setValue("FCDPlusStartupMode",sFCDPlusStartupMode);
+    qSettings->setValue("Gain",sGain);
+    qSettings->setValue("FCD_PID",sFCD_PID);
+    qSettings->setValue("FCD_PLUS_PID",sFCD_PLUS_PID);
+    qSettings->setValue("VID",sVID);
 	qSettings->setValue("Offset",sOffset);
 	qSettings->setValue("LNAGain",fcdLNAGain);
 	qSettings->setValue("LNAEnhance",fcdLNAEnhance);
