@@ -477,7 +477,7 @@ void Settings::ReadSettings()
     ini_iqBalanceEnable[2] = qSettings->value("iqBalanceEnable3",false).toBool();
     ini_iqBalanceEnable[3] = qSettings->value("iqBalanceEnable4",false).toBool();
 
-    dbOffset = qSettings->value("dbOffset",-70).toFloat();
+    dbOffset = qSettings->value("dbOffset",-60).toFloat();
 	lastMode = qSettings->value("LastMode",0).toInt();
 	lastDisplayMode = qSettings->value("LastDisplayMode",0).toInt();
 	leftRightIncrement = qSettings->value("LeftRightIncrement",10).toInt();

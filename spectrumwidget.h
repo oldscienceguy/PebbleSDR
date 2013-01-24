@@ -89,14 +89,13 @@ private:
 
     QPixmap *plotArea;
 
-    double dbMax;
-    double dbMin;
     int dbRange;
 
     QColor *spectrumColors;
 
     double GetMouseFreq();
     double GetXYFreq(int x, int y);
+    int GetMouseDb();
 
 
 };

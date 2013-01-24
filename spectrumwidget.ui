@@ -219,7 +219,7 @@
           <widget class="QFrame" name="cursorLabel">
            <property name="minimumSize">
             <size>
-             <width>80</width>
+             <width>130</width>
              <height>0</height>
             </size>
            </property>

@@ -71,9 +71,7 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 
 	fMixer = 0;
 
-    dbMax = 0;      //S Unit of 60 = -13db so we should never see greater than 0
-    dbMin = -150; //Smallest value returned by fft->FreqDomainToMagnitude
-    dbRange = abs(dbMax - dbMin);
+    dbRange = abs(global->maxDb - global->minDb);
 
     //Spectrum power is converted to 8bit int for display
     //This array maps the colors for each power level
@@ -234,6 +232,22 @@ double SpectrumWidget::GetXYFreq(int x, int y)
     //And conver to freq
     m *= hzPerPixel;
     return m;
+}
+
+int SpectrumWidget::GetMouseDb()
+{
+    QPoint mp = QCursor::pos(); //Current mouse position in global coordinates
+    mp = mapFromGlobal(mp); //Convert to widget relative
+    QRect pf = this->ui.plotFrame->geometry();
+    if (!pf.contains(mp))
+        return global->minDb;
+
+    //Find db at cursor
+    int db = (pf.height() - mp.y()); //Num pixels
+    db = dbRange/pf.height() * db; //Scale to get db
+    //Convert back to minDb relative
+    db += global->minDb - spectrumOffset;
+    return db;
 }
 
 //Track cursor and display freq in cursorLabel
@@ -439,8 +453,9 @@ void SpectrumWidget::paintCursor(QColor color)
 
     QString label;
     mouseFreq = GetMouseFreq() + loFreq;
+    int mouseDb = GetMouseDb();
     if (mouseFreq > 0)
-        label.sprintf("%.3f kHz",mouseFreq / 1000.0);
+        label.sprintf("%.3f kHz @ %ddB",mouseFreq / 1000.0,mouseDb);
     else
         label = "";
 
@@ -552,7 +567,7 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
      * We keep db between dbMin and dbMax at all times (0 and dbRange when zero based
      * dbZeroAdj is the amount we add to any db to make sure it's zero to dbRange
      */
-    double dbZeroAdj = abs(dbMin); //Adj to get to zero base
+    double dbZeroAdj = abs(global->minDb); //Adj to get to zero base
     //qDebug("dbZero %f dbRange %f",dbZeroAdj, dbRange);
 
     //Scale dbRange to number of pixels we have
@@ -589,23 +604,41 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 		spectrum = averageSpectrum;
 	}
 
+    //plotArea has to be created after layout has done it's work, not in constructor
+    //Todo: Find a post layout event and more
+    if (plotArea == NULL) {
+        plotArea = new QPixmap(plotFr.width(),plotFr.height());
+        plotArea->fill(Qt::black);
+    } else if (plotArea->width() != plotFr.width() || plotArea->height() != plotFr.height()) {
+        //Window resized
+        delete plotArea;
+        plotArea = new QPixmap(plotFr.width(),plotFr.height());
+        plotArea->fill(Qt::black);
+    }
+    QPainter plotPainter(plotArea);
+
+    //Color code each bin and draw line
+    QColor plotColor;
+
 	if (spectrumMode == SignalSpectrum::SPECTRUM)
 	{
-		painter.setPen(Qt::blue);
+        plotArea->fill(Qt::lightGray); //Erase to background color each time
         //BUG: Won't handle case where we have more pixels than samples
+        int lastX = 0;
+        int lastY = 0;
         for (int i=0; i<plotFr.width(); i++)
 		{
 			plotX = i;
 
 			//Taking average results in spectrum not being displayed correctly due to 'chunks'
 			//Just use every Nth sample and throw away the rest
-            //We should only be getting values from -150 to 60 in spectrum array
+            //We should only be getting values from -130 to +10 in spectrum array
             //but occasionally we get a garbage value which I think is caused by spectrum thread running while spectrum array is being update
             //Rather than lock, we'll just bound the results and ignore
-            db = qBound(dbMin, (double)spectrum[binStart + qRound(binStep * i)], dbMax);
+            db = spectrum[binStart + qRound(binStep * i)]; //Spectrum is already bound to minDb and maxDb
 
             //Make relative to zero.
-            db = qBound(dbMin, db + spectrumOffset, dbMax);
+            db = qBound(global->minDb, db + spectrumOffset, global->maxDb);
             db = qBound(0.0, db + dbZeroAdj, (double)dbRange);  //ensure zero base
             db = qBound(0.0, db * spectrumGain, (double)dbRange);
             //Experiment to use same colors as waterfall
@@ -624,9 +657,16 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
             if (db > plotHeight)
                 db = plotHeight;  //Min
 
+            plotPainter.setPen(Qt::darkGray);
+            plotPainter.drawLine(plotX,plotHeight,plotX,db);
+            plotPainter.setPen(Qt::blue);
+            if (i>0)
+                plotPainter.drawLine(lastX,lastY,plotX,db);
+            lastX = plotX;
+            lastY = db;
+        }
+        painter.drawPixmap(0,0,plotFr.width(),plotFr.height(),*plotArea);
 
-            painter.drawLine(plotX,plotHeight,plotX,db);
-		}
         //Paint cursor last because painter changes - hack
         paintCursor(Qt::black);
 
@@ -635,35 +675,19 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 			   spectrumMode == SignalSpectrum::POSTMIXER  ||
 			   spectrumMode == SignalSpectrum::POSTBANDPASS){
 		//Waterfall
-		//plotArea has to be created after layout has done it's work, not in constructor
-		//Todo: Find a post layout event and more
-		if (plotArea == NULL) {
-            plotArea = new QPixmap(plotFr.width(),plotFr.height());
-            plotArea->fill(Qt::black);
-        } else if (plotArea->width() != plotFr.width() || plotArea->height() != plotFr.height()) {
-			//Window resized
-			delete plotArea;
-            plotArea = new QPixmap(plotFr.width(),plotFr.height());
-            plotArea->fill(Qt::black);
-		}
         //Scroll fr rect 1 pixel to create new line
         //plotArea->scroll(0,1,0,0, fr.width(), fr.height()); //This has to be done before attaching painter
         plotArea->scroll(0,1,plotFr); //This has to be done before attaching painter
-
-        QPainter plotPainter(plotArea);
-
-		//Color code each bin and draw line
-		QColor plotColor;
 
 		for (int i=0; i<plotArea->width(); i++)
 		{
 			plotX = i;
 			plotY = 0;
 
-            db = qBound(dbMin, (double)spectrum[binStart + qRound(binStep * i)], dbMax);
+            db = spectrum[binStart + qRound(binStep * i)];
 
             //Make relative to zero.
-            db = qBound(dbMin, db + spectrumOffset, dbMax);
+            db = qBound(global->minDb, db + spectrumOffset, global->maxDb);
             db = qBound(0.0, db + dbZeroAdj, (double)dbRange);  //ensure zero base
             db = qBound(0.0, db * spectrumGain, (double)dbRange);
 

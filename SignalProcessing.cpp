@@ -290,9 +290,10 @@ void FFT::FreqDomainToMagnitude(CPX * freqBuf, int size, float baseline, float c
 	//Convert to db and order correctly
     //Limit output to -150db to 60db
 	for (int i=0, j = size/2; i < size/2; i++, j++) {
-//        fbr[i] = qBound(-150.0, 10.0 * log10((buf[j]).sqrMag() + baseline) + correction, 60.0); //global->MIN_DB);
-//        fbr[j] = qBound(-150.0, 10.0 * log10((buf[i]).sqrMag() + baseline) + correction, 60.0); //global->MIN_DB);
-        fbr[i] = SignalProcessing::powerToDb(buf[j].sqrMag() + baseline) + correction;
-        fbr[j] = SignalProcessing::powerToDb(buf[i].sqrMag() + baseline) + correction;;
+        //Returns values that are 70-80db too high for some reason
+        //calculate the magnitude of your complex frequency domain data (magnitude = sqrt(re^2 + im^2))
+        //convert magnitude to a log scale (dB) (magnitude_dB = 20*log10(magnitude))
+        fbr[i] = SignalProcessing::amplitudeToDb(buf[j].mag() + baseline) + correction;
+        fbr[j] = SignalProcessing::amplitudeToDb(buf[i].mag() + baseline) + correction;;
     }
 }
