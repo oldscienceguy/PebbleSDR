@@ -56,7 +56,8 @@ private:
 
 	SpectrumThread *st;
 	Ui::SpectrumWidgetClass ui;
-    void paintCursor(QColor color);
+    void paintCursor(QPainter &painter, QColor color);
+    void paintFixedArea(QPainter &painter);
 
 	//Event overrides
 	void paintEvent(QPaintEvent *event);

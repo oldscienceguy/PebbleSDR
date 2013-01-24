@@ -170,6 +170,14 @@ void SpectrumWidget::Run(bool r)
     ui.cursorLabel->setFont(global->settings->medFont);
     ui.zoomBox->setFont(global->settings->medFont);
 
+    QRect plotFr = ui.plotFrame->geometry(); //relative to parent
+
+    //plotArea has to be created after layout has done it's work, not in constructor
+    if (plotArea == NULL) {
+        plotArea = new QPixmap(plotFr.width(),plotFr.height());
+        plotArea->fill(Qt::black);
+    }
+
 	if (r) {
         ui.displayBox->setCurrentIndex(global->settings->lastDisplayMode); //Initial display mode
 
@@ -207,7 +215,16 @@ void SpectrumWidget::leaveEvent(QEvent *event)
 //Todo: Move resize logic out of paint and capture here
 void SpectrumWidget::resizeEvent(QResizeEvent *event)
 {
-    event->ignore(); //We don't handle
+    QRect plotFr = ui.plotFrame->geometry(); //relative to parent
+
+    if (plotArea != NULL) {
+        //Window resized
+        delete plotArea;
+        plotArea = new QPixmap(plotFr.width(),plotFr.height());
+        plotArea->fill(Qt::black);
+    }
+
+    event->accept(); //We don't handle
 }
 
 //Returns +/- freq from LO based on where mouse cursor is
@@ -244,7 +261,8 @@ int SpectrumWidget::GetMouseDb()
 
     //Find db at cursor
     int db = (pf.height() - mp.y()); //Num pixels
-    db = dbRange/pf.height() * db; //Scale to get db
+    double scale = (double)dbRange/pf.height();
+    db *= scale; //Scale to get db
     //Convert back to minDb relative
     db += global->minDb - spectrumOffset;
     return db;
@@ -415,9 +433,9 @@ void SpectrumWidget::SetSignalSpectrum(SignalSpectrum *s)
 	}
 }
 // Diplays frequency cursor and filter range
-void SpectrumWidget::paintCursor(QColor color)
+void SpectrumWidget::paintCursor(QPainter &painter, QColor color)
 {
-    QPainter painter(this);
+    painter.save(); //Push current state on stack
     QRect plotFr = ui.plotFrame->geometry(); //relative to parent
     int plotWidth = plotFr.width();
     int hzPerPixel = sampleRate / plotWidth * zoom;
@@ -465,11 +483,58 @@ void SpectrumWidget::paintCursor(QColor color)
     //painter.translate(freqFr.x(),freqFr.y());
     painter.setFont(global->settings->medFont);
     painter.drawText(freqFr.bottomLeft(),label);
+    painter.restore(); //pop state from stack
+}
+
+void SpectrumWidget::paintFixedArea(QPainter &painter)
+{
+    painter.save();
+    //Draw scale
+    //labelRect X,Y will be relative to 0.0
+    QRect labelRect = ui.labelFrame->geometry();
+    //This makes logical 0,0 map to left,upper of labelFrame
+    painter.translate(labelRect.x(),labelRect.y());
+
+    painter.setPen(Qt::black);
+    painter.setFont(global->settings->smFont);
+
+    //Show actual hi/lo frequency range
+    double loRange = (loFreq - sampleRate/2 * zoom)/1000;
+    double midRange = loFreq/1000;
+    double hiRange = (loFreq + sampleRate/2 * zoom)/1000;
+    QString loText = QString::number(loRange,'f',0);
+    QString midText = QString::number(midRange,'f',0);
+    QString hiText = QString::number(hiRange,'f',0);
+    painter.drawText(0,labelRect.height()-2, loText+"k");
+    painter.drawText(labelRect.width()/2 - 15,labelRect.height()-2, midText+"k");
+    painter.drawText(labelRect.width() - 35,labelRect.height()-2, hiText+"k");
+
+    //Tics
+    //Draw center tick, then on either side
+    int labelMid = labelRect.width()/2;
+    int numTicks = labelMid / 10; //1 tick every N pixel regardless of spectrum width
+    int inc = labelMid / numTicks;
+
+    painter.drawLine(labelMid,5,labelMid,2);
+    for (int i=0; i<=numTicks; i++){
+        painter.drawLine(labelMid - i*inc,3, labelMid - i*inc, 2);
+        painter.drawLine(labelMid + i*inc,3, labelMid + i*inc, 2);
+    }
+
+    //Draw spectrum colors centered at bottom of label pane
+    if (spectrumMode == SignalSpectrum::WATERFALL) {
+        for (int i=0; i<dbRange; i++) {
+            painter.setPen(spectrumColors[i]);
+            painter.drawPoint(labelMid - 80 + i,labelRect.height()-2);
+            painter.drawPoint(labelMid - 80 + i,labelRect.height()-1);
+        }
+    }
+    painter.restore();
 }
 
 void SpectrumWidget::paintEvent(QPaintEvent *e)
 {
-	QPainter painter(this);
+    QPainter painter(this);
     QRect plotFr = ui.plotFrame->geometry(); //relative to parent
     int plotHeight = plotFr.height(); //Plot area height
     int plotWidth = plotFr.width();
@@ -490,8 +555,14 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 		}
 	return;
 	}
-	if (spectrumMode == SignalSpectrum::NODISPLAY || signalSpectrum == NULL)
-		return;
+
+    if (spectrumMode == SignalSpectrum::NODISPLAY || signalSpectrum == NULL)
+        return;
+
+    paintFixedArea(painter); //Find a way to only call this once
+    //Crashes if paintFixedArea called after QPainter below
+    //Are the two painters tied together somehow
+
 
     //Map spectrum[] to display
     int binCountRaw = signalSpectrum->BinCount(); //Total number of spectrum data available to us
@@ -514,48 +585,6 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 	painter.setPen(Qt::black);
 #endif
 
-	//Draw scale
-    //labelRect X,Y will be relative to 0.0
-    QRect labelRect = ui.labelFrame->geometry();
-    //This makes logical 0,0 map to left,upper of labelFrame
-    painter.resetTransform();
-    painter.translate(labelRect.x(),labelRect.y());
-
-    painter.setPen(Qt::black);
-    painter.setFont(global->settings->smFont);
-
-    //Show actual hi/lo frequency range
-    double loRange = (loFreq - sampleRate/2 * zoom)/1000;
-	double midRange = loFreq/1000;
-    double hiRange = (loFreq + sampleRate/2 * zoom)/1000;
-	QString loText = QString::number(loRange,'f',0);
-	QString midText = QString::number(midRange,'f',0);
-	QString hiText = QString::number(hiRange,'f',0);
-    painter.drawText(0,labelRect.height()-2, loText+"k");
-    painter.drawText(labelRect.width()/2 - 15,labelRect.height()-2, midText+"k");
-    painter.drawText(labelRect.width() - 35,labelRect.height()-2, hiText+"k");
-
-	//Tics
-    //Draw center tick, then on either side
-    int labelMid = labelRect.width()/2;
-    int numTicks = labelMid / 10; //1 tick every N pixel regardless of spectrum width
-    int inc = labelMid / numTicks;
-
-    painter.drawLine(labelMid,5,labelMid,2);
-    for (int i=0; i<=numTicks; i++){
-        painter.drawLine(labelMid - i*inc,3, labelMid - i*inc, 2);
-        painter.drawLine(labelMid + i*inc,3, labelMid + i*inc, 2);
-	}
-
-    //Draw spectrum colors centered at bottom of label pane
-    if (spectrumMode == SignalSpectrum::WATERFALL) {
-        for (int i=0; i<dbRange; i++) {
-            painter.setPen(spectrumColors[i]);
-            painter.drawPoint(labelMid - 80 + i,labelRect.height()-2);
-            painter.drawPoint(labelMid - 80 + i,labelRect.height()-1);
-    }
-    }
-    painter.resetTransform();  //If we don't call this, translate gets confused
     painter.translate(plotFr.x(),plotFr.y());
 
 	//In case we try to paint beyond plotFrame, set this AFTER area outside plotFrame has been painted
@@ -586,7 +615,7 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 
 	//Experiments in averaging to smooth spectrum and waterfall
 	//Too much and we get mush
-	bool smoothing = true;
+    bool smoothing = true;
     if (demodMode == dmCWL|| demodMode == dmCWU)
 		smoothing = false; //We want crisp cw in waterfall
 
@@ -604,17 +633,6 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 		spectrum = averageSpectrum;
 	}
 
-    //plotArea has to be created after layout has done it's work, not in constructor
-    //Todo: Find a post layout event and more
-    if (plotArea == NULL) {
-        plotArea = new QPixmap(plotFr.width(),plotFr.height());
-        plotArea->fill(Qt::black);
-    } else if (plotArea->width() != plotFr.width() || plotArea->height() != plotFr.height()) {
-        //Window resized
-        delete plotArea;
-        plotArea = new QPixmap(plotFr.width(),plotFr.height());
-        plotArea->fill(Qt::black);
-    }
     QPainter plotPainter(plotArea);
 
     //Color code each bin and draw line
@@ -668,7 +686,7 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
         painter.drawPixmap(0,0,plotFr.width(),plotFr.height(),*plotArea);
 
         //Paint cursor last because painter changes - hack
-        paintCursor(Qt::black);
+        paintCursor(painter, Qt::black);
 
 
 	} else if (spectrumMode == SignalSpectrum::WATERFALL ||
@@ -700,7 +718,7 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
         painter.drawPixmap(0,0,plotFr.width(),plotFr.height(),*plotArea);
 
 		//Draw cursor on top of image
-        paintCursor(Qt::white);
+        paintCursor(painter, Qt::white);
 	}
 	else if (spectrumMode == SignalSpectrum::IQ || spectrumMode == SignalSpectrum::PHASE)
 	{
@@ -712,7 +730,7 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 		IPen.setColor(Qt::red);
 		QPen.setColor(Qt::blue);
 		//apply gain 0-50
-        int gain = (spectrumGain * 5000);
+        int gain = (spectrumGain * 1000);
 
 		//int offset = -25; //hack
         int offset = plotHeight * -0.5;
