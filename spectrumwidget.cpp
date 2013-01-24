@@ -73,10 +73,12 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 
     dbMax = 0;      //S Unit of 60 = -13db so we should never see greater than 0
     dbMin = -150; //Smallest value returned by fft->FreqDomainToMagnitude
+    dbRange = abs(dbMax - dbMin);
 
     //Spectrum power is converted to 8bit int for display
     //This array maps the colors for each power level
-    //Technique from CuteSDR
+    //Technique from CuteSDR to get a smooth color palette across the spectrum
+#if 0
     for( int i=0; i<256; i++)
     {
         if( (i<43) )
@@ -91,6 +93,51 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
             spectrumColors[i].setRgb( 255, 255 - (255*(i-154)/62), 0);
         if( (i>=217)  )
             spectrumColors[i].setRgb( 255, 0, 128*(i-217)/38);
+    }
+#endif
+
+    //Note:  Make sure that top range is less than dbRange
+    //Ranges do not have to be the same size
+    int range1 = 30;
+    int range2 = 40;
+    int range3 = 45;
+    int range4 = 50;
+    int range5 = 55;
+    int range6 = 60;
+    int range7 = 65;
+    int range8 = 70;
+    int range9 = 75;
+    int range10 = 80; //Everything > than this will be max db color
+
+    //Standard named colors
+    //black, blue, green, cyan, yellow, magenta, red
+
+    //Create color map from zero relative 0db to dbRange
+    spectrumColors = new QColor[dbRange];
+    for (int i=0; i<dbRange; i++) {
+        if (i < range1)
+            spectrumColors[i].setRgb(0,0,0); //Black
+        else if (i >= range1 && i < range2)
+            spectrumColors[i].setRgb(0,0,100);
+        else if (i >= range2 && i < range3)
+            spectrumColors[i].setRgb(0,0,255); //Blue
+        else if (i >= range3 && i < range4)
+            spectrumColors[i].setRgb(0,100,100); //Looking for blue/green
+        else if (i >= range4 && i < range5)
+            spectrumColors[i].setRgb(0,100,0); //Green
+        else if (i >= range5 && i < range6)
+            spectrumColors[i].setRgb(0,255,255); //Cyan
+        else if (i >= range6 && i < range7)
+            spectrumColors[i].setRgb(255,255,0); //Yellow
+        else if (i >= range7 && i < range8)
+            spectrumColors[i].setRgb(255,255,0); //Looking for yellow/orange
+        else if (i >= range8 && i < range9)
+            spectrumColors[i].setRgb(255,170,0); //Orange
+        else if (i >= range9 && i < range10)
+            spectrumColors[i].setRgb(255,0,0);
+        else if (i >= range10)
+            spectrumColors[i].setRgb(255,0,0); // Red
+
     }
 
     //Turns on mouse events without requiring button press
@@ -487,11 +534,11 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 
     //Draw spectrum colors centered at bottom of label pane
     if (spectrumMode == SignalSpectrum::WATERFALL) {
-        for (int i=0; i<256; i++) {
+        for (int i=0; i<dbRange; i++) {
             painter.setPen(spectrumColors[i]);
-            painter.drawPoint(labelMid - 128 + i,labelRect.height()-2);
-            painter.drawPoint(labelMid - 128 + i,labelRect.height()-1);
-        }
+            painter.drawPoint(labelMid - 80 + i,labelRect.height()-2);
+            painter.drawPoint(labelMid - 80 + i,labelRect.height()-1);
+    }
     }
     painter.resetTransform();  //If we don't call this, translate gets confused
     painter.translate(plotFr.x(),plotFr.y());
@@ -506,7 +553,6 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
      * dbZeroAdj is the amount we add to any db to make sure it's zero to dbRange
      */
     double dbZeroAdj = abs(dbMin); //Adj to get to zero base
-    double dbRange = abs(dbMax - dbMin);
     //qDebug("dbZero %f dbRange %f",dbZeroAdj, dbRange);
 
     //Scale dbRange to number of pixels we have
@@ -560,8 +606,11 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 
             //Make relative to zero.
             db = qBound(dbMin, db + spectrumOffset, dbMax);
-            db = qBound(0.0, db + dbZeroAdj, dbRange);  //ensure zero base
-            db = qBound(0.0, db * spectrumGain, dbRange);
+            db = qBound(0.0, db + dbZeroAdj, (double)dbRange);  //ensure zero base
+            db = qBound(0.0, db * spectrumGain, (double)dbRange);
+            //Experiment to use same colors as waterfall
+            //Too much color change to be useful, but maybe a single color change for strong signals?
+            //painter.setPen(spectrumColors[(int)db]);
 
             //Test
             //if (db < 0 || db > dbRange)
@@ -574,6 +623,7 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
             db = plotHeight - db; //Make rel to bottom of frame
             if (db > plotHeight)
                 db = plotHeight;  //Min
+
 
             painter.drawLine(plotX,plotHeight,plotX,db);
 		}
@@ -604,7 +654,6 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 
 		//Color code each bin and draw line
 		QColor plotColor;
-        int colorScale = (256/dbRange); //scale from dbRange to 0-255
 
 		for (int i=0; i<plotArea->width(); i++)
 		{
@@ -615,13 +664,10 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 
             //Make relative to zero.
             db = qBound(dbMin, db + spectrumOffset, dbMax);
-            db = qBound(0.0, db + dbZeroAdj, dbRange);  //ensure zero base
-            db = qBound(0.0, db * spectrumGain, dbRange);
+            db = qBound(0.0, db + dbZeroAdj, (double)dbRange);  //ensure zero base
+            db = qBound(0.0, db * spectrumGain, (double)dbRange);
 
-            db = qBound(0.0, db * colorScale, 255.0); //Force 0-255
-
-            int colorIndex = db;
-            plotColor = spectrumColors[colorIndex];
+            plotColor = spectrumColors[(int)db];
 
             plotPainter.setPen(plotColor);
             plotPainter.drawPoint(plotX,plotY);

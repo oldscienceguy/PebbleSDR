@@ -91,7 +91,9 @@ private:
 
     double dbMax;
     double dbMin;
-    QColor spectrumColors[256];
+    int dbRange;
+
+    QColor *spectrumColors;
 
     double GetMouseFreq();
     double GetXYFreq(int x, int y);
