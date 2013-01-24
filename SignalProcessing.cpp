@@ -44,12 +44,12 @@ float SignalProcessing::powerToDb(float p)
 {
     //For our purposes -127db is the lowest we'll ever see.  Handle special case of 0 directly
     if (p==0)
-        return -127;
+        return global->minDb;
 
 	//Std equation for decibles is A(db) = 10 * log10(P2/P1) where P1 is measured power and P2 is compared power
     //Voltage = 20 * log10(V2/V1)
 	//  + ALMOSTZERO avoid problem if p==0 but does not impact result
-    return  10.0 * log10(p + ALMOSTZERO);
+    return  qBound(global->minDb, 10.0 * log10(p + ALMOSTZERO), global->maxDb);
 }
 float SignalProcessing::dbToPower(float db)
 {
@@ -58,7 +58,7 @@ float SignalProcessing::dbToPower(float db)
 //Steven Smith pg 264
 float SignalProcessing::amplitudeToDb(float a)
 {
-	return 20.0 * log10(a + ALMOSTZERO);
+    return qBound(global->minDb, 20.0 * log10(a + ALMOSTZERO), global->maxDb);
 }
 //Steven Smith pg 264
 float SignalProcessing::dbToAmplitude(float db)
@@ -84,7 +84,7 @@ double SignalProcessing::watts_2_dBm(double watts)
 {
 	if (watts < 10.0e-32) 
 		watts = 10.0e-32;
-	return (10.0 * log10(watts)) + 30.0;
+    return qBound(global->minDb, (10.0 * log10(watts)) + 30.0, global->maxDb);
 }
 
 double SignalProcessing::dBm_2_RMSVolts(double dBm, double impedance)
@@ -290,9 +290,9 @@ void FFT::FreqDomainToMagnitude(CPX * freqBuf, int size, float baseline, float c
 	//Convert to db and order correctly
     //Limit output to -150db to 60db
 	for (int i=0, j = size/2; i < size/2; i++, j++) {
-        fbr[i] = qBound(-150.0, 10.0 * log10((buf[j]).sqrMag() + baseline) + correction, 60.0); //global->MIN_DB);
-
-        fbr[j] = qBound(-150.0, 10.0 * log10((buf[i]).sqrMag() + baseline) + correction, 60.0); //global->MIN_DB);
-
+//        fbr[i] = qBound(-150.0, 10.0 * log10((buf[j]).sqrMag() + baseline) + correction, 60.0); //global->MIN_DB);
+//        fbr[j] = qBound(-150.0, 10.0 * log10((buf[i]).sqrMag() + baseline) + correction, 60.0); //global->MIN_DB);
+        fbr[i] = SignalProcessing::powerToDb(buf[j].sqrMag() + baseline) + correction;
+        fbr[j] = SignalProcessing::powerToDb(buf[i].sqrMag() + baseline) + correction;;
     }
 }

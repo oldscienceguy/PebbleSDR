@@ -21,6 +21,9 @@ Global::Global()
     //SVN keyword substitution must be turned on for this to updated
     //Check in this file on every external release to update
     revision = "$Rev$";
+
+    minDb = -130; //Same as SpectraVue
+    maxDb = 10;
 }
 Global::~Global()
 {

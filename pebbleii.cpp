@@ -9,8 +9,8 @@ Global *global;
 PebbleII::PebbleII(QWidget *parent, Qt::WindowFlags flags)
 : QMainWindow(parent,flags)
 {
-	ui.setupUi(this);
-	global = new Global();
+    global = new Global(); //We need globals in constructors, so must be first thing we do
+    ui.setupUi(this);
 	receiver = new Receiver(ui.receiverUI, this);
     global->receiver = receiver; //Many classes need access
 
