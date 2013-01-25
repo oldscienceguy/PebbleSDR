@@ -51,7 +51,11 @@ int SoundCard::Start(int _inputSampleRate, int _outputSampleRate)
 
 	if (inputSampleRate != 0) {
 		//We're getting input from sound card
-        inParam->device = settings->inputDevice;
+        //inParam->device = settings->inputDevice;
+        inParam->device = FindDeviceByName(settings->inputDeviceName,true);
+        if (inParam->device < 0)
+            return 0;
+
         inParam->channelCount = 2;
         inParam->sampleFormat = sampleFormat;
         //Bug: crashes if latency anything except 0, looks like struct is getting corrupted
@@ -69,7 +73,11 @@ int SoundCard::Start(int _inputSampleRate, int _outputSampleRate)
 	}
 	//Can't think of a good reason why output rate would be zero, but ...
 	if (outputSampleRate != 0) {
-        outParam->device = settings->outputDevice;
+        //outParam->device = settings->outputDevice;
+        outParam->device = FindDeviceByName(settings->outputDeviceName,false);
+        if (outParam->device < 0)
+            return 0;
+
         outParam->channelCount = 2;
         outParam->sampleFormat = sampleFormat;
         //Bug: same as above
@@ -160,6 +168,29 @@ int SoundCard::DefaultOutputDevice()
 	return r;
 }
 
+int SoundCard::FindDeviceByName(QString name, bool inputDevice)
+{
+    QString di;
+    int apiCnt = Pa_GetHostApiCount();
+    const PaHostApiInfo *apiInfo;
+    const PaDeviceInfo *devInfo;
+
+    for (int i = 0; i < apiCnt; i++)
+    {
+        apiInfo = Pa_GetHostApiInfo(i);
+        for (int j=0; j < apiInfo->deviceCount; j++){
+            devInfo = Pa_GetDeviceInfo(j);
+            if ((inputDevice && devInfo->maxInputChannels > 1) || (!inputDevice && devInfo->maxOutputChannels > 0)){
+                //Must be EXACT format as returned by DeviceList, minus device index number
+                di = di.sprintf("%s:%s",apiInfo->name,devInfo->name);
+                if (di == name)
+                    return Pa_HostApiDeviceIndexToDeviceIndex(i,j); //Index
+            }
+        }
+    }
+    return -1; //Not found
+}
+
 //Returns a device list for UI
 //paDeviceIndex is returned in 1st 2 char, strip for UI
 //Todo: Write .txt file with all device info to help with debugging
@@ -199,6 +230,8 @@ QStringList SoundCard::DeviceList(bool typeInput)
                 }
                 else if(!typeInput && devInfo->maxOutputChannels > 1)
                 {
+                    //This is the fully qualified name that will be saved and used to find the same device
+                    //See FindDeviceByName()
                     di = di.sprintf("%2d:%s:%s",Pa_HostApiDeviceIndexToDeviceIndex(i,j),
                         apiInfo->name,devInfo->name);
                     devList << di;

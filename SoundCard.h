@@ -24,6 +24,9 @@ public:
 	void SendToOutput(CPX *);
 	void ClearCounts();
 
+    //Return device index for matching device
+    int FindDeviceByName(QString name, bool inputDevice);
+
 	//Returns a list of input devices for settings to chose from
 	static QStringList DeviceList(bool inputDevice);
 	static int DefaultOutputDevice();
