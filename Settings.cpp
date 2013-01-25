@@ -300,12 +300,14 @@ void Settings::SetOptionsForSDR(int s)
     sd->sourceBox1->blockSignals(true);
     sd->sourceBox1->clear();
     int id;
+    QString dn;
     //Input devices may be restricted form some SDRs
     for (int i=0; i<inputDevices.count(); i++)
     {
         id = inputDevices[i].left(2).toInt();
-        sd->sourceBox1->addItem(inputDevices[i].mid(3),id);
-        if (id == ini_inputDevice[s])
+        dn = inputDevices[i].mid(3);
+        sd->sourceBox1->addItem(dn, id);
+        if (dn == ini_inputDeviceName[s])
             sd->sourceBox1->setCurrentIndex(i);
     }
     sd->sourceBox1->blockSignals(false);
@@ -315,8 +317,9 @@ void Settings::SetOptionsForSDR(int s)
     for (int i=0; i<outputDevices.count(); i++)
     {
         id = outputDevices[i].left(2).toInt();
-        sd->outputBox1->addItem(outputDevices[i].mid(3),id);
-        if (id == ini_outputDevice[s])
+        dn = outputDevices[i].mid(3);
+        sd->outputBox1->addItem(dn, id);
+        if (dn == ini_outputDeviceName[s])
             sd->outputBox1->setCurrentIndex(i);
     }
     sd->outputBox1->blockSignals(false);
@@ -415,17 +418,17 @@ void Settings::ReadSettings()
 
 	lastFreq = qSettings->value("LastFreq", 10000000).toDouble();
 
-    ini_inputDevice[0] = qSettings->value("InputDevice1", SoundCard::DefaultInputDevice()).toInt();
-    ini_inputDevice[1] = qSettings->value("InputDevice2", SoundCard::DefaultInputDevice()).toInt();
-    ini_inputDevice[2] = qSettings->value("InputDevice3", SoundCard::DefaultInputDevice()).toInt();
-    ini_inputDevice[3] = qSettings->value("InputDevice4", SoundCard::DefaultInputDevice()).toInt();
-    inputDevice = ini_inputDevice[selectedSDR];
+    ini_inputDeviceName[0] = qSettings->value("InputDeviceName1", "").toString();
+    ini_inputDeviceName[1] = qSettings->value("InputDeviceName2", "").toString();
+    ini_inputDeviceName[2] = qSettings->value("InputDeviceName3", "").toString();
+    ini_inputDeviceName[3] = qSettings->value("InputDeviceName4", "").toString();
+    inputDeviceName = ini_inputDeviceName[selectedSDR];
 
-    ini_outputDevice[0] = qSettings->value("OutputDevice1", SoundCard::DefaultOutputDevice()).toInt();
-    ini_outputDevice[1] = qSettings->value("OutputDevice2", SoundCard::DefaultOutputDevice()).toInt();
-    ini_outputDevice[2] = qSettings->value("OutputDevice3", SoundCard::DefaultOutputDevice()).toInt();
-    ini_outputDevice[3] = qSettings->value("OutputDevice4", SoundCard::DefaultOutputDevice()).toInt();
-    outputDevice = ini_outputDevice[selectedSDR];
+    ini_outputDeviceName[0] = qSettings->value("OutputDeviceName1", "").toString();
+    ini_outputDeviceName[1] = qSettings->value("OutputDeviceName2", "").toString();
+    ini_outputDeviceName[2] = qSettings->value("OutputDeviceName3", "").toString();
+    ini_outputDeviceName[3] = qSettings->value("OutputDeviceName4", "").toString();
+    outputDeviceName = ini_outputDeviceName[selectedSDR];
 
     ini_sampleRate[0] = qSettings->value("SampleRate1", 48000).toInt();
     ini_sampleRate[1] = qSettings->value("SampleRate2", 48000).toInt();
@@ -492,10 +495,10 @@ void Settings::SaveSettings(bool b)
     //SelectedSdr is already set, save current values
 
     cur = sd->sourceBox1->currentIndex();
-    ini_inputDevice[selectedSDR] = sd->sourceBox1->itemData(cur).toInt();
+    ini_inputDeviceName[selectedSDR] = sd->sourceBox1->itemText(cur);
 
     cur = sd->outputBox1->currentIndex();
-    ini_outputDevice[selectedSDR] = sd->outputBox1->itemData(cur).toInt();
+    ini_outputDeviceName[selectedSDR] = sd->outputBox1->itemText(cur);
 
     cur = sd->receiverBox1->currentIndex();
     ini_sdrDevice[0] = (SDR::SDRDEVICE)sd->receiverBox1->itemData(cur).toInt();
@@ -544,15 +547,16 @@ void Settings::WriteSettings()
     qSettings->setValue("StartupFreq4",ini_startupFreq[3]);
 
 	qSettings->setValue("LastFreq",lastFreq);
-    qSettings->setValue("InputDevice1", ini_inputDevice[0]);
-    qSettings->setValue("InputDevice2", ini_inputDevice[1]);
-    qSettings->setValue("InputDevice3", ini_inputDevice[2]);
-    qSettings->setValue("InputDevice4", ini_inputDevice[3]);
 
-    qSettings->setValue("OutputDevice1", ini_outputDevice[0]);
-    qSettings->setValue("OutputDevice2", ini_outputDevice[1]);
-    qSettings->setValue("OutputDevice3", ini_outputDevice[2]);
-    qSettings->setValue("OutputDevice4", ini_outputDevice[3]);
+    qSettings->setValue("InputDeviceName1", ini_inputDeviceName[0]);
+    qSettings->setValue("InputDeviceName2", ini_inputDeviceName[1]);
+    qSettings->setValue("InputDeviceName3", ini_inputDeviceName[2]);
+    qSettings->setValue("InputDeviceName4", ini_inputDeviceName[3]);
+
+    qSettings->setValue("OutputDeviceName1", ini_outputDeviceName[0]);
+    qSettings->setValue("OutputDeviceName2", ini_outputDeviceName[1]);
+    qSettings->setValue("OutputDeviceName3", ini_outputDeviceName[2]);
+    qSettings->setValue("OutputDeviceName4", ini_outputDeviceName[3]);
 
     qSettings->setValue("sdrDevice1",ini_sdrDevice[0]);
     qSettings->setValue("sdrDevice2",ini_sdrDevice[1]);

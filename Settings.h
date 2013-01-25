@@ -26,8 +26,8 @@ public:
 	double lastFreq;
 	int lastMode;
 	int lastDisplayMode; //Spectrum, waterfall, etc
-	int inputDevice;
-	int outputDevice;
+    QString inputDeviceName;
+    QString outputDeviceName;
 	int sampleRate;
 	//If Output Sample Rate is above this, then we try to reduce it by skipping samples when we output
 	int decimateLimit;
@@ -76,8 +76,8 @@ private:
     int ini_sampleRate[4];
     STARTUP ini_startup[4];
     double ini_startupFreq[4];
-    int ini_inputDevice[4];
-    int ini_outputDevice[4];
+    QString ini_inputDeviceName[4];
+    QString ini_outputDeviceName[4];
     double ini_iqGain[4];
     IQORDER ini_iqOrder[4];
     double ini_iqBalanceGain[4];
