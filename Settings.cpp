@@ -138,7 +138,8 @@ void Settings::SetupRecieverBox(QComboBox *receiverBox)
     receiverBox->addItem("SR V9-ABPF",SDR::SR_V9);
     receiverBox->addItem("SR LITE II",SDR::SR_LITE);
     receiverBox->addItem("Elektor SDR",SDR::ELEKTOR);
-    receiverBox->addItem("RFSpace SDR-IQ",SDR::SDR_IQ);
+    receiverBox->addItem("RFSpace SDR-IQ",SDR::SDR_IQ_USB);
+    receiverBox->addItem("RFSpace SDR-IP",SDR::SDR_IP_TCP);
     receiverBox->addItem("HPSDR USB",SDR::HPSDR_USB);
     //receiverBox->addItem("HPSDR TCP",SDR::HPSDR_TCP);
     receiverBox->addItem("SDR Widget",SDR::SDRWIDGET);

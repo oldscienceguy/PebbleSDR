@@ -78,11 +78,13 @@ SDR *SDR::Factory(Receiver *receiver, Settings *settings)
 	case SDR::ELEKTOR_PA:
 		sdr = new ElektorSDR(receiver, SDR::ELEKTOR_PA,settings);
 		break;
-	case SDR::SDR_IQ:
-		//Todo: Enum is conflicting with class, rename one or the other
-		sdr = new SDR_IQ::SDR_IQ(receiver, SDR::SDR_IQ,settings);
+    case SDR::SDR_IQ_USB:
+        sdr = new SDR_IQ(receiver, SDR::SDR_IQ_USB,settings);
 		break;
-	case SDR::HPSDR_USB:
+    case SDR::SDR_IP_TCP:
+        sdr = new SDR_IQ(receiver, SDR::SDR_IP_TCP,settings);
+        break;
+    case SDR::HPSDR_USB:
 		sdr = new HPSDR(receiver, SDR::HPSDR_USB,settings);
 		break;
 	case SDR::SDRWIDGET:

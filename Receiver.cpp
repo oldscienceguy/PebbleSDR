@@ -187,7 +187,7 @@ bool Receiver::Off()
 	powerOn = false;
 
 	//Carefull with order of shutting down
-	if (settings->sdrDevice == SDR::SDR_IQ) {
+    if (settings->sdrDevice == SDR::SDR_IQ_USB) {
 	}
 	//Stop incoming samples first
 	if (sdr != NULL)
