@@ -12,6 +12,7 @@ FTDI DLL is also used for Elektor SDR
 #include <QMutex>
 #include <QSemaphore>
 #include <QSettings>
+#include <QtNetwork>
 #include "sdr.h"
 #include "cpx.h"
 #include "ui/ui_sdriqoptions.h"
@@ -128,6 +129,9 @@ public:
 		void rfGainChanged(int i);
 		void ifGainChanged(int i);
 		void bandwidthChanged(int i);
+        //SDR_IP
+        void tcpData();
+        void tcpError(QAbstractSocket::SocketError error);
 
 
 private:
@@ -192,6 +196,12 @@ private:
 	int sBandwidth;
 	int sRFGain;
 	int sIFGain;
+
+    //SDR_IP specif
+    QTcpSocket *tcpSocket;
+    QNetworkSession *networkSession;
+
+    int Read(BYTE *buf, unsigned int numBytes);
 
 
 };

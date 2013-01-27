@@ -3,8 +3,9 @@
 #include "SDR_IQ.h"
 #include "settings.h"
 #include "receiver.h"
-#include "qmessagebox.h"
+#include <QMessageBox>
 
+//Supports SDR_IQ AND SDR_IP
 SDR_IQ::SDR_IQ(Receiver *_receiver, SDRDEVICE dev,Settings *settings):SDR(_receiver, dev,settings)
 {
 	QString path = QCoreApplication::applicationDirPath();
@@ -13,22 +14,43 @@ SDR_IQ::SDR_IQ(Receiver *_receiver, SDRDEVICE dev,Settings *settings):SDR(_recei
         path.chop(25);
 #endif
 
-    qSettings = new QSettings(path+"/PebbleData/sdriq.ini",QSettings::IniFormat);
+    if (dev == SDR::SDR_IQ_USB)
+        qSettings = new QSettings(path+"/PebbleData/sdriq.ini",QSettings::IniFormat);
+    else
+        qSettings = new QSettings(path+"/PebbleData/sdrip.ini",QSettings::IniFormat);
+
 	ReadSettings();
 
+    tcpSocket = NULL;
 	ftHandle = NULL;
 	sdrIQOptions = NULL;
 	inBuffer = NULL;
 	outBuffer = NULL;
     readBuf = producerReadBuf = NULL;
 	isThreadRunning = false;
+    if (dev == SDR::SDR_IQ_USB) {
+        if (!isFtdiLoaded) {
+            if (!USBUtil::LoadFtdi()) {
+                QMessageBox::information(NULL,"Pebble","ftd2xx.dll could not be loaded.  SDR-IQ communication is disabled.");
+                return;
+            }
+            isFtdiLoaded = true;
+        }
+    } else {
+        tcpSocket = new QTcpSocket(this);
+        if (tcpSocket == NULL)
+            return;
+        //Callback for data from TCP Server
+        connect(tcpSocket, SIGNAL(readyRead()), this, SLOT(tcpData()));
+        //Callback for errors from TCP Server
+        connect(tcpSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(tcpError(QAbstractSocket::SocketError)));
+        //Try connecting
+        tcpSocket->connectToHost("192.168.0.221",50000);
+        if (tcpSocket->waitForConnected(5000)) {
+            RequestTargetName(); //Test
 
-	if (!isFtdiLoaded) {
-        if (!USBUtil::LoadFtdi()) {
-			QMessageBox::information(NULL,"Pebble","ftd2xx.dll could not be loaded.  SDR-IQ communication is disabled.");
-			return;
-		}
-        isFtdiLoaded = true;
+        }
+
     }
 
     dataBuf = new short *[numDataBufs];
@@ -191,12 +213,10 @@ bool SDR_IQ::Connect()
     //Testing: Increase size of internal buffers from default 4096
     //ftStatus = FT_SetUSBParameters(ftHandle,8192,8192);
 
-
     //SDR sends a 0 on startup, clear it out of buffer
-	DWORD bytesReturned;
-	ftStatus = FT_Read(ftHandle,readBuf,1,&bytesReturned);
-    if (ftStatus != FT_OK) //Don't care how many bytes actually got read
-        return false;
+    int numBytes;
+    numBytes = Read(readBuf,1);
+    //Don't care how many bytes actually got read
 
 	return true;
 }
@@ -240,8 +260,6 @@ QString SDR_IQ::GetDeviceName()
 //Control Item Code 0x0001
 bool SDR_IQ::RequestTargetName()
 {
-	if (!isFtdiLoaded)
-		return false;
 
 	targetName = "Pending";
 	FT_STATUS ftStatus;
@@ -250,9 +268,19 @@ bool SDR_IQ::RequestTargetName()
 	BYTE writeBuf[4] = { 0x04, 0x20, 0x01, 0x00 };
 	DWORD bytesWritten;
 	//Ask for data
-	ftStatus = FT_Write(ftHandle,(LPVOID)writeBuf,sizeof(writeBuf),&bytesWritten);
-	if (ftStatus != FT_OK)
-		return false;
+    if (sdrDevice == SDR::SDR_IQ_USB) {
+        if (!isFtdiLoaded)
+            return false;
+
+        ftStatus = FT_Write(ftHandle,(LPVOID)writeBuf,sizeof(writeBuf),&bytesWritten);
+        if (ftStatus != FT_OK)
+            return false;
+    } else {
+        bytesWritten = tcpSocket->write((const char*)writeBuf,sizeof(writeBuf));
+        if (bytesWritten != sizeof(writeBuf))
+            return false;
+        return true; //We assume it succeeded and will catch error in tcpError()
+    }
 	return true;
 }
 //Same pattern as TargetName
@@ -654,6 +682,30 @@ unsigned SDR_IQ::StopCapture()
 	return 0;
 }
 
+//Utility Functions to allow common code for USB and TCP
+int SDR_IQ::Read(BYTE *buf, unsigned int numBytes)
+{
+    unsigned int bytesRead;
+    if (sdrDevice == SDR_IQ_USB) {
+        FT_STATUS ftStatus;
+        if (!isFtdiLoaded)
+            return -1;
+
+        ftStatus = FT_Read(ftHandle, buf, numBytes, &bytesRead);
+        if (ftStatus != FT_OK || bytesRead != numBytes)
+            return -1; //Error
+    } else {
+        if (tcpSocket == NULL)
+            return -1;
+
+        bytesRead = tcpSocket->read((char*)buf,numBytes);
+        if (bytesRead != numBytes)
+            return -1;
+
+    }
+    return bytesRead;
+}
+
 //Called from Producer thread
 //Returns bytesReturned or -1 if error
 int SDR_IQ::ReadResponse(int expectedType)
@@ -664,22 +716,20 @@ int SDR_IQ::ReadResponse(int expectedType)
 	//mutex.lock();
     FT_STATUS ftStatus;
 
-	DWORD bytesReturned;
+    int bytesReturned;
 
 	//FT_Read blocks until bytes are ready or timeout, which wastes time
 	//Check to make sure we've got bytes ready before proceeding
-	ftStatus = FT_GetQueueStatus(ftHandle,&bytesReturned);
+    ftStatus = FT_GetQueueStatus(ftHandle,(unsigned int*)&bytesReturned);
 	if (ftStatus != FT_OK || bytesReturned < 2)
         //We get a lot of this initially as there's no data to return until rcv gets set up
 		return 0;
 
 	//Note, this assumes that we're in sync with stream
 	//Read 16 bit Header which contains message length and type
-    ftStatus = FT_Read(ftHandle, producerReadBuf, 2, &bytesReturned);
-	if (ftStatus != FT_OK || bytesReturned != 2){
-		//mutex.unlock();
-		return -1;
-	}
+    bytesReturned = Read(producerReadBuf,2);
+    if (bytesReturned != 2)
+        return -1;
 
 	//Get 13bit message length, mask 3 high order bits of 2nd byte
     //Example from problem response rb = 0x01 0x03
@@ -699,9 +749,8 @@ int SDR_IQ::ReadResponse(int expectedType)
         //This will block if we don't have any free data buffers to use, pending consumer thread releasing
         semNumFreeBuffers->acquire();
 
-        ftStatus = FT_Read(ftHandle,dataBuf[nextProducerDataBuf],length,&bytesReturned);
-
-        if (ftStatus != FT_OK || bytesReturned != 8192) {
+        bytesReturned = Read((BYTE *)dataBuf[nextProducerDataBuf],length);
+        if (bytesReturned != 8192) {
             //Lost data
             semNumFreeBuffers->release(); //Put back what we acquired
             return -1;
@@ -727,9 +776,8 @@ int SDR_IQ::ReadResponse(int expectedType)
     //FT_Read fails in this case because there are actually no more bytes to read
     //See if we this is ack, nak, or something else that needs special casing
     //Trace back and see what last FT_Write was?
-    ftStatus = FT_Read(ftHandle, producerReadBuf, length, &bytesReturned);
-
-	if (ftStatus != FT_OK || bytesReturned != (unsigned)length){
+    bytesReturned = Read(producerReadBuf, length);
+    if (bytesReturned != (unsigned)length){
 		//mutex.unlock();
         return -1;
 	}
@@ -744,7 +792,7 @@ int SDR_IQ::ReadResponse(int expectedType)
 		{
 		case 0x0001: //Target Name
             targetName = QString((char*)&producerReadBuf[2]);
-			break;
+            break;
 		case 0x0002: //Serial Number
             serialNumber = QString((char*)&producerReadBuf[2]);
 			break;
@@ -885,12 +933,11 @@ void SDR_IQ::FlushDataBlocks()
 	if (!isFtdiLoaded)
 		return;
 
-    FT_STATUS ftStatus;
-    DWORD bytesReturned = 0;
+    int bytesReturned = 0;
 
     do
-        ftStatus = FT_Read(ftHandle, readBuf, 1, &bytesReturned);
-    while (ftStatus == FT_OK && bytesReturned > 0);
+        bytesReturned = Read(readBuf, 1);
+    while (bytesReturned > 0);
 }
 
 void SDR_IQ::StopProducerThread()
@@ -953,8 +1000,76 @@ void SDR_IQ::bandwidthChanged(int i)
 		bandwidth = SDR_IQ::BW190K;
 		break;
 	}
-	sBandwidth = bandwidth; //If settings are saved, this is saved
+    sBandwidth = bandwidth; //If settings are saved, this is saved
 }
+
+void SDR_IQ::tcpData()
+{
+    //This will get called asynchonously with full or partial data
+    //so we need some sort of state machine to keep track of what we're looking for
+
+    //Note, this assumes that we're in sync with stream
+    //Read 16 bit Header which contains message length and type
+    int bytesAvailable = tcpSocket->bytesAvailable();
+    int bytesRead;
+    if (bytesAvailable >= 2) {
+        bytesRead = tcpSocket->read((char *)producerReadBuf, 2);
+        //Get 13bit message length, mask 3 high order bits of 2nd byte
+        //Example from problem response rb = 0x01 0x03
+        //rb[0] = 0000 0001 rb[1] = 000 0011
+        //type is 0 and length is 769
+        int type = producerReadBuf[1]>>5; //Get 3 high order bits
+        int length = producerReadBuf[0] + (producerReadBuf[1] & 0x1f) * 0x100;
+        bytesRead = tcpSocket->read((char*)producerReadBuf,length);
+
+        int itemCode = producerReadBuf[0] | producerReadBuf[1]<<8;
+        if (type == 0 && itemCode == 1)
+            targetName = QString((char*)&producerReadBuf[2]);
+        //qDebug("%s",targetName);
+    }
+
+#if 0
+    QDataStream in(tcpSocket);
+    in.setVersion(QDataStream::Qt_4_0);
+
+    if (blockSize == 0) {
+        if (tcpSocket->bytesAvailable() < (int)sizeof(quint16))
+            return;
+
+        in >> blockSize;
+    }
+
+    if (tcpSocket->bytesAvailable() < blockSize)
+        return;
+#endif
+}
+
+void SDR_IQ::tcpError(QAbstractSocket::SocketError error)
+{
+    switch (error) {
+    case QAbstractSocket::RemoteHostClosedError:
+        break;
+    case QAbstractSocket::HostNotFoundError:
+        QMessageBox::information(NULL, tr("Pebble"),
+                                 tr("The host was not found. Please check the "
+                                    "host name and port settings."));
+        break;
+    case QAbstractSocket::ConnectionRefusedError:
+        QMessageBox::information(NULL, tr("Pebble"),
+                                 tr("The connection was refused by the server. "
+                                    "Make sure SDR_IP is running, "
+                                    "and check that the host name and port "
+                                    "settings are correct."));
+        break;
+    default:
+        QMessageBox::information(NULL, tr("Pebble"),
+                                 tr("The following error occurred: %1.")
+                                 .arg(tcpSocket->errorString()));
+    }
+
+
+}
+
 void SDR_IQ::ShowOptions()
 {
     QFont smFont = settings->smFont;
