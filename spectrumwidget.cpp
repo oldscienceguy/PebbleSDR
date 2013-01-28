@@ -640,7 +640,8 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 
 	if (spectrumMode == SignalSpectrum::SPECTRUM)
 	{
-        plotArea->fill(Qt::lightGray); //Erase to background color each time
+        //plotArea->fill(Qt::lightGray); //Erase to background color each time
+        plotArea->fill(QColor("light yellow")); //Looks better and easier to see
         //BUG: Won't handle case where we have more pixels than samples
         int lastX = 0;
         int lastY = 0;
