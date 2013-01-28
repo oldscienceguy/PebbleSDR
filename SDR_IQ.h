@@ -198,11 +198,14 @@ private:
 	int sIFGain;
 
     //SDR_IP specif
-    QTcpSocket *tcpSocket;
-    QNetworkSession *networkSession;
+    QTcpSocket *tcpSocket; //Commands and return values
+    QUdpSocket *udpSocket; //I/Q data
+    QNetworkSession *networkSession; //Not using this, research
 
+    qint64 Peek(BYTE *buf, unsigned int numBytes);
     int Read(BYTE *buf, unsigned int numBytes);
-
+    int Write(BYTE *buf,unsigned int numBytes);
+    bool TransportOk();
 
 };
 

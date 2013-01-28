@@ -38,19 +38,20 @@ SDR_IQ::SDR_IQ(Receiver *_receiver, SDRDEVICE dev,Settings *settings):SDR(_recei
         }
     } else {
         tcpSocket = new QTcpSocket(this);
-        if (tcpSocket == NULL)
+        if (tcpSocket == NULL) {
+            QMessageBox::information(NULL,"Pebble","TCP socket could not be created.");
             return;
-        //Callback for data from TCP Server
-        connect(tcpSocket, SIGNAL(readyRead()), this, SLOT(tcpData()));
-        //Callback for errors from TCP Server
-        connect(tcpSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(tcpError(QAbstractSocket::SocketError)));
-        //Try connecting
-        tcpSocket->connectToHost("192.168.0.221",50000);
-        if (tcpSocket->waitForConnected(5000)) {
-            RequestTargetName(); //Test
-
+        }
+        udpSocket = new QUdpSocket(this);
+        if (udpSocket == NULL) {
+            QMessageBox::information(NULL,"Pebble","UDP socket could not be created.");
+            return;
         }
 
+        //Callback for data from TCP Server
+        //connect(tcpSocket, SIGNAL(readyRead()), this, SLOT(tcpData()));
+        //Callback for errors from TCP Server
+        //connect(tcpSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(tcpError(QAbstractSocket::SocketError)));
     }
 
     dataBuf = new short *[numDataBufs];
@@ -83,6 +84,8 @@ SDR_IQ::~SDR_IQ(void)
 	//Let FTDI DLL know we're done, otherwise we won't be able to re-open same device in this session
 	if (ftHandle != NULL)
 		FT_Close(ftHandle);
+    if (tcpSocket != NULL)
+        tcpSocket->close();
 
 	if (inBuffer != NULL)
 		CPXBuf::free(inBuffer);
@@ -128,7 +131,7 @@ void SDR_IQ::WriteSettings()
 
 void SDR_IQ::Start()
 {
-	if (!isFtdiLoaded)
+    if (!TransportOk())
 		return;
 
     //Start out with all producer buffers available
@@ -155,18 +158,19 @@ void SDR_IQ::Start()
     FlushDataBlocks();
 
 	//Get basic Device Information for later use, name, version, etc
+    //BUG: These are NOT returning and data
 	bool result = RequestTargetName();
-	result = RequestTargetSerialNumber();
-	result = RequestFirmwareVersion();
-	result = RequestBootcodeVersion();
-	result = RequestInterfaceVersion();
+    result = RequestTargetSerialNumber();
+    result = RequestFirmwareVersion();
+    result = RequestBootcodeVersion();
+    result = RequestInterfaceVersion();
 
 	//Set IF Gain, 0,+6, +12,+18,+24
-	SetIFGain(sIFGain);
+    SetIFGain(sIFGain);
 
 	//RFGain MUST be set to something when we power up or we get no data in buffer
 	//RFGain is actually an attenuator
-	SetRFGain(sRFGain);
+    SetRFGain(sRFGain);
 
 	//Finally ready to start getting data samples
     StartCapture();
@@ -174,7 +178,7 @@ void SDR_IQ::Start()
 }
 void SDR_IQ::Stop()
 {
-	if (!isFtdiLoaded)
+    if (!TransportOk())
 		return;
 
 	if (isThreadRunning) {
@@ -187,42 +191,64 @@ void SDR_IQ::Stop()
 }
 bool SDR_IQ::Connect()
 {
-	if (!isFtdiLoaded)
+    if (!TransportOk())
 		return false;
 
-	FT_STATUS ftStatus;
+    if (sdrDevice == SDR::SDR_IQ_USB) {
+        FT_STATUS ftStatus;
 
-    int deviceNumber = USBUtil::FTDI_FindDeviceByName("SDR-IQ");
-	if (deviceNumber == -1)
-		return false;
+        int deviceNumber = USBUtil::FTDI_FindDeviceByName("SDR-IQ");
+        if (deviceNumber == -1)
+            return false;
 
-	//Open device
-	if (ftHandle == NULL) 
-	{
-		ftStatus = FT_Open(deviceNumber,&ftHandle);
-		if (ftStatus != FT_OK) {
-			//commError(ftStatus);
-			return false; // FT_Open failed
-		}
-	}
+        //Open device
+        if (ftHandle == NULL)
+        {
+            ftStatus = FT_Open(deviceNumber,&ftHandle);
+            if (ftStatus != FT_OK) {
+                //commError(ftStatus);
+                return false; // FT_Open failed
+            }
+        }
 
-    ftStatus = FT_ResetDevice(ftHandle);
-	//Make sure driver buffers are empty
-    ftStatus = FT_Purge(ftHandle,FT_PURGE_RX | FT_PURGE_TX);
-    ftStatus = FT_SetTimeouts(ftHandle,500,500);
-    //Testing: Increase size of internal buffers from default 4096
-    //ftStatus = FT_SetUSBParameters(ftHandle,8192,8192);
+        ftStatus = FT_ResetDevice(ftHandle);
+        //Make sure driver buffers are empty
+        ftStatus = FT_Purge(ftHandle,FT_PURGE_RX | FT_PURGE_TX);
+        ftStatus = FT_SetTimeouts(ftHandle,500,500);
+        //Testing: Increase size of internal buffers from default 4096
+        //ftStatus = FT_SetUSBParameters(ftHandle,8192,8192);
 
-    //SDR sends a 0 on startup, clear it out of buffer
-    int numBytes;
-    numBytes = Read(readBuf,1);
-    //Don't care how many bytes actually got read
+        //SDR sends a 0 on startup, clear it out of buffer
+        int numBytes;
+        numBytes = Read(readBuf,1);
+        //Don't care how many bytes actually got read
 
-	return true;
+        return true;
+    } else {
+        //Try connecting
+        tcpSocket->connectToHost("192.168.0.221",50000);  //From settings?
+        if (tcpSocket->waitForConnected(1000)) {
+            //Got TCP, now UDP
+            udpSocket->connectToHost("192.168.0.221",50000);
+            if (udpSocket->waitForConnected(1000)) {
+                //RequestTargetName(); //Test
+                return true;
+            }
+        }
+        return false;
+    }
 }
 bool SDR_IQ::Disconnect()
 {
-	return true;
+    if (sdrDevice == SDR::SDR_IQ_USB)
+        return true;
+    else {
+        tcpSocket->disconnectFromHost();
+        bool b1 = tcpSocket->waitForDisconnected(1000);
+        udpSocket->disconnectFromHost();
+        bool b2 = udpSocket->waitForDisconnected(1000);
+        return b1 && b2;
+    }
 }
 
 double SDR_IQ::GetStartupFrequency()
@@ -252,7 +278,10 @@ double SDR_IQ::GetGain()
 
 QString SDR_IQ::GetDeviceName()
 {
-	return "RFSpace SDR-IQ";
+    if (sdrDevice == SDR::SDR_IQ_USB)
+        return "RFSpace SDR-IQ";
+    else
+        return "RFSpace SDR-IP";
 }
 
 
@@ -262,137 +291,97 @@ bool SDR_IQ::RequestTargetName()
 {
 
 	targetName = "Pending";
-	FT_STATUS ftStatus;
 	//0x04, 0x20 is the request command
 	//0x01, 0x00 is the Control Item Code (command)
 	BYTE writeBuf[4] = { 0x04, 0x20, 0x01, 0x00 };
-	DWORD bytesWritten;
+    int bytesWritten;
 	//Ask for data
-    if (sdrDevice == SDR::SDR_IQ_USB) {
-        if (!isFtdiLoaded)
-            return false;
-
-        ftStatus = FT_Write(ftHandle,(LPVOID)writeBuf,sizeof(writeBuf),&bytesWritten);
-        if (ftStatus != FT_OK)
-            return false;
-    } else {
-        bytesWritten = tcpSocket->write((const char*)writeBuf,sizeof(writeBuf));
-        if (bytesWritten != sizeof(writeBuf))
-            return false;
-        return true; //We assume it succeeded and will catch error in tcpError()
-    }
+    bytesWritten = Write(writeBuf,sizeof(writeBuf));
+    if (bytesWritten < 0)
+        return false;
 	return true;
 }
 //Same pattern as TargetName
 bool SDR_IQ::RequestTargetSerialNumber()
 {
-	if (!isFtdiLoaded)
-		return false;
-
 	serialNumber = "Pending";
-	FT_STATUS ftStatus;
 	BYTE writeBuf[4] = { 0x04, 0x20, 0x02, 0x00 };
-	DWORD bytesWritten;
-	ftStatus = FT_Write(ftHandle,(LPVOID)writeBuf,sizeof(writeBuf),&bytesWritten);
-	if (ftStatus != FT_OK)
+    int bytesWritten;
+    bytesWritten = Write(writeBuf,sizeof(writeBuf));
+    if (bytesWritten < 0)
 		return false;
 	return true;
 }
 bool SDR_IQ::RequestInterfaceVersion()
 {
-	if (!isFtdiLoaded)
-		return false;
-
 	interfaceVersion = 0;
-	FT_STATUS ftStatus;
 	BYTE writeBuf[4] = { 0x04, 0x20, 0x03, 0x00 };
-	DWORD bytesWritten;
-	ftStatus = FT_Write(ftHandle,(LPVOID)writeBuf,sizeof(writeBuf),&bytesWritten);
-	if (ftStatus != FT_OK)
+    int bytesWritten;
+    bytesWritten = Write(writeBuf,sizeof(writeBuf));
+    if (bytesWritten < 0)
 		return false;
 	else
 		return true;
 }
 bool SDR_IQ::RequestFirmwareVersion()
 {
-	if (!isFtdiLoaded)
-		return false;
-
 	firmwareVersion = 0;
-	FT_STATUS ftStatus;
 	BYTE writeBuf[5] = { 0x05, 0x20, 0x04, 0x00, 0x01 };
-	DWORD bytesWritten;
-	ftStatus = FT_Write(ftHandle,(LPVOID)writeBuf,sizeof(writeBuf),&bytesWritten);
-	if (ftStatus != FT_OK)
+    int bytesWritten;
+    bytesWritten = Write(writeBuf,sizeof(writeBuf));
+    if (bytesWritten < 0)
 		return false;
 
 	return true;
 }
 bool SDR_IQ::RequestBootcodeVersion()
 {
-	if (!isFtdiLoaded)
-		return false;
-
 	bootcodeVersion = 0;
-	FT_STATUS ftStatus;
 	BYTE writeBuf[5] = { 0x05, 0x20, 0x04, 0x00, 0x00 };
-	DWORD bytesWritten;
-	ftStatus = FT_Write(ftHandle,(LPVOID)writeBuf,sizeof(writeBuf),&bytesWritten);
-	if (ftStatus != FT_OK)
+    int bytesWritten;
+    bytesWritten = Write(writeBuf,sizeof(writeBuf));
+    if (bytesWritten < 0)
 		return false;
 	return true;
 }
 unsigned SDR_IQ::StatusCode()
 {
-	if (!isFtdiLoaded)
-		return false;
-
-	FT_STATUS ftStatus;
 	BYTE writeBuf[4] = { 0x04, 0x20, 0x05, 0x00};
-	DWORD bytesWritten;
-	ftStatus = FT_Write(ftHandle,(LPVOID)writeBuf,sizeof(writeBuf),&bytesWritten);
-	if (ftStatus != FT_OK)
+    int bytesWritten;
+    bytesWritten = Write(writeBuf,sizeof(writeBuf));
+    if (bytesWritten < 0)
 		return -1;
 
 	return 0;
 }
-//Call may not be working right in SDR-IQ
+//Call may not be working right in SDR-IQ and not listed in SDR-IP
 QString SDR_IQ::StatusString(BYTE code)
 {
-	if (!isFtdiLoaded)
-		return "Error";
-
-	FT_STATUS ftStatus;
+#if 0
 	BYTE writeBuf[5] = { 0x05, 0x20, 0x06, 0x00, code};
 	DWORD bytesWritten;
-	ftStatus = FT_Write(ftHandle,(LPVOID)writeBuf,sizeof(writeBuf),&bytesWritten);
-	if (ftStatus != FT_OK)
+    bytesWritten = Write(writeBuf,sizeof(writeBuf));
+    if (bytesWritten < 0)
 		return "";
+#endif
 	return "TBD";
 }
 double SDR_IQ::GetFrequency()
 {
-	if (!isFtdiLoaded)
-		return -1;
-
-	FT_STATUS ftStatus;
 	BYTE writeBuf[5] = { 0x05, 0x20, 0x20, 0x00, 0x00};
-	DWORD bytesWritten;
-	ftStatus = FT_Write(ftHandle,(LPVOID)writeBuf,sizeof(writeBuf),&bytesWritten);
-	if (ftStatus != FT_OK)
+    int bytesWritten;
+    bytesWritten = Write(writeBuf,sizeof(writeBuf));
+    if (bytesWritten < 0)
 		return -1;
 	return 0;
 }
 
+//Sets SDR-IP NCO, Not display
 double SDR_IQ::SetFrequency(double freq, double fCurrent)
 {
-    if (!isFtdiLoaded)
-		return freq;
-
 	if (freq==0)
 		return freq; //ignore
 
-	FT_STATUS ftStatus;
 	ULONG f = (ULONG)freq; 
 	BYTE writeBuf[0x0a] = { 0x0a, 0x00, 0x20, 0x00, 0x00,0xff,0xff,0xff,0xff,0x01};
 	//Byte order is LSB/MSB
@@ -403,23 +392,19 @@ double SDR_IQ::SetFrequency(double freq, double fCurrent)
 	writeBuf[7] = (BYTE)((f >> 16) & 0xff);
 	writeBuf[8] = (BYTE)((f >> 24) & 0xff);;
 
-	DWORD bytesWritten;
-	ftStatus = FT_Write(ftHandle,(LPVOID)writeBuf,sizeof(writeBuf),&bytesWritten);
-	if (ftStatus != FT_OK)
+    int bytesWritten;
+    bytesWritten = Write(writeBuf,sizeof(writeBuf));
+    if (bytesWritten < 0)
 		return 0;
 	return freq;
 }
 
 unsigned SDR_IQ::GetRFGain()
 {
-	if (!isFtdiLoaded)
-		return -1;
-
-	FT_STATUS ftStatus;
 	BYTE writeBuf[5] = { 0x05, 0x20, 0x38, 0x00, 0x00};
-	DWORD bytesWritten;
-	ftStatus = FT_Write(ftHandle,(LPVOID)writeBuf,sizeof(writeBuf),&bytesWritten);
-	if (ftStatus != FT_OK)
+    int bytesWritten;
+    bytesWritten = Write(writeBuf,sizeof(writeBuf));
+    if (bytesWritten < 0)
 		return -1;
 
 	return 0;
@@ -427,41 +412,35 @@ unsigned SDR_IQ::GetRFGain()
 //0,-10,-20,-30
 bool SDR_IQ::SetRFGain(qint8 gain)
 {
-	if (!isFtdiLoaded)
-		return false;
-
-	FT_STATUS ftStatus;
 	BYTE writeBuf[6] = { 0x06, 0x00, 0x38, 0x00, 0xff, 0xff};
     writeBuf[4] = 0x00;
 	writeBuf[5] = gain ;
 
-	DWORD bytesWritten;
-	ftStatus = FT_Write(ftHandle,(LPVOID)writeBuf,sizeof(writeBuf),&bytesWritten);
-	if (ftStatus != FT_OK)
+    int bytesWritten;
+    bytesWritten = Write(writeBuf,sizeof(writeBuf));
+    if (bytesWritten < 0)
 		return false;
 	return true;
 }
 //This is not documented in Interface spec, but used in activeX examples
 bool SDR_IQ::SetIFGain(qint8 gain)
 {
-	if (!isFtdiLoaded)
-		return false;
-
-	FT_STATUS ftStatus;
 	BYTE writeBuf[6] = { 0x06, 0x00, 0x40, 0x00, 0xff, 0xff};
 	//Bits 7,6,5 are Factory test bits and are masked
 	writeBuf[4] = 0; //gain & 0xE0;
     writeBuf[5] = gain;
 
-	DWORD bytesWritten;
-	ftStatus = FT_Write(ftHandle,(LPVOID)writeBuf,sizeof(writeBuf),&bytesWritten);
-	return (ftStatus == FT_OK);
+    int bytesWritten;
+    bytesWritten = Write(writeBuf,sizeof(writeBuf));
+    if (bytesWritten < 0)
+        return false;
+    return true;
 }
 //AD6620 registers
 bool SDR_IQ::SetAD6620Raw(unsigned address, short d0, short d1, short d2, short d3, short d4)
 {
-	if (!isFtdiLoaded)
-		return false;
+    if (sdrDevice == SDR::SDR_IP_TCP)
+        return false; //Not used
 
 	qint8 writeBuf[9];
 	writeBuf[0] = 0x09;
@@ -473,16 +452,20 @@ bool SDR_IQ::SetAD6620Raw(unsigned address, short d0, short d1, short d2, short 
 	writeBuf[6] = d2 & 0x00ff;
 	writeBuf[7] = d3 & 0x00ff;
 	writeBuf[8] = d4 & 0x00ff;
-	DWORD bytesWritten;
-	return (FT_Write(ftHandle,(LPVOID)&writeBuf,9,&bytesWritten) == FT_OK);
+    int bytesWritten;
+    bytesWritten = Write((BYTE*)writeBuf,sizeof(writeBuf));
+    if (bytesWritten < 0)
+        return false;
+    return true;
+
 }
 //2byte register followed by 5 data bytes
 bool SDR_IQ::SetRegisters(unsigned adrs, qint32 data)
 {
-	if (!isFtdiLoaded)
-		return false;
+    if (sdrDevice == SDR::SDR_IP_TCP)
+        return false; //Not used
 
-	AD6620_Register writeBuf;
+    AD6620_Register writeBuf;
 
 	writeBuf.header[0] = 9;
 	writeBuf.header[1] = 0xa0;
@@ -490,8 +473,11 @@ bool SDR_IQ::SetRegisters(unsigned adrs, qint32 data)
 	writeBuf.data1 = data;
 	writeBuf.data2 = 0;
 
-	DWORD bytesWritten;
-	return (FT_Write(ftHandle,(LPVOID)&writeBuf,9,&bytesWritten) == FT_OK);
+    int bytesWritten;
+    bytesWritten = Write((BYTE*)&writeBuf,sizeof(writeBuf));
+    if (bytesWritten < 0)
+        return false;
+    return true;
 
 }
 
@@ -524,7 +510,7 @@ BW (IF Filter) can not be changed on the fly, SDR-IQ has to be stopped, then res
 
 int SDR_IQ::SetBandwidth(BANDWIDTH bw)
 {
-	if (!isFtdiLoaded)
+    if (!TransportOk())
 		return false;
 
 	qint8 CIC2Rate=0;
@@ -640,96 +626,162 @@ int SDR_IQ::SetBandwidth(BANDWIDTH bw)
 //Note: Blocks are fixed size, 8192 bytes
 unsigned SDR_IQ::CaptureBlocks(unsigned numBlocks)
 {
-	if (!isFtdiLoaded)
-		return -1;
-
-	FT_STATUS ftStatus;
-	BYTE writeBuf[8] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x02, 0x02, numBlocks};
-	DWORD bytesWritten;
-	ftStatus = FT_Write(ftHandle,(LPVOID)writeBuf,sizeof(writeBuf),&bytesWritten);
-	if (ftStatus != FT_OK)
-		return -1;
-
-	return 0;
+    if (sdrDevice == SDR::SDR_IQ_USB) {
+        BYTE writeBuf[8] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x02, 0x02, numBlocks};
+        int bytesWritten;
+        bytesWritten = Write(writeBuf,sizeof(writeBuf));
+        if (bytesWritten < 0)
+            return -1;
+        return 0;
+    } else {
+        //SDR-IP TBD
+    }
 }
 
 unsigned SDR_IQ::StartCapture()
 {
-	if (!isFtdiLoaded)
-		return -1;
-
-	FT_STATUS ftStatus;
-	BYTE writeBuf[8] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x02, 0x00, 0x00};
-	DWORD bytesWritten;
-    ftStatus = FT_Write(ftHandle,(LPVOID)writeBuf,sizeof(writeBuf),&bytesWritten);
-	if (ftStatus != FT_OK)
-		return -1;
-	return 0;
+    if (sdrDevice == SDR::SDR_IQ_USB) {
+        BYTE writeBuf[8] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x02, 0x00, 0x00};
+        int bytesWritten;
+        bytesWritten = Write(writeBuf,sizeof(writeBuf));
+        if (bytesWritten < 0)
+            return -1;
+        return 0;
+    } else {
+        //TBD, more complicated
+        return 0;
+    }
 }
 
 unsigned SDR_IQ::StopCapture()
 {
-	if (!isFtdiLoaded)
-		return -1;
-
-	FT_STATUS ftStatus;
-	BYTE writeBuf[8] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x01, 0x00, 0x00};
-	DWORD bytesWritten;
-	ftStatus = FT_Write(ftHandle,(LPVOID)writeBuf,sizeof(writeBuf),&bytesWritten);
-	if (ftStatus != FT_OK)
-		return -1;
-
-	return 0;
+    if (sdrDevice == SDR::SDR_IQ_USB) {
+        BYTE writeBuf[8] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x01, 0x00, 0x00};
+        int bytesWritten;
+        bytesWritten = Write(writeBuf,sizeof(writeBuf));
+        if (bytesWritten < 0)
+            return -1;
+        return 0;
+    } else {
+        //Different for SDR-IP
+        return 0;
+    }
 }
 
 //Utility Functions to allow common code for USB and TCP
+bool SDR_IQ::TransportOk()
+{
+    if (sdrDevice == SDR_IQ_USB)
+        return isFtdiLoaded;
+    else
+        return tcpSocket != NULL;
+
+}
+
+//Returns buf without removing from stream buffer
+qint64 SDR_IQ::Peek(BYTE *buf, unsigned int numBytes)
+{
+    if (!TransportOk())
+        return -1;
+
+    qint64 bytesRead;
+    if (sdrDevice == SDR_IQ_USB) {
+        return -1; //not implemented
+    } else {
+        bytesRead = tcpSocket->peek((char*)buf,numBytes);
+        if (bytesRead != numBytes)
+            return -1;
+    }
+    return bytesRead;
+}
+
 int SDR_IQ::Read(BYTE *buf, unsigned int numBytes)
 {
+    if (!TransportOk())
+        return -1;
+
     unsigned int bytesRead;
     if (sdrDevice == SDR_IQ_USB) {
         FT_STATUS ftStatus;
-        if (!isFtdiLoaded)
-            return -1;
-
         ftStatus = FT_Read(ftHandle, buf, numBytes, &bytesRead);
         if (ftStatus != FT_OK || bytesRead != numBytes)
             return -1; //Error
     } else {
-        if (tcpSocket == NULL)
-            return -1;
-
         bytesRead = tcpSocket->read((char*)buf,numBytes);
         if (bytesRead != numBytes)
             return -1;
-
     }
     return bytesRead;
+}
+
+int SDR_IQ::Write(BYTE *buf,unsigned int numBytes)
+{
+    if (!TransportOk())
+        return -1;
+
+    unsigned int bytesWritten;
+    if (sdrDevice == SDR_IQ_USB) {
+        FT_STATUS ftStatus;
+        ftStatus = FT_Write(ftHandle,(LPVOID)buf,numBytes,&bytesWritten);
+        if (ftStatus != FT_OK || bytesWritten != numBytes)
+            return -1; //Error
+    } else {
+        bytesWritten = tcpSocket->write((char*)buf,numBytes);
+        if (bytesWritten != numBytes)
+            return -1;
+    }
+    return bytesWritten;
 }
 
 //Called from Producer thread
 //Returns bytesReturned or -1 if error
 int SDR_IQ::ReadResponse(int expectedType)
 {
-	if (!isFtdiLoaded)
+    if (!TransportOk())
 		return -1;
 
 	//mutex.lock();
-    FT_STATUS ftStatus;
 
     int bytesReturned;
+    qint64 udpBytesAvailable;
+    qint64 bytesAvailable;
 
-	//FT_Read blocks until bytes are ready or timeout, which wastes time
-	//Check to make sure we've got bytes ready before proceeding
-    ftStatus = FT_GetQueueStatus(ftHandle,(unsigned int*)&bytesReturned);
-	if (ftStatus != FT_OK || bytesReturned < 2)
-        //We get a lot of this initially as there's no data to return until rcv gets set up
-		return 0;
+    if (sdrDevice == SDR::SDR_IQ_USB) {
+        FT_STATUS ftStatus;
+        //FT_Read blocks until bytes are ready or timeout, which wastes time
+        //Check to make sure we've got bytes ready before proceeding
+        ftStatus = FT_GetQueueStatus(ftHandle,(unsigned int*)&bytesReturned);
+        if (ftStatus != FT_OK || bytesReturned < 2)
+            //We get a lot of this initially as there's no data to return until rcv gets set up
+            return 0;
+    } else {
+        //Read 16 bit Header which contains message length and type
+        //Test udp
+        udpBytesAvailable = udpSocket->bytesAvailable();
+        bytesAvailable = tcpSocket->bytesAvailable();
+        if (bytesAvailable < 2)
+            return 0; //Not enough for anything, leave in tcp buffer
+    }
 
-	//Note, this assumes that we're in sync with stream
-	//Read 16 bit Header which contains message length and type
-    bytesReturned = Read(producerReadBuf,2);
-    if (bytesReturned != 2)
-        return -1;
+    //BUG: We get here with bytesAvailable = 16384!  but fail peek below
+    //SDR-IQ gets here with 4654767632
+    //But if we skip it we miss data
+    //if (bytesAvailable > 8192)
+    //    return 0;
+
+    //Note, this assumes that we're in sync with stream
+    //Read 16 bit Header which contains message length and type
+    if (sdrDevice == SDR::SDR_IQ_USB) {
+        bytesReturned = Read(producerReadBuf,2);
+        if (bytesReturned != 2)
+            return -1;
+
+    } else {
+        //Use Peek in case it's not (Peek not avail for USB?)
+        bytesReturned = Peek(producerReadBuf,2);
+        if (bytesReturned != 2)
+            return -1;
+    }
 
 	//Get 13bit message length, mask 3 high order bits of 2nd byte
     //Example from problem response rb = 0x01 0x03
@@ -737,6 +789,22 @@ int SDR_IQ::ReadResponse(int expectedType)
     //type is 0 and length is 769
     int type = producerReadBuf[1]>>5; //Get 3 high order bits
     int length = producerReadBuf[0] + (producerReadBuf[1] & 0x1f) * 0x100;
+
+    //Validate type and length
+    //Type range 000b to 111b
+    //Length range 0 to 8192
+    if (type >= 0 && type <=7 && length >= 0 && length <=8191) {
+        //Valid, accept if TCP
+        if (sdrDevice == SDR::SDR_IP_TCP)
+            Read(producerReadBuf,2);  //Accept and throw away data from Peek
+    } else {
+        //we must be out of sync
+        //Read 1 byte and try again
+        qDebug("SDR_IQ data streem out of sync, flushing 1 byte");
+        if (sdrDevice == SDR::SDR_IP_TCP)
+           Read(producerReadBuf,1);
+        return 0;
+    }
 
 	if (type == 0x04 && length==0) {
 
@@ -930,7 +998,7 @@ void SDR_IQ::ProcessDataBlocks()
 
 void SDR_IQ::FlushDataBlocks()
 {
-	if (!isFtdiLoaded)
+    if (!TransportOk())
 		return;
 
     int bytesReturned = 0;
@@ -1005,6 +1073,8 @@ void SDR_IQ::bandwidthChanged(int i)
 
 void SDR_IQ::tcpData()
 {
+    return; //testing
+
     //This will get called asynchonously with full or partial data
     //so we need some sort of state machine to keep track of what we're looking for
 
@@ -1025,7 +1095,7 @@ void SDR_IQ::tcpData()
         int itemCode = producerReadBuf[0] | producerReadBuf[1]<<8;
         if (type == 0 && itemCode == 1)
             targetName = QString((char*)&producerReadBuf[2]);
-        //qDebug("%s",targetName);
+        qDebug()<<"targetName "<<targetName;
     }
 
 #if 0
