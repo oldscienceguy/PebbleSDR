@@ -5,6 +5,9 @@ QT += widgets core gui multimedia
 
 #Download & install QT 5.0 from http://qt-project.org
 
+#Subversion files are found at http://www.wandisco.com/subversion/download#osx
+#Edit QtCreator prefs so subversion is found in /opt/subversion/bin/svn (mac default svn is old)  Enter username and pw
+
 #Download & install FTDI D2XX drivers from http://www.ftdichip.com/Drivers/D2XX.htm
 #V 1.1.0 4/25/11
 #V 1.2.2 10/30/12
@@ -45,6 +48,25 @@ QTDIR = c:/Qt/4.8.0
 
 #Conditional MUST match the Build Configuration name, Debug or Release or SomeCustomName
 macx {
+	#Get most recent checkin version number.  Assumes svn installed as in comments above
+	#See http://www.qtcentre.org/wiki/index.php?title=Version_numbering_using_QMake
+	VERSION = $$system(/opt/subversion/bin/svn info -r HEAD . | grep 'Changed\ Rev' | cut -b 19-)
+	!isEmpty(VERSION){
+	  VERSION = 0.$${VERSION}
+	}
+	VERSION = '\\"$${VERSION}\\"' #puts escaped strings so VERSION is \"0.123\"
+	message($${VERSION})
+	#make it available to code
+	# NO SPACES !!!
+	DEFINES += PEBBLE_VERSION=\"$${VERSION}\"
+
+	DATE = $$system(/opt/subversion/bin/svn info -r HEAD . | grep 'Changed\ Date' | cut -b 19-)
+	DATE = '\\"$${DATE}\\"' #puts escaped strings so VERSION is \"0.123\"
+	message($${DATE})
+	#make it available to code
+	# NO SPACES !!!
+	DEFINES += PEBBLE_DATE=\"$${DATE}\"
+
 	#This will stop the creation of a Mac package (default) and just create a unix bin if we need to for testing
 	#CONFIG-=app_bundle
 

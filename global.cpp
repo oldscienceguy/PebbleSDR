@@ -1,5 +1,6 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
+#include <QDebug>
 #include "global.h"
 #include "qcoreapplication.h"
 
@@ -18,9 +19,10 @@ Global::Global()
 		pLogfile = new QDebug(file);
 		*pLogfile << "Pebble log file\n";
 	}
-    //SVN keyword substitution must be turned on for this to updated
-    //Check in this file on every external release to update
-    revision = "$Rev$";
+    revision = new char[80];
+    //See PebbleQt.pro for DEFINES statement that creates PEBBLE_VERSION
+    sprintf(revision,"Rev: %s %s",PEBBLE_VERSION, PEBBLE_DATE);
+    //qDebug(revision);
 
     minDb = -130; //Same as SpectraVue
     maxDb = 10;
