@@ -23,14 +23,14 @@ public:
 	inline CPX(void)
 		{re=0; im=0;}
 
-	inline CPX(float r, float i)
+    inline CPX(double r, double i)
 		{re = r;im = i;}
 
 	inline CPX(const CPX &cx)
 		{re=cx.re; im=cx.im;}
 
 	~CPX(void);
-	float re, im;
+    double re, im;
 	inline void clear() {re = im = 0;}
 
 	inline CPX operator +(CPX a)
@@ -42,7 +42,7 @@ public:
 	//Convolution
 	CPX operator *(CPX y);
 	//Same as scale
-	inline CPX operator *(float a)
+    inline CPX operator *(double a)
 		{ return CPX(re * a, im * a);}
 
 	CPX operator /(CPX y);
@@ -53,7 +53,7 @@ public:
 	{return re != a.re || im != a.im;}
 
 	//Scale re*a, im*a
-	inline CPX scale(float a)
+    inline CPX scale(double a)
 		{return CPX(re * a, im * a);}
 	
 	//Complex conjugate (see wikipedia).  im has opposite sign of original
@@ -63,13 +63,13 @@ public:
 	//In Polar notation, signals are represented by magnitude and phase (angle)
 	//Complex and Polar notation are interchangable.  See Steve Smith pg 162
 	//Convert to Polar mag()
-	inline float mag()
+    inline double mag()
 	{return sqrt(re*re + im*im);}//hypot(re,im);}
 	//Convert to Polar phase()
 	//This is also the arg() function (see wikipedia)
-	inline float arg()
+    inline double arg()
 	{return this->phase();}
-	float phase();
+    double phase();
 	//Convert Cartesion to Polar
 	//WARNING: CPX IS USED TO KEEP POLAR, BUT VALUES ARE NOT REAL/IMAGINARY, THEY ARE MAG/PHASE
 	//NAME VARS cpx... and pol... TO AVOID CONFUSION
@@ -80,7 +80,7 @@ public:
 	{return CPX(re * cos(im), re * sin(im));}
 
 	//Squared version of magnitudeMagnitude = re^2 + im^2
-	inline float sqrMag() 
+    inline double sqrMag()
 		{return re*re + im*im;}
 };
 
@@ -94,8 +94,8 @@ public:
     CPX * Ptr() {return cpxBuffer;}
     //Returning a reference allows these to be used as lvalues (assignment) or rvalues (data)
     inline CPX & Cpx(int i) {return cpxBuffer[i];}
-    inline float & Re(int i) {return cpxBuffer[i].re;}
-    inline float & Im(int i) {return cpxBuffer[i].im;}
+    inline double & Re(int i) {return cpxBuffer[i].re;}
+    inline double & Im(int i) {return cpxBuffer[i].im;}
 
     //Don't use array operator which won't work on CPXBuf *, use Cpx() instead
     //inline CPX & operator [](int i) {return cpxBuffer[i];}
@@ -104,7 +104,7 @@ public:
         {memcpy(out,cpxBuffer,sizeof(CPX) * size);}
 
     //scales in by a and returns in out, SIMD enabled
-    void Scale(CPX * out, float a);
+    void Scale(CPX * out, double a);
 
     //adds in + in2 and returns in out, SIMD enabled
     void Add(CPX * out, CPX *in2);
@@ -123,14 +123,14 @@ public:
     void Decimate(CPX *out, int by);
 
     //Hypot version of norm
-    float Norm();
+    double Norm();
 
     //Squared version of norm
-    float NormSqr();
+    double NormSqr();
 
     //Return max mag()
-    float Peak();
-    float PeakPower();
+    double Peak();
+    double PeakPower();
 
 	//Static for now
 	//Returns 16byte aligned pointer if SIMD math enabled, you must use CPXBuf::free(...) to delete
@@ -144,7 +144,7 @@ public:
 	static inline void clear(CPX *out, int size)
 		{memset(out,0,sizeof(CPX) * size); }
 	//scales in by a and returns in out, SIMD enabled
-	static void scale(CPX * out, CPX * in, float a, int size);
+    static void scale(CPX * out, CPX * in, double a, int size);
 	//adds in + in2 and returns in out, SIMD enabled
 	static void add(CPX * out, CPX * in, CPX *in2, int size);
 	//SIMD enabled
@@ -156,12 +156,12 @@ public:
 	//Copy every N samples from in to out
 	static void decimate(CPX *out, CPX *in, int by, int size);
 	//Hypot version of norm
-	static float norm(CPX *in, int size);
+    static double norm(CPX *in, int size);
 	//Squared version of norm
-	static float normSqr(CPX *in, int size);
+    static double normSqr(CPX *in, int size);
 	//Return max mag()
-	static float peak(CPX *in, int size);
-	static float peakPower(CPX *in, int size);
+    static double peak(CPX *in, int size);
+    static double peakPower(CPX *in, int size);
 
 private:
     CPX *cpxBuffer;

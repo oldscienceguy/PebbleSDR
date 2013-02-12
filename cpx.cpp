@@ -9,7 +9,7 @@
 #endif
 
 //Forward declaration of SSE utils
-extern void SSEScaleCPX(CPX * c, CPX * a, float b, int size);
+extern void SSEScaleCPX(CPX * c, CPX * a, double b, int size);
 extern void SSEAddCPX(CPX * c, CPX * a, CPX * b, int size);
 extern void SSEMultCPX(CPX * c, CPX * a, CPX * b, int size);
 extern void SSEMagCPX(CPX * c, CPX * a, int size);
@@ -30,19 +30,19 @@ CPX CPX::operator *(CPX y)
 }
 CPX CPX::operator /(CPX y)
 {
-	float d = y.re * y.re + y.im * y.im;
+    double d = y.re * y.re + y.im * y.im;
 	CPX z;
 	z.re = (re * y.re + im * y.im) / d;
 	z.im = (y.re * im - y.im * re) / d;
 	return z;
 }
-float CPX::phase()
+double CPX::phase()
 {
-	float tmp;
+    double tmp;
 	//Special handling to avoid divide by 0
 	//Alternative is to set re = tiny amount and continue to use atan()
 	tmp = atan(im / ((re==0) ? ALMOSTZERO : re));
-	//float tmp1 = atan(im/re);
+    //double tmp1 = atan(im/re);
 
 	//Correct for errors if re and im are negative
 	if (re < 0 && im < 0)
@@ -97,7 +97,7 @@ void CPXBuf::free(CPX *memory)
 			std::free (memory);
 	}
 }
-void CPXBuf::scale(CPX *out, CPX *in, float a, int size)
+void CPXBuf::scale(CPX *out, CPX *in, double a, int size)
 {
 	if(SIMD)
 		return SSEScaleCPX(out,in,a,size);
@@ -150,37 +150,37 @@ void CPXBuf::decimate(CPX *out, CPX *in, int by, int size)
     }  
 }
 //
-float CPXBuf::normSqr(CPX *in, int size)
+double CPXBuf::normSqr(CPX *in, int size)
 {
-	float sum = 0.0;
+    double sum = 0.0;
 	for (int i=0; i<size; i++)
 		sum += in[i].sqrMag();
 	return sum;
 }
-float CPXBuf::norm(CPX *in, int size)
+double CPXBuf::norm(CPX *in, int size)
 {
-	float sum = 0.0;
+    double sum = 0.0;
 	for (int i=0; i<size; i++)
 		sum += in[i].sqrMag();
 	return sqrt(sum/size);
 }
 //Returns max mag() in buffer
-float CPXBuf::peak(CPX *in, int size)
+double CPXBuf::peak(CPX *in, int size)
 {
-	float maxMag=0.0;
+    double maxMag=0.0;
 	for (int i=0; i<size; i++)
 		maxMag = std::max(in[i].mag(),maxMag);
 	return maxMag;
 }
-float CPXBuf::peakPower(CPX *in, int size)
+double CPXBuf::peakPower(CPX *in, int size)
 {
-	float maxPower = 0.0;
+    double maxPower = 0.0;
 	for (int i=0; i<size; i++)
 		maxPower = std::max(in[i].sqrMag(),maxPower);
     return maxPower;
 }
 
-void CPXBuf::Scale(CPX *out, float a)
+void CPXBuf::Scale(CPX *out, double a)
 {
     if(SIMD)
         return SSEScaleCPX(out,cpxBuffer,a,size);
@@ -241,36 +241,36 @@ void CPXBuf::Decimate(CPX *out, int by)
 
 }
 
-float CPXBuf::Norm()
+double CPXBuf::Norm()
 {
-    float sum = 0.0;
+    double sum = 0.0;
     for (int i=0; i<size; i++)
         sum += cpxBuffer[i].sqrMag();
     return sqrt(sum/size);
 
 }
 
-float CPXBuf::NormSqr()
+double CPXBuf::NormSqr()
 {
-    float sum = 0.0;
+    double sum = 0.0;
     for (int i=0; i<size; i++)
         sum += cpxBuffer[i].sqrMag();
     return sum;
 
 }
 
-float CPXBuf::Peak()
+double CPXBuf::Peak()
 {
-    float maxMag=0.0;
+    double maxMag=0.0;
     for (int i=0; i<size; i++)
         maxMag = std::max(cpxBuffer[i].mag(),maxMag);
     return maxMag;
 
 }
 
-float CPXBuf::PeakPower()
+double CPXBuf::PeakPower()
 {
-    float maxPower = 0.0;
+    double maxPower = 0.0;
     for (int i=0; i<size; i++)
         maxPower = std::max(cpxBuffer[i].sqrMag(),maxPower);
     return maxPower;
@@ -279,10 +279,9 @@ float CPXBuf::PeakPower()
 
 CPXBuf &CPXBuf::operator +(CPXBuf a)
 {
-    CPXBuf out(size);
     for (int i=0; i<size; i++)
-        out.Cpx(i) = cpxBuffer[i] + a.Cpx(i);
-    return out;
+        cpxBuffer[i] = cpxBuffer[i] + a.Cpx(i);
+    return *this;
 }
 
 #if (SIMD)
@@ -290,21 +289,21 @@ CPXBuf &CPXBuf::operator +(CPXBuf a)
 SSE functions use Intel Streaming SIMD Extensions for performance
 Search Intel site for compiler settings, usage, etc
 */
-void DoSSEScaleCPX(CPX * c, CPX * a, float b) {
+void DoSSEScaleCPX(CPX * c, CPX * a, double b) {
 	__m128 x, y, z;
 
-	x = _mm_load_ps((float *)a);
+    x = _mm_load_ps((double *)a);
 	y = _mm_load1_ps(&b);
 
 	z = _mm_mul_ps(x, y);
 
-	_mm_store_ps((float *)c, z);
+    _mm_store_ps((double *)c, z);
 }
 
-void SSEScaleCPX(CPX * c, CPX * a, float b, int size) 
+void SSEScaleCPX(CPX * c, CPX * a, double b, int size)
 {
 	CPX * aa;
-	float sb;
+    double sb;
 	CPX * cc;
 
 	aa = a;
@@ -324,12 +323,12 @@ void SSEScaleCPX(CPX * c, CPX * a, float b, int size)
 void DoSSEAddCPX(CPX * c, CPX * a, CPX * b) {
 	__m128 x, y, z;
 
-	x = _mm_load_ps((float *)a);
-	y = _mm_load_ps((float *)b);
+    x = _mm_load_ps((double *)a);
+    y = _mm_load_ps((double *)b);
 
 	z = _mm_add_ps(x, y);
 
-	_mm_store_ps((float *)c, z);
+    _mm_store_ps((double *)c, z);
 }
 
 void SSEAddCPX(CPX * c, CPX * a, CPX * b, int size) 
@@ -356,8 +355,8 @@ void DoSSEMultCPX(CPX * c, CPX * a, CPX * b) {
 
 	__m128 x, y, yl, yh, t1, t2, z;
 
-	x = _mm_load_ps((float *)a);
-	y = _mm_load_ps((float *)b);
+    x = _mm_load_ps((double *)a);
+    y = _mm_load_ps((double *)b);
 
 	yl = _mm_moveldup_ps(y);
 	yh = _mm_movehdup_ps(y);
@@ -370,7 +369,7 @@ void DoSSEMultCPX(CPX * c, CPX * a, CPX * b) {
 
 	z = _mm_addsub_ps(t1, t2);
 
-	_mm_store_ps((float *)c, z);
+    _mm_store_ps((double *)c, z);
 }
 
 void SSEMultCPX(CPX * c, CPX * a, CPX * b, int size) 
@@ -397,7 +396,7 @@ void SSEMultCPX(CPX * c, CPX * a, CPX * b, int size)
 void DoSSEMagCPX(CPX * c, CPX * a) {
 	__m128 x, t1, z;
 
-	x = _mm_load_ps((float *)a);
+    x = _mm_load_ps((double *)a);
 
 	t1 = _mm_mul_ps(x, x);
 
@@ -407,7 +406,7 @@ void DoSSEMagCPX(CPX * c, CPX * a) {
 
 	z = _mm_sqrt_ps(t1);
 
-	_mm_store_ps((float *)c, z);
+    _mm_store_ps((double *)c, z);
 }
 
 void SSEMagCPX(CPX * c, CPX * a, int size) {
@@ -431,13 +430,13 @@ void SSEMagCPX(CPX * c, CPX * a, int size) {
 void DoSSESqMagCPX(CPX * c, CPX * a) {
 	__m128 x, t1;
 
-	x = _mm_load_ps((float *)a);
+    x = _mm_load_ps((double *)a);
 
 	t1 = _mm_mul_ps(x, x);
 
 	t1 = _mm_hadd_ps(t1, t1);
 
-	_mm_store_ps((float *)c, t1);
+    _mm_store_ps((double *)c, t1);
 }
 
 void SSESqMagCPX(CPX * c, CPX * a, int size) {
