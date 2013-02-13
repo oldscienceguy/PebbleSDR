@@ -91,7 +91,7 @@ FIRFilter::FIRFilter(int sr, int ns, bool _useFFT, int _numTaps, int _delay):
 		fftFIR = new FFT(numSamplesX2);
 		fftSamples = new FFT(numSamplesX2);
 
-		window = new float[numSamples];
+        window = new double[numSamples];
 
 		//Time domain FIR coefficients
 		taps = CPXBuf::malloc(numSamples);
@@ -106,7 +106,7 @@ FIRFilter::FIRFilter(int sr, int ns, bool _useFFT, int _numTaps, int _delay):
 		M = _numTaps; //For sinc formula
 		//Delay line has to be large enough so we have 1 sample per tap
 		delayLine = new DelayLine((numTaps + delay) * 2, delay);
-		window = new float[numTaps];
+        window = new double[numTaps];
 
 		taps = CPXBuf::malloc(numTaps);
 		CPXBuf::clear (taps,numTaps);
@@ -451,7 +451,7 @@ void FIRFilter::SetLoadable(float * coeff)
 Returns window[] with standard window coefficients
 From PowerSDR, SDRMax and DSP books in reference
 */
-void FIRFilter::MakeWindow(WINDOWTYPE wtype, int size, float * window) 
+void FIRFilter::MakeWindow(WINDOWTYPE wtype, int size, double * window)
 {
     int i, j, midn, midp1, midm1;
     float freq, rate, sr1, angle, expn, expsum, cx, two_pi;

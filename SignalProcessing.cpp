@@ -19,7 +19,7 @@ SignalProcessing::~SignalProcessing(void)
 }
 
 //Returns the total power in the sample buffer, using Lynn formula
-float SignalProcessing::totalPower(CPX *in, int bsize)
+double SignalProcessing::totalPower(CPX *in, int bsize)
 {
 	float tmp = 0.0;
 	//sum(re^2 + im^2)
@@ -40,7 +40,7 @@ db tutorial from Steven Smith
 */
 //Power same as cpx.mag()
 //Convert Power to Db
-float SignalProcessing::powerToDb(float p)
+double SignalProcessing::powerToDb(double p)
 {
     //For our purposes -127db is the lowest we'll ever see.  Handle special case of 0 directly
     if (p==0)
@@ -51,17 +51,17 @@ float SignalProcessing::powerToDb(float p)
 	//  + ALMOSTZERO avoid problem if p==0 but does not impact result
     return  qBound(global->minDb, 10.0 * log10(p + ALMOSTZERO), global->maxDb);
 }
-float SignalProcessing::dbToPower(float db)
+double SignalProcessing::dbToPower(double db)
 {
 	return pow(10, db/10.0);
 }
 //Steven Smith pg 264
-float SignalProcessing::amplitudeToDb(float a)
+double SignalProcessing::amplitudeToDb(double a)
 {
     return qBound(global->minDb, 20.0 * log10(a + ALMOSTZERO), global->maxDb);
 }
 //Steven Smith pg 264
-float SignalProcessing::dbToAmplitude(float db)
+double SignalProcessing::dbToAmplitude(double db)
 {
 	return pow(10, db/20.0);
 }
@@ -70,7 +70,7 @@ float SignalProcessing::dbToAmplitude(float db)
 	s0 = -127, s1=-121, s2=-115, ... s9 = -73db (-93dbVHF)
 	+10 = -63db, +20 = -53, ... +60 = -13db
 */
-int SignalProcessing::dbToSUnit(float db)
+int SignalProcessing::dbToSUnit(double db)
 {
 	int unit = db/6;
 	return unit;
@@ -133,7 +133,7 @@ CPX DelayLine::operator [] (int i)
 }
 //Convolution sum or Multiply And Accumulate (MAC)
 //Key component for filter math
-CPX DelayLine::MAC(float *coeff, int numCoeff)
+CPX DelayLine::MAC(double *coeff, int numCoeff)
 {
 	mutex.lock();
 	int next;
@@ -186,20 +186,28 @@ FFT::FFT(int size)
 	timeDomain = CPXBuf::malloc(size);
 	freqDomain = CPXBuf::malloc(size);
 
-	//These are inplace transforms,ie out = in, of 1 dimensional data (dft_1d)
-	plan_fwd = fftwf_plan_dft_1d(size , (float (*)[2])timeDomain, (float (*)[2])freqDomain, FFTW_FORWARD, FFTW_MEASURE);
-	plan_rev = fftwf_plan_dft_1d(size , (float (*)[2])freqDomain, (float (*)[2])timeDomain, FFTW_BACKWARD, FFTW_MEASURE);
+    plan_fwd = fftw_plan_dft_1d(size , (double (*)[2])timeDomain, (double (*)[2])freqDomain, FFTW_FORWARD, FFTW_MEASURE);
+    plan_rev = fftw_plan_dft_1d(size , (double (*)[2])freqDomain, (double (*)[2])timeDomain, FFTW_BACKWARD, FFTW_MEASURE);
     buf = CPXBuf::malloc(size);
 	CPXBuf::clear(buf, size);
 	overlap = CPXBuf::malloc(size);
 	CPXBuf::clear(overlap, size);
+
+    //Testing Ooura
+    //These are inplace transforms,ie out = in, of 1 dimensional data (dft_1d)
+    offt = new FFTOoura();
+    offtWorkArea = new int[fftSize]; //Work buffer for bit reversal, size at least 2+sqrt(n)
+    offtWorkArea[0] = 0; //Initializes w with sine/cosine values.  Only do this once
+    offtSinCosTable = new double[fftSize*5/4]; //sine/cosine table.  Check size
+    offtBuf = CPXBuf::malloc(fftSize+1);
+
 }
 
 FFT::~FFT()
 {
 
-	fftwf_destroy_plan(plan_fwd);
-	fftwf_destroy_plan(plan_rev);
+    fftw_destroy_plan(plan_fwd);
+    fftw_destroy_plan(plan_rev);
 
 
 	if (buf) CPXBuf::free(buf);
@@ -222,7 +230,7 @@ void FFT::DoFFTWForward(CPX * in, CPX * out, int size)
 		CPXBuf::copy(timeDomain, in, size);
 	}
 
-    fftwf_execute(plan_fwd);
+    fftw_execute(plan_fwd);
 
 	//If out == NULL, just leave result in freqDomain buffer and let caller get it
 	if (out != NULL)
@@ -241,7 +249,7 @@ void FFT::DoFFTWInverse(CPX * in, CPX * out, int size)
 
 		CPXBuf::copy(freqDomain, in, size);
 	}
-    fftwf_execute(plan_rev);
+    fftw_execute(plan_rev);
 
 	if (out != NULL)
 		CPXBuf::copy(out, timeDomain, fftSize);
@@ -261,22 +269,40 @@ void FFT::OverlapAdd(CPX *out, int size)
 }
 
 //NOTE: size= # samples in 'in' buffer, 'out' must be == fftSize (set on construction) which is #bins
-void FFT::DoFFTWMagnForward (CPX * in, int size, float baseline, float correction, float *fbr)
+void FFT::DoFFTWMagnForward (CPX * in, int size, double baseline, double correction, double *fbr)
 {
 	if (size < fftSize)
 		//Make sure that buffer which does not have samples is zero'd out
 		CPXBuf::clear(timeDomain, fftSize);
 
-	CPXBuf::copy(timeDomain, in, size);
 
-    fftwf_execute(plan_fwd);
-	FreqDomainToMagnitude(freqDomain, fftSize, baseline, correction, fbr);
+#if 1
+    CPXBuf::copy(timeDomain, in, size);
+    // For Ref plan_fwd = fftwf_plan_dft_1d(size , (float (*)[2])timeDomain, (float (*)[2])freqDomain, FFTW_FORWARD, FFTW_MEASURE);
+    fftw_execute(plan_fwd);
+    //FFT output is now in freqDomain
+    FreqDomainToMagnitude(freqDomain, fftSize, baseline, correction, fbr);
+#else
+    //CPXBuf::copy(timeDomain, in, size);
+    CPXBuf::copy(offtBuf, in, size);
+
+    //Size is 2x fftSize because offt works on double[] re-im-re-im et
+    offt->cdft(2*size, +1, (double*)offtBuf, offtWorkArea, offtSinCosTable);
+
+    for (int i=0; i<size; i++)
+    {
+
+        //fbr[i] = log10(offtBuf[i].re + baseline)+correction;
+        fbr[i] = SignalProcessing::amplitudeToDb(offtBuf[i].mag() + baseline) + correction;
+
+    }
+#endif
 
 }
 
 //This can be called directly if we've already done FFT
 //WARNING:  fbr must be large enough to hold 'size' values
-void FFT::FreqDomainToMagnitude(CPX * freqBuf, int size, float baseline, float correction, float *fbr)
+void FFT::FreqDomainToMagnitude(CPX * freqBuf, int size, double baseline, double correction, double *fbr)
 {
 	/*
 	freqBuf[0] = DC component, or what we expect to see in the middle of spectrum

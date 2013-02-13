@@ -16,7 +16,9 @@ QT += widgets core gui multimedia
 #portaudio directory is at same level as PebbleII
 
 #Download FFTW from fftw.org, open terminal, build floating point
-#./configure --enable-float
+#Current version 3.3.1 as of 2/2013
+#Swithed from float to double so we can switch between FFTW and Ooura libraries.  Don't add --enable-float to ./configure
+#./configure
 # make
 #sudo make install
 
@@ -67,6 +69,12 @@ macx {
 	# NO SPACES !!!
 	DEFINES += PEBBLE_DATE=\"$${DATE}\"
 
+	#Turn off warnings for unused variables so we can focus on real warnings
+	#We completely replace this variable with our own warning flags in the order we want them
+	#This turns on all warnings, then turns off selected ones
+	QMAKE_CXXFLAGS_WARN_ON = "-Wall"
+	QMAKE_CXXFLAGS_WARN_ON += "-Wno-unused-variable"
+
 	#This will stop the creation of a Mac package (default) and just create a unix bin if we need to for testing
 	#CONFIG-=app_bundle
 
@@ -92,7 +100,7 @@ macx {
 	LIBS += -framework AudioUnit
 	LIBS += -framework CoreServices
 	##fftw
-	LIBS += -L$${PWD}/../fftw-3.3.1/.libs/ -lfftw3f
+	LIBS += -L$${PWD}/../fftw-3.3.1/.libs/ -lfftw3
 
 	LIBS += /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation \
 		/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit
@@ -362,7 +370,8 @@ HEADERS += \
     demod/rdsdecode.h \
     filters/fractresampler.h \
     filters/datatypes.h \
-    rtl-sdr/tuner_r820t.h
+    rtl-sdr/tuner_r820t.h \
+    DSP/fftooura.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -414,7 +423,8 @@ SOURCES += \
     demod/rdsdecode.cpp \
     filters/fractresampler.cpp \
     rtl-sdr/tuner_r820t.c \
-    rtl-sdr/librtlsdr.c
+    rtl-sdr/librtlsdr.c \
+    DSP/fftooura.cpp
 
 FORMS += \
     spectrumwidget.ui \

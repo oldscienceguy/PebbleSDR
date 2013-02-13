@@ -46,8 +46,8 @@ signals:
             void zoomChanged(int item);
 private:
 	SignalSpectrum *signalSpectrum; //Source of spectrum data
-	float *averageSpectrum; 
-	float *lastSpectrum;
+    double *averageSpectrum;
+    double *lastSpectrum;
 
 	int upDownIncrement;
 	int leftRightIncrement;

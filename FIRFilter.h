@@ -30,7 +30,7 @@ public:
 	void SetLoadable(float * coeff);
 
 	//Utility functions
-	static void MakeWindow(WINDOWTYPE wtype, int size, float * window); 
+    static void MakeWindow(WINDOWTYPE wtype, int size, double *window);
 
 	//Angular frequency in radians/sec w = 2*Pi*frequency //This lower case w appears in many formulas
 	//fHz is normalized for sample rate, ie fHz = f/fs = 10000/48000
@@ -57,7 +57,7 @@ private:
 	DelayLine * delayLine;
 	//Filter coefficients
 	CPX *taps; 
-	float *window;
+    double *window;
 
 	//FFT versions
 	FFT *fftFIR;

@@ -134,7 +134,7 @@ private:
     int binWidthHz;
     int scale;
 
-    float *window; //Precalculated array of window values for specified freq,
+    double *window; //Precalculated array of window values for specified freq,
 
     //These could be static in FPNextSample, but here for debugging and for use
     //if we try different algorithms

@@ -605,7 +605,7 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
     double db = 0;
 	int plotX = 0;
 	int plotY = 0;
-	float *spectrum = NULL;
+    double *spectrum = NULL;
 	if (spectrumMode == SignalSpectrum::SPECTRUM || spectrumMode == SignalSpectrum::WATERFALL)
 		spectrum = signalSpectrum->Unprocessed();
 	else if (spectrumMode == SignalSpectrum::POSTMIXER)
@@ -621,15 +621,15 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 
     if (spectrum != NULL && smoothing) {
 		if (averageSpectrum == NULL) {
-            averageSpectrum = new float[binCountRaw];
-            lastSpectrum = new float[binCountRaw];
-            memcpy(averageSpectrum, spectrum, binCountRaw * sizeof(float));
+            averageSpectrum = new double[binCountRaw];
+            lastSpectrum = new double[binCountRaw];
+            memcpy(averageSpectrum, spectrum, binCountRaw * sizeof(double));
 		} else {
             for (int i = 0; i < binCountRaw; i++)
 				averageSpectrum[i] = (lastSpectrum[i] + spectrum[i]) / 2;
 		}
 		//Save this spectrum for next iteration
-        memcpy(lastSpectrum, spectrum, binCountRaw * sizeof(float));
+        memcpy(lastSpectrum, spectrum, binCountRaw * sizeof(double));
 		spectrum = averageSpectrum;
 	}
 

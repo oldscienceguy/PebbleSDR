@@ -4,6 +4,8 @@
 #include "cpx.h"
 #include <QMutex>
 #include "../fftw-3.3.1/api/fftw3.h"
+#include "DSP/fftooura.h"
+
 #include "QObject"
 
 /*
@@ -31,7 +33,7 @@ public:
 	//Array access
 	CPX operator [] (int i);
 	//Multiply and Accumulate or convolution sum
-	CPX MAC(float *coeff, int numCoeff);
+    CPX MAC(double *coeff, int numCoeff);
 	CPX MAC(CPX *coeff, int numCoeff);
 
 
@@ -50,9 +52,9 @@ public:
     FFT(int size);
     ~FFT();    
     void DoFFTWForward(CPX * in, CPX * out, int size);    
-	void DoFFTWMagnForward(CPX * in,int size,float baseline,float correction,float *fbr);
+    void DoFFTWMagnForward(CPX * in,int size,double baseline,double correction,double *fbr);
     void DoFFTWInverse(CPX * in, CPX * out, int size);
-	void FreqDomainToMagnitude(CPX * freqBuf, int size, float baseline, float correction, float *fbr);
+    void FreqDomainToMagnitude(CPX * freqBuf, int size, double baseline, double correction, double *fbr);
 	void OverlapAdd(CPX *out, int size);
 
 	CPX *timeDomain;
@@ -60,9 +62,14 @@ public:
 	int fftSize;
 
 private:
+    //Testing Ooura DFT
+    FFTOoura *offt;
+    double *offtSinCosTable;
+    int *offtWorkArea;
+    CPX *offtBuf;
 
-	fftwf_plan plan_fwd;
-	fftwf_plan plan_rev;
+    fftw_plan plan_fwd;
+    fftw_plan plan_rev;
 	CPX *buf;
 	CPX *overlap;
 	int half_sz;
@@ -78,10 +85,10 @@ public:
 	~SignalProcessing(void);
 
 	//Useful conversion functions
-	static inline float cpxToWatts(CPX cx) //Returns power (watts) for sample c
+    static inline double cpxToWatts(CPX cx) //Returns power (watts) for sample c
 		{return (cx.re * cx.re + cx.im * cx.im)/2;}
 	//Calculates the total power of all samples in buffer
-	static float totalPower(CPX *in, int bsize);
+    static double totalPower(CPX *in, int bsize);
 
 	static double dBm_2_Watts(double dBm);
 	static double watts_2_dBm(double watts);
@@ -89,13 +96,13 @@ public:
 	static double rmsVolts_2_dBm(double volts, double impedance);
 	
 	//db conversion functions from Steven Smith book
-	static float powerToDb(float p);
-	static float dbToPower(float db);
+    static double powerToDb(double p);
+    static double dbToPower(double db);
 
-	static float amplitudeToDb(float a);
-	static float dbToAmplitude(float db);
+    static double amplitudeToDb(double a);
+    static double dbToAmplitude(double db);
 
-	static int dbToSUnit(float db);
+    static int dbToSUnit(double db);
 
 	int SampleRate() {return sampleRate;}
 	int NumSamples() {return numSamples;}

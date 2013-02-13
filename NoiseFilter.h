@@ -21,6 +21,6 @@ private:
 	int anfDelaySize; //Size of delay buffer
 	DelayLine *anfDelay;
 	//ANF filter coefficients
-	float *anfCoeff;
+    double *anfCoeff;
 
 };

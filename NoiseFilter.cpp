@@ -11,7 +11,7 @@ NoiseFilter::NoiseFilter(int sr, int ns):
 	anfAdaptationRate = 0.01; //dttsp 0.01, SDRMax 0.005
 	anfLeakage = 0.00001; //dttsp 0.00001, SDRMax 0.01
 	anfDelay = new DelayLine(anfDelaySize, 64); //64 sample delay line
-	anfCoeff = new float[anfAdaptiveFilterSize];
+    anfCoeff = new double[anfAdaptiveFilterSize];
 	anfEnabled = false;
 }
 

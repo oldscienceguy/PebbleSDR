@@ -18,14 +18,14 @@ SignalSpectrum::SignalSpectrum(int sr, int ns, Settings *set):
 
 	//Output buffers
 	rawIQ = CPXBuf::malloc(numSamples);
-	unprocessed = new float[binCount];
-	postMixer = new float[binCount];
-	postBandPass = new float[binCount];
+    unprocessed = new double[binCount];
+    postMixer = new double[binCount];
+    postBandPass = new double[binCount];
 	fft = new FFT(binCount);
 
     tmp_cpx = CPXBuf::malloc(binCount);
 	//Create our window coefficients 
-	window = new float[numSamples];
+    window = new double[numSamples];
 	window_cpx = CPXBuf::malloc(numSamples);
 	FIRFilter::MakeWindow(FIRFilter::BLACKMANHARRIS, numSamples, window);
 	for (int i = 0; i < numSamples; i++)
@@ -80,7 +80,7 @@ void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double 
 		MakeSpectrum(in, unprocessed, numSamples);
 }
 
-void SignalSpectrum::MakeSpectrum(CPX *in, float *sOut, int size)
+void SignalSpectrum::MakeSpectrum(CPX *in, double *sOut, int size)
 {
 	//Smooth the data with our window
 	CPXBuf::clear(tmp_cpx, binCount);
@@ -104,7 +104,7 @@ void SignalSpectrum::MakeSpectrum(CPX *in, float *sOut, int size)
 	//out now has the spectrum in db, -f..0..+f
     //mutex.unlock();
 }
-void SignalSpectrum::MakeSpectrum(FFT *fft, float *sOut)
+void SignalSpectrum::MakeSpectrum(FFT *fft, double *sOut)
 {
 	CPXBuf::clear(tmp_cpx, binCount);
 

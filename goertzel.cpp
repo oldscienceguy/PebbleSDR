@@ -163,7 +163,7 @@ int Goertzel::SetFreqHz(int fTone, int bw, int gsr)
     //See http://www.mstarlabs.com/dsp/goertzel/goertzel.html for details on using a window for better detection
     if (window != NULL)
         free (window);
-    window = new float[samplesPerBin];
+    window = new double[samplesPerBin];
     FIRFilter::MakeWindow(FIRFilter::BLACKMANHARRIS, samplesPerBin, window);
 #if 0
     for (int n = 0; n<samplesPerBin; n++) {

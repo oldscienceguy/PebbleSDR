@@ -21,13 +21,13 @@ public:
 	void Unprocessed(CPX * in, double inUnder, double inOver,double outUnder, double outOver);
 	void PostMixer(CPX *in);
 	void PostBandPass(CPX *in, int size);
-	void MakeSpectrum(CPX *in, float *out, int size); //Use if we just have CPX samples
-	void MakeSpectrum(FFT *fft, float *out); //Used if we already have FFT
+    void MakeSpectrum(CPX *in, double *out, int size); //Use if we just have CPX samples
+    void MakeSpectrum(FFT *fft, double *out); //Used if we already have FFT
 
 	int BinCount() {return binCount;}
-	float *Unprocessed() {return unprocessed;}
-	float *PostMixer() {return postMixer;}
-	float *PostBandPass() {return postBandPass;}
+    double *Unprocessed() {return unprocessed;}
+    double *PostMixer() {return postMixer;}
+    double *PostBandPass() {return postBandPass;}
 	CPX *RawIQ() {return rawIQ;}
 
 	double inBufferUnderflowCount;
@@ -45,10 +45,10 @@ private:
 
 	//Spectrum data at different steps in receive chaing
 	CPX *rawIQ;
-	float *unprocessed;
-	float *postMixer; 
-	float *postBandPass;
-	float * window;
+    double *unprocessed;
+    double *postMixer;
+    double *postBandPass;
+    double * window;
 
     CPX *tmp_cpx;
 	CPX *window_cpx;
