@@ -22,6 +22,8 @@ public:
     Settings *settings;
     double minDb; //Smallest db we'll return from FFT
     double maxDb;
+    Perform perform;
+
 
 private:
 	QFile *file;
