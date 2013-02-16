@@ -9,6 +9,7 @@
 #define _INCLUDE_PERFORMXXX_H_
 #include "math.h"
 #include <QtGlobal>
+#include <QString>
 /////////////////////////////////////////////////////////////////////////////
 
 class Perform
@@ -17,7 +18,7 @@ public:
     Perform();
     quint64 QueryPerformanceCounter();
     void InitPerformance();
-    void StartPerformance();
+    void StartPerformance(QString desc="");
     void StopPerformance(int n);
     void ReadPerformance();
     void SamplePerformance();
@@ -32,7 +33,7 @@ private:
     quint64 DeltaTimeMin;
     quint64 DeltaTimeAve;
     quint64 DeltaSamples;
-    quint64 Length;
+    QString desc;
 };
 
 #endif //#if !defined(_INCLUDE_PERFORMXXX_H_)

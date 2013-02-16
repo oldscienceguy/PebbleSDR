@@ -51,7 +51,8 @@
 #include "perform.h"
 #include <QDebug>
 
-#define CPUCLOCKRATEGHZ 3		//manually set to CPU core clock speed
+//#define CPUCLOCKRATEGHZ 3		//manually set to CPU core clock speed
+#define CPUCLOCKRATEGHZ 1.7		//Macbook Air
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -78,7 +79,6 @@ quint32 eax, edx;
 // call to initialize the prformance timer
 void Perform::InitPerformance()
 {
-	Length = 0;
 	DeltaTimeMax = 0;
 	DeltaTimeAve = 0;
 	DeltaSamples = 0;
@@ -87,11 +87,12 @@ void Perform::InitPerformance()
 }
 
 // Starts the performance timer
-void Perform::StartPerformance()
+void Perform::StartPerformance(QString _desc)
 {
     if(DeltaSamples == 0)
         InitPerformance();  //Self initialize on first use
 
+    desc = _desc;
 	StartTime = QueryPerformanceCounter();
 }
 
@@ -111,7 +112,6 @@ void Perform::StopPerformance(int n)
 	{
 		DeltaTimeMin = DeltaTime;
 	}
-    Length += n;  //This doesn't seem to be used
     if (DeltaSamples >= n) {
         ReadPerformance();
         InitPerformance();
@@ -141,7 +141,6 @@ void Perform::SamplePerformance()
 		}
 		StartTime = QueryPerformanceCounter();
 		DeltaSamples++;
-		Length++;
 	}
 }
 
@@ -154,26 +153,28 @@ void Perform::ReadPerformance()
 {
 	if(DeltaSamples != 0 )
 	{
+        //Convert everything to actual time based on CPU freq
 		DeltaTime = (DeltaTime)/CountFreq;
 		DeltaTimeMin = (DeltaTimeMin)/CountFreq;
 		DeltaTimeMax = (DeltaTimeMax)/CountFreq;
 		DeltaTimeAve = (DeltaTimeAve)/CountFreq;
 
-		float fAve= (float)DeltaTimeAve/( (float)Length);
-		qDebug()<<"Length "<<Length/DeltaSamples;
+        float fAve= (float)DeltaTimeAve/( (float)DeltaSamples);
+        qDebug()<<desc;
+
 		if(fAve>1e6)
 		{
-			qDebug()<<"Delta Time Max mSec = "<<DeltaTimeMax/1000000  <<"Delta Time Min mSec = "<<DeltaTimeMin/1000000;
+            qDebug()<<"Max mSec = "<<DeltaTimeMax/1000000  <<"Min mSec = "<<DeltaTimeMin/1000000;
 			qDebug()<<"Ave mSec= "<<fAve/1000000.0<<" #Samples = "<< DeltaSamples;
 		}
 		else if(fAve>1e3)
 		{
-			qDebug()<<"Delta Time Max uSec = "<<DeltaTimeMax/1000  <<"Delta Time Min uSec = "<<DeltaTimeMin/1000;
+            qDebug()<<"Max uSec = "<<DeltaTimeMax/1000  <<"Min uSec = "<<DeltaTimeMin/1000;
 			qDebug()<<"Ave uSec= "<<fAve/1000.0<<" #Samples = "<< DeltaSamples;
 		}
 		else
 		{
-			qDebug()<<"Delta Time Max nSec = "<<DeltaTimeMax  <<"Delta Time Min nSec = "<<DeltaTimeMin;
+            qDebug()<<"Max nSec = "<<DeltaTimeMax  <<"Min nSec = "<<DeltaTimeMin;
 			qDebug()<<"Ave nSec= "<<fAve<<" #Samples = "<< DeltaSamples;
 		}
 	}
