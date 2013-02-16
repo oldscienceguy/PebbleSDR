@@ -5,6 +5,7 @@
 #include <QMutex>
 #include "../fftw-3.3.1/api/fftw3.h"
 #include "DSP/fftooura.h"
+#include "global.h"
 
 #include "QObject"
 
@@ -73,6 +74,8 @@ private:
 	CPX *buf;
 	CPX *overlap;
 	int half_sz;
+
+    Perform perform;
 
 };
 

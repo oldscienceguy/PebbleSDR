@@ -2,7 +2,6 @@
 #include "gpl.h"
 #include "SignalProcessing.h"
 #include "string.h"
-#include "global.h"
 
 SignalProcessing::SignalProcessing(int sr, int ns)
 {
@@ -178,7 +177,7 @@ void LMS(int numCoeff)
 
 }
 #endif
-FFT::FFT(int size) 
+FFT::FFT(int size):perform()
 {
 	fftSize = size;
 	half_sz = size/2;
@@ -193,6 +192,7 @@ FFT::FFT(int size)
 	overlap = CPXBuf::malloc(size);
 	CPXBuf::clear(overlap, size);
 
+#if 0
     //Testing Ooura
     //These are inplace transforms,ie out = in, of 1 dimensional data (dft_1d)
     offt = new FFTOoura();
@@ -200,12 +200,11 @@ FFT::FFT(int size)
     offtWorkArea[0] = 0; //Initializes w with sine/cosine values.  Only do this once
     offtSinCosTable = new double[fftSize*5/4]; //sine/cosine table.  Check size
     offtBuf = CPXBuf::malloc(fftSize+1);
-
+#endif
 }
 
 FFT::~FFT()
 {
-
     fftw_destroy_plan(plan_fwd);
     fftw_destroy_plan(plan_rev);
 
@@ -275,51 +274,78 @@ void FFT::DoFFTWMagnForward (CPX * in, int size, double baseline, double correct
 		//Make sure that buffer which does not have samples is zero'd out
 		CPXBuf::clear(timeDomain, fftSize);
 
-
+    //perform.StartPerformance();
+    //FFTW averages 25-30us (relative) between calls
+    //Ooura averages 35-40us (relative) between calls
+    //Confirmed with Mac CPU usage: avg 90% with Ooura vs 80% with FFTW, just using Ooura for Spectrum FFT!
+    //So Ooura is significantly slower!
 #if 1
+    //Use FFTW
     CPXBuf::copy(timeDomain, in, size);
     // For Ref plan_fwd = fftwf_plan_dft_1d(size , (float (*)[2])timeDomain, (float (*)[2])freqDomain, FFTW_FORWARD, FFTW_MEASURE);
     fftw_execute(plan_fwd);
     //FFT output is now in freqDomain
-    FreqDomainToMagnitude(freqDomain, fftSize, baseline, correction, fbr);
+    //FFTW does not appear to be in order as documented.  On-going mystery
+    /*
+     *From FFTW documentation
+     *From above, an FFTW_FORWARD transform corresponds to a sign of -1 in the exponent of the DFT.
+     *Note also that we use the standard “in-order” output ordering—the k-th output corresponds to the frequency k/n
+     *(or k/T, where T is your total sampling period).
+     *For those who like to think in terms of positive and negative frequencies,
+     *this means that the positive frequencies are stored in the first half of the output
+     *and the negative frequencies are stored in backwards order in the second half of the output.
+     *(The frequency -k/n is the same as the frequency (n-k)/n.)
+     */
+    CPX temp;
+    for (int i=0, j = size-1; i < size/2; i++, j--) {
+        temp = freqDomain[i];
+        freqDomain[i] = freqDomain[j];
+        freqDomain[j] = temp;
+    }
+
+    FreqDomainToMagnitude(freqDomain, size, baseline, correction, fbr);
 #else
     //CPXBuf::copy(timeDomain, in, size);
     CPXBuf::copy(offtBuf, in, size);
 
     //Size is 2x fftSize because offt works on double[] re-im-re-im et
     offt->cdft(2*size, +1, (double*)offtBuf, offtWorkArea, offtSinCosTable);
+    FreqDomainToMagnitude(offtBuf, size, baseline, correction, fbr);
 
-    for (int i=0; i<size; i++)
-    {
-
-        //fbr[i] = log10(offtBuf[i].re + baseline)+correction;
-        fbr[i] = SignalProcessing::amplitudeToDb(offtBuf[i].mag() + baseline) + correction;
-
-    }
 #endif
-
+    //perform.StopPerformance(5);
 }
+
+/*
+ * Spectrum Folding Example for ooura FFT
+ * Buffer[]:        0           N/2-1   N/2                 N-1
+ *
+ * FFT bins:        0           Most Positive (MP)                                  //Positive Freq
+ *                                      Most Negative (MN)  Least Negative(LN)      //Negative Freq
+ *
+ * Folded:          MN          LN                                                  // +/- freq order
+ *                                      0                   MP
+ *
+ * FFTW should be in same order, but is reversed, ie
+ * FFT bins:        LN          MN      MP                  0
+ */
 
 //This can be called directly if we've already done FFT
 //WARNING:  fbr must be large enough to hold 'size' values
 void FFT::FreqDomainToMagnitude(CPX * freqBuf, int size, double baseline, double correction, double *fbr)
 {
-	/*
-	freqBuf[0] = DC component, or what we expect to see in the middle of spectrum
-	This puts things in the right order by first reversing the buffer so what was highest is now lowest
-	Then splitting so that db output array is -f..0..+f
-	*/
-    for (int i=0, j = size-1; i < size; i++, j--) {
-		buf[j] = freqBuf[i];
-    }
+    //calculate the magnitude of your complex frequency domain data (magnitude = sqrt(re^2 + im^2))
+    //convert magnitude to a log scale (dB) (magnitude_dB = 20*log10(magnitude))
 
-	//Convert to db and order correctly
-    //Limit output to -150db to 60db
-	for (int i=0, j = size/2; i < size/2; i++, j++) {
-        //Returns values that are 70-80db too high for some reason
-        //calculate the magnitude of your complex frequency domain data (magnitude = sqrt(re^2 + im^2))
-        //convert magnitude to a log scale (dB) (magnitude_dB = 20*log10(magnitude))
-        fbr[i] = SignalProcessing::amplitudeToDb(buf[j].mag() + baseline) + correction;
-        fbr[j] = SignalProcessing::amplitudeToDb(buf[i].mag() + baseline) + correction;;
+    // FFT output index 0 to N/2-1 - frequency output 0 to +Fs/2 Hz  ( 0 Hz DC term )
+    //This puts 0 to size/2 into size/2 to size-1 position
+    for (int i=0, j=size/2; i<size/2; i++,j++) {
+        fbr[j] = SignalProcessing::amplitudeToDb(freqBuf[i].mag() + baseline) + correction;
+    }
+    // FFT output index N/2 to N-1 - frequency output -Fs/2 to 0
+    // This puts size/2 to size-1 into 0 to size/2
+    //Works correctly with Ooura FFT
+    for (int i=size/2, j=0; i<size; i++,j++) {
+        fbr[j] = SignalProcessing::amplitudeToDb(freqBuf[i].mag() + baseline) + correction;
     }
 }

@@ -5,6 +5,7 @@
 
 #include "QDebug"
 #include "QFile"
+#include "perform.h"
 
 class Receiver;
 class Settings;

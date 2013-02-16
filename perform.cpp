@@ -1,3 +1,8 @@
+/*
+ * Modified by RAL to class so multiple timers can be used in same program
+ */
+
+
 ///////////////////////////////////////////////////////
 // Perform.cpp : implementation file
 //
@@ -44,24 +49,19 @@
 //or implied, of Moe Wheatley.
 //==========================================================================================
 #include "perform.h"
-#include <QtGlobal>
 #include <QDebug>
 
 #define CPUCLOCKRATEGHZ 3		//manually set to CPU core clock speed
 
 /////////////////////////////////////////////////////////////////////////////
-static quint64 StartTime;
-static quint64 StopTime;
-static quint64 DeltaTime;
-static quint64 CountFreq;
-static quint64 DeltaTimeMax;
-static quint64 DeltaTimeMin;
-static quint64 DeltaTimeAve;
-static quint64 DeltaSamples;
-static quint64 Length;
+
+Perform::Perform()
+{
+
+}
 
 ////////////////  Time measuring routine using Pentium timer
-static quint64 QueryPerformanceCounter()
+quint64 Perform::QueryPerformanceCounter()
 {
 quint64 val=0;
 #ifdef USE_PERFORMANCE
@@ -76,7 +76,7 @@ quint32 eax, edx;
 }
 
 // call to initialize the prformance timer
-void InitPerformance()
+void Perform::InitPerformance()
 {
 	Length = 0;
 	DeltaTimeMax = 0;
@@ -87,13 +87,17 @@ void InitPerformance()
 }
 
 // Starts the performance timer
-void StartPerformance()
+void Perform::StartPerformance()
 {
+    if(DeltaSamples == 0)
+        InitPerformance();  //Self initialize on first use
+
 	StartTime = QueryPerformanceCounter();
 }
 
 // Stop performance timer and calculate timing values
-void StopPerformance(int n)
+//Report and clear if DeltaSamples >=n
+void Perform::StopPerformance(int n)
 {
 	StopTime = QueryPerformanceCounter();
 	DeltaTime = (StopTime-StartTime);
@@ -107,11 +111,15 @@ void StopPerformance(int n)
 	{
 		DeltaTimeMin = DeltaTime;
 	}
-	Length += n;
+    Length += n;  //This doesn't seem to be used
+    if (DeltaSamples >= n) {
+        ReadPerformance();
+        InitPerformance();
+    }
 }
 
 // Call this to measure time between succesive calls to SamplePerformance()
-void SamplePerformance()
+void Perform::SamplePerformance()
 {
 	if(	DeltaTimeMax == 0 )
 	{
@@ -142,7 +150,7 @@ void SamplePerformance()
 // DeltaTimeMin == minimum time between start()-stop() or sample()-Sample()
 // DeltaTimeAve == average time between start()-stop() or sample()-Sample()
 // DeltaSamples == number of time samples captured
-void ReadPerformance()
+void Perform::ReadPerformance()
 {
 	if(DeltaSamples != 0 )
 	{
@@ -171,7 +179,7 @@ void ReadPerformance()
 	}
 }
 
-int GetDeltaPerformance()
+int Perform::GetDeltaPerformance()
 {
 quint64 delta = ((StopTime-StartTime))/CountFreq;
 	return (int)delta;

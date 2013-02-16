@@ -42,7 +42,7 @@ message("UI_HEADERS = "$${UI_DIR})
 
 
 #Should this be predefined somewhere?
-QTDIR = c:/Qt/4.8.0
+#QTDIR = c:/Qt/4.8.0
 
 #Enable this to look at config to debug conditionals. For example: debug and release both show up sometimes
 #message($$CONFIG)
@@ -371,7 +371,8 @@ HEADERS += \
     filters/fractresampler.h \
     filters/datatypes.h \
     rtl-sdr/tuner_r820t.h \
-    DSP/fftooura.h
+    DSP/fftooura.h \
+    perform.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -424,7 +425,8 @@ SOURCES += \
     filters/fractresampler.cpp \
     rtl-sdr/tuner_r820t.c \
     rtl-sdr/librtlsdr.c \
-    DSP/fftooura.cpp
+    DSP/fftooura.cpp \
+    perform.cpp
 
 FORMS += \
     spectrumwidget.ui \

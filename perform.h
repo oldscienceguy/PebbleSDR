@@ -8,11 +8,31 @@
 #if !defined(_INCLUDE_PERFORMXXX_H_)
 #define _INCLUDE_PERFORMXXX_H_
 #include "math.h"
+#include <QtGlobal>
 /////////////////////////////////////////////////////////////////////////////
-extern void InitPerformance();
-extern void StartPerformance();
-extern void StopPerformance(int n);
-extern void ReadPerformance();
-extern void SamplePerformance();
-extern int GetDeltaPerformance();
+
+class Perform
+{
+public:
+    Perform();
+    quint64 QueryPerformanceCounter();
+    void InitPerformance();
+    void StartPerformance();
+    void StopPerformance(int n);
+    void ReadPerformance();
+    void SamplePerformance();
+    int GetDeltaPerformance();
+
+private:
+    quint64 StartTime;
+    quint64 StopTime;
+    quint64 DeltaTime;
+    quint64 CountFreq;
+    quint64 DeltaTimeMax;
+    quint64 DeltaTimeMin;
+    quint64 DeltaTimeAve;
+    quint64 DeltaSamples;
+    quint64 Length;
+};
+
 #endif //#if !defined(_INCLUDE_PERFORMXXX_H_)
