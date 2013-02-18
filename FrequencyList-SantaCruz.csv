@@ -1,486 +1,486 @@
-kHz ,Time(UTC),Days,ITU, Station ,Lng,Target, Remarks ,P,Start,Stop, Input     , Type ,Tone Out,Tone In, Alpha Tag , Mode , Tag ,County,City,Agency,Notes,Source,EchoLink(E),IRLP(I),WideArea(x),ARES(s)
-35.060,,,,,,,Comcast Cable ,,,,,M,,,Comcast 3506,FM ,Business ,Santa Cruz,,Comcast Cable,,RadioReference,,,,
-35.120,,,,,,,Comcast Cable ,,,,,M,,,Comcast 3512,FM ,Business ,Santa Cruz,,Comcast Cable,,RadioReference,,,,
-35.140,,,,,,,Comcast Cable ,,,,,M,,,Comcast 3512,FM ,Business ,Santa Cruz,,Comcast Cable,,RadioReference,,,,
-47.660,,,,WQJG338 ,,,American Medical Response - Company Channel ,,,,,BM,,,SCZ AMR CO,FM ,EMS-Talk ,Santa Cruz,,Ambulance,,RadioReference,,,,
-51.760,,,,WE6R,,,Coordinated,,,,51.260,,,,WE6R,FMN,Ham,,Monterey,,clrs,narcc.org,,,,
-51.820,,,,WR6VHF,,,Not Coordinated,,,,51.320,,,136.5,CERT,FMN,Ham,,San Ardo,,#o136.5e,narcc.org,,,,
-51.920,,,,KU6V,,,Coordinated,,,,51.420,,,114.8,KU6V,FMN,Ham,,Los Gatos,,o114.8elx,narcc.org,,,y,
-52.580,,,,WA6VPL,,,Coordinated,,,,52.080,,,82.5,WA6VPL,FMN,Ham,,Nipomo,,o82.5el,narcc.org,,,,
-52.580,,,,W6PIY,,,Coordinated,,,,52.080,,,151.4,WVARA,FMN,Ham,,San Jose,,o151.4aels,narcc.org,,,,y
-52.600,,,,WA6VPL,,,Coordinated,,,,52.100,,,82.5,WA6VPL,FMN,Ham,,New Cuyama,,o82.5lx,narcc.org,,,y,
-52.640,,,,WA6FUL,,,Coordinated,,,,52.140,,,114.8,WA6FUL,FMN,Ham,,Palo Alto,,o114.8elrsx,narcc.org,,,y,y
-52.660,,,,KD6AOG,,,Not Coordinated,,,,52.160,,,127.3,KD6AOG,FMN,Ham,,San Jose,,#o127.3,narcc.org,,,,
-52.800,,,,WR6AOK,,,Coordinated,,,,52.300,,,114.8,SLVARC,FMN,Ham,,Ben Lomond,,o114.8esx,narcc.org,,,y,y
-52.940,,,,KG6HAT,,,Not Coordinated,,,,52.440,,,100.0,KG6HAT,FMN,Ham,,San Jose,,#o100.0,narcc.org,,,,
-118.000,,,,,,,San Jose Clearance Delivery,,,,,,,,,,,,,SJC,,liveatc.net,,,,
-118.200,,,,,,,SFO Clearance Delivery,,,,,,,,,,,,,SFO,flightaware.com,liveatc.net,,,,
-118.300,,,,,,,"Oakland Tower (Runways 27L/9R, 27R/9L, 33/15, righ",,,,,,,,,,,,,OAK,,liveatc.net,,,,
-120.100,,,,,,,"NORCAL Approach ""LICKE"" SJC Final",,,,,,,,,,,,,SJC,,liveatc.net,,,,
-120.100,,,,,,,"NORCAL Approach ""LICKE"" SJC Final",,,,,,,,,,,,,SJC,,liveatc.net,,,,
-120.350,,,,,,,Norcal Approach - Foster,,,,,,,,,,,,,SFO,airnav.com,liveatc.net,,,,
-120.500,,,,,,,SFO Tower,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-120.825,,,,,,,Beaver Control W-260,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-120.900,,,,,,,Norcal Approach - NW,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-120.900,,,,,,,Norcal Departure,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-120.900,,,,,,,NORCAL Departure (Northeast Departures),,,,,,,,,,,,,OAK,,liveatc.net,,,,
-121.100,,,,,,,Oakland Clearance Delivery (left channel),,,,,,,,,,,,,OAK,,liveatc.net,,,,
-121.300,,,,,,,"NORCAL Approach ""TOGA""",,,,,,,,,,,,,SJC,,liveatc.net,,,,
-121.300,,,,,,,NORCAL Departure,,,,,,,,,,,,,SJC,,liveatc.net,,,,
-121.500,,,,,,,Emergency/Guard,,,,,,,,,,,,,SJC,,liveatc.net,,,,
-121.500,,,,,,,Emergency/Guard,,,,,,,,,,,,,SJC,,liveatc.net,,,,
-121.700,,,,,,,San Jose Ground,,,,,,,,,,,,,SJC,,liveatc.net,,,,
-121.750,,,,,,,Oakland Ground (left channel),,,,,,,,,,,,,OAK,,liveatc.net,,,,
-121.800,,,,,,,SFO Ground,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-121.900,,,,,,,"Oakland Ground (North, right channel)",,,,,,,,,,,,,OAK,,liveatc.net,,,,
-122.800,,,,,,,Common Traffic Advisory Freq ,,,,,RM,,,WVI CTAF,AM ,Aircraft ,Santa Cruz,Wattsonville,,,RadioReference,,,,
-124.000,,,,,,,San Jose Tower,,,,,,,,,,,,,SJC,,liveatc.net,,,,
-124.125,,,,,,,Beaver Control W-283/W-285,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-124.400,,,,,,,NORCAL Approach (Mulford Sector),,,,,,,,,,,,,OAK,,liveatc.net,,,,
-125.350,,,,,,,Norcal Approach - NE,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-125.350,,,,,,,NORCAL Approach (KOAK Rwy 29/27R Final),,,,,,,,,,,,,OAK,,liveatc.net,,,,
-127.000,,,,,,,Norcal Approach - N,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-127.000,,,,,,,NORCAL Departure (Northeast Departures),,,,,,,,,,,,,OAK,,liveatc.net,,,,
-127.150,,,,,,,Approach/Departure ,,,,,,,,WVI App/Dep,AM ,Aircraft ,Santa Cruz,,Air,,RadioReference,,,,
-127.200,,,,,,,Oakland Tower (left channel),,,,,,,,,,,,,OAK,,liveatc.net,,,,
-127.800,,,,,,,Oakland Center Sector 40,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-127.850,,,,,,,Oakland Center Sector 41,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-127.975,,,,,,,NORCAL Departure (Southwest Departures),,,,,,,,,,,,,OAK,,liveatc.net,,,,
-128.325,,,,,,,Norcal Approach,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-128.575,,,,,,,Norcal Approach,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-128.650,,,,,,,SFO Tower Secondary,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-129.200,,,,,,,American Airlines Ops,,,,,,,,,,,,,SJC,,liveatc.net,,,,
-129.800,,,,,,,Atlantic Aviation (San Jose Jet Center),,,,,,,,,,,,,SJC,,liveatc.net,,,,
-131.200,,,,,,,Alaska Airlines Ops,,,,,,,,,,,,,SJC,,liveatc.net,,,,
-131.700,,,,,,,Southwest Airlines Ops,,,,,,,,,,,,,SJC,,liveatc.net,,,,
-131.950,,,,,,,ARINC San Francisco Radio,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-132.000,,,,,,,Horizon Air Ops,,,,,,,,,,,,,SJC,,liveatc.net,,,,
-132.275,,,,,,,ASOS ,,,,,RM,,,WVI ASOS,AM ,Aircraft ,Santa Cruz,Wattsonville,,,RadioReference,,,,
-133.950,,,,,,,Norcal Approach - Boulder,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-134.150,,,,,,,Oakland Center Sector 35,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-134.150,,,,,,,Oakland Center (Sector 35),,,,,,,,,,,,,SFO,,liveatc.net,,,,
-134.500,,,,,,,Norcal Approach - SE,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-135.100,,,,,,,Norcal Approach - W,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-135.100,,,,,,,Norcal Departure,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-135.100,,,,,,,NORCAL Departure (Southwest Departures),,,,,,,,,,,,,OAK,,liveatc.net,,,,
-135.200,,,,,,,NORCAL Approach,,,,,,,,,,,,,SJC,,liveatc.net,,,,
-135.650,,,,,,,Norcal Approach - Woodside,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-135.650,,,,,,,Norcal Approach - S ,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-145.170,,,,W6UNI,,,Not Coordinated,,,,144.570,,,151.4,W6UNI,FMN,Ham,,Watsonville,,#o151.4,narcc.org,,,,
-145.170,,,,K6GL,,,Coordinated,,,,144.570,,,94.8,SNNYVLARES,FMN,Ham,,Sunnyvale,,o94.8ers,narcc.org,,,,y
-145.190,,,,WA2IBM,,,Not Coordinated,,,,144.590,,,151.4,IBM ARC,FMN,Ham,,San Jose,,#o151.4ae,narcc.org,,,,
-145.210,,,,KB6FEC,,,Pending,,,,144.610,,,114.8,AREA,FMN,Ham,,San Jose,,#o114.8rs,narcc.org,,,,y
-145.210,,,,N6HU,,,Coordinated,,,,144.610,,,,KQ6RC,FMN,Ham,,Soledad,,cel,narcc.org,,,,
-145.230,,,,N6NFI,,,Coordinated,,,,144.630,,,100.0,SPARK/SARS,FMN,Ham,,Palo Alto,,o100.0aersx,narcc.org,,,y,y
-145.250,,,,W6PEK,,,Not Coordinated,,,,144.650,,,100.0,W6PAD,FMN,Ham,,Santa Cruz,,#o100.0s,narcc.org,,,,y
-145.250,,,,NA6MF,,,Coordinated,,,,144.650,,,123.0,Ames ARC,FMN,Ham,,Moffett Field,,o123.0rs,narcc.org,,,,y
-145.270,,,,W6ASH,,,Coordinated,,,,144.670,,,100.0,SPECS RA,FMN,Ham,,Mountain View,,o100.0aelrs,narcc.org,,,,y
-145.290,,,,W6TUW ,,,Portable Repeater ,,,,144.690,RM,94.8 PL,,Portable,FM ,Ham ,Santa Cruz,,VHF ARES,,RadioReference,,,,
-145.290,,,,KC6WRD,,,Coordinated,,,,144.690,,,,FCC,FMN,Ham,,SanLuisObispo,,ce,narcc.org,,,,
-145.310,,,,KB6FEC,,,Coordinated,,,,144.710,,,162.2,AREA,FMN,Ham,,San Jose,,o162.2rs,narcc.org,,,,y
-145.330,,,,W6DNC,,,Not Coordinated,,,,144.730,,,123.0,W6DNC,FMN,Ham,,Watsonville,,#o123.0elsx,narcc.org,,,y,y
-145.350,,,,KI6YDR,,,Coordinated,,,,144.750,,,94.8,KI6YDR,FMN,Ham,,Boulder Creek,,o94.8e,narcc.org,,,,
-145.370,,,,N6SPD,,,Coordinated,,,,144.770,,,100.0,N6SPD RG,FMN,Ham,,King City,,o100.0elrsx,narcc.org,,,y,y
-145.410,,,,W6CER,,,Not Coordinated,,,,144.810,,,146.2,CCARN,FMN,Ham,,Salinas,,#o146.2el,narcc.org,E:305210,,,
-145.430,,,,N6SPD,,,Coordinated,,,,144.830,,,94.8,N6SPD RG,FMN,Ham,,Salinas,,o94.8esx,narcc.org,,,y,y
-145.430,,,,W6MLP,,,Coordinated,,,,144.830,,,85.4,MARES,FMN,Ham,,Milpitas,,o85.4elrs,narcc.org,,,,y
-145.450,,,,K6FB,,,Coordinated,,,,144.850,,,100.0,LCARC,FMN,Ham,,Los Gatos,,o100.0elrsx,narcc.org,,,y,y
-145.470,,,,K6JE,,,Coordinated,,,,144.870,,,94.8,FPRA,FMN,Ham,,Salinas,,o94.8ersx,narcc.org,,,y,y
-145.490,,,,W6RTF,,,Coordinated,,,,144.890,,,100.0,W6RTF,FMN,Ham,,Salinas,,o100.0l,narcc.org,E:141890,,,
-146.085,,,,KC6UDC,,,Not Coordinated,,,,146.685,,,100.0,KC6UDC,FMN,Ham,,Salinas,,#o100.0,narcc.org,,,,
-146.085,,,,WE6R,,,Coordinated,,,,146.685,,,,WE6R,FMN,Ham,,Monterey,,cers,narcc.org,,,,y
-146.085,,,,WB5NVN,,,Not Coordinated,,,,146.685,,,100.0,WB5NVN,FMN,Ham,,Portola Valley,,#o100.0,narcc.org,,,,
-146.115,,,,AA6BT,,,Coordinated,,,,146.715,,,100.0,SVECS,FMN,Ham,,San Jose,,o100.0aersx,narcc.org,,,y,y
-146.205,,,,KI6AOZ,,,Coordinated,,,,146.805,,,146.2,P.A.R.E,FMN,Ham,,San Jose,,o146.2,narcc.org,,,,
-146.355,,,,KD6AOG,,,Not Coordinated,,,,146.955,,,127.3,KD6AOG,FMN,Ham,,San Jose,,#o127.3,narcc.org,,,,
-146.620,,,,W6SLO,,,Coordinated,,,,146.020,,,127.3,SLOECC,FMN,Ham,,San Simeon,,o127.3ersx,narcc.org,,,y,y
-146.625,,,,N6SBC,,,Coordinated,,,,146.025,,,94.8,SBC ARES,FMN,Ham,,Paicines,,o94.8els,narcc.org,,,,y
-146.640,,,,WR6ABD,,,Coordinated,,,,146.040,,,162.2,LPRC,FMN,Ham,,San Jose,,o162.2ex,narcc.org,,,y,
-146.655,,,,KI6FKX,,,Not Coordinated,,,,146.055,,,94.8,KI6FKX,FMN,Ham,,Salinas,,#o94.8es,narcc.org,,,,y
-146.655,,,,K6SA,,,Coordinated,,,,146.055,,,114.8,SARA,FMN,Ham,,Saratoga,,o114.8elrs,narcc.org,E:85531,I:3671 ,,y
-146.670,,,,W6SLO,,,Coordinated,,,,146.070,,,127.3,SLOECC,FMN,Ham,,SanLuisObispo,,o127.3ersx,narcc.org,,,y,y
-146.700,,,,NS6G,,,Not Coordinated,,,,146.100,,,94.8,GOB/R,FMN,Ham,,Watsonville,,#o94.8e,narcc.org,,,,
-146.730,,,,W6FM,,,Coordinated,,,,146.130,,,127.3,W6FM,FMN,Ham,,San Ardo,,o127.3elsx,narcc.org,,,y,y
-146.745,,,,W6JWS ,,,Empire Grade ,,,,146.145,RM,94.8 PL,,Empire,FM ,Ham ,Santa Cruz,,VHF ARES,,RadioReference,,,,
-146.745,,,,W6JWS,,,Coordinated,,,,146.145,,,94.8,SLVARES,FMN,Ham,,Santa Cruz,,o94.8ers,narcc.org,,,,y
-146.745,,,,W6LAH,,,Coordinated,,,,146.145,,,110.9,LAHEG,FMN,Ham,,LosAltosHills,,o110.9e,narcc.org,,,,
-146.745,,,,W6LAH,,,Coordinated,,,,146.145,,,,LAHEG,FMN,Ham,,LosAltosHills,,ce,narcc.org,,,,
-146.760,,,,W6BHZ,,,Coordinated,,,,146.160,,,91.5,CPARC,FMN,Ham,,SanLuisObispo,,o91.5aels,narcc.org,,I:3016,,y
-146.760,,,,WB6OQS,,,Coordinated,,,,146.160,,,151.4,SCVRS,FMN,Ham,,San Jose,,o151.4alx,narcc.org,,,y,
-146.775,,,,KB6MET,,,Not Coordinated,,,,146.175,,,123.0,KB6MET,FMN,Ham,,Watsonville,,#o123.0a,narcc.org,,,,
-146.790,,,,K6BJ ,,,Santa Cruz ,,,,146.190,RM,94.8 PL,,S Cruz,FM ,Ham ,Santa Cruz,,VHF ARES,,RadioReference,,,,
-146.790,,,,K6BJ,,,Coordinated,,,,146.190,,,94.8,SCCARC,FMN,Ham,,Santa Cruz,,o94.8aelrs,narcc.org,,,,y
-146.800,,,,WB6FMC,,,Not Coordinated,,,,146.200,,,127.3,WB6FMC,FMN,Ham,,SanLuisObispo,,#o127.3ersx,narcc.org,,,y,y
-146.820,,,,K6INC,,,Coordinated,,,,146.220,,,123.0,SCAN INT'L,FMN,Ham,,San Jose,,o123.0,narcc.org,,,,
-146.835,,,,AE6KE ,,,Loma Prieta Summit ,,,,146.235,RM,94.8 PL,,Smt/Loma,FM ,Ham ,Santa Cruz,,VHF ARES,,RadioReference,,,,
-146.835,,,,AE6KE,,,Coordinated,,,,146.235,,,94.8,SC ARES,FMN,Ham,,Santa Cruz,,o94.8ers,narcc.org,,,,y
-146.835,,,,W6SLO,,,Coordinated,,,,146.235,,,127.3,SLOECC,FMN,Ham,,SantaMargarita,,o127.3ersx,narcc.org,,,y,y
-146.860,,,,WB6MIA,,,Coordinated,,,,146.260,,,127.3,SLOECC,FMN,Ham,,Los Osos,,o127.3ers,narcc.org,,,,y
-146.880,,,,W6YDZ,,,Coordinated,,,,146.280,,,127.3,W6YDZ,FMN,Ham,,Templeton,,o127.3elsx,narcc.org,,,y,y
-146.895,,,,KB6FEC,,,Coordinated,,,,146.295,,,110.9,KB6FEC,FMN,Ham,,San Jose,,o110.9rs,narcc.org,,,,y
-146.910,,,,W6OPI,,,Coordinated,,,,146.310,,,94.8,W6OPI,FMN,Ham,,Prunedale,,o94.8ers,narcc.org,E:396492,,,y
-146.940,,,,KI6PAU,,,Coordinated,,,,146.340,,,94.8,KI6PAU,FMN,Ham,,Big Sur,,o94.8es,narcc.org,,,,y
-146.940,,,,W6SLO,,,Coordinated,,,,146.340,,,127.3,SLOECC,FMN,Ham,,Arroyo Grande,,o127.3ers,narcc.org,,,,y
-146.970,,,,K6LY,,,Not Coordinated,,,,146.370,,,94.8,NPSARC,FMN,Ham,,Monterey,,o94.8ers,narcc.org,,,,y
-146.970,,,,WA6INC,,,Coordinated,,,,146.370,,,,AD1U,FMN,Ham,,San Jose,,cl,narcc.org,,,,
-146.980,,,,W6YDZ,,,Coordinated,,,,146.380,,,127.3,PRARC,FMN,Ham,,Paso Robles,,o127.3els,narcc.org,,,,y
-146.985,,,,W6UU,,,Coordinated,,,,146.385,,,114.8,SCCARA,FMN,Ham,,San Jose,,o114.8aer,narcc.org,,,,
-147.000,,,,K6RMW ,,,Watsonville ,,,,147.600,RM,94.8 PL,,Watsonville,FM ,Ham ,Santa Cruz,,VHF ARES,,RadioReference,,,,
-147.000,,,,K6RMW,,,Coordinated,,,,147.600,,,94.8,K6RMWK6GDI,FMN,Ham,,Watsonville,,o94.8ers,narcc.org,,,,y
-147.030,,,,AE6HC,,,Coordinated,,,,147.630,,,127.3,HVRA,FMN,Ham,,Arroyo Grande,,o127.3e,narcc.org,,,,
-147.060,,,,W6PRB,,,Coordinated,,,,147.660,,,127.3,PRHS-ARC,FMN,Ham,,Paso Robles,,o127.3ers,narcc.org,,,,y
-147.120,,,,WR6AOK ,,,Ben Lomond ,,,,147.720,RM,94.8 PL,,BenLomnd,FM ,Ham ,Santa Cruz,,VHF ARES,,RadioReference,,,,
-147.120,,,,WA6VPL,,,Coordinated,,,,147.720,,,131.8,WA6VPL,FMN,Ham,,Lompoc,,o131.8es,narcc.org,,,,y
-147.120,,,,WR6AOK,,,Coordinated,,,,147.720,,,94.8,SLVARC,FMN,Ham,,Ben Lomond,,o94.8els,narcc.org,,,,y
-147.150,,,,WA6YCZ,,,Coordinated,,,,147.750,,,,BAYCOM,FMN,Ham,,San Jose,,celx,narcc.org,,,,
-147.165,,,,KB6FEC,,,Coordinated,,,,147.765,,,100.0,KB6FEC,FMN,Ham,,San Jose,,o100.0rs,narcc.org,,,,y
-147.165,,,,KB6FEC,,,Coordinated,,,,147.765,,,162.2,KB6FEC,FMN,Ham,,San Jose,,o162.2ers,narcc.org,,,,y
-147.180,,,,W6WLS ,,,Santa Cruz Mountains (Felton / Bonny Doon) ,,,,147.780,RM,94.8 PL,,SCZ Mtns,FM ,Ham ,Santa Cruz,,VHF ARES,,RadioReference,,,,
-147.180,,,,W6WLS,,,Coordinated,,,,147.780,,,94.8,W6WLS,FMN,Ham,,Felton,,o94.8elsx,narcc.org,,I:3228,y,y
-147.270,,,,KC6TOX,,,Not Coordinated,,,,147.870,,,127.3,SLOECC,FMN,Ham,,Cambria,,#o127.3,narcc.org,,,,
-147.285,,,,KF6FWO,,,Coordinated,,,,147.885,,,103.5,MARA,FMN,Ham,,San Jose,,o103.5aer,narcc.org,,,,
-147.315,,,,N6SBC,,,Coordinated,,,,147.915,,,94.8,SBC OES,FMN,Ham,,Hollister,,o94.8els,narcc.org,,,,y
-147.315,,,,N6SBC,,,Coordinated,,,,147.915,,,146.2,SBC ARES,FMN,Ham,,Hollister,,o146.2es,narcc.org,,,,y
-147.330,,,,K7DAA,,,Coordinated,,,,147.930,,,103.5,MHARS,FMN,Ham,,Morgan Hill,,o103.5ae,narcc.org,E:9537,I:7662,,
-147.360,,,,W6FM,,,Coordinated,,,,147.960,,,127.3,W6FM,FMN,Ham,,SanLuisObispo,,o127.3ers,narcc.org,,,,y
-147.360,,,,W6TI,,,Coordinated,,,,147.960,,,110.9,NCDXC,FMN,Ham,,Palo Alto,,o110.9esx,narcc.org,,,y,y
-147.390,,,,W6PIY,,,Coordinated,,,,147.990,,,151.4,WVARA,FMN,Ham,,San Jose,,o151.4aels,narcc.org,,,,y
-147.675,,,,KB6FEC,,,Not Coordinated,,,,147.075,,,162.2,KB6FEC,FMN,Ham,,San Jose,,#o162.2,narcc.org,,,,
-147.825,,,,W6GGF,,,Coordinated,,,,147.225,,,100.0,GVARC,FMN,Ham,,Morgan Hill,,o100.0aers,narcc.org,,,,y
-147.855,,,,WA6TEM,,,Coordinated,,,,147.255,,,100.0,WA6HNE,FMN,Ham,,San Jose,,o100.0ae,narcc.org,,,,
-147.945,,,,KI6EH ,,,Watsonville ,,,,147.345,RM,94.8 PL,,Watsonville,FM ,Ham ,Santa Cruz,,VHF ARES,,RadioReference,,,,
-147.945,,,,KI6EH,,,Coordinated,,,,147.345,,,94.8,SCCARC,FMN,Ham,,Watsonville,,o94.8elrs,narcc.org,,,,y
-147.945,,,,N6QDY,,,Coordinated,,,,147.345,,,77.0,C.A.R.U.N.,FMN,Ham,,Milpitas,,o77.0elsx,narcc.org,,,y,y
-147.990,,,,WB6MIA,,,Coordinated,,,,147.390,,,127.3,SLOECC,FMN,Ham,,Nipomo,,o127.3rs,narcc.org,,,,y
-150.775,,,,,,,Tac Silver ,,,,,RM,192.8 PL,,SCCoFD Sil,FM ,Fire-Tac ,Santa Cruz,,Fire,,RadioReference,,,,
-151.040,,,,,,,Tac Orange ,,,,,RM,151.4 PL,,SCCoFD Orn,FM ,Fire-Tac ,Santa Cruz,,Fire,,RadioReference,,,,
-151.100,,,,,,,County Roads ,,,,159.195,RM,CSQ,,SCC Roads,FM ,Public Works ,Santa Cruz,,,,RadioReference,,,,
-152.360,,,,WNKD229 ,,,Yellow Cab Co - Base ,,,,,B,,,Yellow Cab B,FM ,Transportation ,Santa Cruz,,,,RadioReference,,,,
-153.410,,,,KMK835  ,,,Water Department ,,,,158.160,RM,,,SntaCruzWtr,FM ,Public Works ,Santa Cruz,Santa Cruz,,,RadioReference,,,,
-153.515,,,,WNHB862 ,,,District Operations ,,,,,BM,,,SVWD Ops,FM ,Utilities ,Santa Cruz,Scotts Valley,Water,,RadioReference,,,,
-153.530,,,,KFM822 ,,,District Operations ,,,,158.190,RM,131.8 PL,,SCWD Ops,FM ,Utilities ,Santa Cruz,Soquel,Water,,RadioReference,,,,
-153.635,,,,KMB879 ,,,Santa Cruz Area Electric ,,,,,BM,103.5 PL,,PG&E S Cruz,FM ,Utilities ,Santa Cruz,,Pacific Gas and Electric,,RadioReference,,,,
-153.995,,,,KNHB808 ,,,Police Secondary Yellow ,,,,,BM,,,CapitolaPD 2,FM ,Law Tac ,Santa Cruz,Capitola,,,RadioReference,,,,
-154.055,,,,KD28224  ,,,Common Black ,,,,,M,162.2 PL,,SCCSO Black,FM ,Law Tac ,Santa Cruz,,Sheriff,,RadioReference,,,,
-154.055,,,,,,,South Tac Black ,,,,,BM,192.8 PL,,SCCoFD Blk,FM ,Fire-Tac ,Santa Cruz,,Fire,,RadioReference,,,,
-154.100,,,,KMJ884  ,,,Trash/Recycling ,,,,158.790,RM,103.5 PL,,SntaCruzTras,FM ,Public Works ,Santa Cruz,Santa Cruz,,,RadioReference,,,,
-154.190,,,,,,,Valley Tac Yellow ,,,,156.000,RM,103.5 PL,,SCCoFD Yel,FM ,Fire-Tac ,Santa Cruz,,Fire,,RadioReference,,,,
-154.325,,,,,,,Dispatch Red ,,,,153.770,RM,118.8 PL,,SCCoFD Red,FM ,Fire Dispatch ,Santa Cruz,,Fire,,RadioReference,,,,
-154.415,,,,,,,Coastal Tac Blue ,,,,,BM,151.4 PL,,SCCoFD Blu,FM ,Fire-Tac ,Santa Cruz,,Fire,,RadioReference,,,,
-154.445,,,,,,,East Tac Green ,,,,,BM,162.2 PL,,SCCoFD Grn,FM ,Fire-Tac ,Santa Cruz,,Fire,,RadioReference,,,,
-154.555,,,,,,,Detectives Brown ,,,,,M,162.2 PL,,SCCSO Brown,FM ,Law Tac ,Santa Cruz,,Sheriff,,RadioReference,,,,
-154.770,,,,KMA233 ,,,Police Dispatch ,,,,155.655,RM,162.2 PL,,SntaCruzPD1,FM ,Law Dispatch ,Santa Cruz,Santa Cruz,,,RadioReference,,,,
-154.845,,,,KMA340 ,,,Police Dispatch Blue ,,,,158.730,RM,162.2 PL,,WatsnvillePD,FM ,Law Dispatch ,Santa Cruz,Wattsonville,,,RadioReference,,,,
-154.950,,,,WSQ977 ,,,Mutual Aid Red ,,,,159.150,RM,CSQ,,SCCSO Red,FMN ,Interop ,Santa Cruz,,Sheriff,,RadioReference,,,,
-155.010,,,,,,,Mobile Extenders ,,,,,M,CSQ,,SCCSO Ext,FM ,Law Talk ,Santa Cruz,,Sheriff,,RadioReference,,,,
-155.055,,,,,,,County Animal Control ,,,,153.935,RM,CSQ,,SCCAnimalCTL,FM ,Public Works ,Santa Cruz,,,,RadioReference,,,,
-155.070,,,,KBV97 ,,,Tac Green ,,,,,M,162.2 PL,,SCCSO Green,FM ,Law Tac ,Santa Cruz,,Sheriff,,RadioReference,,,,
-155.085,,,,KLI289 ,,,Police Dispatch Blue ,,,,153.905,RM,162.2 PL,,ScottsVlyPD1,FM ,Law Dispatch ,Santa Cruz,Scotts Valley,,,RadioReference,,,,
-155.145,,,,WPIC576 ,,,Santa Cruz Port District ,,,,,BM,,,StnaCruzPort,FM ,Public Works ,Santa Cruz,Santa Cruz,,,RadioReference,,,,
-155.160,,,,KD31427 ,,,Disaster 1 - Search & Rescue / SWAT ,,,,,M,162.2 PL,,SCCSO Dis 1,FM ,Emergency Ops ,Santa Cruz,,Sheriff,,RadioReference,,,,
-155.220,,,,WNWN528 ,,,Disaster 2 Gold ,,,,,M,CSQ,,SCCSO Dis 2,FM ,Emergency Ops ,Santa Cruz,,Sheriff,,RadioReference,,,,
-155.220,,,,WNWN528 ,,,Lifeguards ,,,,,BM,123.0 PL,,StnaCruzL/G,FM ,Public Works ,Santa Cruz,Santa Cruz,,,RadioReference,,,,
-155.235,,,,KB54173 ,,,Search & Rescue ,,,,,M,162.2 PL,,SCCSO SAR,FM ,Law Tac ,Santa Cruz,,Sheriff,,RadioReference,,,,
-155.265,,,,KD31427 ,,,SWAT/Explorers ,,,,,M,162.2 PL,,SCCSO SWAT,FM ,Law Tac ,Santa Cruz,,Sheriff,,RadioReference,,,,
-155.310,,,,WNHI428 ,,,Jail Security ,,,,158.865,RM,162.2 PL,,SCCSO Jail,FM ,Law Dispatch ,Santa Cruz,,Sheriff,,RadioReference,,,,
-155.385,,,,,,,Medic-Hospital ,,,,,BM,118.8 PL,,SCCo Med,FM ,Hospital ,Santa Cruz,,EMS,,RadioReference,,,,
-155.565,,,,WSQ977 ,,,Dispatch Blue ,,,,159.030,RM,CSQ,,SCCSO Blue,FMN ,Law Dispatch ,Santa Cruz,,Sheriff,,RadioReference,,,,
-155.625,,,,KUZ592 ,,,Police Dispatch Blue ,,,,158.970,RM,162.2 PL,,CapitolaPD 1,FM ,Law Dispatch ,Santa Cruz,Capitola,,,RadioReference,,,,
-155.880,,,,WNVA542 ,,,Police Secondary ,,,,158.760,RM,123.0 PL,,SntaCruzPD2,FM ,Law Tac ,Santa Cruz,Santa Cruz,,,RadioReference,,,,
-155.940,,,,KLI289 ,,,Police Secondary Yellow ,,,,,BM,162.2 PL,,ScottsVlyPD2,FM ,Law Tac ,Santa Cruz,Scotts Valley,,,RadioReference,,,,
-156.030,,,,KBV97 ,,,Tac Orange ,,,,,M,162.2 PL,,SCCSO Orange,FM ,Law Talk ,Santa Cruz,,Sheriff,,RadioReference,,,,
-156.425,,,,WQA899 ,,,Santa Cruz Yacht Club ,,,,,BM,,,SCZ Yacht,FM ,Business ,Santa Cruz,,,,RadioReference,,,,
-157.620,,,,WNKD229 ,,,Yellow Cab Co - Mobile ,,,,,M,,,Yellow Cab M,FM ,Transportation ,Santa Cruz,,,,RadioReference,,,,
-161.640,,,,KLG271 ,,,KSCO-1080 AM Remote Broadcast ,,,,,B,CSQ,,KSCO-AM IFP,FM ,Media ,Santa Cruz,,Media,,RadioReference,,,,
-161.670,,,,KLG271 ,,,KSCO-1080 AM Remote Broadcast ,,,,,B,CSQ,,KSCO-AM IFP,FM ,Media ,Santa Cruz,,Media,,RadioReference,,,,
-161.700,,,,KLG272 ,,,KSCO-1080 AM Remote Broadcast ,,,,,B,CSQ,,KSCO-AM IFP,FM ,Media ,Santa Cruz,,Media,,RadioReference,,,,
-161.730,,,,KLG272 ,,,KSCO-1080 AM Remote Broadcast ,,,,,B,CSQ,,KSCO-AM IFP,FM ,Media ,Santa Cruz,,Media,,RadioReference,,,,
-161.760,,,,KLG272 ,,,KSCO-1080 AM Remote Broadcast ,,,,,B,CSQ,,KSCO-AM IFP,FM ,Media ,Santa Cruz,,Media,,RadioReference,,,,
-162.400,,,,NOAA1,,,,,,,,,,,NOAA1,FMN,NOAA,,,,,,,,,
-162.425,,,,NOAA2,,,,,,,,,,,NOAA2,FMN,NOAA,,,,,,,,,
-162.450,,,,NOAA3,,,,,,,,,,,NOAA3,FMN,NOAA,,,,,,,,,
-162.475,,,,NOAA4,,,,,,,,,,,NOAA4,FMN,NOAA,,,,,,,,,
-162.500,,,,NOAA5,,,,,,,,,,,NOAA5,FMN,NOAA,,,,,,,,,
-162.525,,,,NOAA6,,,,,,,,,,,NOAA6,FMN,NOAA,,,,,,,,,
-162.550,,,,NOAA7,,,,,,,,,,,NOAA7,FMN,NOAA,,,,,,,,,
-166.250,,,,,,,88.9 KUSP-FM Remote Broadcast ,,,,,B,CSQ,,KUSP-FM IFP,FM ,Media ,Santa Cruz,,Media,,RadioReference,,,,
-170.150,,,,,,,88.9 KUSP-FM Remote Broadcast ,,,,,B,CSQ,,KUSP-FM IFP,FM ,Media ,Santa Cruz,,Media,,RadioReference,,,,
-223.780,,,,K6GOD,,,Coordinated,,,,222.180,,,110.9,K6GOD,FMN,Ham,,Fremont,,o110.9elx,narcc.org,,,y,
-223.800,,,,WA6YBD,,,Not Coordinated,,,,222.200,,,107.2,WA6YBD,FMN,Ham,,Morgan Hill,,#o107.2el,narcc.org,,,,
-223.820,,,,KB6LCS,,,Coordinated,,,,222.220,,,156.7,KB6LCS,FMN,Ham,,Los Gatos,,o156.7el,narcc.org,,,,
-223.860,,,,K6GOD,,,Coordinated,,,,222.260,,,107.2,K6GOD,FMN,Ham,,Palo Alto,,o107.2ex,narcc.org,,,y,
-223.880,,,,K6FB,,,Coordinated,,,,222.280,,,100.0,LCARC,FMN,Ham,,Los Gatos,,o100.0ersx,narcc.org,,,y,y
-223.920,,,,KU6V,,,Coordinated,,,,222.320,,,100.0,KU6V,FMN,Ham,,San Martin,,o100.0el,narcc.org,,I:3620,,
-223.940,,,,KQ6RC,,,Coordinated,,,,222.340,,,,KQ6RC,FMN,Ham,,Santa Clara,,celx,narcc.org,E:59357,,y,
-223.960,,,,W6PIY,,,Coordinated,,,,222.360,,,156.7,WVARA,FMN,Ham,,San Jose,,o156.7aels,narcc.org,,,,y
-224.020,,,,K6UB,,,Coordinated,,,,222.420,,,88.5,K6UB,FMN,Ham,,San Jose,,o88.5elx,narcc.org,,,y,
-224.040,,,,KU6V,,,Coordinated,,,,222.440,,,100.0,KU6V,FMN,Ham,,San Jose,,o100.0elx,narcc.org, E:114065,I:3620,y,
-224.060,,,,N6NAC,,,Coordinated,,,,222.460,,,110.9,N6NAC,FMN,Ham,,Bonny Doon,,o110.9el,narcc.org,,,,
-224.080,,,,K6RPT,,,Not Coordinated,,,,222.480,,,107.2,K6RPT,FMN,Ham,,San Jose,,#o107.2l,narcc.org,,,,
-224.100,,,,WA2IBM,,,Not Coordinated,,,,222.500,,,156.7,IBM ARC,FMN,Ham,,San Jose,,#o156.7ae,narcc.org,,,,
-224.140,,,,W6ASH,,,Coordinated,,,,222.540,,,100.0,SPECS RA,FMN,Ham,,Mountain View,,o100.0aelrs,narcc.org,,,,y
-224.240,,,,N6SPD,,,Coordinated,,,,222.640,,,123.0,N6SPD RG,FMN,Ham,,Monterey,,o123.0aelrsx,narcc.org,E:202044,I:3234,y,y
-224.260,,,,WB6OQS,,,Coordinated,,,,222.660,,,123.0,SCVRS,FMN,Ham,,San Jose,,o123.0alx,narcc.org,,,y,
-224.280,,,,WA6GFY,,,Coordinated,,,,222.680,,,100.0,LMERA ARC,FMN,Ham,,San Jose,,o100.0ex,narcc.org,,,y,
-224.320,,,,N6LEX,,,Coordinated,,,,222.720,,,146.2,CCARN,FMN,Ham,,Salinas,,o146.2el,narcc.org,E:143007,,,
-224.340,,,,NV6RN,,,Coordinated,,,,222.740,,,88.5,VARN,FMN,Ham,,San Jose,,o88.5el,narcc.org,E:308926,,,
-224.360,,,,NV6RN,,,Not Coordinated,,,,222.760,,,156.7,BKRN,FMN,Ham,,San Jose,,#o156.7,narcc.org,,,,
-224.380,,,,KB6MET,,,Not Coordinated,,,,222.780,,,,KB6MET,FMN,Ham,,Watsonville,,#c,narcc.org,,,,
-224.460,,,,K6BEN,,,Coordinated,,,,222.860,,,,W2NYC,FMN,Ham,,Saratoga,,caelrx,narcc.org,,,y,
-224.480,,,,K6INC,,,Coordinated,,,,222.880,,,,AD1U,FMN,Ham,,Los Gatos,,cex,narcc.org,,,y,
-224.540,,,,KC6WRD,,,Coordinated,,,,222.940,,,,Friends Co,FMN,Ham,,San Jose,,celx,narcc.org,,,y,
-224.580,,,,WB6NYS,,,Not Coordinated,,,,222.980,,,151.4,WB6NYS,FMN,Ham,,SanLuisObispo,,#o151.4elx,narcc.org,,,y,
-224.580,,,,K6RPT,,,Not Coordinated,,,,222.980,,,107.2,K6RPT,FMN,Ham,,Los Gatos,,#o107.2el,narcc.org,,,,
-224.600,,,,KB6ABM,,,Coordinated,,,,223.000,,,156.7,CONDOR,FMN,Ham,,San Jose,,o156.7elx,narcc.org,,,y,
-224.620,,,,KA2FND,,,Coordinated,,,,223.020,,,110.9,KA2FND,FMN,Ham,,San Jose,,o110.9elrsx,narcc.org,,,y,y
-224.640,,,,N6NAC,,,Coordinated,,,,223.040,,,110.9,N6NAC,FMN,Ham,,San Jose,,o110.9elx,narcc.org,,,y,
-224.660,,,,NV6RN,,,Coordinated,,,,223.060,,,,VARN,FMN,Ham,,San Jose,,celsx,narcc.org,,,y,
-224.680,,,,WB6JWB,,,Not Coordinated,,,,223.080,,,94.8,WB6JWB,FMN,Ham,,SanLuisObispo,,#o94.8,narcc.org,,,,
-224.680,,,,WB6KHP,,,Coordinated,,,,223.080,,,107.2,CFMA,FMN,Ham,,San Jose,,o107.2,narcc.org,,,,
-224.720,,,,W6MLP,,,Coordinated,,,,223.120,,,100.0,MARES,FMN,Ham,,Milpitas,,o100.0ers,narcc.org,,,,y
-224.740,,,,WB6NYS,,,Not Coordinated,,,,223.140,,,131.8,ShandonRG,FMN,Ham,,Shandon,,#o131.8,narcc.org,,,,
-224.800,,,,NU6P,,,Coordinated,,,,223.200,,,118.8,NU6P,FMN,Ham,,Los Gatos,,o118.8aex,narcc.org,,,y,
-224.840,,,,KB6MET,,,Not Coordinated,,,,223.240,,,156.7,KB6MET,FMN,Ham,,Watsonville,,#o156.7,narcc.org,,,,
-224.860,,,,WC6MRA,,,Coordinated,,,,223.260,,,,CMRA,FMN,Ham,,SanLuisObispo,,cex,narcc.org,,,y,
-224.860,,,,KB6HDA,,,Not Coordinated,,,,223.260,,,100.0,KB6HDA,FMN,Ham,,San Jose,,#o100.0,narcc.org,,,,
-224.880,,,,N6DVC,,,Coordinated,,,,223.280,,,88.5,K6UB,FMN,Ham,,Los Gatos,,o88.5e,narcc.org,,,,
-224.920,,,,N6HYM,,,Not Coordinated,,,,223.320,,,,TCARS,FMN,Ham,,SanLuisObispo,,#celx,narcc.org,,,y,
-224.940,,,,WA6YCZ,,,Coordinated,,,,223.340,,,,BAYCOM,FMN,Ham,,San Jose,,oex,narcc.org,,,y,
-224.980,,,,NT6S,,,Coordinated,,,,223.380,,,110.9,NT6S,FMN,Ham,,San Jose,,o110.9l,narcc.org,,,,
-250.650,,,,,,,Beaver Control Discrete,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-282.050,,,,,,,Beaver Control W-283/W-285,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-290.150,,,,,,,Beaver Control W-260,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-307.125,,,,,,,Approach/Departure ,,,,,,,,WVI App/Dep,AM ,Aircraft ,Santa Cruz,,Air,,RadioReference,,,,
-328.450,,,,,,,Beaver Control W-283/W-285,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-353.450,,,,,,,Beaver Control W-260,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-355.600,,,,,,,Oakland Center (Sector 35),,,,,,,,,,,,,SFO,,liveatc.net,,,,
-362.550,,,,,,,Beaver Control Discrete,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-362.950,,,,,,,Beaver Control Discrete,,,,,,,,,,,,,SFO,,liveatc.net,,,,
-440.100,,,,W6SMQ,,,Coordinated,,,,445.100,,,127.3,W6SMQ,FMN,Ham,,San Jose,,o127.3elrsx,narcc.org,,,y,y
-440.125,,,,W6AMT,,,Not Coordinated,,,,445.125,,,114.8,AMT ARC,FMN,Ham,,Cupertino,,#o114.8l,narcc.org,,,,
-440.150,,,,W6TDM,,,Coordinated,,,,445.150,,,100.0,Cupertino,FMN,Ham,,Cupertino,,o100.0ers,narcc.org,,,,y
-440.200,,,,N6BDE,,,Coordinated,,,,445.200,,,123.0,N6BDE,FMN,Ham,,Palo Alto,,o123.0ers,narcc.org,,,,y
-440.225,,,,K6LLC,,,Coordinated,,,,445.225,,,123.0,LAPU-LAPU,FMN,Ham,,San Jose,,o123.0e,narcc.org,,,,
-440.275,,,,W6YOP,,,Coordinated,,,,445.275,,,127.3,YOP HLLS,FMN,Ham,,San Jose,,o127.3elrx,narcc.org,,,y,
-440.375,,,,N6TNR,,,Coordinated,,,,445.375,,,,ERG,FMN,Ham,,San Jose,,celx,narcc.org,,,y,
-440.450,,,,KG6NRI,,,Not Coordinated,,,,445.450,,,110.9,KG6NRI,FMN,Ham,,Monterey,,#o110.9ael,narcc.org,,,,
-440.525,,,,N6LEX,,,Not Coordinated,,,,445.525,,,146.2,CCARN,FMN,Ham,,Soledad,,#o146.2el,narcc.org,E:243317,,,
-440.550,,,,AB6VS,,,Pending,,,,445.550,,,94.8,LPARC,FMN,Ham,,Santa Cruz,,#o94.8els,narcc.org,,,,y
-440.575,,,,KA6ZRJ,,,Not Coordinated,,,,445.575,,,114.8,KA6ZRJ,FMN,Ham,,Morgan Hill,,#o114.8,narcc.org,,,,
-440.650,,,,WA6JZN,,,Not Coordinated,,,,445.650,,,94.8,WA6JZN,FMN,Ham,,Los Gatos,,#o94.8ex,narcc.org,,,y,
-440.700,,,,W6RTF,,,Coordinated,,,,445.700,,,100.0,w6rtf,FMN,Ham,,Salinas,,o100.0l,narcc.org,,,,
-440.800,,,,W6ASH,,,Coordinated,,,,445.800,,,100.0,SPECS RA,FMN,Ham,,Mountain View,,o100.0aelrs,narcc.org,,,,y
-440.850,,,,W6JWS,,,Coordinated,,,,445.850,,,94.8,W6JWS,FMN,Ham,,Santa Cruz,,o94.8aersx,narcc.org,,,y,y
-440.875,,,,KH6N,,,Coordinated,,,,445.875,,,100.0,KH6N,FMN,Ham,,Los Altos,,o100.0rs,narcc.org,E:96932,,,y
-440.925,,,,K6BJ,,,Coordinated,,,,445.925,,,123.0,SCCARC,FMN,Ham,,Santa Cruz,,o123.0ers,narcc.org,,,,y
-441.025,,,,K9GVF,,,Coordinated,,,,446.025,,,156.7,K9GVF,FMN,Ham,,Campbell,,o156.7ers,narcc.org,,,,y
-441.050,,,,K6NN,,,Coordinated,,,,446.050,,,100.0,T&BC,FMN,Ham,,Los Gatos,,o100.0ex,narcc.org,,,y,
-441.050,,,,N6UUI,,,Not Coordinated,,,,446.050,,,123.0,TEL PNRS,FMN,Ham,,Los Gatos,,#o123.0ex,narcc.org,,,y,
-441.075,,,,WB6JWB,,,Not Coordinated,,,,446.075,,,94.8,WB6JWB,FMN,Ham,,SanLuisObispo,,#o94.8,narcc.org,,,,
-441.100,,,,K6GOD,,,Coordinated,,,,446.100,,,114.8,K6GOD,FMN,Ham,,Palo Alto,,o114.8elrsx,narcc.org,,,y,y
-441.125,,,,KC6UDC,,,Not Coordinated,,,,446.125,,,123.0,KC6UDC,FMN,Ham,,Prunedale,,#o123.0,narcc.org,,,,
-441.150,,,,KC6BJO,,,Coordinated,,,,446.150,,,100.0,KAISER HP,FMN,Ham,,San Jose,,o100.0e,narcc.org,,,,
-441.175,,,,KF6FWO,,,Coordinated,,,,446.175,,,103.5,MARA,FMN,Ham,,San Jose,,o103.5aer,narcc.org,,,,
-441.250,,,,WB6WTM,,,Coordinated,,,,446.250,,,,WB6WTM,FMN,Ham,,Los Altos,,cel,narcc.org,,,,
-441.275,,,,K6BEN,,,Coordinated,,,,446.275,,,,W2NYC,FMN,Ham,,San Jose,,celrx,narcc.org,,,y,
-441.300,,,,WB6ECE,,,Not Coordinated,,,,446.300,,,100.0,WB6ECE RG,FMN,Ham,,Bonny Doon,,#o100.0elx,narcc.org,,,y,
-441.300,,,,WB6ECE,,,Not Coordinated,,,,446.300,,,156.7,WB6ECE RG,FMN,Ham,,Bonny Doon,,#o156.7a,narcc.org,,,,
-441.300,,,,WB6ECE,,,Not Coordinated,,,,446.300,,,136.5,WB6ECE RG,FMN,Ham,,Monterey,,#o136.5ex,narcc.org,,,y,
-441.300,,,,WB6ECE,,,Not Coordinated,,,,446.300,,,100.0,WB6ECE RG,FMN,Ham,,Boulder Creek,,#o100.0elx,narcc.org,,,y,
-441.300,,,,WB6ECE,,,Not Coordinated,,,,446.300,,,100.0,WB6ECE RG,FMN,Ham,,Milpitas,,#o100.0ex,narcc.org,,,y,
-441.300,,,,WB6ECE,,,Not Coordinated,,,,446.300,,,100.0,WB6ECE RG,FMN,Ham,,San Jose,,#o100.0elx,narcc.org,,,y,
-441.325,,,,WE6R,,,Coordinated,,,,446.325,,,,WE6R,FMN,Ham,,Monterey,,celrs,narcc.org,,,,y
-441.350,,,,W6PIY,,,Coordinated,,,,446.350,,,88.5,WVARA,FMN,Ham,,San Jose,,o88.5aels,narcc.org,,,,y
-441.450,,,,K6JE,,,Coordinated,,,,446.450,,,123.0,FPRA,FMN,Ham,,Salinas,,o123.0ersx,narcc.org,,,y,y
-441.550,,,,W6VB,,,Coordinated,,,,446.550,,,,W6VB,FMN,Ham,,Cupertino,,caels,narcc.org,,,,y
-441.575,,,,K6IRC,,,Not Coordinated,,,,446.575,,,,ARN,FMN,Ham,,Palo Alto,,#celx,narcc.org,,,y,
-441.600,,,,N6HU,,,Coordinated,,,,446.600,,,,KQ6RC,FMN,Ham,,Soledad,,cel,narcc.org,,,,
-441.625,,,,W6RCA,,,Not Coordinated,,,,446.625,,,100.0,W6CBS,FMN,Ham,,Los Gatos,,#o100.0,narcc.org,,,,
-441.650,,,,N6SPD,,,Coordinated,,,,446.650,,,94.8,N6SPD RG,FMN,Ham,,King City,,o94.8elrsx,narcc.org,,I:3796,y,y
-441.650,,,,N6SPD,,,Coordinated,,,,446.650,,,123.0,N6SPD RG,FMN,Ham,,Monterey,,o123.0aelrsx,narcc.org,E:202044,I:3234,y,y
-441.675,,,,K6BJ,,,Coordinated,,,,446.675,,,,SCCARC,FMN,Ham,,Santa Cruz,,oers,narcc.org,,,,y
-441.700,,,,K6UB,,,Coordinated,,,,446.700,,,127.3,K6UB,FMN,Ham,,Los Gatos,,o127.3el,narcc.org,,,,
-441.725,,,,WA6QDP,,,Coordinated,,,,446.725,,,,WA6QDP,FMN,Ham,,San Jose,,celx,narcc.org,,,y,
-441.775,,,,W6NSA,,,Not Coordinated,,,,446.775,,,100.0,CCARC,FMN,Ham,,San Jose,,#o100.0,narcc.org,,,,
-441.825,,,,K6INC,,,Coordinated,,,,446.825,,,,SCAN INT'L,FMN,Ham,,Coalinga,,cx,narcc.org,,,y,
-441.825,,,,AD1U,,,Coordinated,,,,446.825,,,,AD1U,FMN,Ham,,San Jose,,cl,narcc.org,,,,
-441.850,,,,K6OTR,,,Not Coordinated,,,,446.850,,,114.8,SCAR,FMN,Ham,,Palo Alto,,#o114.8x,narcc.org,,,y,
-441.900,,,,W6MOW,,,Coordinated,,,,446.900,,,110.9,W6MOW,FMN,Ham,,Hollister,,o110.9el,narcc.org,,,,
-441.925,,,,WA6HHQ,,,Coordinated,,,,446.925,,,100.0,WA6HHQ,FMN,Ham,,Aptos,,o100.0,narcc.org,,,,
-441.950,,,,N6MPX,,,Coordinated,,,,446.950,,,100.0,MSARC,FMN,Ham,,San Jose,,o100.0el,narcc.org,,,,
-442.000,,,,WW6HP,,,Coordinated,,,,447.000,,,151.4,HPSVRC,FMN,Ham,,Palo Alto,,o151.4ex,narcc.org,,,y,
-442.025,,,,N6ADU,,,Coordinated,,,,447.025,,,100.0,A UNTALAN,FMN,Ham,,Grover Beach,,o100.0,narcc.org,E:651303,,,
-442.025,,,,N6LEX,,,Not Coordinated,,,,447.025,,,146.2,CCARN,FMN,Ham,,Salinas,,#o146.2el,narcc.org,E:1430037,,,
-442.025,,,,K6SNC,,,Coordinated,,,,447.025,,,100.0,SCARS,FMN,Ham,,Santa Clara,,o100.0rs,narcc.org,,,,y
-442.075,,,,K6LNK,,,Coordinated,,,,447.075,,,114.8,CARLA,FMN,Ham,,Greenfield,,o114.8el,narcc.org,E:360571,I:3994,,
-442.125,,,,WR6BAT,,,Coordinated,,,,447.125,,,,K6LLK,FMN,Ham,,Cupertino,,caesx,narcc.org,,,y,
-442.175,,,,K9GVF,,,Coordinated,,,,447.175,,,100.0,CalNet,FMN,Ham,,Campbell,,o100.0el,narcc.org,,,,
-442.175,,,,N1UFD,,,Not Coordinated,,,,447.175,,,,CALNET,FMN,Ham,,San Jose,,#celx,narcc.org,,,y,
-442.300,,,,W6BHZ,,,Coordinated,,,,447.300,,,127.3,CPARC,FMN,Ham,,SanLuisObispo,,o127.3elrs,narcc.org,,,,y
-442.300,,,,K6INC,,,Coordinated,,,,447.300,,,114.8,SCAN INT'L,FMN,Ham,,Los Gatos,,o114.8elx,narcc.org,E:38384,,y,
-442.350,,,,K6GOD,,,Coordinated,,,,447.350,,,,GOD,FMN,Ham,,Cupertino,,ce,narcc.org,,,,
-442.350,,,,K6GOD,,,Coordinated,,,,447.350,,,100.0,GOD,FMN,Ham,,Milpitas,,o100.0e,narcc.org,,,,
-442.350,,,,K6GOD,,,Coordinated,,,,447.350,,,123.0,K6GOD,FMN,Ham,,San Jose,,o123.0,narcc.org,,,,
-442.375,,,,K6JDE,,,Coordinated,,,,447.375,,,114.8,K6JDE,FMN,Ham,,San Jose,,o114.8,narcc.org,,,,
-442.425,,,,W6UU,,,Coordinated,,,,447.425,,,107.2,SCCARA,FMN,Ham,,San Jose,,o107.2er,narcc.org,,,,
-442.500,,,,WB6ZVW,,,Coordinated,,,,447.500,,,100.0,CPRA,FMN,Ham,,San Jose,,o100.0ersx,narcc.org,,,y,y
-442.575,,,,K6FB,,,Coordinated,,,,447.575,,,100.0,LCARC,FMN,Ham,,Palo Alto,,o100.0elrsx,narcc.org,,,y,y
-442.600,,,,KG6UYZ,,,Coordinated,,,,447.600,,,110.9,KG6UYZ,FMN,Ham,,Salinas,,o110.9el,narcc.org,,,,
-442.650,,,,WR6E,,,Coordinated,,,,447.650,,,141.3,AC6E,FMN,Ham,,Panoche,,o141.3e,narcc.org,,,,
-442.650,,,,KQ6RC,,,Coordinated,,,,447.650,,,,KQ6RC,FMN,Ham,,Daly City,,cel,narcc.org,,,,
-442.675,,,,W6HD,,,Coordinated,,,,447.675,,,110.9,RadioRanch,FMN,Ham,,Paso Robles,,o110.9ae,narcc.org,,,,
-442.700,,,,WB6FMC,,,Not Coordinated,,,,447.700,,,127.3,WB6FMC,FMN,Ham,,SanLuisObispo,,#o127.3ersx,narcc.org,,,y,y
-442.700,,,,N6MNV,,,Coordinated,,,,447.700,,,100.0,Rolm ARC,FMN,Ham,,San Jose,,o100.0e,narcc.org,,,,
-442.775,,,,KG6NRI,,,Coordinated,,,,447.775,,,110.9,KG6NRI,FMN,Ham,,Prunedale,,o110.9l,narcc.org,,,,
-442.775,,,,KU6V,,,Coordinated,,,,447.775,,,131.8,KU6V,FMN,Ham,,San Jose,,o131.8e,narcc.org,,,,
-442.800,,,,K6OTR,,,Coordinated,,,,447.800,,,114.8,SCAR,FMN,Ham,,Palo Alto,,o114.8,narcc.org,,,,
-442.825,,,,WR6COP,,,Coordinated,,,,447.825,,,,K6COP,FMN,Ham,,San Jose,,celx,narcc.org,,,,
-442.875,,,,WB6FMC,,,Not Coordinated,,,,447.875,,,,WB6FMC,FMN,Ham,,SanLuisObispo,,#celrsx,narcc.org,,,y,y
-442.875,,,,WA6YLV,,,Not Coordinated,,,,447.875,,,100.0,WA6YLV,FMN,Ham,,San Jose,,#o100.0,narcc.org,,,,
-442.900,,,,WR6ABD,,,Coordinated,,,,447.900,,,162.2,LPRC,FMN,Ham,,San Jose,,o162.2elx,narcc.org,,I:3421,y,
-442.950,,,,K6YZS,,,Not Coordinated,,,,447.950,,,85.4,K6YZS,FMN,Ham,,San Jose,,#o85.4ex,narcc.org,,,y,
-442.975,,,,K7DAA,,,Coordinated,,,,447.975,,,100.0,MHARS,FMN,Ham,,Morgan Hill,,o100.0elx,narcc.org,,,y,
-443.000,,,,W6OOL,,,Coordinated,,,,448.000,,,,W6OOL,FMN,Ham,,Palo Alto,,caex,narcc.org,,,y,
-443.025,,,,K6EXE,,,Coordinated,,,,448.025,,,,K6EXE,FMN,Ham,,Milpitas,,cers,narcc.org,,,,y
-443.025,,,,WA6ABB,,,Coordinated,,,,448.025,,,,WA6ABB,FMN,Ham,,Los Gatos,,caex,narcc.org,,,y,
-443.050,,,,K6RMW,,,Coordinated,,,,448.050,,,94.8,K6RMWK6GDI,FMN,Ham,,Watsonville,,o94.8ers,narcc.org,,,,y
-443.075,,,,K6LNK,,,Coordinated,,,,448.075,,,123.0,CARLA,FMN,Ham,,San Jose,,o123.0e,narcc.org, E:360571,I:3994,,
-443.125,,,,K6BEN,,,Coordinated,,,,448.125,,,,W2NYC,FMN,Ham,,Saratoga,,caelr,narcc.org,,,,
-443.150,,,,K6SA,,,Coordinated,,,,448.150,,,100.0,SARA,FMN,Ham,,Cupertino,,o100.0lrs,narcc.org,E:85531,I:3671,,y
-443.225,,,,WW6BAY,,,Coordinated,,,,448.225,,,100.0,Bay Net,FMN,Ham,,Palo Alto,,o100.0elx,narcc.org, E:314933,I:3802,y,
-443.275,,,,K7AZ,,,Coordinated,,,,448.275,,,,K7AZ,FMN,Ham,,Lompoc,,cel,narcc.org,,,,
-443.275,,,,K6SNY,,,Coordinated,,,,448.275,,,107.2,SARES-RG,FMN,Ham,,San Jose,,o107.2ersx,narcc.org,,,y,y
-443.300,,,,KB5JR,,,Not Coordinated,,,,448.300,,,136.5,KB5JR,FMN,Ham,,San Jose,,#o136.5elx,narcc.org,,,y,
-443.350,,,,KB6MET,,,Not Coordinated,,,,448.350,,,123.0,KB6MET,FMN,Ham,,Watsonville,,#o123.0,narcc.org,,,,
-443.425,,,,NC6EO,,,Coordinated,,,,448.425,,,100.0,N. CA Assn,FMN,Ham,,Fremont,,o100.0lrx,narcc.org,,,y,
-443.450,,,,K6MF,,,Coordinated,,,,448.450,,,,K6MF,FMN,Ham,,San Jose,,cel,narcc.org,,,,
-443.475,,,,WB6PHE,,,Not Coordinated,,,,448.475,,,127.3,WB6PHE,FMN,Ham,,Santa Cruz,,#o127.3elrs,narcc.org,,,,y
-443.475,,,,K6LNK,,,Coordinated,,,,448.475,,,123.0,CARLA,FMN,Ham,,San Jose,,o123.0elx,narcc.org,E:360571,I:3994,y,
-443.500,,,,K6LNK,,,Coordinated,,,,448.500,,,100.0,CARLA,FMN,Ham,,SanLuis Obispo,,o100.0elx,narcc.org,E:360571,I:3994,y,
-443.550,,,,WB6FRM,,,Coordinated,,,,448.550,,,,NCCRA,FMN,Ham,,San Jose,,celx,narcc.org,,,y,
-443.575,,,,W6FM,,,Coordinated,,,,448.575,,,,W6FM,FMN,Ham,,SanLuisObispo,,cex,narcc.org,,,,
-443.575,,,,KE6STH,,,Coordinated,,,,448.575,,,110.9,KE6STH,FMN,Ham,,San Jose,,o110.9al,narcc.org,E:95278,,,
-443.600,,,,W6MOW,,,Coordinated,,,,448.600,,,110.9,W6MOW,FMN,Ham,,Salinas,,o110.9ex,narcc.org,,I:3853,y,
-443.625,,,,K6MSR,,,Not Coordinated,,,,448.625,,,,MSR,FMN,Ham,,San Jose,,#caelx,narcc.org,,,y,
-443.675,,,,WA6NMF,,,Coordinated,,,,448.675,,,136.5,WA6NMF,FMN,Ham,,Santa Cruz,,o136.5aes,narcc.org,,,,y
-443.675,,,,K6MSR,,,Not Coordinated,,,,448.675,,,,MSR,FMN,Ham,,Los Altos,,#cael,narcc.org,,,,
-443.700,,,,KA7DXP,,,Not Coordinated,,,,448.700,,,100.0,KA7DXP,FMN,Ham,,Nipomo,,#o100.0,narcc.org,,,,
-443.750,,,,K9GVF,,,Coordinated,,,,448.750,,,100.0,K9GVF,FMN,Ham,,Los Gatos,,o100.0elrx,narcc.org,,,y,
-443.775,,,,WA6GFY,,,Coordinated,,,,448.775,,,100.0,LMERA ARC,FMN,Ham,,San Jose,,o100.0ex,narcc.org,,,y,
-443.800,,,,KG6UYZ,,,Coordinated,,,,448.800,,,110.9,KG6UYZ,FMN,Ham,,Carmel,,o110.9el,narcc.org,,,,
-443.800,,,,N6HYM,,,Not Coordinated,,,,448.800,,,,N6HYM,FMN,Ham,,SanLuisObispo,,#cel,narcc.org,,,,
-443.850,,,,W6BUG,,,Coordinated,,,,448.850,,,,Bay Users,FMN,Ham,,LosAltosHills,,cel,narcc.org, E:3580,I:3737,,
-443.900,,,,N6SPD,,,Coordinated,,,,448.900,,,123.0,N6SPD RG,FMN,Ham,,Prunedale,,o123.0ers,narcc.org,,,,y
-443.900,,,,K6RDC,,,Not Coordinated,,,,448.900,,,100.0,CCARC,FMN,Ham,,San Jose,,#o100.0,narcc.org,,,,
-443.950,,,,K6INC,,,Coordinated,,,,448.950,,,,SCAN INT'L,FMN,Ham,,Los Gatos,,c,narcc.org,,,,
-443.975,,,,W6SLO,,,Coordinated,,,,448.975,,,127.3,SLOECC,FMN,Ham,,Arroyo Grande,,o127.3elrs,narcc.org,,,,y
-443.975,,,,WB6FRM,,,Coordinated,,,,448.975,,,,NCCRA,FMN,Ham,,King City,,clx,narcc.org,,,y,
-444.000,,,,W6WLS,,,Coordinated,,,,449.000,,,94.8,W6WLS,FMN,Ham,,Scotts Valley,,o94.8l,narcc.org,,I:7228,,
-444.000,,,,WA6INC,,,Coordinated,,,,449.000,,,,AD1U,FMN,Ham,,San Jose,,c,narcc.org,,,,
-444.025,,,,K6JJC,,,Coordinated,,,,449.025,,,136.5,RMRG,FMN,Ham,,San Jose,,o136.5elx,narcc.org,,,y,
-444.050,,,,KF6QYJ,,,Coordinated,,,,449.050,,,127.3,SLOECC,FMN,Ham,,SanLuisObispo,,o127.3elrsx,narcc.org,,,y,y
-444.050,,,,KB6FEC,,,Coordinated,,,,449.050,,,,KB6FEC,FMN,Ham,,San Jose,,cals,narcc.org,,,,y
-444.075,,,,WB6ORK,,,Not Coordinated,,,,449.075,,,,WB6ORK,FMN,Ham,,King City,,#celsx,narcc.org,,,y,y
-444.100,,,,KD6EKH,,,Coordinated,,,,449.100,,,127.3,SLOECC,FMN,Ham,,San Simeon,,o127.3elrsx,narcc.org,,,y,y
-444.100,,,,N6TLQ,,,Not Coordinated,,,,449.100,,,,N6TLQ,FMN,Ham,,San Jose,,#cer,narcc.org,,,,
-444.150,,,,W6SLO,,,Coordinated,,,,449.150,,,127.3,SLOECC,FMN,Ham,,SantaMargarita,,o127.3elrsx,narcc.org,,,y,y
-444.175,,,,WA6RQX,,,Coordinated,,,,449.175,,,192.8,WA6RQX,FMN,Ham,,San Jose,,o192.8elrx,narcc.org,,,y,
-444.200,,,,KJ6WZS,,,Coordinated,,,,449.200,,,123.0,GilroyRPTR,FMN,Ham,,Gilroy,,o123.0e,narcc.org,,,,
-444.225,,,,KE6JTK,,,Not Coordinated,,,,449.225,,,131.8,KE6JTK,FMN,Ham,,LosAltosHills,,#o131.8aex,narcc.org,,,y,
-444.275,,,,N6SPD,,,Coordinated,,,,449.275,,,100.0,N6SPD RG,FMN,Ham,,Monterey,,o100.0aelrsx,narcc.org,,I:3589,y,y
-444.275,,,,WA6VPL,,,Coordinated,,,,449.275,,,,WA6VPL,FMN,Ham,,Nipomo,,c,narcc.org,,,,
-444.300,,,,W7AFG,,,Coordinated,,,,449.300,,,173.8,AREA-Amate,FMN,Ham,,San Jose,,o173.8ersx,narcc.org,,,y,y
-444.300,,,,W7AFG,,,Coordinated,,,,449.300,,,162.2,AREA-Amate,FMN,Ham,,San Jose,,o162.2aers,narcc.org,,,,y
-444.325,,,,KD6AOG,,,Not Coordinated,,,,449.325,,,127.3,KD6AOG,FMN,Ham,,San Jose,,#o127.3,narcc.org,,,,
-444.350,,,,KJ6VU,,,Coordinated,,,,449.350,,,,NCCRA,FMN,Ham,,Palo Alto,,celx,narcc.org,,,y,
-444.375,,,,WA6RQX,,,Coordinated,,,,449.375,,,100.0,WEST COAST,FMN,Ham,,Soledad,,o100.0er,narcc.org,,,,
-444.375,,,,N6INC,,,Coordinated,,,,449.375,,,,KQ6RC,FMN,Ham,,Milpitas,,cl,narcc.org,,,,
-444.400,,,,WA6YCZ,,,Coordinated,,,,449.400,,,,BAYCOM,FMN,Ham,,San Jose,,celx,narcc.org,,,y,
-444.425,,,,KJ6VU,,,Coordinated,,,,449.425,,,127.3,Bay-Net,FMN,Ham,,Palo Alto,,o127.3ersx,narcc.org,,,y,
-444.450,,,,WB6JSO,,,Coordinated,,,,449.450,,,100.0,WB6JSO,FMN,Ham,,San Jose,,o100.0e,narcc.org,,,,
-444.475,,,,W6FM,,,Coordinated,,,,449.475,,,,W6FM,FMN,Ham,,SanLuisObispo,,celx,narcc.org,,,y,
-444.525,,,,W6FM,,,Coordinated,,,,449.525,,,127.3,W6FM,FMN,Ham,,SanLuisObispo,,o127.3ex,narcc.org,E:68906,I:5570,y,
-444.525,,,,W6JSO,,,Coordinated,,,,449.525,,,123.0,W6JSO,FMN,Ham,,Monterey,,o123.0ersx,narcc.org,,I:3091,y,y
-444.550,,,,W6FM,,,Coordinated,,,,449.550,,,,W6FM,FMN,Ham,,King City,,cex,narcc.org,,,y,
-444.600,,,,KB6BF,,,Coordinated,,,,449.600,,,131.8,KB6BF,FMN,Ham,,Pismo Beach,,o131.8e,narcc.org,,,,
-444.600,,,,WB6OQS,,,Coordinated,,,,449.600,,,141.3,SCVRS,FMN,Ham,,San Jose,,o141.3alx,narcc.org,,,y,
-444.625,,,,N6NAC,,,Coordinated,,,,449.625,,,110.9,N6NAC,FMN,Ham,,San Jose,,o110.9aelsx,narcc.org,,,y,y
-444.700,,,,K6LY,,,Not Coordinated,,,,449.700,,,123.0,NPSARC,FMN,Ham,,Monterey,,o123.0ers,narcc.org,E:39310,I:3139,,y
-444.700,,,,KB6Q,,,Not Coordinated,,,,449.700,,,100.0,KB6Q,FMN,Ham,,Nipomo,,#o100.0e,narcc.org,,,,
-444.700,,,,WB6KHP,,,Coordinated,,,,449.700,,,127.3,CFMA,FMN,Ham,,San Jose,,o127.3,narcc.org,E:525493,I:3246,,
-444.750,,,,N9JIM,,,Coordinated,,,,449.750,,,100.0,K6LHE,FMN,Ham,,San Jose,,o100.0e,narcc.org,,,,
-444.800,,,,WA6VPL,,,Coordinated,,,,449.800,,,,WA6VPL,FMN,Ham,,Lompoc,,cls,narcc.org,,,,y
-444.800,,,,WA6GEL,,,Coordinated,,,,449.800,,,,Red Carpet,FMN,Ham,,San Jose,,ce,narcc.org,,,,
-444.875,,,,KQ6RC,,,Coordinated,,,,449.875,,,,KQ6RC,FMN,Ham,,Santa Clara,,celx,narcc.org,,,y,
-444.900,,,,KC6WRD,,,Coordinated,,,,449.900,,,,FCC,FMN,Ham,,SanLuisObispo,,ce,narcc.org,,,,
-444.900,,,,KU6V,,,Coordinated,,,,449.900,,,110.9,KU6V,FMN,Ham,,San Jose,,o110.9elx,narcc.org, E:114065,I:3620,y,
-444.925,,,,KB6LCS,,,Coordinated,,,,449.925,,,156.7,WA6HWT,FMN,Ham,,Los Gatos,,o156.7elx,narcc.org,,,y,
-444.950,,,,KB6LED,,,Coordinated,,,,449.950,,,162.2,KB6LED,FMN,Ham,,Palo Alto,,o162.2ex,narcc.org,E:45808,,y,
-444.975,,,,WB6MIA,,,Coordinated,,,,449.975,,,127.3,SLOECC,FMN,Ham,,Los Osos,,o127.3ers,narcc.org,,,,y
-444.975,,,,WB6KHP,,,Coordinated,,,,449.975,,,127.3,CFMA,FMN,Ham,,Los Gatos,,o127.3ex,narcc.org,,,y,
-451.588,,,,WPLT483 ,,,District Operations ,,,,,M,,,SVWD MOB,FM ,Utilities ,Santa Cruz,Scotts Valley,Water,,RadioReference,,,,
-453.600,,,,WNYW379 ,,,Civic Auditorium Ops ,,,,,BM,,,StnaCruzCiv,FM ,Public Works ,Santa Cruz,Santa Cruz,,,RadioReference,,,,
-456.438,,,,WPLT483 ,,,District Operations ,,,,,M,,,SVWD MOB,FM ,Utilities ,Santa Cruz,Scotts Valley,Water,,RadioReference,,,,
-456.538,,,,WPLT483 ,,,District Operations ,,,,,M,,,SVWD MOB,FM ,Utilities,Santa Cruz,Scotts Valley,Water,,RadioReference,,,,
-460.925,,,,,,,Ch. 6 Tactical ,,,,,M,82.5 PL,,FirstAlarm 6,FM ,Security ,Santa Cruz,,First Alarm,,RadioReference,,,,
-460.975,,,,,,,Ch. 1 Monterey Peninsula Primary ,,,,465.975,RM,82.5 PL,,FirstAlarm 1,FM ,Security ,Santa Cruz,,First Alarm,,RadioReference,,,,
-460.975,,,,,,,Ch. 3 Carmel and South Monterey Primary ,,,,465.975,RM,025 DPL,,FirstAlarm 3,FM ,Security ,Santa Cruz,,First Alarm,,RadioReference,,,,
-460.975,,,,,,,Ch. 5 Talk-Around ,,,,,M,,,FirstAlarm 5,FM ,Security ,Santa Cruz,,First Alarm,,RadioReference,,,,
-461.000,,,,,,,"Ch. 2 Santa Cruz, South Bay and Gilroy Primary ",,,,466.000,RM,179.9 PL,,FirstAlarm 2,FM ,Security ,Santa Cruz,,First Alarm,,RadioReference,,,,
-461.250,,,,,,,Ch. 4 Salinas and Holister Primary ,,,,,,123.0 PL,,FirstAlarm 4,FM ,Security ,Santa Cruz,,First Alarm,,RadioReference,,,,
-464.450,,,,KNDV259 ,,,Community Bridges (Aptos) ,,,,469.450,RM,,,Dial-A-Ride,FM ,Transportation ,Santa Cruz,,,,RadioReference,,,,
-464.625,,,,,,,Southwest Airlines Ops,,,,,,,,,,,,,SJC,,liveatc.net,,,,
-927.025,,,,WA6JQV,,,Coordinated,,,,902.025,,,,WA6JQV,FMN,Ham,,Los Gatos,,celx,narcc.org,,,y,
-927.050,,,,K6DND,,,Coordinated,,,,902.050,,,,K6DND,FMN,Ham,,Los Gatos,,oel,narcc.org,,,,
-927.138,,,,WA6FUL,,,Not Coordinated,,,,902.138,,,,WA6FUL,FMN,Ham,,Cupertino,,#oelrsx,narcc.org,,,y,y
-927.150,,,,N6NMZ,,,Coordinated,,,,902.150,,,156.7,N6NMZ,FMN,Ham,,Los Gatos,,o156.7l,narcc.org,,,,
-927.213,,,,WA6FUL,,,Not Coordinated,,,,902.213,,,,WA6FUL,FMN,Ham,,Cupertino,,#oersx,narcc.org,,,y,y
-927.250,,,,K6INC,,,Coordinated,,,,902.250,,,114.8,KD6YYJ,FMN,Ham,,Los Gatos,,o114.8elx,narcc.org,,,y,
-927.288,,,,W6JSO,,,Coordinated,,,,902.288,,,,W6JSO,FMN,Ham,,Monterey,,oelrsx,narcc.org,,,y,y
-927.463,,,,WA6JQV,,,Coordinated,,,,902.463,,,,WA6JQV,FMN,Ham,,Los Gatos,,celx,narcc.org,,,y,
-927.475,,,,WA6JQV,,,Coordinated,,,,902.475,,,,WA6JQV,FMN,Ham,,Los Gatos,,celx,narcc.org,,,y,
-927.638,,,,NC9RS,,,Coordinated,,,,902.013,,,123.0,nc9rs.com,FMN,Ham,,Salinas,,o123.0elx,narcc.org,,,y,
-927.738,,,,K6SNC,,,Coordinated,,,,902.738,,,100.0,K6WAR,FMN,Ham,,Santa Clara,,o100.0elrs,narcc.org,,,,y
-927.813,,,,N6SPB,,,Coordinated,,,,902.813,,,123.0,N6SPB,FMN,Ham,,San Jose,,o123.0l,narcc.org,,,,
-927.838,,,,N6MEF,,,Pending,,,,902.838,,,100.0,N6MEF,FMN,Ham,,Santa Clara,,#o100.0rs,narcc.org,,,,y
-927.863,,,,WW6BAY,,,Coordinated,,,,902.863,,,,Bay-Net,FMN,Ham,,Palo Alto,,oelx,narcc.org,,I:3802,y,
-927.900,,,,N6TBQ,,,Coordinated,,,,902.900,,,,LPRC,FMN,Ham,,San Jose,,ol,narcc.org,,,,
-927.913,,,,K6DND,,,Coordinated,,,,902.050,,,167.9,K6DND,FMN,Ham,,Los Gatos,,o167.9aelx,narcc.org,,,y,
-927.925,,,,W6MOW,,,Coordinated,,,,902.925,,,123.0,W6MOW,FMN,Ham,,Felton,,o123.0e,narcc.org,,,,
-927.950,,,,KG6UYZ,,,Coordinated,,,,902.950,,,,KG6UYZ,FMN,Ham,,Salinas,,oelx,narcc.org,,,y,
-927.975,,,,WE6R,,,Not Coordinated,,,,902.975,,,,WE6R,FMN,Ham,,Monterey,,celrs,narcc.org,,,,
-1282.000,,,,W6RLW,,,Coordinated,,,,1270.000,,,88.5,ARRC,FMN,Ham,,San Jose,,o88.5l,narcc.org,,,,
-1282.200,,,,W6RLW,,,Coordinated,,,,1270.200,,,88.5,ARRC,FMN,Ham,,San Jose,,o88.5lx,narcc.org,,,y,
-1282.500,,,,W6YX,,,Coordinated,,,,1270.500,,,88.5,SUARC,FMN,Ham,,Palo Alto,,o88.5elx,narcc.org,,,y,
-1283.000,,,,W6RLW,,,Coordinated,,,,1271.000,,,88.5,ARRC,FMN,Ham,,Saratoga,,o88.5l,narcc.org,,,,
-1283.100,,,,N6AKK,,,Not Coordinated,,,,1271.100,,,88.5,CarJack,FMN,Ham,,San Jose,,#o88.5ael,narcc.org,,,,
-1283.150,,,,W6SRI,,,Coordinated,,,,1271.150,,,100.0,SRI INT,FMN,Ham,,Los Altos,,o100.0ex,narcc.org,,,y,
-1283.400,,,,N6EEZ,,,Coordinated,,,,1272.400,,,94.8,N6EEZ,FMN,Ham,,San Jose,,o94.8al,narcc.org,,,,
-1283.550,,,,N6AKK,,,Not Coordinated,,,,1271.550,,,88.5,CarJack,FMN,Ham,,San Jose,,#o88.5ael,narcc.org,,,,
-1283.700,,,,WA6GFY,,,Coordinated,,,,1271.700,,,100.0,LMERA ARC,FMN,Ham,,San Jose,,o100.0ex,narcc.org,,,y,
-1284.000,,,,N6MBB,,,Not Coordinated,,,,1272.000,,,100.0,N6MBB,FMN,Ham,,Cupertino,,#o100.0,narcc.org,,,,
-1284.250,,,,N6SGI,,,Not Coordinated,,,,1272.250,,,88.5,SGIARC,FMN,Ham,,Mountain View,,#o88.5e,narcc.org,,,,
-1284.300,,,,N6AKB,,,Not Coordinated,,,,1272.300,,,100.0,N6AKB,FMN,Ham,,San Jose,,#o100.0e,narcc.org,,,,
-1284.850,,,,K6KMT,,,Not Coordinated,,,,1272.850,,,100.0,K6KMT,FMN,Ham,,Campbell,,#o100.0s,narcc.org,,,,
-1284.950,,,,K6BAM,,,Coordinated,,,,1272.950,,,88.5,BAMA,FMN,Ham,,Palo Alto,,o88.5ex,narcc.org,,,y,
-1285.000,,,,W6RLW,,,Coordinated,,,,1273.000,,,88.5,ARRC,FMN,Ham,,San Jose,,o88.5lx,narcc.org,,,y,
-1285.650,,,,W6MOW,,,Coordinated,,,,1273.650,,,110.9,MARG,FMN,Ham,,Cupertino,,o110.9l,narcc.org,,,,
-1285.800,,,,KD6AOG,,,Not Coordinated,,,,1273.800,,,127.3,KD6AOG,FMN,Ham,,San Jose,,#o127.3,narcc.org,,,,
-1285.950,,,,KU6V,,,Coordinated,,,,1273.950,,,100.0,KU6V,FMN,Ham,,San Jose,,o100.0aelx,narcc.org,,I:3620,y,
-1286.000,,,,N6NAC,,,Coordinated,,,,1274.000,,,110.9,N6NAC,FMN,Ham,,San Jose,,o110.9elx,narcc.org,,,y,
-1286.075,,,,WB6OCD,,,Not Coordinated,,,,1274.075,,,88.5,WB6OCD,FMN,Ham,,San Jose,,#o88.5aex,narcc.org,,,y,
-1286.150,,,,KD6AOG,,,Not Coordinated,,,,1274.150,,,127.3,KD6AOG,FMN,Ham,,San Jose,,#o127.3x,narcc.org,,,y,
-1286.200,,,,N6NAC,,,Coordinated,,,,1274.200,,,110.9,N6NAC,FMN,Ham,,Watsonville,,o110.9e,narcc.org,,,,
-1286.200,,,,W6PIY,,,Coordinated,,,,1274.200,,,100.0,WVARA,FMN,Ham,,San Jose,,o100.0aels,narcc.org,,,,y
-1286.325,,,,N6SPB,,,Coordinated,,,,1274.325,,,88.5,N6SPB,FMN,Ham,,San Jose,,o88.5l,narcc.org,,,,
-1286.400,,,,AA6IW,,,Not Coordinated,,,,1274.400,,,88.5,AA6IW,FMN,Ham,,Los Altos,,#o88.5,narcc.org,,,,
-1286.450,,,,K6MF,,,Coordinated,,,,1274.450,,,,K6MF,FMN,Ham,,San Jose,,cel,narcc.org,,,,
-1286.500,,,,W7AFG,,,Coordinated,,,,1274.500,,,173.8,AREA-Amate,FMN,Ham,,San Jose,,o173.8elrsx,narcc.org,,,y,y
-1286.700,,,,K6LY,,,Not Coordinated,,,,1274.700,,,162.2,NPSARC,FMN,Ham,,Monterey,,#o162.2es,narcc.org,,,,y
-1286.850,,,,K6GDS,,,Not Coordinated,,,,1274.850,,,88.5,K6GDS,FMN,Ham,,Santa Clara,,#o88.5,narcc.org,,,,
-1287.000,,,,K6CPU,,,Not Coordinated,,,,1275.000,,,88.5,IEARS,FMN,Ham,,Santa Clara,,#o88.5e,narcc.org,,,,
-1287.200,,,,KE6STH,,,Coordinated,,,,1275.200,,,88.5,KE6STH,FMN,Ham,,San Jose,,o88.5a,narcc.org,E:95278,,,
-1287.500,,,,K6UB,,,Coordinated,,,,1275.500,,,88.5,K6UB,FMN,Ham,,Saratoga,,o88.5el,narcc.org,,I:3610,,
-1287.700,,,,W6RLW,,,Coordinated,,,,1275.700,,,88.5,ARRC,FMN,Ham,,San Jose,,o88.5lx,narcc.org,,,y,
-1292.520,,,,KW6KW,,,Not Coordinated,,,,1272.520,,,,KW6KW,FMN,Ham,,Cupertino,,#oe,narcc.org,,,,
-1292.550,,,,WA6ITV,,,Not Coordinated,,,,1272.550,,,88.5,WA6ITV,FMN,Ham,,Palo Alto,,#o88.5,narcc.org,,,,
+kHz,Time(UTC),Days,ITU, Station ,Lng,Target, Remarks ,P,Start,Stop, Input     , Type ,Tone Out,Tone In, Alpha Tag , Mode , Tag ,County,City,Agency,Notes,Source,EchoLink(E),IRLP(I),WideArea(x),ARES(s)
+35060.000,,,,,,,Comcast Cable ,,,,,M,,,Comcast 3506,FM ,Business ,Santa Cruz,,Comcast Cable,,RadioReference,,,,
+35120.000,,,,,,,Comcast Cable ,,,,,M,,,Comcast 3512,FM ,Business ,Santa Cruz,,Comcast Cable,,RadioReference,,,,
+35140.000,,,,,,,Comcast Cable ,,,,,M,,,Comcast 3512,FM ,Business ,Santa Cruz,,Comcast Cable,,RadioReference,,,,
+47660.000,,,,WQJG338 ,,,American Medical Response - Company Channel ,,,,,BM,,,SCZ AMR CO,FM ,EMS-Talk ,Santa Cruz,,Ambulance,,RadioReference,,,,
+51760.000,,,,WE6R,,,Coordinated,,,,51.26,,,,WE6R,FMN,Ham,,Monterey,,clrs,narcc.org,,,,
+51820.000,,,,WR6VHF,,,Not Coordinated,,,,51.32,,,136.5,CERT,FMN,Ham,,San Ardo,,#o136.5e,narcc.org,,,,
+51920.000,,,,KU6V,,,Coordinated,,,,51.42,,,114.8,KU6V,FMN,Ham,,Los Gatos,,o114.8elx,narcc.org,,,y,
+52580.000,,,,WA6VPL,,,Coordinated,,,,52.08,,,82.5,WA6VPL,FMN,Ham,,Nipomo,,o82.5el,narcc.org,,,,
+52580.000,,,,W6PIY,,,Coordinated,,,,52.08,,,151.4,WVARA,FMN,Ham,,San Jose,,o151.4aels,narcc.org,,,,y
+52600.000,,,,WA6VPL,,,Coordinated,,,,52.1,,,82.5,WA6VPL,FMN,Ham,,New Cuyama,,o82.5lx,narcc.org,,,y,
+52640.000,,,,WA6FUL,,,Coordinated,,,,52.14,,,114.8,WA6FUL,FMN,Ham,,Palo Alto,,o114.8elrsx,narcc.org,,,y,y
+52660.000,,,,KD6AOG,,,Not Coordinated,,,,52.16,,,127.3,KD6AOG,FMN,Ham,,San Jose,,#o127.3,narcc.org,,,,
+52800.000,,,,WR6AOK,,,Coordinated,,,,52.3,,,114.8,SLVARC,FMN,Ham,,Ben Lomond,,o114.8esx,narcc.org,,,y,y
+52940.000,,,,KG6HAT,,,Not Coordinated,,,,52.44,,,100,KG6HAT,FMN,Ham,,San Jose,,#o100.0,narcc.org,,,,
+118000.000,,,,,,,San Jose Clearance Delivery,,,,,,,,,,Air,,,SJC,,liveatc.net,,,,
+118200.000,,,,,,,SFO Clearance Delivery,,,,,,,,,,Air,,,SFO,flightaware.com,liveatc.net,,,,
+118300.000,,,,,,,"Oakland Tower (Runways 27L/9R, 27R/9L, 33/15, righ",,,,,,,,,,Air,,,OAK,,liveatc.net,,,,
+120100.000,,,,,,,"NORCAL Approach ""LICKE"" SJC Final",,,,,,,,,,Air,,,SJC,,liveatc.net,,,,
+120100.000,,,,,,,"NORCAL Approach ""LICKE"" SJC Final",,,,,,,,,,Air,,,SJC,,liveatc.net,,,,
+120350.000,,,,,,,Norcal Approach - Foster,,,,,,,,,,Air,,,SFO,airnav.com,liveatc.net,,,,
+120500.000,,,,,,,SFO Tower,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+120825.000,,,,,,,Beaver Control W-260,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+120900.000,,,,,,,Norcal Approach - NW,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+120900.000,,,,,,,Norcal Departure,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+120900.000,,,,,,,NORCAL Departure (Northeast Departures),,,,,,,,,,Air,,,OAK,,liveatc.net,,,,
+121100.000,,,,,,,Oakland Clearance Delivery (left channel),,,,,,,,,,Air,,,OAK,,liveatc.net,,,,
+121300.000,,,,,,,"NORCAL Approach ""TOGA""",,,,,,,,,,Air,,,SJC,,liveatc.net,,,,
+121300.000,,,,,,,NORCAL Departure,,,,,,,,,,Air,,,SJC,,liveatc.net,,,,
+121500.000,,,,,,,Emergency/Guard,,,,,,,,,,Air,,,SJC,,liveatc.net,,,,
+121500.000,,,,,,,Emergency/Guard,,,,,,,,,,Air,,,SJC,,liveatc.net,,,,
+121700.000,,,,,,,San Jose Ground,,,,,,,,,,Air,,,SJC,,liveatc.net,,,,
+121750.000,,,,,,,Oakland Ground (left channel),,,,,,,,,,Air,,,OAK,,liveatc.net,,,,
+121800.000,,,,,,,SFO Ground,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+121900.000,,,,,,,"Oakland Ground (North, right channel)",,,,,,,,,,Air,,,OAK,,liveatc.net,,,,
+122800.000,,,,,,,Common Traffic Advisory Freq ,,,,,RM,,,WVI CTAF,AM ,Air,Santa Cruz,Wattsonville,,,RadioReference,,,,
+124000.000,,,,,,,San Jose Tower,,,,,,,,,,Air,,,SJC,,liveatc.net,,,,
+124125.000,,,,,,,Beaver Control W-283/W-285,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+124400.000,,,,,,,NORCAL Approach (Mulford Sector),,,,,,,,,,Air,,,OAK,,liveatc.net,,,,
+125350.000,,,,,,,Norcal Approach - NE,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+125350.000,,,,,,,NORCAL Approach (KOAK Rwy 29/27R Final),,,,,,,,,,Air,,,OAK,,liveatc.net,,,,
+127000.000,,,,,,,Norcal Approach - N,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+127000.000,,,,,,,NORCAL Departure (Northeast Departures),,,,,,,,,,Air,,,OAK,,liveatc.net,,,,
+127150.000,,,,,,,Approach/Departure ,,,,,,,,WVI App/Dep,AM ,Air,Santa Cruz,,Air,,RadioReference,,,,
+127200.000,,,,,,,Oakland Tower (left channel),,,,,,,,,,Air,,,OAK,,liveatc.net,,,,
+127800.000,,,,,,,Oakland Center Sector 40,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+127850.000,,,,,,,Oakland Center Sector 41,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+127975.000,,,,,,,NORCAL Departure (Southwest Departures),,,,,,,,,,Air,,,OAK,,liveatc.net,,,,
+128325.000,,,,,,,Norcal Approach,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+128575.000,,,,,,,Norcal Approach,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+128650.000,,,,,,,SFO Tower Secondary,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+129200.000,,,,,,,American Airlines Ops,,,,,,,,,,Air,,,SJC,,liveatc.net,,,,
+129800.000,,,,,,,Atlantic Aviation (San Jose Jet Center),,,,,,,,,,Air,,,SJC,,liveatc.net,,,,
+131200.000,,,,,,,Alaska Airlines Ops,,,,,,,,,,Air,,,SJC,,liveatc.net,,,,
+131700.000,,,,,,,Southwest Airlines Ops,,,,,,,,,,Air,,,SJC,,liveatc.net,,,,
+131950.000,,,,,,,ARINC San Francisco Radio,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+132000.000,,,,,,,Horizon Air Ops,,,,,,,,,,Air,,,SJC,,liveatc.net,,,,
+132275.000,,,,,,,ASOS ,,,,,RM,,,WVI ASOS,AM ,Air,Santa Cruz,Wattsonville,,,RadioReference,,,,
+133950.000,,,,,,,Norcal Approach - Boulder,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+134150.000,,,,,,,Oakland Center Sector 35,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+134150.000,,,,,,,Oakland Center (Sector 35),,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+134500.000,,,,,,,Norcal Approach - SE,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+135100.000,,,,,,,Norcal Approach - W,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+135100.000,,,,,,,Norcal Departure,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+135100.000,,,,,,,NORCAL Departure (Southwest Departures),,,,,,,,,,Air,,,OAK,,liveatc.net,,,,
+135200.000,,,,,,,NORCAL Approach,,,,,,,,,,Air,,,SJC,,liveatc.net,,,,
+135650.000,,,,,,,Norcal Approach - Woodside,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+135650.000,,,,,,,Norcal Approach - S ,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+145170.000,,,,W6UNI,,,Not Coordinated,,,,144.57,,,151.4,W6UNI,FMN,Ham,,Watsonville,,#o151.4,narcc.org,,,,
+145170.000,,,,K6GL,,,Coordinated,,,,144.57,,,94.8,SNNYVLARES,FMN,Ham,,Sunnyvale,,o94.8ers,narcc.org,,,,y
+145190.000,,,,WA2IBM,,,Not Coordinated,,,,144.59,,,151.4,IBM ARC,FMN,Ham,,San Jose,,#o151.4ae,narcc.org,,,,
+145210.000,,,,KB6FEC,,,Pending,,,,144.61,,,114.8,AREA,FMN,Ham,,San Jose,,#o114.8rs,narcc.org,,,,y
+145210.000,,,,N6HU,,,Coordinated,,,,144.61,,,,KQ6RC,FMN,Ham,,Soledad,,cel,narcc.org,,,,
+145230.000,,,,N6NFI,,,Coordinated,,,,144.63,,,100,SPARK/SARS,FMN,Ham,,Palo Alto,,o100.0aersx,narcc.org,,,y,y
+145250.000,,,,W6PEK,,,Not Coordinated,,,,144.65,,,100,W6PAD,FMN,Ham,,Santa Cruz,,#o100.0s,narcc.org,,,,y
+145250.000,,,,NA6MF,,,Coordinated,,,,144.65,,,123,Ames ARC,FMN,Ham,,Moffett Field,,o123.0rs,narcc.org,,,,y
+145270.000,,,,W6ASH,,,Coordinated,,,,144.67,,,100,SPECS RA,FMN,Ham,,Mountain View,,o100.0aelrs,narcc.org,,,,y
+145290.000,,,,W6TUW ,,,Portable Repeater ,,,,144.69,RM,94.8 PL,,Portable,FM ,Ham ,Santa Cruz,,VHF ARES,,RadioReference,,,,
+145290.000,,,,KC6WRD,,,Coordinated,,,,144.69,,,,FCC,FMN,Ham,,SanLuisObispo,,ce,narcc.org,,,,
+145310.000,,,,KB6FEC,,,Coordinated,,,,144.71,,,162.2,AREA,FMN,Ham,,San Jose,,o162.2rs,narcc.org,,,,y
+145330.000,,,,W6DNC,,,Not Coordinated,,,,144.73,,,123,W6DNC,FMN,Ham,,Watsonville,,#o123.0elsx,narcc.org,,,y,y
+145350.000,,,,KI6YDR,,,Coordinated,,,,144.75,,,94.8,KI6YDR,FMN,Ham,,Boulder Creek,,o94.8e,narcc.org,,,,
+145370.000,,,,N6SPD,,,Coordinated,,,,144.77,,,100,N6SPD RG,FMN,Ham,,King City,,o100.0elrsx,narcc.org,,,y,y
+145410.000,,,,W6CER,,,Not Coordinated,,,,144.81,,,146.2,CCARN,FMN,Ham,,Salinas,,#o146.2el,narcc.org,E:305210,,,
+145430.000,,,,N6SPD,,,Coordinated,,,,144.83,,,94.8,N6SPD RG,FMN,Ham,,Salinas,,o94.8esx,narcc.org,,,y,y
+145430.000,,,,W6MLP,,,Coordinated,,,,144.83,,,85.4,MARES,FMN,Ham,,Milpitas,,o85.4elrs,narcc.org,,,,y
+145450.000,,,,K6FB,,,Coordinated,,,,144.85,,,100,LCARC,FMN,Ham,,Los Gatos,,o100.0elrsx,narcc.org,,,y,y
+145470.000,,,,K6JE,,,Coordinated,,,,144.87,,,94.8,FPRA,FMN,Ham,,Salinas,,o94.8ersx,narcc.org,,,y,y
+145490.000,,,,W6RTF,,,Coordinated,,,,144.89,,,100,W6RTF,FMN,Ham,,Salinas,,o100.0l,narcc.org,E:141890,,,
+146085.000,,,,KC6UDC,,,Not Coordinated,,,,146.685,,,100,KC6UDC,FMN,Ham,,Salinas,,#o100.0,narcc.org,,,,
+146085.000,,,,WE6R,,,Coordinated,,,,146.685,,,,WE6R,FMN,Ham,,Monterey,,cers,narcc.org,,,,y
+146085.000,,,,WB5NVN,,,Not Coordinated,,,,146.685,,,100,WB5NVN,FMN,Ham,,Portola Valley,,#o100.0,narcc.org,,,,
+146115.000,,,,AA6BT,,,Coordinated,,,,146.715,,,100,SVECS,FMN,Ham,,San Jose,,o100.0aersx,narcc.org,,,y,y
+146205.000,,,,KI6AOZ,,,Coordinated,,,,146.805,,,146.2,P.A.R.E,FMN,Ham,,San Jose,,o146.2,narcc.org,,,,
+146355.000,,,,KD6AOG,,,Not Coordinated,,,,146.955,,,127.3,KD6AOG,FMN,Ham,,San Jose,,#o127.3,narcc.org,,,,
+146620.000,,,,W6SLO,,,Coordinated,,,,146.02,,,127.3,SLOECC,FMN,Ham,,San Simeon,,o127.3ersx,narcc.org,,,y,y
+146625.000,,,,N6SBC,,,Coordinated,,,,146.025,,,94.8,SBC ARES,FMN,Ham,,Paicines,,o94.8els,narcc.org,,,,y
+146640.000,,,,WR6ABD,,,Coordinated,,,,146.04,,,162.2,LPRC,FMN,Ham,,San Jose,,o162.2ex,narcc.org,,,y,
+146655.000,,,,KI6FKX,,,Not Coordinated,,,,146.055,,,94.8,KI6FKX,FMN,Ham,,Salinas,,#o94.8es,narcc.org,,,,y
+146655.000,,,,K6SA,,,Coordinated,,,,146.055,,,114.8,SARA,FMN,Ham,,Saratoga,,o114.8elrs,narcc.org,E:85531,I:3671 ,,y
+146670.000,,,,W6SLO,,,Coordinated,,,,146.07,,,127.3,SLOECC,FMN,Ham,,SanLuisObispo,,o127.3ersx,narcc.org,,,y,y
+146700.000,,,,NS6G,,,Not Coordinated,,,,146.1,,,94.8,GOB/R,FMN,Ham,,Watsonville,,#o94.8e,narcc.org,,,,
+146730.000,,,,W6FM,,,Coordinated,,,,146.13,,,127.3,W6FM,FMN,Ham,,San Ardo,,o127.3elsx,narcc.org,,,y,y
+146745.000,,,,W6JWS ,,,Empire Grade ,,,,146.145,RM,94.8 PL,,Empire,FM ,Ham ,Santa Cruz,,VHF ARES,,RadioReference,,,,
+146745.000,,,,W6JWS,,,Coordinated,,,,146.145,,,94.8,SLVARES,FMN,Ham,,Santa Cruz,,o94.8ers,narcc.org,,,,y
+146745.000,,,,W6LAH,,,Coordinated,,,,146.145,,,110.9,LAHEG,FMN,Ham,,LosAltosHills,,o110.9e,narcc.org,,,,
+146745.000,,,,W6LAH,,,Coordinated,,,,146.145,,,,LAHEG,FMN,Ham,,LosAltosHills,,ce,narcc.org,,,,
+146760.000,,,,W6BHZ,,,Coordinated,,,,146.16,,,91.5,CPARC,FMN,Ham,,SanLuisObispo,,o91.5aels,narcc.org,,I:3016,,y
+146760.000,,,,WB6OQS,,,Coordinated,,,,146.16,,,151.4,SCVRS,FMN,Ham,,San Jose,,o151.4alx,narcc.org,,,y,
+146775.000,,,,KB6MET,,,Not Coordinated,,,,146.175,,,123,KB6MET,FMN,Ham,,Watsonville,,#o123.0a,narcc.org,,,,
+146790.000,,,,K6BJ ,,,Santa Cruz ,,,,146.19,RM,94.8 PL,,S Cruz,FM ,Ham ,Santa Cruz,,VHF ARES,,RadioReference,,,,
+146790.000,,,,K6BJ,,,Coordinated,,,,146.19,,,94.8,SCCARC,FMN,Ham,,Santa Cruz,,o94.8aelrs,narcc.org,,,,y
+146800.000,,,,WB6FMC,,,Not Coordinated,,,,146.2,,,127.3,WB6FMC,FMN,Ham,,SanLuisObispo,,#o127.3ersx,narcc.org,,,y,y
+146820.000,,,,K6INC,,,Coordinated,,,,146.22,,,123,SCAN INT'L,FMN,Ham,,San Jose,,o123.0,narcc.org,,,,
+146835.000,,,,AE6KE ,,,Loma Prieta Summit ,,,,146.235,RM,94.8 PL,,Smt/Loma,FM ,Ham ,Santa Cruz,,VHF ARES,,RadioReference,,,,
+146835.000,,,,AE6KE,,,Coordinated,,,,146.235,,,94.8,SC ARES,FMN,Ham,,Santa Cruz,,o94.8ers,narcc.org,,,,y
+146835.000,,,,W6SLO,,,Coordinated,,,,146.235,,,127.3,SLOECC,FMN,Ham,,SantaMargarita,,o127.3ersx,narcc.org,,,y,y
+146860.000,,,,WB6MIA,,,Coordinated,,,,146.26,,,127.3,SLOECC,FMN,Ham,,Los Osos,,o127.3ers,narcc.org,,,,y
+146880.000,,,,W6YDZ,,,Coordinated,,,,146.28,,,127.3,W6YDZ,FMN,Ham,,Templeton,,o127.3elsx,narcc.org,,,y,y
+146895.000,,,,KB6FEC,,,Coordinated,,,,146.295,,,110.9,KB6FEC,FMN,Ham,,San Jose,,o110.9rs,narcc.org,,,,y
+146910.000,,,,W6OPI,,,Coordinated,,,,146.31,,,94.8,W6OPI,FMN,Ham,,Prunedale,,o94.8ers,narcc.org,E:396492,,,y
+146940.000,,,,KI6PAU,,,Coordinated,,,,146.34,,,94.8,KI6PAU,FMN,Ham,,Big Sur,,o94.8es,narcc.org,,,,y
+146940.000,,,,W6SLO,,,Coordinated,,,,146.34,,,127.3,SLOECC,FMN,Ham,,Arroyo Grande,,o127.3ers,narcc.org,,,,y
+146970.000,,,,K6LY,,,Not Coordinated,,,,146.37,,,94.8,NPSARC,FMN,Ham,,Monterey,,o94.8ers,narcc.org,,,,y
+146970.000,,,,WA6INC,,,Coordinated,,,,146.37,,,,AD1U,FMN,Ham,,San Jose,,cl,narcc.org,,,,
+146980.000,,,,W6YDZ,,,Coordinated,,,,146.38,,,127.3,PRARC,FMN,Ham,,Paso Robles,,o127.3els,narcc.org,,,,y
+146985.000,,,,W6UU,,,Coordinated,,,,146.385,,,114.8,SCCARA,FMN,Ham,,San Jose,,o114.8aer,narcc.org,,,,
+147000.000,,,,K6RMW ,,,Watsonville ,,,,147.6,RM,94.8 PL,,Watsonville,FM ,Ham ,Santa Cruz,,VHF ARES,,RadioReference,,,,
+147000.000,,,,K6RMW,,,Coordinated,,,,147.6,,,94.8,K6RMWK6GDI,FMN,Ham,,Watsonville,,o94.8ers,narcc.org,,,,y
+147030.000,,,,AE6HC,,,Coordinated,,,,147.63,,,127.3,HVRA,FMN,Ham,,Arroyo Grande,,o127.3e,narcc.org,,,,
+147060.000,,,,W6PRB,,,Coordinated,,,,147.66,,,127.3,PRHS-ARC,FMN,Ham,,Paso Robles,,o127.3ers,narcc.org,,,,y
+147120.000,,,,WR6AOK ,,,Ben Lomond ,,,,147.72,RM,94.8 PL,,BenLomnd,FM ,Ham ,Santa Cruz,,VHF ARES,,RadioReference,,,,
+147120.000,,,,WA6VPL,,,Coordinated,,,,147.72,,,131.8,WA6VPL,FMN,Ham,,Lompoc,,o131.8es,narcc.org,,,,y
+147120.000,,,,WR6AOK,,,Coordinated,,,,147.72,,,94.8,SLVARC,FMN,Ham,,Ben Lomond,,o94.8els,narcc.org,,,,y
+147150.000,,,,WA6YCZ,,,Coordinated,,,,147.75,,,,BAYCOM,FMN,Ham,,San Jose,,celx,narcc.org,,,,
+147165.000,,,,KB6FEC,,,Coordinated,,,,147.765,,,100,KB6FEC,FMN,Ham,,San Jose,,o100.0rs,narcc.org,,,,y
+147165.000,,,,KB6FEC,,,Coordinated,,,,147.765,,,162.2,KB6FEC,FMN,Ham,,San Jose,,o162.2ers,narcc.org,,,,y
+147180.000,,,,W6WLS ,,,Santa Cruz Mountains (Felton / Bonny Doon) ,,,,147.78,RM,94.8 PL,,SCZ Mtns,FM ,Ham ,Santa Cruz,,VHF ARES,,RadioReference,,,,
+147180.000,,,,W6WLS,,,Coordinated,,,,147.78,,,94.8,W6WLS,FMN,Ham,,Felton,,o94.8elsx,narcc.org,,I:3228,y,y
+147270.000,,,,KC6TOX,,,Not Coordinated,,,,147.87,,,127.3,SLOECC,FMN,Ham,,Cambria,,#o127.3,narcc.org,,,,
+147285.000,,,,KF6FWO,,,Coordinated,,,,147.885,,,103.5,MARA,FMN,Ham,,San Jose,,o103.5aer,narcc.org,,,,
+147315.000,,,,N6SBC,,,Coordinated,,,,147.915,,,94.8,SBC OES,FMN,Ham,,Hollister,,o94.8els,narcc.org,,,,y
+147315.000,,,,N6SBC,,,Coordinated,,,,147.915,,,146.2,SBC ARES,FMN,Ham,,Hollister,,o146.2es,narcc.org,,,,y
+147330.000,,,,K7DAA,,,Coordinated,,,,147.93,,,103.5,MHARS,FMN,Ham,,Morgan Hill,,o103.5ae,narcc.org,E:9537,I:7662,,
+147360.000,,,,W6FM,,,Coordinated,,,,147.96,,,127.3,W6FM,FMN,Ham,,SanLuisObispo,,o127.3ers,narcc.org,,,,y
+147360.000,,,,W6TI,,,Coordinated,,,,147.96,,,110.9,NCDXC,FMN,Ham,,Palo Alto,,o110.9esx,narcc.org,,,y,y
+147390.000,,,,W6PIY,,,Coordinated,,,,147.99,,,151.4,WVARA,FMN,Ham,,San Jose,,o151.4aels,narcc.org,,,,y
+147675.000,,,,KB6FEC,,,Not Coordinated,,,,147.075,,,162.2,KB6FEC,FMN,Ham,,San Jose,,#o162.2,narcc.org,,,,
+147825.000,,,,W6GGF,,,Coordinated,,,,147.225,,,100,GVARC,FMN,Ham,,Morgan Hill,,o100.0aers,narcc.org,,,,y
+147855.000,,,,WA6TEM,,,Coordinated,,,,147.255,,,100,WA6HNE,FMN,Ham,,San Jose,,o100.0ae,narcc.org,,,,
+147945.000,,,,KI6EH ,,,Watsonville ,,,,147.345,RM,94.8 PL,,Watsonville,FM ,Ham ,Santa Cruz,,VHF ARES,,RadioReference,,,,
+147945.000,,,,KI6EH,,,Coordinated,,,,147.345,,,94.8,SCCARC,FMN,Ham,,Watsonville,,o94.8elrs,narcc.org,,,,y
+147945.000,,,,N6QDY,,,Coordinated,,,,147.345,,,77,C.A.R.U.N.,FMN,Ham,,Milpitas,,o77.0elsx,narcc.org,,,y,y
+147990.000,,,,WB6MIA,,,Coordinated,,,,147.39,,,127.3,SLOECC,FMN,Ham,,Nipomo,,o127.3rs,narcc.org,,,,y
+150775.000,,,,,,,Tac Silver ,,,,,RM,192.8 PL,,SCCoFD Sil,FM ,Fire-Tac ,Santa Cruz,,Fire,,RadioReference,,,,
+151040.000,,,,,,,Tac Orange ,,,,,RM,151.4 PL,,SCCoFD Orn,FM ,Fire-Tac ,Santa Cruz,,Fire,,RadioReference,,,,
+151100.000,,,,,,,County Roads ,,,,159.195,RM,CSQ,,SCC Roads,FM ,Public Works ,Santa Cruz,,,,RadioReference,,,,
+152360.000,,,,WNKD229 ,,,Yellow Cab Co - Base ,,,,,B,,,Yellow Cab B,FM ,Transportation ,Santa Cruz,,,,RadioReference,,,,
+153410.000,,,,KMK835  ,,,Water Department ,,,,158.16,RM,,,SntaCruzWtr,FM ,Public Works ,Santa Cruz,Santa Cruz,,,RadioReference,,,,
+153515.000,,,,WNHB862 ,,,District Operations ,,,,,BM,,,SVWD Ops,FM ,Utilities ,Santa Cruz,Scotts Valley,Water,,RadioReference,,,,
+153530.000,,,,KFM822 ,,,District Operations ,,,,158.19,RM,131.8 PL,,SCWD Ops,FM ,Utilities ,Santa Cruz,Soquel,Water,,RadioReference,,,,
+153635.000,,,,KMB879 ,,,Santa Cruz Area Electric ,,,,,BM,103.5 PL,,PG&E S Cruz,FM ,Utilities ,Santa Cruz,,Pacific Gas and Electric,,RadioReference,,,,
+153995.000,,,,KNHB808 ,,,Police Secondary Yellow ,,,,,BM,,,CapitolaPD 2,FM ,Law Tac ,Santa Cruz,Capitola,,,RadioReference,,,,
+154055.000,,,,KD28224  ,,,Common Black ,,,,,M,162.2 PL,,SCCSO Black,FM ,Law Tac ,Santa Cruz,,Sheriff,,RadioReference,,,,
+154055.000,,,,,,,South Tac Black ,,,,,BM,192.8 PL,,SCCoFD Blk,FM ,Fire-Tac ,Santa Cruz,,Fire,,RadioReference,,,,
+154100.000,,,,KMJ884  ,,,Trash/Recycling ,,,,158.79,RM,103.5 PL,,SntaCruzTras,FM ,Public Works ,Santa Cruz,Santa Cruz,,,RadioReference,,,,
+154190.000,,,,,,,Valley Tac Yellow ,,,,156,RM,103.5 PL,,SCCoFD Yel,FM ,Fire-Tac ,Santa Cruz,,Fire,,RadioReference,,,,
+154325.000,,,,,,,Dispatch Red ,,,,153.77,RM,118.8 PL,,SCCoFD Red,FM ,Fire Dispatch ,Santa Cruz,,Fire,,RadioReference,,,,
+154415.000,,,,,,,Coastal Tac Blue ,,,,,BM,151.4 PL,,SCCoFD Blu,FM ,Fire-Tac ,Santa Cruz,,Fire,,RadioReference,,,,
+154445.000,,,,,,,East Tac Green ,,,,,BM,162.2 PL,,SCCoFD Grn,FM ,Fire-Tac ,Santa Cruz,,Fire,,RadioReference,,,,
+154555.000,,,,,,,Detectives Brown ,,,,,M,162.2 PL,,SCCSO Brown,FM ,Law Tac ,Santa Cruz,,Sheriff,,RadioReference,,,,
+154770.000,,,,KMA233 ,,,Police Dispatch ,,,,155.655,RM,162.2 PL,,SntaCruzPD1,FM ,Law Dispatch ,Santa Cruz,Santa Cruz,,,RadioReference,,,,
+154845.000,,,,KMA340 ,,,Police Dispatch Blue ,,,,158.73,RM,162.2 PL,,WatsnvillePD,FM ,Law Dispatch ,Santa Cruz,Wattsonville,,,RadioReference,,,,
+154950.000,,,,WSQ977 ,,,Mutual Aid Red ,,,,159.15,RM,CSQ,,SCCSO Red,FMN ,Interop ,Santa Cruz,,Sheriff,,RadioReference,,,,
+155010.000,,,,,,,Mobile Extenders ,,,,,M,CSQ,,SCCSO Ext,FM ,Law Talk ,Santa Cruz,,Sheriff,,RadioReference,,,,
+155055.000,,,,,,,County Animal Control ,,,,153.935,RM,CSQ,,SCCAnimalCTL,FM ,Public Works ,Santa Cruz,,,,RadioReference,,,,
+155070.000,,,,KBV97 ,,,Tac Green ,,,,,M,162.2 PL,,SCCSO Green,FM ,Law Tac ,Santa Cruz,,Sheriff,,RadioReference,,,,
+155085.000,,,,KLI289 ,,,Police Dispatch Blue ,,,,153.905,RM,162.2 PL,,ScottsVlyPD1,FM ,Law Dispatch ,Santa Cruz,Scotts Valley,,,RadioReference,,,,
+155145.000,,,,WPIC576 ,,,Santa Cruz Port District ,,,,,BM,,,StnaCruzPort,FM ,Public Works ,Santa Cruz,Santa Cruz,,,RadioReference,,,,
+155160.000,,,,KD31427 ,,,Disaster 1 - Search & Rescue / SWAT ,,,,,M,162.2 PL,,SCCSO Dis 1,FM ,Emergency Ops ,Santa Cruz,,Sheriff,,RadioReference,,,,
+155220.000,,,,WNWN528 ,,,Disaster 2 Gold ,,,,,M,CSQ,,SCCSO Dis 2,FM ,Emergency Ops ,Santa Cruz,,Sheriff,,RadioReference,,,,
+155220.000,,,,WNWN528 ,,,Lifeguards ,,,,,BM,123.0 PL,,StnaCruzL/G,FM ,Public Works ,Santa Cruz,Santa Cruz,,,RadioReference,,,,
+155235.000,,,,KB54173 ,,,Search & Rescue ,,,,,M,162.2 PL,,SCCSO SAR,FM ,Law Tac ,Santa Cruz,,Sheriff,,RadioReference,,,,
+155265.000,,,,KD31427 ,,,SWAT/Explorers ,,,,,M,162.2 PL,,SCCSO SWAT,FM ,Law Tac ,Santa Cruz,,Sheriff,,RadioReference,,,,
+155310.000,,,,WNHI428 ,,,Jail Security ,,,,158.865,RM,162.2 PL,,SCCSO Jail,FM ,Law Dispatch ,Santa Cruz,,Sheriff,,RadioReference,,,,
+155385.000,,,,,,,Medic-Hospital ,,,,,BM,118.8 PL,,SCCo Med,FM ,Hospital ,Santa Cruz,,EMS,,RadioReference,,,,
+155565.000,,,,WSQ977 ,,,Dispatch Blue ,,,,159.03,RM,CSQ,,SCCSO Blue,FMN ,Law Dispatch ,Santa Cruz,,Sheriff,,RadioReference,,,,
+155625.000,,,,KUZ592 ,,,Police Dispatch Blue ,,,,158.97,RM,162.2 PL,,CapitolaPD 1,FM ,Law Dispatch ,Santa Cruz,Capitola,,,RadioReference,,,,
+155880.000,,,,WNVA542 ,,,Police Secondary ,,,,158.76,RM,123.0 PL,,SntaCruzPD2,FM ,Law Tac ,Santa Cruz,Santa Cruz,,,RadioReference,,,,
+155940.000,,,,KLI289 ,,,Police Secondary Yellow ,,,,,BM,162.2 PL,,ScottsVlyPD2,FM ,Law Tac ,Santa Cruz,Scotts Valley,,,RadioReference,,,,
+156030.000,,,,KBV97 ,,,Tac Orange ,,,,,M,162.2 PL,,SCCSO Orange,FM ,Law Talk ,Santa Cruz,,Sheriff,,RadioReference,,,,
+156425.000,,,,WQA899 ,,,Santa Cruz Yacht Club ,,,,,BM,,,SCZ Yacht,FM ,Business ,Santa Cruz,,,,RadioReference,,,,
+157620.000,,,,WNKD229 ,,,Yellow Cab Co - Mobile ,,,,,M,,,Yellow Cab M,FM ,Transportation ,Santa Cruz,,,,RadioReference,,,,
+161640.000,,,,KLG271 ,,,KSCO-1080 AM Remote Broadcast ,,,,,B,CSQ,,KSCO-AM IFP,FM ,Media ,Santa Cruz,,Media,,RadioReference,,,,
+161670.000,,,,KLG271 ,,,KSCO-1080 AM Remote Broadcast ,,,,,B,CSQ,,KSCO-AM IFP,FM ,Media ,Santa Cruz,,Media,,RadioReference,,,,
+161700.000,,,,KLG272 ,,,KSCO-1080 AM Remote Broadcast ,,,,,B,CSQ,,KSCO-AM IFP,FM ,Media ,Santa Cruz,,Media,,RadioReference,,,,
+161730.000,,,,KLG272 ,,,KSCO-1080 AM Remote Broadcast ,,,,,B,CSQ,,KSCO-AM IFP,FM ,Media ,Santa Cruz,,Media,,RadioReference,,,,
+161760.000,,,,KLG272 ,,,KSCO-1080 AM Remote Broadcast ,,,,,B,CSQ,,KSCO-AM IFP,FM ,Media ,Santa Cruz,,Media,,RadioReference,,,,
+162400.000,,,,NOAA1,,,,,,,,,,,NOAA1,FMN,NOAA,,,,,,,,,
+162425.000,,,,NOAA2,,,,,,,,,,,NOAA2,FMN,NOAA,,,,,,,,,
+162450.000,,,,NOAA3,,,,,,,,,,,NOAA3,FMN,NOAA,,,,,,,,,
+162475.000,,,,NOAA4,,,,,,,,,,,NOAA4,FMN,NOAA,,,,,,,,,
+162500.000,,,,NOAA5,,,,,,,,,,,NOAA5,FMN,NOAA,,,,,,,,,
+162525.000,,,,NOAA6,,,,,,,,,,,NOAA6,FMN,NOAA,,,,,,,,,
+162550.000,,,,NOAA7,,,,,,,,,,,NOAA7,FMN,NOAA,,,,,,,,,
+166250.000,,,,,,,88.9 KUSP-FM Remote Broadcast ,,,,,B,CSQ,,KUSP-FM IFP,FM ,Media ,Santa Cruz,,Media,,RadioReference,,,,
+170150.000,,,,,,,88.9 KUSP-FM Remote Broadcast ,,,,,B,CSQ,,KUSP-FM IFP,FM ,Media ,Santa Cruz,,Media,,RadioReference,,,,
+223780.000,,,,K6GOD,,,Coordinated,,,,222.18,,,110.9,K6GOD,FMN,Ham,,Fremont,,o110.9elx,narcc.org,,,y,
+223800.000,,,,WA6YBD,,,Not Coordinated,,,,222.2,,,107.2,WA6YBD,FMN,Ham,,Morgan Hill,,#o107.2el,narcc.org,,,,
+223820.000,,,,KB6LCS,,,Coordinated,,,,222.22,,,156.7,KB6LCS,FMN,Ham,,Los Gatos,,o156.7el,narcc.org,,,,
+223860.000,,,,K6GOD,,,Coordinated,,,,222.26,,,107.2,K6GOD,FMN,Ham,,Palo Alto,,o107.2ex,narcc.org,,,y,
+223880.000,,,,K6FB,,,Coordinated,,,,222.28,,,100,LCARC,FMN,Ham,,Los Gatos,,o100.0ersx,narcc.org,,,y,y
+223920.000,,,,KU6V,,,Coordinated,,,,222.32,,,100,KU6V,FMN,Ham,,San Martin,,o100.0el,narcc.org,,I:3620,,
+223940.000,,,,KQ6RC,,,Coordinated,,,,222.34,,,,KQ6RC,FMN,Ham,,Santa Clara,,celx,narcc.org,E:59357,,y,
+223960.000,,,,W6PIY,,,Coordinated,,,,222.36,,,156.7,WVARA,FMN,Ham,,San Jose,,o156.7aels,narcc.org,,,,y
+224020.000,,,,K6UB,,,Coordinated,,,,222.42,,,88.5,K6UB,FMN,Ham,,San Jose,,o88.5elx,narcc.org,,,y,
+224040.000,,,,KU6V,,,Coordinated,,,,222.44,,,100,KU6V,FMN,Ham,,San Jose,,o100.0elx,narcc.org, E:114065,I:3620,y,
+224060.000,,,,N6NAC,,,Coordinated,,,,222.46,,,110.9,N6NAC,FMN,Ham,,Bonny Doon,,o110.9el,narcc.org,,,,
+224080.000,,,,K6RPT,,,Not Coordinated,,,,222.48,,,107.2,K6RPT,FMN,Ham,,San Jose,,#o107.2l,narcc.org,,,,
+224100.000,,,,WA2IBM,,,Not Coordinated,,,,222.5,,,156.7,IBM ARC,FMN,Ham,,San Jose,,#o156.7ae,narcc.org,,,,
+224140.000,,,,W6ASH,,,Coordinated,,,,222.54,,,100,SPECS RA,FMN,Ham,,Mountain View,,o100.0aelrs,narcc.org,,,,y
+224240.000,,,,N6SPD,,,Coordinated,,,,222.64,,,123,N6SPD RG,FMN,Ham,,Monterey,,o123.0aelrsx,narcc.org,E:202044,I:3234,y,y
+224260.000,,,,WB6OQS,,,Coordinated,,,,222.66,,,123,SCVRS,FMN,Ham,,San Jose,,o123.0alx,narcc.org,,,y,
+224280.000,,,,WA6GFY,,,Coordinated,,,,222.68,,,100,LMERA ARC,FMN,Ham,,San Jose,,o100.0ex,narcc.org,,,y,
+224320.000,,,,N6LEX,,,Coordinated,,,,222.72,,,146.2,CCARN,FMN,Ham,,Salinas,,o146.2el,narcc.org,E:143007,,,
+224340.000,,,,NV6RN,,,Coordinated,,,,222.74,,,88.5,VARN,FMN,Ham,,San Jose,,o88.5el,narcc.org,E:308926,,,
+224360.000,,,,NV6RN,,,Not Coordinated,,,,222.76,,,156.7,BKRN,FMN,Ham,,San Jose,,#o156.7,narcc.org,,,,
+224380.000,,,,KB6MET,,,Not Coordinated,,,,222.78,,,,KB6MET,FMN,Ham,,Watsonville,,#c,narcc.org,,,,
+224460.000,,,,K6BEN,,,Coordinated,,,,222.86,,,,W2NYC,FMN,Ham,,Saratoga,,caelrx,narcc.org,,,y,
+224480.000,,,,K6INC,,,Coordinated,,,,222.88,,,,AD1U,FMN,Ham,,Los Gatos,,cex,narcc.org,,,y,
+224540.000,,,,KC6WRD,,,Coordinated,,,,222.94,,,,Friends Co,FMN,Ham,,San Jose,,celx,narcc.org,,,y,
+224580.000,,,,WB6NYS,,,Not Coordinated,,,,222.98,,,151.4,WB6NYS,FMN,Ham,,SanLuisObispo,,#o151.4elx,narcc.org,,,y,
+224580.000,,,,K6RPT,,,Not Coordinated,,,,222.98,,,107.2,K6RPT,FMN,Ham,,Los Gatos,,#o107.2el,narcc.org,,,,
+224600.000,,,,KB6ABM,,,Coordinated,,,,223,,,156.7,CONDOR,FMN,Ham,,San Jose,,o156.7elx,narcc.org,,,y,
+224620.000,,,,KA2FND,,,Coordinated,,,,223.02,,,110.9,KA2FND,FMN,Ham,,San Jose,,o110.9elrsx,narcc.org,,,y,y
+224640.000,,,,N6NAC,,,Coordinated,,,,223.04,,,110.9,N6NAC,FMN,Ham,,San Jose,,o110.9elx,narcc.org,,,y,
+224660.000,,,,NV6RN,,,Coordinated,,,,223.06,,,,VARN,FMN,Ham,,San Jose,,celsx,narcc.org,,,y,
+224680.000,,,,WB6JWB,,,Not Coordinated,,,,223.08,,,94.8,WB6JWB,FMN,Ham,,SanLuisObispo,,#o94.8,narcc.org,,,,
+224680.000,,,,WB6KHP,,,Coordinated,,,,223.08,,,107.2,CFMA,FMN,Ham,,San Jose,,o107.2,narcc.org,,,,
+224720.000,,,,W6MLP,,,Coordinated,,,,223.12,,,100,MARES,FMN,Ham,,Milpitas,,o100.0ers,narcc.org,,,,y
+224740.000,,,,WB6NYS,,,Not Coordinated,,,,223.14,,,131.8,ShandonRG,FMN,Ham,,Shandon,,#o131.8,narcc.org,,,,
+224800.000,,,,NU6P,,,Coordinated,,,,223.2,,,118.8,NU6P,FMN,Ham,,Los Gatos,,o118.8aex,narcc.org,,,y,
+224840.000,,,,KB6MET,,,Not Coordinated,,,,223.24,,,156.7,KB6MET,FMN,Ham,,Watsonville,,#o156.7,narcc.org,,,,
+224860.000,,,,WC6MRA,,,Coordinated,,,,223.26,,,,CMRA,FMN,Ham,,SanLuisObispo,,cex,narcc.org,,,y,
+224860.000,,,,KB6HDA,,,Not Coordinated,,,,223.26,,,100,KB6HDA,FMN,Ham,,San Jose,,#o100.0,narcc.org,,,,
+224880.000,,,,N6DVC,,,Coordinated,,,,223.28,,,88.5,K6UB,FMN,Ham,,Los Gatos,,o88.5e,narcc.org,,,,
+224920.000,,,,N6HYM,,,Not Coordinated,,,,223.32,,,,TCARS,FMN,Ham,,SanLuisObispo,,#celx,narcc.org,,,y,
+224940.000,,,,WA6YCZ,,,Coordinated,,,,223.34,,,,BAYCOM,FMN,Ham,,San Jose,,oex,narcc.org,,,y,
+224980.000,,,,NT6S,,,Coordinated,,,,223.38,,,110.9,NT6S,FMN,Ham,,San Jose,,o110.9l,narcc.org,,,,
+250650.000,,,,,,,Beaver Control Discrete,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+282050.000,,,,,,,Beaver Control W-283/W-285,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+290150.000,,,,,,,Beaver Control W-260,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+307125.000,,,,,,,Approach/Departure ,,,,,,,,WVI App/Dep,AM ,Air,Santa Cruz,,Air,,RadioReference,,,,
+328450.000,,,,,,,Beaver Control W-283/W-285,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+353450.000,,,,,,,Beaver Control W-260,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+355600.000,,,,,,,Oakland Center (Sector 35),,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+362550.000,,,,,,,Beaver Control Discrete,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+362950.000,,,,,,,Beaver Control Discrete,,,,,,,,,,Air,,,SFO,,liveatc.net,,,,
+440100.000,,,,W6SMQ,,,Coordinated,,,,445.1,,,127.3,W6SMQ,FMN,Ham,,San Jose,,o127.3elrsx,narcc.org,,,y,y
+440125.000,,,,W6AMT,,,Not Coordinated,,,,445.125,,,114.8,AMT ARC,FMN,Ham,,Cupertino,,#o114.8l,narcc.org,,,,
+440150.000,,,,W6TDM,,,Coordinated,,,,445.15,,,100,Cupertino,FMN,Ham,,Cupertino,,o100.0ers,narcc.org,,,,y
+440200.000,,,,N6BDE,,,Coordinated,,,,445.2,,,123,N6BDE,FMN,Ham,,Palo Alto,,o123.0ers,narcc.org,,,,y
+440225.000,,,,K6LLC,,,Coordinated,,,,445.225,,,123,LAPU-LAPU,FMN,Ham,,San Jose,,o123.0e,narcc.org,,,,
+440275.000,,,,W6YOP,,,Coordinated,,,,445.275,,,127.3,YOP HLLS,FMN,Ham,,San Jose,,o127.3elrx,narcc.org,,,y,
+440375.000,,,,N6TNR,,,Coordinated,,,,445.375,,,,ERG,FMN,Ham,,San Jose,,celx,narcc.org,,,y,
+440450.000,,,,KG6NRI,,,Not Coordinated,,,,445.45,,,110.9,KG6NRI,FMN,Ham,,Monterey,,#o110.9ael,narcc.org,,,,
+440525.000,,,,N6LEX,,,Not Coordinated,,,,445.525,,,146.2,CCARN,FMN,Ham,,Soledad,,#o146.2el,narcc.org,E:243317,,,
+440550.000,,,,AB6VS,,,Pending,,,,445.55,,,94.8,LPARC,FMN,Ham,,Santa Cruz,,#o94.8els,narcc.org,,,,y
+440575.000,,,,KA6ZRJ,,,Not Coordinated,,,,445.575,,,114.8,KA6ZRJ,FMN,Ham,,Morgan Hill,,#o114.8,narcc.org,,,,
+440650.000,,,,WA6JZN,,,Not Coordinated,,,,445.65,,,94.8,WA6JZN,FMN,Ham,,Los Gatos,,#o94.8ex,narcc.org,,,y,
+440700.000,,,,W6RTF,,,Coordinated,,,,445.7,,,100,w6rtf,FMN,Ham,,Salinas,,o100.0l,narcc.org,,,,
+440800.000,,,,W6ASH,,,Coordinated,,,,445.8,,,100,SPECS RA,FMN,Ham,,Mountain View,,o100.0aelrs,narcc.org,,,,y
+440850.000,,,,W6JWS,,,Coordinated,,,,445.85,,,94.8,W6JWS,FMN,Ham,,Santa Cruz,,o94.8aersx,narcc.org,,,y,y
+440875.000,,,,KH6N,,,Coordinated,,,,445.875,,,100,KH6N,FMN,Ham,,Los Altos,,o100.0rs,narcc.org,E:96932,,,y
+440925.000,,,,K6BJ,,,Coordinated,,,,445.925,,,123,SCCARC,FMN,Ham,,Santa Cruz,,o123.0ers,narcc.org,,,,y
+441025.000,,,,K9GVF,,,Coordinated,,,,446.025,,,156.7,K9GVF,FMN,Ham,,Campbell,,o156.7ers,narcc.org,,,,y
+441050.000,,,,K6NN,,,Coordinated,,,,446.05,,,100,T&BC,FMN,Ham,,Los Gatos,,o100.0ex,narcc.org,,,y,
+441050.000,,,,N6UUI,,,Not Coordinated,,,,446.05,,,123,TEL PNRS,FMN,Ham,,Los Gatos,,#o123.0ex,narcc.org,,,y,
+441075.000,,,,WB6JWB,,,Not Coordinated,,,,446.075,,,94.8,WB6JWB,FMN,Ham,,SanLuisObispo,,#o94.8,narcc.org,,,,
+441100.000,,,,K6GOD,,,Coordinated,,,,446.1,,,114.8,K6GOD,FMN,Ham,,Palo Alto,,o114.8elrsx,narcc.org,,,y,y
+441125.000,,,,KC6UDC,,,Not Coordinated,,,,446.125,,,123,KC6UDC,FMN,Ham,,Prunedale,,#o123.0,narcc.org,,,,
+441150.000,,,,KC6BJO,,,Coordinated,,,,446.15,,,100,KAISER HP,FMN,Ham,,San Jose,,o100.0e,narcc.org,,,,
+441175.000,,,,KF6FWO,,,Coordinated,,,,446.175,,,103.5,MARA,FMN,Ham,,San Jose,,o103.5aer,narcc.org,,,,
+441250.000,,,,WB6WTM,,,Coordinated,,,,446.25,,,,WB6WTM,FMN,Ham,,Los Altos,,cel,narcc.org,,,,
+441275.000,,,,K6BEN,,,Coordinated,,,,446.275,,,,W2NYC,FMN,Ham,,San Jose,,celrx,narcc.org,,,y,
+441300.000,,,,WB6ECE,,,Not Coordinated,,,,446.3,,,100,WB6ECE RG,FMN,Ham,,Bonny Doon,,#o100.0elx,narcc.org,,,y,
+441300.000,,,,WB6ECE,,,Not Coordinated,,,,446.3,,,156.7,WB6ECE RG,FMN,Ham,,Bonny Doon,,#o156.7a,narcc.org,,,,
+441300.000,,,,WB6ECE,,,Not Coordinated,,,,446.3,,,136.5,WB6ECE RG,FMN,Ham,,Monterey,,#o136.5ex,narcc.org,,,y,
+441300.000,,,,WB6ECE,,,Not Coordinated,,,,446.3,,,100,WB6ECE RG,FMN,Ham,,Boulder Creek,,#o100.0elx,narcc.org,,,y,
+441300.000,,,,WB6ECE,,,Not Coordinated,,,,446.3,,,100,WB6ECE RG,FMN,Ham,,Milpitas,,#o100.0ex,narcc.org,,,y,
+441300.000,,,,WB6ECE,,,Not Coordinated,,,,446.3,,,100,WB6ECE RG,FMN,Ham,,San Jose,,#o100.0elx,narcc.org,,,y,
+441325.000,,,,WE6R,,,Coordinated,,,,446.325,,,,WE6R,FMN,Ham,,Monterey,,celrs,narcc.org,,,,y
+441350.000,,,,W6PIY,,,Coordinated,,,,446.35,,,88.5,WVARA,FMN,Ham,,San Jose,,o88.5aels,narcc.org,,,,y
+441450.000,,,,K6JE,,,Coordinated,,,,446.45,,,123,FPRA,FMN,Ham,,Salinas,,o123.0ersx,narcc.org,,,y,y
+441550.000,,,,W6VB,,,Coordinated,,,,446.55,,,,W6VB,FMN,Ham,,Cupertino,,caels,narcc.org,,,,y
+441575.000,,,,K6IRC,,,Not Coordinated,,,,446.575,,,,ARN,FMN,Ham,,Palo Alto,,#celx,narcc.org,,,y,
+441600.000,,,,N6HU,,,Coordinated,,,,446.6,,,,KQ6RC,FMN,Ham,,Soledad,,cel,narcc.org,,,,
+441625.000,,,,W6RCA,,,Not Coordinated,,,,446.625,,,100,W6CBS,FMN,Ham,,Los Gatos,,#o100.0,narcc.org,,,,
+441650.000,,,,N6SPD,,,Coordinated,,,,446.65,,,94.8,N6SPD RG,FMN,Ham,,King City,,o94.8elrsx,narcc.org,,I:3796,y,y
+441650.000,,,,N6SPD,,,Coordinated,,,,446.65,,,123,N6SPD RG,FMN,Ham,,Monterey,,o123.0aelrsx,narcc.org,E:202044,I:3234,y,y
+441675.000,,,,K6BJ,,,Coordinated,,,,446.675,,,,SCCARC,FMN,Ham,,Santa Cruz,,oers,narcc.org,,,,y
+441700.000,,,,K6UB,,,Coordinated,,,,446.7,,,127.3,K6UB,FMN,Ham,,Los Gatos,,o127.3el,narcc.org,,,,
+441725.000,,,,WA6QDP,,,Coordinated,,,,446.725,,,,WA6QDP,FMN,Ham,,San Jose,,celx,narcc.org,,,y,
+441775.000,,,,W6NSA,,,Not Coordinated,,,,446.775,,,100,CCARC,FMN,Ham,,San Jose,,#o100.0,narcc.org,,,,
+441825.000,,,,K6INC,,,Coordinated,,,,446.825,,,,SCAN INT'L,FMN,Ham,,Coalinga,,cx,narcc.org,,,y,
+441825.000,,,,AD1U,,,Coordinated,,,,446.825,,,,AD1U,FMN,Ham,,San Jose,,cl,narcc.org,,,,
+441850.000,,,,K6OTR,,,Not Coordinated,,,,446.85,,,114.8,SCAR,FMN,Ham,,Palo Alto,,#o114.8x,narcc.org,,,y,
+441900.000,,,,W6MOW,,,Coordinated,,,,446.9,,,110.9,W6MOW,FMN,Ham,,Hollister,,o110.9el,narcc.org,,,,
+441925.000,,,,WA6HHQ,,,Coordinated,,,,446.925,,,100,WA6HHQ,FMN,Ham,,Aptos,,o100.0,narcc.org,,,,
+441950.000,,,,N6MPX,,,Coordinated,,,,446.95,,,100,MSARC,FMN,Ham,,San Jose,,o100.0el,narcc.org,,,,
+442000.000,,,,WW6HP,,,Coordinated,,,,447,,,151.4,HPSVRC,FMN,Ham,,Palo Alto,,o151.4ex,narcc.org,,,y,
+442025.000,,,,N6ADU,,,Coordinated,,,,447.025,,,100,A UNTALAN,FMN,Ham,,Grover Beach,,o100.0,narcc.org,E:651303,,,
+442025.000,,,,N6LEX,,,Not Coordinated,,,,447.025,,,146.2,CCARN,FMN,Ham,,Salinas,,#o146.2el,narcc.org,E:1430037,,,
+442025.000,,,,K6SNC,,,Coordinated,,,,447.025,,,100,SCARS,FMN,Ham,,Santa Clara,,o100.0rs,narcc.org,,,,y
+442075.000,,,,K6LNK,,,Coordinated,,,,447.075,,,114.8,CARLA,FMN,Ham,,Greenfield,,o114.8el,narcc.org,E:360571,I:3994,,
+442125.000,,,,WR6BAT,,,Coordinated,,,,447.125,,,,K6LLK,FMN,Ham,,Cupertino,,caesx,narcc.org,,,y,
+442175.000,,,,K9GVF,,,Coordinated,,,,447.175,,,100,CalNet,FMN,Ham,,Campbell,,o100.0el,narcc.org,,,,
+442175.000,,,,N1UFD,,,Not Coordinated,,,,447.175,,,,CALNET,FMN,Ham,,San Jose,,#celx,narcc.org,,,y,
+442300.000,,,,W6BHZ,,,Coordinated,,,,447.3,,,127.3,CPARC,FMN,Ham,,SanLuisObispo,,o127.3elrs,narcc.org,,,,y
+442300.000,,,,K6INC,,,Coordinated,,,,447.3,,,114.8,SCAN INT'L,FMN,Ham,,Los Gatos,,o114.8elx,narcc.org,E:38384,,y,
+442350.000,,,,K6GOD,,,Coordinated,,,,447.35,,,,GOD,FMN,Ham,,Cupertino,,ce,narcc.org,,,,
+442350.000,,,,K6GOD,,,Coordinated,,,,447.35,,,100,GOD,FMN,Ham,,Milpitas,,o100.0e,narcc.org,,,,
+442350.000,,,,K6GOD,,,Coordinated,,,,447.35,,,123,K6GOD,FMN,Ham,,San Jose,,o123.0,narcc.org,,,,
+442375.000,,,,K6JDE,,,Coordinated,,,,447.375,,,114.8,K6JDE,FMN,Ham,,San Jose,,o114.8,narcc.org,,,,
+442425.000,,,,W6UU,,,Coordinated,,,,447.425,,,107.2,SCCARA,FMN,Ham,,San Jose,,o107.2er,narcc.org,,,,
+442500.000,,,,WB6ZVW,,,Coordinated,,,,447.5,,,100,CPRA,FMN,Ham,,San Jose,,o100.0ersx,narcc.org,,,y,y
+442575.000,,,,K6FB,,,Coordinated,,,,447.575,,,100,LCARC,FMN,Ham,,Palo Alto,,o100.0elrsx,narcc.org,,,y,y
+442600.000,,,,KG6UYZ,,,Coordinated,,,,447.6,,,110.9,KG6UYZ,FMN,Ham,,Salinas,,o110.9el,narcc.org,,,,
+442650.000,,,,WR6E,,,Coordinated,,,,447.65,,,141.3,AC6E,FMN,Ham,,Panoche,,o141.3e,narcc.org,,,,
+442650.000,,,,KQ6RC,,,Coordinated,,,,447.65,,,,KQ6RC,FMN,Ham,,Daly City,,cel,narcc.org,,,,
+442675.000,,,,W6HD,,,Coordinated,,,,447.675,,,110.9,RadioRanch,FMN,Ham,,Paso Robles,,o110.9ae,narcc.org,,,,
+442700.000,,,,WB6FMC,,,Not Coordinated,,,,447.7,,,127.3,WB6FMC,FMN,Ham,,SanLuisObispo,,#o127.3ersx,narcc.org,,,y,y
+442700.000,,,,N6MNV,,,Coordinated,,,,447.7,,,100,Rolm ARC,FMN,Ham,,San Jose,,o100.0e,narcc.org,,,,
+442775.000,,,,KG6NRI,,,Coordinated,,,,447.775,,,110.9,KG6NRI,FMN,Ham,,Prunedale,,o110.9l,narcc.org,,,,
+442775.000,,,,KU6V,,,Coordinated,,,,447.775,,,131.8,KU6V,FMN,Ham,,San Jose,,o131.8e,narcc.org,,,,
+442800.000,,,,K6OTR,,,Coordinated,,,,447.8,,,114.8,SCAR,FMN,Ham,,Palo Alto,,o114.8,narcc.org,,,,
+442825.000,,,,WR6COP,,,Coordinated,,,,447.825,,,,K6COP,FMN,Ham,,San Jose,,celx,narcc.org,,,,
+442875.000,,,,WB6FMC,,,Not Coordinated,,,,447.875,,,,WB6FMC,FMN,Ham,,SanLuisObispo,,#celrsx,narcc.org,,,y,y
+442875.000,,,,WA6YLV,,,Not Coordinated,,,,447.875,,,100,WA6YLV,FMN,Ham,,San Jose,,#o100.0,narcc.org,,,,
+442900.000,,,,WR6ABD,,,Coordinated,,,,447.9,,,162.2,LPRC,FMN,Ham,,San Jose,,o162.2elx,narcc.org,,I:3421,y,
+442950.000,,,,K6YZS,,,Not Coordinated,,,,447.95,,,85.4,K6YZS,FMN,Ham,,San Jose,,#o85.4ex,narcc.org,,,y,
+442975.000,,,,K7DAA,,,Coordinated,,,,447.975,,,100,MHARS,FMN,Ham,,Morgan Hill,,o100.0elx,narcc.org,,,y,
+443000.000,,,,W6OOL,,,Coordinated,,,,448,,,,W6OOL,FMN,Ham,,Palo Alto,,caex,narcc.org,,,y,
+443025.000,,,,K6EXE,,,Coordinated,,,,448.025,,,,K6EXE,FMN,Ham,,Milpitas,,cers,narcc.org,,,,y
+443025.000,,,,WA6ABB,,,Coordinated,,,,448.025,,,,WA6ABB,FMN,Ham,,Los Gatos,,caex,narcc.org,,,y,
+443050.000,,,,K6RMW,,,Coordinated,,,,448.05,,,94.8,K6RMWK6GDI,FMN,Ham,,Watsonville,,o94.8ers,narcc.org,,,,y
+443075.000,,,,K6LNK,,,Coordinated,,,,448.075,,,123,CARLA,FMN,Ham,,San Jose,,o123.0e,narcc.org, E:360571,I:3994,,
+443125.000,,,,K6BEN,,,Coordinated,,,,448.125,,,,W2NYC,FMN,Ham,,Saratoga,,caelr,narcc.org,,,,
+443150.000,,,,K6SA,,,Coordinated,,,,448.15,,,100,SARA,FMN,Ham,,Cupertino,,o100.0lrs,narcc.org,E:85531,I:3671,,y
+443225.000,,,,WW6BAY,,,Coordinated,,,,448.225,,,100,Bay Net,FMN,Ham,,Palo Alto,,o100.0elx,narcc.org, E:314933,I:3802,y,
+443275.000,,,,K7AZ,,,Coordinated,,,,448.275,,,,K7AZ,FMN,Ham,,Lompoc,,cel,narcc.org,,,,
+443275.000,,,,K6SNY,,,Coordinated,,,,448.275,,,107.2,SARES-RG,FMN,Ham,,San Jose,,o107.2ersx,narcc.org,,,y,y
+443300.000,,,,KB5JR,,,Not Coordinated,,,,448.3,,,136.5,KB5JR,FMN,Ham,,San Jose,,#o136.5elx,narcc.org,,,y,
+443350.000,,,,KB6MET,,,Not Coordinated,,,,448.35,,,123,KB6MET,FMN,Ham,,Watsonville,,#o123.0,narcc.org,,,,
+443425.000,,,,NC6EO,,,Coordinated,,,,448.425,,,100,N. CA Assn,FMN,Ham,,Fremont,,o100.0lrx,narcc.org,,,y,
+443450.000,,,,K6MF,,,Coordinated,,,,448.45,,,,K6MF,FMN,Ham,,San Jose,,cel,narcc.org,,,,
+443475.000,,,,WB6PHE,,,Not Coordinated,,,,448.475,,,127.3,WB6PHE,FMN,Ham,,Santa Cruz,,#o127.3elrs,narcc.org,,,,y
+443475.000,,,,K6LNK,,,Coordinated,,,,448.475,,,123,CARLA,FMN,Ham,,San Jose,,o123.0elx,narcc.org,E:360571,I:3994,y,
+443500.000,,,,K6LNK,,,Coordinated,,,,448.5,,,100,CARLA,FMN,Ham,,SanLuis Obispo,,o100.0elx,narcc.org,E:360571,I:3994,y,
+443550.000,,,,WB6FRM,,,Coordinated,,,,448.55,,,,NCCRA,FMN,Ham,,San Jose,,celx,narcc.org,,,y,
+443575.000,,,,W6FM,,,Coordinated,,,,448.575,,,,W6FM,FMN,Ham,,SanLuisObispo,,cex,narcc.org,,,,
+443575.000,,,,KE6STH,,,Coordinated,,,,448.575,,,110.9,KE6STH,FMN,Ham,,San Jose,,o110.9al,narcc.org,E:95278,,,
+443600.000,,,,W6MOW,,,Coordinated,,,,448.6,,,110.9,W6MOW,FMN,Ham,,Salinas,,o110.9ex,narcc.org,,I:3853,y,
+443625.000,,,,K6MSR,,,Not Coordinated,,,,448.625,,,,MSR,FMN,Ham,,San Jose,,#caelx,narcc.org,,,y,
+443675.000,,,,WA6NMF,,,Coordinated,,,,448.675,,,136.5,WA6NMF,FMN,Ham,,Santa Cruz,,o136.5aes,narcc.org,,,,y
+443675.000,,,,K6MSR,,,Not Coordinated,,,,448.675,,,,MSR,FMN,Ham,,Los Altos,,#cael,narcc.org,,,,
+443700.000,,,,KA7DXP,,,Not Coordinated,,,,448.7,,,100,KA7DXP,FMN,Ham,,Nipomo,,#o100.0,narcc.org,,,,
+443750.000,,,,K9GVF,,,Coordinated,,,,448.75,,,100,K9GVF,FMN,Ham,,Los Gatos,,o100.0elrx,narcc.org,,,y,
+443775.000,,,,WA6GFY,,,Coordinated,,,,448.775,,,100,LMERA ARC,FMN,Ham,,San Jose,,o100.0ex,narcc.org,,,y,
+443800.000,,,,KG6UYZ,,,Coordinated,,,,448.8,,,110.9,KG6UYZ,FMN,Ham,,Carmel,,o110.9el,narcc.org,,,,
+443800.000,,,,N6HYM,,,Not Coordinated,,,,448.8,,,,N6HYM,FMN,Ham,,SanLuisObispo,,#cel,narcc.org,,,,
+443850.000,,,,W6BUG,,,Coordinated,,,,448.85,,,,Bay Users,FMN,Ham,,LosAltosHills,,cel,narcc.org, E:3580,I:3737,,
+443900.000,,,,N6SPD,,,Coordinated,,,,448.9,,,123,N6SPD RG,FMN,Ham,,Prunedale,,o123.0ers,narcc.org,,,,y
+443900.000,,,,K6RDC,,,Not Coordinated,,,,448.9,,,100,CCARC,FMN,Ham,,San Jose,,#o100.0,narcc.org,,,,
+443950.000,,,,K6INC,,,Coordinated,,,,448.95,,,,SCAN INT'L,FMN,Ham,,Los Gatos,,c,narcc.org,,,,
+443975.000,,,,W6SLO,,,Coordinated,,,,448.975,,,127.3,SLOECC,FMN,Ham,,Arroyo Grande,,o127.3elrs,narcc.org,,,,y
+443975.000,,,,WB6FRM,,,Coordinated,,,,448.975,,,,NCCRA,FMN,Ham,,King City,,clx,narcc.org,,,y,
+444000.000,,,,W6WLS,,,Coordinated,,,,449,,,94.8,W6WLS,FMN,Ham,,Scotts Valley,,o94.8l,narcc.org,,I:7228,,
+444000.000,,,,WA6INC,,,Coordinated,,,,449,,,,AD1U,FMN,Ham,,San Jose,,c,narcc.org,,,,
+444025.000,,,,K6JJC,,,Coordinated,,,,449.025,,,136.5,RMRG,FMN,Ham,,San Jose,,o136.5elx,narcc.org,,,y,
+444050.000,,,,KF6QYJ,,,Coordinated,,,,449.05,,,127.3,SLOECC,FMN,Ham,,SanLuisObispo,,o127.3elrsx,narcc.org,,,y,y
+444050.000,,,,KB6FEC,,,Coordinated,,,,449.05,,,,KB6FEC,FMN,Ham,,San Jose,,cals,narcc.org,,,,y
+444075.000,,,,WB6ORK,,,Not Coordinated,,,,449.075,,,,WB6ORK,FMN,Ham,,King City,,#celsx,narcc.org,,,y,y
+444100.000,,,,KD6EKH,,,Coordinated,,,,449.1,,,127.3,SLOECC,FMN,Ham,,San Simeon,,o127.3elrsx,narcc.org,,,y,y
+444100.000,,,,N6TLQ,,,Not Coordinated,,,,449.1,,,,N6TLQ,FMN,Ham,,San Jose,,#cer,narcc.org,,,,
+444150.000,,,,W6SLO,,,Coordinated,,,,449.15,,,127.3,SLOECC,FMN,Ham,,SantaMargarita,,o127.3elrsx,narcc.org,,,y,y
+444175.000,,,,WA6RQX,,,Coordinated,,,,449.175,,,192.8,WA6RQX,FMN,Ham,,San Jose,,o192.8elrx,narcc.org,,,y,
+444200.000,,,,KJ6WZS,,,Coordinated,,,,449.2,,,123,GilroyRPTR,FMN,Ham,,Gilroy,,o123.0e,narcc.org,,,,
+444225.000,,,,KE6JTK,,,Not Coordinated,,,,449.225,,,131.8,KE6JTK,FMN,Ham,,LosAltosHills,,#o131.8aex,narcc.org,,,y,
+444275.000,,,,N6SPD,,,Coordinated,,,,449.275,,,100,N6SPD RG,FMN,Ham,,Monterey,,o100.0aelrsx,narcc.org,,I:3589,y,y
+444275.000,,,,WA6VPL,,,Coordinated,,,,449.275,,,,WA6VPL,FMN,Ham,,Nipomo,,c,narcc.org,,,,
+444300.000,,,,W7AFG,,,Coordinated,,,,449.3,,,173.8,AREA-Amate,FMN,Ham,,San Jose,,o173.8ersx,narcc.org,,,y,y
+444300.000,,,,W7AFG,,,Coordinated,,,,449.3,,,162.2,AREA-Amate,FMN,Ham,,San Jose,,o162.2aers,narcc.org,,,,y
+444325.000,,,,KD6AOG,,,Not Coordinated,,,,449.325,,,127.3,KD6AOG,FMN,Ham,,San Jose,,#o127.3,narcc.org,,,,
+444350.000,,,,KJ6VU,,,Coordinated,,,,449.35,,,,NCCRA,FMN,Ham,,Palo Alto,,celx,narcc.org,,,y,
+444375.000,,,,WA6RQX,,,Coordinated,,,,449.375,,,100,WEST COAST,FMN,Ham,,Soledad,,o100.0er,narcc.org,,,,
+444375.000,,,,N6INC,,,Coordinated,,,,449.375,,,,KQ6RC,FMN,Ham,,Milpitas,,cl,narcc.org,,,,
+444400.000,,,,WA6YCZ,,,Coordinated,,,,449.4,,,,BAYCOM,FMN,Ham,,San Jose,,celx,narcc.org,,,y,
+444425.000,,,,KJ6VU,,,Coordinated,,,,449.425,,,127.3,Bay-Net,FMN,Ham,,Palo Alto,,o127.3ersx,narcc.org,,,y,
+444450.000,,,,WB6JSO,,,Coordinated,,,,449.45,,,100,WB6JSO,FMN,Ham,,San Jose,,o100.0e,narcc.org,,,,
+444475.000,,,,W6FM,,,Coordinated,,,,449.475,,,,W6FM,FMN,Ham,,SanLuisObispo,,celx,narcc.org,,,y,
+444525.000,,,,W6FM,,,Coordinated,,,,449.525,,,127.3,W6FM,FMN,Ham,,SanLuisObispo,,o127.3ex,narcc.org,E:68906,I:5570,y,
+444525.000,,,,W6JSO,,,Coordinated,,,,449.525,,,123,W6JSO,FMN,Ham,,Monterey,,o123.0ersx,narcc.org,,I:3091,y,y
+444550.000,,,,W6FM,,,Coordinated,,,,449.55,,,,W6FM,FMN,Ham,,King City,,cex,narcc.org,,,y,
+444600.000,,,,KB6BF,,,Coordinated,,,,449.6,,,131.8,KB6BF,FMN,Ham,,Pismo Beach,,o131.8e,narcc.org,,,,
+444600.000,,,,WB6OQS,,,Coordinated,,,,449.6,,,141.3,SCVRS,FMN,Ham,,San Jose,,o141.3alx,narcc.org,,,y,
+444625.000,,,,N6NAC,,,Coordinated,,,,449.625,,,110.9,N6NAC,FMN,Ham,,San Jose,,o110.9aelsx,narcc.org,,,y,y
+444700.000,,,,K6LY,,,Not Coordinated,,,,449.7,,,123,NPSARC,FMN,Ham,,Monterey,,o123.0ers,narcc.org,E:39310,I:3139,,y
+444700.000,,,,KB6Q,,,Not Coordinated,,,,449.7,,,100,KB6Q,FMN,Ham,,Nipomo,,#o100.0e,narcc.org,,,,
+444700.000,,,,WB6KHP,,,Coordinated,,,,449.7,,,127.3,CFMA,FMN,Ham,,San Jose,,o127.3,narcc.org,E:525493,I:3246,,
+444750.000,,,,N9JIM,,,Coordinated,,,,449.75,,,100,K6LHE,FMN,Ham,,San Jose,,o100.0e,narcc.org,,,,
+444800.000,,,,WA6VPL,,,Coordinated,,,,449.8,,,,WA6VPL,FMN,Ham,,Lompoc,,cls,narcc.org,,,,y
+444800.000,,,,WA6GEL,,,Coordinated,,,,449.8,,,,Red Carpet,FMN,Ham,,San Jose,,ce,narcc.org,,,,
+444875.000,,,,KQ6RC,,,Coordinated,,,,449.875,,,,KQ6RC,FMN,Ham,,Santa Clara,,celx,narcc.org,,,y,
+444900.000,,,,KC6WRD,,,Coordinated,,,,449.9,,,,FCC,FMN,Ham,,SanLuisObispo,,ce,narcc.org,,,,
+444900.000,,,,KU6V,,,Coordinated,,,,449.9,,,110.9,KU6V,FMN,Ham,,San Jose,,o110.9elx,narcc.org, E:114065,I:3620,y,
+444925.000,,,,KB6LCS,,,Coordinated,,,,449.925,,,156.7,WA6HWT,FMN,Ham,,Los Gatos,,o156.7elx,narcc.org,,,y,
+444950.000,,,,KB6LED,,,Coordinated,,,,449.95,,,162.2,KB6LED,FMN,Ham,,Palo Alto,,o162.2ex,narcc.org,E:45808,,y,
+444975.000,,,,WB6MIA,,,Coordinated,,,,449.975,,,127.3,SLOECC,FMN,Ham,,Los Osos,,o127.3ers,narcc.org,,,,y
+444975.000,,,,WB6KHP,,,Coordinated,,,,449.975,,,127.3,CFMA,FMN,Ham,,Los Gatos,,o127.3ex,narcc.org,,,y,
+451588.000,,,,WPLT483 ,,,District Operations ,,,,,M,,,SVWD MOB,FM ,Utilities ,Santa Cruz,Scotts Valley,Water,,RadioReference,,,,
+453600.000,,,,WNYW379 ,,,Civic Auditorium Ops ,,,,,BM,,,StnaCruzCiv,FM ,Public Works ,Santa Cruz,Santa Cruz,,,RadioReference,,,,
+456438.000,,,,WPLT483 ,,,District Operations ,,,,,M,,,SVWD MOB,FM ,Utilities ,Santa Cruz,Scotts Valley,Water,,RadioReference,,,,
+456538.000,,,,WPLT483 ,,,District Operations ,,,,,M,,,SVWD MOB,FM ,Utilities,Santa Cruz,Scotts Valley,Water,,RadioReference,,,,
+460925.000,,,,,,,Ch. 6 Tactical ,,,,,M,82.5 PL,,FirstAlarm 6,FM ,Security ,Santa Cruz,,First Alarm,,RadioReference,,,,
+460975.000,,,,,,,Ch. 1 Monterey Peninsula Primary ,,,,465.975,RM,82.5 PL,,FirstAlarm 1,FM ,Security ,Santa Cruz,,First Alarm,,RadioReference,,,,
+460975.000,,,,,,,Ch. 3 Carmel and South Monterey Primary ,,,,465.975,RM,025 DPL,,FirstAlarm 3,FM ,Security ,Santa Cruz,,First Alarm,,RadioReference,,,,
+460975.000,,,,,,,Ch. 5 Talk-Around ,,,,,M,,,FirstAlarm 5,FM ,Security ,Santa Cruz,,First Alarm,,RadioReference,,,,
+461000.000,,,,,,,"Ch. 2 Santa Cruz, South Bay and Gilroy Primary ",,,,466,RM,179.9 PL,,FirstAlarm 2,FM ,Security ,Santa Cruz,,First Alarm,,RadioReference,,,,
+461250.000,,,,,,,Ch. 4 Salinas and Holister Primary ,,,,,,123.0 PL,,FirstAlarm 4,FM ,Security ,Santa Cruz,,First Alarm,,RadioReference,,,,
+464450.000,,,,KNDV259 ,,,Community Bridges (Aptos) ,,,,469.45,RM,,,Dial-A-Ride,FM ,Transportation ,Santa Cruz,,,,RadioReference,,,,
+464625.000,,,,,,,Southwest Airlines Ops,,,,,,,,,,Air,,,SJC,,liveatc.net,,,,
+927025.000,,,,WA6JQV,,,Coordinated,,,,902.025,,,,WA6JQV,FMN,Ham,,Los Gatos,,celx,narcc.org,,,y,
+927050.000,,,,K6DND,,,Coordinated,,,,902.05,,,,K6DND,FMN,Ham,,Los Gatos,,oel,narcc.org,,,,
+927138.000,,,,WA6FUL,,,Not Coordinated,,,,902.138,,,,WA6FUL,FMN,Ham,,Cupertino,,#oelrsx,narcc.org,,,y,y
+927150.000,,,,N6NMZ,,,Coordinated,,,,902.15,,,156.7,N6NMZ,FMN,Ham,,Los Gatos,,o156.7l,narcc.org,,,,
+927213.000,,,,WA6FUL,,,Not Coordinated,,,,902.213,,,,WA6FUL,FMN,Ham,,Cupertino,,#oersx,narcc.org,,,y,y
+927250.000,,,,K6INC,,,Coordinated,,,,902.25,,,114.8,KD6YYJ,FMN,Ham,,Los Gatos,,o114.8elx,narcc.org,,,y,
+927288.000,,,,W6JSO,,,Coordinated,,,,902.288,,,,W6JSO,FMN,Ham,,Monterey,,oelrsx,narcc.org,,,y,y
+927463.000,,,,WA6JQV,,,Coordinated,,,,902.463,,,,WA6JQV,FMN,Ham,,Los Gatos,,celx,narcc.org,,,y,
+927475.000,,,,WA6JQV,,,Coordinated,,,,902.475,,,,WA6JQV,FMN,Ham,,Los Gatos,,celx,narcc.org,,,y,
+927638.000,,,,NC9RS,,,Coordinated,,,,902.013,,,123,nc9rs.com,FMN,Ham,,Salinas,,o123.0elx,narcc.org,,,y,
+927738.000,,,,K6SNC,,,Coordinated,,,,902.738,,,100,K6WAR,FMN,Ham,,Santa Clara,,o100.0elrs,narcc.org,,,,y
+927813.000,,,,N6SPB,,,Coordinated,,,,902.813,,,123,N6SPB,FMN,Ham,,San Jose,,o123.0l,narcc.org,,,,
+927838.000,,,,N6MEF,,,Pending,,,,902.838,,,100,N6MEF,FMN,Ham,,Santa Clara,,#o100.0rs,narcc.org,,,,y
+927863.000,,,,WW6BAY,,,Coordinated,,,,902.863,,,,Bay-Net,FMN,Ham,,Palo Alto,,oelx,narcc.org,,I:3802,y,
+927900.000,,,,N6TBQ,,,Coordinated,,,,902.9,,,,LPRC,FMN,Ham,,San Jose,,ol,narcc.org,,,,
+927913.000,,,,K6DND,,,Coordinated,,,,902.05,,,167.9,K6DND,FMN,Ham,,Los Gatos,,o167.9aelx,narcc.org,,,y,
+927925.000,,,,W6MOW,,,Coordinated,,,,902.925,,,123,W6MOW,FMN,Ham,,Felton,,o123.0e,narcc.org,,,,
+927950.000,,,,KG6UYZ,,,Coordinated,,,,902.95,,,,KG6UYZ,FMN,Ham,,Salinas,,oelx,narcc.org,,,y,
+927975.000,,,,WE6R,,,Not Coordinated,,,,902.975,,,,WE6R,FMN,Ham,,Monterey,,celrs,narcc.org,,,,
+1282000.000,,,,W6RLW,,,Coordinated,,,,1270,,,88.5,ARRC,FMN,Ham,,San Jose,,o88.5l,narcc.org,,,,
+1282200.000,,,,W6RLW,,,Coordinated,,,,1270.2,,,88.5,ARRC,FMN,Ham,,San Jose,,o88.5lx,narcc.org,,,y,
+1282500.000,,,,W6YX,,,Coordinated,,,,1270.5,,,88.5,SUARC,FMN,Ham,,Palo Alto,,o88.5elx,narcc.org,,,y,
+1283000.000,,,,W6RLW,,,Coordinated,,,,1271,,,88.5,ARRC,FMN,Ham,,Saratoga,,o88.5l,narcc.org,,,,
+1283100.000,,,,N6AKK,,,Not Coordinated,,,,1271.1,,,88.5,CarJack,FMN,Ham,,San Jose,,#o88.5ael,narcc.org,,,,
+1283150.000,,,,W6SRI,,,Coordinated,,,,1271.15,,,100,SRI INT,FMN,Ham,,Los Altos,,o100.0ex,narcc.org,,,y,
+1283400.000,,,,N6EEZ,,,Coordinated,,,,1272.4,,,94.8,N6EEZ,FMN,Ham,,San Jose,,o94.8al,narcc.org,,,,
+1283550.000,,,,N6AKK,,,Not Coordinated,,,,1271.55,,,88.5,CarJack,FMN,Ham,,San Jose,,#o88.5ael,narcc.org,,,,
+1283700.000,,,,WA6GFY,,,Coordinated,,,,1271.7,,,100,LMERA ARC,FMN,Ham,,San Jose,,o100.0ex,narcc.org,,,y,
+1284000.000,,,,N6MBB,,,Not Coordinated,,,,1272,,,100,N6MBB,FMN,Ham,,Cupertino,,#o100.0,narcc.org,,,,
+1284250.000,,,,N6SGI,,,Not Coordinated,,,,1272.25,,,88.5,SGIARC,FMN,Ham,,Mountain View,,#o88.5e,narcc.org,,,,
+1284300.000,,,,N6AKB,,,Not Coordinated,,,,1272.3,,,100,N6AKB,FMN,Ham,,San Jose,,#o100.0e,narcc.org,,,,
+1284850.000,,,,K6KMT,,,Not Coordinated,,,,1272.85,,,100,K6KMT,FMN,Ham,,Campbell,,#o100.0s,narcc.org,,,,
+1284950.000,,,,K6BAM,,,Coordinated,,,,1272.95,,,88.5,BAMA,FMN,Ham,,Palo Alto,,o88.5ex,narcc.org,,,y,
+1285000.000,,,,W6RLW,,,Coordinated,,,,1273,,,88.5,ARRC,FMN,Ham,,San Jose,,o88.5lx,narcc.org,,,y,
+1285650.000,,,,W6MOW,,,Coordinated,,,,1273.65,,,110.9,MARG,FMN,Ham,,Cupertino,,o110.9l,narcc.org,,,,
+1285800.000,,,,KD6AOG,,,Not Coordinated,,,,1273.8,,,127.3,KD6AOG,FMN,Ham,,San Jose,,#o127.3,narcc.org,,,,
+1285950.000,,,,KU6V,,,Coordinated,,,,1273.95,,,100,KU6V,FMN,Ham,,San Jose,,o100.0aelx,narcc.org,,I:3620,y,
+1286000.000,,,,N6NAC,,,Coordinated,,,,1274,,,110.9,N6NAC,FMN,Ham,,San Jose,,o110.9elx,narcc.org,,,y,
+1286075.000,,,,WB6OCD,,,Not Coordinated,,,,1274.075,,,88.5,WB6OCD,FMN,Ham,,San Jose,,#o88.5aex,narcc.org,,,y,
+1286150.000,,,,KD6AOG,,,Not Coordinated,,,,1274.15,,,127.3,KD6AOG,FMN,Ham,,San Jose,,#o127.3x,narcc.org,,,y,
+1286200.000,,,,N6NAC,,,Coordinated,,,,1274.2,,,110.9,N6NAC,FMN,Ham,,Watsonville,,o110.9e,narcc.org,,,,
+1286200.000,,,,W6PIY,,,Coordinated,,,,1274.2,,,100,WVARA,FMN,Ham,,San Jose,,o100.0aels,narcc.org,,,,y
+1286325.000,,,,N6SPB,,,Coordinated,,,,1274.325,,,88.5,N6SPB,FMN,Ham,,San Jose,,o88.5l,narcc.org,,,,
+1286400.000,,,,AA6IW,,,Not Coordinated,,,,1274.4,,,88.5,AA6IW,FMN,Ham,,Los Altos,,#o88.5,narcc.org,,,,
+1286450.000,,,,K6MF,,,Coordinated,,,,1274.45,,,,K6MF,FMN,Ham,,San Jose,,cel,narcc.org,,,,
+1286500.000,,,,W7AFG,,,Coordinated,,,,1274.5,,,173.8,AREA-Amate,FMN,Ham,,San Jose,,o173.8elrsx,narcc.org,,,y,y
+1286700.000,,,,K6LY,,,Not Coordinated,,,,1274.7,,,162.2,NPSARC,FMN,Ham,,Monterey,,#o162.2es,narcc.org,,,,y
+1286850.000,,,,K6GDS,,,Not Coordinated,,,,1274.85,,,88.5,K6GDS,FMN,Ham,,Santa Clara,,#o88.5,narcc.org,,,,
+1287000.000,,,,K6CPU,,,Not Coordinated,,,,1275,,,88.5,IEARS,FMN,Ham,,Santa Clara,,#o88.5e,narcc.org,,,,
+1287200.000,,,,KE6STH,,,Coordinated,,,,1275.2,,,88.5,KE6STH,FMN,Ham,,San Jose,,o88.5a,narcc.org,E:95278,,,
+1287500.000,,,,K6UB,,,Coordinated,,,,1275.5,,,88.5,K6UB,FMN,Ham,,Saratoga,,o88.5el,narcc.org,,I:3610,,
+1287700.000,,,,W6RLW,,,Coordinated,,,,1275.7,,,88.5,ARRC,FMN,Ham,,San Jose,,o88.5lx,narcc.org,,,y,
+1292520.000,,,,KW6KW,,,Not Coordinated,,,,1272.52,,,,KW6KW,FMN,Ham,,Cupertino,,#oe,narcc.org,,,,
+1292550.000,,,,WA6ITV,,,Not Coordinated,,,,1272.55,,,88.5,WA6ITV,FMN,Ham,,Palo Alto,,#o88.5,narcc.org,,,,
