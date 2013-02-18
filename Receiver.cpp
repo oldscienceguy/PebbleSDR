@@ -143,7 +143,7 @@ bool Receiver::On()
 		//In freq domain chain we have full size fft available
 		bpFilter = new FIRFilter(sampleRate, framesPerBuffer,true, 128);
 	else
-		bpFilter = new FIRFilter(downSampleRate, downSampleFrames,true, 128);
+        bpFilter = new FIRFilter(downSampleRate, downSampleFrames,true, 128);
 	bpFilter->setEnabled(true);
 	
 	agc = new AGC(downSampleRate, downSampleFrames);
@@ -440,6 +440,26 @@ that is disabled and not do a useless copy from IN to OUT.
 */
 void Receiver::ProcessBlock(CPX *in, CPX *out, int frameCount)
 {
+    /*
+     * Critical timing!!
+     * At 48k sample rate and 2048 samples per block, we need to process 48000/2048, rounded up = 24 blocks per second
+     * So each iteration of this function must be significantly less than 1/24 seconds (416ms) to keep up
+     * Max time = 1 / (SampleRate/BlockSize)
+     *
+     *  Sample Rate     Max time
+     *  48k             .042666s
+     *  96k             .021333s
+     *  192k            .010666s
+     *  200k            .010240
+     *  250k            .008192
+     *  500k            .004096
+     *  1.8m            .000137 (max rate of SDR-IP or AFEDRI)
+     *
+     *  2/17/13         .007035 Actual- 200k max!
+     */
+
+    //global->perform.StartPerformance("ProcessBlock");
+
 	//We make an assumption that the number of samples we get is always equal to what we asked for.
 	//This is critical, since buffers are created and loops are generated using framesPerBuffer
 	//If frameCount is ever not equal to framesPerBuffer, we have a problem
@@ -496,12 +516,15 @@ void Receiver::ProcessBlock(CPX *in, CPX *out, int frameCount)
 		ProcessBlockTimeDomain(in,out,frameCount);
 	else
 		ProcessBlockFreqDomain(in,out,frameCount);
+
+    //global->perform.StopPerformance(100);
 }
 
 void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 {
 	CPX *nextStep = in;
 
+    //global->perform.StartPerformance();
     /*
       3 step decimation
       1. Decimate to max spectrum, ie RTL2832 samples at >1msps
@@ -525,14 +548,13 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 		0,//audio->outBufferUnderflowCount,
 		0);//audio->outBufferOverflowCount);
 	//audio->ClearCounts();
+    //global->perform.StopPerformance(100);
 
 	//Signal (Specific frequency) processing
 	//Mixer shows no loss in testing
 	nextStep = mixer->ProcessBlock(nextStep);
 	//float post = SignalProcessing::TotalPower(nextStep,frameCount); 
 	signalSpectrum->PostMixer(nextStep);
-
-
 
 	//DOWNSAMPLED from here on
 	//Todo: Variable output sample rate based on mode, requires changing output stream when mode changes
@@ -550,6 +572,7 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
       Solution, decimate before demod to get to 300k where sampleRate > 300k, after demod where sampleRate <300k
     */
 
+    //global->perform.StartPerformance();
     if (demod->DemodMode() == dmFMMono || demod->DemodMode() == dmFMStereo) {
         //These steps are NOT at downSamplerate
         //Special handling for wide band fm
@@ -557,7 +580,7 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
         //Do we need bandPass filter or handle in demod?
         nextStep = demod->ProcessBlock(nextStep,framesPerBuffer);
 
-        //Demod wil Decimate to audio output rate
+        //Demod will Decimate to audio output rate
 
     } else {
         //Filter above downSampleRate so we don't get aliases
@@ -568,15 +591,24 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
                 nextStep[j] = nextStep[i];
         }
 
+        //global->perform.StopPerformance(100);
+
+        //global->perform.StartPerformance();
+
         //float pre = SignalProcessing::TotalPower(nextStep,frameCount);
         nextStep = bpFilter->ProcessBlock(nextStep);
         //Crude AGC, too much fluctuation
         //CPXBuf::scale(nextStep,nextStep,pre/post,frameCount);
         signalSpectrum->PostBandPass(nextStep,downSampleFrames);
+        //global->perform.StopPerformance(100);
+
+        //global->perform.StartPerformance();
 
         //If squelch is set, and we're below threshold and should set output to zero
         //Do this in SignalStrength, since that's where we're calculating average signal strength anyway
         nextStep = signalStrength->ProcessBlock(nextStep, squelch);
+        //global->perform.StopPerformance(100);
+        //global->perform.StartPerformance();
 
         //Tune only mode, no demod or output
         if (demod->DemodMode() == dmNONE){
@@ -589,8 +621,13 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
         //float post = SignalProcessing::totalPower(nextStep,framesPerBuffer);
 
         nextStep = agc->ProcessBlock(nextStep);
+        //global->perform.StopPerformance(100);
+
+        //global->perform.StartPerformance();
 
         nextStep = demod->ProcessBlock(nextStep, downSampleFrames);
+
+        //global->perform.StopPerformance(100);
 
         /*
           Todo: Add post demod FFT to check FM stereo and other composite formats
@@ -600,14 +637,18 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
         if (dataSelection == ReceiverWidget::CW_DATA)
             nextStep = morse->ProcessBlock(nextStep);
 
+        //global->perform.StartPerformance();
 
         //Testing LPF to get rid of some noise after demod
         nextStep = lpFilter->ProcessBlock(nextStep);
+        //global->perform.StopPerformance(100);
+
     }
 	// apply volume setting
 	//Todo: gain should be a factor of slider, receiver, filter, and mode, and should be normalized
 	//	so changing anything other than slider doesn't impact overall volume.
 	//	or should filter normalize gain
+    //global->perform.StartPerformance();
 
 	//CPXBuf::scale(out, nextStep, gain * filterLoss, frameCount);
 	if (mute)
@@ -616,6 +657,8 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 		CPXBuf::scale(out, nextStep, gain, downSampleFrames);
 
 	audioOutput->SendToOutput(out);
+    //global->perform.StopPerformance(100);
+
 }
 
 /*
