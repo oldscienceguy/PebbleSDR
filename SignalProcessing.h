@@ -74,9 +74,6 @@ private:
 	CPX *buf;
 	CPX *overlap;
 	int half_sz;
-
-    Perform perform;
-
 };
 
 class SignalProcessing : public QObject

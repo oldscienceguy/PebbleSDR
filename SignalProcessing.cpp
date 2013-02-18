@@ -177,7 +177,7 @@ void LMS(int numCoeff)
 
 }
 #endif
-FFT::FFT(int size):perform()
+FFT::FFT(int size)
 {
 	fftSize = size;
 	half_sz = size/2;
@@ -223,7 +223,7 @@ void FFT::DoFFTWForward(CPX * in, CPX * out, int size)
 		if (size < fftSize)
 			//Make sure that buffer which does not have samples is zero'd out
 			//We can pad samples in the time domain because it does not impact frequency results in FFT
-			CPXBuf::clear(timeDomain,fftSize);
+            CPXBuf::clear(timeDomain,fftSize);
 
 		//Put the data in properly aligned FFTW buffer
 		CPXBuf::copy(timeDomain, in, size);
