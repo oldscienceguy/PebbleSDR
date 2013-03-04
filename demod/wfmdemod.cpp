@@ -42,6 +42,9 @@
 //#include "interface/perform.h"
 #include <QDebug>
 
+#define TRUE 1
+#define FALSE 0
+
 //#define FMDEMOD_GAIN 8000.0
 //RL Pebble needs much smaller values, else overloads
 #define FMDEMOD_GAIN .001
@@ -219,7 +222,10 @@ TYPEREAL CWFmDemod::SetSampleRate(TYPEREAL samplerate, bool USver)
 /////////////////////////////////////////////////////////////////////////////////
 int CWFmDemod::ProcessDataMono(int InLength, TYPECPX* pInData, TYPECPX* pOutData)
 {
-    m_MonoLPFilter.ProcessFilter(InLength,pInData, pInData);
+    //RL Added
+    if (m_SampleRate >= 150000)
+        //IIR filter is 75k and needs at least 150k sample rate to remain stable (nyquist)
+        m_MonoLPFilter.ProcessFilter(InLength,pInData, pInData);
 //g_pTestBench->DisplayData(InLength, pInData, m_SampleRate,PROFILE_2);
 	for(int i=0; i<InLength; i++)
 	{

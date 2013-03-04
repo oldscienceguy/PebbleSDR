@@ -73,8 +73,8 @@ CFractResampler::~CFractResampler()
 {
 	if(m_pSinc)
 		delete m_pSinc;
-	if(m_pInputBuf)
-		delete m_pInputBuf;
+    //if(m_pInputBuf)
+    //	delete m_pInputBuf;
 }
 //
 

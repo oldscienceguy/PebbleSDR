@@ -1,6 +1,6 @@
 /*
  * Widely used DSP library, platform neutral.  See http://www.kurims.kyoto-u.ac.jp/~ooura/ for details
- * We use Radix 4 version which is supposed to run well on Intel processors
+ * We use Radix 4 version (fft4g.c) which is supposed to run well on Intel processors
  */
 /*
 Fast Fourier/Cosine/Sine Transform
@@ -11,7 +11,7 @@ Fast Fourier/Cosine/Sine Transform
     data        :inplace
     table       :use
 functions
-    cdft: Complex Discrete Fourier Transform
+    cdft: Complex Discrete Fourier Transform (Same as FFTW Complex 1D DFT fftwf_plan_dft_1d)
     rdft: Real Discrete Fourier Transform
     ddct: Discrete Cosine Transform
     ddst: Discrete Sine Transform
@@ -660,6 +660,7 @@ void FFTOoura::dfst(int n, double *a, double *t, int *ip, double *w)
 //These are utility functions for main FFT functions above
 //Eventually we should make these private members and update code
 
+//Initializes sine/cosine table
 void makewt(int nw, int *ip, double *w)
 {
     void bitrv2(int n, int *ip, double *a);
