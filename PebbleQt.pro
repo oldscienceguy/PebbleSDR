@@ -4,6 +4,9 @@ TARGET = Pebble
 QT += widgets core gui multimedia
 
 #Download & install QT 5.0 from http://qt-project.org
+#Edit Projects and make sure Kits use Clang
+#Edit Projects and add 'make install' as additional build step
+#QML Debugging can be turned off, not using QML
 
 #Subversion files are found at http://www.wandisco.com/subversion/download#osx
 #Edit QtCreator prefs so subversion is found in /opt/subversion/bin/svn (mac default svn is old)  Enter username and pw
@@ -40,19 +43,17 @@ UI_DIR = $${PWD}/UI
 RCC_DIR = $${PWD}/UI
 message("UI_HEADERS = "$${UI_DIR})
 
-
-#Should this be predefined somewhere?
-#QTDIR = c:/Qt/4.8.0
-
 #Enable this to look at config to debug conditionals. For example: debug and release both show up sometimes
 #message($$CONFIG)
 
 
 #Conditional MUST match the Build Configuration name, Debug or Release or SomeCustomName
 macx {
+	#WARNING: Switching computers caused this .pro file to not load due to a bad certificate for asembla subversion
+	#Ran Qmake in terminal to see error, accepted cert, and file loads ok
 	#Get most recent checkin version number.  Assumes svn installed as in comments above
 	#See http://www.qtcentre.org/wiki/index.php?title=Version_numbering_using_QMake
-	VERSION = $$system(/opt/subversion/bin/svn info -r HEAD . | grep 'Changed\ Rev' | cut -b 19-)
+	VERSION = $$system(/opt/subversion/bin/svn info -r HEAD . | grep 'Changed\\ Rev' | cut -b 19-)
 	!isEmpty(VERSION){
 	  VERSION = 0.$${VERSION}
 	}
@@ -62,7 +63,7 @@ macx {
 	# NO SPACES !!!
 	DEFINES += PEBBLE_VERSION=\"$${VERSION}\"
 
-	DATE = $$system(/opt/subversion/bin/svn info -r HEAD . | grep 'Changed\ Date' | cut -b 19-)
+	DATE = $$system(/opt/subversion/bin/svn info -r HEAD . | grep 'Changed\\ Date' | cut -b 19-)
 	DATE = '\\"$${DATE}\\"' #puts escaped strings so VERSION is \"0.123\"
 	message($${DATE})
 	#make it available to code
@@ -141,7 +142,9 @@ macx {
 	#install_name_tool -change /usr/local/lib/libftd2xx.1.1.0.dylib @executable_path/../Frameworks/libftd2xx.1.1.0.dylib pebble.app/contents/macos/pebble
 
 	#macdeployqt replaces all the install detail below and handles Qt and any non-system dylibs
-	QMAKE_POST_LINK += macdeployqt $${DESTDIR}/Pebble.app -no-plugins
+	#Turn this off if you are having any problem with libraries or plugins
+	#Starting in QT5.02 the cocoa plugin is always required, so we can't use -no-plugins
+	QMAKE_POST_LINK += macdeployqt $${DESTDIR}/Pebble.app
 
 	#We may need to copy ftd2xx.cfg with value ConfigFlags=0x40000000
 	#ftd2xx.files += $${PWD}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
