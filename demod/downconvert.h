@@ -59,7 +59,7 @@ private:
 	{
 	public:
 		CHalfBandDecimateBy2(int len,const TYPEREAL* pCoef);
-		~CHalfBandDecimateBy2(){if(m_pHBFirBuf) delete m_pHBFirBuf;}
+        ~CHalfBandDecimateBy2(){}
 		int DecBy2(int InLength, TYPECPX* pInData, TYPECPX* pOutData);
 		TYPECPX* m_pHBFirBuf;
 		int m_FirLength;

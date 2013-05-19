@@ -86,10 +86,10 @@ void CDownConvert::DeleteFilters()
 	{
 		if(m_pDecimatorPtrs[i])
 		{
-			delete m_pDecimatorPtrs[i];
+            delete m_pDecimatorPtrs[i];
 			m_pDecimatorPtrs[i] = NULL;
 		}
-	}
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -121,7 +121,7 @@ TYPEREAL f = InRate;
 		m_InRate = InRate;
 		m_MaxBW = MaxBW;
 		m_Mutex.lock();
-		DeleteFilters();
+        DeleteFilters();
 		//loop until closest output rate is found and list of pointers to decimate by 2 stages is generated
 		while( (f > (m_MaxBW / HB51TAP_MAX) ) && (f > MIN_OUTPUT_RATE) )
 		{
@@ -326,7 +326,8 @@ int numoutsamples = 0;
 		TYPECPX acc;
 		acc.re = ( m_pHBFirBuf[i].re * m_pCoef[0] );
 		acc.im = ( m_pHBFirBuf[i].im * m_pCoef[0] );
-		for(j=2; j<m_FirLength; j+=2)	//only use even coefficients since odd are zero(except center point)
+        //Fix from cuteSdr 1.10
+        for(j=0; j<m_FirLength; j+=2)	//only use even coefficients since odd are zero(except center point)
 		{
 			acc.re += ( m_pHBFirBuf[i+j].re * m_pCoef[j] );
 			acc.im += ( m_pHBFirBuf[i+j].im * m_pCoef[j] );
