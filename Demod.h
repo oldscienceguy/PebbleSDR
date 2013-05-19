@@ -61,8 +61,8 @@ private:
 
     void FMDeemphasisFilter(int _bufSize, CPX *in, CPX *out);
     float fmDeemphasisAlpha;
-    static const float usDeemphasisTime = 75E-6; //Use for US & Korea FM
-    static const float intlDeemphasisTime = 50E-6;  //Use for international FM
+    static const float usDeemphasisTime; //Use for US & Korea FM
+    static const float intlDeemphasisTime;  //Use for international FM
 
     //CFir fmMonoLPFilter;
     CIir fmMonoLPFilter;

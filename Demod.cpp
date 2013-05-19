@@ -5,6 +5,9 @@
 #include "global.h"
 #include "Receiver.h"
 
+const float Demod::usDeemphasisTime = 75E-6; //Use for US & Korea FM
+const float Demod::intlDeemphasisTime = 50E-6;  //Use for international FM
+
 Demod::Demod(int sr, int ns) :
 	SignalProcessing(sr,ns)   
 {   
