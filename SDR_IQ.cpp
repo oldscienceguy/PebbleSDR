@@ -635,6 +635,7 @@ unsigned SDR_IQ::CaptureBlocks(unsigned numBlocks)
         return 0;
     } else {
         //SDR-IP TBD
+        return 0;
     }
 }
 
