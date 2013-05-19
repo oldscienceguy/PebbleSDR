@@ -923,9 +923,16 @@ void ReceiverWidget::DisplayBand(double freq)
         return;
 
     Band *band = presets->FindBand(freq);
-
-    //If we didn't find a band, clear
     if (band != NULL) {
+        //Set bandType to match band, this will trigger bandChanged to load bands for type
+        ui.bandType->setCurrentIndex(band->bType);
+
+        //Now matching band
+        int index = ui.bandCombo->findData(band->bandIndex);
+        ui.bandCombo->blockSignals(true); //Just select band to display, don't reset freq to band
+        ui.bandCombo->setCurrentIndex(index);
+        ui.bandCombo->blockSignals(false);
+
         //If band has changed, update station list to match band
         if (currentBandIndex != band->bandIndex) {
             //List of stations per band should be setup when we read eibi.csv
@@ -950,14 +957,9 @@ void ReceiverWidget::DisplayBand(double freq)
             ui.stationCombo->blockSignals(false);
         }
 
-        //Set bandType to match band
-        ui.bandType->setCurrentIndex(band->bType);
-
-        int index = ui.bandCombo->findData(band->bandIndex);
-        ui.bandCombo->blockSignals(true); //Just select band to display, don't reset freq to band
-        ui.bandCombo->setCurrentIndex(index);
-        ui.bandCombo->blockSignals(false);
+        //Done, update currentBandIndex so we can see if it changed next time
         currentBandIndex = band->bandIndex;
+
     } else {
         ui.bandCombo->setCurrentIndex(-1); //no band selected
         ui.stationCombo->clear(); //No stations
