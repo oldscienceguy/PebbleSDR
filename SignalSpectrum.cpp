@@ -12,18 +12,18 @@ SignalSpectrum::SignalSpectrum(int sr, int ns, Settings *set):
 	//a zoom function, ie 500 pixels can show 500 bins, or a portion of available spectrum data
 	//Less bins = faster FFT
 	if (false)
-		binCount = numSamplesX2;
+        fftSize = numSamplesX2;
 	else
-		binCount = numSamples;
+        fftSize = numSamples;
 
 	//Output buffers
 	rawIQ = CPXBuf::malloc(numSamples);
-    unprocessed = new double[binCount];
-    postMixer = new double[binCount];
-    postBandPass = new double[binCount];
-	fft = new FFT(binCount);
+    unprocessed = new double[fftSize];
+    postMixer = new double[fftSize];
+    postBandPass = new double[fftSize];
+    fft = new FFT(fftSize);
 
-    tmp_cpx = CPXBuf::malloc(binCount);
+    tmp_cpx = CPXBuf::malloc(fftSize);
 	//Create our window coefficients 
     window = new double[numSamples];
 	window_cpx = CPXBuf::malloc(numSamples);
@@ -36,6 +36,15 @@ SignalSpectrum::SignalSpectrum(int sr, int ns, Settings *set):
 
 	//db calibration
     dbOffset  = settings->dbOffset;
+
+    //Spectrum refresh rate from 1 to 50 per second
+    //Init here for now and add UI element to set, save with settings data
+    updatesPerSec = 0; //Refresh rate per second
+    skipFfts = 0; //How many samples should we skip to sync with rate
+    skipFftsCounter = 0; //Keep count of samples we've skipped
+    SetUpdatesPerSec(10);
+    displayUpdateComplete = true;
+    displayUpdateOverrun = 0;
 }
 
 SignalSpectrum::~SignalSpectrum(void)
@@ -82,40 +91,85 @@ void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double 
 
 void SignalSpectrum::MakeSpectrum(CPX *in, double *sOut, int size)
 {
-	//Smooth the data with our window
-	CPXBuf::clear(tmp_cpx, binCount);
-	//Since tmp_cpx is 2x size of in, we're left with empty entries at the end of tmp_cpx
-	//The extra zeros don't change the frequency component of the signal and give us smaller bins
-	//But why do we need more bins for spectrum, we're just going to decimate to fit # pixels in graph
-	
-	//Apply window filter so we get better FFT results
-	//If size != numSamples, then window_cpx will not be right and we skip
-	if (true && size==numSamples)
-		CPXBuf::mult(tmp_cpx, in, window_cpx, numSamples);
-	else
-		//Test without FFT window
-		CPXBuf::copy(tmp_cpx,in,size);
+    //Only make spectrum often enough to match spectrum update rate, otherwise we just throw it away
+    if (++skipFftsCounter >= skipFfts) {
+        skipFftsCounter = 0;
+        if (displayUpdateComplete) {
 
-	//I don't think this is critical section
-    //mutex.lock();
+            //Smooth the data with our window
+            CPXBuf::clear(tmp_cpx, fftSize);
+            //Since tmp_cpx is 2x size of in, we're left with empty entries at the end of tmp_cpx
+            //The extra zeros don't change the frequency component of the signal and give us smaller bins
+            //But why do we need more bins for spectrum, we're just going to decimate to fit # pixels in graph
 
-	fft->DoFFTWMagnForward (tmp_cpx, size, 0, dbOffset, sOut);
+            //Apply window filter so we get better FFT results
+            //If size != numSamples, then window_cpx will not be right and we skip
+            if (true && size==numSamples)
+                CPXBuf::mult(tmp_cpx, in, window_cpx, numSamples);
+            else
+                //Test without FFT window
+                CPXBuf::copy(tmp_cpx,in,size);
 
-	//out now has the spectrum in db, -f..0..+f
-    //mutex.unlock();
+            //I don't think this is critical section
+            //mutex.lock();
+
+            fft->DoFFTWMagnForward (tmp_cpx, size, 0, dbOffset, sOut);
+
+            //out now has the spectrum in db, -f..0..+f
+            //mutex.unlock();
+            displayUpdateComplete = false;
+            emit newFftData();
+        } else {
+            //We're not able to keep up with selected display rate, display is taking longer than refresh rate
+            //We could auto-adjust display rate when we get here
+            displayUpdateOverrun++;
+        }
+    }
 }
 void SignalSpectrum::MakeSpectrum(FFT *fft, double *sOut)
 {
-	CPXBuf::clear(tmp_cpx, binCount);
+    //Only make spectrum often enough to match spectrum update rate, otherwise we just throw it away
+    if (++skipFftsCounter >= skipFfts) {
+        skipFftsCounter = 0;
 
-	if (binCount < fft->fftSize) {
-		//Decimate to fit spectrum binCount
-		int decimate = fft->fftSize / binCount;
-		for (int i=0; i<binCount; i++)
-			tmp_cpx[i] = fft->freqDomain[i*decimate];
-	} else {
-		CPXBuf::copy(tmp_cpx,fft->freqDomain,binCount);
-	}
+        if (displayUpdateComplete) {
+            CPXBuf::clear(tmp_cpx, fftSize);
 
-	fft->FreqDomainToMagnitude(tmp_cpx, binCount, 0, dbOffset, sOut);
+            if (fftSize < fft->fftSize) {
+                //Decimate to fit spectrum binCount
+                int decimate = fft->fftSize / fftSize;
+                for (int i=0; i<fftSize; i++)
+                    tmp_cpx[i] = fft->freqDomain[i*decimate];
+            } else {
+                CPXBuf::copy(tmp_cpx,fft->freqDomain,fftSize);
+            }
+
+            fft->FreqDomainToMagnitude(tmp_cpx, fftSize, 0, dbOffset, sOut);
+            displayUpdateComplete = false;
+            emit newFftData();
+        } else {
+            //We're not able to keep up with selected display rate, display is taking longer than refresh rate
+            //We could auto-adjust display rate when we get here
+            displayUpdateOverrun++;
+        }
+    }
+}
+
+//UpdatesPerSecond 1(min) to 50(max)
+void SignalSpectrum::SetUpdatesPerSec(int updatespersec)
+{
+    // updateInterval = 1 / UpdatesPerSecond = updateInterval
+    // updateInterval = 1 / 1 = 1 update ever 1.000 sec
+    // updateInterval = 1 / 10 = 1 update every 0.100sec (100 ms)
+    // updateInterval = 1/ 50 = 1 update every 0.020 sec (20ms)
+    // So we only need to proccess 1 FFT Spectrum block every updateInterval seconds
+    // If we're sampling at 192,000 sps and each Spectrum fft is 4096 (fftSize)
+    // then there are 192000/4096 or 46.875 possible FFTs every second
+    // fftsToSkip = FFTs per second * updateInterval
+    // fftsToSkip = (192000 / 4096) * 1.000 sec = 46.875 = skip 46 and process every 47th
+    // fftsToSkip = (192000 / 4096) * 0.100 sec = 4.6875 = skip 4 and process every 5th FFT
+    // fftsToSkip = (192000 / 4096) * 0.020 sec = 0.920 = skip 0 and process every FFT
+    updatesPerSec = updatespersec;
+    skipFfts = sampleRate/(numSamples * updatesPerSec);
+    skipFftsCounter = 0;
 }

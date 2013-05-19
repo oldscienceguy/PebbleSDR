@@ -10,6 +10,8 @@
 class SignalSpectrum :
 	public SignalProcessing
 {
+    Q_OBJECT
+
 public:
 	//Moved from spectrumWidget to avoid .h circular ref.  We need to know mode so we can skip non-visible displays
     enum DISPLAYMODE {SPECTRUM = 0,WATERFALL,IQ,PHASE,NODISPLAY,POSTMIXER,POSTBANDPASS};
@@ -24,7 +26,7 @@ public:
     void MakeSpectrum(CPX *in, double *out, int size); //Use if we just have CPX samples
     void MakeSpectrum(FFT *fft, double *out); //Used if we already have FFT
 
-	int BinCount() {return binCount;}
+    int BinCount() {return fftSize;}
     double *Unprocessed() {return unprocessed;}
     double *PostMixer() {return postMixer;}
     double *PostBandPass() {return postBandPass;}
@@ -37,11 +39,21 @@ public:
 
 	Settings *settings;
 
+    //New technique from CuteSdr to ignore spectrum data between updates
+    void SetUpdatesPerSec(int updatespersec);
+    bool displayUpdateComplete; //Wrap in access func after testing
+    int displayUpdateOverrun; //temp counter
+
+public slots:
+
+signals:
+    void newFftData(); //New spectrum data to display
+
 
 private:
 	QMutex mutex;
 	DISPLAYMODE displayMode; //Don't FFT spectrum if that display is not active
-	int binCount;
+    int fftSize;
 
 	//Spectrum data at different steps in receive chaing
 	CPX *rawIQ;
@@ -55,5 +67,9 @@ private:
     FFT *fft;
 
     float dbOffset; //Used to calibrate power to db calculations
+
+    int updatesPerSec; //Refresh rate per second
+    int skipFfts; //How many samples should we skip to sync with rate
+    int skipFftsCounter; //Keep count of samples we've skipped
 
 };

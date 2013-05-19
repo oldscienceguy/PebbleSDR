@@ -147,17 +147,11 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 
     //Set focus policy so we get key strokes
     setFocusPolicy(Qt::StrongFocus); //Focus can be set by click or tab
-
-	//Start paint thread
-	st = new SpectrumThread(this);
-	connect(st,SIGNAL(repaint()),this,SLOT(updateSpectrum()));
-	//st->start();
 	isRunning = false;
 }
 
 SpectrumWidget::~SpectrumWidget()
 {
-	st->quit();
 	if (lastSpectrum != NULL) free(lastSpectrum);
 	if (averageSpectrum != NULL) free (averageSpectrum);
 }
@@ -180,14 +174,10 @@ void SpectrumWidget::Run(bool r)
 
 	if (r) {
         ui.displayBox->setCurrentIndex(global->settings->lastDisplayMode); //Initial display mode
-
-		st->start();
 		isRunning = true;
 	}
 	else {
         ui.displayBox->setCurrentIndex(-1);
-
-		st->stop();
 		isRunning =false;
 		signalSpectrum = NULL;
 		plotArea = NULL; //Start with a  clean plot every time
@@ -402,23 +392,12 @@ void SpectrumWidget::SetFilter(int lo, int hi)
 	hiFilter = hi;
 }
 
-void SpectrumWidget::updateSpectrum()
-{
-	repaint();
-}
-
 void SpectrumWidget::plotSelectionChanged(SignalSpectrum::DISPLAYMODE mode)
 {
 	if (signalSpectrum != NULL) {
 		signalSpectrum->SetDisplayMode(mode);
 	}
     global->settings->lastDisplayMode = mode;
-
-	//We may want different refresh rates for different modes
-	if (mode==SignalSpectrum::WATERFALL)
-		st->SetRefresh(50);//Fast enough so we don't perceive flicker
-	else
-		st->SetRefresh(100);//
 
 	spectrumMode = mode;
 	repaint();
@@ -427,6 +406,8 @@ void SpectrumWidget::SetSignalSpectrum(SignalSpectrum *s)
 {
 	signalSpectrum = s;	
 	if (s!=NULL) {
+        connect(signalSpectrum,SIGNAL(newFftData()),this,SLOT(newFftData()));
+
 		sampleRate = s->SampleRate();
 		upDownIncrement = s->settings->upDownIncrement;
 		leftRightIncrement = s->settings->leftRightIncrement;
@@ -534,6 +515,7 @@ void SpectrumWidget::paintFixedArea(QPainter &painter)
 
 void SpectrumWidget::paintEvent(QPaintEvent *e)
 {
+
     QPainter painter(this);
     QRect plotFr = ui.plotFrame->geometry(); //relative to parent
     int plotHeight = plotFr.height(); //Plot area height
@@ -770,6 +752,9 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 	{
         painter.eraseRect(plotFr);
 	}
+
+    //Tell spectrum generator it ok to give us another one
+    signalSpectrum->displayUpdateComplete = true;
 }
 
 void SpectrumWidget::displayChanged(int item)
@@ -815,5 +800,11 @@ void SpectrumWidget::dbGainChanged(int s)
 void SpectrumWidget::zoomChanged(int item)
 {
     zoom = ui.zoomBox->itemData(item).toDouble();
+    repaint();
+}
+
+//New Fft data is ready for display, update screen if last update is finished
+void SpectrumWidget::newFftData()
+{
     repaint();
 }

@@ -31,7 +31,6 @@ public:
 	void SetSignalSpectrum(SignalSpectrum *s);
 
 public slots:
-		void updateSpectrum(); //For use by thread to trigger repaint
 		void plotSelectionChanged(SignalSpectrum::DISPLAYMODE m);
 
 signals:
@@ -44,6 +43,7 @@ signals:
             void dbOffsetChanged(int i);
             void dbGainChanged(int t);
             void zoomChanged(int item);
+            void newFftData();
 private:
 	SignalSpectrum *signalSpectrum; //Source of spectrum data
     double *averageSpectrum;
@@ -54,7 +54,6 @@ private:
 
     double zoom; //Percentage of total spectrum to display
 
-	SpectrumThread *st;
 	Ui::SpectrumWidgetClass ui;
     void paintCursor(QPainter &painter, QColor color);
     void paintFixedArea(QPainter &painter);
@@ -101,34 +100,4 @@ private:
 
 };
 
-	class SpectrumThread:public QThread
-	{
-		Q_OBJECT
-		public:
-			SpectrumThread(SpectrumWidget *w) 
-			{sw = w; 
-			msSleep=100;
-			doRun = true;}
-			void stop() {doRun=false;}
-			void SetRefresh(int ms) {
-				msSleep = ms;
-			} //Refresh rate in me
-			void run() {
-				doRun = true;
-				while(doRun) {
-				//We can't trigger a paint event cross thread, Qt design
-				//But we can trigger a signal which main thread will get and that can trigger repaint
-				//sw->repaint();
-				emit repaint();
-				//Sleep for resolution
-				msleep(msSleep);
-				}
-			}
-		signals:
-				void repaint();
-	private:
-		bool doRun;
-		SpectrumWidget * sw;
-		int msSleep;
-	};
 #endif // SPECTRUMWIDGET_H
