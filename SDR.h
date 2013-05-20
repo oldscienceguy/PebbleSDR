@@ -33,11 +33,10 @@ public:
         NOSDR, FILE, DVB_T, FUNCUBE_PLUS, SDR_IP_TCP};
 
 	typedef enum IQORDER {IQ,QI,IONLY,QONLY} IQORDER;
-
-	SDR(Receiver *receiver, SDRDEVICE dev, Settings *_settings);
+    SDR(Receiver *receiver, SDRDEVICE dev, Settings *_settings);
 	~SDR(void);
 
-	static SDR *Factory(Receiver *receiver, Settings *settings);
+    static SDR *Factory(Receiver *receiver, SDR::SDRDEVICE dev, Settings *settings);
 
 	virtual bool Connect()=0;
 	virtual bool Disconnect()=0;
@@ -55,6 +54,7 @@ public:
 	virtual QString GetDeviceName()=0;
 	//Sample rate for some devices, like SDR-IQ, is dependent on bandwidth
 	virtual int GetSampleRate();
+    virtual int* GetSampleRates(int &len); //Returns array of allowable rates and length of array as ref
 
 	SDRDEVICE GetDevice();
 	void SetDevice(SDRDEVICE m);
@@ -70,6 +70,7 @@ protected:
 	Settings *settings;
 	bool isLibUsbLoaded;
 	bool isFtdiLoaded;
+    int sampleRates[10]; //Max 10 for testing
 
 	bool isThreadRunning;
 	SDRProducerThread *producerThread;

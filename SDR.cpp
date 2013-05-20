@@ -16,8 +16,11 @@
 
 SDR::SDR(Receiver *_receiver, SDRDEVICE dev,Settings *_settings)
 {
+    settings = _settings;
+    if (!settings)
+        return; //Init only
+
 	sdrDevice = dev;
-	settings = _settings;
 	receiver = _receiver;
 	startupFrequency = 0;
 	//DLL's are loaded explicitly when we connect to SDR.  Not everyone will have DLLs for every SDR installed
@@ -31,6 +34,9 @@ SDR::SDR(Receiver *_receiver, SDRDEVICE dev,Settings *_settings)
 
 SDR::~SDR(void)
 {
+    if (!settings)
+        return;
+
 	if (audioInput != NULL) {
 		delete audioInput;
 	}
@@ -45,14 +51,14 @@ void SDR::WriteSettings(QSettings *settings)
 }
 
 //Static
-SDR *SDR::Factory(Receiver *receiver, Settings *settings)
+SDR *SDR::Factory(Receiver *receiver, SDR::SDRDEVICE dev, Settings *settings)
 {
 	SDR *sdr=NULL;
 
-	switch (settings->sdrDevice)
+    switch (dev)
 	{
 	case SDR::SR_LITE:
-		sdr = new SoftRock(receiver, SDR::SR_LITE,settings);
+        sdr = new SoftRock(receiver, SDR::SR_LITE,settings);
 		break;
 	case SDR::SR_V9:
 		sdr = new SoftRock(receiver, SDR::SR_V9,settings);
@@ -119,6 +125,16 @@ SDR *SDR::Factory(Receiver *receiver, Settings *settings)
 int SDR::GetSampleRate()
 {
 	return settings->sampleRate;
+}
+
+int *SDR::GetSampleRates(int &len)
+{
+    len = 3;
+    //Ugly, but couldn't find easy way to init with {1,2,3} array initializer
+    sampleRates[0] = 192000;
+    sampleRates[1] = 96000;
+    sampleRates[2] = 48000;
+    return sampleRates;
 }
 
 SDR::SDRDEVICE SDR::GetDevice()
