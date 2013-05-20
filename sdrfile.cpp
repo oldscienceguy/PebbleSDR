@@ -8,6 +8,10 @@ void ReadWavTest();
 
 SDRFile::SDRFile(Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_receiver, dev,_settings)
 {
+    settings=_settings;
+    if (!settings)
+        return; //No init
+
     QString path = QCoreApplication::applicationDirPath();
 #ifdef Q_OS_MAC
         //Pebble.app/contents/macos = 25
