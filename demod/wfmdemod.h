@@ -63,6 +63,8 @@ private:
 	CDecimateBy2* m_pDecBy2A;
 	CDecimateBy2* m_pDecBy2B;
 	CDecimateBy2* m_pDecBy2C;
+    CDecimateBy2* m_pDecBy2D;
+    CDecimateBy2* m_pDecBy2E;
 
 	TYPECPX m_D0;		//complex delay line variables
 	TYPECPX m_D1;

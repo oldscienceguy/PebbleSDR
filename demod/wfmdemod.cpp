@@ -108,7 +108,9 @@ CWFmDemod::CWFmDemod(TYPEREAL samplerate) : m_SampleRate(samplerate)
 	m_pDecBy2A = NULL;
 	m_pDecBy2B = NULL;
 	m_pDecBy2C = NULL;
-	m_PilotPhaseAdjust = 0.0;
+    m_pDecBy2D = NULL;
+    m_pDecBy2E = NULL;
+    m_PilotPhaseAdjust = 0.0;
 	SetSampleRate(samplerate, true);
 	m_InBitStream = 0;
 	m_CurrentBitPosition = 0;
@@ -145,15 +147,33 @@ TYPEREAL CWFmDemod::SetSampleRate(TYPEREAL samplerate, bool USver)
 		delete m_pDecBy2B;
 	if(m_pDecBy2C)
 		delete m_pDecBy2C;
-	m_pDecBy2A = NULL;
+    if(m_pDecBy2D)
+        delete m_pDecBy2D;
+    if(m_pDecBy2E)
+        delete m_pDecBy2E;
+    m_pDecBy2A = NULL;
 	m_pDecBy2B = NULL;
 	m_pDecBy2C = NULL;
+    m_pDecBy2D = NULL;
+    m_pDecBy2E = NULL;
 
 	m_OutRate = m_SampleRate = samplerate;
 	//Determine post demod decimation rate based on input sample rate range
 	// try to get down to close to 50khz
     //RL: Target 48k
     //if(m_SampleRate>400000)//need dec by 8
+    if(m_SampleRate>=1536000)//need dec by 32
+    {
+        m_pDecBy2E = new CDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
+        m_OutRate /= 2.0;
+    }
+
+    if(m_SampleRate>=768000)//need dec by 16
+    {
+        m_pDecBy2D = new CDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
+        m_OutRate /= 2.0;
+    }
+
     if(m_SampleRate>=384000)//need dec by 8
     {
 		m_pDecBy2C = new CDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
@@ -233,6 +253,8 @@ int CWFmDemod::ProcessDataMono(int InLength, TYPECPX* pInData, TYPECPX* pOutData
         pOutData[i].re = pOutData[i].im = FMDEMOD_GAIN*atan2( (m_D1.re*m_D0.im - m_D0.re*m_D1.im), (m_D1.re*m_D0.re + m_D1.im*m_D0.im));
 		m_D1 = m_D0;
 	}
+/*
+    //Replaced by downConvert in Receiver chain
 	//decimate down close to final audio rate by dividing by 2's
 	if(m_pDecBy2A)
 		InLength = m_pDecBy2A->DecBy2(InLength, pOutData, pOutData);
@@ -240,8 +262,15 @@ int CWFmDemod::ProcessDataMono(int InLength, TYPECPX* pInData, TYPECPX* pOutData
 		InLength = m_pDecBy2B->DecBy2(InLength, pOutData, pOutData);
 	if(m_pDecBy2C)
 		InLength = m_pDecBy2C->DecBy2(InLength, pOutData, pOutData);
-
+    if(m_pDecBy2D)
+        InLength = m_pDecBy2D->DecBy2(InLength, pOutData, pOutData);
+    if(m_pDecBy2E)
+        InLength = m_pDecBy2E->DecBy2(InLength, pOutData, pOutData);
+*/
 //g_pTestBench->DisplayData(InLength, m_RawFm, m_SampleRate,PROFILE_2);
+
+    //These steps are currently done at around 200k, but should be decimated first (see above).
+    //Moved decimation to Receiver chain and need to come back to it later.
 
     m_LPFilter.ProcessFilter( InLength, pOutData, pOutData);	//rolloff audio above 15KHz
     ProcessDeemphasisFilter(InLength, pOutData, pOutData);		//50 or 75uSec de-emphasis one pole filter
