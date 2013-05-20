@@ -62,15 +62,6 @@ Settings::Settings(void)
     sd->serialBox1->addItem("8",8);
     sd->serialBox1->addItem("9",9);
 
-    sd->sampleRateBox1->addItem("48k",48000);
-    sd->sampleRateBox1->addItem("96k",96000);
-    sd->sampleRateBox1->addItem("192k",192000);
-    sd->sampleRateBox1->addItem("256k",256000);
-    sd->sampleRateBox1->addItem("512k",512000);
-    sd->sampleRateBox1->addItem("1024k",1024000);
-    sd->sampleRateBox1->addItem("2048k",2048000);
-    //sd->sampleRateBox1->addItem("640k",640000);
-    //sd->sampleRateBox1->addItem("960k",960000);
     sd->sampleRateBox1->setFont(medFont);
 
     sd->startupBox1->setFont(medFont);
@@ -300,6 +291,7 @@ void Settings::SelectedSDRChanged(int s)
 
 }
 
+//Set options for SDR 0-3
 void Settings::SetOptionsForSDR(int s)
 {
     //Adding items triggers selection, block signals until list is complete
@@ -337,9 +329,21 @@ void Settings::SetOptionsForSDR(int s)
     sd->iqBalancePhase->setValue(ini_iqBalancePhase[s] * 1000);
     sd->iqEnableBalance->setChecked(ini_iqBalanceEnable[s]);
 
+    //Get allowable sampleRates from device
+    //Ugly - testing
+    SDR *sdr = SDR::Factory(NULL,sdrDevice,NULL);
+    int numSr;
+    int *sr = sdr->GetSampleRates(numSr);
+    delete sdr;
+    sd->sampleRateBox1->blockSignals(true);
+    sd->sampleRateBox1->clear();
+    for (int i=0; i<numSr; i++) {
+        sd->sampleRateBox1->addItem(QString::number(sr[i]),sr[i]);
+    }
     int cur;
     cur = sd->sampleRateBox1->findData(ini_sampleRate[s]);
     sd->sampleRateBox1->setCurrentIndex(cur);
+    sd->sampleRateBox1->blockSignals(false);
 
     cur = sd->startupBox1->findData(ini_startup[s]);
     sd->startupBox1->setCurrentIndex(cur);
@@ -347,8 +351,8 @@ void Settings::SetOptionsForSDR(int s)
     StartupChanged(cur);
 
     //Serial box only applies to SoftRocks for now
-    ReceiverChanged(0); //Enable/disable
     sd->serialBox1->setCurrentIndex(ini_sdrNumber[s]+1);
+    //ReceiverChanged(0); //Enable/disable
 
 }
 
@@ -365,6 +369,8 @@ void Settings::StartupChanged(int i)
     }
 
 }
+
+//Receiver selection changed
 void Settings::ReceiverChanged(int i)
 {
     int cur;
@@ -389,6 +395,8 @@ void Settings::ReceiverChanged(int i)
         break;
     }
 
+    sdrDevice = dev; //So SetOptions can get defaults
+    SetOptionsForSDR(selectedSDR);
 
 	//Reset to default
     //!!sd->serialBox->setCurrentIndex(0);

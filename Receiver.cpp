@@ -67,7 +67,7 @@ bool Receiver::On()
 {
 	powerOn = true;
 
-	sdr = SDR::Factory(this, settings);
+    sdr = SDR::Factory(this, settings->sdrDevice, settings);
 
 
 	if (!sdr->Connect()){
