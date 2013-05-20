@@ -37,7 +37,7 @@ public:
 	void SetCwOffset(TYPEREAL offset){m_CW_Offset= offset;}
 	int ProcessData(int InLength, TYPECPX* pInData, TYPECPX* pOutData);
 	TYPEREAL SetDataRate(TYPEREAL InRate, TYPEREAL MaxBW);
-	TYPEREAL SetWfmDataRate(TYPEREAL InRate, TYPEREAL MaxBW);
+    TYPEREAL SetDataRateSimple(TYPEREAL InRate, TYPEREAL MaxBW);
 
 private:
 	////////////
