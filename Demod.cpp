@@ -40,13 +40,7 @@ Demod::Demod(int _inputRate, int _inputWfmRate, int ns) :
 	amDc = 0.0;
 	amSmooth = 0.0;
 
-    //Decimation filters - 47tap half-band
-    decBy2A = new CDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
-    decBy2B = new CDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
-    decBy2C = new CDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
-    decBy2D = new CDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
-
-    wfmDemod = new CWFmDemod(inputWfmSampleRate);
+    wfmDemod = new CWFmDemod(inputWfmSampleRate, audioSampleRate);
     ResetDemod();
 
     connect(this,SIGNAL(OutputData(const char *)),global->receiver,SLOT(OutputData(const char *)));
@@ -54,13 +48,6 @@ Demod::Demod(int _inputRate, int _inputWfmRate, int ns) :
 
 Demod::~Demod()
 {
-#if 0
-    //Destructors seg fault
-    delete decBy2A;
-    delete decBy2B;
-    delete decBy2C;
-    delete decBy2D;
-#endif
 }
 
 //We can get called with anything up to maxSamples, depending on earlier decimation steps
@@ -373,15 +360,16 @@ void Demod::PllFMN(  CPX * in, CPX * out, int _numSamples )
 //CuteSDR algorithm
 void Demod::FMMono( CPX * in, CPX * out, int bufSize)
 {
-
+    //in buf has already been decimated to inputWfmSampleRate
+    //out buf will be decimated to audio rate in receive chain
 #if 1
     bufSize = wfmDemod->ProcessDataMono(bufSize,in,out);
     return;
-#endif
-
+#else
+    //Alternate methods works as of 5/18/13, but use wfmDemod
     //LP filter to elimate everything above FM bandwidth
     //Only if sample width high enough (2x) for 75khz filter to work
-    if (inputSampleRate >= 2*75000)
+    if (inputWfmSampleRate >= 2*75000)
         fmMonoLPFilter.ProcessFilter(bufSize, in, in);
 
 #if 1
@@ -400,34 +388,6 @@ void Demod::FMMono( CPX * in, CPX * out, int bufSize)
     SimpleFM2(in,out, bufSize);
 #endif
 
-    //The sample rate for all these post demod filters has to be at least 2x sample rate
-    //or filter will not work or will be unstable (oscilate)
-    //Decimate to 48k for performance, max 384k sourceRate
-    //Dec factors must be multiples of 2
-    //Dec filters need to be kept separate, ie can't use the same filter in a loop N times
-    switch (postFM1Dec) {
-    case 2:
-        decBy2A->DecBy2(bufSize,out,out);
-        bufSize /= 2;
-        break;
-
-    case 4:
-        decBy2A->DecBy2(bufSize,out,out);
-        bufSize /= 2;
-        decBy2B->DecBy2(bufSize,out,out);
-        bufSize /= 2;
-        break;
-
-    case 8:
-        decBy2A->DecBy2(bufSize,out,out);
-        bufSize /= 2;
-        decBy2B->DecBy2(bufSize,out,out);
-        bufSize /= 2;
-        decBy2C->DecBy2(bufSize,out,out);
-        bufSize /= 2;
-
-        break;
-    }
 
     //19khz notch filter to get rid of pilot
     fmPilotNotchFilter.ProcessFilter(bufSize, out, out);	//notch out 19KHz pilot
@@ -438,13 +398,6 @@ void Demod::FMMono( CPX * in, CPX * out, int bufSize)
 
     //50 or 75uSec de-emphasis one pole filter
     FMDeemphasisFilter(bufSize, out,out);
-
-#if 1
-    // Moe's decimate and filter class
-    decBy2D->DecBy2(bufSize,out,out);
-#else
-    for(int i=0,j=0; i<bufSize; i+=postFM2Dec,j++)
-        out[j] = out[i];
 #endif
 }
 
@@ -470,8 +423,6 @@ void Demod::FMMono( CPX * in, CPX * out, int bufSize)
 void Demod::FMStereo(CPX * in, CPX * out, int bufSize)
 {
     bufSize = wfmDemod->ProcessDataStereo(bufSize,in,out);
-    //Dec to audio rate
-    decBy2D->DecBy2(bufSize,out,out);
 
     //Do we have stereo lock
     int pilotLock =0;
@@ -525,9 +476,6 @@ void Demod::SetDemodMode(DEMODMODE _mode, int _sourceSampleRate, int _audioSampl
     mode = _mode;
     inputSampleRate = _sourceSampleRate;
     audioSampleRate = _audioSampleRate;
-    //Post FMW demod steps are all at 48k min sample rate
-    postFM1Dec = inputSampleRate / postFMSampleRate;
-    postFM2Dec = postFMSampleRate / audioSampleRate;
 
 	pllFrequency = 0.0;
     pllPhase = 0.0;
@@ -547,26 +495,21 @@ void Demod::SetDemodMode(DEMODMODE _mode, int _sourceSampleRate, int _audioSampl
         case dmFMMono:
         case dmFMStereo:
             //FM Stereo testing
-            //if (wfmDemod->SetSampleRate(sourceSampleRate,true) != postFMSampleRate)
-            //Should be decimated to 48k postFMSampleRate
-                //qDebug("WFM PostFM Sample Rate incorrect");
             rdsDecode.DecodeReset(true);
-#if(0)
-            //Needs update with new downConvert logic
+
             //Moe Wheatley filters
             //IIR filter freq * 2 must be below sampleRate or algorithm won't work
             fmMonoLPFilter.InitLP(75000,1.0,inputWfmSampleRate);
             //FIR version
             //fmMonoLPFilter.InitLPFilter(0, 1.0, 60.0, 75000, 1.4*75000.0, sourceSampleRate); //FIR version
             //Create narrow BP filter around 19KHz pilot tone with Q=500
-            fmPilotBPFilter.InitBP(19000, 500, postFMSampleRate);
+            fmPilotBPFilter.InitBP(19000, 500, inputWfmSampleRate);
             //create LP filter to roll off audio
-            fmAudioLPFilter.InitLPFilter(0, 1.0, 60.0, 15000.0, 1.4*15000.0, postFMSampleRate);
+            fmAudioLPFilter.InitLPFilter(0, 1.0, 60.0, 15000.0, 1.4*15000.0, inputWfmSampleRate);
             //create 19KHz pilot notch filter with Q=5
-            fmPilotNotchFilter.InitBR(19000, 5, postFMSampleRate);
+            fmPilotNotchFilter.InitBR(19000, 5, inputWfmSampleRate);
 
             fmDeemphasisAlpha = (1.0-exp(-1.0/(inputWfmSampleRate * usDeemphasisTime)) );
-#endif
             break;
         default:
             alpha = 0.3 * 500.0 * TWOPI / sampleRate;

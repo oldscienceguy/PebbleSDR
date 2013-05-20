@@ -71,21 +71,11 @@ private:
     CIir fmPilotBPFilter;
     CFir hilbertFilter;
 
-    //These are CuteSDR FIR filters that decimate and filter using predefined (filtercoef.h) half-band filters to avoid aliasing
-    CDecimateBy2* decBy2A;
-    CDecimateBy2* decBy2B;
-    CDecimateBy2* decBy2C;
-    CDecimateBy2* decBy2D;
-
-
     //Used for FMW only for now
     int inputSampleRate; //Original signal coming in
     int inputWfmSampleRate; //Original signal coming in for Wfm (wider signal)
 
     int audioSampleRate; //Audio out
-    int postFM2Dec; //From postFM1 to output output rate
-    int postFM1Dec; //For 48k post FMW filters
-    static const int postFMSampleRate = 48000;
 
     float pllPhase;
     float samLockCurrent;

@@ -28,10 +28,10 @@
 class CWFmDemod
 {
 public:
-	CWFmDemod(TYPEREAL samplerate);
+    CWFmDemod(TYPEREAL samplerate, TYPEREAL _audioRate);
 	virtual ~CWFmDemod();
 
-	TYPEREAL SetSampleRate(TYPEREAL samplerate, bool USver);
+    TYPEREAL SetSampleRate(TYPEREAL samplerate, TYPEREAL _outRate, bool USver);
 	//overloaded functions for mono and stereo
     int ProcessDataStereo(int InLength, TYPECPX* pInData, TYPECPX* pOutData);
     int ProcessDataMono(int InLength, TYPECPX* pInData, TYPECPX* pOutData);
@@ -60,11 +60,6 @@ private:
 	TYPEREAL m_OutRate;
 	TYPEREAL m_RawFm[PHZBUF_SIZE];
 	TYPECPX m_CpxRawFm[PHZBUF_SIZE];
-	CDecimateBy2* m_pDecBy2A;
-	CDecimateBy2* m_pDecBy2B;
-	CDecimateBy2* m_pDecBy2C;
-    CDecimateBy2* m_pDecBy2D;
-    CDecimateBy2* m_pDecBy2E;
 
 	TYPECPX m_D0;		//complex delay line variables
 	TYPECPX m_D1;

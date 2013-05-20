@@ -103,15 +103,10 @@ const double HILBLP_H[HILB_LENGTH] =
 /////////////////////////////////////////////////////////////////////////////////
 //	Construct/destruct WFM demod object
 /////////////////////////////////////////////////////////////////////////////////
-CWFmDemod::CWFmDemod(TYPEREAL samplerate) : m_SampleRate(samplerate)
+CWFmDemod::CWFmDemod(TYPEREAL samplerate, TYPEREAL _audioRate) : m_SampleRate(samplerate)
 {
-	m_pDecBy2A = NULL;
-	m_pDecBy2B = NULL;
-	m_pDecBy2C = NULL;
-    m_pDecBy2D = NULL;
-    m_pDecBy2E = NULL;
     m_PilotPhaseAdjust = 0.0;
-	SetSampleRate(samplerate, true);
+    SetSampleRate(samplerate, _audioRate, true);
 	m_InBitStream = 0;
 	m_CurrentBitPosition = 0;
 	m_CurrentBlock = BLOCK_A;
@@ -124,12 +119,6 @@ CWFmDemod::CWFmDemod(TYPEREAL samplerate) : m_SampleRate(samplerate)
 
 CWFmDemod::~CWFmDemod()
 {	//destroy resources
-	if(m_pDecBy2A)
-		delete m_pDecBy2A;
-	if(m_pDecBy2B)
-		delete m_pDecBy2B;
-	if(m_pDecBy2C)
-		delete m_pDecBy2C;
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -138,60 +127,11 @@ CWFmDemod::~CWFmDemod()
 // Input sample rate should be in the range 200 to 400Ksps
 // The output rate will be between 50KHz and 100KHz
 /////////////////////////////////////////////////////////////////////////////////
-TYPEREAL CWFmDemod::SetSampleRate(TYPEREAL samplerate, bool USver)
+TYPEREAL CWFmDemod::SetSampleRate(TYPEREAL samplerate, TYPEREAL _outRate, bool USver)
 {
-	//delete any resources that may still exist
-	if(m_pDecBy2A)
-		delete m_pDecBy2A;
-	if(m_pDecBy2B)
-		delete m_pDecBy2B;
-	if(m_pDecBy2C)
-		delete m_pDecBy2C;
-    if(m_pDecBy2D)
-        delete m_pDecBy2D;
-    if(m_pDecBy2E)
-        delete m_pDecBy2E;
-    m_pDecBy2A = NULL;
-	m_pDecBy2B = NULL;
-	m_pDecBy2C = NULL;
-    m_pDecBy2D = NULL;
-    m_pDecBy2E = NULL;
-
-	m_OutRate = m_SampleRate = samplerate;
-	//Determine post demod decimation rate based on input sample rate range
-	// try to get down to close to 50khz
-    //RL: Target 48k
-    //if(m_SampleRate>400000)//need dec by 8
-    if(m_SampleRate>=1536000)//need dec by 32
-    {
-        m_pDecBy2E = new CDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
-        m_OutRate /= 2.0;
-    }
-
-    if(m_SampleRate>=768000)//need dec by 16
-    {
-        m_pDecBy2D = new CDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
-        m_OutRate /= 2.0;
-    }
-
-    if(m_SampleRate>=384000)//need dec by 8
-    {
-		m_pDecBy2C = new CDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
-		m_OutRate /= 2.0;
-	}
-    //if(m_SampleRate>200000)//need dec by 4
-    if(m_SampleRate>=192000)//need dec by 4
-    {
-		m_pDecBy2B = new CDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
-		m_OutRate /= 2.0;
-	}
-    //if(m_SampleRate>100000)//need dec by 2
-    if(m_SampleRate>=96000)//need dec by 2
-    {
-		m_pDecBy2A = new CDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
-		m_OutRate /= 2.0;
-	}
-//qDebug()<<"WFW Rates = "<<m_SampleRate <<m_OutRate;
+    m_SampleRate = samplerate;
+    m_OutRate = _outRate;
+    //Decimation now done in receiver chain, before this is called
 
 	//set Stereo Pilot phase adjustment values based on sample rate
 	// compensation function is a straight line approximation with
@@ -253,20 +193,7 @@ int CWFmDemod::ProcessDataMono(int InLength, TYPECPX* pInData, TYPECPX* pOutData
         pOutData[i].re = pOutData[i].im = FMDEMOD_GAIN*atan2( (m_D1.re*m_D0.im - m_D0.re*m_D1.im), (m_D1.re*m_D0.re + m_D1.im*m_D0.im));
 		m_D1 = m_D0;
 	}
-/*
-    //Replaced by downConvert in Receiver chain
-	//decimate down close to final audio rate by dividing by 2's
-	if(m_pDecBy2A)
-		InLength = m_pDecBy2A->DecBy2(InLength, pOutData, pOutData);
-	if(m_pDecBy2B)
-		InLength = m_pDecBy2B->DecBy2(InLength, pOutData, pOutData);
-	if(m_pDecBy2C)
-		InLength = m_pDecBy2C->DecBy2(InLength, pOutData, pOutData);
-    if(m_pDecBy2D)
-        InLength = m_pDecBy2D->DecBy2(InLength, pOutData, pOutData);
-    if(m_pDecBy2E)
-        InLength = m_pDecBy2E->DecBy2(InLength, pOutData, pOutData);
-*/
+
 //g_pTestBench->DisplayData(InLength, m_RawFm, m_SampleRate,PROFILE_2);
 
     //These steps are currently done at around 200k, but should be decimated first (see above).
@@ -404,14 +331,7 @@ m_RdsRaw[i].im = Data;
 //g_pTestBench->DisplayData(length, m_RdsData, m_RdsOutputRate, PROFILE_3);
     //qDebug("%s %d",m_RdsRaw, m_RdsData);
 
-
-	//decimate by 2's down close to final audio rate
-	if(m_pDecBy2A)
-		InLength = m_pDecBy2A->DecBy2(InLength, pOutData, pOutData);
-	if(m_pDecBy2B)
-		InLength = m_pDecBy2B->DecBy2(InLength, pOutData, pOutData);
-	if(m_pDecBy2C)
-		InLength = m_pDecBy2C->DecBy2(InLength, pOutData, pOutData);
+    //Todo: Put back decimate stage here if we're running too hot CPU
 
 	m_LPFilter.ProcessFilter( InLength, pOutData, pOutData);	//rolloff audio above 15KHz
 	ProcessDeemphasisFilter(InLength, pOutData, pOutData);		//50 or 75uSec de-emphasis one pole filter
