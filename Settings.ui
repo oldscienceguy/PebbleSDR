@@ -161,7 +161,7 @@
      <rect>
       <x>302</x>
       <y>4</y>
-      <width>57</width>
+      <width>90</width>
       <height>18</height>
      </rect>
     </property>
@@ -493,27 +493,6 @@
      <string>Reset</string>
     </property>
    </widget>
-   <zorder>startupBox1</zorder>
-   <zorder>sourceBox1</zorder>
-   <zorder>outputBox1</zorder>
-   <zorder>sampleRateBox1</zorder>
-   <zorder>iqGain1</zorder>
-   <zorder>label_8</zorder>
-   <zorder>label_9</zorder>
-   <zorder>label_2</zorder>
-   <zorder>label_10</zorder>
-   <zorder>label_5</zorder>
-   <zorder>startupEdit1</zorder>
-   <zorder>IQSettings</zorder>
-   <zorder>label_11</zorder>
-   <zorder>serialBox1</zorder>
-   <zorder></zorder>
-   <zorder>iqEnableBalance</zorder>
-   <zorder>iqBalancePhaseLabel</zorder>
-   <zorder>iqBalanceGain</zorder>
-   <zorder>iqBalancePhase</zorder>
-   <zorder>iqBalanceGainLabel</zorder>
-   <zorder>iqBalanceReset</zorder>
   </widget>
   <widget class="QFrame" name="frame">
    <property name="geometry">
