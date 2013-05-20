@@ -92,9 +92,33 @@ RTL2832::RTL2832 (Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_r
       1.152 (28.8 / 25) 192k * 6 - This is our best rate convert to 192k effective rate
        .96 (28.8 / 30)
     */
-    rtlSampleRate = 1.152e6;
-    rtlDecimate = rtlSampleRate / sampleRate; //Should be 6 for 1.152 and 192k sampleRate
-
+/*
+range += osmosdr::range_t( 250000 ); // known to work
+  range += osmosdr::range_t( 1000000 ); // known to work
+  range += osmosdr::range_t( 1024000 ); // known to work
+  range += osmosdr::range_t( 1800000 ); // known to work
+  range += osmosdr::range_t( 1920000 ); // known to work
+  range += osmosdr::range_t( 2000000 ); // known to work
+  range += osmosdr::range_t( 2048000 ); // known to work
+  range += osmosdr::range_t( 2400000 ); // known to work
+//  range += osmosdr::range_t( 2600000 ); // may work
+//  range += osmosdr::range_t( 2800000 ); // may work
+//  range += osmosdr::range_t( 3000000 ); // may work
+//  range += osmosdr::range_t( 3200000 ); // max rate
+*/
+    rtlSampleRate = 2.048e6; //We can keep up with Spectrum
+    //rtlSampleRate = 1.024e6;
+    rtlDecimate = rtlSampleRate / sampleRate; //Must be even number, convert to lookup table
+    /*
+    //Find whole number decimate rate less than 2048000
+    rtlDecimate = 1;
+    rtlSampleRate = 0;
+    quint32 tempRtlSampleRate = 0;
+    while (tempRtlSampleRate <= 1800000) {
+        rtlSampleRate = tempRtlSampleRate;
+        tempRtlSampleRate = sampleRate * ++rtlDecimate;
+    }
+*/
     rtlFrequency = 162400000;
 
     sampleGain = .005; //Matched with rtlGain
@@ -348,6 +372,8 @@ void RTL2832::RunProducerThread()
 
 void RTL2832::StopConsumerThread()
 {
+    //Problem - RunConsumerThread may be in process when we're asked to stopp
+    //We have to wait for it to complete, then return.  Bad dependency - should not have tight connection like this
 }
 
 void RTL2832::RunConsumerThread()

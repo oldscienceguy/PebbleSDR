@@ -32,7 +32,7 @@ class Demod : public SignalProcessing
     Q_OBJECT
 
 public:
-    Demod(int samplerate, int size); 
+    Demod(int _inputRate, int _inputWfmRate, int size);
 	~Demod();
 
     CPX * ProcessBlock(CPX * in, int _numSamples);
@@ -79,7 +79,9 @@ private:
 
 
     //Used for FMW only for now
-    int sourceSampleRate; //Original signal coming in
+    int inputSampleRate; //Original signal coming in
+    int inputWfmSampleRate; //Original signal coming in for Wfm (wider signal)
+
     int audioSampleRate; //Audio out
     int postFM2Dec; //From postFM1 to output output rate
     int postFM1Dec; //For 48k post FMW filters

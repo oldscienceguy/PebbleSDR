@@ -65,7 +65,12 @@ Settings::Settings(void)
     sd->sampleRateBox1->addItem("48k",48000);
     sd->sampleRateBox1->addItem("96k",96000);
     sd->sampleRateBox1->addItem("192k",192000);
-    sd->sampleRateBox1->addItem("384k",384000);
+    sd->sampleRateBox1->addItem("256k",256000);
+    sd->sampleRateBox1->addItem("512k",512000);
+    sd->sampleRateBox1->addItem("1024k",1024000);
+    sd->sampleRateBox1->addItem("2048k",2048000);
+    //sd->sampleRateBox1->addItem("640k",640000);
+    //sd->sampleRateBox1->addItem("960k",960000);
     sd->sampleRateBox1->setFont(medFont);
 
     sd->startupBox1->setFont(medFont);

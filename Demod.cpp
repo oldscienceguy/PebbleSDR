@@ -8,9 +8,13 @@
 const float Demod::usDeemphasisTime = 75E-6; //Use for US & Korea FM
 const float Demod::intlDeemphasisTime = 50E-6;  //Use for international FM
 
-Demod::Demod(int sr, int ns) :
-	SignalProcessing(sr,ns)   
+//Two input rates, one normal and one for wfm
+Demod::Demod(int _inputRate, int _inputWfmRate, int ns) :
+    SignalProcessing(_inputRate,ns)
 {   
+    inputSampleRate = _inputRate;
+    inputWfmSampleRate = _inputWfmRate;
+
     SetDemodMode(dmAM, sampleRate, sampleRate);
 	
 	//SAM config
@@ -42,8 +46,7 @@ Demod::Demod(int sr, int ns) :
     decBy2C = new CDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
     decBy2D = new CDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
 
-    //Testing
-    wfmDemod = new CWFmDemod(sampleRate);
+    wfmDemod = new CWFmDemod(inputWfmSampleRate);
     ResetDemod();
 
     connect(this,SIGNAL(OutputData(const char *)),global->receiver,SLOT(OutputData(const char *)));
@@ -373,14 +376,12 @@ void Demod::FMMono( CPX * in, CPX * out, int bufSize)
 
 #if 1
     bufSize = wfmDemod->ProcessDataMono(bufSize,in,out);
-    //Dec to audio rate
-    decBy2D->DecBy2(bufSize,out,out);
     return;
 #endif
 
     //LP filter to elimate everything above FM bandwidth
     //Only if sample width high enough (2x) for 75khz filter to work
-    if (sourceSampleRate >= 2*75000)
+    if (inputSampleRate >= 2*75000)
         fmMonoLPFilter.ProcessFilter(bufSize, in, in);
 
 #if 1
@@ -522,10 +523,10 @@ void Demod::FMDeemphasisFilter(int _bufSize, CPX *in, CPX *out)
 void Demod::SetDemodMode(DEMODMODE _mode, int _sourceSampleRate, int _audioSampleRate)
 {
     mode = _mode;
-    sourceSampleRate = _sourceSampleRate;
+    inputSampleRate = _sourceSampleRate;
     audioSampleRate = _audioSampleRate;
     //Post FMW demod steps are all at 48k min sample rate
-    postFM1Dec = sourceSampleRate / postFMSampleRate;
+    postFM1Dec = inputSampleRate / postFMSampleRate;
     postFM2Dec = postFMSampleRate / audioSampleRate;
 
 	pllFrequency = 0.0;
@@ -546,14 +547,15 @@ void Demod::SetDemodMode(DEMODMODE _mode, int _sourceSampleRate, int _audioSampl
         case dmFMMono:
         case dmFMStereo:
             //FM Stereo testing
-            if (wfmDemod->SetSampleRate(sourceSampleRate,true) != postFMSampleRate)
+            //if (wfmDemod->SetSampleRate(sourceSampleRate,true) != postFMSampleRate)
             //Should be decimated to 48k postFMSampleRate
-                qDebug("WFM PostFM Sample Rate incorrect");
+                //qDebug("WFM PostFM Sample Rate incorrect");
             rdsDecode.DecodeReset(true);
-
+#if(0)
+            //Needs update with new downConvert logic
             //Moe Wheatley filters
             //IIR filter freq * 2 must be below sampleRate or algorithm won't work
-            fmMonoLPFilter.InitLP(75000,1.0,sourceSampleRate);
+            fmMonoLPFilter.InitLP(75000,1.0,inputWfmSampleRate);
             //FIR version
             //fmMonoLPFilter.InitLPFilter(0, 1.0, 60.0, 75000, 1.4*75000.0, sourceSampleRate); //FIR version
             //Create narrow BP filter around 19KHz pilot tone with Q=500
@@ -563,8 +565,8 @@ void Demod::SetDemodMode(DEMODMODE _mode, int _sourceSampleRate, int _audioSampl
             //create 19KHz pilot notch filter with Q=5
             fmPilotNotchFilter.InitBR(19000, 5, postFMSampleRate);
 
-            fmDeemphasisAlpha = (1.0-exp(-1.0/(sourceSampleRate * usDeemphasisTime)) );
-
+            fmDeemphasisAlpha = (1.0-exp(-1.0/(inputWfmSampleRate * usDeemphasisTime)) );
+#endif
             break;
         default:
             alpha = 0.3 * 500.0 * TWOPI / sampleRate;

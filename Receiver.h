@@ -101,16 +101,28 @@ private:
 
 
 	double frequency; //Current LO frequency (not mixed)
+    double mixerFrequency;
 	int sampleRate;
 	int framesPerBuffer; //#samples in each callback
 	//sample rate and buffer size after down sampling step
-	int downSampleFactor;
-	int downSampleRate;
-	int downSampleFrames;
-	FIRFilter *downSampleFilter;
+    int downSample1Frames;
+    int downSample2Frames;
+    FIRFilter *downSampleFilter;
+
+    //Trying cuteSdr downsample code
+    CDownConvert downConvert1; //Get to reasonable rate for demod and following
+    CDownConvert downConvert2; //Get to 48k or below for audio
+    CDownConvert downConvertWfm1; //Special to get to 300k
+    CDownConvert downConvertWfm2; //Get to 48k or below for audio
+    int downSample1Rate;
+    int downSample2Rate;
+    int downSampleWfm1Rate;
+    int downSampleWfm2Rate;
+    CPX *workingBuf;
+
+
 
     //Use CuteSDR decimation filters for downsampling
-    int decimate1SampleRate;
     CDecimateBy2 *decimate1;
     int decimate2SampleRate;
     CDecimateBy2 *decmiate2;

@@ -79,61 +79,64 @@ bool Receiver::On()
     //Don't set title until we connect.  Some drivers handle multiple devices (RTL2832) and we need connection data
     QApplication::activeWindow()->setWindowTitle("Pebble: " + sdr->GetDeviceName());
 
-	downSampleFactor = 1;
-    //Get undecimated sample rate from RTL2832 and decimate here vs in SDR
-    //For FMStereo, initial rate should be close to 300k
-    decimate1SampleRate = 300000;
-	sampleRate = downSampleRate = sdr->GetSampleRate();
-	framesPerBuffer = downSampleFrames = settings->framesPerBuffer;
-
-	//Downsample to target rate
-	if (settings->postMixerDecimate) {
-		//Keep this in sync with SoundCard decimation
-		downSampleFactor = sampleRate / settings->decimateLimit;
-		downSampleFactor = downSampleFactor < 1 ? 1 : downSampleFactor;
-		downSampleRate = sampleRate / downSampleFactor;
-		downSampleFrames = framesPerBuffer / downSampleFactor;
-		//Anti alias filter for decimation
-		downSampleFilter = 	new FIRFilter(sampleRate,framesPerBuffer, false, 128);
-		downSampleFilter->SetLowPass(downSampleRate/2);
-		downSampleFilter->setEnabled(true);
-	}
-
-    presets = new Presets(receiverWidget);
-
-	//These steps work on full sample rates
-	noiseBlanker = new NoiseBlanker(sampleRate,framesPerBuffer);
-	signalSpectrum = new SignalSpectrum(sampleRate,framesPerBuffer,settings);
-	mixer = new Mixer(sampleRate, framesPerBuffer);
-	iqBalance = new IQBalance(sampleRate,framesPerBuffer);
+    sampleRate = downSample1Rate = sdr->GetSampleRate();
+    framesPerBuffer = downSample1Frames = settings->framesPerBuffer;
+    //These steps work on full sample rates
+    noiseBlanker = new NoiseBlanker(sampleRate,framesPerBuffer);
+    signalSpectrum = new SignalSpectrum(sampleRate,framesPerBuffer,settings);
+    //Don't need Mixer anymore - TBD
+    mixer = new Mixer(sampleRate, framesPerBuffer);
+    iqBalance = new IQBalance(sampleRate,framesPerBuffer);
     iqBalance->setEnabled(settings->iqBalanceEnable);
     iqBalance->setGainFactor(settings->iqBalanceGain);
     iqBalance->setPhaseFactor(settings->iqBalancePhase);
+
+    //Calculates the number of decimation states and returns converted sample rate
+    //SetDataRate() doesn't downsample below 256k?
+    double audioInTargetRate = 48000.0;
+    downSample1Rate = downConvert1.SetDataRateSimple(sampleRate, 96000.0);
+    downSample2Rate = downConvert2.SetDataRateSimple(downSample1Rate, audioInTargetRate); //Keep same as downSampleWfm2 rate
+
+    //For FMStereo, initial rate should be close to 300k
+    downSampleWfm1Rate = downConvertWfm1.SetDataRateSimple(sampleRate, 300000.0);
+    downSampleWfm2Rate = downConvertWfm2.SetDataRateSimple(downSampleWfm1Rate, audioInTargetRate);
+    //Init demod with defaults
+    //Demod uses variable frame size, up to framesPerBuffer
+    //Demod can also run at different sample rates, high for FMW and lower for rest
+    //Todo: How to handle this for filters which need explicit sample rate
+    //demod = new Demod(downSampleRate,framesPerBuffer);
+    demod = new Demod(downSample1Rate, downSampleWfm1Rate,framesPerBuffer); //Can't change rate later, fix
+
+    downSample1Frames = downSample1Rate / (1.0 * sampleRate) * framesPerBuffer; //Temp Hack
+    downSample2Frames = downSample2Rate / (1.0 * downSample1Rate) * downSample1Frames; //Temp Hack
+    //Sets the Mixer NCO frequency
+    //downConvert.SetFrequency(-RDS_FREQUENCY);
+
+    workingBuf = CPXBuf::malloc(framesPerBuffer);
+
+    presets = new Presets(receiverWidget);
+
 
 	//Testing with frequency domain receive chain
 	//fft must be large enough to avoid circular convolution for filtering
 	fftSize = framesPerBuffer *2;
 	fft = new FFT(fftSize);
 
-	//These steps work on downSample rates
+    //These steps work on downSample1 rates
 
-	//Init demod with defaults
-    //Demod uses variable frame size, up to framesPerBuffer
-    //Demod can also run at different sample rates, high for FMW and lower for rest
-    //Todo: How to handle this for filters which need explicit sample rate
-    demod = new Demod(downSampleRate,framesPerBuffer);
-	//WIP, testing QT audio as alternative to PortAudio
+    //WIP, testing QT audio as alternative to PortAudio
 	//audioOutput = new AudioQT(this,sampleRate,framesPerBuffer,settings);
-	audioOutput = new SoundCard(this,downSampleRate,downSampleFrames,settings);
-	noiseFilter = new NoiseFilter(downSampleRate,downSampleFrames);
-	signalStrength = new SignalStrength(downSampleRate,downSampleFrames);
+
+    audioOutput = new SoundCard(this,downSample2Rate,downSample2Frames,settings);
+    noiseFilter = new NoiseFilter(downSample1Rate,downSample1Frames);
+    signalStrength = new SignalStrength(downSample1Rate,downSample1Frames);
 	//FIR MAC LP Filter
-	lpFilter = new FIRFilter(downSampleRate,downSampleFrames, false, 128);
+    lpFilter = new FIRFilter(downSample1Rate,downSample1Frames, false, 128);
 	lpFilter->SetLowPass(3000);
 	//lpFilter->SetHighPass(3000); //Testing 
 	//lpFilter->SetBandPass(50,3000); //Testing
 
-    morse = new Morse(downSampleRate,downSampleFrames);
+    morse = new Morse(downSample1Rate,downSample1Frames);
     morse->SetReceiver(this);
 
 	//Testing, time intensive for large # taps, ie @512 we lose chunks of signal
@@ -143,10 +146,10 @@ bool Receiver::On()
 		//In freq domain chain we have full size fft available
 		bpFilter = new FIRFilter(sampleRate, framesPerBuffer,true, 128);
 	else
-        bpFilter = new FIRFilter(downSampleRate, downSampleFrames,true, 128);
+        bpFilter = new FIRFilter(downSample1Rate, downSample1Frames,true, 128);
 	bpFilter->setEnabled(true);
 	
-	agc = new AGC(downSampleRate, downSampleFrames);
+    agc = new AGC(downSample1Rate, downSample1Frames);
 
 	//Limit tuning range and mixer range
 	//Todo: Get from SDR and enforce in UI
@@ -175,7 +178,7 @@ bool Receiver::On()
 	receiverWidget->SetFrequency(frequency);
 
 	//This should always be last because it starts samples flowing through the processBlocks
-    audioOutput->Start(0,downSampleRate);
+    audioOutput->Start(0,downSample2Rate);
 	sdr->Start();
 
 	return true;
@@ -196,10 +199,6 @@ bool Receiver::Off()
 		audioOutput->Stop();
 
 	//Now clean up rest
-	if (audioOutput != NULL) {
-		delete audioOutput;
-		audioOutput = NULL;
-	}
 	if (sdr != NULL){
 		sdr->Disconnect();
 		delete sdr;
@@ -249,6 +248,12 @@ bool Receiver::Off()
         delete morse;
         morse = NULL;
     }
+    //Making this last to work around a shut down order problem with consumer threads
+    if (audioOutput != NULL) {
+        delete audioOutput;
+        audioOutput = NULL;
+    }
+
 #if(0)
 	if (iqBalanceOptions != NULL) {
 		if (iqBalanceOptions->isVisible()) {
@@ -355,7 +360,7 @@ double Receiver::SetFrequency(double fRequested, double fCurrent)
 void Receiver::SetMode(DEMODMODE m)
 {
 	if(demod != NULL) {
-        demod->SetDemodMode(m, sampleRate, downSampleRate);
+        demod->SetDemodMode(m, sampleRate, downSample1Rate);
 		settings->lastMode = m;
 	}
 }	
@@ -410,6 +415,7 @@ void Receiver::SetSquelch(int s)
 void Receiver::SetMixer(int f)
 {
     if (mixer != NULL) {
+        mixerFrequency = f;
 		mixer->SetFrequency(f);
         demod->ResetDemod();
     }
@@ -533,11 +539,11 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
       4. Decimate to final audio
     */
 	//Adj IQ to get 90deg phase and I==Q gain
-	nextStep = iqBalance->ProcessBlock(nextStep);
+    nextStep = iqBalance->ProcessBlock(nextStep);
 
 	//Noise blankers
-	nextStep = noiseBlanker->ProcessBlock(nextStep);
-	nextStep = noiseBlanker->ProcessBlock2(nextStep);
+    nextStep = noiseBlanker->ProcessBlock(nextStep);
+    nextStep = noiseBlanker->ProcessBlock2(nextStep);
 
 	//Spectrum display, in buffer is not modified
 	//Spectrum is displayed before mixer, so that changes in mixer don't change spectrum
@@ -552,9 +558,10 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 
 	//Signal (Specific frequency) processing
 	//Mixer shows no loss in testing
-	nextStep = mixer->ProcessBlock(nextStep);
+    //!!Test - trying this in wfm step
+    //nextStep = mixer->ProcessBlock(nextStep);
 	//float post = SignalProcessing::TotalPower(nextStep,frameCount); 
-	signalSpectrum->PostMixer(nextStep);
+    //signalSpectrum->PostMixer(nextStep);
 
 	//DOWNSAMPLED from here on
 	//Todo: Variable output sample rate based on mode, requires changing output stream when mode changes
@@ -576,20 +583,24 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
     if (demod->DemodMode() == dmFMMono || demod->DemodMode() == dmFMStereo) {
         //These steps are NOT at downSamplerate
         //Special handling for wide band fm
+        //Set demod sample rate?
 
+        //Replaces Mixer.cpp
+        downConvertWfm1.SetFrequency(mixerFrequency);
+        // InLength must be a multiple of 2^N where N is the maximum decimation by 2 stages expected.
+        //We need a separated input/output buffer for downConvert
+        int downConvertLen = downConvertWfm1.ProcessData(framesPerBuffer,nextStep,workingBuf);
         //Do we need bandPass filter or handle in demod?
-        nextStep = demod->ProcessBlock(nextStep,framesPerBuffer);
-
-        //Demod will Decimate to audio output rate
+        nextStep = demod->ProcessBlock(workingBuf,downConvertLen);
+        downConvertWfm2.SetFrequency(0); //Downconvert, no mix
+        downConvertLen = downConvertWfm2.ProcessData(downConvertLen,nextStep,workingBuf);
+        downSample1Frames = downConvertLen;
+        nextStep = workingBuf;
 
     } else {
-        //Filter above downSampleRate so we don't get aliases
-        if (settings->postMixerDecimate && downSampleFactor != 1){
-            //We need to worry about aliasing, so LP filter to match downSample
-            nextStep = downSampleFilter->ProcessBlock(nextStep);
-            for(int i=0,j=0; i<framesPerBuffer; i+=downSampleFactor,j++)
-                nextStep[j] = nextStep[i];
-        }
+        //Replaces Mixer.cpp
+        downConvert1.SetFrequency(mixerFrequency);
+        int downConvertLen = downConvert1.ProcessData(framesPerBuffer,nextStep,workingBuf);
 
         //global->perform.StopPerformance(100);
 
@@ -599,7 +610,7 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
         nextStep = bpFilter->ProcessBlock(nextStep);
         //Crude AGC, too much fluctuation
         //CPXBuf::scale(nextStep,nextStep,pre/post,frameCount);
-        signalSpectrum->PostBandPass(nextStep,downSampleFrames);
+        signalSpectrum->PostBandPass(nextStep,downConvertLen);
         //global->perform.StopPerformance(100);
 
         //global->perform.StartPerformance();
@@ -612,7 +623,7 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 
         //Tune only mode, no demod or output
         if (demod->DemodMode() == dmNONE){
-            CPXBuf::clear(out,downSampleFrames);
+            CPXBuf::clear(out,downConvertLen);
             return;
         }
         nextStep = noiseFilter->ProcessBlock(nextStep);
@@ -625,7 +636,7 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 
         //global->perform.StartPerformance();
 
-        nextStep = demod->ProcessBlock(nextStep, downSampleFrames);
+        nextStep = demod->ProcessBlock(nextStep, downConvertLen);
 
         //global->perform.StopPerformance(100);
 
@@ -643,7 +654,13 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
         nextStep = lpFilter->ProcessBlock(nextStep);
         //global->perform.StopPerformance(100);
 
+        //Down convert to pre-audio rate
+        downConvert2.SetFrequency(0); //Downconvert, no mix
+        downConvertLen = downConvert2.ProcessData(downConvertLen,nextStep,workingBuf);
+        nextStep = workingBuf;
+
     }
+
 	// apply volume setting
 	//Todo: gain should be a factor of slider, receiver, filter, and mode, and should be normalized
 	//	so changing anything other than slider doesn't impact overall volume.
@@ -652,11 +669,11 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 
 	//CPXBuf::scale(out, nextStep, gain * filterLoss, frameCount);
 	if (mute)
-		CPXBuf::clear(out, downSampleFrames);
+        CPXBuf::clear(out, downSample1Frames);
 	else
-		CPXBuf::scale(out, nextStep, gain, downSampleFrames);
+        CPXBuf::scale(out, nextStep, gain, downSample1Frames);
 
-	audioOutput->SendToOutput(out);
+    audioOutput->SendToOutput(out);
     //global->perform.StopPerformance(100);
 
 }
@@ -690,16 +707,17 @@ void Receiver::ProcessBlockFreqDomain(CPX *in, CPX *out, int frameCount)
 	nextStep = out;
 
 	//downsample
-	for(int i=0,j=0; i<framesPerBuffer; i+=downSampleFactor,j++)
-		nextStep[j] = nextStep[i];
+    //Broken after change to downconvert TBD
+//	for(int i=0,j=0; i<framesPerBuffer; i+=downSampleFactor,j++)
+//		nextStep[j] = nextStep[i];
 
-    nextStep = demod->ProcessBlock(nextStep,downSampleFrames);
+    nextStep = demod->ProcessBlock(nextStep,downSample1Frames);
 
 
 	if (mute)
-		CPXBuf::clear(out, downSampleFrames);
+        CPXBuf::clear(out, downSample1Frames);
 	else
-		CPXBuf::scale(out, nextStep, gain, downSampleFrames);
+        CPXBuf::scale(out, nextStep, gain, downSample1Frames);
 
 	audioOutput->SendToOutput(out);
 
