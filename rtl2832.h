@@ -26,7 +26,9 @@ public:
     double GetLowLimit();
     double GetGain();
     QString GetDeviceName();
-    int GetSampleRate();
+    int GetSampleRate(); //Returns current sample rate
+    int* GetSampleRates(int &len);  //Returns array of allowable rates
+
     //bool SetSampleRate(quint32 sampleRate);
 
 

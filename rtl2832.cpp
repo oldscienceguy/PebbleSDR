@@ -62,8 +62,13 @@ enum blocks {
 #define HAMA_VID		0x0bda	// Same as ezcap
 #define HAMA_PID		0x2832
 
-RTL2832::RTL2832 (Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_receiver, dev,_settings)
+
+RTL2832::RTL2832 (Receiver *_receiver, SDRDEVICE dev, Settings *_settings): SDR(_receiver, dev,_settings)
 {
+    settings = _settings;
+    if (!settings)
+        return;
+
     QString path = QCoreApplication::applicationDirPath();
 #ifdef Q_OS_MAC
         //Pebble.app/contents/macos = 25
@@ -92,22 +97,25 @@ RTL2832::RTL2832 (Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_r
       1.152 (28.8 / 25) 192k * 6 - This is our best rate convert to 192k effective rate
        .96 (28.8 / 30)
     */
-/*
-range += osmosdr::range_t( 250000 ); // known to work
-  range += osmosdr::range_t( 1000000 ); // known to work
-  range += osmosdr::range_t( 1024000 ); // known to work
-  range += osmosdr::range_t( 1800000 ); // known to work
-  range += osmosdr::range_t( 1920000 ); // known to work
-  range += osmosdr::range_t( 2000000 ); // known to work
-  range += osmosdr::range_t( 2048000 ); // known to work
-  range += osmosdr::range_t( 2400000 ); // known to work
-//  range += osmosdr::range_t( 2600000 ); // may work
-//  range += osmosdr::range_t( 2800000 ); // may work
-//  range += osmosdr::range_t( 3000000 ); // may work
-//  range += osmosdr::range_t( 3200000 ); // max rate
-*/
+    /*
+    range += osmosdr::range_t( 250000 ); // known to work
+      range += osmosdr::range_t( 1000000 ); // known to work
+      range += osmosdr::range_t( 1024000 ); // known to work
+      range += osmosdr::range_t( 1800000 ); // known to work
+      range += osmosdr::range_t( 1920000 ); // known to work
+      range += osmosdr::range_t( 2000000 ); // known to work
+      range += osmosdr::range_t( 2048000 ); // known to work
+      range += osmosdr::range_t( 2400000 ); // known to work
+    //  range += osmosdr::range_t( 2600000 ); // may work
+    //  range += osmosdr::range_t( 2800000 ); // may work
+    //  range += osmosdr::range_t( 3000000 ); // may work
+    //  range += osmosdr::range_t( 3200000 ); // max rate
+    */
+    //Different sampleRates for different RTL rates
     rtlSampleRate = 2.048e6; //We can keep up with Spectrum
+
     //rtlSampleRate = 1.024e6;
+
     rtlDecimate = rtlSampleRate / sampleRate; //Must be even number, convert to lookup table
     /*
     //Find whole number decimate rate less than 2048000
@@ -152,6 +160,9 @@ range += osmosdr::range_t( 250000 ); // known to work
 
 RTL2832::~RTL2832(void)
 {
+    if (!settings)
+        return;
+
     WriteSettings();
 
     if (inBuffer != NULL)
@@ -548,6 +559,20 @@ QString RTL2832::GetDeviceName()
 int RTL2832::GetSampleRate()
 {
     return sampleRate;
+}
+
+int* RTL2832::GetSampleRates(int &len)
+{
+    len = 6;
+    //Ugly, but couldn't find easy way to init with {1,2,3} array initializer
+    sampleRates[0] = 2048000;
+    sampleRates[1] = 1024000;
+    sampleRates[2] = 512000;
+    sampleRates[3] = 256000;
+    sampleRates[4] = 128000;
+    sampleRates[5] = 64000;
+    return sampleRates;
+
 }
 
 void RTL2832::StopProducerThread()
