@@ -31,6 +31,7 @@ public:
 	double GetGain();
 	QString GetDeviceName();
 	int GetSampleRate();
+    int* GetSampleRates(int &len);  //Returns array of allowable rates
 
 	//FCD HW
 	void SetDCCorrection(qint16 cI, qint16 cQ);

@@ -657,6 +657,7 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
         //Down convert to pre-audio rate
         downConvert2.SetFrequency(0); //Downconvert, no mix
         downConvertLen = downConvert2.ProcessData(downConvertLen,nextStep,workingBuf);
+        downSample1Frames = downConvertLen;
         nextStep = workingBuf;
 
     }

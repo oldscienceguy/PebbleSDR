@@ -325,6 +325,8 @@ FunCube::FunCube(Receiver *_receiver, SDRDEVICE dev,Settings *_settings):
         qSettings = new QSettings(path+"/PebbleData/funcube_plus.ini",QSettings::IniFormat);
 
 	ReadSettings();
+    //Test, This causes FCD to crash in HID on exit
+    //fcdSetFreqHz = true; //Seems to be the way new FCD+ code is working
     hidDev = NULL;
     hidDevInfo = NULL;
     hid_init();
@@ -1381,6 +1383,17 @@ int FunCube::GetSampleRate()
         return 96000; //Fixed by device
     else
         return 192000;
+}
+
+int *FunCube::GetSampleRates(int &len)
+{
+    len = 1;
+    if (sdrDevice == SDR::FUNCUBE)
+        sampleRates[0] = 96000; //Always 96k
+    else
+        sampleRates[0] = 192000; //Always 192k
+
+    return sampleRates;
 }
 void FunCube::ReadSettings()
 {
