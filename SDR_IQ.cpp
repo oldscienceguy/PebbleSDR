@@ -6,8 +6,13 @@
 #include <QMessageBox>
 
 //Supports SDR_IQ AND SDR_IP
-SDR_IQ::SDR_IQ(Receiver *_receiver, SDRDEVICE dev,Settings *settings):SDR(_receiver, dev,settings)
+SDR_IQ::SDR_IQ(Receiver *_receiver, SDRDEVICE dev,Settings *_settings):SDR(_receiver, dev, _settings)
 {
+    //If settings is NULL we're getting called just to get defaults, check in destructor
+    settings = _settings;
+    if (!settings)
+        return;
+
 	QString path = QCoreApplication::applicationDirPath();
 #ifdef Q_OS_MAC
         //Pebble.app/contents/macos = 25
@@ -76,6 +81,8 @@ SDR_IQ::SDR_IQ(Receiver *_receiver, SDRDEVICE dev,Settings *settings):SDR(_recei
 
 SDR_IQ::~SDR_IQ(void)
 {
+    if (!settings)
+        return;
 	WriteSettings();
 
 	if (sdrIQOptions != NULL && sdrIQOptions->isVisible())

@@ -40,6 +40,8 @@ SDRFile::SDRFile(Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_re
 }
 SDRFile::~SDRFile(void)
 {
+    if (!settings)
+        return;
 }
 
 bool SDRFile::Connect()

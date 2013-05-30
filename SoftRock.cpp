@@ -9,6 +9,11 @@
 
 SoftRock::SoftRock(Receiver *_receiver,SDRDEVICE dev,Settings *_settings) : SDR(_receiver, dev,_settings)
 {
+    //If settings is NULL we're getting called just to get defaults, check in destructor
+    settings = _settings;
+    if (!settings)
+        return;
+
 	hDev = NULL;
 	//Use ini files to avoid any registry problems or install/uninstall
 	//Scope::UserScope puts file C:\Users\...\AppData\Roaming\N1DDY
@@ -43,6 +48,8 @@ SoftRock::SoftRock(Receiver *_receiver,SDRDEVICE dev,Settings *_settings) : SDR(
 }
 SoftRock::~SoftRock()
 {
+    if (!settings)
+        return;
 	WriteSettings();
 	if (hDev && isLibUsbLoaded) {
 #ifdef LIBUSB_VERSION1

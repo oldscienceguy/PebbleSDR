@@ -18,6 +18,11 @@ Derived from:
 */
 ElektorSDR::ElektorSDR(Receiver *_receiver, SDRDEVICE dev,Settings *_settings):SDR(_receiver, dev,_settings)
 {
+    //If settings is NULL we're getting called just to get defaults, check in destructor
+    settings = _settings;
+    if (!settings)
+        return;
+
 	QString path = QCoreApplication::applicationDirPath();
 #ifdef Q_OS_MAC
         //Pebble.app/contents/macos = 25
@@ -43,6 +48,8 @@ ElektorSDR::ElektorSDR(Receiver *_receiver, SDRDEVICE dev,Settings *_settings):S
 
 ElektorSDR::~ElektorSDR(void)
 {
+    if (!settings)
+        return;
 	WriteSettings();
 }
 void ElektorSDR::Start()

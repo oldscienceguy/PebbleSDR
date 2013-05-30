@@ -65,6 +65,7 @@ enum blocks {
 
 RTL2832::RTL2832 (Receiver *_receiver, SDRDEVICE dev, Settings *_settings): SDR(_receiver, dev,_settings)
 {
+    //If settings is NULL we're getting called just to get defaults
     settings = _settings;
     if (!settings)
         return;
