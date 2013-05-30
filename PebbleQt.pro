@@ -375,7 +375,10 @@ HEADERS += \
     filters/datatypes.h \
     rtl-sdr/tuner_r820t.h \
     DSP/fftooura.h \
-    perform.h
+    perform.h \
+    Devices/netiobase.h \
+    Devices/threadwrapper.h \
+    Devices/ascpmsg.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -429,7 +432,8 @@ SOURCES += \
     rtl-sdr/tuner_r820t.c \
     rtl-sdr/librtlsdr.c \
     DSP/fftooura.cpp \
-    perform.cpp
+    perform.cpp \
+    Devices/netiobase.cpp
 
 FORMS += \
     spectrumwidget.ui \
