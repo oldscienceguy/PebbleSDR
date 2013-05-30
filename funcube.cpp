@@ -31,6 +31,7 @@
 #define FCD_HID_CMD_SET_MIXER_GAIN   114 // * Send one byte, 1 on, 0 of
 #define FCD_HID_CMD_SET_BIAS_CURRENT 115
 #define FCD_HID_CMD_SET_MIXER_FILTER 116
+//Same as SET_IF_GAIN for FCD+
 #define FCD_HID_CMD_SET_IF_GAIN1     117 // * Send one byte value, valid value 0 to 59 (dB)
 #define FCD_HID_CMD_SET_IF_GAIN_MODE 118
 #define FCD_HID_CMD_SET_IF_RC_FILTER 119
@@ -43,7 +44,7 @@
 #define FCD_HID_CMD_SET_BIAS_TEE     126 // * PLUS ONLY Send one byte, 1 on, 0 off
 
 
-#define FCD_HID_CMD_GET_LNA_GAIN     150 // * Retrieve a 1 byte value, see enums for reference
+#define FCD_HID_CMD_GET_LNA_GAIN     150 // * Retrieve a 1 byte value, 1=ON, 0=OFF
 #define FCD_HID_CMD_GET_LNA_ENHANCE  151
 #define FCD_HID_CMD_GET_BAND         152
 #define FCD_HID_CMD_GET_RF_FILTER    153 // * Returns one byte enum, see TUNERRFFILTERENUM
@@ -311,6 +312,11 @@ typedef enum
 FunCube::FunCube(Receiver *_receiver, SDRDEVICE dev,Settings *_settings):
 		SDR(_receiver, dev,_settings)
 {
+    //If settings is NULL we're getting called just to get defaults, check in destructor
+    settings = _settings;
+    if (!settings)
+        return;
+
 	fcdOptionsDialog = NULL;
 
 	QString path = QCoreApplication::applicationDirPath();
@@ -326,7 +332,7 @@ FunCube::FunCube(Receiver *_receiver, SDRDEVICE dev,Settings *_settings):
 
 	ReadSettings();
     //Test, This causes FCD to crash in HID on exit
-    //fcdSetFreqHz = true; //Seems to be the way new FCD+ code is working
+    fcdSetFreqHz = true; //Seems to be the way new FCD+ code is working
     hidDev = NULL;
     hidDevInfo = NULL;
     hid_init();
@@ -335,6 +341,8 @@ FunCube::FunCube(Receiver *_receiver, SDRDEVICE dev,Settings *_settings):
 
 FunCube::~FunCube(void)
 {
+    if (!settings)
+        return;
 	WriteSettings();
 	Disconnect();
 	if (fcdOptionsDialog != NULL && fcdOptionsDialog->isVisible())
@@ -363,10 +371,12 @@ bool FunCube::Connect()
 
     if ((hidDev = hid_open_path(hidPath)) == NULL){
         free(hidPath);
+        hidPath = NULL;
         return false;
     }
 
     free(hidPath);
+    hidPath = NULL;
     return true;
 }
 
@@ -414,6 +424,15 @@ void FunCube::Start()
         SetIFGainMode(fcdIFGainMode);
         SetIFRCFilter(fcdIFRCFilter);
         SetIFFilter(fcdIFFilter);
+    } else {
+        //FCD+
+        SetLNAGain(fcdLNAGain);
+        SetRFFilter(fcdRFFilter);
+        SetMixerGain(fcdMixerGain);
+        SetIFGain1(fcdIFGain1);
+        SetIFFilter(fcdIFFilter);
+        SetBiasTee(fcdBiasTee);
+
     }
 
 	if (audioInput != NULL)
@@ -509,13 +528,18 @@ double FunCube::SetFrequency(double fRequested, double fCurrent)
 		return fCurrent; //Read error
 	}
 	double fActual;
-	if (fcdSetFreqHz) {
+    //Remember HIDRead throws away buf[0] when comparing to QTHID
+    if (fcdSetFreqHz && inBuf[0]==1) {
 		//Return actual freq set, which may not be exactly what was requested
 		//Note: Results are too strange to be usable, ie user requests a freq and sees something completely different
 		//Just return fRequested for now
-        fActual = (quint64)inBuf[1]+(((quint64)inBuf[2])<<8)+(((quint64)inBuf[3])<<16)+(((quint64)inBuf[4])<<24);
+        fActual = 0;
+        fActual += (quint64)inBuf[1];
+        fActual += (quint64)inBuf[2]<<8;
+        fActual += (quint64)inBuf[3]<<16;
+        fActual += (quint64)inBuf[4]<<24;
 		fActual = fActual / (sOffset/1000000.0);
-		fActual = fRequested;
+        fActual = fRequested;
 	} else {
 		//Does't return actual freq, just return req
 		fActual = fRequested;
@@ -631,6 +655,7 @@ void FunCube::SetLNAGain(int v)
 {
 	if (v<0)
 		v = TLGE_P20_0DB;
+    //Looks like FCD+ expects enabled/disabled only
 	HIDSet(FCD_HID_CMD_SET_LNA_GAIN,v);
 	fcdLNAGain = v;
 }
@@ -664,6 +689,23 @@ void FunCube::SetBand(int v)
 
 void FunCube::BandChanged(int s)
 {
+    //If FCD+ there are no bands, just populate combo
+    if (sdrDevice == FUNCUBE_PLUS) {
+        fco->RFFilter->clear();
+        fco->RFFilter->addItem("0 to 4 LPF",TRFE_0_4);
+        fco->RFFilter->addItem("4 to 8 LPF",TRFE_4_8);
+        fco->RFFilter->addItem("8 to 16 LPF",TRFE_8_16);
+        fco->RFFilter->addItem("16 to 32 LPF",TRFE_16_32);
+        fco->RFFilter->addItem("32 to 75 LPF",TRFE_32_75);
+        fco->RFFilter->addItem("75 to 125 LPF",TRFE_75_125);
+        fco->RFFilter->addItem("125 to 250 LPF",TRFE_125_250);
+        fco->RFFilter->addItem("145 LPF",TRFE_145);
+        fco->RFFilter->addItem("410 to 875 LPF",TRFE_410_875);
+        fco->RFFilter->addItem("435 LPF",TRFE_435);
+        fco->RFFilter->addItem("875 to 2000 LPF",TRFE_875_2000);
+
+        return;
+    }
     int v = fco->Band->itemData(s).toInt();
 	SetBand(v);
 	//Change RFFilter options to match band
@@ -726,6 +768,9 @@ void FunCube::SetRFFilter(int v)
 {
 	if (v<0)
 		v = 0;
+    if (sdrDevice == FUNCUBE_PLUS && v > TRFE_875_2000)
+        return; //Invalid for FCD+
+
 	HIDSet(FCD_HID_CMD_SET_RF_FILTER,v);
 	fcdRFFilter = v;
 }
@@ -759,6 +804,27 @@ void FunCube::SetBiasCurrent(int v)
 	fcdBiasCurrent = v;
 }
 
+//FCD+ only
+void FunCube::SetBiasTee(int v)
+{
+    if (sdrDevice == SDR::FUNCUBE)
+        return; //Not supported
+
+    if (v<0)
+        v = TBCE_LBAND;
+    HIDSet(FCD_HID_CMD_SET_BIAS_TEE,v);
+    fcdBiasTee = v;
+}
+
+void FunCube::BiasTeeChanged(int s)
+{
+    if (sdrDevice == SDR::FUNCUBE)
+        return; //Not supported
+    int v = fco->BiasTee->itemData(s).toInt();
+
+    SetBiasTee(v);
+}
+
 void FunCube::MixerFilterChanged(int s)
 {
     int v = fco->MixerFilter->itemData(s).toInt();
@@ -784,6 +850,9 @@ void FunCube::SetIFGain1(int v)
 {
 	if (v<0)
 		v = TIG1E_P6_0DB;
+    else if (v > 59)
+        return;
+
 	HIDSet(FCD_HID_CMD_SET_IF_GAIN1,v);
 	fcdIFGain1 = v;
 }
@@ -921,6 +990,7 @@ void FunCube::DefaultClicked(bool)
 	SetRFFilter(-1);
 	SetMixerGain(-1);
 	SetBiasCurrent(-1);
+    SetBiasTee(0);
 	SetMixerFilter(-1);
 	SetIFGain1(-1);
 	SetIFGain2(-1);
@@ -974,6 +1044,7 @@ void FunCube::ReadFCDOptions()
 		fcdFreq = fcdFreq / (sOffset/1000000.0);
 	}
 
+    //FCD+ return 0 or 1
 	res = HIDGet(FCD_HID_CMD_GET_LNA_GAIN,data,sizeof(data));
 	if (res) {
 		fcdLNAGain=data[0];
@@ -1006,6 +1077,12 @@ void FunCube::ReadFCDOptions()
         res = HIDGet(FCD_HID_CMD_GET_BIAS_CURRENT,data,sizeof(data));
         if (res) {
             fcdBiasCurrent=data[0];
+        }
+    }
+    if (sdrDevice == SDR::FUNCUBE_PLUS) {
+        res = HIDGet(FCD_HID_CMD_GET_BIAS_TEE,data,sizeof(data));
+        if (res) {
+            fcdBiasTee=data[0];
         }
     }
 
@@ -1090,6 +1167,7 @@ void FunCube::ShowOptions()
 
         fco->Band->setFont(medFont);
         fco->BiasCurrent->setFont(medFont);
+        fco->BiasTee->setFont(medFont);
         fco->defaultsButton->setFont(medFont);
         fco->frequencyLabel->setFont(medFont);
         fco->IFFilter->setFont(medFont);
@@ -1109,6 +1187,7 @@ void FunCube::ShowOptions()
         fco->label_14->setFont(medFont);
         fco->label_15->setFont(medFont);
         fco->label_16->setFont(medFont);
+        fco->label_17->setFont(medFont);
         fco->label_2->setFont(medFont);
         fco->label_3->setFont(medFont);
         fco->label_4->setFont(medFont);
@@ -1125,7 +1204,9 @@ void FunCube::ShowOptions()
         fco->saveButton->setFont(medFont);
         fco->versionLabel->setFont(medFont);
 
-
+        fco->BiasTee->addItem("Off",0);
+        fco->BiasTee->addItem("On", 1);
+        connect(fco->BiasTee,SIGNAL(currentIndexChanged(int)),this,SLOT(BiasTeeChanged(int)));
 
         fco->LNAGain->addItem("-5.0db",TLGE_N5_0DB);
         fco->LNAGain->addItem("-2.5db",TLGE_N2_5DB);
@@ -1142,6 +1223,14 @@ void FunCube::ShowOptions()
         fco->LNAGain->addItem("+30.0db",TLGE_P30_0DB);
         connect(fco->LNAGain,SIGNAL(currentIndexChanged(int)),this,SLOT(LNAGainChanged(int)));
 
+        fco->MixerGain->addItem("4db",TMGE_P4_0DB);
+        fco->MixerGain->addItem("12db",TMGE_P12_0DB);
+        connect(fco->MixerGain,SIGNAL(currentIndexChanged(int)),this,SLOT(MixerGainChanged(int)));
+
+        fco->IFGain1->addItem("-3dB",TIG1E_N3_0DB);
+        fco->IFGain1->addItem("+6dB",TIG1E_P6_0DB);
+        connect(fco->IFGain1,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain1Changed(int)));
+
         fco->LNAEnhance->addItem("Off",TLEE_OFF);
         fco->LNAEnhance->addItem("0",TLEE_0);
         fco->LNAEnhance->addItem("1",TLEE_1);
@@ -1155,10 +1244,6 @@ void FunCube::ShowOptions()
         fco->Band->addItem("L band",TBE_LBAND);
         connect(fco->Band,SIGNAL(currentIndexChanged(int)),this,SLOT(BandChanged(int)));
         connect(fco->RFFilter,SIGNAL(currentIndexChanged(int)),this,SLOT(RFFilterChanged(int)));
-
-        fco->MixerGain->addItem("4db",TMGE_P4_0DB);
-        fco->MixerGain->addItem("12db",TMGE_P12_0DB);
-        connect(fco->MixerGain,SIGNAL(currentIndexChanged(int)),this,SLOT(MixerGainChanged(int)));
 
         fco->BiasCurrent->addItem("00 L band",TBCE_LBAND);
         fco->BiasCurrent->addItem("01",TBCE_1);
@@ -1176,10 +1261,6 @@ void FunCube::ShowOptions()
         fco->MixerFilter->addItem("4.6MHz",TMFE_4_6MHZ);
         fco->MixerFilter->addItem("27MHz",TMFE_27_0MHZ);
         connect(fco->MixerFilter,SIGNAL(currentIndexChanged(int)),this,SLOT(MixerFilterChanged(int)));
-
-        fco->IFGain1->addItem("-3dB",TIG1E_N3_0DB);
-        fco->IFGain1->addItem("+6dB",TIG1E_P6_0DB);
-        connect(fco->IFGain1,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain1Changed(int)));
 
         fco->IFGainMode->addItem("Linearity",TIGME_LINEARITY);
         fco->IFGainMode->addItem("Sensitivity",TIGME_SENSITIVITY);
@@ -1234,6 +1315,57 @@ void FunCube::ShowOptions()
         fco->IFGain6->addItem("+15dB",TIG6E_P15_0DB);
         connect(fco->IFGain6,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain6Changed(int)));
 
+
+        connect(fco->IFFilter,SIGNAL(currentIndexChanged(int)),this,SLOT(IFFilterChanged(int)));
+
+        connect(fco->defaultsButton,SIGNAL(clicked(bool)),this,SLOT(DefaultClicked(bool)));
+        connect(fco->saveButton,SIGNAL(clicked(bool)),this,SLOT(SaveClicked(bool)));
+
+    }  //End dialog set up
+
+    //Get current options from device
+    ReadFCDOptions();
+    int index =0;
+
+    //Common to FCD and FCD+
+    if (sdrDevice == FUNCUBE)
+        fco->versionLabel->setText("FunCube: "+fcdVersion);
+    else
+        fco->versionLabel->setText("FunCube+: "+fcdVersion);
+
+    fco->frequencyLabel->setText("Freq: "+QString::number(fcdFreq,'f',0));
+
+    index = fco->RFFilter->findData(fcdRFFilter);
+    fco->RFFilter->setCurrentIndex(index);
+
+    index = fco->IFFilter->findData(fcdIFFilter);
+    fco->IFFilter->setCurrentIndex(index);
+
+    index = fco->IFGain1->findData(fcdIFGain1);
+    fco->IFGain1->setCurrentIndex(index);
+
+    index = fco->MixerGain->findData(fcdMixerGain);
+    fco->MixerGain->setCurrentIndex(index);
+
+    index = fco->LNAGain->findData(fcdLNAGain);
+    fco->LNAGain->setCurrentIndex(index);
+
+    if (sdrDevice == FUNCUBE) {
+        //FCD only
+        fco->LNAEnhance->setEnabled(true);
+        fco->Band->setEnabled(true);
+        fco->BiasCurrent->setEnabled(true);
+        fco->MixerFilter->setEnabled(true);
+        fco->IFGainMode->setEnabled(true);
+        fco->IFRCFilter->setEnabled(true);
+        fco->IFGain2->setEnabled(true);
+        fco->IFGain3->setEnabled(true);
+        fco->IFGain4->setEnabled(true);
+        fco->IFGain5->setEnabled(true);
+        fco->IFGain6->setEnabled(true);
+        fco->BiasTee->setEnabled(false);
+
+        fco->IFFilter->clear();  //Changes for FCD or FCD +
         fco->IFFilter->addItem("2.15MHz",TIFE_2_15MHZ);
         fco->IFFilter->addItem("2.20MHz",TIFE_2_20MHZ);
         fco->IFFilter->addItem("2.24MHz",TIFE_2_24MHZ);
@@ -1266,68 +1398,73 @@ void FunCube::ShowOptions()
         fco->IFFilter->addItem("5.00MHz",TIFE_5_00MHZ);
         fco->IFFilter->addItem("5.30MHz",TIFE_5_30MHZ);
         fco->IFFilter->addItem("5.50MHz",TIFE_5_50MHZ);
-        connect(fco->IFFilter,SIGNAL(currentIndexChanged(int)),this,SLOT(IFFilterChanged(int)));
 
-        connect(fco->defaultsButton,SIGNAL(clicked(bool)),this,SLOT(DefaultClicked(bool)));
-        connect(fco->saveButton,SIGNAL(clicked(bool)),this,SLOT(SaveClicked(bool)));
+        index = fco->Band->findData(fcdBand);
+        fco->Band->setCurrentIndex(index);
+        BandChanged(index);
 
-	}
+        index = fco->LNAEnhance->findData(fcdLNAEnhance);
+        fco->LNAEnhance->setCurrentIndex(index);
 
-	//Get current options from device
-	ReadFCDOptions();
+        index = fco->BiasCurrent->findData(fcdBiasCurrent);
+        fco->BiasCurrent->setCurrentIndex(index);
 
-    fco->versionLabel->setText("Version: "+fcdVersion);
+        index = fco->MixerFilter->findData(fcdMixerFilter);
+        fco->MixerFilter->setCurrentIndex(index);
 
-    fco->frequencyLabel->setText("Freq: "+QString::number(fcdFreq,'f',0));
+        index = fco->IFGainMode->findData(fcdIFGainMode);
+        fco->IFGainMode->setCurrentIndex(index);
 
-    int index = fco->LNAGain->findData(fcdLNAGain);
-    fco->LNAGain->setCurrentIndex(index);
+        index = fco->IFRCFilter->findData(fcdIFRCFilter);
+        fco->IFRCFilter->setCurrentIndex(index);
 
-    index = fco->Band->findData(fcdBand);
-    fco->Band->setCurrentIndex(index);
-	BandChanged(index);
+        index = fco->IFGain2->findData(fcdIFGain2);
+        fco->IFGain2->setCurrentIndex(index);
 
-    index = fco->RFFilter->findData(fcdRFFilter);
-    fco->RFFilter->setCurrentIndex(index);
+        index = fco->IFGain3->findData(fcdIFGain3);
+        fco->IFGain3->setCurrentIndex(index);
 
-    index = fco->LNAEnhance->findData(fcdLNAEnhance);
-    fco->LNAEnhance->setCurrentIndex(index);
+        index = fco->IFGain4->findData(fcdIFGain4);
+        fco->IFGain4->setCurrentIndex(index);
 
-    index = fco->MixerGain->findData(fcdMixerGain);
-    fco->MixerGain->setCurrentIndex(index);
+        index = fco->IFGain5->findData(fcdIFGain5);
+        fco->IFGain5->setCurrentIndex(index);
 
-    index = fco->BiasCurrent->findData(fcdBiasCurrent);
-    fco->BiasCurrent->setCurrentIndex(index);
+        index = fco->IFGain6->findData(fcdIFGain6);
+        fco->IFGain6->setCurrentIndex(index);
 
-    index = fco->MixerFilter->findData(fcdMixerFilter);
-    fco->MixerFilter->setCurrentIndex(index);
+    } else {
+        //FCD+ only
+        fco->LNAEnhance->setEnabled(false);
+        fco->Band->setEnabled(false);
+        fco->BiasCurrent->setEnabled(false);
+        fco->MixerFilter->setEnabled(false);
+        fco->IFGainMode->setEnabled(false);
+        fco->IFRCFilter->setEnabled(false);
+        fco->IFGain2->setEnabled(false);
+        fco->IFGain3->setEnabled(false);
+        fco->IFGain4->setEnabled(false);
+        fco->IFGain5->setEnabled(false);
+        fco->IFGain6->setEnabled(false);
+        fco->BiasTee->setEnabled(true);
 
-    index = fco->IFGain1->findData(fcdIFGain1);
-    fco->IFGain1->setCurrentIndex(index);
+        fco->IFFilter->clear();
+        fco->IFFilter->addItem("200KHz",TIFE_200KHZ);
+        fco->IFFilter->addItem("300KHz",TIFE_300KHZ);
+        fco->IFFilter->addItem("600KHz",TIFE_600KHZ);
+        fco->IFFilter->addItem("1536KHz",TIFE_1536KHZ);
+        fco->IFFilter->addItem("5MHz",TIFE_5MHZ);
+        fco->IFFilter->addItem("6MHz",TIFE_6MHZ);
+        fco->IFFilter->addItem("7MHz",TIFE_7MHZ);
+        fco->IFFilter->addItem("8MHz",TIFE_8MHZ);
 
-    index = fco->IFGainMode->findData(fcdIFGainMode);
-    fco->IFGainMode->setCurrentIndex(index);
+        index = fco->BiasTee->findData(fcdBiasTee);
+        fco->BiasTee->setCurrentIndex(index);
 
-    index = fco->IFRCFilter->findData(fcdIFRCFilter);
-    fco->IFRCFilter->setCurrentIndex(index);
-
-    index = fco->IFGain2->findData(fcdIFGain2);
-    fco->IFGain2->setCurrentIndex(index);
-
-    index = fco->IFGain3->findData(fcdIFGain3);
-    fco->IFGain3->setCurrentIndex(index);
-
-    index = fco->IFFilter->findData(fcdIFFilter);
-    fco->IFFilter->setCurrentIndex(index);
-
-    index = fco->IFGain4->findData(fcdIFGain4);
-    fco->IFGain4->setCurrentIndex(index);
-
-    index = fco->IFGain5->findData(fcdIFGain5);
-    fco->IFGain5->setCurrentIndex(index);
-
-    index = fco->IFGain6->findData(fcdIFGain6);
-    fco->IFGain6->setCurrentIndex(index);
+        //Call BandChanged to set RF Filter options, even though FCD+ doesn have band
+        BandChanged(0);
+        //Add BiasTee to UI
+    }
 
 	fcdOptionsDialog->show();
 }
@@ -1420,7 +1557,8 @@ void FunCube::ReadSettings()
 	fcdRFFilter = qSettings->value("RFFilter",-1).toInt();
 	fcdMixerGain = qSettings->value("MixerGain",-1).toInt();
     fcdBiasCurrent = qSettings->value("BiasCurrent",-1).toInt();
-	fcdMixerFilter = qSettings->value("MixerFilter",-1).toInt();
+    fcdBiasTee = qSettings->value("BiasTee",0).toInt();
+    fcdMixerFilter = qSettings->value("MixerFilter",-1).toInt();
 	fcdIFGain1 = qSettings->value("IFGain1",-1).toInt();
 	fcdIFGain2 = qSettings->value("IFGain2",-1).toInt();
 	fcdIFGain3 = qSettings->value("IFGain3",-1).toInt();
@@ -1459,7 +1597,8 @@ void FunCube::WriteSettings()
 	qSettings->setValue("RFFilter",fcdRFFilter);
 	qSettings->setValue("MixerGain",fcdMixerGain);
 	qSettings->setValue("BiasCurrent",fcdBiasCurrent);
-	qSettings->setValue("MixerFilter",fcdMixerFilter);
+    qSettings->setValue("BiasTee",fcdBiasTee);
+    qSettings->setValue("MixerFilter",fcdMixerFilter);
 	qSettings->setValue("IFGain1",fcdIFGain1);
 	qSettings->setValue("IFGain2",fcdIFGain2);
 	qSettings->setValue("IFGain3",fcdIFGain3);

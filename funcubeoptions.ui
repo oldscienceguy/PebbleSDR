@@ -187,7 +187,7 @@
     <rect>
      <x>180</x>
      <y>30</y>
-     <width>71</width>
+     <width>88</width>
      <height>16</height>
     </rect>
    </property>
@@ -213,7 +213,7 @@
     <rect>
      <x>180</x>
      <y>70</y>
-     <width>71</width>
+     <width>83</width>
      <height>16</height>
     </rect>
    </property>
@@ -225,8 +225,8 @@
    <property name="geometry">
     <rect>
      <x>180</x>
-     <y>110</y>
-     <width>71</width>
+     <y>113</y>
+     <width>84</width>
      <height>16</height>
     </rect>
    </property>
@@ -375,8 +375,8 @@
   <widget class="QComboBox" name="LNAEnhance">
    <property name="geometry">
     <rect>
-     <x>260</x>
-     <y>30</y>
+     <x>274</x>
+     <y>28</y>
      <width>69</width>
      <height>16</height>
     </rect>
@@ -385,7 +385,7 @@
   <widget class="QComboBox" name="Band">
    <property name="geometry">
     <rect>
-     <x>260</x>
+     <x>274</x>
      <y>50</y>
      <width>69</width>
      <height>16</height>
@@ -395,7 +395,7 @@
   <widget class="QComboBox" name="BiasCurrent">
    <property name="geometry">
     <rect>
-     <x>260</x>
+     <x>262</x>
      <y>70</y>
      <width>81</width>
      <height>16</height>
@@ -405,8 +405,8 @@
   <widget class="QComboBox" name="IFGainMode">
    <property name="geometry">
     <rect>
-     <x>260</x>
-     <y>110</y>
+     <x>272</x>
+     <y>113</y>
      <width>69</width>
      <height>16</height>
     </rect>
@@ -436,6 +436,29 @@
    </property>
    <property name="text">
     <string>Defaults</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="BiasTee">
+   <property name="geometry">
+    <rect>
+     <x>272</x>
+     <y>92</y>
+     <width>71</width>
+     <height>16</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_17">
+   <property name="geometry">
+    <rect>
+     <x>180</x>
+     <y>92</y>
+     <width>71</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Bias Tee</string>
    </property>
   </widget>
  </widget>

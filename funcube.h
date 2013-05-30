@@ -54,8 +54,9 @@ public:
 	void SetIFRCFilter(int v);
 	void SetIFFilter(int v);
 
-
+    void SetBiasTee(int v);
 private slots:
+    void BiasTeeChanged(int s);
 	void LNAGainChanged(int s);
 	void LNAEnhanceChanged(int s);
 	void BandChanged(int s);
@@ -110,6 +111,7 @@ private:
 	int fcdDCQCorrection;
 	int fcdIQPhaseCorrection;
 	int fcdIQGainCorrection;
+    int fcdBiasTee; //FCD+ only 0 or 1
 	bool fcdSetFreqHz; //true to use hz, false to set in khz
 
     hid_device *hidDev;
