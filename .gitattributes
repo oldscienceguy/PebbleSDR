@@ -35,12 +35,14 @@ Devices/usb.h -text
 /PebbleQt.pro -text
 /PortAudio.lib -text
 /Receiver.cpp -text
+/Receiver.h -text
 /ReceiverWidget.cpp -text
 /ReceiverWidget.h -text
 /ReceiverWidget.ui -text
 /ReleaseNotes.txt -text
 Resources/edit.png -text
 /SDR.cpp -text
+/SDR.h -text
 /SDRIQOptions.ui -text
 /Settings.cpp -text
 /Settings.h -text
