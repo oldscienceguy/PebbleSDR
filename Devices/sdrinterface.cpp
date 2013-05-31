@@ -44,11 +44,14 @@
 //authors and should not be interpreted as representing official policies, either expressed
 //or implied, of Moe Wheatley.
 //==========================================================================================
-#include "interface/sdrinterface.h"
-#include "gui/testbench.h"
-#include <QDebug>
 
-#define SPUR_CAL_MAXSAMPLES 300000
+//RAL: Refactor to just provide device interface without any of the receive chain logic
+//  Receive chain is provided at higher level and device independent in Pebble
+
+#include "sdrinterface.h"
+#include <QTimer>
+
+//#define SPUR_CAL_MAXSAMPLES 300000
 #define MAX_SAMPLERATES 4
 
 //Tables to get various parameters based on the gui sdrsetup samplerate index value
@@ -133,127 +136,30 @@ const double CLOUDSDR_SAMPLERATE[MAX_SAMPLERATES] =
 	(122.88e6/100.0)
 };
 
-
 /////////////////////////////////////////////////////////////////////
 // Constructor/Destructor
 /////////////////////////////////////////////////////////////////////
 CSdrInterface::CSdrInterface()
 {
-	m_Running = false;
-	m_BootRev = 0.0;
-	m_AppRev = 0.0;
-	m_FftBufPos = 0;
-	m_RfGain = 0;
-	m_KeepAliveCounter = 0;
-	m_GainCalibrationOffset = 0.0;
-	m_SampleRate = 1.0;
-	m_MaxBandwidth = 1;
-	m_SerialNum = "";
-	m_DeviceName = "";
-	m_BandwidthIndex = -1;
-	m_RadioType = SDR14;
-	m_FftSize = 4096;
-	m_DisplaySkipCounter = 0;
-	m_NCOSpurOffsetI = 0.0;
-	m_NCOSpurOffsetQ = 0.0;
-	m_MaxDisplayRate = 10;
-	m_CurrentFrequency = 0;
-	m_BaseFrequencyRangeMin = 0;		//load default frequency ranges
-	m_BaseFrequencyRangeMax = 30000000;
-	m_OptionFrequencyRangeMin = 0;
-	m_OptionFrequencyRangeMax = 30000000;
-	SetMaxDisplayRate(m_MaxDisplayRate);
-	m_ScreenUpateFinished = true;
-	SetFftSize(4096);
-	SetFftAve(1);
-	m_pSoundCardOut = new CSoundOut();
-	m_pdataProcess = new CDataProcess(this);
-	m_Status = NOT_CONNECTED;
-	m_ChannelMode = CI_RX_CHAN_SETUP_SINGLE_1;	//default channel settings for NetSDR
-	m_Channel = CI_RX_CHAN_1;
-}
+    m_Running = false;
+    m_BootRev = 0.0;
+    m_AppRev = 0.0;
+    m_RfGain = 0;
+    m_KeepAliveCounter = 0;
+    m_SampleRate = 1.0;
+    m_MaxBandwidth = 1;
+    m_SerialNum = "";
+    m_DeviceName = "";
+    m_BandwidthIndex = -1;
+    m_RadioType = SDR14;
+    m_CurrentFrequency = 0;
+    m_Status = NOT_CONNECTED;
+    m_ChannelMode = CI_RX_CHAN_SETUP_SINGLE_1;	//default channel settings for NetSDR
+    m_Channel = CI_RX_CHAN_1;
 
+}
 CSdrInterface::~CSdrInterface()
 {
-qDebug()<<"CSdrInterface destructor";
-	if(m_pSoundCardOut)
-	{
-		delete m_pSoundCardOut;
-		m_pSoundCardOut = NULL;
-	}
-	if(m_pdataProcess)
-	{
-		delete m_pdataProcess;
-		m_pdataProcess = NULL;
-	}
-}
-
-/////////////////////////////////////////////////////////////////////
-// returns the maximum bandwidth based on radio and gui bw index
-/////////////////////////////////////////////////////////////////////
-qint32 CSdrInterface::GetMaxBWFromIndex(qint32 index)
-{
-qint32 ret = 0;
-if(index >= MAX_SAMPLERATES)
-	return 100000;
-	switch(m_RadioType)
-	{
-		case SDR14:
-		case SDRIQ:
-			ret = SDRIQ_MAXBW[index];
-			break;
-		case SDRIP:
-			ret = SDRIP_MAXBW[index];
-			break;
-		case NETSDR:
-			ret = NETSDR_MAXBW[index];
-			break;
-		case CLOUDSDR:
-			ret = CLOUDSDR_MAXBW[index];
-			break;
-		default:
-			break;
-	}
-	return ret;
-}
-
-/////////////////////////////////////////////////////////////////////
-// returns the maximum bandwidth based on radio and gui bw index
-/////////////////////////////////////////////////////////////////////
-double CSdrInterface::GetSampleRateFromIndex(qint32 index)
-{
-double ret = 1.0;
-	if(index >= MAX_SAMPLERATES)
-		return 100000;
-	switch(m_RadioType)
-	{
-		case SDR14:
-		case SDRIQ:
-			ret = SDRIQ_SAMPLERATE[index];
-			break;
-		case SDRIP:
-			ret = SDRIP_SAMPLERATE[index];
-			break;
-		case NETSDR:
-			ret = NETSDR_SAMPLERATE[index];
-			break;
-		case CLOUDSDR:
-			ret = CLOUDSDR_SAMPLERATE[index];
-			break;
-		default:
-			break;
-	}
-	return ret;
-}
-
-/////////////////////////////////////////////////////////////////////
-// called to stop io device threads and close device.
-/////////////////////////////////////////////////////////////////////
-void CSdrInterface::StopIO()
-{
-	StopSdr();
-	//delay disconnect in case of pending traffic
-	QTimer::singleShot(200, this, SLOT(CNetio::DisconnectFromServer()));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -265,159 +171,159 @@ void CSdrInterface::ParseAscpMsg(CAscpRxMsg *pMsg)
 {
 quint16 Length;
 CAscpTxMsg TxMsg;
-	pMsg->InitRxMsg();	//initialize receive msg object for read back
-	if( pMsg->GetType() == TYPE_TARG_RESP_CITEM )
-	{	// Is a message from SDR in response to a request
+    pMsg->InitRxMsg();	//initialize receive msg object for read back
+    if( pMsg->GetType() == TYPE_TARG_RESP_CITEM )
+    {	// Is a message from SDR in response to a request
 //qDebug()<<"Msg "<<pMsg->GetCItem();
-		switch(pMsg->GetCItem())
-		{
-			case CI_GENERAL_INTERFACE_NAME:
-				m_DeviceName = (const char*)(&pMsg->Buf8[4]);
-				// create radio type value from connected device string
-				if("SDR-14" == m_DeviceName)
-					m_RadioType = SDR14;
-				else if("SDR-IQ" == m_DeviceName)
-					m_RadioType = SDRIQ;
-				else if("SDR-IP" == m_DeviceName)
-					m_RadioType = SDRIP;
-				else if("NetSDR" == m_DeviceName)
-					m_RadioType = NETSDR;
-				if("CloudSDR" == m_DeviceName)
-					m_RadioType = CLOUDSDR;
-				if( (SDRIP==m_RadioType) || (NETSDR==m_RadioType) || (CLOUDSDR==m_RadioType))
-				{
+        switch(pMsg->GetCItem())
+        {
+            case CI_GENERAL_INTERFACE_NAME:
+                m_DeviceName = (const char*)(&pMsg->Buf8[4]);
+                // create radio type value from connected device string
+                if("SDR-14" == m_DeviceName)
+                    m_RadioType = SDR14;
+                else if("SDR-IQ" == m_DeviceName)
+                    m_RadioType = SDRIQ;
+                else if("SDR-IP" == m_DeviceName)
+                    m_RadioType = SDRIP;
+                else if("NetSDR" == m_DeviceName)
+                    m_RadioType = NETSDR;
+                if("CloudSDR" == m_DeviceName)
+                    m_RadioType = CLOUDSDR;
+                if( (SDRIP==m_RadioType) || (NETSDR==m_RadioType) || (CLOUDSDR==m_RadioType))
+                {
                     TxMsg.InitTxMsg(TYPE_HOST_REQ_CITEM_RANGE);
                     TxMsg.AddCItem(CI_RX_FREQUENCY);
                     TxMsg.AddParm8(CI_RX_CHAN_1);
                     SendAscpMsg(&TxMsg);
-				}
-				break;
-			case CI_GENERAL_INTERFACE_SERIALNUM:
-				m_SerialNum = (const char*)(&pMsg->Buf8[4]);
-				break;
-			case CI_GENERAL_INTERFACE_VERSION:
-				break;
-			case CI_GENERAL_HARDFIRM_VERSION:
-				if(pMsg->GetParm8() == 0)
-				{
-					m_BootRev = (float)pMsg->GetParm16()/100.0;
-				}
-				else
-				{
-					m_AppRev =(float)pMsg->GetParm16()/100.0;
-					m_BandwidthIndex = -1;	//force update of sample rate logic
-					emit NewInfoData();
-				}
-				break;
-			case CI_RX_STATE:
-				pMsg->GetParm8();
-				if(RX_STATE_ON == pMsg->GetParm8())
-				{
-					emit NewStatus( RUNNING );
-					m_Running = true;
-				}
-				else
-				{
-					emit NewStatus( CONNECTED );
-					m_Running = false;
-				}
-				break;
-			case CI_GENERAL_OPTIONS:
-				break;
-			case CI_GENERAL_SECURITY_CODE:
+                }
+                break;
+            case CI_GENERAL_INTERFACE_SERIALNUM:
+                m_SerialNum = (const char*)(&pMsg->Buf8[4]);
+                break;
+            case CI_GENERAL_INTERFACE_VERSION:
+                break;
+            case CI_GENERAL_HARDFIRM_VERSION:
+                if(pMsg->GetParm8() == 0)
+                {
+                    m_BootRev = (float)pMsg->GetParm16()/100.0;
+                }
+                else
+                {
+                    m_AppRev =(float)pMsg->GetParm16()/100.0;
+                    //m_BandwidthIndex = -1;	//force update of sample rate logic
+                    emit NewInfoData();
+                }
+                break;
+            case CI_RX_STATE:
+                pMsg->GetParm8();
+                if(RX_STATE_ON == pMsg->GetParm8())
+                {
+                    emit NewStatus( RUNNING );
+                    m_Running = true;
+                }
+                else
+                {
+                    emit NewStatus( CONNECTED );
+                    m_Running = false;
+                }
+                break;
+            case CI_GENERAL_OPTIONS:
+                break;
+            case CI_GENERAL_SECURITY_CODE:
 //qDebug()<<"security = "<<pMsg->GetParm16();
-				break;
-			case CI_GENERAL_STATUS_CODE:	//used as keepalive ack
-				m_KeepAliveCounter = 0;
-				break;
-			case CI_RX_FREQUENCY:
-				pMsg->GetParm8();
+                break;
+            case CI_GENERAL_STATUS_CODE:	//used as keepalive ack
+                m_KeepAliveCounter = 0;
+                break;
+            case CI_RX_FREQUENCY:
+                pMsg->GetParm8();
 //				tmp32 = pMsg->GetParm32();
-				break;
-			case CI_RX_OUT_SAMPLE_RATE:
-				pMsg->GetParm8();
-				m_SampleRate = (double)pMsg->GetParm32();
-				break;
-			case CI_GENERAL_PRODUCT_ID:
-				break;
-			case CI_UPDATE_MODE_PARAMS:
-				break;
-			default:
-				break;
-		}
-	}
-	else if( pMsg->GetType() == TYPE_TARG_RESP_CITEM_RANGE )
-	{	// Is a range request message from SDR
-		switch( pMsg->GetCItem() )
-		{
-			case CI_RX_FREQUENCY:
-				pMsg->GetParm8();	//ignor channel
-				Length = pMsg->GetParm8();
-				m_BaseFrequencyRangeMin = (quint64)pMsg->GetParm32();
-				pMsg->GetParm8();//ignor msb
-				m_BaseFrequencyRangeMax = (quint64)pMsg->GetParm32();
-				pMsg->GetParm8();	//ignor msb
-				pMsg->GetParm32();	//ignor VCO frequency
-				pMsg->GetParm8();	//ignor msb
-				m_OptionFrequencyRangeMin = m_BaseFrequencyRangeMin;	//set option range to base range
-				m_OptionFrequencyRangeMax = m_BaseFrequencyRangeMax;
-				if(Length>1)
-				{
-					m_OptionFrequencyRangeMin = (quint64)pMsg->GetParm32();
-					pMsg->GetParm8();//ignor msb
-					m_OptionFrequencyRangeMax = (quint64)pMsg->GetParm32();
-					pMsg->GetParm8();//ignor msb
-					pMsg->GetParm32();	//ignor VCO frequency
-				}
+                break;
+            case CI_RX_OUT_SAMPLE_RATE:
+                pMsg->GetParm8();
+                m_SampleRate = (double)pMsg->GetParm32();
+                break;
+            case CI_GENERAL_PRODUCT_ID:
+                break;
+            case CI_UPDATE_MODE_PARAMS:
+                break;
+            default:
+                break;
+        }
+    }
+    else if( pMsg->GetType() == TYPE_TARG_RESP_CITEM_RANGE )
+    {	// Is a range request message from SDR
+        switch( pMsg->GetCItem() )
+        {
+            case CI_RX_FREQUENCY:
+                pMsg->GetParm8();	//ignor channel
+                Length = pMsg->GetParm8();
+                m_BaseFrequencyRangeMin = (quint64)pMsg->GetParm32();
+                pMsg->GetParm8();//ignor msb
+                m_BaseFrequencyRangeMax = (quint64)pMsg->GetParm32();
+                pMsg->GetParm8();	//ignor msb
+                pMsg->GetParm32();	//ignor VCO frequency
+                pMsg->GetParm8();	//ignor msb
+                m_OptionFrequencyRangeMin = m_BaseFrequencyRangeMin;	//set option range to base range
+                m_OptionFrequencyRangeMax = m_BaseFrequencyRangeMax;
+                if(Length>1)
+                {
+                    m_OptionFrequencyRangeMin = (quint64)pMsg->GetParm32();
+                    pMsg->GetParm8();//ignor msb
+                    m_OptionFrequencyRangeMax = (quint64)pMsg->GetParm32();
+                    pMsg->GetParm8();//ignor msb
+                    pMsg->GetParm32();	//ignor VCO frequency
+                }
 qDebug()<<"Base range"<<m_BaseFrequencyRangeMin << m_BaseFrequencyRangeMax;
 qDebug()<<"Option range"<<m_OptionFrequencyRangeMin << m_OptionFrequencyRangeMax;
-				break;
-			default:
-				break;
-		}
-	}
-	else if( pMsg->GetType() == TYPE_TARG_UNSOLICITED_CITEM )
-	{	// Is an unsolicited message from SDR
-		switch( pMsg->GetCItem() )
-		{
-			case CI_GENERAL_STATUS_CODE:
-				if( GENERAL_STATUS_ADOVERLOAD == pMsg->GetParm8() )
-					SendStatus(ADOVR);
-				break;
-			default:
-				break;
-		}
-	}
-	else if( pMsg->GetType() == TYPE_TARG_DATA_ITEM0 )
-	{
-	}
-	else if( pMsg->GetType() == TYPE_TARG_DATA_ITEM1 )
-	{
-	}
-	else if( pMsg->GetType() == TYPE_TARG_DATA_ITEM2 )
-	{
-	}
-	else if( pMsg->GetType() == TYPE_TARG_DATA_ITEM3 )
-	{
-	}
-	else if(pMsg->GetType() == TYPE_DATA_ITEM_ACK)
-	{
-		switch(pMsg->Buf8[2])
-		{	//decode Data acks
-			case 0:		//NetSDR and SDRIP keepalive ack
-				break;
-			case 1: 	//ack of AD6620 load so ok to send next msg if any left to send
+                break;
+            default:
+                break;
+        }
+    }
+    else if( pMsg->GetType() == TYPE_TARG_UNSOLICITED_CITEM )
+    {	// Is an unsolicited message from SDR
+        switch( pMsg->GetCItem() )
+        {
+            case CI_GENERAL_STATUS_CODE:
+                if( GENERAL_STATUS_ADOVERLOAD == pMsg->GetParm8() )
+                    SendStatus(ADOVR);
+                break;
+            default:
+                break;
+        }
+    }
+    else if( pMsg->GetType() == TYPE_TARG_DATA_ITEM0 )
+    {
+    }
+    else if( pMsg->GetType() == TYPE_TARG_DATA_ITEM1 )
+    {
+    }
+    else if( pMsg->GetType() == TYPE_TARG_DATA_ITEM2 )
+    {
+    }
+    else if( pMsg->GetType() == TYPE_TARG_DATA_ITEM3 )
+    {
+    }
+    else if(pMsg->GetType() == TYPE_DATA_ITEM_ACK)
+    {
+        switch(pMsg->Buf8[2])
+        {	//decode Data acks
+            case 0:		//NetSDR and SDRIP keepalive ack
+                break;
+            case 1: 	//ack of AD6620 load so ok to send next msg if any left to send
                 if( m_AD6620.GetNext6620Msg(TxMsg) )
                     SendAscpMsg(&TxMsg);
-				else
-					qDebug()<<"AD6620 Load Complete";
-				break;
-			case 2:
-				break;
-			case 3:
-				break;
-		}
-	}
+                else
+                    qDebug()<<"AD6620 Load Complete";
+                break;
+            case 2:
+                break;
+            case 3:
+                break;
+        }
+    }
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -437,7 +343,7 @@ CAscpTxMsg TxMsg;
 quint16 gain;
 quint32 phase;
 //	qDebug()<<"Rx2Gain = "<<Rx2Gain <<" Rx2Phase = "<<Rx2Phase;
-	gain = (quint16)(Rx2Gain*32767.0);
+    gain = (quint16)(Rx2Gain*32767.0);
 
     TxMsg.InitTxMsg(TYPE_HOST_SET_CITEM);
     TxMsg.AddCItem(CI_RX_ADCGAIN);
@@ -452,7 +358,7 @@ quint32 phase;
     SendAscpMsg(&TxMsg);
 
 
-	phase = (quint32)( (Rx2Phase/360.0) * 4294967295.0);
+    phase = (quint32)( (Rx2Phase/360.0) * 4294967295.0);
 
     TxMsg.InitTxMsg(TYPE_HOST_SET_CITEM);
     TxMsg.AddCItem(CI_RX_NCOPHASE);
@@ -466,7 +372,7 @@ quint32 phase;
     TxMsg.AddParm32(phase);
     SendAscpMsg(&TxMsg);
 
-	qDebug()<<"Gain = "<<gain <<" Rx2Phase = "<<phase;
+    qDebug()<<"Gain = "<<gain <<" Rx2Phase = "<<phase;
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -493,14 +399,13 @@ CAscpTxMsg TxMsg;
     TxMsg.AddParm8(1);
     SendAscpMsg(&TxMsg);
 
-	m_BaseFrequencyRangeMin = 0;		//load default frequency ranges
-	m_BaseFrequencyRangeMax = 30000000;
-	m_OptionFrequencyRangeMin = 0;
-	m_OptionFrequencyRangeMax = 30000000;
+    m_BaseFrequencyRangeMin = 0;		//load default frequency ranges
+    m_BaseFrequencyRangeMax = 30000000;
+    m_OptionFrequencyRangeMin = 0;
+    m_OptionFrequencyRangeMax = 30000000;
 
 qDebug()<<"req info";
 }
-
 
 /////////////////////////////////////////////////////////////////////
 // Called to request sdr status
@@ -510,7 +415,7 @@ void CSdrInterface::ReqStatus()
 CAscpTxMsg TxMsg;
     TxMsg.InitTxMsg(TYPE_HOST_REQ_CITEM);
     TxMsg.AddCItem(CI_GENERAL_STATUS_CODE);
-	SendAscpMsg(&TxMsg);
+    SendAscpMsg(&TxMsg);
 }
 
 
@@ -519,25 +424,25 @@ CAscpTxMsg TxMsg;
 /////////////////////////////////////////////////////////////////////
 void CSdrInterface::SetChannelMode(qint32 channelmode)
 {
-	m_ChannelMode = channelmode;
-	switch(m_ChannelMode)
-	{
-		case CI_RX_CHAN_SETUP_SINGLE_1:
-			m_Channel = CI_RX_CHAN_1;
-			break;
-		case CI_RX_CHAN_SETUP_SINGLE_2:
-			m_Channel = CI_RX_CHAN_2;
-			break;
-		case CI_RX_CHAN_SETUP_SINGLE_SUM:
-			m_Channel = CI_RX_CHAN_ALL;
+    m_ChannelMode = channelmode;
+    switch(m_ChannelMode)
+    {
+        case CI_RX_CHAN_SETUP_SINGLE_1:
+            m_Channel = CI_RX_CHAN_1;
+            break;
+        case CI_RX_CHAN_SETUP_SINGLE_2:
+            m_Channel = CI_RX_CHAN_2;
+            break;
+        case CI_RX_CHAN_SETUP_SINGLE_SUM:
+            m_Channel = CI_RX_CHAN_ALL;
 
-			break;
-		case CI_RX_CHAN_SETUP_SINGLE_DIF:
-			m_Channel = CI_RX_CHAN_ALL;
-			break;
-		default:
-			break;
-	}
+            break;
+        case CI_RX_CHAN_SETUP_SINGLE_DIF:
+            m_Channel = CI_RX_CHAN_ALL;
+            break;
+        default:
+            break;
+    }
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -546,14 +451,13 @@ void CSdrInterface::SetChannelMode(qint32 channelmode)
 void CSdrInterface::StartSdr()
 {
 CAscpTxMsg TxMsg;
-    m_FftBufPos = 0;
 
-	switch(m_RadioType)
-	{
-		case SDRIP:
-		case NETSDR:
-		case CLOUDSDR:
-			emit NewStatus( RUNNING );
+    switch(m_RadioType)
+    {
+        case SDRIP:
+        case NETSDR:
+        case CLOUDSDR:
+            emit NewStatus( RUNNING );
 
             TxMsg.InitTxMsg(TYPE_HOST_SET_CITEM);
             TxMsg.AddCItem(CI_RX_CHAN_SETUP);
@@ -594,20 +498,16 @@ CAscpTxMsg TxMsg;
             TxMsg.AddCItem(CI_RX_STATE);
             TxMsg.AddParm8(RX_STATE_DATACOMPLEX);
             TxMsg.AddParm8(RX_STATE_ON);
-			if(m_SampleRate<1500000.0)
+            if(m_SampleRate<1500000.0)
                 TxMsg.AddParm8(MODE_CONTIGUOUS24);
-			else
+            else
                 TxMsg.AddParm8(MODE_CONTIGUOUS16);
             TxMsg.AddParm8(0);
             SendAscpMsg(&TxMsg);
-
-			m_NCOSpurOffsetI = 0.0;		//don't need for netsdr
-			m_NCOSpurOffsetQ = 0.0;
-			m_NcoSpurCalActive = false;
-			break;
-		case SDR14:
-		case SDRIQ:
-			emit NewStatus( RUNNING );
+            break;
+        case SDR14:
+        case SDRIQ:
+            emit NewStatus( RUNNING );
 
             TxMsg.InitTxMsg(TYPE_HOST_SET_CITEM);
             TxMsg.AddCItem(CI_RX_IF_GAIN);
@@ -622,14 +522,11 @@ CAscpTxMsg TxMsg;
             TxMsg.AddParm8(MODE_CONTIGUOUS16);
             TxMsg.AddParm8(0);
             SendAscpMsg(&TxMsg);
-			ManageNCOSpurOffsets(CSdrInterface::NCOSPUR_CMD_STARTCAL,0,0);
-			break;
-	}
-	SetSdrRfGain(m_RfGain);
-	m_ScreenUpateFinished = true;
-	m_KeepAliveCounter = 0;
-	//setup and start soundcard output
-	m_pSoundCardOut->Start(m_SoundOutIndex, m_StereoOut, m_Demodulator.GetOutputRate());
+            break;
+    }
+    SetSdrRfGain(m_RfGain);
+    m_KeepAliveCounter = 0;
+    //setup and start soundcard output
 //qDebug()<<"SR="<<m_SampleRate;
 }
 
@@ -640,7 +537,6 @@ void CSdrInterface::StopSdr()
 {
 CAscpTxMsg TxMsg;
     m_Running = false;
-	m_pSoundCardOut->Stop();
     TxMsg.InitTxMsg(TYPE_HOST_SET_CITEM);
     TxMsg.AddCItem(CI_RX_STATE);
     TxMsg.AddParm8(RX_STATE_DATACOMPLEX);
@@ -649,6 +545,17 @@ CAscpTxMsg TxMsg;
     TxMsg.AddParm8(0);
     SendAscpMsg(&TxMsg);
 }
+
+/////////////////////////////////////////////////////////////////////
+// called to stop io device threads and close device.
+/////////////////////////////////////////////////////////////////////
+void CSdrInterface::StopIO()
+{
+    StopSdr();
+    //delay disconnect in case of pending traffic
+    QTimer::singleShot(200, this, SLOT(CNetio::DisconnectFromServer()));
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Sends RF gain command to SDR
@@ -663,29 +570,25 @@ CAscpTxMsg TxMsg;
     TxMsg.AddParm8((qint8)gain);
     SendAscpMsg(&TxMsg);
 //qDebug()<<"gain "<<gain;
-	//try to keep dB calibration close to dBm at the radio antenna connector
-	switch(m_RadioType)
-	{	//  *** todo: needs to allow user calibration data  ***
-		case SDRIP:
-			m_GainCalibrationOffset = -10.0;
-			break;
-		case NETSDR:
-			m_GainCalibrationOffset = -12.0;
-			break;
-		case CLOUDSDR:
-			m_GainCalibrationOffset = -12.0;
-			break;
-		case SDR14:
-			m_GainCalibrationOffset = -49.0 + SDRIQ_6620FILTERGAIN[m_BandwidthIndex];
-			break;
-		case SDRIQ:
-			m_GainCalibrationOffset = -49.0 + SDRIQ_6620FILTERGAIN[m_BandwidthIndex];
-			break;
-	}
-	m_Fft.SetFFTParams( m_FftSize,
-						false,
-						m_GainCalibrationOffset-m_RfGain,
-						m_SampleRate);
+    //try to keep dB calibration close to dBm at the radio antenna connector
+    switch(m_RadioType)
+    {	//  *** todo: needs to allow user calibration data  ***
+        case SDRIP:
+            m_GainCalibrationOffset = -10.0;
+            break;
+        case NETSDR:
+            m_GainCalibrationOffset = -12.0;
+            break;
+        case CLOUDSDR:
+            m_GainCalibrationOffset = -12.0;
+            break;
+        case SDR14:
+            m_GainCalibrationOffset = -49.0 + SDRIQ_6620FILTERGAIN[m_BandwidthIndex];
+            break;
+        case SDRIQ:
+            m_GainCalibrationOffset = -49.0 + SDRIQ_6620FILTERGAIN[m_BandwidthIndex];
+            break;
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -694,20 +597,20 @@ CAscpTxMsg TxMsg;
 quint64 CSdrInterface::SetRxFreq(quint64 freq)
 {
 CAscpTxMsg TxMsg;
-	if(NOT_CONNECTED == m_Status)	//just return if not conencted to sdr
-		return freq;
+    if(NOT_CONNECTED == m_Status)	//just return if not conencted to sdr
+        return freq;
 
-	//clamp to range of receiver and any options
-	if(freq > m_OptionFrequencyRangeMax)	//if greater than max range
-		freq = m_OptionFrequencyRangeMax;
-	if(	(freq > m_BaseFrequencyRangeMax) && ( freq < m_OptionFrequencyRangeMin) )	//if in invalid region
-	{
-		if(	freq > m_CurrentFrequency)	//if last freq lower then go to converter range bottom
-			freq = m_OptionFrequencyRangeMin;
-		else
-			freq = m_BaseFrequencyRangeMax; //else last freq higher then go to base range top
-	}
-	m_CurrentFrequency = freq;
+    //clamp to range of receiver and any options
+    if(freq > m_OptionFrequencyRangeMax)	//if greater than max range
+        freq = m_OptionFrequencyRangeMax;
+    if(	(freq > m_BaseFrequencyRangeMax) && ( freq < m_OptionFrequencyRangeMin) )	//if in invalid region
+    {
+        if(	freq > m_CurrentFrequency)	//if last freq lower then go to converter range bottom
+            freq = m_OptionFrequencyRangeMin;
+        else
+            freq = m_BaseFrequencyRangeMax; //else last freq higher then go to base range top
+    }
+    m_CurrentFrequency = freq;
 
     TxMsg.InitTxMsg(TYPE_HOST_SET_CITEM);
     TxMsg.AddCItem(CI_RX_FREQUENCY);
@@ -716,16 +619,16 @@ CAscpTxMsg TxMsg;
     TxMsg.AddParm8(0);
     SendAscpMsg(&TxMsg);
 
-	if(SDRIP==m_RadioType)
-	{
+    if(SDRIP==m_RadioType)
+    {
         TxMsg.InitTxMsg(TYPE_HOST_SET_CITEM);
         TxMsg.AddCItem(CI_RX_FREQUENCY);
         TxMsg.AddParm8(CI_RX_FREQUENCY_DISPLAY);
         TxMsg.AddParm32( (quint32)freq );
         TxMsg.AddParm8(0);
         SendAscpMsg(&TxMsg);
-	}
-	return freq;
+    }
+    return freq;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -736,12 +639,149 @@ void CSdrInterface::KeepAlive()
 CAscpTxMsg TxMsg;
     TxMsg.InitTxMsg(TYPE_HOST_REQ_CITEM);
     TxMsg.AddCItem(CI_GENERAL_STATUS_CODE);
-	SendAscpMsg(&TxMsg);
-	if(++m_KeepAliveCounter >2)		//see if no ack received
-	{
-		SendStatus(ERR);
+    SendAscpMsg(&TxMsg);
+    if(++m_KeepAliveCounter >2)		//see if no ack received
+    {
+        SendStatus(ERR);
 qDebug()<<"Keepalive failed";
-		m_KeepAliveCounter = 0;
+        m_KeepAliveCounter = 0;
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//called to change SDR sample rate based on the GUI index value(0-3)
+///////////////////////////////////////////////////////////////////////////////
+void CSdrInterface::SetSdrBandwidthIndex(qint32 bwindex)
+{
+CAscpTxMsg TxMsg;
+    if(m_BandwidthIndex == bwindex)
+        return;		//if nothing changed
+    m_BandwidthIndex = bwindex;
+    StopSdr();
+    switch(m_RadioType)
+    {
+        case SDR14:
+        case SDRIQ:		//need to load AD6620 parameters
+            m_SampleRate = SDRIQ_SAMPLERATE[m_BandwidthIndex];
+            m_MaxBandwidth = SDRIQ_6620FILTERS[m_BandwidthIndex];
+            //SDR-IQ/14 requires filter change to set sample rate
+            m_AD6620.CreateLoad6620Msgs(SDRIQ_6620FILTERS[m_BandwidthIndex]);
+            if( m_AD6620.GetNext6620Msg(TxMsg) )
+            {
+                SendAscpMsg(&TxMsg);
+            }
+            break;
+        case SDRIP:
+            m_SampleRate = SDRIP_SAMPLERATE[m_BandwidthIndex];
+            m_MaxBandwidth = SDRIP_MAXBW[m_BandwidthIndex];
+            break;
+        case NETSDR:
+            m_SampleRate = NETSDR_SAMPLERATE[m_BandwidthIndex];
+            m_MaxBandwidth = NETSDR_MAXBW[m_BandwidthIndex];
+            break;
+        case CLOUDSDR:
+            m_SampleRate = CLOUDSDR_SAMPLERATE[m_BandwidthIndex];
+            m_MaxBandwidth = CLOUDSDR_MAXBW[m_BandwidthIndex];
+            break;
+    }
+}
+
+/////////////////////////////////////////////////////////////////////
+// returns the maximum bandwidth based on radio and gui bw index
+/////////////////////////////////////////////////////////////////////
+qint32 CSdrInterface::GetMaxBWFromIndex(qint32 index)
+{
+qint32 ret = 0;
+if(index >= MAX_SAMPLERATES)
+    return 100000;
+    switch(m_RadioType)
+    {
+        case SDR14:
+        case SDRIQ:
+            ret = SDRIQ_MAXBW[index];
+            break;
+        case SDRIP:
+            ret = SDRIP_MAXBW[index];
+            break;
+        case NETSDR:
+            ret = NETSDR_MAXBW[index];
+            break;
+        case CLOUDSDR:
+            ret = CLOUDSDR_MAXBW[index];
+            break;
+        default:
+            break;
+    }
+    return ret;
+}
+
+/////////////////////////////////////////////////////////////////////
+// returns the maximum bandwidth based on radio and gui bw index
+/////////////////////////////////////////////////////////////////////
+double CSdrInterface::GetSampleRateFromIndex(qint32 index)
+{
+double ret = 1.0;
+    if(index >= MAX_SAMPLERATES)
+        return 100000;
+    switch(m_RadioType)
+    {
+        case SDR14:
+        case SDRIQ:
+            ret = SDRIQ_SAMPLERATE[index];
+            break;
+        case SDRIP:
+            ret = SDRIP_SAMPLERATE[index];
+            break;
+        case NETSDR:
+            ret = NETSDR_SAMPLERATE[index];
+            break;
+        case CLOUDSDR:
+            ret = CLOUDSDR_SAMPLERATE[index];
+            break;
+        default:
+            break;
+    }
+    return ret;
+}
+
+#if 0
+/////////////////////////////////////////////////////////////////////
+// Constructor/Destructor
+/////////////////////////////////////////////////////////////////////
+CSdrInterface::CSdrInterface()
+{
+
+    m_DisplaySkipCounter = 0;
+	m_NCOSpurOffsetI = 0.0;
+	m_NCOSpurOffsetQ = 0.0;
+	m_MaxDisplayRate = 10;
+	m_BaseFrequencyRangeMin = 0;		//load default frequency ranges
+	m_BaseFrequencyRangeMax = 30000000;
+	m_OptionFrequencyRangeMin = 0;
+	m_OptionFrequencyRangeMax = 30000000;
+	SetMaxDisplayRate(m_MaxDisplayRate);
+	m_ScreenUpateFinished = true;
+    m_FftSize = 4096;
+    m_FftBufPos = 0;
+    SetFftSize(4096);
+	SetFftAve(1);
+    m_GainCalibrationOffset = 0.0;
+    m_pSoundCardOut = new CSoundOut();
+	m_pdataProcess = new CDataProcess(this);
+}
+
+CSdrInterface::~CSdrInterface()
+{
+qDebug()<<"CSdrInterface destructor";
+	if(m_pSoundCardOut)
+	{
+		delete m_pSoundCardOut;
+		m_pSoundCardOut = NULL;
+	}
+	if(m_pdataProcess)
+	{
+		delete m_pdataProcess;
+		m_pdataProcess = NULL;
 	}
 }
 
@@ -760,48 +800,6 @@ void CSdrInterface::SetFftSize(qint32 size)
 	SetMaxDisplayRate(m_MaxDisplayRate);
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//called to change SDR sample rate based on the GUI index value(0-3)
-///////////////////////////////////////////////////////////////////////////////
-void CSdrInterface::SetSdrBandwidthIndex(qint32 bwindex)
-{
-CAscpTxMsg TxMsg;
-    if(m_BandwidthIndex == bwindex)
-		return;		//if nothing changed
-	m_BandwidthIndex = bwindex;
-	StopSdr();
-	switch(m_RadioType)
-	{
-		case SDR14:
-		case SDRIQ:		//need to load AD6620 parameters
-			m_SampleRate = SDRIQ_SAMPLERATE[m_BandwidthIndex];
-			m_MaxBandwidth = SDRIQ_6620FILTERS[m_BandwidthIndex];
-			//SDR-IQ/14 requires filter change to set sample rate
-			m_AD6620.CreateLoad6620Msgs(SDRIQ_6620FILTERS[m_BandwidthIndex]);
-            if( m_AD6620.GetNext6620Msg(TxMsg) )
-			{
-                SendAscpMsg(&TxMsg);
-			}
-			break;
-		case SDRIP:
-			m_SampleRate = SDRIP_SAMPLERATE[m_BandwidthIndex];
-			m_MaxBandwidth = SDRIP_MAXBW[m_BandwidthIndex];
-			break;
-		case NETSDR:
-			m_SampleRate = NETSDR_SAMPLERATE[m_BandwidthIndex];
-			m_MaxBandwidth = NETSDR_MAXBW[m_BandwidthIndex];
-			break;
-		case CLOUDSDR:
-			m_SampleRate = CLOUDSDR_SAMPLERATE[m_BandwidthIndex];
-			m_MaxBandwidth = CLOUDSDR_MAXBW[m_BandwidthIndex];
-			break;
-	}
-	SetFftSize(m_FftSize);	//need to tell fft because sample rate has changed
-	SetMaxDisplayRate(m_MaxDisplayRate);
-	m_Demodulator.SetInputSampleRate(m_SampleRate);
-	m_pSoundCardOut->ChangeUserDataRate( m_Demodulator.GetOutputRate());
-qDebug()<<"UsrDataRate="<< m_Demodulator.GetOutputRate();
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 //called to change demodulation parameters
@@ -977,3 +975,4 @@ void CSdrInterface::ProcessIQData(TYPECPX *pIQData, int NumSamples)
 			m_pSoundCardOut->PutOutQueue(n, (TYPEREAL*)SoundBuf);
 	}
 }
+#endif
