@@ -378,7 +378,8 @@ HEADERS += \
     Devices/rtl-sdr/tuner_fc0012.h \
     Devices/rtl-sdr/tuner_fc0013.h \
     Devices/rtl-sdr/tuner_fc2580.h \
-    Devices/rtl-sdr/tuner_r820t.h
+    Devices/rtl-sdr/tuner_r820t.h \
+    Devices/rtl-sdr/reg_field.h
 
 SOURCES += \
     spectrumwidget.cpp \
