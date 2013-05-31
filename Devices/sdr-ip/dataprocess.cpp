@@ -84,10 +84,10 @@ typedef union
 /////////////////////////////////////////////////////////////////////
 CDataProcess::CDataProcess(QObject *pParent) : m_pParent(pParent)
 {
-	m_pInQueue = new TYPECPX* [IN_QUEUE_SIZE];
+    m_pInQueue = new CPX* [IN_QUEUE_SIZE];
 	for(int i=0; i<IN_QUEUE_SIZE; i++)
 	{	//now allocate memory for each row
-		m_pInQueue[i] = new TYPECPX[QUEUE_BUF_LENGTH];	//enough for complex packet data length
+        m_pInQueue[i] = new CPX[QUEUE_BUF_LENGTH];	//enough for complex packet data length
 	}
 qDebug()<<"CDataProcess constructor";
 }
@@ -128,7 +128,7 @@ void CDataProcess::PutInQ(char* pBuf, qint64 Length)
 int i,j;
 tBtoL data;
 tBtoS seq;
-TYPECPX cpxtmp;
+CPX cpxtmp;
 	if(NULL == m_pInQueue)
 		return;
 	m_Mutex.lock();
@@ -205,7 +205,8 @@ void CDataProcess::ProcNewData()
 	while(m_InHead != m_InTail )
 	{
 		//call function in parent that does all the DSP processing
-		( (CSdrInterface*)m_pParent)->ProcessIQData(m_pInQueue[m_InTail],m_PacketSize);
+        //TODO: This is where we need to hook into producer/consumer pattern
+//		( (CSdrInterface*)m_pParent)->ProcessIQData(m_pInQueue[m_InTail],m_PacketSize);
 		if(++m_InTail >= IN_QUEUE_SIZE)
 			m_InTail = 0;
 	}

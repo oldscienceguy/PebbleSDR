@@ -9,7 +9,7 @@
 #include <QtNetwork>
 #include "sdr.h"
 #include "cpx.h"
-#include "sdrinterface.h"
+#include "sdr-ip/sdrinterface.h"
 
 class SDR_IP : public SDR
 {

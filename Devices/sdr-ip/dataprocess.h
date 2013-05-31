@@ -41,7 +41,8 @@
 #ifndef DATAPROCESS_H
 #define DATAPROCESS_H
 #include "threadwrapper.h"
-#include "dsp/datatypes.h"
+//#include "dsp/datatypes.h"
+#include "cpx.h" //Replace TYPECPX in CuteSDR which is double,double with our CPX which is the same, but with methods
 
 class CDataProcess : public CThreadWrapper
 {
@@ -66,7 +67,7 @@ private:
 	int m_InTail;
 	int m_PacketSize;
 	quint16 m_LastSeqNum;
-	TYPECPX** m_pInQueue;
+    CPX** m_pInQueue;
 
 };
 
