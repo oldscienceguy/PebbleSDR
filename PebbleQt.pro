@@ -346,13 +346,6 @@ HEADERS += \
     global.h \
     goertzel.h \
     morse.h \
-    rtl-sdr/rtl-sdr.h \
-    rtl-sdr/tuner_fc2580.h \
-    rtl-sdr/tuner_fc0013.h \
-    rtl-sdr/tuner_fc0012.h \
-    rtl-sdr/tuner_e4k.h \
-    rtl-sdr/rtlsdr_i2c.h \
-    rtl-sdr/rtl-sdr_export.h \
     filters/fir.h \
     filters/filtercoef.h \
     filters/iir.h \
@@ -362,7 +355,6 @@ HEADERS += \
     demod/rdsdecode.h \
     filters/fractresampler.h \
     filters/datatypes.h \
-    rtl-sdr/tuner_r820t.h \
     DSP/fftooura.h \
     perform.h \
     Devices/netiobase.h \
@@ -378,7 +370,15 @@ HEADERS += \
     Devices/usbutil.h \
     Devices/usb.h \
     Devices/extio.h \
-    Devices/hidapi.h
+    Devices/hidapi.h \
+    Devices/rtl-sdr/rtl-sdr.h \
+    Devices/rtl-sdr/rtl-sdr_export.h \
+    Devices/rtl-sdr/rtlsdr_i2c.h \
+    Devices/rtl-sdr/tuner_e4k.h \
+    Devices/rtl-sdr/tuner_fc0012.h \
+    Devices/rtl-sdr/tuner_fc0013.h \
+    Devices/rtl-sdr/tuner_fc2580.h \
+    Devices/rtl-sdr/tuner_r820t.h
 
 SOURCES += \
     spectrumwidget.cpp \
