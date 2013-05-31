@@ -37,7 +37,7 @@
 #ifndef AD6620_H
 #define AD6620_H
 
-#include "interface/netiobase.h"
+#include "netiobase.h"
 
 
 #define MAX_COEF 256
