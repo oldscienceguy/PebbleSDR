@@ -88,7 +88,6 @@ public:
 	};
 
 	void ConnectToServer(QHostAddress IPAdr, quint16 Port);
-	void DisconnectFromServer();
 	void SendStatus(eStatus status);
 	virtual void ParseAscpMsg( CAscpRxMsg* pMsg){Q_UNUSED(pMsg)}
 	virtual void ProcessUdpData(char* pBuf, qint64 Length){Q_UNUSED(pBuf);Q_UNUSED(Length)}
@@ -103,6 +102,7 @@ signals:
 	void NewStatus(int status);	//emitted when sdr status changes
 
 public slots:
+    void DisconnectFromServer();
 
 private slots:
 	void ReadTcpData();
