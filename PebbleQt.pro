@@ -383,7 +383,8 @@ HEADERS += \
     Devices/sdrinterface.h \
     Devices/protocoldefs.h \
     Devices/ad6620.h \
-    Devices/sdr_ip.h
+    Devices/sdr_ip.h \
+    Devices/sdr-ip/dataprocess.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -441,7 +442,8 @@ SOURCES += \
     Devices/rtl-sdr/tuner_r820t.c \
     Devices/sdrinterface.cpp \
     Devices/ad6620.cpp \
-    Devices/sdr_ip.cpp
+    Devices/sdr_ip.cpp \
+    Devices/sdr-ip/dataprocess.cpp
 
 FORMS += \
     spectrumwidget.ui \

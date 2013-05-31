@@ -551,7 +551,7 @@ CAscpTxMsg TxMsg;
 /////////////////////////////////////////////////////////////////////
 void CSdrInterface::StopIO()
 {
-    //StopSdr();
+    StopSdr(); //Stops packet delivery
     //delay disconnect in case of pending traffic
     QTimer::singleShot(200, this, SLOT(DisconnectFromServer()));
 }

@@ -1,4 +1,7 @@
 #include "sdr_ip.h"
+#include "Demod.h"
+#include "Settings.h"
+#include "Receiver.h"
 
 
 SDR_IP::SDR_IP(Receiver *_receiver, SDR::SDRDEVICE dev, Settings *_settings)
@@ -8,6 +11,20 @@ SDR_IP::SDR_IP(Receiver *_receiver, SDR::SDRDEVICE dev, Settings *_settings)
     settings = _settings;
     if (!settings)
         return;
+
+    QString path = QCoreApplication::applicationDirPath();
+#ifdef Q_OS_MAC
+        //Pebble.app/contents/macos = 25
+        path.chop(25);
+#endif
+    qSettings = new QSettings(path+"/PebbleData/sdr_ip.ini",QSettings::IniFormat);
+    //ReadSettings();
+
+    sampleRate = settings->sampleRate;
+    framesPerBuffer = settings->framesPerBuffer;
+
+    //inBuffer = new CPXBuf(framesPerBuffer);
+    //outBuffer = new CPXBuf(framesPerBuffer);
 
     m_pSdrInterface = new CSdrInterface();
     //TcpClient emits signals, handled by CSdrInterface, and re-emited to us
@@ -20,6 +37,18 @@ SDR_IP::SDR_IP(Receiver *_receiver, SDR::SDRDEVICE dev, Settings *_settings)
     m_Status = CSdrInterface::NOT_CONNECTED;
     m_RadioType = CSdrInterface::SDRIP;
     m_pSdrInterface->SetRadioType(m_RadioType);
+
+    producerBuffer = new unsigned char *[numDataBufs];
+    for (int i=0; i<numDataBufs; i++)
+        producerBuffer[i] = new unsigned char [framesPerBuffer];
+
+    semNumFreeBuffers = NULL;
+    semNumFilledBuffers = NULL;
+
+    producerThread = new SDRProducerThread(this);
+    producerThread->setRefresh(0);
+    consumerThread = new SDRConsumerThread(this);
+    consumerThread->setRefresh(0);
 
 }
 
@@ -128,14 +157,14 @@ bool SDR_IP::Connect()
 
 bool SDR_IP::Disconnect()
 {
-    //m_pSdrInterface->DisconnectFromServer();
     m_pSdrInterface->StopIO(); //Sends SDR stop command and delays slightly before calling DisconnectFromServer
     return true;
 }
 
 double SDR_IP::SetFrequency(double fRequested, double fCurrent)
 {
-    return fRequested;
+    m_CenterFrequency = m_pSdrInterface->SetRxFreq(fRequested);
+    return m_CenterFrequency;
 }
 
 void SDR_IP::ShowOptions()
@@ -144,16 +173,15 @@ void SDR_IP::ShowOptions()
 
 void SDR_IP::Start()
 {
+    //We want the consumer thread to start first, it will block waiting for data from the SDR thread
+    consumerThread->start();
+    producerThread->start();
+    isThreadRunning = true;
+
     if( CSdrInterface::CONNECTED == m_Status)
     {
-        //m_CenterFrequency = m_pSdrInterface->SetRxFreq(m_CenterFrequency);
-        //m_pSdrInterface->SetDemodFreq(m_CenterFrequency - m_DemodFrequency);
         m_pSdrInterface->StartSdr();
         m_pSdrInterface->m_MissedPackets = 0;
-
-        //ui->framePlot->SetRunningState(true);
-        //InitPerformance();
-        //m_RdsDecode.DecodeReset(m_USFm);
     }
 
 }
@@ -163,10 +191,12 @@ void SDR_IP::Stop()
     if(CSdrInterface::RUNNING == m_Status)
     {
         m_pSdrInterface->StopSdr();
-        //ui->framePlot->SetRunningState(false);
-        //ReadPerformance();
     }
-
+    if (isThreadRunning) {
+        producerThread->stop();
+        consumerThread->stop();
+        isThreadRunning = false;
+    }
 }
 
 double SDR_IP::GetStartupFrequency()
@@ -197,4 +227,33 @@ double SDR_IP::GetGain()
 QString SDR_IP::GetDeviceName()
 {
     return "SDR_IP";
+}
+
+//These are called from Producer/Consumer threads to do the work
+void SDR_IP::RunProducerThread()
+{
+    int bytesRead;
+
+    //This will block if we don't have any free data buffers to use, pending consumer thread releasing
+    semNumFreeBuffers->acquire();
+}
+
+void SDR_IP::StopProducerThread()
+{
+
+}
+
+void SDR_IP::RunConsumerThread()
+{
+    double fpSampleRe;
+    double fpSampleIm;
+
+    //Wait for data to be available from producer
+    semNumFilledBuffers->acquire();
+}
+
+void SDR_IP::StopConsumerThread()
+{
+    //Problem - RunConsumerThread may be in process when we're asked to stopp
+    //We have to wait for it to complete, then return.  Bad dependency - should not have tight connection like this
 }
