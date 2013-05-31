@@ -18,6 +18,8 @@ Devices/funcube.h -text
 Devices/hpsdr.cpp -text
 Devices/hpsdr.h -text
 Devices/protocoldefs.h -text
+Devices/sdr_ip.cpp -text
+Devices/sdr_ip.h -text
 Devices/sdrinterface.cpp -text
 Devices/sdrinterface.h -text
 Devices/usb.h -text

@@ -11,6 +11,7 @@
 #include "Devices/funcube.h"
 #include "Devices/sdrfile.h"
 #include "Devices/rtl2832.h"
+#include "Devices/sdr_ip.h"
 #include "SoundCard.h"
 #include "Receiver.h"
 
@@ -88,7 +89,7 @@ SDR *SDR::Factory(Receiver *receiver, SDR::SDRDEVICE dev, Settings *settings)
         sdr = new SDR_IQ(receiver, SDR::SDR_IQ_USB,settings);
 		break;
     case SDR::SDR_IP_TCP:
-        sdr = new SDR_IQ(receiver, SDR::SDR_IP_TCP,settings);
+        sdr = new SDR_IP(receiver, SDR::SDR_IP_TCP,settings);
         break;
     case SDR::HPSDR_USB:
 		sdr = new HPSDR(receiver, SDR::HPSDR_USB,settings);

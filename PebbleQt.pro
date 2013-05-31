@@ -382,7 +382,8 @@ HEADERS += \
     Devices/rtl-sdr/reg_field.h \
     Devices/sdrinterface.h \
     Devices/protocoldefs.h \
-    Devices/ad6620.h
+    Devices/ad6620.h \
+    Devices/sdr_ip.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -439,7 +440,8 @@ SOURCES += \
     Devices/rtl-sdr/tuner_fc2580.c \
     Devices/rtl-sdr/tuner_r820t.c \
     Devices/sdrinterface.cpp \
-    Devices/ad6620.cpp
+    Devices/ad6620.cpp \
+    Devices/sdr_ip.cpp
 
 FORMS += \
     spectrumwidget.ui \
