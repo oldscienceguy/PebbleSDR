@@ -411,18 +411,12 @@ SOURCES += \
     global.cpp \
     goertzel.cpp \
     morse.cpp \
-    rtl-sdr/tuner_fc2580.c \
-    rtl-sdr/tuner_fc0013.c \
-    rtl-sdr/tuner_fc0012.c \
-    rtl-sdr/tuner_e4k.c \
     filters/fir.cpp \
     filters/iir.cpp \
     demod/wfmdemod.cpp \
     demod/downconvert.cpp \
     demod/rdsdecode.cpp \
     filters/fractresampler.cpp \
-    rtl-sdr/tuner_r820t.c \
-    rtl-sdr/librtlsdr.c \
     DSP/fftooura.cpp \
     perform.cpp \
     Devices/netiobase.cpp \
@@ -433,7 +427,13 @@ SOURCES += \
     Devices/hpsdr.cpp \
     Devices/funcube.cpp \
     Devices/ElektorSDR.cpp \
-	Devices/usbutil.cpp
+	Devices/usbutil.cpp \
+    Devices/rtl-sdr/librtlsdr.c \
+    Devices/rtl-sdr/tuner_e4k.c \
+    Devices/rtl-sdr/tuner_fc0012.c \
+    Devices/rtl-sdr/tuner_fc0013.c \
+    Devices/rtl-sdr/tuner_fc2580.c \
+    Devices/rtl-sdr/tuner_r820t.c
 
 FORMS += \
     spectrumwidget.ui \
