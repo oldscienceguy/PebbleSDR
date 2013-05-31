@@ -357,9 +357,6 @@ HEADERS += \
     filters/datatypes.h \
     DSP/fftooura.h \
     perform.h \
-    Devices/netiobase.h \
-    Devices/threadwrapper.h \
-    Devices/ascpmsg.h \
     Devices/sdrfile.h \
     Devices/rtl2832.h \
     Devices/SDR_IQ.h \
@@ -380,11 +377,14 @@ HEADERS += \
     Devices/rtl-sdr/tuner_fc2580.h \
     Devices/rtl-sdr/tuner_r820t.h \
     Devices/rtl-sdr/reg_field.h \
-    Devices/sdrinterface.h \
-    Devices/protocoldefs.h \
-    Devices/ad6620.h \
     Devices/sdr_ip.h \
-    Devices/sdr-ip/dataprocess.h
+    Devices/sdr-ip/dataprocess.h \
+    Devices/sdr-ip/ad6620.h \
+    Devices/sdr-ip/ascpmsg.h \
+    Devices/sdr-ip/netiobase.h \
+    Devices/sdr-ip/sdrinterface.h \
+    Devices/sdr-ip/threadwrapper.h \
+    Devices/sdr-ip/protocoldefs.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -425,7 +425,6 @@ SOURCES += \
     filters/fractresampler.cpp \
     DSP/fftooura.cpp \
     perform.cpp \
-    Devices/netiobase.cpp \
     Devices/sdrfile.cpp \
     Devices/rtl2832.cpp \
     Devices/SDR_IQ.cpp \
@@ -440,10 +439,11 @@ SOURCES += \
     Devices/rtl-sdr/tuner_fc0013.c \
     Devices/rtl-sdr/tuner_fc2580.c \
     Devices/rtl-sdr/tuner_r820t.c \
-    Devices/sdrinterface.cpp \
-    Devices/ad6620.cpp \
     Devices/sdr_ip.cpp \
-    Devices/sdr-ip/dataprocess.cpp
+    Devices/sdr-ip/dataprocess.cpp \
+    Devices/sdr-ip/ad6620.cpp \
+    Devices/sdr-ip/netiobase.cpp \
+    Devices/sdr-ip/sdrinterface.cpp
 
 FORMS += \
     spectrumwidget.ui \
