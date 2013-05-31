@@ -115,7 +115,7 @@ macx {
 
 	#Mac only source files
 	#HIDAPI
-	SOURCES += hid-mac.c
+	SOURCES += Devices/hid-mac.c
 
 	#INSTALLS is called when we manually make -install or add it to the Qt project build steps
 	pebbleData.files = eibireadme.txt eibi.csv bands.csv memory.csv Help.htm gpl.h ReleaseNotes.txt
@@ -204,7 +204,7 @@ win32 {
 	LIBS += C:/Program Files/Microsoft SDKs/Windows/v6.0A/Lib/setupapi.lib
 
 	#Win only source files
-	SOURCES += hid-win.c
+	SOURCES += Devices/hid-win.c
 
 	CONFIG(release, debug|release) {
 		DESTDIR = ../WinRelease
@@ -314,16 +314,13 @@ OTHER_FILES += \
 	FrequencyList-SantaCruz.csv
 
 HEADERS += \
-    usb.h \
     spectrumwidget.h \
     SoundCard.h \
-    SoftRock.h \
     smeterwidget.h \
     SignalStrength.h \
     SignalSpectrum.h \
     SignalProcessing.h \
     Settings.h \
-    SDR_IQ.h \
     SDR.h \
     ReceiverWidget.h \
     Receiver.h \
@@ -336,7 +333,6 @@ HEADERS += \
     IIRFilter.h \
     GPL.h \
     FIRFilter.h \
-    ElektorSDR.h \
     Demod.h \
     defs.h \
     cpx.h \
@@ -345,18 +341,11 @@ HEADERS += \
     AGC.h \
     audio.h \
     audioqt.h \
-    hpsdr.h \
     fftbasic.h \
 	iqbalance.h \
     global.h \
-    usbutil.h \
-    funcube.h \
-    hidapi.h \
-    sdrfile.h \
     goertzel.h \
     morse.h \
-    extio.h \
-    rtl2832.h \
     rtl-sdr/rtl-sdr.h \
     rtl-sdr/tuner_fc2580.h \
     rtl-sdr/tuner_fc0013.h \
@@ -378,18 +367,27 @@ HEADERS += \
     perform.h \
     Devices/netiobase.h \
     Devices/threadwrapper.h \
-    Devices/ascpmsg.h
+    Devices/ascpmsg.h \
+    Devices/sdrfile.h \
+    Devices/rtl2832.h \
+    Devices/SDR_IQ.h \
+    Devices/SoftRock.h \
+    Devices/hpsdr.h \
+    Devices/funcube.h \
+    Devices/ElektorSDR.h \
+    Devices/usbutil.h \
+    Devices/usb.h \
+    Devices/extio.h \
+    Devices/hidapi.h
 
 SOURCES += \
     spectrumwidget.cpp \
     SoundCard.cpp \
-    SoftRock.cpp \
     smeterwidget.cpp \
     SignalStrength.cpp \
     SignalSpectrum.cpp \
     SignalProcessing.cpp \
     Settings.cpp \
-    SDR_IQ.cpp \
     SDR.cpp \
     ReceiverWidget.cpp \
     Receiver.cpp \
@@ -402,23 +400,17 @@ SOURCES += \
     main.cpp \
     IIRFilter.cpp \
     FIRFilter.cpp \
-    ElektorSDR.cpp \
     Demod.cpp \
     cpx.cpp \
     Butterworth.cpp \
     AGC.cpp \
     audio.cpp \
     audioqt.cpp \
-    hpsdr.cpp \
     fftbasic.cpp \
     iqbalance.cpp \
     global.cpp \
-    usbutil.cpp \
-	funcube.cpp \
-    sdrfile.cpp \
     goertzel.cpp \
     morse.cpp \
-    rtl2832.cpp \
     rtl-sdr/tuner_fc2580.c \
     rtl-sdr/tuner_fc0013.c \
     rtl-sdr/tuner_fc0012.c \
@@ -433,7 +425,15 @@ SOURCES += \
     rtl-sdr/librtlsdr.c \
     DSP/fftooura.cpp \
     perform.cpp \
-    Devices/netiobase.cpp
+    Devices/netiobase.cpp \
+    Devices/sdrfile.cpp \
+    Devices/rtl2832.cpp \
+    Devices/SDR_IQ.cpp \
+    Devices/SoftRock.cpp \
+    Devices/hpsdr.cpp \
+    Devices/funcube.cpp \
+    Devices/ElektorSDR.cpp \
+	Devices/usbutil.cpp
 
 FORMS += \
     spectrumwidget.ui \

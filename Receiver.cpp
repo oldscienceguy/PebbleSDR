@@ -3,9 +3,9 @@
 #include "global.h"
 #include "Receiver.h"
 #include "qmessagebox.h"
-#include "elektorsdr.h"
-#include "sdr_iq.h"
-#include "hpsdr.h"
+#include "Devices/elektorsdr.h"
+#include "Devices/sdr_iq.h"
+#include "Devices/hpsdr.h"
 #include "signalprocessing.h"
 #include "audioqt.h"
 
