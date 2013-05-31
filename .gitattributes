@@ -11,10 +11,13 @@ Devices/SDR_IQ.cpp -text
 Devices/SDR_IQ.h -text
 Devices/SoftRock.cpp -text
 Devices/SoftRock.h -text
+Devices/ad6620.cpp -text
+Devices/ad6620.h -text
 Devices/funcube.cpp -text
 Devices/funcube.h -text
 Devices/hpsdr.cpp -text
 Devices/hpsdr.h -text
+Devices/protocoldefs.h -text
 Devices/sdrinterface.cpp -text
 Devices/sdrinterface.h -text
 Devices/usb.h -text
