@@ -74,6 +74,9 @@ public:
     void KeepAlive();
     void SetSdrBandwidthIndex(qint32 bwindex);
 
+    void SetRadioType(qint32 radiotype ){m_RadioType = (eRadioType)radiotype;}
+    qint32 GetRadioType(){return (qint32)m_RadioType;}
+
 
     //bunch of public members containing sdr related information and data
     QString m_DeviceName;
@@ -138,8 +141,6 @@ private:
 
 
 	//GUI Public settings and access functions
-	void SetRadioType(qint32 radiotype ){m_RadioType = (eRadioType)radiotype;}
-	qint32 GetRadioType(){return (qint32)m_RadioType;}
 
 	void SetSoundCardSelection(qint32 SoundInIndex, qint32 SoundOutIndex,bool StereoOut)
 				{ m_pSoundCardOut->Stop(); m_SoundInIndex = SoundInIndex;

@@ -9,12 +9,14 @@
 #include <QtNetwork>
 #include "sdr.h"
 #include "cpx.h"
+#include "sdrinterface.h"
 
 class SDR_IP : public SDR
 {
     Q_OBJECT
 public:
     SDR_IP(Receiver *_receiver, SDRDEVICE dev, Settings *_settings);
+    ~SDR_IP();
 
     //SDR class overrides
     bool Connect();
@@ -36,7 +38,18 @@ public:
 signals:
     
 public slots:
-    
+
+private slots:
+    void OnStatus(int status);
+
+private:
+    CSdrInterface *m_pSdrInterface;
+    CSdrInterface::eStatus m_Status;
+    CSdrInterface::eStatus m_LastStatus;
+    QHostAddress m_IPAdr;
+    quint32 m_Port;
+    qint32 m_RadioType;
+
 };
 
 #endif // SDR_IP_H
