@@ -193,7 +193,7 @@ qDebug()<<"Status = "<<m_Status;
 ///////////////////////////////////////////////////////////////////////////////
 // Called to connect to TCP Server SDR
 ///////////////////////////////////////////////////////////////////////////////
-void CNetio::ConnectToServer(QHostAddress IPAdr, quint16 Port)
+bool CNetio::ConnectToServer(QHostAddress IPAdr, quint16 Port, bool wait=false)
 {
 	m_MsgState = MSGSTATE_HDR1;
 	m_RxMsgIndex = 0;
@@ -204,7 +204,11 @@ void CNetio::ConnectToServer(QHostAddress IPAdr, quint16 Port)
 	m_pTcpClient->close();
 	emit NewStatus(CONNECTING);
 	m_pTcpClient->connectToHost(m_ServerIPAdr, m_ServerPort);
-qDebug()<<"Connecting to "<<m_ServerIPAdr <<m_ServerPort;
+    qDebug()<<"Connecting to "<<m_ServerIPAdr <<m_ServerPort;
+    if (wait && !m_pTcpClient->waitForConnected(5000))
+        return false;
+    else
+        return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

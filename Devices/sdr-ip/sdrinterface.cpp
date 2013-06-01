@@ -49,6 +49,7 @@
 //  Receive chain is provided at higher level and device independent in Pebble
 
 #include "sdrinterface.h"
+#include "../sdr_ip.h"
 #include <QTimer>
 
 //#define SPUR_CAL_MAXSAMPLES 300000
@@ -139,8 +140,9 @@ const double CLOUDSDR_SAMPLERATE[MAX_SAMPLERATES] =
 /////////////////////////////////////////////////////////////////////
 // Constructor/Destructor
 /////////////////////////////////////////////////////////////////////
-CSdrInterface::CSdrInterface()
+CSdrInterface::CSdrInterface(SDR_IP * _sdr_ip)
 {
+    sdr_ip = _sdr_ip;
     m_Running = false;
     m_BootRev = 0.0;
     m_AppRev = 0.0;
@@ -156,10 +158,18 @@ CSdrInterface::CSdrInterface()
     m_Status = NOT_CONNECTED;
     m_ChannelMode = CI_RX_CHAN_SETUP_SINGLE_1;	//default channel settings for NetSDR
     m_Channel = CI_RX_CHAN_1;
+    m_InvertSpectrum = false;
+    m_pdataProcess = new CDataProcess(this);
 
 }
 CSdrInterface::~CSdrInterface()
 {
+    if(m_pdataProcess)
+    {
+        delete m_pdataProcess;
+        m_pdataProcess = NULL;
+    }
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -526,7 +536,6 @@ CAscpTxMsg TxMsg;
     }
     SetSdrRfGain(m_RfGain);
     m_KeepAliveCounter = 0;
-    //setup and start soundcard output
 //qDebug()<<"SR="<<m_SampleRate;
 }
 
@@ -744,6 +753,79 @@ double ret = 1.0;
     return ret;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Called by worker thread with new I/Q data fom the SDR.
+//  This thread is what is used to perform all the DSP functions
+// pIQData is ptr to complex I/Q double samples.
+// Length is the number of complex samples in pIQData.
+// emits "NewFftData()" when it accumulates an entire FFT length of samples
+// and the display update time is ready
+///////////////////////////////////////////////////////////////////////////////
+void CSdrInterface::ProcessIQData(CPX *pIQData, int NumSamples)
+{
+    if(!m_Running)	//ignor any incoming data if not running
+        return;
+    qDebug()<<"ProcessIQData";
+/*
+    if(m_InvertSpectrum)	//if need to swap I/Q data for inverting the spectrum
+    {
+        double tmp;
+        for(int i=0; i<NumSamples; i++)
+        {
+            tmp = pIQData[i].re;
+            pIQData[i].re = pIQData[i].im;
+            pIQData[i].im = tmp;
+        }
+    }
+
+    //g_pTestBench->CreateGeneratorSamples(NumSamples, (TYPECPX*)pIQData, m_SampleRate);
+    //m_NoiseProc.ProcessBlanker(NumSamples, (TYPECPX*)pIQData, (TYPECPX*)pIQData);
+
+    //if(m_NcoSpurCalActive)	//if performing NCO spur calibration
+    //    NcoSpurCalibrate(pIQData, NumSamples);
+    //accumulate samples into m_DataBuf until have enough to perform an FFT
+    for(int i=0; i<NumSamples; i++)
+    {
+        m_DataBuf[m_FftBufPos].re = pIQData[i].re - m_NCOSpurOffsetI;
+        m_DataBuf[m_FftBufPos++].im = pIQData[i].im - m_NCOSpurOffsetQ;
+        if(m_FftBufPos >= (m_FftSize) )
+        {
+            m_FftBufPos = 0;
+            if(++m_DisplaySkipCounter >= m_DisplaySkipValue )
+            {
+                m_DisplaySkipCounter = 0;
+                if(m_ScreenUpateFinished)
+                {
+                    m_Fft.PutInDisplayFFT(m_FftSize, m_DataBuf);
+                    m_ScreenUpateFinished = false;
+                    emit NewFftData();
+                }
+            }
+        }
+    }
+    TYPECPX SoundBuf[8192];
+    int n;
+    if(m_StereoOut)
+    {
+        n = m_Demodulator.ProcessData(NumSamples, pIQData, SoundBuf);
+        if(m_pSoundCardOut)
+            m_pSoundCardOut->PutOutQueue(n, SoundBuf);
+    }
+    else
+    {
+        n = m_Demodulator.ProcessData(NumSamples, pIQData, (TYPEREAL*)SoundBuf);
+        if(m_pSoundCardOut)
+            m_pSoundCardOut->PutOutQueue(n, (TYPEREAL*)SoundBuf);
+    }
+    */
+}
+
+void CSdrInterface::ProcessUdpData(char* pBuf, qint64 Length)
+{
+    if(m_pdataProcess)
+        m_pdataProcess->PutInQ(pBuf,Length);
+}
+
 #if 0
 /////////////////////////////////////////////////////////////////////
 // Constructor/Destructor
@@ -767,7 +849,6 @@ CSdrInterface::CSdrInterface()
 	SetFftAve(1);
     m_GainCalibrationOffset = 0.0;
     m_pSoundCardOut = new CSoundOut();
-	m_pdataProcess = new CDataProcess(this);
 }
 
 CSdrInterface::~CSdrInterface()
@@ -777,11 +858,6 @@ qDebug()<<"CSdrInterface destructor";
 	{
 		delete m_pSoundCardOut;
 		m_pSoundCardOut = NULL;
-	}
-	if(m_pdataProcess)
-	{
-		delete m_pdataProcess;
-		m_pdataProcess = NULL;
 	}
 }
 
@@ -911,68 +987,4 @@ bool CSdrInterface::GetScreenIntegerFFTData(qint32 MaxHeight, qint32 MaxWidth,
 
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Called by worker thread with new I/Q data fom the SDR.
-//  This thread is what is used to perform all the DSP functions
-// pIQData is ptr to complex I/Q double samples.
-// Length is the number of complex samples in pIQData.
-// emits "NewFftData()" when it accumulates an entire FFT length of samples
-// and the display update time is ready
-///////////////////////////////////////////////////////////////////////////////
-void CSdrInterface::ProcessIQData(TYPECPX *pIQData, int NumSamples)
-{
-	if(!m_Running)	//ignor any incoming data if not running
-		return;
-
-	if(m_InvertSpectrum)	//if need to swap I/Q data for inverting the spectrum
-	{
-		double tmp;
-		for(int i=0; i<NumSamples; i++)
-		{
-			tmp = pIQData[i].re;
-			pIQData[i].re = pIQData[i].im;
-			pIQData[i].im = tmp;
-		}
-	}
-
-	g_pTestBench->CreateGeneratorSamples(NumSamples, (TYPECPX*)pIQData, m_SampleRate);
-	m_NoiseProc.ProcessBlanker(NumSamples, (TYPECPX*)pIQData, (TYPECPX*)pIQData);
-
-	if(m_NcoSpurCalActive)	//if performing NCO spur calibration
-		NcoSpurCalibrate(pIQData, NumSamples);
-	//accumulate samples into m_DataBuf until have enough to perform an FFT
-	for(int i=0; i<NumSamples; i++)
-	{
-		m_DataBuf[m_FftBufPos].re = pIQData[i].re - m_NCOSpurOffsetI;
-		m_DataBuf[m_FftBufPos++].im = pIQData[i].im - m_NCOSpurOffsetQ;
-		if(m_FftBufPos >= (m_FftSize) )
-		{
-			m_FftBufPos = 0;
-			if(++m_DisplaySkipCounter >= m_DisplaySkipValue )
-			{
-				m_DisplaySkipCounter = 0;
-				if(m_ScreenUpateFinished)
-				{
-					m_Fft.PutInDisplayFFT(m_FftSize, m_DataBuf);
-					m_ScreenUpateFinished = false;
-					emit NewFftData();
-				}
-			}
-		}
-	}
-	TYPECPX SoundBuf[8192];
-	int n;
-	if(m_StereoOut)
-	{
-		n = m_Demodulator.ProcessData(NumSamples, pIQData, SoundBuf);
-		if(m_pSoundCardOut)
-			m_pSoundCardOut->PutOutQueue(n, SoundBuf);
-	}
-	else
-	{
-		n = m_Demodulator.ProcessData(NumSamples, pIQData, (TYPEREAL*)SoundBuf);
-		if(m_pSoundCardOut)
-			m_pSoundCardOut->PutOutQueue(n, (TYPEREAL*)SoundBuf);
-	}
-}
 #endif

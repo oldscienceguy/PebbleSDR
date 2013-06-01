@@ -87,7 +87,7 @@ public:
 		ERR
 	};
 
-	void ConnectToServer(QHostAddress IPAdr, quint16 Port);
+    bool ConnectToServer(QHostAddress IPAdr, quint16 Port, bool wait);
 	void SendStatus(eStatus status);
 	virtual void ParseAscpMsg( CAscpRxMsg* pMsg){Q_UNUSED(pMsg)}
 	virtual void ProcessUdpData(char* pBuf, qint64 Length){Q_UNUSED(pBuf);Q_UNUSED(Length)}

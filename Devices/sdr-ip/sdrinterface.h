@@ -41,6 +41,10 @@
 #include "netiobase.h"
 #include "ad6620.h"
 #include "protocoldefs.h"
+#include "dataprocess.h"
+#include "cpx.h"
+
+class SDR_IP;
 
 /////////////////////////////////////////////////////////////////////
 // Derived class from NetIOBase for all the custom SDR msg processing
@@ -49,7 +53,7 @@ class CSdrInterface : public CNetio
 {
     Q_OBJECT
 public:
-    CSdrInterface();
+    CSdrInterface(SDR_IP *_sdr_ip);
     ~CSdrInterface();
     enum eRadioType {
         SDR14,
@@ -77,6 +81,11 @@ public:
     void SetRadioType(qint32 radiotype ){m_RadioType = (eRadioType)radiotype;}
     qint32 GetRadioType(){return (qint32)m_RadioType;}
 
+    //virtual function called by UDP thread with new raw data to process
+    void ProcessUdpData(char* pBuf, qint64 Length);
+    //called by DataProcess thread with new I/Q data samples to process
+    void ProcessIQData( CPX* pIQData, int NumSamples);
+
 
     //bunch of public members containing sdr related information and data
     QString m_DeviceName;
@@ -87,8 +96,11 @@ public:
 
 signals:
     void NewInfoData();			//emitted when sdr information is received after GetSdrInfo()
+    void FreqChange(int freq);	//emitted if requested frequency has been clamped by radio
 
 private:
+    SDR_IP *sdr_ip;
+
     void SendAck(quint8 chan);
     //Utility function, were public
     qint32 GetMaxBWFromIndex(qint32 index);
@@ -111,6 +123,8 @@ private:
     qint32 m_BandwidthIndex; //Current BW from table
     quint64 m_CurrentFrequency;
     qint32 m_MaxBandwidth;
+    CDataProcess* m_pdataProcess;
+    bool m_InvertSpectrum;
 
 };
 
@@ -126,10 +140,6 @@ private:
 	};
 
 
-	//virtual function called by UDP thread with new raw data to process
-	void ProcessUdpData(char* pBuf, qint64 Length){if(m_pdataProcess) m_pdataProcess->PutInQ(pBuf,Length);}
-	//called by DataProcess thread with new I/Q data samples to process
-	void ProcessIQData( TYPECPX* pIQData, int NumSamples);
 
 	bool GetScreenIntegerFFTData(qint32 MaxHeight, qint32 MaxWidth,
 									double MaxdB, double MindB,
@@ -182,9 +192,7 @@ private:
 	int GetNextRdsGroupData(tRDS_GROUPS* pGroupData){return m_Demodulator.GetNextRdsGroupData(pGroupData);}
 
 signals:
-	void NewInfoData();			//emitted when sdr information is received after GetSdrInfo()
 	void NewFftData();			//emitted when new FFT data is available
-	void FreqChange(int freq);	//emitted if requested frequency has been clamped by radio
 
 private:
 	void Start6620Download();
@@ -193,7 +201,6 @@ private:
 
 	bool m_ScreenUpateFinished;
 	bool m_StereoOut;
-	bool m_InvertSpectrum;
 	bool m_USFm;
 	qint32 m_DisplaySkipCounter;
 	qint32 m_DisplaySkipValue;
@@ -215,7 +222,6 @@ private:
 	CDemodulator m_Demodulator;
 	CNoiseProc m_NoiseProc;
 	CSoundOut* m_pSoundCardOut;
-	CDataProcess* m_pdataProcess;
 
 CIir m_Iir;
 
