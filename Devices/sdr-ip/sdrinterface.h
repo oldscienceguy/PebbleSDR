@@ -82,10 +82,11 @@ public:
     qint32 GetRadioType(){return (qint32)m_RadioType;}
 
     //virtual function called by UDP thread with new raw data to process
-    void ProcessUdpData(char* pBuf, qint64 Length);
+    void ProcessUdpData(char* pBuf, qint64 length);
     //called by DataProcess thread with new I/Q data samples to process
     void ProcessIQData( CPX* pIQData, int NumSamples);
 
+    void DecodeUDPPacket(char *pBuf, qint64 Length);
 
     //bunch of public members containing sdr related information and data
     QString m_DeviceName;
@@ -123,8 +124,12 @@ private:
     qint32 m_BandwidthIndex; //Current BW from table
     quint64 m_CurrentFrequency;
     qint32 m_MaxBandwidth;
-    CDataProcess* m_pdataProcess;
+    //CDataProcess* m_pdataProcess; //Replaced with direct implementation here that calls sdr_ip addToProducerQ()
     bool m_InvertSpectrum;
+
+    //For decodePacket()
+    int m_PacketSize;
+    quint16 m_LastSeqNum;
 
 };
 

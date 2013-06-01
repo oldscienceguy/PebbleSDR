@@ -11,9 +11,11 @@
 #include "cpx.h"
 #include "sdr-ip/sdrinterface.h"
 
+
 class SDR_IP : public SDR
 {
     Q_OBJECT
+    friend class CSdrInterface; //Allows callback to our private PutInQ()
 public:
     SDR_IP(Receiver *_receiver, SDRDEVICE dev, Settings *_settings);
     ~SDR_IP();
@@ -56,17 +58,19 @@ private:
 
     //Producer/Consumer
     //SDR overrides
-    void StopProducerThread();
-    void RunProducerThread();
+    //We use CNetio thread as our producer thread and just provide an enqueue method for it to call
+    void PutInProducerQ(CPX cpx);
+    //void StopProducerThread();
+    //void RunProducerThread();
     void StopConsumerThread();
     void RunConsumerThread();
 
     int msTimeOut;
 
     static const int numDataBufs = 50; //Producer/Consumer buffers
-    unsigned char **producerBuffer; //Array of buffers
 
-    short **dataBuf;
+    CPX *outBuffer;
+    CPX **dataBuf;  //Array of CPX arrays
     int nextProducerDataBuf;
     int nextConsumerDataBuf;
     /*
@@ -77,6 +81,8 @@ private:
     QSemaphore *semNumFreeBuffers; //Init to NUMDATABUFS
     QSemaphore *semNumFilledBuffers;
     bool dataBufOverflow;
+    quint32 numSamplesInBuffer; //Number of samples in working producer buffer
+
     void ProcessDataBlocks();
 
 

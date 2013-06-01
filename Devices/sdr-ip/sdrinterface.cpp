@@ -159,16 +159,21 @@ CSdrInterface::CSdrInterface(SDR_IP * _sdr_ip)
     m_ChannelMode = CI_RX_CHAN_SETUP_SINGLE_1;	//default channel settings for NetSDR
     m_Channel = CI_RX_CHAN_1;
     m_InvertSpectrum = false;
-    m_pdataProcess = new CDataProcess(this);
+
+    //Remove pdataProcess if we don't use it
+    m_LastSeqNum = 0;
+    //m_pdataProcess = new CDataProcess(this);
 
 }
 CSdrInterface::~CSdrInterface()
 {
+    /*
     if(m_pdataProcess)
     {
         delete m_pdataProcess;
         m_pdataProcess = NULL;
     }
+    */
 
 }
 
@@ -820,10 +825,110 @@ void CSdrInterface::ProcessIQData(CPX *pIQData, int NumSamples)
     */
 }
 
-void CSdrInterface::ProcessUdpData(char* pBuf, qint64 Length)
+//Raw UDP data received from CNetio and handed to pdataProcess
+void CSdrInterface::ProcessUdpData(char* pBuf, qint64 length)
 {
-    if(m_pdataProcess)
-        m_pdataProcess->PutInQ(pBuf,Length);
+    //I think we can get rid of m_pdataProcess, decode here, and then call sdr_ip producer to enqueue
+    //if(m_pdataProcess)
+    //    m_pdataProcess->PutInQ(pBuf,Length);
+    //qDebug()<<"ProcessUdpData "<<length;
+    DecodeUDPPacket(pBuf, length);
+}
+
+//Local structs specific to DecodePacket()
+#define PKT_LENGTH_24 1444
+#define PKT_LENGTH_16 1028
+
+typedef union
+{
+    struct bs
+    {
+        unsigned char b0;
+        unsigned char b1;
+        unsigned char b2;
+        unsigned char b3;
+    }bytes;
+    int all;
+}tBtoL;
+
+typedef union
+{
+    struct bs
+    {
+        unsigned char b0;
+        unsigned char b1;
+    }bytes;
+    signed short sall;
+    unsigned short all;
+}tBtoS;
+
+//Derived from CdataProcess::PutInQ
+//Decodes and returns CPX decoded from packet
+void CSdrInterface::DecodeUDPPacket(char* pBuf, qint64 Length)
+{
+int i,j;
+tBtoL data;
+tBtoS seq;
+CPX cpxtmp;
+
+    data.all = 0;
+    //use packet length to determine whether 24 or 16 bit data format
+    if(PKT_LENGTH_24 == Length)
+    {	//24 bit I/Q data
+        m_PacketSize = (PKT_LENGTH_24-4)/6;		//number of complex samples in packet
+        seq.bytes.b0 = pBuf[2];
+        seq.bytes.b1 = pBuf[3];
+        if(0==seq.all)	//is first packet after started
+            m_LastSeqNum = 0;
+        if(seq.all != m_LastSeqNum)
+        {
+            m_MissedPackets += ((qint16)seq.all - (qint16)m_LastSeqNum);
+            m_LastSeqNum = seq.all;
+        }
+        m_LastSeqNum++;
+        if(0==m_LastSeqNum)
+            m_LastSeqNum = 1;
+        for( i=4,j=0; i<Length; i+=6,j++)
+        {
+            data.bytes.b1 = pBuf[i];		//combine 3 bytes into 32 bit signed int
+            data.bytes.b2 = pBuf[i+1];
+            data.bytes.b3 = pBuf[i+2];
+            cpxtmp.re = (double)data.all/65536.0;
+            data.bytes.b1 = pBuf[i+3];		//combine 3 bytes into 32 bit signed int
+            data.bytes.b2 = pBuf[i+4];
+            data.bytes.b3 = pBuf[i+5];
+            cpxtmp.im = (double)data.all/65536.0;
+            sdr_ip->PutInProducerQ(cpxtmp);
+            //m_pInQueue[m_InHead][j] = cpxtmp;
+        }
+    }
+    else if(PKT_LENGTH_16 == Length)
+    {	//16 bit I/Q data
+        m_PacketSize = (PKT_LENGTH_16-4)/4;	//number of complex samples in packet
+        seq.bytes.b0 = pBuf[2];
+        seq.bytes.b1 = pBuf[3];
+        if(0==seq.all)	//is first packet after started
+            m_LastSeqNum = 0;
+        if(seq.all != m_LastSeqNum)
+        {
+            m_MissedPackets += ((qint16)seq.all - (qint16)m_LastSeqNum);
+            m_LastSeqNum = seq.all;
+        }
+        m_LastSeqNum++;
+        if(0==m_LastSeqNum)
+            m_LastSeqNum = 1;
+        for( i=4,j=0; i<Length; i+=4,j++)
+        {	//use 'seq' as temp variable to combine bytes into short int
+            seq.bytes.b0 = pBuf[i+0];
+            seq.bytes.b1 = pBuf[i+1];
+            cpxtmp.re = (double)seq.sall;
+            seq.bytes.b0 = pBuf[i+2];
+            seq.bytes.b1 = pBuf[i+3];
+            cpxtmp.im = (double)seq.sall;
+            sdr_ip->PutInProducerQ(cpxtmp);
+            //m_pInQueue[m_InHead][j] = cpxtmp;
+        }
+    }
 }
 
 #if 0

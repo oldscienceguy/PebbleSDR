@@ -57,15 +57,19 @@ SDR_IP::SDR_IP(Receiver *_receiver, SDR::SDRDEVICE dev, Settings *_settings)
     m_RadioType = CSdrInterface::SDRIP;
     m_pSdrInterface->SetRadioType(m_RadioType);
 
-    producerBuffer = new unsigned char *[numDataBufs];
+    outBuffer = CPXBuf::malloc(framesPerBuffer);
+
+    numSamplesInBuffer = 0;
+
+    dataBuf = new CPX *[numDataBufs];
     for (int i=0; i<numDataBufs; i++)
-        producerBuffer[i] = new unsigned char [framesPerBuffer];
+        dataBuf[i] = new CPX [framesPerBuffer];
 
     semNumFreeBuffers = NULL;
     semNumFilledBuffers = NULL;
 
-    producerThread = new SDRProducerThread(this);
-    producerThread->setRefresh(0);
+    //producerThread = new SDRProducerThread(this);
+    //producerThread->setRefresh(0);
     consumerThread = new SDRConsumerThread(this);
     consumerThread->setRefresh(0);
 
@@ -222,7 +226,7 @@ void SDR_IP::Start()
 
     //We want the consumer thread to start first, it will block waiting for data from the SDR thread
     consumerThread->start();
-    producerThread->start();
+    //producerThread->start();
     isThreadRunning = true;
 
     if( CSdrInterface::CONNECTED == m_Status)
@@ -240,7 +244,7 @@ void SDR_IP::Stop()
         m_pSdrInterface->StopSdr();
     }
     if (isThreadRunning) {
-        producerThread->stop();
+        //producerThread->stop();
         consumerThread->stop();
         isThreadRunning = false;
     }
@@ -276,27 +280,57 @@ QString SDR_IP::GetDeviceName()
     return "SDR_IP";
 }
 
-//These are called from Producer/Consumer threads to do the work
-void SDR_IP::RunProducerThread()
+//Called from CUdp thread when it's processed a packet
+//We need to be as fast as possible and return to CUdp
+//So no blocking, even when we overflow
+void SDR_IP::PutInProducerQ(CPX cpx)
 {
-    int bytesRead;
+    //We may be called before semaphors are set up, defensive code
+    if (semNumFilledBuffers == NULL || semNumFreeBuffers == NULL)
+        return;
+    //qDebug()<<numSamplesInBuffer;
+    //First state to check is if we are already filling a buffer, if so continue until we have enough samples
+    if (numSamplesInBuffer > 0) {
+        dataBuf[nextProducerDataBuf][numSamplesInBuffer++] = cpx;
+    } else {
+        //We're starting a new buffer
+        //Make sure we have at least 1 data buffer available without blocking
+        if (semNumFreeBuffers->available() == 0) {
+            //Set overflow flag and throw away data
+            qDebug()<<"Producer Overflow";
+            return;
+        }
+        //qDebug()<<"Starting new buffer "<<nextProducerDataBuf;
+        //This will block if we don't have any free data buffers to use, pending consumer thread releasing
+        semNumFreeBuffers->acquire();
+        numSamplesInBuffer = 0; //Already the case, but ...
+        dataBuf[nextProducerDataBuf][numSamplesInBuffer++] = cpx;
+    }
 
-    //This will block if we don't have any free data buffers to use, pending consumer thread releasing
-    semNumFreeBuffers->acquire();
-}
-
-void SDR_IP::StopProducerThread()
-{
+    //Do we have enough samples yet?
+    if (numSamplesInBuffer >= framesPerBuffer) {
+        //qDebug()<<"Filled producer buffer "<<nextProducerDataBuf;
+        numSamplesInBuffer = 0; //Start with next buffer
+        //Circular buffer of dataBufs
+        nextProducerDataBuf = (nextProducerDataBuf +1 ) % numDataBufs;
+        //Increment the number of data buffers that are filled so consumer thread can access
+        semNumFilledBuffers->release();
+    }
 
 }
 
 void SDR_IP::RunConsumerThread()
 {
-    double fpSampleRe;
-    double fpSampleIm;
-
     //Wait for data to be available from producer
     semNumFilledBuffers->acquire();
+
+    if (receiver != NULL)
+        receiver->ProcessBlock(dataBuf[nextConsumerDataBuf],outBuffer,framesPerBuffer);
+
+    nextConsumerDataBuf = (nextConsumerDataBuf +1 ) % numDataBufs;
+    semNumFreeBuffers->release();
+
+
 }
 
 void SDR_IP::StopConsumerThread()
