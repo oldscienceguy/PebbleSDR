@@ -95,11 +95,13 @@ qDebug()<<"CDataProcess constructor";
 CDataProcess::~CDataProcess()
 {
 qDebug()<<"CDataProcess destructor";
-	disconnect();
+    disconnect();  //I don't think we need to manually disconnect signals and slots
 	if(NULL != m_pInQueue)
 	{
 		for(int i=0; i<IN_QUEUE_SIZE; i++)	//first delete all the row memory
-			delete m_pInQueue[i];
+            //Note unusual use of delete[] which is necessary because we used new[] above
+            //Simple delete works if CPX is a struct, but crashes if its a class with destructor
+            delete [] m_pInQueue[i];
 		delete [] m_pInQueue;				//delete column ptr memory
 		m_pInQueue = NULL;
 	}
@@ -199,6 +201,8 @@ CPX cpxtmp;
 ////////////////////////////////////////////////////////////////////////
 //  Called by CDataProcess worker thread to process data from I/Q queue
 ////////////////////////////////////////////////////////////////////////
+/// \brief CDataProcess::ProcNewData
+//Connected to GotNewData signal
 void CDataProcess::ProcNewData()
 {
 	m_Mutex.lock();
@@ -206,7 +210,7 @@ void CDataProcess::ProcNewData()
 	{
 		//call function in parent that does all the DSP processing
         //TODO: This is where we need to hook into producer/consumer pattern
-//		( (CSdrInterface*)m_pParent)->ProcessIQData(m_pInQueue[m_InTail],m_PacketSize);
+        ( (CSdrInterface*)m_pParent)->ProcessIQData(m_pInQueue[m_InTail],m_PacketSize);
 		if(++m_InTail >= IN_QUEUE_SIZE)
 			m_InTail = 0;
 	}
