@@ -46,6 +46,7 @@ Devices/usb.h -text
 /ReceiverWidget.cpp -text
 /ReceiverWidget.h -text
 /ReceiverWidget.ui -text
+References/CuteSDR102.pdf -text
 /ReleaseNotes.txt -text
 Resources/edit.png -text
 /SDR.cpp -text
