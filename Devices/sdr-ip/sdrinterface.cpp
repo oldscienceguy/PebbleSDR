@@ -916,11 +916,14 @@ void CSdrInterface::ProcessUdpData(char* pBuf, qint64 Length)
             data.bytes.b1 = pBuf[i];		//combine 3 bytes into 32 bit signed int
             data.bytes.b2 = pBuf[i+1];
             data.bytes.b3 = pBuf[i+2];
-            cpxtmp.re = (double)data.all/8388608;//65536.0;
+            //SDR-IP IQ order is reversed from other radios, so re in spec = im and vice vs
+            //cpxtmp.re = (double)data.all/8388608;//65536.0;
+            cpxtmp.im = (double)data.all/8388608;//65536.0;
             data.bytes.b1 = pBuf[i+3];		//combine 3 bytes into 32 bit signed int
             data.bytes.b2 = pBuf[i+4];
             data.bytes.b3 = pBuf[i+5];
-            cpxtmp.im = (double)data.all/8388608;//65536.0;
+            //cpxtmp.im = (double)data.all/8388608;//65536.0;
+            cpxtmp.re = (double)data.all/8388608;//65536.0;
             m_pInQueue[numSamplesInBuffer++] = cpxtmp;
             //qDebug()<<"RE/IM"<<cpxtmp.re<<"/"<<cpxtmp.im;
             if (numSamplesInBuffer >= sdr_ip->framesPerBuffer) {
@@ -950,11 +953,13 @@ void CSdrInterface::ProcessUdpData(char* pBuf, qint64 Length)
         {	//use 'seq' as temp variable to combine bytes into short int
             seq.bytes.b0 = pBuf[i+0];
             seq.bytes.b1 = pBuf[i+1];
-            cpxtmp.re = (double)seq.sall/32768.0;
+            //cpxtmp.re = (double)seq.sall/32768.0;
+            cpxtmp.im = (double)seq.sall/32768.0;
             seq.bytes.b0 = pBuf[i+2];
             seq.bytes.b1 = pBuf[i+3];
-            cpxtmp.im = (double)seq.sall/32768.0;
-            cpxtmp.scale(1.5);
+            //cpxtmp.im = (double)seq.sall/32768.0;
+            cpxtmp.re = (double)seq.sall/32768.0;
+            //cpxtmp.scale(1.5);
             m_pInQueue[numSamplesInBuffer++] = cpxtmp;
             if (numSamplesInBuffer >= sdr_ip->framesPerBuffer) {
                 //Hand over to producer
