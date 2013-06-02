@@ -104,6 +104,9 @@ signals:
 public slots:
     void DisconnectFromServer();
 
+protected:
+    CUdp* m_pUdpIo;
+
 private slots:
 	void ReadTcpData();
 	void TcpStateChanged(QAbstractSocket::SocketState State);
@@ -119,7 +122,6 @@ private:
 	quint16 m_ServerPort;
 	QHostAddress m_ClientIPAdr;
 	quint16 m_ClientPort;
-	CUdp* m_pUdpIo;
 	QTcpSocket* m_pTcpClient;
 };
 

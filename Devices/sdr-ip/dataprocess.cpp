@@ -209,8 +209,8 @@ void CDataProcess::ProcNewData()
 	while(m_InHead != m_InTail )
 	{
 		//call function in parent that does all the DSP processing
-        //TODO: This is where we need to hook into producer/consumer pattern
-        ( (CSdrInterface*)m_pParent)->ProcessIQData(m_pInQueue[m_InTail],m_PacketSize);
+        //We're about to remove this whole thread
+        //( (CSdrInterface*)m_pParent)->ProcessIQData(m_pInQueue[m_InTail],m_PacketSize);
 		if(++m_InTail >= IN_QUEUE_SIZE)
 			m_InTail = 0;
 	}

@@ -36,6 +36,8 @@ public:
     double GetGain();
     QString GetDeviceName();
 
+    int GetSampleRate();
+    int* GetSampleRates(int &len);  //Returns array of allowable rates
 
 signals:
     
@@ -52,6 +54,8 @@ private:
     quint32 m_Port;
     qint32 m_RadioType;
     qint64 m_CenterFrequency;
+    qint32 m_RfGain;
+
     QSettings *qSettings;
     quint32 sampleRate; //Pebble rate from settings or option box eventually
     int framesPerBuffer;
@@ -59,7 +63,7 @@ private:
     //Producer/Consumer
     //SDR overrides
     //We use CNetio thread as our producer thread and just provide an enqueue method for it to call
-    void PutInProducerQ(CPX cpx);
+    void PutInProducerQ(CPX *cpxBuf, quint32 numCpx);
     //void StopProducerThread();
     //void RunProducerThread();
     void StopConsumerThread();
@@ -81,8 +85,7 @@ private:
     QSemaphore *semNumFreeBuffers; //Init to NUMDATABUFS
     QSemaphore *semNumFilledBuffers;
     bool dataBufOverflow;
-    quint32 numSamplesInBuffer; //Number of samples in working producer buffer
-
+    quint32 producerOverflowCount; //Number of times we'ver overflowed producer, use to test 1.8m sampleRate
     void ProcessDataBlocks();
 
 

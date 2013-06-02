@@ -162,18 +162,13 @@ CSdrInterface::CSdrInterface(SDR_IP * _sdr_ip)
 
     //Remove pdataProcess if we don't use it
     m_LastSeqNum = 0;
-    //m_pdataProcess = new CDataProcess(this);
+    m_pInQueue = new CPX[2048];
+    numSamplesInBuffer = 0;
 
 }
+
 CSdrInterface::~CSdrInterface()
 {
-    /*
-    if(m_pdataProcess)
-    {
-        delete m_pdataProcess;
-        m_pdataProcess = NULL;
-    }
-    */
 
 }
 
@@ -662,6 +657,27 @@ qDebug()<<"Keepalive failed";
     }
 }
 
+//Returns actual samplerate without changing anything, needed in sdr_ip GetSampleRate
+quint32 CSdrInterface::LookUpSampleRate(qint32 bw)
+{
+    for (int i=0; i< sizeof(SDRIP_MAXBW); i++) {
+        if (SDRIP_MAXBW[i] == bw) {
+            return SDRIP_SAMPLERATE[i];
+        }
+    }
+
+}
+
+//Called from sdr_ip with bandwidth, only we should know or care about index
+void CSdrInterface::SetSdrBandwidth(qint32 bw)
+{
+    for (int i=0; i< sizeof(SDRIP_MAXBW); i++) {
+        if (SDRIP_MAXBW[i] == bw) {
+            SetSdrBandwidthIndex(i);
+        }
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 //called to change SDR sample rate based on the GUI index value(0-3)
 ///////////////////////////////////////////////////////////////////////////////
@@ -758,6 +774,7 @@ double ret = 1.0;
     return ret;
 }
 
+/*
 ///////////////////////////////////////////////////////////////////////////////
 // Called by worker thread with new I/Q data fom the SDR.
 //  This thread is what is used to perform all the DSP functions
@@ -771,7 +788,7 @@ void CSdrInterface::ProcessIQData(CPX *pIQData, int NumSamples)
     if(!m_Running)	//ignor any incoming data if not running
         return;
     qDebug()<<"ProcessIQData";
-/*
+
     if(m_InvertSpectrum)	//if need to swap I/Q data for inverting the spectrum
     {
         double tmp;
@@ -822,23 +839,15 @@ void CSdrInterface::ProcessIQData(CPX *pIQData, int NumSamples)
         if(m_pSoundCardOut)
             m_pSoundCardOut->PutOutQueue(n, (TYPEREAL*)SoundBuf);
     }
-    */
-}
 
-//Raw UDP data received from CNetio and handed to pdataProcess
-void CSdrInterface::ProcessUdpData(char* pBuf, qint64 length)
-{
-    //I think we can get rid of m_pdataProcess, decode here, and then call sdr_ip producer to enqueue
-    //if(m_pdataProcess)
-    //    m_pdataProcess->PutInQ(pBuf,Length);
-    //qDebug()<<"ProcessUdpData "<<length;
-    DecodeUDPPacket(pBuf, length);
 }
+*/
 
 //Local structs specific to DecodePacket()
 #define PKT_LENGTH_24 1444
 #define PKT_LENGTH_16 1028
 
+//Technique for converting 4 bytes of data into 32bit signed long
 typedef union
 {
     struct bs
@@ -851,6 +860,7 @@ typedef union
     int all;
 }tBtoL;
 
+//Technique for converting 2 bytes of data into signed or unsigned short
 typedef union
 {
     struct bs
@@ -858,50 +868,69 @@ typedef union
         unsigned char b0;
         unsigned char b1;
     }bytes;
-    signed short sall;
-    unsigned short all;
+    //qint16 doesn't work for sall, why?
+    signed short sall; //Signed
+    unsigned short all; //Unsigned
 }tBtoS;
 
 //Derived from CdataProcess::PutInQ
 //Decodes and returns CPX decoded from packet
-void CSdrInterface::DecodeUDPPacket(char* pBuf, qint64 Length)
+//Raw UDP data received from CNetio and handed to pdataProcess
+void CSdrInterface::ProcessUdpData(char* pBuf, qint64 Length)
 {
-int i,j;
-tBtoL data;
-tBtoS seq;
-CPX cpxtmp;
+    int i,j;
+    tBtoL data;
+    tBtoS seq;
+    CPX cpxtmp;
+
+    //We're being called by CUdp thread, so use that threads m_Mutex
+    m_pUdpIo->m_Mutex.lock();
 
     data.all = 0;
     //use packet length to determine whether 24 or 16 bit data format
     if(PKT_LENGTH_24 == Length)
     {	//24 bit I/Q data
-        m_PacketSize = (PKT_LENGTH_24-4)/6;		//number of complex samples in packet
+        m_PacketSize = (PKT_LENGTH_24-4)/6;		//number of complex samples in packet = 240 (6 bytes per cpx)
+        //pBuf[0] =
+        //pBuf[1] =
+        //pBuf[2-3] = 2 byte unsigned packet sequence #
         seq.bytes.b0 = pBuf[2];
         seq.bytes.b1 = pBuf[3];
+        //seq.all is the newly received sequence #
+        //m_LastSeqNum is actually the seq number expected (see post inc below)
+        //If !=, then we lost some packets - assuming all packets delivered in correct order
         if(0==seq.all)	//is first packet after started
             m_LastSeqNum = 0;
         if(seq.all != m_LastSeqNum)
         {
+            //The number of missed packets is the actual seq - expected seq
             m_MissedPackets += ((qint16)seq.all - (qint16)m_LastSeqNum);
             m_LastSeqNum = seq.all;
         }
         m_LastSeqNum++;
-        if(0==m_LastSeqNum)
+        if(0==m_LastSeqNum) //Handles quint32 overflow?
             m_LastSeqNum = 1;
+
         for( i=4,j=0; i<Length; i+=6,j++)
         {
             data.bytes.b1 = pBuf[i];		//combine 3 bytes into 32 bit signed int
             data.bytes.b2 = pBuf[i+1];
             data.bytes.b3 = pBuf[i+2];
-            cpxtmp.re = (double)data.all/65536.0;
+            cpxtmp.re = (double)data.all/8388608;//65536.0;
             data.bytes.b1 = pBuf[i+3];		//combine 3 bytes into 32 bit signed int
             data.bytes.b2 = pBuf[i+4];
             data.bytes.b3 = pBuf[i+5];
-            cpxtmp.im = (double)data.all/65536.0;
-            sdr_ip->PutInProducerQ(cpxtmp);
-            //m_pInQueue[m_InHead][j] = cpxtmp;
+            cpxtmp.im = (double)data.all/8388608;//65536.0;
+            m_pInQueue[numSamplesInBuffer++] = cpxtmp;
+            //qDebug()<<"RE/IM"<<cpxtmp.re<<"/"<<cpxtmp.im;
+            if (numSamplesInBuffer >= sdr_ip->framesPerBuffer) {
+                //Hand over to producer
+                sdr_ip->PutInProducerQ(m_pInQueue,numSamplesInBuffer);
+                numSamplesInBuffer = 0;
+            }
         }
     }
+    //This is used at higher bw 1.8m
     else if(PKT_LENGTH_16 == Length)
     {	//16 bit I/Q data
         m_PacketSize = (PKT_LENGTH_16-4)/4;	//number of complex samples in packet
@@ -921,14 +950,23 @@ CPX cpxtmp;
         {	//use 'seq' as temp variable to combine bytes into short int
             seq.bytes.b0 = pBuf[i+0];
             seq.bytes.b1 = pBuf[i+1];
-            cpxtmp.re = (double)seq.sall;
+            cpxtmp.re = (double)seq.sall/32768.0;
             seq.bytes.b0 = pBuf[i+2];
             seq.bytes.b1 = pBuf[i+3];
-            cpxtmp.im = (double)seq.sall;
-            sdr_ip->PutInProducerQ(cpxtmp);
-            //m_pInQueue[m_InHead][j] = cpxtmp;
+            cpxtmp.im = (double)seq.sall/32768.0;
+            cpxtmp.scale(1.5);
+            m_pInQueue[numSamplesInBuffer++] = cpxtmp;
+            if (numSamplesInBuffer >= sdr_ip->framesPerBuffer) {
+                //Hand over to producer
+                sdr_ip->PutInProducerQ(m_pInQueue,numSamplesInBuffer);
+                numSamplesInBuffer = 0;
+            }
+
         }
     }
+
+    m_pUdpIo->m_Mutex.unlock();
+
 }
 
 #if 0

@@ -74,19 +74,21 @@ public:
     void StopIO();	//stops IO threads
 
     void SetSdrRfGain(qint32 gain);
+    qint32 GetSdrRfGain(){return m_RfGain;}
     quint64 SetRxFreq(quint64 freq);
     void KeepAlive();
     void SetSdrBandwidthIndex(qint32 bwindex);
+    void SetSdrBandwidth(qint32 bw);
+    quint32 GetSdrMaxBandwidth(){return m_SampleRate;}
 
     void SetRadioType(qint32 radiotype ){m_RadioType = (eRadioType)radiotype;}
     qint32 GetRadioType(){return (qint32)m_RadioType;}
 
+    double GetSdrSampleRate(){return m_SampleRate;}
+    quint32 LookUpSampleRate(qint32 bw);
+
     //virtual function called by UDP thread with new raw data to process
     void ProcessUdpData(char* pBuf, qint64 length);
-    //called by DataProcess thread with new I/Q data samples to process
-    void ProcessIQData( CPX* pIQData, int NumSamples);
-
-    void DecodeUDPPacket(char *pBuf, qint64 Length);
 
     //bunch of public members containing sdr related information and data
     QString m_DeviceName;
@@ -124,12 +126,14 @@ private:
     qint32 m_BandwidthIndex; //Current BW from table
     quint64 m_CurrentFrequency;
     qint32 m_MaxBandwidth;
-    //CDataProcess* m_pdataProcess; //Replaced with direct implementation here that calls sdr_ip addToProducerQ()
     bool m_InvertSpectrum;
 
     //For decodePacket()
     int m_PacketSize;
     quint16 m_LastSeqNum;
+    CPX* m_pInQueue;
+    quint32 numSamplesInBuffer; //Number of samples in working producer buffer
+
 
 };
 
