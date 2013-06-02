@@ -345,6 +345,9 @@ void SpectrumWidget::keyPressEvent(QKeyEvent *event)
 		m -= leftRightIncrement;
 		emit mixerChanged(m);
 		break;
+    case Qt::Key_Enter:
+        emit mixerChanged(m, true); //Change LO to current mixer freq
+        break;
 	}
     event->accept();
 }
