@@ -50,6 +50,7 @@ SDR_IP::SDR_IP(Receiver *_receiver, SDR::SDRDEVICE dev, Settings *_settings)
     //TcpClient emits signals, handled by CSdrInterface, and re-emited to us
     //This is how we get info back
     connect(m_pSdrInterface, SIGNAL(NewStatus(int)), this,  SLOT( OnStatus(int) ) );
+    connect(m_pSdrInterface, SIGNAL(NewInfoData()), this,  SLOT( OnNewInfo() ) );  //ASCP data parsed with device info
 
     //Initial testing
     m_IPAdr = QHostAddress("192.168.0.222");
@@ -178,6 +179,16 @@ void SDR_IP::OnStatus(int status)
             break;
     }
     m_LastStatus = m_Status;
+}
+
+void SDR_IP::OnNewInfo()
+{
+    qDebug()<<"Info received from device";
+    qDebug()<<"Device name: "<<m_pSdrInterface->m_DeviceName;
+    qDebug()<<"Serial #: "<<m_pSdrInterface->m_SerialNum;
+    qDebug()<<"Boot Rev: "<<m_pSdrInterface->m_BootRev;
+    qDebug()<<"App Rev: "<<m_pSdrInterface->m_AppRev;
+
 }
 
 bool SDR_IP::Connect()

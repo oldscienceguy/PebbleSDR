@@ -45,6 +45,7 @@ public slots:
 
 private slots:
     void OnStatus(int status);
+    void OnNewInfo();
 
 private:
     CSdrInterface *m_pSdrInterface;

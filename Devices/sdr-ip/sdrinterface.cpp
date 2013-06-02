@@ -137,6 +137,50 @@ const double CLOUDSDR_SAMPLERATE[MAX_SAMPLERATES] =
 	(122.88e6/100.0)
 };
 
+//SDR-IP RF Gain[4] (0 , -10, -20-, -30 dB)
+/*
+RFFilter options
+0 = Automatically select filter based on NCO frequency.
+1 = Select 0 to 1.8 MHz Filter
+2 = Select 1.8 to 2.8 MHz Filter
+3 = Select 2.8 to 4.0 MHz Filter
+4 = Select 4.0 to 5.5 MHz Filter
+5 = Select 5.5 to 7.0 MHz Filter
+6 = Select 7 to 10 MHz Filter
+7 = Select 10 to 14 MHz Filter
+Ver. 1.02 2010-03-26 178 = Select 14 to 20 MHz Filter
+9 = Select 20 to 28 MHz Filter
+10 = Select 28 to 34 MHz Filter
+11 = Bypass Filters
+*/
+
+/*
+ * TCP Packet flow (Control and Information)
+ * 1. QT Network received TCP packet and emits signal
+ * 2. CNetio::ReadTcpData() is connected to signal and calls CNetio::AssembleAscpMsg()
+ * 3. CNetio::AssembleAscpMsg() calls CSdrInterface::ParseAscpMsg()
+ * 4. Data members are updates and NewInfo() signal emitted
+ *
+ *
+ * UDP Packet flow (I/Q data)
+ * 1. QT Network receives UPD packet and emits signal
+ * 2. CUdp is a thread that connects to UDP signal and calls CUdp::GotUDPData()
+ * 3. CUdp::GotUdpData() calls CSdrInterface::ProcessUdpData() (Still in CUDP thread context)
+ * (Following steps are original CuteSDR and are replaced in Pebble impleentation)
+ * 4. CSdrInterface::ProcessUdpData() calls CDataProcess::PutInQ() (CDataProcess is another thread)
+ * 5. PutInQ() decodes UDP packet and emits NewData() signal then returns, ending original thread that started with UDP packet reception.
+ * 6. CDataProcess::ProcNewData() is connected to NewData() signal, note we now in the CDataProcess thread
+ * 7. CDataProcess::NewData() calls CSdrInterface::ProcessIQData() to execute receiver chain
+ * (Pebble Replacement steps)
+ * 4  CSdrInterface::ProcessUdpData() implements the same PutInQ() logic as step 5 above, eliminating need for CDataProcess thread
+ * 5. ProcessUDPData() builds a Pebble buffer of 2048 samples and when complete
+ * 6. Calls SDR_IP::PutInProducerQ() with 2048 CPX samples
+ * 7. PutInProducer() uses existing Pebble Pub/Sub semaphor model and copies data into Pebble buffers
+ * 8. Asynchronously, Pebble consumer thread will pull data for processing in Pebble receive chain
+ *
+*/
+
+
 /////////////////////////////////////////////////////////////////////
 // Constructor/Destructor
 /////////////////////////////////////////////////////////////////////
@@ -153,7 +197,7 @@ CSdrInterface::CSdrInterface(SDR_IP * _sdr_ip)
     m_SerialNum = "";
     m_DeviceName = "";
     m_BandwidthIndex = -1;
-    m_RadioType = SDR14;
+    m_RadioType = SDRIP;
     m_CurrentFrequency = 0;
     m_Status = NOT_CONNECTED;
     m_ChannelMode = CI_RX_CHAN_SETUP_SINGLE_1;	//default channel settings for NetSDR
@@ -882,6 +926,7 @@ void CSdrInterface::ProcessUdpData(char* pBuf, qint64 Length)
     tBtoL data;
     tBtoS seq;
     CPX cpxtmp;
+    double scale; //Normalize
 
     //We're being called by CUdp thread, so use that threads m_Mutex
     m_pUdpIo->m_Mutex.lock();
@@ -890,6 +935,7 @@ void CSdrInterface::ProcessUdpData(char* pBuf, qint64 Length)
     //use packet length to determine whether 24 or 16 bit data format
     if(PKT_LENGTH_24 == Length)
     {	//24 bit I/Q data
+        scale = 0.05; //Normalize to other SDR - we need a common way to calibrate all devices
         m_PacketSize = (PKT_LENGTH_24-4)/6;		//number of complex samples in packet = 240 (6 bytes per cpx)
         //pBuf[0] =
         //pBuf[1] =
@@ -919,11 +965,13 @@ void CSdrInterface::ProcessUdpData(char* pBuf, qint64 Length)
             //SDR-IP IQ order is reversed from other radios, so re in spec = im and vice vs
             //cpxtmp.re = (double)data.all/8388608;//65536.0;
             cpxtmp.im = (double)data.all/8388608;//65536.0;
+            cpxtmp.im *= scale;
             data.bytes.b1 = pBuf[i+3];		//combine 3 bytes into 32 bit signed int
             data.bytes.b2 = pBuf[i+4];
             data.bytes.b3 = pBuf[i+5];
             //cpxtmp.im = (double)data.all/8388608;//65536.0;
             cpxtmp.re = (double)data.all/8388608;//65536.0;
+            cpxtmp.re *= scale;
             m_pInQueue[numSamplesInBuffer++] = cpxtmp;
             //qDebug()<<"RE/IM"<<cpxtmp.re<<"/"<<cpxtmp.im;
             if (numSamplesInBuffer >= sdr_ip->framesPerBuffer) {
@@ -936,6 +984,7 @@ void CSdrInterface::ProcessUdpData(char* pBuf, qint64 Length)
     //This is used at higher bw 1.8m
     else if(PKT_LENGTH_16 == Length)
     {	//16 bit I/Q data
+        scale = 10.0;
         m_PacketSize = (PKT_LENGTH_16-4)/4;	//number of complex samples in packet
         seq.bytes.b0 = pBuf[2];
         seq.bytes.b1 = pBuf[3];
@@ -955,11 +1004,12 @@ void CSdrInterface::ProcessUdpData(char* pBuf, qint64 Length)
             seq.bytes.b1 = pBuf[i+1];
             //cpxtmp.re = (double)seq.sall/32768.0;
             cpxtmp.im = (double)seq.sall/32768.0;
+            cpxtmp.im *= scale;
             seq.bytes.b0 = pBuf[i+2];
             seq.bytes.b1 = pBuf[i+3];
             //cpxtmp.im = (double)seq.sall/32768.0;
             cpxtmp.re = (double)seq.sall/32768.0;
-            //cpxtmp.scale(1.5);
+            cpxtmp.re *= scale;
             m_pInQueue[numSamplesInBuffer++] = cpxtmp;
             if (numSamplesInBuffer >= sdr_ip->framesPerBuffer) {
                 //Hand over to producer
