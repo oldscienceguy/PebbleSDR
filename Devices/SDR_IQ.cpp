@@ -472,6 +472,17 @@ int SDR_IQ::GetSampleRate()
 	return GetSampleRate((BANDWIDTH)sBandwidth); //Sample rate for current BW
 }
 
+int *SDR_IQ::GetSampleRates(int &len)
+{
+    len = 4;
+    //Ugly, but couldn't find easy way to init with {1,2,3} array initializer
+    sampleRates[0] = 50000;
+    sampleRates[1] = 100000;
+    sampleRates[2] = 150000;
+    sampleRates[3] = 190000;
+    return sampleRates;
+}
+
 //Receiver needs to get sample rate early in setup process, before we've actually started SDR
 int SDR_IQ::GetSampleRate(BANDWIDTH bw)
 {

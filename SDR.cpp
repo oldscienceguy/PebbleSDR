@@ -132,9 +132,9 @@ int *SDR::GetSampleRates(int &len)
 {
     len = 3;
     //Ugly, but couldn't find easy way to init with {1,2,3} array initializer
-    sampleRates[0] = 192000;
+    sampleRates[0] = 48000;
     sampleRates[1] = 96000;
-    sampleRates[2] = 48000;
+    sampleRates[2] = 192000;
     return sampleRates;
 }
 

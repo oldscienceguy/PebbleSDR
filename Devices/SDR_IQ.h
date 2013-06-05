@@ -113,6 +113,7 @@ public:
 	int GetSampleRate();
 
 	int GetSampleRate(BANDWIDTH bw);
+    int* GetSampleRates(int &len); //Returns array of allowable rates and length of array as ref
 
 
 	//Capture N blocks of data
