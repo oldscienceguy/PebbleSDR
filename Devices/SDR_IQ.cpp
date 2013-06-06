@@ -5,8 +5,12 @@
 #include "receiver.h"
 #include "qmessagebox.h"
 
-SDR_IQ::SDR_IQ(Receiver *_receiver, SDRDEVICE dev,Settings *settings):SDR(_receiver, dev,settings)
+SDR_IQ::SDR_IQ(Receiver *_receiver, SDRDEVICE dev,Settings *_settings):SDR(_receiver, dev,_settings)
 {
+    settings = _settings;
+    if (!settings)
+        return; //Init only
+
 	QString path = QCoreApplication::applicationDirPath();
 #ifdef Q_OS_MAC
         //Pebble.app/contents/macos = 25
@@ -49,10 +53,27 @@ SDR_IQ::SDR_IQ(Receiver *_receiver, SDRDEVICE dev,Settings *settings):SDR(_recei
 	producerThread->setRefresh(0); //Semaphores will block and wait, no extra delay needed
 	consumerThread = new SDRConsumerThread(this);
 	consumerThread->setRefresh(0);
+
+    //Instead of getting BW from SDR_IQ options dialog, we now get it directly from settings dialog
+    //because we're passing GetSampleRates() during dialog setup
+    //So sampleRate is actually bandwidth
+    int sr = settings->sampleRate;
+    if (sr==190000)
+        sBandwidth = BW190K;
+    else if (sr==150000)
+        sBandwidth = BW150K;
+    else if (sr==100000)
+        sBandwidth = BW100K;
+    else
+        sBandwidth = BW50K;
+
 }
 
 SDR_IQ::~SDR_IQ(void)
 {
+    if (!settings)
+        return;
+
 	WriteSettings();
 
 	if (sdrIQOptions != NULL && sdrIQOptions->isVisible())
