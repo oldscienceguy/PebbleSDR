@@ -20,7 +20,7 @@ public:
 	virtual int Flush()=0;
 	virtual int Pause()=0;
 	virtual int Restart()=0;
-	virtual void SendToOutput(CPX *)=0;
+    virtual void SendToOutput(CPX *_cpxBuf,int _numSamples)=0;
 	virtual void ClearCounts()=0;
 
 	//Returns a list of input devices for settings to chose from
@@ -49,7 +49,6 @@ protected:
 	Receiver *receiver;
 	int inputSampleRate;
 	int outputSampleRate;
-	int decimate;
 	int framesPerBuffer; //#samples in each callback
 
 

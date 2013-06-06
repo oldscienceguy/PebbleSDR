@@ -93,9 +93,9 @@ int SoundCard::Start(int _inputSampleRate, int _outputSampleRate)
 		//we'll hear a skip or static as we jump to a non-regular skip interval
 		//Update: Too much thinking.  Works better if we just find the smallest decimation factor and don't worry
 		//about precise end-of-buffer scenarios
-		decimate = 1;
 #if(0)
-		//Decimate moved to post mixer phase, here for reference
+        decimate = 1;
+        //Decimate moved to post mixer phase, here for reference
 		decimate = outputSampleRate / settings->decimateLimit;
 		decimate = decimate < 1 ? 1 : decimate;
 		outputSampleRate /= decimate;
@@ -300,7 +300,7 @@ int SoundCard::streamCallback(
 	return paContinue;
 }
 //Final call from receiver ProcessBlock to send audio out
-void SoundCard::SendToOutput(CPX *out)
+void SoundCard::SendToOutput(CPX *out, int outSamples)
 {
 	float *outPtr;
 	outPtr = outStreamBuffer;
@@ -308,17 +308,16 @@ void SoundCard::SendToOutput(CPX *out)
 
 	//We may have to skip samples to reduce rate to match audio out, decimate set when we
 	//opened stream
-	int numSamples = framesPerBuffer / decimate;
-	for (int i=0;i<numSamples;i++)
+    for (int i=0;i<outSamples;i++)
 	{
-        temp = out[i*decimate].re;
+        temp = out[i].re;
         //Cap at -1 to +1 to make sure we don't overdrive
         if (temp >.9999)
             temp = .9999;
         else if (temp < -.9999)
             temp = -.9999;
         *outPtr++ = temp;
-        temp = out[i*decimate].im;
+        temp = out[i].im;
         //Cap at -1 to +1 to make sure we don't overdrive
         if (temp >.9999)
             temp = .9999;
@@ -328,6 +327,6 @@ void SoundCard::SendToOutput(CPX *out)
 	}
 
 	//Note we use frameCount, not #bytes in outStreamBuffer.  WriteStream knows format
-	error = Pa_WriteStream(outStream,outStreamBuffer,numSamples);
+    error = Pa_WriteStream(outStream,outStreamBuffer,outSamples);
 }
 

@@ -63,7 +63,6 @@ Resources/edit.png -text
 /SignalStrength.h -text
 /SoftRockOptions.ui -text
 /SoundCard.cpp -text
-/SoundCard.h -text
 /audio.cpp -text
 /audio.h -text
 /audioqt.cpp -text
