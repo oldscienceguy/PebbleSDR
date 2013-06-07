@@ -28,7 +28,7 @@ SDR::SDR(Receiver *_receiver, SDRDEVICE dev,Settings *_settings)
 	isLibUsbLoaded = false;
 	isFtdiLoaded = false;
 	isThreadRunning = false;
-	audioInput = new SoundCard(receiver,GetSampleRate(),settings->framesPerBuffer,settings);
+    audioInput = Audio::Factory(receiver,settings->framesPerBuffer,settings);
 	producerThread = NULL;
 	consumerThread = NULL;
 }
