@@ -39,6 +39,8 @@ public:
     int GetSampleRate();
     int* GetSampleRates(int &len);  //Returns array of allowable rates
 
+    void ReadSettings();
+    void WriteSettings();
 signals:
     
 public slots:

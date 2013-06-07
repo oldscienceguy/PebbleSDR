@@ -37,7 +37,7 @@ SDR_IP::SDR_IP(Receiver *_receiver, SDR::SDRDEVICE dev, Settings *_settings)
         path.chop(25);
 #endif
     qSettings = new QSettings(path+"/PebbleData/sdr_ip.ini",QSettings::IniFormat);
-    //ReadSettings();
+    ReadSettings();
 
     sampleRate = settings->sampleRate;
 
@@ -53,8 +53,13 @@ SDR_IP::SDR_IP(Receiver *_receiver, SDR::SDRDEVICE dev, Settings *_settings)
     connect(m_pSdrInterface, SIGNAL(NewInfoData()), this,  SLOT( OnNewInfo() ) );  //ASCP data parsed with device info
 
     //Initial testing
-    m_IPAdr = QHostAddress("192.168.0.222");
-    m_Port = 50000;
+    //The higher bandwidths can flood a network due to the high sample rate
+    //I use a direct network connection to Mac to avoid this
+    //Create a new network service using LAN, manual IP of 10.0.1.1 and standard 255.255.255.0 mask
+    //Then set SDR-IP or AFEDRI to IP 10.0.1.100 with 10.0.1.1 gateway
+    //
+    //m_IPAdr = QHostAddress("10.0.1.100"); //Move to settings page
+    //m_Port = 50000;
     m_Status = m_LastStatus = CSdrInterface::NOT_CONNECTED;
     m_RadioType = CSdrInterface::SDRIP;
     m_pSdrInterface->SetRadioType(m_RadioType);
@@ -80,8 +85,39 @@ SDR_IP::~SDR_IP()
     if (!settings)
         return;
 
+    WriteSettings();
+
     if (m_pSdrInterface != NULL)
         delete(m_pSdrInterface);
+}
+
+void SDR_IP::ReadSettings()
+{
+    SDR::ReadSettings(qSettings);
+    //sStartup = qSettings->value("Startup",10000000).toDouble();
+    //sLow = qSettings->value("Low",100000).toDouble();
+    //sHigh = qSettings->value("High",33000000).toDouble();
+    //sStartupMode = qSettings->value("StartupMode",dmAM).toInt();
+    //sGain = qSettings->value("Gain",1.0).toDouble();
+    m_RfGain = qSettings->value("RFGain",0).toInt();
+    m_IPAdr = QHostAddress(qSettings->value("IPAddr","10.0.1.100").toString());
+    m_Port = qSettings->value("Port",50000).toInt();
+
+}
+void SDR_IP::WriteSettings()
+{
+    SDR::WriteSettings(qSettings);
+    //qSettings->setValue("Startup",sStartup);
+    //qSettings->setValue("Low",sLow);
+    //qSettings->setValue("High",sHigh);
+    //qSettings->setValue("StartupMode",sStartupMode);
+    //qSettings->setValue("Gain",sGain);
+    //qSettings->setValue("Bandwidth",sBandwidth); //Enum
+    qSettings->setValue("RFGain",m_RfGain);
+    qSettings->setValue("IPAddr",m_IPAdr.toString());
+    qSettings->setValue("Port",m_Port);
+
+    qSettings->sync();
 }
 
 //This is where we handle status updates from sdrInterface and underlying TcpClient
