@@ -20,9 +20,11 @@ public:
 	int Restart();
     void SendToOutput(CPX *, int outSamples);
 	void ClearCounts();
+    QAudioDeviceInfo FindInputDeviceByName(QString name);
+    QAudioDeviceInfo FindOutputDeviceByName(QString name);
 
-	QStringList InputDeviceList();
-	QStringList OutputDeviceList();
+    static QStringList InputDeviceList();
+    static QStringList OutputDeviceList();
 
 private:
 	QAudioDeviceInfo qaDevice;
@@ -31,7 +33,7 @@ private:
 	QAudioFormat     qaFormat;
 	QIODevice *dataSource;
 
-    qint16 *outStreamBuffer;
+    float *outStreamBuffer;
 
 	void DumpDeviceInfo(QAudioDeviceInfo device);
 

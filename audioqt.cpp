@@ -2,6 +2,7 @@
 #include "gpl.h"
 #include "audioqt.h"
 #include <QDebug>
+#include "Settings.h"
 
 AudioQT::AudioQT(Receiver *r,int sr, int fpb, Settings *s)
 {
@@ -15,7 +16,7 @@ AudioQT::AudioQT(Receiver *r,int sr, int fpb, Settings *s)
 	this->InputDeviceList();
 
     qaAudioOutput = NULL;
-    outStreamBuffer = new qint16[framesPerBuffer * 2]; //Max we'll ever see
+    outStreamBuffer = new float[framesPerBuffer * 2]; //Max we'll ever see
 }
 
 int AudioQT::Start(int _inputSampleRate, int _outputSampleRate)
@@ -25,15 +26,19 @@ int AudioQT::Start(int _inputSampleRate, int _outputSampleRate)
     outputSampleRate = _outputSampleRate;
 
     //Test ouput only
-    qaDevice = QAudioDeviceInfo::defaultOutputDevice();
-    //DumpDeviceInfo(qaDevice);
+    //qaDevice = QAudioDeviceInfo::defaultOutputDevice();
+    qaDevice = FindOutputDeviceByName(settings->outputDeviceName);
+
+    //DumpDeviceInfo(qaDevice); //Use this to see supported formats
 
     qaFormat.setSampleRate(outputSampleRate);
     qaFormat.setChannelCount(2);
     qaFormat.setCodec("audio/pcm");
     qaFormat.setByteOrder(QAudioFormat::LittleEndian);
-    qaFormat.setSampleSize(16);
-    qaFormat.setSampleType(QAudioFormat::SignedInt);
+    //Testedwith Int/16 and Float32
+    //Same as PortAudio PAFloat32
+    qaFormat.setSampleSize(32);
+    qaFormat.setSampleType(QAudioFormat::Float);
 
     //qaAudioOutput->setBufferSize(framesPerBuffer*sizeof(CPX)); //Optional??
     //qaAudioOutput->setNotifyInterval(42); //Only if we want callbacks
@@ -74,18 +79,19 @@ void AudioQT::SendToOutput(CPX *out, int outSamples)
 	//We may have to skip samples to reduce rate to match audio out, decimate set when we
 	//opened stream
 	qint64 bytesWritten = 0;
-    qint16 left,right;
+    //qint16 left,right;
     for (int i=0, j=0;i<outSamples;i++, j+=2)
 	{
-		//Float not supported by QT
-        left = Float2Int(out[i].re);
-        right = Float2Int(out[i].im);
+        //If we use Int 16
+        //left = Float2Int(out[i].re);
+        //right = Float2Int(out[i].im);
 
-        outStreamBuffer[j] = left;
-        outStreamBuffer[j+1] = right;
+        //No conversion necessary from cpx
+        outStreamBuffer[j] = out[i].re;
+        outStreamBuffer[j+1] = out[i].im;
 
 	}
-    bytesWritten = dataSource->write((char*)outStreamBuffer,outSamples*4);
+    bytesWritten = dataSource->write((char*)outStreamBuffer,outSamples*sizeof(float)*2);
     //if (bytesWritten != data.length())
 	//	true;
 }
@@ -93,16 +99,40 @@ void AudioQT::ClearCounts()
 {
 
 }
+QAudioDeviceInfo AudioQT::FindInputDeviceByName(QString name)
+{
+    QAudioDeviceInfo device;
+    foreach (device, QAudioDeviceInfo::availableDevices(QAudio::AudioInput)) {
+        if (device.deviceName() == name)
+            return device;
+    }
+    return QAudioDeviceInfo::defaultInputDevice();
+
+}
+QAudioDeviceInfo AudioQT::FindOutputDeviceByName(QString name)
+{
+    QAudioDeviceInfo device;
+    foreach (device, QAudioDeviceInfo::availableDevices(QAudio::AudioOutput)) {
+        if (device.deviceName() == name)
+            return device;
+    }
+    return QAudioDeviceInfo::defaultOutputDevice();
+
+}
+
 QStringList AudioQT::InputDeviceList()
 {
 	QStringList inputDevices;
 	QAudioDeviceInfo device;
-	foreach (device, QAudioDeviceInfo::availableDevices(QAudio::AudioInput)) {
+    QString buf;
+    int devId = 1;
+    foreach (device, QAudioDeviceInfo::availableDevices(QAudio::AudioInput)) {
 		//DumpDeviceInfo(device);
-
-		inputDevices.append(device.deviceName());
-									   //qVariantFromValue(device));
-	}
+        //Emulate same format as portAudio ID:Name
+        buf = QString("%1:%2").arg(devId,2).arg(device.deviceName());
+        inputDevices.append(buf);
+        devId++;
+    }
 
 	return inputDevices;
 }
@@ -110,11 +140,14 @@ QStringList AudioQT::OutputDeviceList()
 {
 	QStringList outputDevices;
 	QAudioDeviceInfo device;
+    QString buf;
+    int devId = 1;
 	foreach (device, QAudioDeviceInfo::availableDevices(QAudio::AudioOutput)) {
 		//DumpDeviceInfo(device);
-
-		outputDevices.append(device.deviceName());
-									   //qVariantFromValue(device));
+        //Emulate same format as portAudio ID:Name
+        buf = QString("%1:%2").arg(devId,2).arg(device.deviceName());
+        outputDevices.append(buf);
+        devId++;
 	}
 
 	return outputDevices;
