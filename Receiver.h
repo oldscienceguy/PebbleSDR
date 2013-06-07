@@ -25,6 +25,7 @@
 #include "iqbalance.h"
 #include "morse.h"
 #include "filters/fir.h"
+#include "filters/fractresampler.h"
 
 #include "Devices/sdr_iq.h"
 
@@ -110,14 +111,12 @@ private:
     FIRFilter *downSampleFilter;
 
     //Trying cuteSdr downsample code
+    CFractResampler fractResampler; //To get to final audio rate
     CDownConvert downConvert1; //Get to reasonable rate for demod and following
-    CDownConvert downConvert2; //Get to 48k or below for audio
     CDownConvert downConvertWfm1; //Special to get to 300k
-    CDownConvert downConvertWfm2; //Get to 48k or below for audio
+    int audioOutRate;
     int downSample1Rate;
-    int downSample2Rate;
     int downSampleWfm1Rate;
-    int downSampleWfm2Rate;
     CPX *workingBuf;
 
 
