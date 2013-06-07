@@ -12,6 +12,10 @@ Audio::Audio(QObject *parent) :
 {
 }
 
+Audio::~Audio()
+{
+}
+
 Audio * Audio::Factory(Receiver *rcv, int framesPerBuffer,Settings *settings)
 {
     if (Audio::useQtAudio) {

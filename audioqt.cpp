@@ -3,6 +3,7 @@
 #include "audioqt.h"
 #include <QDebug>
 #include "Settings.h"
+#include "Receiver.h"
 
 AudioQT::AudioQT(Receiver *r,int fpb, Settings *s):Audio()
 {
@@ -14,16 +15,84 @@ AudioQT::AudioQT(Receiver *r,int fpb, Settings *s):Audio()
 	this->InputDeviceList();
 
     qaAudioOutput = NULL;
+    qaAudioInput = NULL;
+    cpxInBuffer = new CPX[framesPerBuffer];
+    cpxOutBuffer = new CPX[framesPerBuffer];
     outStreamBuffer = new float[framesPerBuffer * 2]; //Max we'll ever see
+    inStreamBuffer = new float[framesPerBuffer * 2 * 2]; //Max we'll ever see
+}
+
+AudioQT::~AudioQT()
+{
 }
 
 int AudioQT::StartInput(int _inputSampleRate)
 {
     inputSampleRate = _inputSampleRate;
     //qaDevice = QAudioDeviceInfo::defaultInputDevice();
-    qaInputDevice = FindOutputDeviceByName(settings->inputDeviceName);
+    qaInputDevice = FindInputDeviceByName(settings->inputDeviceName);
+
+    //DumpDeviceInfo(qaInputDevice); //Use this to see supported formats
+
+    qaFormat.setSampleRate(inputSampleRate);
+    qaFormat.setChannelCount(2);
+    qaFormat.setCodec("audio/pcm");
+    qaFormat.setByteOrder(QAudioFormat::LittleEndian);
+    //Same as PortAudio PAFloat32
+    qaFormat.setSampleSize(32);
+    qaFormat.setSampleType(QAudioFormat::Float);
+
+    QAudioDeviceInfo info(qaInputDevice);
+    if (!info.isFormatSupported(qaFormat)) {
+        qWarning() << "QAudio input format not supported";
+        //qaFormat = info.nearestFormat(qaFormat);
+        return -1;
+    }
+
+    //set notify interval and connect to notify signal, calls us back whenever n ms of data is available
+    qaAudioInput = new QAudioInput(qaInputDevice, qaFormat, this);
+
+    //Want to get called back whenever there's a buffer full of data
+    int notifyInterval = (float)framesPerBuffer / ((float)inputSampleRate * 1.5)* 1000.0;
+    qaAudioInput->setNotifyInterval(notifyInterval);  //Experiment with this, has to be fast enough to keep up with sample rate
+    //Set up our call back
+    //connect(qaAudioInput,SIGNAL(notify()),this,SLOT(ProcessInputData()));
+    //New QT5 connect syntax for compile time checking
+    connect(qaAudioInput,&QAudioInput::notify,this,&AudioQT::ProcessInputData);
+    //This sets the max # of samples and is in units of sampleformat
+    //So 2048 float samples will return 8192 bytes
+    qaAudioInput->setBufferSize(framesPerBuffer*2*2); //2x Extra room
+    qaAudioInput->setVolume(20); //Default is 1
+    //We should start seeing callbacks after start
+    inputDataSource = qaAudioInput->start();
 
     return 0;
+}
+
+void AudioQT::ProcessInputData()
+{
+    qint64 bytesAvailable = qaAudioInput->bytesReady();
+    qint64 bytesPerBuffer = framesPerBuffer * sizeof(float) *2;
+    if (bytesAvailable < bytesPerBuffer)
+        return;
+    //qDebug()<<"ProcessInputData "<<bytesAvailable;
+    qint64 bytesRead = inputDataSource->read((char*)inStreamBuffer,bytesPerBuffer);
+    if (bytesRead != bytesPerBuffer)
+        qDebug()<<"AudioQt bytesRead != bytesPerBuffer";
+    //qDebug()<<"Num Read "<<numRead;
+    int floatSize = sizeof(float);
+    //Number of CPX samples
+    int frameCount = bytesRead / floatSize / 2;
+    float I,Q;
+    for (int i=0,j=0;i<frameCount;i++,j+=2)
+    {
+        I = inStreamBuffer[j];
+        Q = inStreamBuffer[j+1];
+        //qDebug()<<I<<"/"<<Q;
+        cpxInBuffer[i]=CPX(I,Q);
+    }
+    //ProcessBlock handles all receive chain and ouput
+    receiver->ProcessBlock(cpxInBuffer,cpxOutBuffer,frameCount);
 }
 
 int AudioQT::StartOutput(int _outputSampleRate)
@@ -34,7 +103,7 @@ int AudioQT::StartOutput(int _outputSampleRate)
     //qaDevice = QAudioDeviceInfo::defaultOutputDevice();
     qaOutputDevice = FindOutputDeviceByName(settings->outputDeviceName);
 
-    //DumpDeviceInfo(qaDevice); //Use this to see supported formats
+    //DumpDeviceInfo(qaOutputDevice); //Use this to see supported formats
 
     qaFormat.setSampleRate(outputSampleRate);
     qaFormat.setChannelCount(2);
@@ -50,18 +119,23 @@ int AudioQT::StartOutput(int _outputSampleRate)
 
     QAudioDeviceInfo info(qaOutputDevice);
     if (!info.isFormatSupported(qaFormat)) {
-        qWarning() << "Default format not supported";
+        qWarning() << "QAudio output format not supported";
         //qaFormat = info.nearestFormat(qaFormat);
         return -1;
     }
 
     qaAudioOutput = new QAudioOutput(qaOutputDevice, qaFormat, this);
 
-	dataSource = qaAudioOutput->start();
+    outputDataSource = qaAudioOutput->start();
 	return 0;
 }
 int AudioQT::Stop()
 {
+    if (qaAudioOutput)
+        qaAudioOutput->stop();
+    if (qaAudioInput)
+        qaAudioInput->stop();
+
 	return 0;
 }
 int AudioQT::Flush()
@@ -96,7 +170,7 @@ void AudioQT::SendToOutput(CPX *out, int outSamples)
         outStreamBuffer[j+1] = out[i].im;
 
 	}
-    bytesWritten = dataSource->write((char*)outStreamBuffer,outSamples*sizeof(float)*2);
+    bytesWritten = outputDataSource->write((char*)outStreamBuffer,outSamples*sizeof(float)*2);
     //if (bytesWritten != data.length())
 	//	true;
 }
@@ -107,10 +181,13 @@ void AudioQT::ClearCounts()
 QAudioDeviceInfo AudioQT::FindInputDeviceByName(QString name)
 {
     QAudioDeviceInfo device;
+
     foreach (device, QAudioDeviceInfo::availableDevices(QAudio::AudioInput)) {
+        //qDebug()<<name<<"/"<<device.deviceName();
         if (device.deviceName() == name)
             return device;
     }
+    qDebug()<<"QTAudio input device not found, using default";
     return QAudioDeviceInfo::defaultInputDevice();
 
 }
@@ -121,6 +198,7 @@ QAudioDeviceInfo AudioQT::FindOutputDeviceByName(QString name)
         if (device.deviceName() == name)
             return device;
     }
+    qDebug()<<"QTAudio output device not found, using default";
     return QAudioDeviceInfo::defaultOutputDevice();
 
 }

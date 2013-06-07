@@ -61,6 +61,7 @@ int SoundCard::StartInput(int _inputSampleRate)
         error = Pa_StartStream(inStream);
     }
 
+    return 0;
 }
 
 int SoundCard::StartOutput(int _outputSampleRate)

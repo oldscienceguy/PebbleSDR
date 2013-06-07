@@ -4,6 +4,7 @@
 #include "gpl.h"
 
 #include "audio.h"
+#include <QAudioInput>
 #include <QAudioOutput>
 #include <QAudioFormat>
 
@@ -11,6 +12,8 @@ class AudioQT : public Audio
 {
 public:
     AudioQT(Receiver *r, int fpb, Settings *s);
+    ~AudioQT();
+
 	//Virtual functions
 	//We may get input from some other source, if so inputSampleRate = 0
     int StartInput(int inputSampleRate);
@@ -27,15 +30,23 @@ public:
     static QStringList InputDeviceList();
     static QStringList OutputDeviceList();
 
+public slots:
+    void ProcessInputData();
+
 private:
     QAudioDeviceInfo qaInputDevice;
     QAudioDeviceInfo qaOutputDevice;
-	QAudioOutput*    qaAudioOutput;
+    QAudioInput *qaAudioInput;
+    QAudioOutput *qaAudioOutput;
 	//QIODevice*       qaOutput; // not owned
 	QAudioFormat     qaFormat;
-	QIODevice *dataSource;
+    QIODevice *outputDataSource;
+    QIODevice *inputDataSource;
 
+    float *inStreamBuffer;
     float *outStreamBuffer;
+    CPX *cpxInBuffer;
+    CPX *cpxOutBuffer;
 
 	void DumpDeviceInfo(QAudioDeviceInfo device);
 
