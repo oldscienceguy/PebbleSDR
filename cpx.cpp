@@ -15,11 +15,6 @@ extern void SSEMultCPX(CPX * c, CPX * a, CPX * b, int size);
 extern void SSEMagCPX(CPX * c, CPX * a, int size);
 extern void SSESqMagCPX(CPX * c, CPX * a, int size);
 
-
-CPX::~CPX(void)
-{
-}
-
 //Convolution
 CPX CPX::operator *(CPX y)
 {

@@ -29,7 +29,8 @@ public:
 	inline CPX(const CPX &cx)
 		{re=cx.re; im=cx.im;}
 
-	~CPX(void);
+    ~CPX(void){}
+
     double re, im;
 	inline void clear() {re = im = 0;}
 
