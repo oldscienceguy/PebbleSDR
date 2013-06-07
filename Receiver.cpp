@@ -109,7 +109,7 @@ bool Receiver::On()
     fractResampler.Init(framesPerBuffer);
     //Calculates the number of decimation states and returns converted sample rate
     //SetDataRate() doesn't downsample below 256k?
-    audioOutRate = 12000;
+    audioOutRate = 11025; //This rate supported by QTAudio and PortAudio on Mac
     //SetDataRate MaxBW should be driven by our filter selection, ie width of filter
     //For now just set to widest filter, which is 16k for AM
     downSample1Rate = downConvert1.SetDataRate(sampleRate, 16000.0);
@@ -140,7 +140,7 @@ bool Receiver::On()
     //These steps work on downSample1 rates
 
     //WIP, testing QT audio as alternative to PortAudio
-	//audioOutput = new AudioQT(this,sampleRate,framesPerBuffer,settings);
+    //audioOutput = new AudioQT(this,sampleRate,framesPerBuffer,settings);
 
     audioOutput = new SoundCard(this,audioOutRate,downSample1Frames,settings);
     noiseFilter = new NoiseFilter(downSample1Rate,downSample1Frames);
