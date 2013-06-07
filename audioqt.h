@@ -31,6 +31,8 @@ private:
 	QAudioFormat     qaFormat;
 	QIODevice *dataSource;
 
+    qint16 *outStreamBuffer;
+
 	void DumpDeviceInfo(QAudioDeviceInfo device);
 
 

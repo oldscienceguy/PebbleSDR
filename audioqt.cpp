@@ -15,6 +15,7 @@ AudioQT::AudioQT(Receiver *r,int sr, int fpb, Settings *s)
 	this->InputDeviceList();
 
     qaAudioOutput = NULL;
+    outStreamBuffer = new qint16[framesPerBuffer * 2]; //Max we'll ever see
 }
 
 int AudioQT::Start(int _inputSampleRate, int _outputSampleRate)
@@ -29,13 +30,13 @@ int AudioQT::Start(int _inputSampleRate, int _outputSampleRate)
 
     qaFormat.setSampleRate(outputSampleRate);
     qaFormat.setChannelCount(2);
-    qaFormat.setSampleSize(16);
     qaFormat.setCodec("audio/pcm");
     qaFormat.setByteOrder(QAudioFormat::LittleEndian);
+    qaFormat.setSampleSize(16);
     qaFormat.setSampleType(QAudioFormat::SignedInt);
 
-    //qaAudioOutput->setBufferSize(framesPerBuffer*sizeof(CPX));
-    //qaAudioOutput->setNotifyInterval(42);
+    //qaAudioOutput->setBufferSize(framesPerBuffer*sizeof(CPX)); //Optional??
+    //qaAudioOutput->setNotifyInterval(42); //Only if we want callbacks
 
     QAudioDeviceInfo info(qaDevice);
     if (!info.isFormatSupported(qaFormat)) {
@@ -47,7 +48,6 @@ int AudioQT::Start(int _inputSampleRate, int _outputSampleRate)
     qaAudioOutput = new QAudioOutput(qaDevice, qaFormat, this);
 
 	dataSource = qaAudioOutput->start();
-	//dataSource->open(QIODevice::ReadWrite);
 	return 0;
 }
 int AudioQT::Stop()
@@ -74,24 +74,19 @@ void AudioQT::SendToOutput(CPX *out, int outSamples)
 	//We may have to skip samples to reduce rate to match audio out, decimate set when we
 	//opened stream
 	qint64 bytesWritten = 0;
-	QByteArray data;
-	//data.resize(framesPerBuffer*sizeof(CPX));
-    for (int i=0;i<outSamples;i++)
+    qint16 left,right;
+    for (int i=0, j=0;i<outSamples;i++, j+=2)
 	{
 		//Float not supported by QT
-        qint16 left = Float2Int(out[i].re);
-        qint16 right = Float2Int(out[i].im);
+        left = Float2Int(out[i].re);
+        right = Float2Int(out[i].im);
 
-		//Everytime we write to QIODevice, it emits a signal
-		//This caused problems, so we write everything to a ByteArray and then output
-		//float left = out[i*decimate].re;
-		//float right = out[i*decimate].im;
+        outStreamBuffer[j] = left;
+        outStreamBuffer[j+1] = right;
 
-		data.append((char*)&left,sizeof(left));
-		data.append((char*)&right,sizeof(right));
 	}
-	bytesWritten = dataSource->write(data);
-	//if (bytesWritten != data.length())
+    bytesWritten = dataSource->write((char*)outStreamBuffer,outSamples*4);
+    //if (bytesWritten != data.length())
 	//	true;
 }
 void AudioQT::ClearCounts()
