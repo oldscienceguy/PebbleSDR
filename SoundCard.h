@@ -12,7 +12,7 @@ class Receiver; //Forward declaration since soundcard and receiver are dependent
 class SoundCard:public Audio
 {
 public:
-	SoundCard(Receiver *r,int sr, int fpb, Settings *s);
+    SoundCard(Receiver *r,int fpb, Settings *s);
 	~SoundCard(void);
 	//Virtual functions
 	//We may get input from some other source, if so inputSampleRate = 0
@@ -28,12 +28,15 @@ public:
     int FindDeviceByName(QString name, bool inputDevice);
 
 	//Returns a list of input devices for settings to chose from
-	static QStringList DeviceList(bool inputDevice);
-	static int DefaultOutputDevice();
+    static QStringList InputDeviceList();
+    static QStringList OutputDeviceList();
+    static int DefaultOutputDevice();
 	static int DefaultInputDevice();
 
 
 private:
+
+    static QStringList DeviceList(bool input);
 
 	//Input may come from another source, so we manage these streams separately
 	PaStream *inStream;

@@ -4,11 +4,9 @@
 #include <QDebug>
 #include "Settings.h"
 
-AudioQT::AudioQT(Receiver *r,int sr, int fpb, Settings *s)
+AudioQT::AudioQT(Receiver *r,int fpb, Settings *s):Audio()
 {
 	framesPerBuffer = fpb;
-	inputSampleRate = sr;
-	outputSampleRate = sr;
 	settings = s;
 	receiver=r;
 

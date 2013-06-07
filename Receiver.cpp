@@ -20,6 +20,10 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
     global->settings = settings;
 	connect(settings,SIGNAL(Restart()),this,SLOT(Restart()));
 
+    //Testing 1 place to switch between PortAudio and QTAudio
+    //WARNING: When you change this, delete pebble.ini or manually reset all settings because input/output names may change
+    Audio::useQtAudio = false;
+
 	mainWindow = main;
 	receiverWidget = rw;
 
@@ -140,9 +144,8 @@ bool Receiver::On()
     //These steps work on downSample1 rates
 
     //WIP, testing QT audio as alternative to PortAudio
-    //audioOutput = new AudioQT(this,sampleRate,framesPerBuffer,settings);
+    audioOutput = Audio::Factory(this,downSample1Frames, settings);
 
-    audioOutput = new SoundCard(this,audioOutRate,downSample1Frames,settings);
     noiseFilter = new NoiseFilter(downSample1Rate,downSample1Frames);
     signalStrength = new SignalStrength(downSample1Rate,downSample1Frames);
 	//FIR MAC LP Filter

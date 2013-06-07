@@ -6,6 +6,7 @@
 #include "soundcard.h"
 #include "demod.h" //For DEMODMODE
 #include "Receiver.h"
+#include "audioqt.h"
 
 Settings::Settings(void)
 {
@@ -168,8 +169,9 @@ void Settings::ShowSettings()
 #endif
 
 	//Audio devices may have been plugged or unplugged, refresh list on each show
-    inputDevices = SoundCard::DeviceList(true);
-    outputDevices = SoundCard::DeviceList(false);
+    //This will use PortAudio or QTAudio depending on configuration
+    inputDevices = Audio::InputDeviceList();
+    outputDevices = Audio::OutputDeviceList();
 
     SetOptionsForSDR(selectedSDR); //Make sure fields are loaded
     SelectedSDRChanged(selectedSDR);
@@ -302,6 +304,8 @@ void Settings::SetOptionsForSDR(int s)
     //Input devices may be restricted form some SDRs
     for (int i=0; i<inputDevices.count(); i++)
     {
+        //This is portAudio specific format ID:Name
+        //AudioQt will emulate
         id = inputDevices[i].left(2).toInt();
         dn = inputDevices[i].mid(3);
         sd->sourceBox1->addItem(dn, id);

@@ -23,8 +23,13 @@ public:
     virtual void SendToOutput(CPX *_cpxBuf,int _numSamples)=0;
 	virtual void ClearCounts()=0;
 
-	//Returns a list of input devices for settings to chose from
-	static QStringList DeviceList(bool inputDevice);
+    //Creates either PortAudio or QTAudio device
+    static Audio *Factory(Receiver *rcv, int framesPerBuffer,Settings *settings);
+
+    //Returns a list of input devices for settings to chose from
+    static QStringList InputDeviceList();
+    static QStringList OutputDeviceList();
+
 	static int DefaultOutputDevice();
 	static int DefaultInputDevice();
 
@@ -39,6 +44,7 @@ public:
 	qint16 Float2Int(float sample) {return sample * 32767;}
 	quint16 Float2UInt(float sample) {return sample * 65535;}
 
+    static bool useQtAudio;
 
 signals:
 
@@ -50,7 +56,6 @@ protected:
 	int inputSampleRate;
 	int outputSampleRate;
 	int framesPerBuffer; //#samples in each callback
-
 
 };
 

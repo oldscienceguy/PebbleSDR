@@ -10,7 +10,7 @@
 class AudioQT : public Audio
 {
 public:
-	AudioQT(Receiver *r,int sr, int fpb, Settings *s);
+    AudioQT(Receiver *r, int fpb, Settings *s);
 	//Virtual functions
 	//We may get input from some other source, if so inputSampleRate = 0
 	int Start(int inputSampleRate, int outputSampleRate);

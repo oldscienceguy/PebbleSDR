@@ -11,14 +11,12 @@
     Files should be re-created and problem goes away.
 
 */
-SoundCard::SoundCard(Receiver *r, int sr, int fpb, Settings *s)
+SoundCard::SoundCard(Receiver *r, int fpb, Settings *s):Audio()
 {
 	settings = s;
 	//Float32 format returns values between -1 and +1
 	sampleFormat = paFloat32;
 	//Todo: These can be removed I think, we're now setting them in Start() where we have SDR context
-	inputSampleRate = sr;
-	outputSampleRate = sr;
 	framesPerBuffer = fpb;
 	receiver=r;
 	//Deliver samples to this buffer
@@ -194,6 +192,15 @@ int SoundCard::FindDeviceByName(QString name, bool inputDevice)
 //Returns a device list for UI
 //paDeviceIndex is returned in 1st 2 char, strip for UI
 //Todo: Write .txt file with all device info to help with debugging
+QStringList SoundCard::InputDeviceList()
+{
+    return DeviceList(true);
+}
+QStringList SoundCard::OutputDeviceList()
+{
+    return DeviceList(false);
+}
+
 QStringList SoundCard::DeviceList(bool typeInput)
 {
 	//This static method may get called before constructor
