@@ -17,15 +17,22 @@ AudioQT::AudioQT(Receiver *r,int fpb, Settings *s):Audio()
     outStreamBuffer = new float[framesPerBuffer * 2]; //Max we'll ever see
 }
 
-int AudioQT::Start(int _inputSampleRate, int _outputSampleRate)
+int AudioQT::StartInput(int _inputSampleRate)
+{
+    inputSampleRate = _inputSampleRate;
+    //qaDevice = QAudioDeviceInfo::defaultInputDevice();
+    qaInputDevice = FindOutputDeviceByName(settings->inputDeviceName);
+
+    return 0;
+}
+
+int AudioQT::StartOutput(int _outputSampleRate)
 {
     //Don't set sample rate in construct, only here do we know actual rate
-    inputSampleRate = _inputSampleRate;
     outputSampleRate = _outputSampleRate;
 
-    //Test ouput only
     //qaDevice = QAudioDeviceInfo::defaultOutputDevice();
-    qaDevice = FindOutputDeviceByName(settings->outputDeviceName);
+    qaOutputDevice = FindOutputDeviceByName(settings->outputDeviceName);
 
     //DumpDeviceInfo(qaDevice); //Use this to see supported formats
 
@@ -41,14 +48,14 @@ int AudioQT::Start(int _inputSampleRate, int _outputSampleRate)
     //qaAudioOutput->setBufferSize(framesPerBuffer*sizeof(CPX)); //Optional??
     //qaAudioOutput->setNotifyInterval(42); //Only if we want callbacks
 
-    QAudioDeviceInfo info(qaDevice);
+    QAudioDeviceInfo info(qaOutputDevice);
     if (!info.isFormatSupported(qaFormat)) {
         qWarning() << "Default format not supported";
         //qaFormat = info.nearestFormat(qaFormat);
         return -1;
     }
 
-    qaAudioOutput = new QAudioOutput(qaDevice, qaFormat, this);
+    qaAudioOutput = new QAudioOutput(qaOutputDevice, qaFormat, this);
 
 	dataSource = qaAudioOutput->start();
 	return 0;

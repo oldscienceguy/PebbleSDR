@@ -13,7 +13,8 @@ public:
     AudioQT(Receiver *r, int fpb, Settings *s);
 	//Virtual functions
 	//We may get input from some other source, if so inputSampleRate = 0
-	int Start(int inputSampleRate, int outputSampleRate);
+    int StartInput(int inputSampleRate);
+    int StartOutput(int outputSampleRate);
 	int Stop();
 	int Flush();
 	int Pause();
@@ -27,7 +28,8 @@ public:
     static QStringList OutputDeviceList();
 
 private:
-	QAudioDeviceInfo qaDevice;
+    QAudioDeviceInfo qaInputDevice;
+    QAudioDeviceInfo qaOutputDevice;
 	QAudioOutput*    qaAudioOutput;
 	//QIODevice*       qaOutput; // not owned
 	QAudioFormat     qaFormat;

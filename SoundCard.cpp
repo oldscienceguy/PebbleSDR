@@ -34,86 +34,87 @@ SoundCard::~SoundCard(void)
 	Pa_Terminate();
 }
 
-int SoundCard::Start(int _inputSampleRate, int _outputSampleRate)
+int SoundCard::StartInput(int _inputSampleRate)
 {
-	inputSampleRate = _inputSampleRate;
+    inputSampleRate = _inputSampleRate;
+    inBufferUnderflowCount = 0;
+    inBufferOverflowCount = 0;
+    PaStreamParameters *inParam = new PaStreamParameters();
+    //We're getting input from sound card
+    //inParam->device = settings->inputDevice;
+    inParam->device = FindDeviceByName(settings->inputDeviceName,true);
+    if (inParam->device < 0)
+        return 0;
+
+    inParam->channelCount = 2;
+    inParam->sampleFormat = sampleFormat;
+    //Bug: crashes if latency anything except 0, looks like struct is getting corrupted
+    //Update: Mac doesn't like zero and only works with device info
+    //inParam->suggestedLatency = 0;
+    inParam->suggestedLatency = Pa_GetDeviceInfo(inParam->device)->defaultLowInputLatency;  //Todo: Understand what this means
+    inParam->hostApiSpecificStreamInfo = NULL;
+
+    error = Pa_IsFormatSupported(inParam,NULL,inputSampleRate);
+    if (!error) {
+        error = Pa_OpenStream(&inStream,inParam,NULL,
+            inputSampleRate,framesPerBuffer,paNoFlag,&SoundCard::streamCallback,this );
+        error = Pa_StartStream(inStream);
+    }
+
+}
+
+int SoundCard::StartOutput(int _outputSampleRate)
+{
 	outputSampleRate = _outputSampleRate;
 
-	inBufferUnderflowCount = 0;
-	inBufferOverflowCount = 0;
 	outBufferUnderflowCount = 0;
 	outBufferOverflowCount = 0;
 
-	PaStreamParameters *inParam = new PaStreamParameters();
 	PaStreamParameters *outParam = new PaStreamParameters();
 
-	if (inputSampleRate != 0) {
-		//We're getting input from sound card
-        //inParam->device = settings->inputDevice;
-        inParam->device = FindDeviceByName(settings->inputDeviceName,true);
-        if (inParam->device < 0)
-            return 0;
+    //outParam->device = settings->outputDevice;
+    outParam->device = FindDeviceByName(settings->outputDeviceName,false);
+    if (outParam->device < 0)
+        return 0;
 
-        inParam->channelCount = 2;
-        inParam->sampleFormat = sampleFormat;
-        //Bug: crashes if latency anything except 0, looks like struct is getting corrupted
-        //Update: Mac doesn't like zero and only works with device info
-        //inParam->suggestedLatency = 0;
-        inParam->suggestedLatency = Pa_GetDeviceInfo(inParam->device)->defaultLowInputLatency;  //Todo: Understand what this means
-        inParam->hostApiSpecificStreamInfo = NULL;
+    outParam->channelCount = 2;
+    outParam->sampleFormat = sampleFormat;
+    //Bug: same as above
+    //outParam->suggestedLatency = 0;
+    outParam->suggestedLatency = Pa_GetDeviceInfo(outParam->device)->defaultLowOutputLatency;
+    outParam->hostApiSpecificStreamInfo = NULL;
 
-        error = Pa_IsFormatSupported(inParam,NULL,inputSampleRate);
-        if (!error) {
-			error = Pa_OpenStream(&inStream,inParam,NULL,
-				inputSampleRate,framesPerBuffer,paNoFlag,&SoundCard::streamCallback,this );
-			error = Pa_StartStream(inStream);
-		}
-	}
-	//Can't think of a good reason why output rate would be zero, but ...
-	if (outputSampleRate != 0) {
-        //outParam->device = settings->outputDevice;
-        outParam->device = FindDeviceByName(settings->outputDeviceName,false);
-        if (outParam->device < 0)
-            return 0;
-
-        outParam->channelCount = 2;
-        outParam->sampleFormat = sampleFormat;
-        //Bug: same as above
-        //outParam->suggestedLatency = 0;
-        outParam->suggestedLatency = Pa_GetDeviceInfo(outParam->device)->defaultLowOutputLatency;
-        outParam->hostApiSpecificStreamInfo = NULL;
-
-		//For performance reasons, we try to keep output sample rate low.  
-		//Surprisingly, this is a primary issue in higher sample rates, like from SDR-IQ (196k)
-		//See if we have an even divisor we can use for simple decimation
-		//decimate has to be an even multiple of framesPerBuffer so that when we take every Nth sample and output it,
-		//we don't have any any uneven samples left in the buffer.  If so, then when we start with the next buffer,
-		//we'll hear a skip or static as we jump to a non-regular skip interval
-		//Update: Too much thinking.  Works better if we just find the smallest decimation factor and don't worry
-		//about precise end-of-buffer scenarios
+    //For performance reasons, we try to keep output sample rate low.
+    //Surprisingly, this is a primary issue in higher sample rates, like from SDR-IQ (196k)
+    //See if we have an even divisor we can use for simple decimation
+    //decimate has to be an even multiple of framesPerBuffer so that when we take every Nth sample and output it,
+    //we don't have any any uneven samples left in the buffer.  If so, then when we start with the next buffer,
+    //we'll hear a skip or static as we jump to a non-regular skip interval
+    //Update: Too much thinking.  Works better if we just find the smallest decimation factor and don't worry
+    //about precise end-of-buffer scenarios
 #if(0)
-        decimate = 1;
-        //Decimate moved to post mixer phase, here for reference
-		decimate = outputSampleRate / settings->decimateLimit;
-		decimate = decimate < 1 ? 1 : decimate;
-		outputSampleRate /= decimate;
+    decimate = 1;
+    //Decimate moved to post mixer phase, here for reference
+    decimate = outputSampleRate / settings->decimateLimit;
+    decimate = decimate < 1 ? 1 : decimate;
+    outputSampleRate /= decimate;
 #endif
-		error = Pa_IsFormatSupported(NULL,outParam,outputSampleRate);
-		if (!error) {
-			//Sample rate is set by SDR device if not using soundCard for I/Q
-			//NOTE: PortAudio does strange things if we open stream with a small buffer, even if that's all we need
-			//Symptoms are long processing times and garbled audio
-			//To avoid this, we always open with value from settings, even if we only use a fraction
-			//of the buffer due to downsampling.
-			//SendToOutput() will use the actual number of samples in buffer, not the size.
-			error = Pa_OpenStream(&outStream,NULL,outParam,
-				outputSampleRate,settings->framesPerBuffer,paNoFlag,NULL,NULL );
+    error = Pa_IsFormatSupported(NULL,outParam,outputSampleRate);
+    if (!error) {
+        //Sample rate is set by SDR device if not using soundCard for I/Q
+        //NOTE: PortAudio does strange things if we open stream with a small buffer, even if that's all we need
+        //Symptoms are long processing times and garbled audio
+        //To avoid this, we always open with value from settings, even if we only use a fraction
+        //of the buffer due to downsampling.
+        //SendToOutput() will use the actual number of samples in buffer, not the size.
+        error = Pa_OpenStream(&outStream,NULL,outParam,
+            outputSampleRate,settings->framesPerBuffer,paNoFlag,NULL,NULL );
 
-			error = Pa_StartStream(outStream);
-		}
-	}
+        error = Pa_StartStream(outStream);
+    }
 	return 0;
 }
+
 int SoundCard::Stop()
 {
 	if (inStream)

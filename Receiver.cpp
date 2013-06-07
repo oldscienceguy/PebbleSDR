@@ -196,7 +196,7 @@ bool Receiver::On()
 	receiverWidget->SetFrequency(frequency);
 
 	//This should always be last because it starts samples flowing through the processBlocks
-    audioOutput->Start(0,audioOutRate);
+    audioOutput->StartOutput(audioOutRate);
 	sdr->Start();
 
 	return true;

@@ -15,7 +15,8 @@ class Audio : public QObject
     Q_OBJECT
 public:
     explicit Audio(QObject *parent = 0);
-	virtual int Start(int inputSampleRate, int outputSampleRate)=0;
+    virtual int StartInput(int inputSampleRate)=0;
+    virtual int StartOutput(int outputSampleRate)=0;
 	virtual int Stop()=0;
 	virtual int Flush()=0;
 	virtual int Pause()=0;

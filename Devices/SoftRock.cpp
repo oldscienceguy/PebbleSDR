@@ -64,7 +64,7 @@ SoftRock::~SoftRock()
 }
 void SoftRock::Start()
 {
-    audioInput->Start(GetSampleRate(),0);
+    audioInput->StartInput(GetSampleRate());
 }
 
 void SoftRock::Stop()

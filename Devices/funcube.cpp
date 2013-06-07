@@ -436,7 +436,7 @@ void FunCube::Start()
     }
 
 	if (audioInput != NULL)
-		audioInput->Start(GetSampleRate(),0);
+        audioInput->StartInput(GetSampleRate());
 
 }
 
