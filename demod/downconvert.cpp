@@ -49,6 +49,7 @@
 #define NCO_VCASM 0		//Visual C assembly call to floating point sin/cos instruction
 #define NCO_GCCASM 0	//GCC assembly call to floating point sin/cos instruction (100nS)
 
+//Where does this come from?  Limit of audio system or DSP?
 #define MIN_OUTPUT_RATE (7900.0*2.0)
 
 #define MAX_HALF_BAND_BUFSIZE 32768
@@ -111,6 +112,21 @@ TYPEREAL tmpf = NcoFreq + m_CW_Offset;
 // input sample rate and desired output bandwidth.  Returns final output rate
 //from divide by 2 stages.
 //////////////////////////////////////////////////////////////////////
+
+// Each DecBy2 filter has a max filter to eliminate alias
+// MaxBW = the maximum desired decimated result, typically 48k
+// Examples at 48k 10k
+//
+// CCicN3DecimateBy2 48000/(.5-.4985) = 32,000,000 2,000,000
+// CHalfBand11TapDecimateBy2 = 1,920,000
+// HB15TAP_MAX 979,592
+// HB19TAP_MAX 666,666
+// HB23TAP_MAX 527,472
+// ...
+// This last filter limits how low we can decimate
+// if MaxBW = 16000, then this will limit us to 96k! at 10k MaxBW 60k at 8K 48k
+// How do we decimate lower?
+// HB51TAP_MAX (.5-.333) 287,425 59,880
 TYPEREAL CDownConvert::SetDataRate(TYPEREAL InRate, TYPEREAL MaxBW)
 {
 int n = 0;
@@ -299,7 +315,7 @@ CDownConvert::CHalfBandDecimateBy2::CHalfBandDecimateBy2(int len,const TYPEREAL*
 {
 	//create buffer for FIR implementation
 	m_pHBFirBuf = new TYPECPX[MAX_HALF_BAND_BUFSIZE];
-    TYPECPX CPXZERO(0,0);
+    TYPECPX CPXZERO(0.0,0.0);
 	for(int i=0; i<MAX_HALF_BAND_BUFSIZE ;i++)
 		m_pHBFirBuf[i] = CPXZERO;
 }
@@ -360,7 +376,7 @@ CDownConvert::CHalfBand11TapDecimateBy2::CHalfBand11TapDecimateBy2()
 	H0 = HB11TAP_H[0]; H2 = HB11TAP_H[2]; H4 = HB11TAP_H[4];
 	H5 = HB11TAP_H[5];
 	H6 = HB11TAP_H[6]; H8 = HB11TAP_H[8]; H10 = HB11TAP_H[10];
-    TYPECPX CPXZERO(0,0);
+    TYPECPX CPXZERO(0.0,0.0);
 	d0 = CPXZERO; d1 = CPXZERO;	d2 = CPXZERO; d3 = CPXZERO;
 	d4 = CPXZERO; d5 = CPXZERO;	d6 = CPXZERO; d7 = CPXZERO;
 	d8 = CPXZERO; d9 = CPXZERO;
