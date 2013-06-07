@@ -10,33 +10,42 @@ AudioQT::AudioQT(Receiver *r,int sr, int fpb, Settings *s)
 	outputSampleRate = sr;
 	settings = s;
 	receiver=r;
-	decimate = 1;
 
 	this->OutputDeviceList();
 	this->InputDeviceList();
 
-	//Test ouput only
-	qaDevice = QAudioDeviceInfo::defaultOutputDevice();
-
-    qaFormat.setSampleRate(sr);
-    qaFormat.setChannelCount(2);
-	qaFormat.setSampleSize(16);
-	qaFormat.setCodec("audio/pcm");
-	qaFormat.setByteOrder(QAudioFormat::LittleEndian);
-	qaFormat.setSampleType(QAudioFormat::SignedInt);
-
-	QAudioDeviceInfo info(qaDevice);
-	if (!info.isFormatSupported(qaFormat)) {
-		qWarning() << "Default format not supported - trying to use nearest";
-		qaFormat = info.nearestFormat(qaFormat);
-	}
-	qaAudioOutput = new QAudioOutput(qaDevice, qaFormat, this);
-	//qaAudioOutput->setBufferSize(framesPerBuffer*sizeof(CPX));
-	//qaAudioOutput->setNotifyInterval(42);
-
+    qaAudioOutput = NULL;
 }
-int AudioQT::Start(int inputSampleRate, int outputSampleRate)
+
+int AudioQT::Start(int _inputSampleRate, int _outputSampleRate)
 {
+    //Don't set sample rate in construct, only here do we know actual rate
+    inputSampleRate = _inputSampleRate;
+    outputSampleRate = _outputSampleRate;
+
+    //Test ouput only
+    qaDevice = QAudioDeviceInfo::defaultOutputDevice();
+    //DumpDeviceInfo(qaDevice);
+
+    qaFormat.setSampleRate(outputSampleRate);
+    qaFormat.setChannelCount(2);
+    qaFormat.setSampleSize(16);
+    qaFormat.setCodec("audio/pcm");
+    qaFormat.setByteOrder(QAudioFormat::LittleEndian);
+    qaFormat.setSampleType(QAudioFormat::SignedInt);
+
+    //qaAudioOutput->setBufferSize(framesPerBuffer*sizeof(CPX));
+    //qaAudioOutput->setNotifyInterval(42);
+
+    QAudioDeviceInfo info(qaDevice);
+    if (!info.isFormatSupported(qaFormat)) {
+        qWarning() << "Default format not supported";
+        //qaFormat = info.nearestFormat(qaFormat);
+        return -1;
+    }
+
+    qaAudioOutput = new QAudioOutput(qaDevice, qaFormat, this);
+
 	dataSource = qaAudioOutput->start();
 	//dataSource->open(QIODevice::ReadWrite);
 	return 0;
@@ -57,19 +66,21 @@ int AudioQT::Restart()
 {
 	return 0;
 }
-void AudioQT::SendToOutput(CPX *out)
+void AudioQT::SendToOutput(CPX *out, int outSamples)
 {
+    if (!qaAudioOutput)
+        return;
+
 	//We may have to skip samples to reduce rate to match audio out, decimate set when we
 	//opened stream
 	qint64 bytesWritten = 0;
-	int numSamples = framesPerBuffer / decimate;
 	QByteArray data;
 	//data.resize(framesPerBuffer*sizeof(CPX));
-	for (int i=0;i<numSamples;i++)
+    for (int i=0;i<outSamples;i++)
 	{
 		//Float not supported by QT
-		qint16 left = Float2Int(out[i*decimate].re);
-		qint16 right = Float2Int(out[i*decimate].im);
+        qint16 left = Float2Int(out[i].re);
+        qint16 right = Float2Int(out[i].im);
 
 		//Everytime we write to QIODevice, it emits a signal
 		//This caused problems, so we write everything to a ByteArray and then output
@@ -119,7 +130,7 @@ QStringList AudioQT::OutputDeviceList()
 //Todo:  See if we need to install any optional QT audio plugins to get 24 bit, 192k, or float support
 void AudioQT::DumpDeviceInfo(QAudioDeviceInfo device)
 {
-#if(0)
+#if(1)
 	//Look at QTGlobal for all debug options
 
 	qDebug()<<device.deviceName();
@@ -138,8 +149,8 @@ void AudioQT::DumpDeviceInfo(QAudioDeviceInfo device)
 	qDebug()<<"Supported Sample Sizes";
 	foreach (int s,device.supportedSampleSizes())
 		qDebug()<<s;
-	qDebug()<<"Supported Channels";
-	foreach (int s,device.supportedChannels())
+    qDebug()<<"Supported Channels";
+    foreach (int s,device.supportedChannelCounts())
 		qDebug()<<s;
 	qDebug()<<"Supported Byte Orders: BigEndian(0), LittleEndian(1)";
 	foreach (QAudioFormat::Endian s,device.supportedByteOrders())

@@ -18,7 +18,7 @@ public:
 	int Flush();
 	int Pause();
 	int Restart();
-	void SendToOutput(CPX *);
+    void SendToOutput(CPX *, int outSamples);
 	void ClearCounts();
 
 	QStringList InputDeviceList();
