@@ -91,7 +91,7 @@ TYPEREAL window;
 	if(NULL == m_pSinc)
 		m_pSinc = new  TYPEREAL[SINC_LENGTH];
 	if(m_pInputBuf)
-		delete m_pInputBuf;
+        delete [] m_pInputBuf; //RL fix. new[] must be matched with delete []
 	m_pInputBuf = new TYPECPX[MaxInputSize];
 	for(i=0; i<MaxInputSize; i++)
 	{
