@@ -566,12 +566,12 @@ int* RTL2832::GetSampleRates(int &len)
 {
     len = 6;
     //Ugly, but couldn't find easy way to init with {1,2,3} array initializer
-    sampleRates[0] = 2048000;
-    sampleRates[1] = 1024000;
-    sampleRates[2] = 512000;
-    sampleRates[3] = 256000;
-    sampleRates[4] = 128000;
-    sampleRates[5] = 64000;
+    sampleRates[0] = 64000;
+    sampleRates[1] = 128000;
+    sampleRates[2] = 256000;
+    sampleRates[3] = 512000;
+    sampleRates[4] = 1024000;
+    sampleRates[5] = 2048000;
     return sampleRates;
 
 }
