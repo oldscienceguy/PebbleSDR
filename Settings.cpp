@@ -152,14 +152,25 @@ void Settings::SetupRecieverBox(QComboBox *receiverBox)
 void Settings::ShowSettings()
 {
     int cur;
+    sd->receiverBox1->blockSignals(true);
     cur = sd->receiverBox1->findData(ini_sdrDevice[0]);
     sd->receiverBox1->setCurrentIndex(cur);
+    sd->receiverBox1->blockSignals(false);
+
+    sd->receiverBox2->blockSignals(true);
     cur = sd->receiverBox2->findData(ini_sdrDevice[1]);
     sd->receiverBox2->setCurrentIndex(cur);
+    sd->receiverBox2->blockSignals(false);
+
+    sd->receiverBox3->blockSignals(true);
     cur = sd->receiverBox3->findData(ini_sdrDevice[2]);
     sd->receiverBox3->setCurrentIndex(cur);
+    sd->receiverBox3->blockSignals(false);
+
+    sd->receiverBox4->blockSignals(true);
     cur = sd->receiverBox4->findData(ini_sdrDevice[3]);
     sd->receiverBox4->setCurrentIndex(cur);
+    sd->receiverBox4->blockSignals(false);
 
 #if 0
 	if (startup == SETFREQ)
@@ -173,8 +184,7 @@ void Settings::ShowSettings()
     inputDevices = Audio::InputDeviceList();
     outputDevices = Audio::OutputDeviceList();
 
-    SetOptionsForSDR(selectedSDR); //Make sure fields are loaded
-    SelectedSDRChanged(selectedSDR);
+    SelectedSDRChanged(selectedSDR); //Also calls SetOptions ..
 
     //SDR options only available when powered on so we can read device data
     sd->sdrOptionsButton->setEnabled(global->receiver->GetPowerOn());
@@ -241,8 +251,6 @@ void Settings::BalanceReset()
 //Otherwise s = button to select
 void Settings::SelectedSDRChanged(int s)
 {
-    //Save previous settings
-    SaveSettings(true);
 
     //If s == -1, then called from connect link and we need to figure out selection
     if (s == -1) {
@@ -256,9 +264,14 @@ void Settings::SelectedSDRChanged(int s)
             s = 3;
     }
 
+    //Save previous settings
+    SaveSettings(true);
+
     //s now has selection
     selectedSDR = s;
+
     //Load the options for selected SDR
+    sdrDevice = ini_sdrDevice[s];
     SetOptionsForSDR(selectedSDR);
 
     sd->receiverBox1->setEnabled(false);
@@ -338,7 +351,6 @@ void Settings::SetOptionsForSDR(int s)
     SDR *sdr = SDR::Factory(NULL,sdrDevice,NULL);
     int numSr;
     int *sr = sdr->GetSampleRates(numSr);
-    delete sdr;
     sd->sampleRateBox1->blockSignals(true);
     sd->sampleRateBox1->clear();
     for (int i=0; i<numSr; i++) {
@@ -348,6 +360,7 @@ void Settings::SetOptionsForSDR(int s)
     cur = sd->sampleRateBox1->findData(ini_sampleRate[s]);
     sd->sampleRateBox1->setCurrentIndex(cur);
     sd->sampleRateBox1->blockSignals(false);
+    delete sdr; //Don't delete until everything is copied into settings ui
 
     cur = sd->startupBox1->findData(ini_startup[s]);
     sd->startupBox1->setCurrentIndex(cur);
@@ -513,6 +526,9 @@ void Settings::SaveSettings(bool b)
     //SelectedSdr is already set, save current values
 
     cur = sd->sourceBox1->currentIndex();
+    if (cur == -1)
+        return; //We're not initialized yet
+
     ini_inputDeviceName[selectedSDR] = sd->sourceBox1->itemText(cur);
 
     cur = sd->outputBox1->currentIndex();
@@ -520,10 +536,13 @@ void Settings::SaveSettings(bool b)
 
     cur = sd->receiverBox1->currentIndex();
     ini_sdrDevice[0] = (SDR::SDRDEVICE)sd->receiverBox1->itemData(cur).toInt();
+
     cur = sd->receiverBox2->currentIndex();
     ini_sdrDevice[1] = (SDR::SDRDEVICE)sd->receiverBox2->itemData(cur).toInt();
+
     cur = sd->receiverBox3->currentIndex();
     ini_sdrDevice[2] = (SDR::SDRDEVICE)sd->receiverBox3->itemData(cur).toInt();
+
     cur = sd->receiverBox4->currentIndex();
     ini_sdrDevice[3] = (SDR::SDRDEVICE)sd->receiverBox4->itemData(cur).toInt();
 
