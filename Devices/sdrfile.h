@@ -28,8 +28,9 @@ The "fmt " subchunk describes the sound data's format:
                                (0x666d7420 big-endian form).
 16        4   Subchunk1Size    16 for PCM.  This is the size of the
                                rest of the Subchunk which follows this number.
-20        2   AudioFormat      PCM = 1 (i.e. Linear quantization)
-                               Values other than 1 indicate some
+20        2   AudioFormat      1 = PCM (i.e. Linear quantization)
+                               3 = IEEE Float
+                               Values other than 1 & 3 indicate some
                                form of compression.
 22        2   NumChannels      Mono = 1, Stereo = 2, etc.
 24        4   SampleRate       8000, 44100, etc.
@@ -86,11 +87,17 @@ typedef struct DATA_SUB_CHUNK
 
 }DATA_SUB_CHUNK;
 //assumes 16bits per sample
-typedef struct WAV_DATA
+typedef struct PCM_DATA
 {
     qint16 left; //+/- 32767
     qint16 right;
-}WAV_DATA;
+}PCM_DATA;
+
+typedef struct FLOAT_DATA
+{
+    float left; //32 bits per sample
+    float right;
+}FLOAT_DATA;
 
 #pragma pack()
 
@@ -129,13 +136,19 @@ protected:
     virtual void StopConsumerThread();
     virtual void RunConsumerThread();
 
+    QString fileName;
+
     bool OpenWavFile(QString fname);
     QFile *wavFile;
     //wav file data structs
     RIFF_CHUNK riff;
     FMT_SUB_CHUNK fmtSubChunk;
     DATA_SUB_CHUNK dataSubChunk;
-    WAV_DATA data;
+    PCM_DATA pcmData;
+    FLOAT_DATA floatData;
+
+    char tmpBuf[256];
+    quint16 dataStart; //Offset in file where data starts, allows us to loop continuously
 
     //Testing NCO
     NCO *nco;
