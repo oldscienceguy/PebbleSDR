@@ -408,8 +408,9 @@ void RTL2832::RunConsumerThread()
         //We take N (rtlDecimate) samples and create one result
         fpSampleRe = fpSampleIm = 0.0;
         for (int k = 0; k < bufInc; k+=2) {
-            fpSampleRe += (double)producerBuffer[nextConsumerDataBuf][j + k];
-            fpSampleIm += (double)producerBuffer[nextConsumerDataBuf][j + k + 1];
+            //I/Q reversed from normal devices, correct here
+            fpSampleIm += (double)producerBuffer[nextConsumerDataBuf][j + k];
+            fpSampleRe += (double)producerBuffer[nextConsumerDataBuf][j + k + 1];
         }
         //If we average, we get a better sample
         //But if we average with a smaller number, we increase range of samples
