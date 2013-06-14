@@ -40,7 +40,9 @@ Demod::Demod(int _inputRate, int _inputWfmRate, int ns) :
 	amDc = 0.0;
 	amSmooth = 0.0;
 
-    wfmDemod = new CWFmDemod(inputWfmSampleRate, audioSampleRate);
+    //We're no longer decimating to audio in wfmdemod, so audio rate is same as input rate
+    //This fixed bug where FM filters were not working because rate was wrong
+    wfmDemod = new CWFmDemod(inputWfmSampleRate, inputWfmSampleRate);
     ResetDemod();
 
     connect(this,SIGNAL(OutputData(const char *)),global->receiver,SLOT(OutputData(const char *)));
