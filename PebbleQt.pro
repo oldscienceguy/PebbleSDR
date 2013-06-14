@@ -384,7 +384,8 @@ HEADERS += \
     Devices/sdr-ip/netiobase.h \
     Devices/sdr-ip/sdrinterface.h \
     Devices/sdr-ip/threadwrapper.h \
-    Devices/sdr-ip/protocoldefs.h
+    Devices/sdr-ip/protocoldefs.h \
+    Decoders/oregonscientificsensordecode.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -443,7 +444,8 @@ SOURCES += \
     Devices/sdr-ip/dataprocess.cpp \
     Devices/sdr-ip/ad6620.cpp \
     Devices/sdr-ip/netiobase.cpp \
-    Devices/sdr-ip/sdrinterface.cpp
+    Devices/sdr-ip/sdrinterface.cpp \
+    Decoders/oregonscientificsensordecode.cpp
 
 FORMS += \
     spectrumwidget.ui \
