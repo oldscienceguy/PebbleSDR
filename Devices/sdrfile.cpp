@@ -4,8 +4,6 @@
 #include "Demod.h"
 #include "QFileDialog"
 
-void ReadWavTest();
-
 SDRFile::SDRFile(Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_receiver, dev,_settings)
 {
     settings=_settings;
@@ -30,8 +28,6 @@ SDRFile::SDRFile(Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_re
     nco->SetFrequency(100);
 #endif
 
-    wavFile = NULL;
-
     producerThread = new SDRProducerThread(this);
     producerThread->setRefresh(0); //Semaphores will block and wait, no extra delay needed
     //consumerThread = new SDRConsumerThread(this);
@@ -49,7 +45,7 @@ bool SDRFile::Connect()
     //WIP: Chose file or fixed internal generator
     //Passing NULL for dir shows current/last directory, which may be inside the mac application bundle
     fileName = QFileDialog::getOpenFileName(NULL,tr("Open Wave File"), NULL, tr("Wave Files (*.wav)"));
-    bool res = OpenWavFile(fileName);
+    bool res = wavFile.OpenRead(fileName);
     if (!res)
         return false;
 
@@ -57,8 +53,7 @@ bool SDRFile::Connect()
 }
 bool SDRFile::Disconnect()
 {
-    if (wavFile != NULL)
-        wavFile->close();
+    wavFile.Close();
     return true;
 }
 double SDRFile::SetFrequency(double fRequested,double fCurrent)
@@ -132,11 +127,7 @@ QString SDRFile::GetDeviceName()
 
 int SDRFile::GetSampleRate()
 {
-    if (wavFile != NULL)
-        //We've successfully opened and parsed chunks
-        return fmtSubChunk.sampleRate;
-    else
-        return 96000;
+    return wavFile.GetSampleRate();
 }
 
 #if 0
@@ -179,41 +170,13 @@ void *addNoise(float *sample, int length, float gain=1.0) {
 void SDRFile::StopProducerThread(){}
 void SDRFile::RunProducerThread()
 {
-    CPX sample;
-    int len;
-    if (wavFile != NULL) {
-        //If we're at end of file, start over in continuous loop
-        if (wavFile->atEnd())
-            wavFile->seek(dataStart);
 
-        for (int i=0; i<framesPerBuffer; i++)
-        {
-            if (fmtSubChunk.format == 1)
-                len = wavFile->read((char*)&pcmData,sizeof(pcmData));
-            else if (fmtSubChunk.format == 3)
-                len = wavFile->read((char*)&floatData,sizeof(floatData));
-            else
-                return; //unsupported format
+    for (int i=0; i<framesPerBuffer; i++)
+    {
+        inBuffer[i] = wavFile.ReadData();
 
-            if (len <= 0) {
-                sample.re = 0;
-                sample.im = 0;
-                inBuffer[i] = sample;
-            }
-            if (fmtSubChunk.format == 1) {
-                //Convert wav 16 bit (-32767 to +32767) int to sound card float32.  Values are -1 to +1
-                sample.re = pcmData.left/32767.0;
-                sample.im = pcmData.right/32767.0;
-            } else {
-                //Samples already float32
-                sample.re = floatData.left;
-                sample.im = floatData.right;
-                //qDebug()<<sample.re<<"/"<<sample.im;
-            }
-            inBuffer[i] = sample;
-
-        }
     }
+
 #if 0
     //Testing output - need to run in thread eventually until Stop
     for (int i=0; i<framesPerBuffer; i++){
@@ -228,40 +191,3 @@ void SDRFile::StopConsumerThread(){}
 void SDRFile::RunConsumerThread(){}
 
 
-bool SDRFile::OpenWavFile(QString fname)
-{
-    wavFile = new QFile(fname);
-    if (wavFile == NULL) {
-        return false;
-    }
-    bool res = wavFile->open(QFile::ReadOnly);
-    if (!res)
-        return false;
-    qint64 len = wavFile->read((char*)&riff,sizeof(riff));
-    if (len <=0 )
-        return false;
-    len = wavFile->read((char*)&fmtSubChunk,sizeof(fmtSubChunk));
-    if (len<0)
-        return false;
-    qDebug()<<"SR:"<<fmtSubChunk.sampleRate<<" Bits/Sample:"<<fmtSubChunk.bitsPerSample<<" Channels:"<<fmtSubChunk.channels<< "Fmt:"<<fmtSubChunk.format<<" Extra:"<<fmtSubChunk.extraParamSize;
-
-    //If we're reading non PCM data, we may have more to read before data
-    if (fmtSubChunk.format!=1 && fmtSubChunk.extraParamSize > 0) {
-        //We may get garbage, max allowed is 22, which may not be right
-        len = wavFile->read(tmpBuf,22);
-        if (len<0)
-            return false;
-    }
-
-    len = wavFile->read((char*)&dataSubChunk,sizeof(dataSubChunk));
-    if (len<0)
-        return false;
-    dataStart = wavFile->pos(); //So we can loop
-#if 0
-    len = wavFile->read((char*)&data,sizeof(data));
-    if (len<0)
-        return false;
-    wavFile->close();
-#endif
-    return true;
-}
