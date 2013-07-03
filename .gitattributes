@@ -23,6 +23,8 @@ Devices/sdr-ip/sdrinterface.h -text
 Devices/sdr_ip.cpp -text
 Devices/sdr_ip.h -text
 Devices/usb.h -text
+Devices/wavfile.cpp -text
+Devices/wavfile.h -text
 /ElektorOptions.ui -text
 /FIRFilter.cpp -text
 /FIRFilter.h -text
