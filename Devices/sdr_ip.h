@@ -4,7 +4,6 @@
 #include "gpl.h"
 #include <QThread>
 #include <QMutex>
-#include <QSemaphore>
 #include <QSettings>
 #include <QtNetwork>
 #include "sdr.h"
@@ -74,20 +73,8 @@ private:
 
     int msTimeOut;
 
-    static const int numDataBufs = 50; //Producer/Consumer buffers
-
     CPX *outBuffer;
-    CPX **dataBuf;  //Array of CPX arrays
-    int nextProducerDataBuf;
-    int nextConsumerDataBuf;
-    /*
-      NumFreeBuffers starts at NUMDATABUFS and is decremented (acquire()) everytime the producer thread has new data.
-      If it ever gets to zero, it will block forever and program will hang until consumer thread catches up.
-      NumFreeBuffers is incremented (release()) in consumer thread when a buffer has been processed and can be reused.
-    */
-    QSemaphore *semNumFreeBuffers; //Init to NUMDATABUFS
-    QSemaphore *semNumFilledBuffers;
-    bool dataBufOverflow;
+
     quint32 producerOverflowCount; //Number of times we'ver overflowed producer, use to test 1.8m sampleRate
     void ProcessDataBlocks();
 

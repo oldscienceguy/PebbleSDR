@@ -187,23 +187,43 @@ void SDR::InitProducerConsumer(int _numDataBufs, int _producerBufferSize)
 
 }
 
+bool SDR::IsFreeBufferAvailable()
+{
+    if (semNumFreeBuffers == NULL)
+        return false; //Not initialized yet
+
+    //Make sure we have at least 1 data buffer available without blocking
+    int freeBuf = semNumFreeBuffers->available();
+    if (freeBuf == 0) {
+        qDebug()<<"No free buffer available, ignoring block.";
+        return false;
+    }
+    return true;
+}
+
 void SDR::AcquireFreeBuffer()
 {
+    if (semNumFreeBuffers == NULL)
+        return; //Not initialized yet
+
     //Debugging to watch producer/consumer overflow
     //Todo:  Add back-pressure to reduce sample rate if not keeping up
     int available = semNumFreeBuffers->available();
-    if ( available < (numDataBufs - 5)) { //Ouput when we get within 5 of overflow
+    if ( available < 5) { //Ouput when we get within 5 of overflow
         qDebug("Limited Free buffers available %d",available);
         freeBufferOverflow = true;
     } else {
         freeBufferOverflow = false;
     }
 
-    semNumFreeBuffers->acquire();
+    semNumFreeBuffers->acquire(); //Will not return until we get a free buffer, but will yield
 }
 
 void SDR::AcquireFilledBuffer()
 {
+    if (semNumFilledBuffers == NULL)
+        return; //Not initialized yet
+
     //Debugging to watch producer/consumer overflow
     //Todo:  Add back-pressure to reduce sample rate if not keeping up
     int available = semNumFilledBuffers->available();
@@ -214,7 +234,7 @@ void SDR::AcquireFilledBuffer()
         filledBufferOverflow = false;
     }
 
-    semNumFilledBuffers->acquire();
+    semNumFilledBuffers->acquire(); //Will not return until we get a filled buffer, but will yield
 
 }
 

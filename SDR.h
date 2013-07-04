@@ -62,6 +62,8 @@ public:
 
     //Proucer-Consumer buffer management
     void InitProducerConsumer(int _numDataBufs, int _producerBufferSize);
+
+    bool IsFreeBufferAvailable();
     void AcquireFreeBuffer();
     void ReleaseFreeBuffer() {semNumFreeBuffers->release();}
     void IncrementProducerBuffer() {nextProducerDataBuf = (nextProducerDataBuf +1 ) % numDataBufs;}

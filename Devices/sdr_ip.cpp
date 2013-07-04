@@ -66,13 +66,6 @@ SDR_IP::SDR_IP(Receiver *_receiver, SDR::SDRDEVICE dev, Settings *_settings)
 
     outBuffer = CPXBuf::malloc(framesPerBuffer);
 
-    dataBuf = new CPX *[numDataBufs];
-    for (int i=0; i<numDataBufs; i++)
-        dataBuf[i] = new CPX [framesPerBuffer];
-
-    semNumFreeBuffers = NULL;
-    semNumFilledBuffers = NULL;
-
     //producerThread = new SDRProducerThread(this);
     //producerThread->setRefresh(0);
     consumerThread = new SDRConsumerThread(this);
@@ -260,17 +253,7 @@ void SDR_IP::Start()
 {
     producerOverflowCount = 0;
 
-    //Start out with all producer buffers available
-    if (semNumFreeBuffers != NULL)
-        delete semNumFreeBuffers;
-    semNumFreeBuffers = new QSemaphore(numDataBufs);
-
-    if (semNumFilledBuffers != NULL)
-        delete semNumFilledBuffers;
-    //Init with zero available
-    semNumFilledBuffers = new QSemaphore(0);
-
-    nextProducerDataBuf = nextConsumerDataBuf = 0;
+    InitProducerConsumer(50, framesPerBuffer * sizeof(CPX));
 
     //We want the consumer thread to start first, it will block waiting for data from the SDR thread
     consumerThread->start();
@@ -356,41 +339,34 @@ int* SDR_IP::GetSampleRates(int &len)
 //sdrinterface ensures we always get called with numFramesPerBuffer (2048) CPX
 void SDR_IP::PutInProducerQ(CPX *cpxBuf, quint32 numCpx)
 {
-    int freeBuf;
-    //We may be called before semaphors are set up, defensive code
-    if (semNumFilledBuffers == NULL || semNumFreeBuffers == NULL)
-        return;
     if (numCpx != framesPerBuffer)
         return; //Defensive
 
-    //Make sure we have at least 1 data buffer available without blocking
-    freeBuf = semNumFreeBuffers->available();
-    //qDebug()<<freeBuf;
-    if (freeBuf == 0) {
-        //Set overflow flag and throw away data
-        producerOverflowCount++;
-        qDebug()<<"Producer Overflow, ignoring block: "<<producerOverflowCount;
+    if (!IsFreeBufferAvailable())
         return;
-    }
+
     //This won't block because we checked above
-    semNumFreeBuffers->acquire();
-    CPXBuf::copy(dataBuf[nextProducerDataBuf],cpxBuf,numCpx);
+    AcquireFreeBuffer();
+
+    //ProducerBuffer is byte array, cast as CPX
+    CPXBuf::copy(((CPX **)producerBuffer)[nextProducerDataBuf],cpxBuf,numCpx);
     //Circular buffer of dataBufs
-    nextProducerDataBuf = (nextProducerDataBuf +1 ) % numDataBufs;
+    IncrementProducerBuffer();
+
     //Increment the number of data buffers that are filled so consumer thread can access
-    semNumFilledBuffers->release();
+    ReleaseFilledBuffer();
 }
 
 void SDR_IP::RunConsumerThread()
 {
     //Wait for data to be available from producer
-    semNumFilledBuffers->acquire();
+    AcquireFilledBuffer();
 
     if (receiver != NULL)
-        receiver->ProcessBlock(dataBuf[nextConsumerDataBuf],outBuffer,framesPerBuffer);
+        receiver->ProcessBlock(((CPX **)producerBuffer)[nextConsumerDataBuf],outBuffer,framesPerBuffer);
 
-    nextConsumerDataBuf = (nextConsumerDataBuf +1 ) % numDataBufs;
-    semNumFreeBuffers->release();
+    IncrementConsumerBuffer();
+    ReleaseFreeBuffer();
 }
 
 void SDR_IP::StopConsumerThread()
