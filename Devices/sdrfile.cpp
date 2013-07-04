@@ -29,7 +29,7 @@ SDRFile::SDRFile(Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_re
 #endif
 
     producerThread = new SDRProducerThread(this);
-    producerThread->setRefresh(0); //Semaphores will block and wait, no extra delay needed
+    producerThread->setRefresh(50); //No semaphores since just producer thread, so set refresh to give UI chance to run
     //consumerThread = new SDRConsumerThread(this);
     //consumerThread->setRefresh(0);
 
@@ -170,12 +170,16 @@ void *addNoise(float *sample, int length, float gain=1.0) {
 void SDRFile::StopProducerThread(){}
 void SDRFile::RunProducerThread()
 {
-
+#if 1
+    int samplesRead = wavFile.ReadSamples(inBuffer,framesPerBuffer);
+#else
     for (int i=0; i<framesPerBuffer; i++)
     {
-        inBuffer[i] = wavFile.ReadData();
+        inBuffer[i] = wavFile.ReadSample();
 
     }
+    int samplesRead = framesPerBuffer;
+#endif
 
 #if 0
     //Testing output - need to run in thread eventually until Stop
@@ -184,7 +188,7 @@ void SDRFile::RunProducerThread()
         inBuffer[i] = sample;
     }
 #endif
-    receiver->ProcessBlock(inBuffer,outBuffer,framesPerBuffer);
+    receiver->ProcessBlock(inBuffer,outBuffer,samplesRead);
 
 }
 void SDRFile::StopConsumerThread(){}

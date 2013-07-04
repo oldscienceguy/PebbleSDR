@@ -106,8 +106,9 @@ public:
     WavFile();
     bool OpenRead(QString fname);
     bool OpenWrite(QString fname);
-    CPX ReadData();
-    bool WriteData(CPX *buf, int numSamples);
+    CPX ReadSample();
+    int ReadSamples(CPX *buf, int numSamples);
+    bool WriteSamples(CPX *buf, int numSamples);
     bool Close();
 
     int GetSampleRate();
@@ -117,6 +118,8 @@ protected:
     bool fileParsed;
     quint16 dataStart; //Offset in file where data starts, allows us to loop continuously
     char tmpBuf[256];
+    PCM_DATA pcmBuf[4096]; //Max samples per read is 4096
+    FLOAT_DATA floatBuf[4096];
 
     QFile *wavFile;
     //wav file data structs

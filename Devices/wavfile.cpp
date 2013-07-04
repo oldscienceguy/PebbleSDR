@@ -98,15 +98,57 @@ bool WavFile::OpenWrite(QString fname)
     return true;
 }
 
-CPX WavFile::ReadData()
+//Returns #sample read into buf
+int WavFile::ReadSamples(CPX *buf, int numSamples)
+{
+
+    if (writeMode || wavFile == NULL)
+        return 0;
+
+    //If we're at end of file, start over in continuous loop
+    if (wavFile->atEnd())
+        wavFile->seek(dataStart);
+
+    int bytesRead;
+    int bytesToRead;
+    int samplesRead = 0;
+
+    if (fmtSubChunk.format == 1) {
+        bytesToRead = sizeof(PCM_DATA) * numSamples;
+        bytesRead = wavFile->read((char*)pcmBuf,bytesToRead);
+        if (bytesRead == -1)
+            samplesRead = 0;
+        else
+            samplesRead = bytesRead / sizeof(PCM_DATA);
+        for (int i=0; i<samplesRead; i++) {
+            buf[i].re = pcmBuf[i].left/32767.0;
+            buf[i].im = pcmBuf[i].right/32767.0;
+        }
+
+    } else if (fmtSubChunk.format == 3) {
+        bytesToRead = sizeof(FLOAT_DATA) * numSamples;
+        bytesRead = wavFile->read((char*)floatBuf,bytesToRead);
+        if (bytesRead == -1)
+            samplesRead = 0;
+        else
+            samplesRead = bytesRead / sizeof(FLOAT_DATA);
+        for (int i=0; i<samplesRead; i++) {
+            buf[i].re = floatBuf[i].left;
+            buf[i].im = floatBuf[i].right;
+        }
+
+    }
+
+    return samplesRead;
+
+}
+
+CPX WavFile::ReadSample()
 {
     CPX sample;
     int len;
 
-    if (writeMode)
-        return sample;
-
-    if (wavFile == NULL)
+    if (writeMode || wavFile == NULL)
         return sample;
 
     //If we're at end of file, start over in continuous loop
@@ -138,7 +180,7 @@ CPX WavFile::ReadData()
 }
 
 //Writes IQ block
-bool WavFile::WriteData(CPX* buf, int numSamples)
+bool WavFile::WriteSamples(CPX* buf, int numSamples)
 {
     if (!writeMode)
         return false;
@@ -162,6 +204,11 @@ bool WavFile::WriteData(CPX* buf, int numSamples)
 bool WavFile::Close()
 {
     //If open for writing, update length fields
+    if (!writeMode) {
+        wavFile->close();
+        return true;
+    }
+
     //4 + (8 + SubChunk1Size) + (8 + SubChunk2Size) should be same as 36 + dataSubChunk.size
     riff.size = 4 + (8 + fmtSubChunk.size) + (8 + dataSubChunk.size);
     wavFile->seek(0); //Replace header data
