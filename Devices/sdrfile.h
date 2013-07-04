@@ -33,7 +33,6 @@ public:
 protected:
     QSettings *qSettings;
 
-    CPX *inBuffer;
     CPX *outBuffer;
     int framesPerBuffer;
     virtual void StopProducerThread();

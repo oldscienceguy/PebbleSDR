@@ -20,7 +20,6 @@ SDRFile::SDRFile(Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_re
     ReadSettings();
 
     framesPerBuffer = settings->framesPerBuffer;
-    inBuffer = CPXBuf::malloc(framesPerBuffer);
     outBuffer = CPXBuf::malloc(framesPerBuffer);
 
 #if 0
@@ -29,9 +28,9 @@ SDRFile::SDRFile(Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_re
 #endif
 
     producerThread = new SDRProducerThread(this);
-    producerThread->setRefresh(50); //No semaphores since just producer thread, so set refresh to give UI chance to run
-    //consumerThread = new SDRConsumerThread(this);
-    //consumerThread->setRefresh(0);
+    producerThread->setRefresh(0);
+    consumerThread = new SDRConsumerThread(this);
+    consumerThread->setRefresh(0);
 
 }
 SDRFile::~SDRFile(void)
@@ -65,9 +64,16 @@ void SDRFile::ShowOptions() {return;}
 
 void SDRFile::Start()
 {
-    //WIP: We don't need both threads, just the producer.  TBD
+    //WIP: Init to support largest data type, float and do CPX conversion in consumer thread.  Then we can read directly to buffer
+    //We can read from file way faster than consumer thread can keep up
+    //Unlike real time data, file data isn't lost so we don't really need to producer/consumer buffer
+    //So by only creating 1 buffer, we force producer to wait for consumer to be done
+    //Ignore overflow warnings in debug
+
+    InitProducerConsumer(1,framesPerBuffer * sizeof(CPX));
+
     //We want the consumer thread to start first, it will block waiting for data from the SDR thread
-    //consumerThread->start();
+    consumerThread->start();
     producerThread->start();
     isThreadRunning = true;
 
@@ -77,7 +83,7 @@ void SDRFile::Stop()
 {
     if (isThreadRunning) {
         producerThread->stop();
-        //consumerThread->stop();
+        consumerThread->stop();
         isThreadRunning = false;
     }
     return;
@@ -170,16 +176,9 @@ void *addNoise(float *sample, int length, float gain=1.0) {
 void SDRFile::StopProducerThread(){}
 void SDRFile::RunProducerThread()
 {
-#if 1
-    int samplesRead = wavFile.ReadSamples(inBuffer,framesPerBuffer);
-#else
-    for (int i=0; i<framesPerBuffer; i++)
-    {
-        inBuffer[i] = wavFile.ReadSample();
-
-    }
-    int samplesRead = framesPerBuffer;
-#endif
+    AcquireFreeBuffer();
+    int samplesRead = wavFile.ReadSamples(((CPX **)producerBuffer)[nextProducerDataBuf],framesPerBuffer);
+    IncrementProducerBuffer();
 
 #if 0
     //Testing output - need to run in thread eventually until Stop
@@ -188,10 +187,16 @@ void SDRFile::RunProducerThread()
         inBuffer[i] = sample;
     }
 #endif
-    receiver->ProcessBlock(inBuffer,outBuffer,samplesRead);
+    ReleaseFilledBuffer();
 
 }
 void SDRFile::StopConsumerThread(){}
-void SDRFile::RunConsumerThread(){}
+void SDRFile::RunConsumerThread()
+{
+    AcquireFilledBuffer();
+    receiver->ProcessBlock(((CPX **)producerBuffer)[nextConsumerDataBuf],outBuffer,framesPerBuffer);
+    IncrementConsumerBuffer();
+    ReleaseFreeBuffer();
+}
 
 
