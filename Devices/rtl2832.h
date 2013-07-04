@@ -1,7 +1,6 @@
 #ifndef RTL2832_H
 #define RTL2832_H
 
-#include "QSemaphore"
 #include "SDR.h"
 #include "rtl-sdr/rtl-sdr.h"
 
@@ -37,22 +36,6 @@ private:
 
     CPXBuf *inBuffer;
     CPXBuf *outBuffer;
-
-    int numDataBufs; //Producer/Consumer buffers
-    unsigned char **producerBuffer; //Array of buffers
-    int producerBufferSize;
-    int nextProducerDataBuf;
-    int nextConsumerDataBuf;
-    /*
-      NumFreeBuffers starts at NUMDATABUFS and is decremented (acquire()) everytime the producer thread has new data.
-      If it ever gets to zero, it will block forever and program will hang until consumer thread catches up.
-      NumFreeBuffers is incremented (release()) in consumer thread when a buffer has been processed and can be reused.
-
-
-    */
-    QSemaphore *semNumFreeBuffers; //Init to NUMDATABUFS
-    QSemaphore *semNumFilledBuffers;
-
 
     int framesPerBuffer;
     qint16 rtlGain; //in 10ths of a db

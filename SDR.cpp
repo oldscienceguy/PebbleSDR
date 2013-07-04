@@ -31,6 +31,10 @@ SDR::SDR(Receiver *_receiver, SDRDEVICE dev,Settings *_settings)
     audioInput = Audio::Factory(receiver,settings->framesPerBuffer,settings);
 	producerThread = NULL;
 	consumerThread = NULL;
+    semNumFreeBuffers = NULL;
+    semNumFilledBuffers = NULL;
+    producerBuffer = NULL;
+
 }
 
 SDR::~SDR(void)
@@ -41,6 +45,13 @@ SDR::~SDR(void)
 	if (audioInput != NULL) {
 		delete audioInput;
 	}
+
+    if (producerBuffer != NULL) {
+        for (int i=0; i<numDataBufs; i++)
+            free (producerBuffer[i]);
+        free (producerBuffer);
+    }
+
 }
 
 //Settings common to all devices
@@ -144,7 +155,49 @@ SDR::SDRDEVICE SDR::GetDevice()
 }
 void SDR::SetDevice(SDRDEVICE m)
 {
-	sdrDevice = m;
+    sdrDevice = m;
+}
+
+void SDR::InitProducerConsumer(int _numDataBufs, int _producerBufferSize)
+{
+    numDataBufs = _numDataBufs;
+    //2 bytes per sample, framesPerBuffer samples after decimate
+    producerBufferSize = _producerBufferSize;
+    if (producerBuffer != NULL) {
+        for (int i=0; i<numDataBufs; i++)
+            free (producerBuffer[i]);
+        free (producerBuffer);
+    }
+    producerBuffer = new unsigned char *[numDataBufs];
+    for (int i=0; i<numDataBufs; i++)
+        producerBuffer[i] = new unsigned char [producerBufferSize];
+
+
+    //Start out with all producer buffers available
+    if (semNumFreeBuffers != NULL)
+        delete semNumFreeBuffers;
+    semNumFreeBuffers = new QSemaphore(numDataBufs);
+
+    if (semNumFilledBuffers != NULL)
+        delete semNumFilledBuffers;
+    //Init with zero available
+    semNumFilledBuffers = new QSemaphore(0);
+
+    nextProducerDataBuf = nextConsumerDataBuf = 0;
+
+}
+
+void SDR::AcquireFreeBuffer()
+{
+#if 0
+    //Debugging to watch producer/consumer overflow
+    //Todo:  Add back-pressure to reduce sample rate if not keeping up
+    int available = semNumFreeBuffers->available();
+    if ( available < (numDataBufs -5))
+        qDebug("Producer %d",available);
+#endif
+    semNumFreeBuffers->acquire();
+
 }
 
 void SDR::StopProducerThread(){}

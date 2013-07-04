@@ -9,6 +9,7 @@ Base class for SDR Receivers
 #include <QThread>
 #include <QSettings>
 #include <QDialog>
+#include "QSemaphore"
 
 #include "Devices/usbutil.h"
 #include "audio.h"
@@ -59,6 +60,15 @@ public:
 	SDRDEVICE GetDevice();
 	void SetDevice(SDRDEVICE m);
 
+    //Proucer-Consumer buffer management
+    void InitProducerConsumer(int _numDataBufs, int _producerBufferSize);
+    void AcquireFreeBuffer();
+    void ReleaseFreeBuffer() {semNumFreeBuffers->release();}
+    void IncrementProducerBuffer() {nextProducerDataBuf = (nextProducerDataBuf +1 ) % numDataBufs;}
+
+    void AcquireFilledBuffer() {semNumFilledBuffers->acquire();}
+    void ReleaseFilledBuffer() {semNumFilledBuffers->release();}
+    void IncrementConsumerBuffer() {nextConsumerDataBuf = (nextConsumerDataBuf +1 ) % numDataBufs;}
 protected:
 	void ReadSettings(QSettings *settings);
 	void WriteSettings(QSettings *settings);
@@ -71,6 +81,22 @@ protected:
 	bool isLibUsbLoaded;
 	bool isFtdiLoaded;
     int sampleRates[10]; //Max 10 for testing
+
+    //Producer/Consumer buffer management
+    int numDataBufs; //Producer/Consumer buffers
+    unsigned char **producerBuffer; //Array of buffers
+    int producerBufferSize;
+    int nextProducerDataBuf;
+    int nextConsumerDataBuf;
+    /*
+      NumFreeBuffers starts at NUMDATABUFS and is decremented (acquire()) everytime the producer thread has new data.
+      If it ever gets to zero, it will block forever and program will hang until consumer thread catches up.
+      NumFreeBuffers is incremented (release()) in consumer thread when a buffer has been processed and can be reused.
+
+
+    */
+    QSemaphore *semNumFreeBuffers; //Init to NUMDATABUFS
+    QSemaphore *semNumFilledBuffers;
 
 	bool isThreadRunning;
 	SDRProducerThread *producerThread;

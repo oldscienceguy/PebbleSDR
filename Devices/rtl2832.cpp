@@ -141,16 +141,6 @@ RTL2832::RTL2832 (Receiver *_receiver, SDRDEVICE dev, Settings *_settings): SDR(
     inBuffer = new CPXBuf(framesPerBuffer);
     outBuffer = new CPXBuf(framesPerBuffer);
 
-    numDataBufs = 50;
-    //2 bytes per sample, framesPerBuffer samples after decimate
-    producerBufferSize = framesPerBuffer * rtlDecimate * 2;
-    producerBuffer = new unsigned char *[numDataBufs];
-    for (int i=0; i<numDataBufs; i++)
-        producerBuffer[i] = new unsigned char [producerBufferSize];
-
-    semNumFreeBuffers = NULL;
-    semNumFilledBuffers = NULL;
-
     producerThread = new SDRProducerThread(this);
     producerThread->setRefresh(0);
     consumerThread = new SDRConsumerThread(this);
@@ -170,11 +160,6 @@ RTL2832::~RTL2832(void)
         delete (inBuffer);
     if (outBuffer != NULL)
         delete (outBuffer);
-    if (producerBuffer != NULL) {
-        for (int i=0; i<numDataBufs; i++)
-            free (producerBuffer[i]);
-        free (producerBuffer);
-    }
 }
 
 //Different for each rtl2832 device, read from settings file eventually
@@ -316,17 +301,7 @@ void RTL2832::Start()
         return;
     }
 
-    //Start out with all producer buffers available
-    if (semNumFreeBuffers != NULL)
-        delete semNumFreeBuffers;
-    semNumFreeBuffers = new QSemaphore(numDataBufs);
-
-    if (semNumFilledBuffers != NULL)
-        delete semNumFilledBuffers;
-    //Init with zero available
-    semNumFilledBuffers = new QSemaphore(0);
-
-    nextProducerDataBuf = nextConsumerDataBuf = 0;
+    InitProducerConsumer(50, framesPerBuffer * rtlDecimate * 2);
 
     //We want the consumer thread to start first, it will block waiting for data from the SDR thread
     consumerThread->start();
@@ -353,32 +328,24 @@ void RTL2832::RunProducerThread()
     int bytesRead;
 
     //This will block if we don't have any free data buffers to use, pending consumer thread releasing
-    semNumFreeBuffers->acquire();
-
-#if 0
-    //Debugging to watch producer/consumer overflow
-    //Todo:  Add back-pressure to reduce sample rate if not keeping up
-    int available = semNumFreeBuffers->available();
-    if ( available < (numDataBufs -5))
-        qDebug("Producer %d",available);
-#endif
+    AcquireFreeBuffer();
 
     if (rtlsdr_read_sync(dev, producerBuffer[nextProducerDataBuf], producerBufferSize, &bytesRead) < 0) {
         qDebug("Sync transfer error");
-        semNumFreeBuffers->release(); //Put back buffer for next try
+        ReleaseFreeBuffer(); //Put back buffer for next try
         return;
     }
 
     if (bytesRead < producerBufferSize) {
         qDebug("Under read");
-        semNumFreeBuffers->release(); //Put back buffer for next try
+        ReleaseFreeBuffer(); //Put back buffer for next try
         return;
     }
     //Circular buffer of dataBufs
-    nextProducerDataBuf = (nextProducerDataBuf +1 ) % numDataBufs;
+    IncrementProducerBuffer();
 
     //Increment the number of data buffers that are filled so consumer thread can access
-    semNumFilledBuffers->release();
+    ReleaseFilledBuffer();
 
 }
 
@@ -394,7 +361,7 @@ void RTL2832::RunConsumerThread()
     double fpSampleIm;
 
     //Wait for data to be available from producer
-    semNumFilledBuffers->acquire();
+    AcquireFilledBuffer();
 
     //RTL I/Q samples are 8bit unsigned 0-256
     int bufInc = rtlDecimate * 2;
@@ -443,8 +410,8 @@ void RTL2832::RunConsumerThread()
 
     //We're done with databuf, so we can release before we call ProcessBlock
     //Update lastDataBuf & release dataBuf
-    nextConsumerDataBuf = (nextConsumerDataBuf +1 ) % numDataBufs;
-    semNumFreeBuffers->release();
+    IncrementConsumerBuffer();
+    ReleaseFreeBuffer();
 
     if (receiver != NULL)
         receiver->ProcessBlock(inBuffer->Ptr(),outBuffer->Ptr(),framesPerBuffer);
