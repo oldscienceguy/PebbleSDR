@@ -189,14 +189,32 @@ void SDR::InitProducerConsumer(int _numDataBufs, int _producerBufferSize)
 
 void SDR::AcquireFreeBuffer()
 {
-#if 0
     //Debugging to watch producer/consumer overflow
     //Todo:  Add back-pressure to reduce sample rate if not keeping up
     int available = semNumFreeBuffers->available();
-    if ( available < (numDataBufs -5))
-        qDebug("Producer %d",available);
-#endif
+    if ( available < (numDataBufs - 5)) { //Ouput when we get within 5 of overflow
+        qDebug("Limited Free buffers available %d",available);
+        freeBufferOverflow = true;
+    } else {
+        freeBufferOverflow = false;
+    }
+
     semNumFreeBuffers->acquire();
+}
+
+void SDR::AcquireFilledBuffer()
+{
+    //Debugging to watch producer/consumer overflow
+    //Todo:  Add back-pressure to reduce sample rate if not keeping up
+    int available = semNumFilledBuffers->available();
+    if ( available > (numDataBufs - 5)) { //Ouput when we get within 5 of overflow
+        qDebug("Filled buffers available %d",available);
+        filledBufferOverflow = true;
+    } else {
+        filledBufferOverflow = false;
+    }
+
+    semNumFilledBuffers->acquire();
 
 }
 

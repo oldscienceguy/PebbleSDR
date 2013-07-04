@@ -66,7 +66,7 @@ public:
     void ReleaseFreeBuffer() {semNumFreeBuffers->release();}
     void IncrementProducerBuffer() {nextProducerDataBuf = (nextProducerDataBuf +1 ) % numDataBufs;}
 
-    void AcquireFilledBuffer() {semNumFilledBuffers->acquire();}
+    void AcquireFilledBuffer();
     void ReleaseFilledBuffer() {semNumFilledBuffers->release();}
     void IncrementConsumerBuffer() {nextConsumerDataBuf = (nextConsumerDataBuf +1 ) % numDataBufs;}
 protected:
@@ -88,6 +88,8 @@ protected:
     int producerBufferSize;
     int nextProducerDataBuf;
     int nextConsumerDataBuf;
+    bool freeBufferOverflow;
+    bool filledBufferOverflow;
     /*
       NumFreeBuffers starts at NUMDATABUFS and is decremented (acquire()) everytime the producer thread has new data.
       If it ever gets to zero, it will block forever and program will hang until consumer thread catches up.
