@@ -922,6 +922,9 @@ typedef union
 //Raw UDP data received from CNetio and handed to pdataProcess
 void CSdrInterface::ProcessUdpData(char* pBuf, qint64 Length)
 {
+    if(!m_Running)	//ignor any incoming data if not running
+        return;
+
     int i,j;
     tBtoL data;
     tBtoS seq;
