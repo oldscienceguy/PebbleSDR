@@ -110,6 +110,7 @@ class WavFile
 {
 public:
     WavFile();
+    ~WavFile();
     bool OpenRead(QString fname);
     bool OpenWrite(QString fname, int sampleRate);
     CPX ReadSample();

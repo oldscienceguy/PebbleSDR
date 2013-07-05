@@ -10,6 +10,11 @@ WavFile::WavFile()
 
 }
 
+WavFile::~WavFile()
+{
+    wavFile->close();
+}
+
 bool WavFile::OpenRead(QString fname)
 {
     wavFile = new QFile(fname);
