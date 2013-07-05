@@ -20,6 +20,17 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
     global->settings = settings;
 	connect(settings,SIGNAL(Restart()),this,SLOT(Restart()));
 
+    //Move to constructor
+    recordingPath = QCoreApplication::applicationDirPath();
+#ifdef Q_OS_MAC
+        //Pebble.app/contents/macos = 25
+        recordingPath.chop(25);
+#endif
+    //Make sure directory exists, else will get file error
+    QDir dir(recordingPath);
+    dir.mkdir("PebbleRecordings");
+    recordingPath += "PebbleRecordings/";
+
     //Testing 1 place to switch between PortAudio and QTAudio
     //WARNING: When you change this, delete pebble.ini or manually reset all settings because input/output names may change
     Audio::useQtAudio = false; //Read from setting TBD
@@ -208,6 +219,10 @@ bool Receiver::Off()
 {
 	powerOn = false;
 
+    if (isRecording) {
+        recordingFile.Close();
+        isRecording = false;
+    }
 	//Carefull with order of shutting down
     if (settings->sdrDevice == SDR::SDR_IQ_USB) {
 	}
@@ -332,16 +347,18 @@ void Receiver::RecToggled(bool on)
     if (!powerOn)
         return;
 
-    //Move to constructor
-    QString path = QCoreApplication::applicationDirPath();
-#ifdef Q_OS_MAC
-        //Pebble.app/contents/macos = 25
-        path.chop(25);
-#endif
-    path += "PebbleRecordings/";
-
     if (on) {
-        recordingFileName = path + "foobar.wav"; //Replace with unique filename, date/time, etc
+        //We could use QTemporaryFile to get a unique file name, but need more control
+        QString baseName = "PebbleIQ";
+        QFileInfo fInfo;
+        for (int i=1; i<1000; i++) {
+            recordingFileName = recordingPath + baseName + QString::number(i) + ".wav";
+            fInfo.setFile(recordingFileName);
+            if (!fInfo.exists())
+                break; //Got a unique name
+            //When we overrun counter, last filename will be continually overwritten
+        }
+
         recordingFile.OpenWrite(recordingFileName, sampleRate);
         isRecording = true;
     } else {

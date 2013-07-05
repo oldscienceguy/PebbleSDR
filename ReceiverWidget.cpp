@@ -168,6 +168,8 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     ui.nbButton->setFont(smFont);
     ui.powerButton->setFont(medFont);
     ui.recButton->setFont(medFont);
+    ui.recButton->setEnabled(false);
+
     ui.settingsButton->setFont(medFont);
     ui.squelchSlider->setFont(smFont);
     ui.filterBox->setFont(medFont);
@@ -445,6 +447,11 @@ void ReceiverWidget::powerToggled(bool on)
 			ui.powerButton->setChecked(false); //Turn power button back off
 			return; //Error setting up receiver
 		}
+
+        //Make sure record button is init properly
+        ui.recButton->setEnabled(true);
+        ui.recButton->setChecked(false);
+
         //Presets are only loaded when receiver is on
         presets = receiver->GetPresets();
 
@@ -464,6 +471,10 @@ void ReceiverWidget::powerToggled(bool on)
 	} else {
 		//Turning power off, shut down receiver widget display BEFORE telling receiver to clean up
 		//Objects
+
+        ui.recButton->setChecked(false);
+        ui.recButton->setEnabled(false);
+
         presets = NULL;
 
 		ui.spectrumWidget->Run(false);

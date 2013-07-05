@@ -61,6 +61,7 @@ bool WavFile::OpenWrite(QString fname, int sampleRate)
         return false;
     }
     //Create a new file, overwrite any existing
+    //Note: Directories must exist or we get error
     bool res = wavFile->open(QFile::WriteOnly | QFile::Truncate);
     if (!res) {
         qDebug()<<"Write wav file - "<<fname;

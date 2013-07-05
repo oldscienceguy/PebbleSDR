@@ -103,6 +103,7 @@ private:
     ReceiverWidget::DATA_SELECTION dataSelection;
     bool isRecording;
     QString recordingFileName;
+    QString recordingPath;
     WavFile recordingFile;
 
 	double frequency; //Current LO frequency (not mixed)

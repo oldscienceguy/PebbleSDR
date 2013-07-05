@@ -47,9 +47,17 @@ bool SDRFile::Connect()
 {
     //WIP: Chose file or fixed internal generator
 
+    //TODO: Get directly from receiver or settings so set in one place
+    QString recordingPath = QCoreApplication::applicationDirPath();
+#ifdef Q_OS_MAC
+        //Pebble.app/contents/macos = 25
+        recordingPath.chop(25);
+#endif
+        recordingPath += "PebbleRecordings/";
+
 #if 1
     //Passing NULL for dir shows current/last directory, which may be inside the mac application bundle
-    fileName = QFileDialog::getOpenFileName(NULL,tr("Open Wave File"), NULL, tr("Wave Files (*.wav)"));
+    fileName = QFileDialog::getOpenFileName(NULL,tr("Open Wave File"), recordingPath, tr("Wave Files (*.wav)"));
     //If we try to debug write after getOpenFileName the dialog is still open and obscures QT!
     //Hack to let event loop purge which lets close message get handled - ughh!
     QEventLoop loop; while (loop.processEvents()) /* nothing */;
