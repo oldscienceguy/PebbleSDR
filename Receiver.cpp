@@ -359,7 +359,7 @@ void Receiver::RecToggled(bool on)
             //When we overrun counter, last filename will be continually overwritten
         }
 
-        recordingFile.OpenWrite(recordingFileName, sampleRate);
+        recordingFile.OpenWrite(recordingFileName, sampleRate, frequency);
         isRecording = true;
     } else {
         recordingFile.Close();

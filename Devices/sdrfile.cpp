@@ -81,7 +81,7 @@ bool SDRFile::Connect()
         return false;
 
     if (copyTest) {
-        res = wavFileWrite.OpenWrite(fileName + "2", wavFileRead.GetSampleRate());
+        res = wavFileWrite.OpenWrite(fileName + "2", wavFileRead.GetSampleRate(),0);
     }
     return true;
 }

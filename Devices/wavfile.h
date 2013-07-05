@@ -7,6 +7,10 @@
 /*
 https://ccrma.stanford.edu/courses/422/projects/WaveFormat/
 http://www.sonicspot.com/guide/wavefiles.html More complete spec
+WAV files have an optional INFO chunk that is often left out of spec
+
+See http://www.johnloomis.org/cpe102/asgn/asgn1/riff.html for full RIFF spec
+http://www.tactilemedia.com/info/MCI_Control_Info.html
 
 The canonical WAVE format starts with the RIFF header:
 
@@ -59,6 +63,14 @@ The "data" subchunk contains the size of the data and the actual sound:
 */
 //Cannonical wav file format
 #pragma pack(1)
+//Every chunk/sub-chunk starts with id and size
+typedef struct SUB_CHUNK
+{
+    quint8 id[4];
+    quint32 size;
+
+}SUB_CHUNK;
+
 typedef struct RIFF_CHUNK
 {
     quint8 id[4];
@@ -69,8 +81,7 @@ typedef struct RIFF_CHUNK
 
 typedef struct FMT_SUB_CHUNK
 {
-    quint8 id[4];
-    quint32 size;
+    //sub_chunk header here
     quint16 format;
     quint16 channels;
     quint32 sampleRate;
@@ -86,11 +97,21 @@ typedef struct OPTIONAL_DATA
 
 typedef struct DATA_SUB_CHUNK
 {
-    quint8 id[4];
-    quint32 size;
+    //sub_chunk header here
     //Data follows
 
 }DATA_SUB_CHUNK;
+
+//Fact chunk is only used for compressed data, but we use it to store extended data also
+typedef struct FACT_SUB_CHUNK
+{
+    //sub_chunk header here
+    quint32 numSamples; //This is the only defined FACT item
+    //Extensions follow, non SDR files won't include this and subchunk length will be shorter
+    quint32 loFreq;
+
+}FACT_SUB_CHUNK;
+
 //assumes 16bits per sample
 typedef struct PCM_DATA
 {
@@ -112,7 +133,7 @@ public:
     WavFile();
     ~WavFile();
     bool OpenRead(QString fname);
-    bool OpenWrite(QString fname, int sampleRate);
+    bool OpenWrite(QString fname, int sampleRate, quint32 loFreq);
     CPX ReadSample();
     int ReadSamples(CPX *buf, int numSamples);
     bool WriteSamples(CPX *buf, int numSamples);
@@ -130,9 +151,13 @@ protected:
 
     QFile *wavFile;
     //wav file data structs
+    SUB_CHUNK subChunk;
     RIFF_CHUNK riff;
+    SUB_CHUNK fmtSubChunkPre;
     FMT_SUB_CHUNK fmtSubChunk;
-    DATA_SUB_CHUNK dataSubChunk;
+    SUB_CHUNK dataSubChunkPre;
+    SUB_CHUNK factSubChunkPre;
+    FACT_SUB_CHUNK factSubChunk;
     PCM_DATA pcmData;
     FLOAT_DATA floatData;
 
