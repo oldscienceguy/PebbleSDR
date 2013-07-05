@@ -27,6 +27,8 @@ SDRFile::SDRFile(Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_re
     nco->SetFrequency(100);
 #endif
 
+    copyTest = false; //Write what we read
+
     producerThread = new SDRProducerThread(this);
     producerThread->setRefresh(0);
     consumerThread = new SDRConsumerThread(this);
@@ -42,17 +44,41 @@ SDRFile::~SDRFile(void)
 bool SDRFile::Connect()
 {
     //WIP: Chose file or fixed internal generator
+
+#if 1
     //Passing NULL for dir shows current/last directory, which may be inside the mac application bundle
     fileName = QFileDialog::getOpenFileName(NULL,tr("Open Wave File"), NULL, tr("Wave Files (*.wav)"));
-    bool res = wavFile.OpenRead(fileName);
+    //If we try to debug write after getOpenFileName the dialog is still open and obscures QT!
+    //Hack to let event loop purge which lets close message get handled - ughh!
+    QEventLoop loop; while (loop.processEvents()) /* nothing */;
+
+#else
+    //Use this instead of static if we need more options
+    QFileDialog fDialog;
+    //fDialog.setLabelText(tr("Open Wave File"));
+    //fDialog.setFilter(tr("Wave Files (*.wav)"));
+    QStringList files;
+    if (fDialog.exec())
+        files = fDialog.selectedFiles();
+
+    fDialog.close();
+
+    fileName = files[0];
+#endif
+
+    bool res = wavFileRead.OpenRead(fileName);
     if (!res)
         return false;
 
+    if (copyTest) {
+        res = wavFileWrite.OpenWrite(fileName + "2", wavFileRead.GetSampleRate());
+    }
     return true;
 }
 bool SDRFile::Disconnect()
 {
-    wavFile.Close();
+    wavFileRead.Close();
+    wavFileWrite.Close();
     return true;
 }
 double SDRFile::SetFrequency(double fRequested,double fCurrent)
@@ -133,7 +159,7 @@ QString SDRFile::GetDeviceName()
 
 int SDRFile::GetSampleRate()
 {
-    return wavFile.GetSampleRate();
+    return wavFileRead.GetSampleRate();
 }
 
 #if 0
@@ -177,7 +203,7 @@ void SDRFile::StopProducerThread(){}
 void SDRFile::RunProducerThread()
 {
     AcquireFreeBuffer();
-    int samplesRead = wavFile.ReadSamples(((CPX **)producerBuffer)[nextProducerDataBuf],framesPerBuffer);
+    int samplesRead = wavFileRead.ReadSamples(((CPX **)producerBuffer)[nextProducerDataBuf],framesPerBuffer);
     IncrementProducerBuffer();
 
 #if 0
@@ -194,7 +220,10 @@ void SDRFile::StopConsumerThread(){}
 void SDRFile::RunConsumerThread()
 {
     AcquireFilledBuffer();
-    receiver->ProcessBlock(((CPX **)producerBuffer)[nextConsumerDataBuf],outBuffer,framesPerBuffer);
+    CPX *buf = ((CPX **)producerBuffer)[nextConsumerDataBuf];
+    if (copyTest)
+        wavFileWrite.WriteSamples(buf, framesPerBuffer);
+    receiver->ProcessBlock(buf, outBuffer,framesPerBuffer);
     IncrementConsumerBuffer();
     ReleaseFreeBuffer();
 }

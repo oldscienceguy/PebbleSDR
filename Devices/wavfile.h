@@ -6,6 +6,8 @@
 
 /*
 https://ccrma.stanford.edu/courses/422/projects/WaveFormat/
+http://www.sonicspot.com/guide/wavefiles.html More complete spec
+
 The canonical WAVE format starts with the RIFF header:
 
 0         4   ChunkID          Contains the letters "RIFF" in ASCII form
@@ -75,9 +77,13 @@ typedef struct FMT_SUB_CHUNK
     quint32 byteRate;
     quint16 blockAlign;
     quint16 bitsPerSample;
-    quint16 extraParamSize; //If not 0, then we have extra to read
-
 }FMT_SUB_CHUNK;
+
+typedef struct OPTIONAL_DATA
+{
+    quint16 extraParamSize; //Only exists for non PCM data, ie float
+}OPTIONAL_DATA;
+
 typedef struct DATA_SUB_CHUNK
 {
     quint8 id[4];
@@ -105,7 +111,7 @@ class WavFile
 public:
     WavFile();
     bool OpenRead(QString fname);
-    bool OpenWrite(QString fname);
+    bool OpenWrite(QString fname, int sampleRate);
     CPX ReadSample();
     int ReadSamples(CPX *buf, int numSamples);
     bool WriteSamples(CPX *buf, int numSamples);

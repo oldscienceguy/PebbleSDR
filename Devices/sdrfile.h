@@ -42,12 +42,13 @@ protected:
 
     QString fileName;
 
-    WavFile wavFile;
+    WavFile wavFileRead;
+    WavFile wavFileWrite;
 
     //Testing NCO
     NCO *nco;
 
-
+    bool copyTest; //True if we're reading from one file and writing to another file for testing
 };
 
 #endif // SDRFILE_H

@@ -5,6 +5,7 @@ WavFile::WavFile()
 {
     fileParsed = false;
     writeMode = false;
+    wavFile = NULL;
     dataStart = sizeof(RIFF_CHUNK) + sizeof(FMT_SUB_CHUNK) + sizeof(DATA_SUB_CHUNK);
 
 }
@@ -24,8 +25,9 @@ bool WavFile::OpenRead(QString fname)
     len = wavFile->read((char*)&fmtSubChunk,sizeof(fmtSubChunk));
     if (len<0)
         return false;
-    qDebug()<<"SR:"<<fmtSubChunk.sampleRate<<" Bits/Sample:"<<fmtSubChunk.bitsPerSample<<" Channels:"<<fmtSubChunk.channels<< "Fmt:"<<fmtSubChunk.format<<" Extra:"<<fmtSubChunk.extraParamSize;
+    qDebug()<<"SR:"<<fmtSubChunk.sampleRate<<" Bits/Sample:"<<fmtSubChunk.bitsPerSample<<" Channels:"<<fmtSubChunk.channels<< "Fmt:"<<fmtSubChunk.format;
 
+#if 0
     //If we're reading non PCM data, we may have more to read before data
     if (fmtSubChunk.format!=1 && fmtSubChunk.extraParamSize > 0) {
         //We may get garbage, max allowed is 22, which may not be right
@@ -33,11 +35,11 @@ bool WavFile::OpenRead(QString fname)
         if (len<0)
             return false;
     }
-
+#endif
     len = wavFile->read((char*)&dataSubChunk,sizeof(dataSubChunk));
     if (len<0)
         return false;
-    dataStart = wavFile->pos(); //So we can loop
+
 #if 0
     len = wavFile->read((char*)&data,sizeof(data));
     if (len<0)
@@ -50,7 +52,7 @@ bool WavFile::OpenRead(QString fname)
     return true;
 }
 
-bool WavFile::OpenWrite(QString fname)
+bool WavFile::OpenWrite(QString fname, int sampleRate)
 {
     wavFile = new QFile(fname);
     if (wavFile == NULL) {
@@ -75,20 +77,20 @@ bool WavFile::OpenWrite(QString fname)
     fmtSubChunk.id[0] = 'f';
     fmtSubChunk.id[1] = 'm';
     fmtSubChunk.id[2] = 't';
+    fmtSubChunk.id[3] = ' ';
     fmtSubChunk.size = 16;
     fmtSubChunk.format = 1; //1 = PCM, 3 = FLOAT
     fmtSubChunk.channels = 2;
-    fmtSubChunk.sampleRate = 48000; //Fixed for now
-    fmtSubChunk.byteRate = 48000 * 2 * (16/8);  //SampleRate * NumChannels * BitsPerSample/8
+    fmtSubChunk.sampleRate = sampleRate;
+    fmtSubChunk.byteRate = sampleRate * 2 * (16/8);  //SampleRate * NumChannels * BitsPerSample/8
     fmtSubChunk.blockAlign = 2 * (16/8);  //NumChannels * BitsPerSample/8
     fmtSubChunk.bitsPerSample = 16; //Fixed for now
-    fmtSubChunk.extraParamSize = 0;
 
     dataSubChunk.id[0] = 'd';
     dataSubChunk.id[1] = 'a';
     dataSubChunk.id[2] = 't';
     dataSubChunk.id[3] = 'a';
-    //This will be updated as we write samples
+    //This will be updated after we write samples and close file
     dataSubChunk.size = 0; //NumSamples * NumChannels * BitsPerSample/8
 
     //Seek to first data byte
@@ -182,7 +184,7 @@ CPX WavFile::ReadSample()
 //Writes IQ block
 bool WavFile::WriteSamples(CPX* buf, int numSamples)
 {
-    if (!writeMode)
+    if (!writeMode || wavFile == NULL)
         return false;
 
     int bytesWritten = 0;
@@ -204,26 +206,29 @@ bool WavFile::WriteSamples(CPX* buf, int numSamples)
 bool WavFile::Close()
 {
     //If open for writing, update length fields
-    if (!writeMode) {
+    if (!writeMode && wavFile != NULL) {
         wavFile->close();
         return true;
     }
 
-    //4 + (8 + SubChunk1Size) + (8 + SubChunk2Size) should be same as 36 + dataSubChunk.size
-    riff.size = 4 + (8 + fmtSubChunk.size) + (8 + dataSubChunk.size);
-    wavFile->seek(0); //Replace header data
-    int bytesWritten = wavFile->write((char*)&riff,sizeof(RIFF_CHUNK));
-    if (bytesWritten == -1)
-        return false;
-    bytesWritten = wavFile->write((char*)&fmtSubChunk,sizeof(FMT_SUB_CHUNK));
-    if (bytesWritten == -1)
-        return false;
-    bytesWritten = wavFile->write((char*)&dataSubChunk,sizeof(DATA_SUB_CHUNK));
-    if (bytesWritten == -1)
-        return false;
-    wavFile->close();
+    if (writeMode && wavFile != NULL) {
+        //4 + (8 + SubChunk1Size) + (8 + SubChunk2Size) should be same as 36 + dataSubChunk.size
+        riff.size = 4 + (8 + fmtSubChunk.size) + (8 + dataSubChunk.size);
+        wavFile->seek(0); //Replace header data
+        int bytesWritten = wavFile->write((char*)&riff,sizeof(RIFF_CHUNK));
+        if (bytesWritten == -1)
+            return false;
+        bytesWritten = wavFile->write((char*)&fmtSubChunk,sizeof(FMT_SUB_CHUNK));
+        if (bytesWritten == -1)
+            return false;
+        bytesWritten = wavFile->write((char*)&dataSubChunk,sizeof(DATA_SUB_CHUNK));
+        if (bytesWritten == -1)
+            return false;
+        wavFile->close();
+        return true;
+    }
 
-    return true;
+    return false;
 }
 
 int WavFile::GetSampleRate(){
