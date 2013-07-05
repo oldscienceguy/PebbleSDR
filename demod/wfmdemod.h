@@ -7,14 +7,7 @@
 /////////////////////////////////////////////////////////////////////
 #ifndef WFMDEMOD_H
 #define WFMDEMOD_H
-//#include "dsp/datatypes.h"
-//Adapt to Pebble types
-#include "cpx.h"
-#define TYPEREAL double
-#define TYPECPX	CPX
-#define K_2PI TWOPI
-#define K_PI PI
-#define K_PI2 PI / 2.0;
+#include "../filters/datatypes.h"
 
 #include "filters/fir.h"
 #include "filters/iir.h"
