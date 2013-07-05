@@ -189,23 +189,28 @@ bool Receiver::On()
 	
     if (sdr->GetDevice() == SDR::FILE || settings->startup == Settings::DEFAULTFREQ) {
         frequency=sdr->GetStartupFrequency();
+        receiverWidget->SetFrequency(frequency);
+        //This triggers indirect frequency set, so make sure we set widget first
         receiverWidget->SetMode((DEMODMODE)sdr->GetStartupMode());
     }
     else if (settings->startup == Settings::SETFREQ) {
 		frequency = settings->startupFreq;
+        receiverWidget->SetFrequency(frequency);
+
         receiverWidget->SetMode((DEMODMODE)sdr->GetStartupMode());
     }
 	else if (settings->startup == Settings::LASTFREQ) {
 		frequency = settings->lastFreq;
+        receiverWidget->SetFrequency(frequency);
+
 		receiverWidget->SetMode((DEMODMODE)settings->lastMode);
 	}
 	else {
 		frequency = 10000000;
+        receiverWidget->SetFrequency(frequency);
+
 		receiverWidget->SetMode(dmAM);
 	}
-
-	//receiver->SetFrequency(frequency);
-	receiverWidget->SetFrequency(frequency);
 
 	//This should always be last because it starts samples flowing through the processBlocks
     audioOutput->StartOutput(audioOutRate);

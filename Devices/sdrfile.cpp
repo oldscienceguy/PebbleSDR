@@ -93,7 +93,11 @@ bool SDRFile::Disconnect()
 }
 double SDRFile::SetFrequency(double fRequested,double fCurrent)
 {
-    return fRequested;
+    quint32 loFreq = wavFileRead.GetLoFreq();
+    if (loFreq == 0)
+        return GetStartupFrequency();
+    else
+        return loFreq;
 }
 
 void SDRFile::ShowOptions() {return;}
@@ -144,7 +148,12 @@ void SDRFile::WriteSettings()
 
 double SDRFile::GetStartupFrequency()
 {
-    return GetSampleRate() / 2.0;
+    //If it's a pebble wav file, we should have LO freq
+    quint32 loFreq = wavFileRead.GetLoFreq();
+    if (loFreq == 0)
+        return GetSampleRate() / 2.0; //Default
+    else
+        return loFreq;
 }
 
 int SDRFile::GetStartupMode()
@@ -153,11 +162,19 @@ int SDRFile::GetStartupMode()
 }
 double SDRFile::GetHighLimit()
 {
-    return GetSampleRate();
+    quint32 loFreq = wavFileRead.GetLoFreq();
+    if (loFreq == 0)
+        return GetSampleRate();
+    else
+        return loFreq + GetSampleRate() / 2.0;
 }
 double SDRFile::GetLowLimit()
 {
-    return 0;
+    quint32 loFreq = wavFileRead.GetLoFreq();
+    if (loFreq == 0)
+        return 0;
+    else
+        return loFreq - GetSampleRate() / 2.0;
 }
 //WIP: We really need an adjustable gain
 //For internally generated data, use .5

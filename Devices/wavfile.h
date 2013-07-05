@@ -140,6 +140,7 @@ public:
     bool Close();
 
     int GetSampleRate();
+    quint32 GetLoFreq() {return factSubChunk.loFreq;}
 
 protected:
     bool writeMode;
