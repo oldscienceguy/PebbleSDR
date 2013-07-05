@@ -39,6 +39,8 @@ SDRFile::~SDRFile(void)
 {
     if (!settings)
         return;
+    Stop();
+    Disconnect();
 }
 
 bool SDRFile::Connect()

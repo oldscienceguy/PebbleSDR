@@ -98,7 +98,8 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 
 	connect(ui.loButton,SIGNAL(toggled(bool)),this,SLOT(setLoMode(bool)));
 	connect(ui.powerButton,SIGNAL(toggled(bool)),this,SLOT(powerToggled(bool)));
-	connect(ui.anfButton,SIGNAL(toggled(bool)),this,SLOT(anfButtonToggled(bool)));
+    connect(ui.recButton,SIGNAL(toggled(bool)),receiver,SLOT(RecToggled(bool)));
+    connect(ui.anfButton,SIGNAL(toggled(bool)),this,SLOT(anfButtonToggled(bool)));
 	connect(ui.nbButton,SIGNAL(toggled(bool)),this,SLOT(nbButtonToggled(bool)));
 	connect(ui.nb2Button,SIGNAL(toggled(bool)),this,SLOT(nb2ButtonToggled(bool)));
 	connect(ui.agcBox,SIGNAL(currentIndexChanged(int)),this,SLOT(agcBoxChanged(int)));
@@ -166,6 +167,7 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     ui.nb2Button->setFont(smFont);
     ui.nbButton->setFont(smFont);
     ui.powerButton->setFont(medFont);
+    ui.recButton->setFont(medFont);
     ui.settingsButton->setFont(medFont);
     ui.squelchSlider->setFont(smFont);
     ui.filterBox->setFont(medFont);
@@ -429,6 +431,7 @@ DEMODMODE ReceiverWidget::GetMode()
 	return mode;
 }
 //Slots
+
 //Note: Pushbutton text color is changed with a style sheet in deigner
 //	QPushButton:on {color:red;}
 //

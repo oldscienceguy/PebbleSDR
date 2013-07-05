@@ -26,6 +26,7 @@
 #include "morse.h"
 #include "filters/fir.h"
 #include "filters/fractresampler.h"
+#include "devices/wavfile.h"
 
 #include "Devices/sdr_iq.h"
 
@@ -74,6 +75,7 @@ public:
 		void ShowSdrSettings(bool b);
         void OutputData(const char *d);
         void OutputData (QString s);
+        void RecToggled(bool on);
 
 private:
 	FFT *fft;
@@ -99,7 +101,9 @@ private:
 	IQBalance *iqBalance;
     Morse *morse;
     ReceiverWidget::DATA_SELECTION dataSelection;
-
+    bool isRecording;
+    QString recordingFileName;
+    WavFile recordingFile;
 
 	double frequency; //Current LO frequency (not mixed)
     double mixerFrequency;

@@ -54,14 +54,19 @@ bool WavFile::OpenRead(QString fname)
 
 bool WavFile::OpenWrite(QString fname, int sampleRate)
 {
+    //qDebug()<<fname;
+
     wavFile = new QFile(fname);
     if (wavFile == NULL) {
         return false;
     }
     //Create a new file, overwrite any existing
-    bool res = wavFile->open(QFile::ReadWrite); // || QFile::Truncate);
-    if (!res)
+    bool res = wavFile->open(QFile::WriteOnly | QFile::Truncate);
+    if (!res) {
+        qDebug()<<"Write wav file - "<<fname;
+        qDebug()<<"Write wav file error - "<< wavFile->errorString();
         return false;
+    }
     //Write RIFF
     riff.id[0] = 'R';
     riff.id[1] = 'I';

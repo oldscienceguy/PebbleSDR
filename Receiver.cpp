@@ -45,6 +45,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 
 	powerOn = false;
 	mute = false;
+    isRecording = false;
 
 	presets = NULL;
 
@@ -320,6 +321,35 @@ void Receiver::OutputData(QString s)
     receiverWidget->OutputData(s.toLatin1());
 }
 
+//Connected to ReceiverWidget REC button
+/*
+ * Records to standard file name in data directory
+ * If file exists, appends number until finds one that doesn't
+ * Simple, no prompt for file name, can be instantly toggled on/off
+ */
+void Receiver::RecToggled(bool on)
+{
+    if (!powerOn)
+        return;
+
+    //Move to constructor
+    QString path = QCoreApplication::applicationDirPath();
+#ifdef Q_OS_MAC
+        //Pebble.app/contents/macos = 25
+        path.chop(25);
+#endif
+    path += "PebbleRecordings/";
+
+    if (on) {
+        recordingFileName = path + "foobar.wav"; //Replace with unique filename, date/time, etc
+        recordingFile.OpenWrite(recordingFileName, sampleRate);
+        isRecording = true;
+    } else {
+        recordingFile.Close();
+        isRecording = false;
+    }
+}
+
 bool Receiver::Power(bool on)
 {
 
@@ -490,6 +520,8 @@ void Receiver::ProcessBlock(CPX *in, CPX *out, int frameCount)
 	//if (frameCount != framesPerBuffer)
 	//	audio->inBufferUnderflowCount++; //Treat like in buffer underflow
 
+    if (isRecording)
+        recordingFile.WriteSamples(in,frameCount);
 
 	float tmp;
 	//Configure IQ order
