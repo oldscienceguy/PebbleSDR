@@ -7,6 +7,8 @@ QT += widgets core gui multimedia
 #Edit Projects and make sure Kits use Clang
 #Edit Projects and add 'make install' as additional build step
 #QML Debugging can be turned off, not using QML
+#QT 5.1 crashes in main() if QML debugging is not turned off
+#QT 5.1 generates OSX not supported warnings for 10.8.4 (Mountain Lion)? Maybe in QMutex?
 
 #Subversion files are found at http://www.wandisco.com/subversion/download#osx
 #Edit QtCreator prefs so subversion is found in /opt/subversion/bin/svn (mac default svn is old)  Enter username and pw
