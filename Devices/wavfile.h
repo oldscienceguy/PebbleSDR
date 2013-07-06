@@ -109,6 +109,8 @@ typedef struct FACT_SUB_CHUNK
     quint32 numSamples; //This is the only defined FACT item
     //Extensions follow, non SDR files won't include this and subchunk length will be shorter
     quint32 loFreq;
+    quint8 mode; //Demod mode during recording so we can restore on playback
+    quint8 spare1; //To keep on word boundaries
 
 }FACT_SUB_CHUNK;
 
@@ -133,7 +135,7 @@ public:
     WavFile();
     ~WavFile();
     bool OpenRead(QString fname);
-    bool OpenWrite(QString fname, int sampleRate, quint32 loFreq);
+    bool OpenWrite(QString fname, int sampleRate, quint32 loFreq, quint8 mode, quint8 spare);
     CPX ReadSample();
     int ReadSamples(CPX *buf, int numSamples);
     bool WriteSamples(CPX *buf, int numSamples);
@@ -141,6 +143,8 @@ public:
 
     int GetSampleRate();
     quint32 GetLoFreq() {return factSubChunk.loFreq;}
+    quint8 GetMode() {return factSubChunk.mode;}
+    quint8 GetSpare() {return factSubChunk.spare1;}
 
 protected:
     bool writeMode;

@@ -81,7 +81,7 @@ bool SDRFile::Connect()
         return false;
 
     if (copyTest) {
-        res = wavFileWrite.OpenWrite(fileName + "2", wavFileRead.GetSampleRate(),0);
+        res = wavFileWrite.OpenWrite(fileName + "2", wavFileRead.GetSampleRate(),0,0,0);
     }
     return true;
 }
@@ -158,7 +158,7 @@ double SDRFile::GetStartupFrequency()
 
 int SDRFile::GetStartupMode()
 {
-    return dmLSB;
+    return wavFileRead.GetMode();
 }
 double SDRFile::GetHighLimit()
 {

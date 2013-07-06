@@ -364,7 +364,7 @@ void Receiver::RecToggled(bool on)
             //When we overrun counter, last filename will be continually overwritten
         }
 
-        recordingFile.OpenWrite(recordingFileName, sampleRate, frequency);
+        recordingFile.OpenWrite(recordingFileName, sampleRate, frequency, demod->DemodMode(), 0);
         isRecording = true;
     } else {
         recordingFile.Close();

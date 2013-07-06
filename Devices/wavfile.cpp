@@ -65,6 +65,8 @@ bool WavFile::OpenRead(QString fname)
         } else if (subChunk.id[0]=='f' && subChunk.id[1]=='a' && subChunk.id[2]=='c' && subChunk.id[3] == 't') {
             //Init our extended fields so we know if they've been read
             factSubChunk.loFreq = 0;
+            factSubChunk.mode = 0;
+            factSubChunk.spare1 = 0;
             len = wavFile->read((char*)&factSubChunk,subChunk.size);
             if (len<0)
                 return false;
@@ -88,7 +90,7 @@ bool WavFile::OpenRead(QString fname)
     return true;
 }
 
-bool WavFile::OpenWrite(QString fname, int sampleRate, quint32 _loFreq)
+bool WavFile::OpenWrite(QString fname, int sampleRate, quint32 _loFreq, quint8 mode, quint8 spare)
 {
     //qDebug()<<fname;
 
@@ -137,6 +139,8 @@ bool WavFile::OpenWrite(QString fname, int sampleRate, quint32 _loFreq)
 
     factSubChunk.numSamples = 0; //Not used
     factSubChunk.loFreq = _loFreq;
+    factSubChunk.mode = mode;
+    factSubChunk.spare1 = spare;
 
     dataSubChunkPre.id[0] = 'd';
     dataSubChunkPre.id[1] = 'a';
