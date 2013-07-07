@@ -471,5 +471,4 @@ FORMS += \
     funcubeoptions.ui
 
 RESOURCES += \
-    resources.qrc \
-    pebbleii.qrc
+    resources.qrc
