@@ -51,6 +51,12 @@ message("UI_HEADERS = "$${UI_DIR})
 
 #Conditional MUST match the Build Configuration name, Debug or Release or SomeCustomName
 macx {
+
+	#After much agony, finally figured out that this icon only appears in release, NOT debug builds
+	#There doesn't appear to be any need to use setWindowIcon() either, just this in make file
+	#But Pebble.icns must be specified in resources.qrc
+	ICON = Resources/Pebble.icns
+
 	#WARNING: Switching computers caused this .pro file to not load due to a bad certificate for asembla subversion
 	#Ran Qmake in terminal to see error, accepted cert, and file loads ok
 	#Get most recent checkin version number.  Assumes svn installed as in comments above
@@ -313,7 +319,7 @@ OTHER_FILES += \
     eibi.csv \
     eibireadme.txt \
     memory.csv \
-	FrequencyList-SantaCruz.csv
+	FrequencyList-SantaCruz.csv \
 
 HEADERS += \
     spectrumwidget.h \

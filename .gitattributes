@@ -50,6 +50,7 @@ Devices/wavfile.h -text
 /ReceiverWidget.ui -text
 References/CuteSDR102.pdf -text
 /ReleaseNotes.txt -text
+Resources/Pebble.icns -text
 Resources/edit.png -text
 /SDR.cpp -text
 /SDR.h -text
