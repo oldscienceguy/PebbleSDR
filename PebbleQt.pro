@@ -55,6 +55,8 @@ macx {
 	#After much agony, finally figured out that this icon only appears in release, NOT debug builds
 	#There doesn't appear to be any need to use setWindowIcon() either, just this in make file
 	#But Pebble.icns must be specified in resources.qrc
+	#Use Sketch to edit Pebble Icons
+	#Use http://iconverticons.com/online/ to convert to icns file
 	ICON = Resources/Pebble.icns
 
 	#WARNING: Switching computers caused this .pro file to not load due to a bad certificate for asembla subversion
@@ -320,6 +322,7 @@ OTHER_FILES += \
     eibireadme.txt \
     memory.csv \
 	FrequencyList-SantaCruz.csv \
+    pebble.qss
 
 HEADERS += \
     spectrumwidget.h \

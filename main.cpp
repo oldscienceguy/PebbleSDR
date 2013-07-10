@@ -5,8 +5,13 @@
 
 int main(int argc, char *argv[])
 {
-	QApplication a(argc, argv);
+    QApplication app(argc, argv);
+    QFile qssFile( ":/pebble.qss" );  // assuming stylesheet is part of the resources
+    qssFile.open( QFile::ReadOnly );
+    app.setStyleSheet( qssFile.readAll() );
+    qssFile.close();
+
 	PebbleII w;
 	w.show();
-	return a.exec();
+    return app.exec();
 }

@@ -86,6 +86,7 @@ Resources/edit.png -text
 /iqbalance.h -text
 /iqbalanceoptions.ui -text
 /main.cpp -text
+/pebble.qss -text
 /pebbleii.cpp -text
 /pebbleii.h -text
 /pebbleii.ui -text

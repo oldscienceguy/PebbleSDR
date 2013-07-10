@@ -1,0 +1,5 @@
+/*
+Some examples
+QLineEdit { background: yellow }
+QPushButton { color: red }
+*/
