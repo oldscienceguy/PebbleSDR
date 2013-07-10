@@ -439,7 +439,6 @@ DEMODMODE ReceiverWidget::GetMode()
 //
 void ReceiverWidget::powerToggled(bool on) 
 {
-	QString pwrStyle = "";
     powerOn = on;
 
 	if (on) {
@@ -455,8 +454,6 @@ void ReceiverWidget::powerToggled(bool on)
         //Presets are only loaded when receiver is on
         presets = receiver->GetPresets();
 
-		//Create style in Qt Designer style editor, then paste here
-		pwrStyle = "background-color: qlineargradient(spread:pad, x1:0.471, y1:0, x2:0.483, y2:0.982955, stop:0 rgba(255, 243, 72, 255), stop:0.778409 rgba(255, 247, 221, 255))";
 		//Give SMeter access to signal strength SignalProcessing block
 		ui.sMeterWidget->setSignalStrength(receiver->GetSignalStrength());
 		ui.spectrumWidget->SetSignalSpectrum(receiver->GetSignalSpectrum());
@@ -484,29 +481,30 @@ void ReceiverWidget::powerToggled(bool on)
 
 	}
 	//Common to on or off
+    //See pebble.qss for on/off styles
+    ui.directEntry->setProperty("powerOn",powerOn);
+    ui.directEntry->setStyleSheet("");
 
-	ui.directEntry->setStyleSheet(pwrStyle);
-
-	ui.nixie1->setStyleSheet(pwrStyle);
-	ui.nixie1->setEnabled(on);
-	ui.nixie10->setStyleSheet(pwrStyle);
-	ui.nixie10->setEnabled(on);
-	ui.nixie100->setStyleSheet(pwrStyle);
-	ui.nixie100->setEnabled(on);
-	ui.nixie1k->setStyleSheet(pwrStyle);
-	ui.nixie1k->setEnabled(on);
-	ui.nixie10k->setStyleSheet(pwrStyle);
-	ui.nixie10k->setEnabled(on);
-	ui.nixie100k->setStyleSheet(pwrStyle);
-	ui.nixie100k->setEnabled(on);
-	ui.nixie1m->setStyleSheet(pwrStyle);
-	ui.nixie1m->setEnabled(on);
-	ui.nixie10m->setStyleSheet(pwrStyle);
-	ui.nixie10m->setEnabled(on);
-    ui.nixie100m->setStyleSheet(pwrStyle);
-	ui.nixie100m->setEnabled(on);
-    ui.nixie1g->setStyleSheet(pwrStyle);
-    ui.nixie1g->setEnabled(on);
+    ui.nixie1->setProperty("powerOn",powerOn);
+    ui.nixie1->setStyleSheet(""); //Required to force widget to update it's style sheet based on changed property
+    ui.nixie10->setProperty("powerOn",powerOn);
+    ui.nixie10->setStyleSheet("");
+    ui.nixie100->setProperty("powerOn",powerOn);
+    ui.nixie100->setStyleSheet("");
+    ui.nixie1k->setProperty("powerOn",powerOn);
+    ui.nixie1k->setStyleSheet("");
+    ui.nixie10k->setProperty("powerOn",powerOn);
+    ui.nixie10k->setStyleSheet("");
+    ui.nixie100k->setProperty("powerOn",powerOn);
+    ui.nixie100k->setStyleSheet("");
+    ui.nixie1m->setProperty("powerOn",powerOn);
+    ui.nixie1m->setStyleSheet("");
+    ui.nixie10m->setProperty("powerOn",powerOn);
+    ui.nixie10m->setStyleSheet("");
+    ui.nixie100m->setProperty("powerOn",powerOn);
+    ui.nixie100m->setStyleSheet("");
+    ui.nixie1g->setProperty("powerOn",powerOn);
+    ui.nixie1g->setStyleSheet("");
 
 }
 

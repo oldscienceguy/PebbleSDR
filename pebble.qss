@@ -3,3 +3,16 @@ Some examples
 QLineEdit { background: yellow }
 QPushButton { color: red }
 */
+
+/*
+Exploring alternative to setting specific stylesheet string
+Change the 'Power' property on selected controls to turn background on/off
+*/
+*[powerOn = "true"] {
+	qproperty-enabled: true;
+	background-color: qlineargradient(spread:pad, x1:0.471, y1:0, x2:0.483, y2:0.982955, stop:0 rgba(255, 243, 72, 255), stop:0.778409 rgba(255, 247, 221, 255))
+}
+
+*[powerOn = "false"] {
+	qproperty-enabled: false;
+}
