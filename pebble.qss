@@ -4,17 +4,22 @@ QLineEdit { background: yellow }
 QPushButton { color: red }
 */
 /*
-	Colors are shades of lightSteelGray for the most part
-	#7B899B Darker
-	#8D9DB2 Frame background
-	#9EB0C8 Lighter
-	#B0C4DE
+	http://www.w3schools.com/tags/ref_colorpicker.asp
+	Option 1: shades of lightSteelGray
+	Option 2: Shades of Powder Blue
+	Option 3: Shades of Slate Gray
+	Option 1	Option 2
+	#7B899B		587073	708090	2 Darker
+
+	#8D9DB2		7B9DA1	8D99A6	Frame background
+	#9EB0C8
+	#B0C4DE		9ECACF	A9B3BC	2 Lighter
 
 */
 
 
 /* Make selected frames metal grey background */
-QFrame#comboFrame, QFrame#tunerFrame, QFrame#buttonFrame, QFrame#sliderFrame, QFrame#dataFrame, QFrame#spectrumFrame, QFrame#bandFrame {
+QFrame#comboFrame, QFrame#tunerFrame, QFrame#buttonFrame, QFrame#sliderFrame, QFrame#dataFrame, QFrame#spectrumFrame, QFrame#bandFrame{
 	/*
 	Looking for close match to R390a or similar from that era
 	This is a shade of LightSteelBlue that's pretty close on a Mac
@@ -22,18 +27,26 @@ QFrame#comboFrame, QFrame#tunerFrame, QFrame#buttonFrame, QFrame#sliderFrame, QF
 	Knobs or equiv black
 	Other backgrounds
 	*/
-	background-color: #8D9DB2;
+	background-color: #8D99A6;
+}
+
+/*Main application window */
+QMainWindow {
+	border-style: solid;
+	border-width: 2px;
+	border-color: #CDCDCD; /* just a bit lighter than silver */
+	background-color: #8D99A6;
 }
 
 #dataEdit,#directEntry {
-	background-color: #B0C4DE;
+	background-color: #A9B3BC;
 }
 
 
 /* All the up/down nixie buttons */
 #nixieFrame QPushButton {
 	text-size: 6px;
-	background-color: #7B899B;
+	background-color: #708090;
 }
 
 QPushButton#powerButton:on {color:orange;}
@@ -47,12 +60,12 @@ QSlider{
 QSlider::groove:horizontal {
 	 border: 1px solid #999999;
 	 height: 8px; /* the groove expands to the size of the slider by default. by giving it a height, it has a fixed size */
-	 background: #B0C4DE;
+	 background: #A9B3BC;
 	 margin: 2px 0;
  }
 
 QSlider::handle:horizontal {
-	 background: #7B899B;
+	 background: #708090;
 	 border: 1px solid #5c5c5c;
 	 width: 3px; /* plus radius and border */
 	 margin: -4px 0; /* handle is placed by default on the contents rect of the groove. Expand outside the groove */
@@ -83,8 +96,7 @@ QRadioButton {
 	font-size: 10px;
 	font-weight: "normal";
 	color: white;
-	background-color: #8D9DB2; /*Same as BG color*/
-
+	background-color: #8D99A6; /*Same as BG color*/
 }
 
 QPushButton {
@@ -92,7 +104,7 @@ QPushButton {
 	font-size: 10px;
 	font-weight: "normal";
 	color: white;
-	background-color: #7B899B; /*Darker*/
+	background-color: #708090; /*Darker*/
 
 }
 
@@ -100,8 +112,14 @@ QComboBox {
 	font-family: "Lucida Grande";
 	font-size: 10px;
 	font-weight: "normal";
-	color: black;
-	background-color: #B0C4DE; /*2 shade lighter than bg */
+	color: white;
+	background-color: #A9B3BC; /*2 shade lighter than bg */
+}
+/* This handles the list view when the down arrow is pressed */
+QComboBox QAbstractItemView {
+	color: white;
+	background-color: #A9B3BC; /*2 shade lighter than bg */
+	/* Problem with white top,bottom space */
 }
 /*
 Exploring alternative to setting specific stylesheet string
