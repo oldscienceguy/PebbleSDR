@@ -49,10 +49,6 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 		"Licensed under GPL.  See PebbleGPL.txt";
 
 	receiverWidget->SetMessage( welcome);
-	//Problem:  If we set general styles, custom widgets don't paint
-	//Until we figure out why, use selectors to prevent cascade
-    QString rwStyle = "QFrame#comboFrame, QFrame#tunerFrame, QFrame#buttonFrame, QFrame#sliderFrame, QFrame#dataFrame, QFrame#spectrumFrame, QFrame#bandFrame {background-color: rgb(200, 200, 200);}";
-	receiverWidget->setStyleSheet(rwStyle);
 
 	powerOn = false;
 	mute = false;

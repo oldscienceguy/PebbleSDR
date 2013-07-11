@@ -72,7 +72,10 @@
        <number>0</number>
       </property>
       <item>
-       <widget class="QFrame" name="frame">
+       <widget class="QFrame" name="nixieFrame">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
         <property name="sizePolicy">
          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
           <horstretch>0</horstretch>
@@ -90,10 +93,6 @@
           <width>16777215</width>
           <height>70</height>
          </size>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">QPushButton { background-color:rgb(125, 125, 125);}
-</string>
         </property>
         <property name="frameShape">
          <enum>QFrame::StyledPanel</enum>
@@ -167,6 +166,9 @@
               <height>10</height>
              </size>
             </property>
+            <property name="cursor">
+             <cursorShape>SizeVerCursor</cursorShape>
+            </property>
             <property name="autoFillBackground">
              <bool>false</bool>
             </property>
@@ -207,6 +209,9 @@
               <height>10</height>
              </size>
             </property>
+            <property name="cursor">
+             <cursorShape>SizeVerCursor</cursorShape>
+            </property>
             <property name="autoFillBackground">
              <bool>false</bool>
             </property>
@@ -222,7 +227,7 @@
            </widget>
            <widget class="QLCDNumber" name="nixie1g">
             <property name="enabled">
-             <bool>false</bool>
+             <bool>true</bool>
             </property>
             <property name="geometry">
              <rect>
@@ -313,6 +318,9 @@
               <height>10</height>
              </size>
             </property>
+            <property name="cursor">
+             <cursorShape>SizeVerCursor</cursorShape>
+            </property>
             <property name="autoFillBackground">
              <bool>false</bool>
             </property>
@@ -353,6 +361,9 @@
               <height>10</height>
              </size>
             </property>
+            <property name="cursor">
+             <cursorShape>SizeVerCursor</cursorShape>
+            </property>
             <property name="autoFillBackground">
              <bool>false</bool>
             </property>
@@ -368,7 +379,7 @@
            </widget>
            <widget class="QLCDNumber" name="nixie100m">
             <property name="enabled">
-             <bool>false</bool>
+             <bool>true</bool>
             </property>
             <property name="geometry">
              <rect>
@@ -443,6 +454,9 @@
               <height>10</height>
              </size>
             </property>
+            <property name="cursor">
+             <cursorShape>SizeVerCursor</cursorShape>
+            </property>
             <property name="autoFillBackground">
              <bool>false</bool>
             </property>
@@ -458,7 +472,7 @@
            </widget>
            <widget class="QLCDNumber" name="nixie10m">
             <property name="enabled">
-             <bool>false</bool>
+             <bool>true</bool>
             </property>
             <property name="geometry">
              <rect>
@@ -510,6 +524,9 @@
               <width>16777215</width>
               <height>10</height>
              </size>
+            </property>
+            <property name="cursor">
+             <cursorShape>SizeVerCursor</cursorShape>
             </property>
             <property name="autoFillBackground">
              <bool>false</bool>
@@ -573,6 +590,9 @@
               <height>10</height>
              </size>
             </property>
+            <property name="cursor">
+             <cursorShape>SizeVerCursor</cursorShape>
+            </property>
             <property name="autoFillBackground">
              <bool>false</bool>
             </property>
@@ -588,7 +608,7 @@
            </widget>
            <widget class="QLCDNumber" name="nixie1m">
             <property name="enabled">
-             <bool>false</bool>
+             <bool>true</bool>
             </property>
             <property name="geometry">
              <rect>
@@ -640,6 +660,9 @@
               <width>16777215</width>
               <height>10</height>
              </size>
+            </property>
+            <property name="cursor">
+             <cursorShape>SizeVerCursor</cursorShape>
             </property>
             <property name="autoFillBackground">
              <bool>false</bool>
@@ -716,6 +739,9 @@
               <height>10</height>
              </size>
             </property>
+            <property name="cursor">
+             <cursorShape>SizeVerCursor</cursorShape>
+            </property>
             <property name="autoFillBackground">
              <bool>false</bool>
             </property>
@@ -731,7 +757,7 @@
            </widget>
            <widget class="QLCDNumber" name="nixie100k">
             <property name="enabled">
-             <bool>false</bool>
+             <bool>true</bool>
             </property>
             <property name="geometry">
              <rect>
@@ -783,6 +809,9 @@
               <width>16777215</width>
               <height>10</height>
              </size>
+            </property>
+            <property name="cursor">
+             <cursorShape>SizeVerCursor</cursorShape>
             </property>
             <property name="autoFillBackground">
              <bool>false</bool>
@@ -846,6 +875,9 @@
               <height>10</height>
              </size>
             </property>
+            <property name="cursor">
+             <cursorShape>SizeVerCursor</cursorShape>
+            </property>
             <property name="autoFillBackground">
              <bool>false</bool>
             </property>
@@ -861,7 +893,7 @@
            </widget>
            <widget class="QLCDNumber" name="nixie10k">
             <property name="enabled">
-             <bool>false</bool>
+             <bool>true</bool>
             </property>
             <property name="geometry">
              <rect>
@@ -913,6 +945,9 @@
               <width>16777215</width>
               <height>10</height>
              </size>
+            </property>
+            <property name="cursor">
+             <cursorShape>SizeVerCursor</cursorShape>
             </property>
             <property name="autoFillBackground">
              <bool>false</bool>
@@ -976,6 +1011,9 @@
               <height>10</height>
              </size>
             </property>
+            <property name="cursor">
+             <cursorShape>SizeVerCursor</cursorShape>
+            </property>
             <property name="autoFillBackground">
              <bool>false</bool>
             </property>
@@ -991,7 +1029,7 @@
            </widget>
            <widget class="QLCDNumber" name="nixie1k">
             <property name="enabled">
-             <bool>false</bool>
+             <bool>true</bool>
             </property>
             <property name="geometry">
              <rect>
@@ -1043,6 +1081,9 @@
               <width>16777215</width>
               <height>10</height>
              </size>
+            </property>
+            <property name="cursor">
+             <cursorShape>SizeVerCursor</cursorShape>
             </property>
             <property name="autoFillBackground">
              <bool>false</bool>
@@ -1119,6 +1160,9 @@
               <height>10</height>
              </size>
             </property>
+            <property name="cursor">
+             <cursorShape>SizeVerCursor</cursorShape>
+            </property>
             <property name="autoFillBackground">
              <bool>false</bool>
             </property>
@@ -1134,7 +1178,7 @@
            </widget>
            <widget class="QLCDNumber" name="nixie100">
             <property name="enabled">
-             <bool>false</bool>
+             <bool>true</bool>
             </property>
             <property name="geometry">
              <rect>
@@ -1186,6 +1230,9 @@
               <width>16777215</width>
               <height>10</height>
              </size>
+            </property>
+            <property name="cursor">
+             <cursorShape>SizeVerCursor</cursorShape>
             </property>
             <property name="autoFillBackground">
              <bool>false</bool>
@@ -1249,6 +1296,9 @@
               <height>10</height>
              </size>
             </property>
+            <property name="cursor">
+             <cursorShape>SizeVerCursor</cursorShape>
+            </property>
             <property name="autoFillBackground">
              <bool>false</bool>
             </property>
@@ -1264,7 +1314,7 @@
            </widget>
            <widget class="QLCDNumber" name="nixie10">
             <property name="enabled">
-             <bool>false</bool>
+             <bool>true</bool>
             </property>
             <property name="geometry">
              <rect>
@@ -1316,6 +1366,9 @@
               <width>16777215</width>
               <height>10</height>
              </size>
+            </property>
+            <property name="cursor">
+             <cursorShape>SizeVerCursor</cursorShape>
             </property>
             <property name="autoFillBackground">
              <bool>false</bool>
@@ -1379,11 +1432,11 @@
               <height>10</height>
              </size>
             </property>
+            <property name="cursor">
+             <cursorShape>SizeVerCursor</cursorShape>
+            </property>
             <property name="autoFillBackground">
              <bool>false</bool>
-            </property>
-            <property name="text">
-             <string/>
             </property>
             <property name="autoRepeat">
              <bool>true</bool>
@@ -1391,7 +1444,7 @@
            </widget>
            <widget class="QLCDNumber" name="nixie1">
             <property name="enabled">
-             <bool>false</bool>
+             <bool>true</bool>
             </property>
             <property name="geometry">
              <rect>
@@ -1450,11 +1503,11 @@
               <height>10</height>
              </size>
             </property>
+            <property name="cursor">
+             <cursorShape>SizeVerCursor</cursorShape>
+            </property>
             <property name="autoFillBackground">
              <bool>false</bool>
-            </property>
-            <property name="text">
-             <string/>
             </property>
             <property name="autoRepeat">
              <bool>true</bool>
@@ -1720,7 +1773,7 @@
              </size>
             </property>
             <property name="frameShape">
-             <enum>QFrame::StyledPanel</enum>
+             <enum>QFrame::Box</enum>
             </property>
             <property name="smallDecimalPoint">
              <bool>false</bool>
@@ -1810,6 +1863,9 @@
            </property>
            <property name="text">
             <string>Settings</string>
+           </property>
+           <property name="flat">
+            <bool>false</bool>
            </property>
           </widget>
          </item>
@@ -2359,9 +2415,6 @@
          <font>
           <pointsize>8</pointsize>
          </font>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">QPushButton:on {color:red;}</string>
         </property>
         <property name="text">
          <string>PWR</string>

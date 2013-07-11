@@ -3,16 +3,112 @@ Some examples
 QLineEdit { background: yellow }
 QPushButton { color: red }
 */
-
 /*
-Exploring alternative to setting specific stylesheet string
-Change the 'Power' property on selected controls to turn background on/off
+	Colors are shades of lightSteelGray for the most part
+	#7B899B Darker
+	#8D9DB2 Frame background
+	#9EB0C8 Lighter
+	#B0C4DE
+
 */
-*[powerOn = "true"] {
-	qproperty-enabled: true;
-	background-color: qlineargradient(spread:pad, x1:0.471, y1:0, x2:0.483, y2:0.982955, stop:0 rgba(255, 243, 72, 255), stop:0.778409 rgba(255, 247, 221, 255))
+
+
+/* Make selected frames metal grey background */
+QFrame#comboFrame, QFrame#tunerFrame, QFrame#buttonFrame, QFrame#sliderFrame, QFrame#dataFrame, QFrame#spectrumFrame, QFrame#bandFrame {
+	/*
+	Looking for close match to R390a or similar from that era
+	This is a shade of LightSteelBlue that's pretty close on a Mac
+	Labels should be white
+	Knobs or equiv black
+	Other backgrounds
+	*/
+	background-color: #8D9DB2;
 }
 
-*[powerOn = "false"] {
-	qproperty-enabled: false;
+#dataEdit,#directEntry {
+	background-color: #B0C4DE;
+}
+
+
+/* All the up/down nixie buttons */
+#nixieFrame QPushButton {
+	text-size: 6px;
+	background-color: #7B899B;
+}
+
+QPushButton#powerButton:on {color:orange;}
+
+QSlider{
+	font-family: "Lucida Grande";
+	font-size: 10px;
+	font-weight: "normal";
+}
+
+QSlider::groove:horizontal {
+	 border: 1px solid #999999;
+	 height: 8px; /* the groove expands to the size of the slider by default. by giving it a height, it has a fixed size */
+	 background: #B0C4DE;
+	 margin: 2px 0;
+ }
+
+QSlider::handle:horizontal {
+	 background: #7B899B;
+	 border: 1px solid #5c5c5c;
+	 width: 3px; /* plus radius and border */
+	 margin: -4px 0; /* handle is placed by default on the contents rect of the groove. Expand outside the groove */
+	 border-radius: 3px;
+ }
+
+
+/*Color of groove after thumb*/
+QSlider::add-page:horizontal {
+	/*background: lightGray;*/
+}
+
+/*Color of groove before thumb */
+QSlider::sub-page:horizontal {
+	/*background: darkGray;*/
+}
+
+
+QLabel {
+	font-family: "Lucida Grande";
+	font-size: 10px;
+	font-weight: "normal";
+	color: white;
+}
+
+QRadioButton {
+	font-family: "Lucida Grande";
+	font-size: 10px;
+	font-weight: "normal";
+	color: white;
+	background-color: #8D9DB2; /*Same as BG color*/
+
+}
+
+QPushButton {
+	font-family: "Lucida Grande";
+	font-size: 10px;
+	font-weight: "normal";
+	color: white;
+	background-color: #7B899B; /*Darker*/
+
+}
+
+QComboBox {
+	font-family: "Lucida Grande";
+	font-size: 10px;
+	font-weight: "normal";
+	color: black;
+	background-color: #B0C4DE; /*2 shade lighter than bg */
+}
+/*
+Exploring alternative to setting specific stylesheet string
+Change the powerOn' property on selected controls to turn background on/off
+*/
+QLCDNumber{
+	/*background-color: qlineargradient(spread:pad, x1:0.471, y1:0, x2:0.483, y2:0.982955, stop:0 rgba(255, 243, 72, 255), stop:0.778409 rgba(255, 247, 221, 255))*/
+	color: white;
+	background-color: #353B43;
 }

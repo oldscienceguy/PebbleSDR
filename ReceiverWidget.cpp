@@ -46,10 +46,6 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 #endif
     connect(ui.settingsButton,SIGNAL(clicked(bool)),receiver,SLOT(ShowSettings(bool)));
 
-	//ui.spectrumWidget->setStyleSheet("border: 1px solid white");
-	//Todo: Make lcd glow when on, set up/down button colors, etc
-	//ui.nixie1->setStyleSheet("background: rgba(240, 255, 255, 75%)");
-
 	//Set up filter option lists
 	//Broadcast 15Khz 20 hz -15 khz
 	//Speech 3Khz 300hz to 3khz
@@ -72,7 +68,6 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     ui.dataSelectionBox->addItem("Band",BAND_DATA);
     ui.dataSelectionBox->addItem("CW",CW_DATA);
     ui.dataSelectionBox->addItem("RTTY",RTTY_DATA);
-    ui.dataSelectionBox->setFont(medFont);
     connect(ui.dataSelectionBox,SIGNAL(currentIndexChanged(int)),this,SLOT(dataSelectionChanged(int)));
     SetDataMode((BAND_DATA));
 
@@ -151,33 +146,7 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 
     ui.directEntry->setInputMask("0000000.000"); //All digits, none required
 
-    ui.agcBox->setFont(medFont);
-    ui.agcSlider->setFont(smFont);
-    ui.anfButton->setFont(smFont);
-    ui.gainSlider->setFont(medFont);
-    ui.directEntry->setFont(medFont);
-    ui.label->setFont(medFont);
-    ui.label_2->setFont(smFont);
-    ui.label_3->setFont(medFont);
-    ui.loButton->setFont(smFont);
-    ui.lpfButton->setFont(smFont);
-    ui.mixButton->setFont(smFont);
-    ui.modeBox->setFont(medFont);
-    ui.muteButton->setFont(medFont);
-    ui.nb2Button->setFont(smFont);
-    ui.nbButton->setFont(smFont);
-    ui.powerButton->setFont(medFont);
-    ui.recButton->setFont(medFont);
     ui.recButton->setEnabled(false);
-
-    ui.settingsButton->setFont(medFont);
-    ui.squelchSlider->setFont(smFont);
-    ui.filterBox->setFont(medFont);
-    ui.stationCombo->setFont(medFont);
-    ui.bandCombo->setFont(medFont);
-    ui.bandType->setFont(medFont);
-    ui.addMemoryButton->setFont(smFont);
-    ui.findStationButton->setFont(smFont);
 
     //Clock
     //Todo: Match bold black look of nixie
@@ -185,11 +154,6 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     palette.setColor(QPalette::WindowText,Qt::black);
     ui.clockWidget->setPalette(palette);
     ui.clockWidget->setSegmentStyle(QLCDNumber::Flat);
-    //Same as power on background
-    ui.clockWidget->setStyleSheet("background-color: qlineargradient(spread:pad, x1:0.471, y1:0, x2:0.483, y2:0.982955, stop:0 rgba(255, 243, 72, 255), stop:0.778409 rgba(255, 247, 221, 255))");
-
-    ui.utcClockButton->setFont(smFont);
-    ui.localClockButton->setFont(smFont);
 
     connect(ui.utcClockButton,SIGNAL(clicked()),this,SLOT(utcClockButtonClicked()));
     connect(ui.localClockButton,SIGNAL(clicked()),this,SLOT(localClockButtonClicked()));
@@ -480,32 +444,6 @@ void ReceiverWidget::powerToggled(bool on)
 		receiver->Power(false);
 
 	}
-	//Common to on or off
-    //See pebble.qss for on/off styles
-    ui.directEntry->setProperty("powerOn",powerOn);
-    ui.directEntry->setStyleSheet("");
-
-    ui.nixie1->setProperty("powerOn",powerOn);
-    ui.nixie1->setStyleSheet(""); //Required to force widget to update it's style sheet based on changed property
-    ui.nixie10->setProperty("powerOn",powerOn);
-    ui.nixie10->setStyleSheet("");
-    ui.nixie100->setProperty("powerOn",powerOn);
-    ui.nixie100->setStyleSheet("");
-    ui.nixie1k->setProperty("powerOn",powerOn);
-    ui.nixie1k->setStyleSheet("");
-    ui.nixie10k->setProperty("powerOn",powerOn);
-    ui.nixie10k->setStyleSheet("");
-    ui.nixie100k->setProperty("powerOn",powerOn);
-    ui.nixie100k->setStyleSheet("");
-    ui.nixie1m->setProperty("powerOn",powerOn);
-    ui.nixie1m->setStyleSheet("");
-    ui.nixie10m->setProperty("powerOn",powerOn);
-    ui.nixie10m->setStyleSheet("");
-    ui.nixie100m->setProperty("powerOn",powerOn);
-    ui.nixie100m->setStyleSheet("");
-    ui.nixie1g->setProperty("powerOn",powerOn);
-    ui.nixie1g->setStyleSheet("");
-
 }
 
 void ReceiverWidget::SetDataMode(int _dataMode)
