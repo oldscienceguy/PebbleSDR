@@ -468,31 +468,47 @@ void ReceiverWidget::setLoMode(bool b)
 }
 void ReceiverWidget::anfButtonToggled(bool b)
 {
+    if (!powerOn)
+        return;
+
 	receiver->SetAnfEnabled(b);
 }
 void ReceiverWidget::nbButtonToggled(bool b)
 {
+    if (!powerOn)
+        return;
 	receiver->SetNbEnabled(b);
 }
 void ReceiverWidget::nb2ButtonToggled(bool b)
 {
+    if (!powerOn)
+        return;
 	receiver->SetNb2Enabled(b);
 }
 void ReceiverWidget::agcBoxChanged(int item)
 {
+    if (!powerOn)
+        return;
 	receiver->SetAgcMode((AGC::AGCMODE)item);
 }
 void ReceiverWidget::lpfButtonToggled(bool b)
 {
+    if (!powerOn)
+        return;
 	receiver->SetLpfEnabled(b);
 }
 void ReceiverWidget::muteButtonToggled(bool b)
 {
+    if (!powerOn)
+        return;
     receiver->SetMute(b);
 }
 
 void ReceiverWidget::addMemoryButtonClicked()
 {
+    if (!powerOn)
+        return;
+
     if (presets == NULL)
         return;
 
@@ -504,6 +520,9 @@ void ReceiverWidget::addMemoryButtonClicked()
 
 void ReceiverWidget::findStationButtonClicked()
 {
+    if (!powerOn)
+        return;
+
     //Search all stations in current band looking for match or close (+/- N  khz)
     //Display in station box, message box, or band info area?
     Station * s = presets->FindStation(frequency,2); // +/- 2khz
@@ -686,17 +705,22 @@ void ReceiverWidget::SetSquelch(int s)
 }
 void ReceiverWidget::agcSliderChanged(int g)
 {
+    if (!powerOn)
+        return;
 	receiver->SetAgcGainTop(g);
 }
 
 void ReceiverWidget::gainSliderChanged(int g) 
 {
-
+    if (!powerOn)
+        return;
 	gain=g; 
 	receiver->SetGain(g);
 }
 void ReceiverWidget::squelchSliderChanged(int s)
 {
+    if (!powerOn)
+        return;
 	squelch = s;
 	receiver->SetSquelch(s);
 }
