@@ -107,18 +107,25 @@ const double NETSDR_SAMPLERATE[MAX_SAMPLERATES] =
 
 const quint32 SDRIP_MAXBW[MAX_SAMPLERATES] =
 {
-	50000,
+    //Used to set effective filter bandwidth in sdr-ip
+    //90% at 2mhz = 1.8
+    //80% at 62500 = 50
+    50000,
 	200000,
-	500000,
+    450000,
 	1800000
 };
 
 const double SDRIP_SAMPLERATE[MAX_SAMPLERATES] =
 {
-	(80.0e6/1280.0),
-	(80.0e6/320.0),
-	(80.0e6/130.0),
-	(80.0e6/40.0)
+    //Default freq of SDR-IP is 80mhz (80.0e6) although this can be adjusted for calibration
+    //If we support calibration, then these numbers need to calculated based on actual freq
+    //Divisors have to be integer divisions of 10
+    //These have to be integers so we can do samplerate lookup
+    (80.0e6/1280.0),    //  62500
+    (80.0e6/320.0),     // 250000
+    (80.0e6/160.0),     // 500000
+    (80.0e6/40.0)       //2000000 Max 16bit sample rate
 };
 
 const quint32 CLOUDSDR_MAXBW[MAX_SAMPLERATES] =
@@ -224,6 +231,7 @@ CSdrInterface::~CSdrInterface()
 void CSdrInterface::ParseAscpMsg(CAscpRxMsg *pMsg)
 {
 quint16 Length;
+int id;
 CAscpTxMsg TxMsg;
     pMsg->InitRxMsg();	//initialize receive msg object for read back
     if( pMsg->GetType() == TYPE_TARG_RESP_CITEM )
@@ -258,14 +266,15 @@ CAscpTxMsg TxMsg;
             case CI_GENERAL_INTERFACE_VERSION:
                 break;
             case CI_GENERAL_HARDFIRM_VERSION:
-                if(pMsg->GetParm8() == 0)
-                {
+                id = pMsg->GetParm8();
+                if(id == 0) {
                     m_BootRev = (float)pMsg->GetParm16()/100.0;
-                }
-                else
-                {
+                } else if (id == 1) {
                     m_AppRev =(float)pMsg->GetParm16()/100.0;
                     //m_BandwidthIndex = -1;	//force update of sample rate logic
+                    emit NewInfoData();
+                } else if(id == 2) {
+                    m_HardwareRev = (float)pMsg->GetParm16()/100.0;
                     emit NewInfoData();
                 }
                 break;
@@ -445,12 +454,17 @@ CAscpTxMsg TxMsg;
 
     TxMsg.InitTxMsg(TYPE_HOST_REQ_CITEM);
     TxMsg.AddCItem(CI_GENERAL_HARDFIRM_VERSION);
-    TxMsg.AddParm8(0);
+    TxMsg.AddParm8(0); //Boot code
     SendAscpMsg(&TxMsg);
 
     TxMsg.InitTxMsg(TYPE_HOST_REQ_CITEM);
     TxMsg.AddCItem(CI_GENERAL_HARDFIRM_VERSION);
-    TxMsg.AddParm8(1);
+    TxMsg.AddParm8(1); //Firmware
+    SendAscpMsg(&TxMsg);
+
+    TxMsg.InitTxMsg(TYPE_HOST_REQ_CITEM);
+    TxMsg.AddCItem(CI_GENERAL_HARDFIRM_VERSION);
+    TxMsg.AddParm8(2); //Hardware
     SendAscpMsg(&TxMsg);
 
     m_BaseFrequencyRangeMin = 0;		//load default frequency ranges
@@ -701,14 +715,15 @@ qDebug()<<"Keepalive failed";
     }
 }
 
-//Returns actual samplerate without changing anything, needed in sdr_ip GetSampleRate
-quint32 CSdrInterface::LookUpSampleRate(qint32 bw)
+//Returns bandwidth without changing anything
+quint32 CSdrInterface::LookUpBandwidth(qint32 sr)
 {
-    for (int i=0; i< sizeof(SDRIP_MAXBW); i++) {
-        if (SDRIP_MAXBW[i] == bw) {
-            return SDRIP_SAMPLERATE[i];
+    for (int i=0; i< sizeof(SDRIP_SAMPLERATE); i++) {
+        if (SDRIP_SAMPLERATE[i] == sr) {
+            return SDRIP_MAXBW[i];
         }
     }
+    return 0;
 
 }
 

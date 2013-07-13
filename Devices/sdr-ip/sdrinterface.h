@@ -85,7 +85,7 @@ public:
     qint32 GetRadioType(){return (qint32)m_RadioType;}
 
     double GetSdrSampleRate(){return m_SampleRate;}
-    quint32 LookUpSampleRate(qint32 bw);
+    quint32 LookUpBandwidth(qint32 sr);
 
     //virtual function called by UDP thread with new raw data to process
     void ProcessUdpData(char* pBuf, qint64 length);
@@ -95,6 +95,7 @@ public:
     QString m_SerialNum;
     float m_BootRev;
     float m_AppRev;
+    float m_HardwareRev;
     int m_MissedPackets;
 
 signals:

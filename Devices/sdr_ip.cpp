@@ -217,6 +217,7 @@ void SDR_IP::OnNewInfo()
     qDebug()<<"Serial #: "<<m_pSdrInterface->m_SerialNum;
     qDebug()<<"Boot Rev: "<<m_pSdrInterface->m_BootRev;
     qDebug()<<"App Rev: "<<m_pSdrInterface->m_AppRev;
+    qDebug()<<"HW Rev: "<<m_pSdrInterface->m_HardwareRev;
 
 }
 
@@ -261,7 +262,7 @@ void SDR_IP::Start()
     isThreadRunning = true;
 
     m_pSdrInterface->m_MissedPackets = 0;
-    m_pSdrInterface->SetSdrBandwidth(sampleRate);
+    m_pSdrInterface->SetSdrBandwidth(m_pSdrInterface->LookUpBandwidth(sampleRate));
     m_RfGain = 0; //index to table
     m_pSdrInterface->SetSdrRfGain( m_RfGain );
     m_pSdrInterface->StartSdr();
@@ -313,9 +314,9 @@ QString SDR_IP::GetDeviceName()
 
 int SDR_IP::GetSampleRate()
 {
-    //return sampleRate;
+    return sampleRate;
     //Get actual sample rate from device
-    return m_pSdrInterface->LookUpSampleRate(sampleRate);
+    //return m_pSdrInterface->LookUpSampleRate(sampleRate);
 }
 
 int* SDR_IP::GetSampleRates(int &len)
@@ -324,11 +325,10 @@ int* SDR_IP::GetSampleRates(int &len)
     //Ugly, but couldn't find easy way to init with {1,2,3} array initializer
     //Assume SDR_IP for now, add other devices later
     //These must be the same values as in sdrinterface.c
-    //Note that sample rate really is bandwidth in sdr-ip terms
-    sampleRates[0] = 50000;
-    sampleRates[1] = 200000;
-    sampleRates[2] = 500000;
-    sampleRates[3] = 1800000;
+    sampleRates[0] = 62500; //50000;
+    sampleRates[1] = 250000; //200000;
+    sampleRates[2] = 500000; //500000;
+    sampleRates[3] = 2000000; //1800000;
     return sampleRates;
 
 }
