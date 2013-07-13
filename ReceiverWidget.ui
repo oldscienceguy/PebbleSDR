@@ -1928,7 +1928,7 @@
        <widget class="QComboBox" name="bandType">
         <property name="maximumSize">
          <size>
-          <width>75</width>
+          <width>85</width>
           <height>18</height>
          </size>
         </property>
@@ -2170,10 +2170,10 @@
          </font>
         </property>
         <property name="frameShape">
-         <enum>QFrame::Box</enum>
+         <enum>QFrame::NoFrame</enum>
         </property>
         <property name="frameShadow">
-         <enum>QFrame::Plain</enum>
+         <enum>QFrame::Sunken</enum>
         </property>
        </widget>
       </item>
@@ -2456,9 +2456,15 @@
       </item>
       <item>
        <widget class="QComboBox" name="modeBox">
+        <property name="minimumSize">
+         <size>
+          <width>80</width>
+          <height>0</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
-          <width>70</width>
+          <width>80</width>
           <height>18</height>
          </size>
         </property>
@@ -2501,7 +2507,7 @@
        <widget class="QComboBox" name="agcBox">
         <property name="maximumSize">
          <size>
-          <width>50</width>
+          <width>60</width>
           <height>18</height>
          </size>
         </property>

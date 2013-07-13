@@ -39,13 +39,13 @@ QMainWindow {
 }
 
 #dataEdit,#directEntry {
+	color: white;
 	background-color: #A9B3BC;
 }
 
 
 /* All the up/down nixie buttons */
 #nixieFrame QPushButton {
-	text-size: 6px;
 	background-color: #708090;
 }
 
@@ -120,6 +120,10 @@ QComboBox QAbstractItemView {
 	color: white;
 	background-color: #A9B3BC; /*2 shade lighter than bg */
 	/* Problem with white top,bottom space */
+}
+/*selected or about to be selected item in drop down list */
+QComboBox::item::selected {
+	background-color: #8D99A6;
 }
 /*
 Exploring alternative to setting specific stylesheet string
