@@ -1,3 +1,5 @@
+cache()
+
 TEMPLATE = app
 TARGET = Pebble
 #QT5 requires explicit add of Widgets to add QtWidgets which was in QtGui in earlier releases
@@ -63,6 +65,7 @@ macx {
 	#Ran Qmake in terminal to see error, accepted cert, and file loads ok
 	#Get most recent checkin version number.  Assumes svn installed as in comments above
 	#See http://www.qtcentre.org/wiki/index.php?title=Version_numbering_using_QMake
+	#Note: This only gets re-generated when QMake is run and global.cpp compiled, not on every build
 	VERSION = $$system(/opt/subversion/bin/svn info -r HEAD . | grep 'Changed\\ Rev' | cut -b 19-)
 	!isEmpty(VERSION){
 	  VERSION = 0.$${VERSION}
