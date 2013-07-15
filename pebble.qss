@@ -19,7 +19,7 @@ QPushButton { color: red }
 
 
 /* Make selected frames metal grey background */
-QFrame#comboFrame, QFrame#tunerFrame, QFrame#buttonFrame, QFrame#sliderFrame, QFrame#dataFrame, QFrame#spectrumFrame, QFrame#bandFrame{
+QDialog, QFrame#comboFrame, QFrame#tunerFrame, QFrame#buttonFrame, QFrame#sliderFrame, QFrame#dataFrame, QFrame#spectrumFrame, QFrame#bandFrame{
 	/*
 	Looking for close match to R390a or similar from that era
 	This is a shade of LightSteelBlue that's pretty close on a Mac
@@ -38,7 +38,11 @@ QMainWindow {
 	background-color: #8D99A6;
 }
 
-#dataEdit,#directEntry {
+QLineEdit {
+	height: 16px;
+	font-family: "Lucida Grande";
+	font-size: 10px;
+	font-weight: "normal";
 	color: white;
 	background-color: #A9B3BC;
 }
@@ -98,8 +102,12 @@ QRadioButton {
 	color: white;
 	background-color: #8D99A6; /*Same as BG color*/
 }
-
+/*Use this to eventually change .png used for checked/unchecked */
+QRadioButton::indicator::unchecked{
+	/* Empty for now */
+}
 QPushButton {
+	height: 16px;
 	font-family: "Lucida Grande";
 	font-size: 10px;
 	font-weight: "normal";

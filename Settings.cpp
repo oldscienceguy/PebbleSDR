@@ -33,6 +33,10 @@ Settings::Settings(void)
     lgFont.setPointSize(12);
 
     selectedSDR = 0;
+    pSdr[0]=NULL;
+    pSdr[1]=NULL;
+    pSdr[2]=NULL;
+    pSdr[3]=NULL;
 
 	settingsDialog = new QDialog();
 	sd = new Ui::SettingsDialog();
@@ -263,13 +267,14 @@ void Settings::SelectedSDRChanged(int s)
         else if (sd->sdrEnabledButton4->isChecked())
             s = 3;
     }
+    if (pSdr[selectedSDR] != NULL)
+        pSdr[selectedSDR]->WriteOptionUi(); //Save any prev changes
 
     //Save previous settings
     SaveSettings(true);
 
     //s now has selection
     selectedSDR = s;
-
     //Load the options for selected SDR
     sdrDevice = ini_sdrDevice[s];
     SetOptionsForSDR(selectedSDR);
@@ -303,12 +308,16 @@ void Settings::SelectedSDRChanged(int s)
         break;
     }
 
-
 }
 
 //Set options for SDR 0-3
 void Settings::SetOptionsForSDR(int s)
 {
+    if (pSdr[selectedSDR] != NULL)
+        delete pSdr[selectedSDR];
+
+    pSdr[selectedSDR] = SDR::Factory(NULL,sdrDevice,NULL);
+
     //Adding items triggers selection, block signals until list is complete
     sd->sourceBox1->blockSignals(true);
     sd->sourceBox1->clear();
@@ -346,21 +355,23 @@ void Settings::SetOptionsForSDR(int s)
     sd->iqBalancePhase->setValue(ini_iqBalancePhase[s] * 1000);
     sd->iqEnableBalance->setChecked(ini_iqBalanceEnable[s]);
 
-    //Get allowable sampleRates from device
-    //Ugly - testing
-    SDR *sdr = SDR::Factory(NULL,sdrDevice,NULL);
-    int numSr;
-    int *sr = sdr->GetSampleRates(numSr);
-    sd->sampleRateBox1->blockSignals(true);
-    sd->sampleRateBox1->clear();
-    for (int i=0; i<numSr; i++) {
-        sd->sampleRateBox1->addItem(QString::number(sr[i]),sr[i]);
+    //Set up options and get allowable sampleRates from device
+    if (pSdr[selectedSDR] != NULL) {
+        SDR *sdr = pSdr[selectedSDR];
+        sdr->SetupOptionUi(sd->sdrSpecific);
+
+        int numSr;
+        int *sr = sdr->GetSampleRates(numSr);
+        sd->sampleRateBox1->blockSignals(true);
+        sd->sampleRateBox1->clear();
+        for (int i=0; i<numSr; i++) {
+            sd->sampleRateBox1->addItem(QString::number(sr[i]),sr[i]);
+        }
     }
     int cur;
     cur = sd->sampleRateBox1->findData(ini_sampleRate[s]);
     sd->sampleRateBox1->setCurrentIndex(cur);
     sd->sampleRateBox1->blockSignals(false);
-    delete sdr; //Don't delete until everything is copied into settings ui
 
     cur = sd->startupBox1->findData(ini_startup[s]);
     sd->startupBox1->setCurrentIndex(cur);

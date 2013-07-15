@@ -83,6 +83,9 @@ private:
     double ini_iqBalanceGain[4];
     double ini_iqBalancePhase[4];
     bool ini_iqBalanceEnable[4];
+    //Temporary *sdr so we can get defaults and write device options
+    SDR *pSdr[4];
+    SDR *GetActiveSDR();
 
     QStringList inputDevices;
     QStringList outputDevices;

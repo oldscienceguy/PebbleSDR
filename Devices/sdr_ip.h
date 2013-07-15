@@ -9,6 +9,7 @@
 #include "sdr.h"
 #include "cpx.h"
 #include "sdr-ip/sdrinterface.h"
+#include "ui/ui_sdr-ip.h"
 
 
 class SDR_IP : public SDR
@@ -34,12 +35,15 @@ public:
     double GetLowLimit();
     double GetGain();
     QString GetDeviceName();
+    void SetupOptionUi(QWidget *parent);
+    void WriteOptionUi();
 
     int GetSampleRate();
     int* GetSampleRates(int &len);  //Returns array of allowable rates
 
     void ReadSettings();
     void WriteSettings();
+
 signals:
     
 public slots:
@@ -61,6 +65,8 @@ private:
     QSettings *qSettings;
     quint32 sampleRate; //Pebble rate from settings or option box eventually
     int framesPerBuffer;
+
+    Ui::SDRIP *optionUi;
 
     //Producer/Consumer
     //SDR overrides

@@ -158,6 +158,20 @@ void SDR::SetDevice(SDRDEVICE m)
     sdrDevice = m;
 }
 
+void SDR::SetupOptionUi(QWidget *parent)
+{
+    parent->setVisible(false);
+    return;
+    //Deleting childres messes things up, just hide
+    //Default if not overridden - Remove any previous option widget
+#if 0
+    QObjectList children = parent->children();
+    for (int i=0; i<children.count(); i++) {
+        delete children[i]; //Delete controls created by sdr specific option widget
+    }
+#endif
+}
+
 void SDR::InitProducerConsumer(int _numDataBufs, int _producerBufferSize)
 {
     numDataBufs = _numDataBufs;

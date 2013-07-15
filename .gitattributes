@@ -94,6 +94,7 @@ Resources/edit.png -text
 /presets.cpp -text
 /presets.h -text
 /presets.ui -text
+/sdr-ip.ui -text
 /smeterwidget.cpp -text
 /smeterwidget.h -text
 /smeterwidget.ui -text

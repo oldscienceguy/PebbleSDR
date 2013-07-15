@@ -474,7 +474,8 @@ FORMS += \
     ElektorOptions.ui \
     hpsdrOptions.ui \
     iqbalanceoptions.ui \
-    funcubeoptions.ui
+    funcubeoptions.ui \
+    sdr-ip.ui
 
 RESOURCES += \
     resources.qrc

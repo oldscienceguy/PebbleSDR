@@ -57,6 +57,11 @@ public:
 	virtual int GetSampleRate();
     virtual int* GetSampleRates(int &len); //Returns array of allowable rates and length of array as ref
 
+    //Display device option widget in settings dialog
+    virtual void SetupOptionUi(QWidget *parent);
+    //Called by settings to write device options to ini file
+    virtual void WriteOptionUi() {}
+
 	SDRDEVICE GetDevice();
 	void SetDevice(SDRDEVICE m);
 

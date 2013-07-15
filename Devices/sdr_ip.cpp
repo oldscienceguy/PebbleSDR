@@ -26,10 +26,7 @@
 SDR_IP::SDR_IP(Receiver *_receiver, SDR::SDRDEVICE dev, Settings *_settings)
     :SDR(_receiver, dev, _settings)
 {
-    //If settings is NULL we're getting called just to get defaults, check in destructor
     settings = _settings;
-    if (!settings)
-        return;
 
     QString path = QCoreApplication::applicationDirPath();
 #ifdef Q_OS_MAC
@@ -38,6 +35,12 @@ SDR_IP::SDR_IP(Receiver *_receiver, SDR::SDRDEVICE dev, Settings *_settings)
 #endif
     qSettings = new QSettings(path+"/PebbleData/sdr_ip.ini",QSettings::IniFormat);
     ReadSettings();
+
+    optionUi = NULL;
+
+    //If settings is NULL we're getting called just to get defaults and device settings, check in destructor
+    if (!settings)
+        return;
 
     sampleRate = settings->sampleRate;
 
@@ -70,6 +73,7 @@ SDR_IP::SDR_IP(Receiver *_receiver, SDR::SDRDEVICE dev, Settings *_settings)
     //producerThread->setRefresh(0);
     consumerThread = new SDRConsumerThread(this);
     consumerThread->setRefresh(0);
+
 
 }
 
@@ -374,3 +378,37 @@ void SDR_IP::StopConsumerThread()
     //Problem - RunConsumerThread may be in process when we're asked to stopp
     //We have to wait for it to complete, then return.  Bad dependency - should not have tight connection like this
 }
+
+//Installs our option widget in setup dialog
+void SDR_IP::SetupOptionUi(QWidget *parent)
+{
+    //This sets up the sdr specific widget
+    if (optionUi != NULL)
+        delete optionUi;
+    optionUi = new Ui::SDRIP();
+    optionUi->setupUi(parent);
+    parent->setVisible(true);
+
+    //Read options file and display
+    optionUi->ipAddress->setText(m_IPAdr.toString());
+    //Set mask after we set text, otherwise won't parse correctly
+    optionUi->ipAddress->setInputMask("000.000.000.000");
+    optionUi->port->setText(QString::number(m_Port));
+
+    //connect(o->pushButton,SIGNAL(clicked(bool)),this,SLOT(Test2(bool)));
+    //Debugging tip using qApp as known slot, this works
+    //connect(o->pushButton,SIGNAL(clicked(bool)),qApp,SLOT(aboutQt()));
+    //New QT5 syntax using pointer to member functions
+    //connect(o->pushButton,&QPushButton::clicked, this, &SDR_IP::Test2);
+    //Lambda function example: needs compiler flag -std=c++0x
+    //connect(o->pushButton,&QPushButton::clicked,[=](bool b){qDebug()<<"test";});
+
+}
+
+void SDR_IP::WriteOptionUi()
+{
+    m_IPAdr = QHostAddress(optionUi->ipAddress->text());
+    m_Port = optionUi->port->text().toInt();
+    WriteSettings();
+}
+
