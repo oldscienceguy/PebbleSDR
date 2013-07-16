@@ -35,6 +35,8 @@ public:
         NOSDR, FILE, DVB_T, FUNCUBE_PLUS, SDR_IP_TCP};
 
 	typedef enum IQORDER {IQ,QI,IONLY,QONLY} IQORDER;
+    typedef enum STARTUP {SETFREQ = 0, LASTFREQ, DEFAULTFREQ} STARTUP;
+
     SDR(Receiver *receiver, SDRDEVICE dev, Settings *_settings);
 	~SDR(void);
 
@@ -78,11 +80,8 @@ public:
     void ReleaseFilledBuffer() {semNumFilledBuffers->release();}
     void IncrementConsumerBuffer() {nextConsumerDataBuf = (nextConsumerDataBuf +1 ) % numDataBufs;}
 
-
-    typedef enum STARTUP {SETFREQ = 0, LASTFREQ, DEFAULTFREQ} STARTUP;
-
 //Begin settings testing - Initial copy from settings.h
-    static void ShowSdrOptions(bool b);
+    void ShowSdrOptions(bool b);
 
     //Hack, these should eventually be access methods
     STARTUP startup;
@@ -112,11 +111,15 @@ public:
 //End settings testing
 
 protected:
-    static QDialog *sdrOptions;
+    QDialog *sdrOptions;
+    Ui::SdrOptions *sd;
 
     void ReadSettings();
     void WriteSettings();
     QSettings *qSettings;
+
+    QStringList inputDevices;
+    QStringList outputDevices;
 
 	Audio *audioInput;
 	Receiver *receiver;
@@ -154,6 +157,19 @@ protected:
 	virtual void RunProducerThread();
 	virtual void StopConsumerThread();
 	virtual void RunConsumerThread();
+
+private slots:
+    void InputChanged(int i);
+    void OutputChanged(int i);
+    void StartupChanged(int i);
+    void StartupFrequencyChanged();
+    void SampleRateChanged(int i);
+    void IQGainChanged(double i);
+    void IQOrderChanged(int i);
+    void BalancePhaseChanged(int v);
+    void BalanceGainChanged(int v);
+    void BalanceEnabledChanged(bool b);
+    void BalanceReset();
 
 };
 

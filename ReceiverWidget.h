@@ -105,6 +105,8 @@ private:
     bool showUtcTime;
 
 	private slots:
+        void ReceiverChanged(int i);
+
         void stationChanged(int s);
         void bandTypeChanged(int s);
         void bandChanged(int s);

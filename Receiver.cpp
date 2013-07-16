@@ -79,7 +79,18 @@ bool Receiver::On()
 {
 	powerOn = true;
 
-    sdr = SDR::Factory(this, settings->sdrDevice, settings);
+    if (sdr == NULL)
+        //First time since launch
+        sdr = SDR::Factory(this, settings->sdrDevice, settings);
+    else if (sdr->GetDevice() != settings->sdrDevice) {
+        //Changed, create new one
+        delete sdr;
+        sdr = SDR::Factory(this, settings->sdrDevice, settings);
+    } else {
+        //Device unchanged, delete and recreate for now because there are dependencies in SDR constructor
+        delete sdr;
+        sdr = SDR::Factory(this, settings->sdrDevice, settings);
+    }
 
 
 	if (!sdr->Connect()){
@@ -236,8 +247,9 @@ bool Receiver::Off()
 	//Now clean up rest
 	if (sdr != NULL){
 		sdr->Disconnect();
-		delete sdr;
-		sdr = NULL;
+        //Don't delete SDR, we may turn it back on
+        //delete sdr;
+        //sdr = NULL;
 	}
 	if (demod != NULL) {
 		delete demod;
@@ -489,7 +501,14 @@ void Receiver::SetMixer(int f)
 
 void Receiver::SdrOptionsToggled(bool b)
 {
-    SDR::ShowSdrOptions(b);
+    //2 states, power on and off
+    //If power on, use active sdr to make changes
+    //If off, create new sdr
+    if (!powerOn) {
+        if (sdr == NULL)
+            sdr = SDR::Factory(this, settings->sdrDevice, settings);
+    }
+    sdr->ShowSdrOptions(b);
 }
 
 void Receiver::ShowSettings(bool b)
@@ -499,8 +518,7 @@ void Receiver::ShowSettings(bool b)
 
 void Receiver::ShowSdrSettings(bool b)
 {
-    if (sdr != NULL)
-		sdr->ShowOptions();
+    sdr->ShowOptions();
 }
 
 //processing flow for audio samples, called from SoundCard PortAudio callback

@@ -43,7 +43,7 @@
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <widget class="QComboBox" name="sampleRateBox1">
+     <widget class="QComboBox" name="sampleRateBox">
       <property name="enabled">
        <bool>true</bool>
       </property>
@@ -118,7 +118,7 @@
        <string>IQ Order</string>
       </property>
      </widget>
-     <widget class="QComboBox" name="outputBox1">
+     <widget class="QComboBox" name="outputBox">
       <property name="geometry">
        <rect>
         <x>77</x>
@@ -133,7 +133,7 @@
        </font>
       </property>
      </widget>
-     <widget class="QLineEdit" name="startupEdit1">
+     <widget class="QLineEdit" name="startupEdit">
       <property name="geometry">
        <rect>
         <x>396</x>
@@ -187,7 +187,7 @@
        </font>
       </property>
      </widget>
-     <widget class="QDoubleSpinBox" name="iqGain1">
+     <widget class="QDoubleSpinBox" name="iqGain">
       <property name="geometry">
        <rect>
         <x>395</x>
@@ -241,7 +241,7 @@
        <string>Startup</string>
       </property>
      </widget>
-     <widget class="QComboBox" name="startupBox1">
+     <widget class="QComboBox" name="startupBox">
       <property name="geometry">
        <rect>
         <x>289</x>
@@ -259,7 +259,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QFrame" name="frame_2">
+    <widget class="QFrame" name="sdrSpecific">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
        <horstretch>0</horstretch>
@@ -294,7 +294,7 @@
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <widget class="QComboBox" name="sourceBox1">
+     <widget class="QComboBox" name="sourceBox">
       <property name="geometry">
        <rect>
         <x>81</x>
@@ -351,7 +351,7 @@
        <string>I/Q Input</string>
       </property>
      </widget>
-     <widget class="QComboBox" name="serialBox1">
+     <widget class="QComboBox" name="serialBox">
       <property name="enabled">
        <bool>true</bool>
       </property>
@@ -406,27 +406,6 @@
       </property>
       <property name="text">
        <string>Reset</string>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="sdrOptionsButton">
-      <property name="geometry">
-       <rect>
-        <x>310</x>
-        <y>4</y>
-        <width>157</width>
-        <height>28</height>
-       </rect>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>10</pointsize>
-       </font>
-      </property>
-      <property name="text">
-       <string>SDR Options (must be on)</string>
-      </property>
-      <property name="autoDefault">
-       <bool>false</bool>
       </property>
      </widget>
      <widget class="QLabel" name="iqBalancePhaseLabel">
@@ -542,36 +521,6 @@
          </size>
         </property>
        </spacer>
-      </item>
-      <item>
-       <widget class="QPushButton" name="saveButton">
-        <property name="font">
-         <font>
-          <pointsize>7</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Save</string>
-        </property>
-        <property name="autoDefault">
-         <bool>false</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="cancelButton">
-        <property name="font">
-         <font>
-          <pointsize>7</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Cancel</string>
-        </property>
-        <property name="autoDefault">
-         <bool>false</bool>
-        </property>
-       </widget>
       </item>
      </layout>
     </widget>

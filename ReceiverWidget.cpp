@@ -170,6 +170,27 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     clockTimer->start(1000);
     showTime();
 
+    QComboBox *sdrSelector = ui.sdrSelector;
+    sdrSelector->addItem("SR Ensemble",SDR::SR_ENSEMBLE);
+    sdrSelector->addItem("SR Ensemble 2M",SDR::SR_ENSEMBLE_2M);
+    sdrSelector->addItem("SR Ensemble 4M",SDR::SR_ENSEMBLE_4M);
+    sdrSelector->addItem("SR Ensemble 6M",SDR::SR_ENSEMBLE_6M);
+    sdrSelector->addItem("SR V9-ABPF",SDR::SR_V9);
+    sdrSelector->addItem("SR LITE II",SDR::SR_LITE);
+    sdrSelector->addItem("Elektor SDR",SDR::ELEKTOR);
+    sdrSelector->addItem("RFSpace SDR-IQ",SDR::SDR_IQ_USB);
+    sdrSelector->addItem("RFSpace SDR-IP",SDR::SDR_IP_TCP);
+    sdrSelector->addItem("HPSDR USB",SDR::HPSDR_USB);
+    //sdrSelector->addItem("HPSDR TCP",SDR::HPSDR_TCP);
+    sdrSelector->addItem("SDR Widget",SDR::SDRWIDGET);
+    sdrSelector->addItem("FUNcube Dongle",SDR::FUNCUBE);
+    sdrSelector->addItem("FUNcube Dongle Plus",SDR::FUNCUBE_PLUS);
+    sdrSelector->addItem("File",SDR::FILE);
+    sdrSelector->addItem("RTL2832 Family",SDR::DVB_T);
+
+    connect(sdrSelector,SIGNAL(currentIndexChanged(int)),this,SLOT(ReceiverChanged(int)));
+
+
 }
 
 ReceiverWidget::~ReceiverWidget(void)
@@ -416,6 +437,9 @@ void ReceiverWidget::powerToggled(bool on)
 			return; //Error setting up receiver
 		}
 
+        //Don't allow SDR changes when receiver is on
+        ui.sdrSelector->setEnabled(false);
+
         //Make sure record button is init properly
         ui.recButton->setEnabled(true);
         ui.recButton->setChecked(false);
@@ -437,6 +461,9 @@ void ReceiverWidget::powerToggled(bool on)
 	} else {
 		//Turning power off, shut down receiver widget display BEFORE telling receiver to clean up
 		//Objects
+
+        //Don't allow SDR changes when receiver is on
+        ui.sdrSelector->setEnabled(true);
 
         ui.recButton->setChecked(false);
         ui.recButton->setEnabled(false);
@@ -799,6 +826,10 @@ double ReceiverWidget::GetNixieNumber()
     v += ui.nixie1->value() *    1;
 
     return v;
+}
+
+void ReceiverWidget::ReceiverChanged(int i)
+{
 }
 
 //Updates all the nixies to display a number
