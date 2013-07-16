@@ -194,19 +194,19 @@ bool Receiver::On()
 	receiverWidget->SetGain(30,1,100);  //20%
 	receiverWidget->SetSquelch(-100);
 	
-    if (sdr->GetDevice() == SDR::FILE || settings->startup == Settings::DEFAULTFREQ) {
+    if (sdr->GetDevice() == SDR::FILE || sdr->startup == SDR::DEFAULTFREQ) {
         frequency=sdr->GetStartupFrequency();
         receiverWidget->SetFrequency(frequency);
         //This triggers indirect frequency set, so make sure we set widget first
         receiverWidget->SetMode((DEMODMODE)sdr->GetStartupMode());
     }
-    else if (settings->startup == Settings::SETFREQ) {
-		frequency = settings->startupFreq;
+    else if (sdr->startup == SDR::SETFREQ) {
+        frequency = sdr->startupFreq;
         receiverWidget->SetFrequency(frequency);
 
         receiverWidget->SetMode((DEMODMODE)sdr->GetStartupMode());
     }
-	else if (settings->startup == Settings::LASTFREQ) {
+    else if (sdr->startup == SDR::LASTFREQ) {
 		frequency = settings->lastFreq;
         receiverWidget->SetFrequency(frequency);
 

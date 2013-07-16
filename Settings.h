@@ -21,8 +21,8 @@ public:
     typedef enum IQORDER {IQ,QI,IONLY,QONLY} IQORDER;
 
 	//Hack, these should eventually be access methods
-	STARTUP startup;
-	double startupFreq;
+    //STARTUP startup;
+    //double startupFreq;
 	double lastFreq;
 	int lastMode;
 	int lastDisplayMode; //Spectrum, waterfall, etc

@@ -387,14 +387,6 @@ void Settings::SetOptionsForSDR(int s)
 void Settings::StartupChanged(int i)
 {
 
-    startup = (STARTUP)sd->startupBox1->itemData(i).toInt();
-    sd->startupEdit1->setText(QString::number(this->ini_startupFreq[selectedSDR],'f',0));
-    if (startup == SETFREQ) {
-        sd->startupEdit1->setEnabled(true);
-    }
-    else {
-        sd->startupEdit1->setEnabled(false);
-    }
 
 }
 
@@ -451,13 +443,13 @@ void Settings::ReadSettings()
     ini_startup[1] = (STARTUP)qSettings->value("Startup2", DEFAULTFREQ).toInt();
     ini_startup[2] = (STARTUP)qSettings->value("Startup3", DEFAULTFREQ).toInt();
     ini_startup[3] = (STARTUP)qSettings->value("Startup4", DEFAULTFREQ).toInt();
-    startup = ini_startup[selectedSDR];
+    //startup = ini_startup[selectedSDR];
 
     ini_startupFreq[0] = qSettings->value("StartupFreq1", 10000000).toDouble();
     ini_startupFreq[1] = qSettings->value("StartupFreq2", 10000000).toDouble();
     ini_startupFreq[2] = qSettings->value("StartupFreq3", 10000000).toDouble();
     ini_startupFreq[3] = qSettings->value("StartupFreq4", 10000000).toDouble();
-    startupFreq = ini_startupFreq[selectedSDR];
+    //startupFreq = ini_startupFreq[selectedSDR];
 
     ini_inputDeviceName[0] = qSettings->value("InputDeviceName1", "").toString();
     ini_inputDeviceName[1] = qSettings->value("InputDeviceName2", "").toString();
