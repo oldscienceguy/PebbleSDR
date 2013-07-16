@@ -15,6 +15,9 @@
 #include "SoundCard.h"
 #include "Receiver.h"
 
+//StaticInit
+QDialog *SDR::sdrOptions = NULL;
+
 SDR::SDR(Receiver *_receiver, SDRDEVICE dev,Settings *_settings)
 {
     settings = _settings;
@@ -55,11 +58,41 @@ SDR::~SDR(void)
 }
 
 //Settings common to all devices
-void SDR::ReadSettings(QSettings *settings)
+//Make sure to call SDR::ReadSettings() in any derived class
+void SDR::ReadSettings()
 {
+    //Not sure if we need this
+    sdrDevice = (SDR::SDRDEVICE)qSettings->value("sdrDevice", SDR::SR_V9).toInt();
+
+    startup = (STARTUP)qSettings->value("Startup", DEFAULTFREQ).toInt();
+    startupFreq = qSettings->value("StartupFreq", 10000000).toDouble();
+    inputDeviceName = qSettings->value("InputDeviceName", "").toString();
+    outputDeviceName = qSettings->value("OutputDeviceName", "").toString();
+    sampleRate = qSettings->value("SampleRate", 48000).toInt();
+    sdrNumber = qSettings->value("sdrNumber",-1).toInt();
+    iqGain = qSettings->value("iqGain",1).toDouble();
+    iqOrder = (IQORDER)qSettings->value("IQOrder", Settings::IQ).toInt();
+    iqBalanceGain = qSettings->value("iqBalanceGain",1).toDouble();
+    iqBalancePhase = qSettings->value("iqBalancePhase",0).toDouble();
+    iqBalanceEnable = qSettings->value("iqBalanceEnable",false).toBool();
+
 }
-void SDR::WriteSettings(QSettings *settings)
+void SDR::WriteSettings()
 {
+    qSettings->setValue("sdrDevice",sdrDevice);
+
+    qSettings->setValue("Startup",startup);
+    qSettings->setValue("StartupFreq",startupFreq);
+    qSettings->setValue("InputDeviceName", inputDeviceName);
+    qSettings->setValue("OutputDeviceName", outputDeviceName);
+    qSettings->setValue("SampleRate",sampleRate);
+    qSettings->setValue("sdrNumber",sdrNumber);
+    qSettings->setValue("iqGain",iqGain);
+    qSettings->setValue("IQOrder", iqOrder);
+    qSettings->setValue("iqBalanceGain", iqBalanceGain);
+    qSettings->setValue("iqBalancePhase", iqBalancePhase);
+    qSettings->setValue("iqBalanceEnable", iqBalanceEnable);
+
 }
 
 //Static
@@ -249,6 +282,22 @@ void SDR::AcquireFilledBuffer()
     }
 
     semNumFilledBuffers->acquire(); //Will not return until we get a filled buffer, but will yield
+
+}
+
+void SDR::ShowSdrOptions(bool b)
+{
+    if (SDR::sdrOptions == NULL) {
+        SDR::sdrOptions = new QDialog();
+        Ui::SdrOptions *sd = new Ui::SdrOptions();
+        sd->setupUi(SDR::sdrOptions);
+        SDR::sdrOptions->setWindowTitle("Pebble Settings");
+    }
+
+    if (b)
+        SDR::sdrOptions->show();
+    else
+        SDR::sdrOptions->hide();
 
 }
 

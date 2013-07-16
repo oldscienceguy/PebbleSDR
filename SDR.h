@@ -14,6 +14,7 @@ Base class for SDR Receivers
 #include "Devices/usbutil.h"
 #include "audio.h"
 #include "ui/ui_iqbalanceoptions.h"
+#include "ui/ui_sdr.h"
 
 class Settings; //Can't include settings.h due to circular dependencies
 class Receiver;
@@ -76,9 +77,46 @@ public:
     void AcquireFilledBuffer();
     void ReleaseFilledBuffer() {semNumFilledBuffers->release();}
     void IncrementConsumerBuffer() {nextConsumerDataBuf = (nextConsumerDataBuf +1 ) % numDataBufs;}
+
+
+    typedef enum STARTUP {SETFREQ = 0, LASTFREQ, DEFAULTFREQ} STARTUP;
+
+//Begin settings testing - Initial copy from settings.h
+    static void ShowSdrOptions(bool b);
+
+    //Hack, these should eventually be access methods
+    STARTUP startup;
+    double startupFreq;
+    double lastFreq;
+    int lastMode;
+    int lastDisplayMode; //Spectrum, waterfall, etc
+    QString inputDeviceName;
+    QString outputDeviceName;
+    int sampleRate;
+    //If Output Sample Rate is above this, then we try to reduce it by skipping samples when we output
+    int decimateLimit;
+    bool postMixerDecimate; //If true, then downsample to decimate limit after mixer
+    int framesPerBuffer;
+    double dbOffset; //DB calibration for spectrum and smeter
+    int sdrNumber; //For SoftRocks, selects last digit in serial number
+    //Increment for left-right and up-down in spectrum display
+    int leftRightIncrement;
+    int upDownIncrement;
+
+    double iqGain; //Normalize device so incoming IQ levels are consistent
+    IQORDER iqOrder;
+    //Image rejection (iqbalance) factors for this device
+    double iqBalanceGain;
+    double iqBalancePhase;
+    bool iqBalanceEnable;
+//End settings testing
+
 protected:
-	void ReadSettings(QSettings *settings);
-	void WriteSettings(QSettings *settings);
+    static QDialog *sdrOptions;
+
+    void ReadSettings();
+    void WriteSettings();
+    QSettings *qSettings;
 
 	Audio *audioInput;
 	Receiver *receiver;

@@ -1534,7 +1534,7 @@ int *FunCube::GetSampleRates(int &len)
 }
 void FunCube::ReadSettings()
 {
-	SDR::ReadSettings(qSettings);
+    SDR::ReadSettings();
     sFCDStartup = qSettings->value("FCDStartup",162450000).toDouble();
     sFCDPlusStartup = qSettings->value("FCDPlusStartup",10000000).toDouble();
     //FCD official range is 64 to 1.7 with no gaps
@@ -1577,7 +1577,7 @@ void FunCube::ReadSettings()
 
 void FunCube::WriteSettings()
 {
-	SDR::WriteSettings(qSettings);
+    SDR::WriteSettings();
     qSettings->setValue("FCDStartup",sFCDStartup);
     qSettings->setValue("FCDPlusStartup",sFCDPlusStartup);
     qSettings->setValue("FCDLow",sFCDLow);

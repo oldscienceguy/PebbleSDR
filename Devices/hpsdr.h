@@ -199,7 +199,6 @@ private:
     unsigned char outputBuffer[BUFSIZE]; //
     unsigned char inputBuffer[BUFSIZE * NUMFRAMES]; //2048 samples
 
-	QSettings *qSettings;
 	//Settings
 	double sStartup;
 	double sLow;

@@ -487,6 +487,11 @@ void Receiver::SetMixer(int f)
     }
 }
 
+void Receiver::SdrOptionsToggled(bool b)
+{
+    SDR::ShowSdrOptions(b);
+}
+
 void Receiver::ShowSettings(bool b)
 {
 	settings->ShowSettings();

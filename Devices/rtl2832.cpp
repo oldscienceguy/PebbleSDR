@@ -421,7 +421,7 @@ void RTL2832::RunConsumerThread()
 
 void RTL2832::ReadSettings()
 {
-    SDR::ReadSettings(qSettings);
+    SDR::ReadSettings();
     //Valid gain values (in tenths of a dB) for the E4000 tuner:
     //-10, 15, 40, 65, 90, 115, 140, 165, 190,
     //215, 240, 290, 340, 420, 430, 450, 470, 490
@@ -432,7 +432,7 @@ void RTL2832::ReadSettings()
 
 void RTL2832::WriteSettings()
 {
-    SDR::WriteSettings(qSettings);
+    SDR::WriteSettings();
     qSettings->setValue("RtlGain",rtlGain);
     qSettings->sync();
 

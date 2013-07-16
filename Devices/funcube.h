@@ -125,7 +125,6 @@ private:
 
 	void ReadSettings();
 	void WriteSettings();
-	QSettings *qSettings;
 	//Settings
     double sFCDStartup;
     double sFCDPlusStartup;

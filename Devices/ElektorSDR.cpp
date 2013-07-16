@@ -66,7 +66,7 @@ void ElektorSDR::Stop()
 
 void ElektorSDR::ReadSettings()
 {
-	SDR::ReadSettings(qSettings);
+    SDR::ReadSettings();
 	ELEKTOR_Startup = qSettings->value("Startup",10000000).toDouble();
 	ELEKTOR_Low = qSettings->value("Low",150000).toDouble();
 	ELEKTOR_High = qSettings->value("High",30000000).toDouble();
@@ -76,7 +76,7 @@ void ElektorSDR::ReadSettings()
 }
 void ElektorSDR::WriteSettings()
 {
-	SDR::WriteSettings(qSettings);
+    SDR::WriteSettings();
 	qSettings->setValue("Startup",ELEKTOR_Startup);
 	qSettings->setValue("Low",ELEKTOR_Low);
 	qSettings->setValue("High",ELEKTOR_High);

@@ -88,7 +88,7 @@ SDR_IQ::~SDR_IQ(void)
 }
 void SDR_IQ::ReadSettings()
 {
-	SDR::ReadSettings(qSettings);
+    SDR::ReadSettings();
 	sStartup = qSettings->value("Startup",10000000).toDouble();
 	sLow = qSettings->value("Low",150000).toDouble();
 	sHigh = qSettings->value("High",33000000).toDouble();
@@ -101,7 +101,7 @@ void SDR_IQ::ReadSettings()
 }
 void SDR_IQ::WriteSettings()
 {
-	SDR::WriteSettings(qSettings);
+    SDR::WriteSettings();
 	qSettings->setValue("Startup",sStartup);
 	qSettings->setValue("Low",sLow);
 	qSettings->setValue("High",sHigh);

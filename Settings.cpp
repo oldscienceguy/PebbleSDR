@@ -444,6 +444,7 @@ void Settings::ReadSettings()
 	//Todo: Make strings constants
 	//If we don' specify a group, "General" is assumed
 
+    //Move to SDR
     selectedSDR = qSettings->value("selectedSDR",0).toInt();
 
     ini_startup[0] = (STARTUP)qSettings->value("Startup1", DEFAULTFREQ).toInt();
@@ -457,8 +458,6 @@ void Settings::ReadSettings()
     ini_startupFreq[2] = qSettings->value("StartupFreq3", 10000000).toDouble();
     ini_startupFreq[3] = qSettings->value("StartupFreq4", 10000000).toDouble();
     startupFreq = ini_startupFreq[selectedSDR];
-
-	lastFreq = qSettings->value("LastFreq", 10000000).toDouble();
 
     ini_inputDeviceName[0] = qSettings->value("InputDeviceName1", "").toString();
     ini_inputDeviceName[1] = qSettings->value("InputDeviceName2", "").toString();
@@ -478,10 +477,6 @@ void Settings::ReadSettings()
     ini_sampleRate[3] = qSettings->value("SampleRate4", 48000).toInt();
     sampleRate = ini_sampleRate[selectedSDR];
 
-	decimateLimit = qSettings->value("DecimateLimit", 24000).toInt();
-	postMixerDecimate = qSettings->value("PostMixerDecimate",true).toBool();
-	//Be careful about changing this, has global impact 
-	framesPerBuffer = qSettings->value("FramesPerBuffer",2048).toInt();
 
     ini_sdrDevice[0] = (SDR::SDRDEVICE)qSettings->value("sdrDevice1", SDR::SR_V9).toInt();
     ini_sdrDevice[1] = (SDR::SDRDEVICE)qSettings->value("sdrDevice2", SDR::SR_V9).toInt();
@@ -521,6 +516,14 @@ void Settings::ReadSettings()
     ini_iqBalanceEnable[1] = qSettings->value("iqBalanceEnable2",false).toBool();
     ini_iqBalanceEnable[2] = qSettings->value("iqBalanceEnable3",false).toBool();
     ini_iqBalanceEnable[3] = qSettings->value("iqBalanceEnable4",false).toBool();
+
+    //End move
+
+    lastFreq = qSettings->value("LastFreq", 10000000).toDouble();
+    decimateLimit = qSettings->value("DecimateLimit", 24000).toInt();
+    postMixerDecimate = qSettings->value("PostMixerDecimate",true).toBool();
+    //Be careful about changing this, has global impact
+    framesPerBuffer = qSettings->value("FramesPerBuffer",2048).toInt();
 
     dbOffset = qSettings->value("dbOffset",-60).toFloat();
 	lastMode = qSettings->value("LastMode",0).toInt();
@@ -594,7 +597,6 @@ void Settings::WriteSettings()
     qSettings->setValue("StartupFreq3",ini_startupFreq[2]);
     qSettings->setValue("StartupFreq4",ini_startupFreq[3]);
 
-	qSettings->setValue("LastFreq",lastFreq);
 
     qSettings->setValue("InputDeviceName1", ini_inputDeviceName[0]);
     qSettings->setValue("InputDeviceName2", ini_inputDeviceName[1]);
@@ -647,7 +649,8 @@ void Settings::WriteSettings()
     qSettings->setValue("iqBalanceEnable4", ini_iqBalanceEnable[3]);
 
     //No UI Settings, only in file
-	qSettings->setValue("dbOffset",dbOffset);
+    qSettings->setValue("LastFreq",lastFreq);
+    qSettings->setValue("dbOffset",dbOffset);
 	qSettings->setValue("LastMode",lastMode);
 	qSettings->setValue("LastDisplayMode",lastDisplayMode);
 	qSettings->setValue("DecimateLimit",decimateLimit);

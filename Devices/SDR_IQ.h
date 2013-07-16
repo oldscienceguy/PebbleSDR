@@ -131,7 +131,6 @@ public:
 
 
 private:
-	QSettings *qSettings;
 	QMutex mutex;
 	FT_HANDLE ftHandle;
 	CPX *inBuffer;

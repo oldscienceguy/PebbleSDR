@@ -76,6 +76,7 @@ public:
         void OutputData(const char *d);
         void OutputData (QString s);
         void RecToggled(bool on);
+        void SdrOptionsToggled(bool b);
 
 private:
 	FFT *fft;

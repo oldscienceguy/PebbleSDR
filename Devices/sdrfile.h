@@ -31,7 +31,6 @@ public:
     int GetSampleRate();
 
 protected:
-    QSettings *qSettings;
 
     CPX *outBuffer;
     int framesPerBuffer;

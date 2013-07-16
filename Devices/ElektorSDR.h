@@ -65,7 +65,6 @@ public:
 		void setInput7(bool b);
 
 private:
-	QSettings *qSettings;
 
 	FT_HANDLE ftHandle;
 #define BUFFER_SIZE 4096

@@ -82,7 +82,6 @@ public:
 		void serialNumberChanged(int s);
 
 private:
-	QSettings *qSettings;
     libusb_device *dev;
     libusb_device_handle* hDev;
     int usbCtrlMsgIn(int request, int value, int index, unsigned char *bytes, int size);

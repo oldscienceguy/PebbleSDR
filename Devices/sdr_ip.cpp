@@ -90,7 +90,7 @@ SDR_IP::~SDR_IP()
 
 void SDR_IP::ReadSettings()
 {
-    SDR::ReadSettings(qSettings);
+    SDR::ReadSettings();
     //sStartup = qSettings->value("Startup",10000000).toDouble();
     //sLow = qSettings->value("Low",100000).toDouble();
     //sHigh = qSettings->value("High",33000000).toDouble();
@@ -103,7 +103,7 @@ void SDR_IP::ReadSettings()
 }
 void SDR_IP::WriteSettings()
 {
-    SDR::WriteSettings(qSettings);
+    SDR::WriteSettings();
     //qSettings->setValue("Startup",sStartup);
     //qSettings->setValue("Low",sLow);
     //qSettings->setValue("High",sHigh);

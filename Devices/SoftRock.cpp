@@ -76,7 +76,7 @@ void SoftRock::Stop()
 
 void SoftRock::ReadSettings()
 {
-	SDR::ReadSettings(qSettings);
+    SDR::ReadSettings();
 	//Device Settings
 	//Keep si570 frequency within 'reasonable' range, not exactly to spec
 	//Standard si570 support 4000000 to 160000000
@@ -120,7 +120,7 @@ void SoftRock::ReadSettings()
 }
 void SoftRock::WriteSettings()
 {
-	SDR::WriteSettings(qSettings);
+    SDR::WriteSettings();
 	qSettings->setValue("SR_ENSEMBLE/Startup",SR_ENSEMBLE_Startup);
 	qSettings->setValue("SR_ENSEMBLE/Low",SR_ENSEMBLE_Low);
 	qSettings->setValue("SR_ENSEMBLE/High",SR_ENSEMBLE_High);
@@ -166,8 +166,10 @@ bool SoftRock::Connect()
 		if (hDev == NULL)
 			return false; //No devices match and/or serial number not found
 
-		// Default is config #0, Select config #1 for SoftRock
-        ret = libusb_set_configuration(hDev,1);//Not sure what config 1 is yet
+        // Default is config #0, Select config #1 for SoftRock, -1 is flag to reset
+        //This stops Fifi from working because it block the Fifi audio device
+        //I don't think it's needed for SoftRocks either, test
+        //ret = libusb_set_configuration(hDev,1);//Not sure what config 1 is yet
 
 		// Claim interface #0.
         ret = libusb_claim_interface(hDev,0);

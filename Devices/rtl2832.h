@@ -46,7 +46,6 @@ private:
 
     rtlsdr_dev_t *dev;
 
-    QSettings *qSettings;
     USBUtil *usb;
 
 

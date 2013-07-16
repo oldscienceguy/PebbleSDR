@@ -131,7 +131,7 @@ void SDRFile::Stop()
 
 void SDRFile::ReadSettings()
 {
-    SDR::ReadSettings(qSettings);
+    SDR::ReadSettings();
 #if 0
     sStartup = qSettings->value("Startup",162450000).toDouble();
     sLow = qSettings->value("Low",60000000).toDouble();

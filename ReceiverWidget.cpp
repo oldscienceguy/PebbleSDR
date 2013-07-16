@@ -94,8 +94,11 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	connect(ui.loButton,SIGNAL(toggled(bool)),this,SLOT(setLoMode(bool)));
     ui.powerButton->setCheckable(true); //Make it a toggle button
     ui.recButton->setCheckable(true);
+    ui.sdrOptions->setCheckable(true);
     connect(ui.powerButton,SIGNAL(toggled(bool)),this,SLOT(powerToggled(bool)));
     connect(ui.recButton,SIGNAL(toggled(bool)),receiver,SLOT(RecToggled(bool)));
+    connect(ui.sdrOptions,SIGNAL(toggled(bool)),receiver,SLOT(SdrOptionsToggled(bool)));
+
     connect(ui.anfButton,SIGNAL(toggled(bool)),this,SLOT(anfButtonToggled(bool)));
 	connect(ui.nbButton,SIGNAL(toggled(bool)),this,SLOT(nbButtonToggled(bool)));
 	connect(ui.nb2Button,SIGNAL(toggled(bool)),this,SLOT(nb2ButtonToggled(bool)));
