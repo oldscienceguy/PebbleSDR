@@ -82,7 +82,7 @@ RTL2832::RTL2832 (Receiver *_receiver, SDRDEVICE dev, Settings *_settings): SDR(
     //RTL2832 samples from 900001 to 3200000 sps (900ksps to 3.2msps)
     //1 msps seems to be optimal according to boards
     //We have to decimate from rtl rate to our rate for everything to work
-    sampleRate = settings->sampleRate;
+
     //Make rtlSample rate close to 1msps but with even decimate
     //Test with higher sps, seems to work better
     /*

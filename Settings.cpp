@@ -475,7 +475,7 @@ void Settings::ReadSettings()
     ini_sampleRate[1] = qSettings->value("SampleRate2", 48000).toInt();
     ini_sampleRate[2] = qSettings->value("SampleRate3", 48000).toInt();
     ini_sampleRate[3] = qSettings->value("SampleRate4", 48000).toInt();
-    sampleRate = ini_sampleRate[selectedSDR];
+    //sampleRate = ini_sampleRate[selectedSDR];
 
 
     ini_sdrDevice[0] = (SDR::SDRDEVICE)qSettings->value("sdrDevice1", SDR::SR_V9).toInt();

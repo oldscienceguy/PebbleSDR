@@ -28,7 +28,7 @@ public:
 	int lastDisplayMode; //Spectrum, waterfall, etc
     QString inputDeviceName;
     QString outputDeviceName;
-	int sampleRate;
+    //int sampleRate;
 	//If Output Sample Rate is above this, then we try to reduce it by skipping samples when we output
 	int decimateLimit;
 	bool postMixerDecimate; //If true, then downsample to decimate limit after mixer

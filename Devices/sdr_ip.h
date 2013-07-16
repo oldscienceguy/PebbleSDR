@@ -62,7 +62,6 @@ private:
     qint64 m_CenterFrequency;
     qint32 m_RfGain;
 
-    quint32 sampleRate; //Pebble rate from settings or option box eventually
     int framesPerBuffer;
 
     Ui::SDRIP *optionUi;

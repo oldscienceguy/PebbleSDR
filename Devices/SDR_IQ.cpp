@@ -51,12 +51,11 @@ SDR_IQ::SDR_IQ(Receiver *_receiver, SDRDEVICE dev,Settings *_settings):SDR(_rece
     //Instead of getting BW from SDR_IQ options dialog, we now get it directly from settings dialog
     //because we're passing GetSampleRates() during dialog setup
     //So sampleRate is actually bandwidth
-    int sr = settings->sampleRate;
-    if (sr==190000)
+    if (sampleRate==190000)
         sBandwidth = BW190K;
-    else if (sr==150000)
+    else if (sampleRate==150000)
         sBandwidth = BW150K;
-    else if (sr==100000)
+    else if (sampleRate==100000)
         sBandwidth = BW100K;
     else
         sBandwidth = BW50K;

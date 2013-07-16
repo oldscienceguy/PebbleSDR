@@ -386,7 +386,7 @@ SDR *SDR::Factory(Receiver *receiver, SDR::SDRDEVICE dev, Settings *settings)
 //Devices may override this and return a rate based on other settings
 int SDR::GetSampleRate()
 {
-	return settings->sampleRate;
+    return sampleRate;
 }
 
 int *SDR::GetSampleRates(int &len)

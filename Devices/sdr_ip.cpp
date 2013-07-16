@@ -42,8 +42,6 @@ SDR_IP::SDR_IP(Receiver *_receiver, SDR::SDRDEVICE dev, Settings *_settings)
     if (!settings)
         return;
 
-    sampleRate = settings->sampleRate;
-
     framesPerBuffer = settings->framesPerBuffer;
 
     //inBuffer = new CPXBuf(framesPerBuffer);
