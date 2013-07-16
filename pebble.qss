@@ -106,7 +106,7 @@ QRadioButton {
 QRadioButton::indicator::unchecked{
 	/* Empty for now */
 }
-QPushButton {
+QToolButton, QPushButton {
 	height: 16px;
 	font-family: "Lucida Grande";
 	font-size: 10px;

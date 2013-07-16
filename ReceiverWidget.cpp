@@ -92,7 +92,9 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     currentBandIndex = -1;
 
 	connect(ui.loButton,SIGNAL(toggled(bool)),this,SLOT(setLoMode(bool)));
-	connect(ui.powerButton,SIGNAL(toggled(bool)),this,SLOT(powerToggled(bool)));
+    ui.powerButton->setCheckable(true); //Make it a toggle button
+    ui.recButton->setCheckable(true);
+    connect(ui.powerButton,SIGNAL(toggled(bool)),this,SLOT(powerToggled(bool)));
     connect(ui.recButton,SIGNAL(toggled(bool)),receiver,SLOT(RecToggled(bool)));
     connect(ui.anfButton,SIGNAL(toggled(bool)),this,SLOT(anfButtonToggled(bool)));
 	connect(ui.nbButton,SIGNAL(toggled(bool)),this,SLOT(nbButtonToggled(bool)));

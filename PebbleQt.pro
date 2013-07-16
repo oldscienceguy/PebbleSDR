@@ -475,7 +475,8 @@ FORMS += \
     hpsdrOptions.ui \
     iqbalanceoptions.ui \
     funcubeoptions.ui \
-    sdr-ip.ui
+    sdr-ip.ui \
+    sdr.ui
 
 RESOURCES += \
     resources.qrc
