@@ -205,12 +205,12 @@ void Settings::ShowSDRSettings()
 //Show realtime changes so we can see gain
 void Settings::IQGainChanged(double i)
 {
-    iqGain = i;
+    //iqGain = i;
 }
 //IQ order can be changed in real time, without saving
 void Settings::IQOrderChanged(int i)
 {
-    iqOrder = (IQORDER)sd->IQSettings->itemData(i).toInt();
+    //iqOrder = (IQORDER)sd->IQSettings->itemData(i).toInt();
 }
 
 void Settings::BalancePhaseChanged(int v)
@@ -218,7 +218,7 @@ void Settings::BalancePhaseChanged(int v)
     //v is an integer, convert to fraction -.500 to +.500
     double newValue = v/1000.0;
     sd->iqBalancePhaseLabel->setText("Phase: " + QString::number(newValue));
-    iqBalancePhase = newValue;
+    //iqBalancePhase = newValue;
 
     if (!global->receiver->GetPowerOn())
         return;
@@ -230,7 +230,7 @@ void Settings::BalanceGainChanged(int v)
     //v is an integer, convert to fraction -.750 to +1.250
     double newValue = v/1000.0;
     sd->iqBalanceGainLabel->setText("Gain: " + QString::number(newValue));
-    iqBalanceGain = newValue;
+    //iqBalanceGain = newValue;
     //Update in realtime
     if (!global->receiver->GetPowerOn())
         return;
@@ -239,7 +239,7 @@ void Settings::BalanceGainChanged(int v)
 
 void Settings::BalanceEnabledChanged(bool b)
 {
-    iqBalanceEnable = b;
+    //iqBalanceEnable = b;
     if (!global->receiver->GetPowerOn())
         return;
     global->receiver->GetIQBalance()->setEnabled(b);
@@ -488,19 +488,19 @@ void Settings::ReadSettings()
     ini_sdrNumber[1] = qSettings->value("sdrNumber2",-1).toInt();
     ini_sdrNumber[2] = qSettings->value("sdrNumber3",-1).toInt();
     ini_sdrNumber[3] = qSettings->value("sdrNumber4",-1).toInt();
-    sdrNumber = ini_sdrNumber[selectedSDR];
+    //sdrNumber = ini_sdrNumber[selectedSDR];
 
     ini_iqGain[0] = qSettings->value("iqGain1",1).toDouble();
     ini_iqGain[1] = qSettings->value("iqGain2",1).toDouble();
     ini_iqGain[2] = qSettings->value("iqGain3",1).toDouble();
     ini_iqGain[3] = qSettings->value("iqGain4",1).toDouble();
-    iqGain = ini_iqGain[selectedSDR];
+    //iqGain = ini_iqGain[selectedSDR];
 
     ini_iqOrder[0] = (IQORDER)qSettings->value("IQOrder1", Settings::IQ).toInt();
     ini_iqOrder[1] = (IQORDER)qSettings->value("IQOrder2", Settings::IQ).toInt();
     ini_iqOrder[2] = (IQORDER)qSettings->value("IQOrder3", Settings::IQ).toInt();
     ini_iqOrder[3] = (IQORDER)qSettings->value("IQOrder4", Settings::IQ).toInt();
-    iqOrder = ini_iqOrder[selectedSDR];
+    //iqOrder = ini_iqOrder[selectedSDR];
 
     ini_iqBalanceGain[0] = qSettings->value("iqBalanceGain1",1).toDouble();
     ini_iqBalanceGain[1] = qSettings->value("iqBalanceGain2",1).toDouble();

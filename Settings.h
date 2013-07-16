@@ -35,17 +35,17 @@ public:
 	int framesPerBuffer;
 	double dbOffset; //DB calibration for spectrum and smeter
 	SDR::SDRDEVICE sdrDevice;
-	int sdrNumber; //For SoftRocks, selects last digit in serial number
+    //int sdrNumber; //For SoftRocks, selects last digit in serial number
 	//Increment for left-right and up-down in spectrum display
 	int leftRightIncrement;
 	int upDownIncrement;
 
-    double iqGain; //Normalize device so incoming IQ levels are consistent
-    IQORDER iqOrder;
+    //double iqGain; //Normalize device so incoming IQ levels are consistent
+    //IQORDER iqOrder;
     //Image rejection (iqbalance) factors for this device
-    double iqBalanceGain;
-    double iqBalancePhase;
-    bool iqBalanceEnable;
+    //double iqBalanceGain;
+    //double iqBalancePhase;
+    //bool iqBalanceEnable;
 
     int selectedSDR;
 

@@ -177,7 +177,7 @@ bool SoftRock::Connect()
 		//Is it the right serial number?
 		//unsigned serial = dev->descriptor.iSerialNumber; //This is NOT the SoftRock serial number suffix
 		int serial = GetSerialNumber();
-		if (settings->sdrNumber == -1 || serial == settings->sdrNumber)
+        if (sdrNumber == -1 || serial == sdrNumber)
 			return true; //We've got it
 		//Not ours, close and keep looking
         ret = libusb_release_interface(hDev,0);

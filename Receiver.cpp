@@ -110,9 +110,9 @@ bool Receiver::On()
     //Don't need Mixer anymore - TBD
     mixer = new Mixer(sampleRate, framesPerBuffer);
     iqBalance = new IQBalance(sampleRate,framesPerBuffer);
-    iqBalance->setEnabled(settings->iqBalanceEnable);
-    iqBalance->setGainFactor(settings->iqBalanceGain);
-    iqBalance->setPhaseFactor(settings->iqBalancePhase);
+    iqBalance->setEnabled(sdr->iqBalanceEnable);
+    iqBalance->setGainFactor(sdr->iqBalanceGain);
+    iqBalance->setPhaseFactor(sdr->iqBalancePhase);
 
     /*
      * Decimation strategy
@@ -568,7 +568,7 @@ void Receiver::ProcessBlock(CPX *in, CPX *out, int frameCount)
 	//Configure IQ order
 	for (int i=0;i<framesPerBuffer;i++)
 	{
-        switch(settings->iqOrder)
+        switch(sdr->iqOrder)
 		{
         case Settings::IQ:
 				//No change, this is the default order
@@ -605,7 +605,7 @@ void Receiver::ProcessBlock(CPX *in, CPX *out, int frameCount)
 	//Note that we DO modify IN buffer in this step
 	sdrGain = sdr->GetGain(); //Allow sdr to change gain while running
     //if (sdrGain != 1)
-        CPXBuf::scale(in,in,sdrGain * settings->iqGain,framesPerBuffer);
+        CPXBuf::scale(in,in,sdrGain * sdr->iqGain,framesPerBuffer);
 
 	//End of common processing for both receive chains, pick one
 	//Time domain or Frequency domain receive chains

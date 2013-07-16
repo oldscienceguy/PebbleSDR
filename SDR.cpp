@@ -113,7 +113,6 @@ void SDR::ShowSdrOptions(bool b)
         connect(sd->startupEdit,SIGNAL(editingFinished()),this,SLOT(StartupFrequencyChanged()));
 
         sd->iqGain->setValue(iqGain);
-        sd->IQSettings->setCurrentIndex(iqOrder);
 
         sd->iqBalanceGain->setValue(iqBalanceGain * 1000);
         sd->iqBalancePhase->setValue(iqBalancePhase * 1000);
@@ -123,6 +122,7 @@ void SDR::ShowSdrOptions(bool b)
         sd->IQSettings->addItem("Q/I (swap)",QI);
         sd->IQSettings->addItem("I Only",IONLY);
         sd->IQSettings->addItem("Q Only",QONLY);
+        sd->IQSettings->setCurrentIndex(iqOrder);
         connect(sd->IQSettings,SIGNAL(currentIndexChanged(int)),this,SLOT(IQOrderChanged(int)));
 
         sd->iqBalancePhase->setMaximum(500);
