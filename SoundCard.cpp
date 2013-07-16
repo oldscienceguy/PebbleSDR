@@ -34,7 +34,7 @@ SoundCard::~SoundCard(void)
 	Pa_Terminate();
 }
 
-int SoundCard::StartInput(int _inputSampleRate)
+int SoundCard::StartInput(QString inputDeviceName, int _inputSampleRate)
 {
     inputSampleRate = _inputSampleRate;
     inBufferUnderflowCount = 0;
@@ -42,7 +42,7 @@ int SoundCard::StartInput(int _inputSampleRate)
     PaStreamParameters *inParam = new PaStreamParameters();
     //We're getting input from sound card
     //inParam->device = settings->inputDevice;
-    inParam->device = FindDeviceByName(settings->inputDeviceName,true);
+    inParam->device = FindDeviceByName(inputDeviceName,true);
     if (inParam->device < 0)
         return 0;
 
@@ -64,7 +64,7 @@ int SoundCard::StartInput(int _inputSampleRate)
     return 0;
 }
 
-int SoundCard::StartOutput(int _outputSampleRate)
+int SoundCard::StartOutput(QString outputDeviceName, int _outputSampleRate)
 {
 	outputSampleRate = _outputSampleRate;
 
@@ -74,7 +74,7 @@ int SoundCard::StartOutput(int _outputSampleRate)
 	PaStreamParameters *outParam = new PaStreamParameters();
 
     //outParam->device = settings->outputDevice;
-    outParam->device = FindDeviceByName(settings->outputDeviceName,false);
+    outParam->device = FindDeviceByName(outputDeviceName,false);
     if (outParam->device < 0)
         return 0;
 

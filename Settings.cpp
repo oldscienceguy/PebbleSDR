@@ -463,13 +463,13 @@ void Settings::ReadSettings()
     ini_inputDeviceName[1] = qSettings->value("InputDeviceName2", "").toString();
     ini_inputDeviceName[2] = qSettings->value("InputDeviceName3", "").toString();
     ini_inputDeviceName[3] = qSettings->value("InputDeviceName4", "").toString();
-    inputDeviceName = ini_inputDeviceName[selectedSDR];
+    //inputDeviceName = ini_inputDeviceName[selectedSDR];
 
     ini_outputDeviceName[0] = qSettings->value("OutputDeviceName1", "").toString();
     ini_outputDeviceName[1] = qSettings->value("OutputDeviceName2", "").toString();
     ini_outputDeviceName[2] = qSettings->value("OutputDeviceName3", "").toString();
     ini_outputDeviceName[3] = qSettings->value("OutputDeviceName4", "").toString();
-    outputDeviceName = ini_outputDeviceName[selectedSDR];
+    //outputDeviceName = ini_outputDeviceName[selectedSDR];
 
     ini_sampleRate[0] = qSettings->value("SampleRate1", 48000).toInt();
     ini_sampleRate[1] = qSettings->value("SampleRate2", 48000).toInt();

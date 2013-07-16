@@ -54,7 +54,7 @@ ElektorSDR::~ElektorSDR(void)
 }
 void ElektorSDR::Start()
 {
-    audioInput->StartInput(GetSampleRate());
+    audioInput->StartInput(inputDeviceName, GetSampleRate());
 }
 
 void ElektorSDR::Stop()

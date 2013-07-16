@@ -26,8 +26,8 @@ public:
 	double lastFreq;
 	int lastMode;
 	int lastDisplayMode; //Spectrum, waterfall, etc
-    QString inputDeviceName;
-    QString outputDeviceName;
+    //QString inputDeviceName;
+    //QString outputDeviceName;
     //int sampleRate;
 	//If Output Sample Rate is above this, then we try to reduce it by skipping samples when we output
 	int decimateLimit;

@@ -16,8 +16,8 @@ public:
 
 	//Virtual functions
 	//We may get input from some other source, if so inputSampleRate = 0
-    int StartInput(int inputSampleRate);
-    int StartOutput(int outputSampleRate);
+    int StartInput(QString inputDeviceName, int inputSampleRate);
+    int StartOutput(QString outputDeviceName, int outputSampleRate);
 	int Stop();
 	int Flush();
 	int Pause();

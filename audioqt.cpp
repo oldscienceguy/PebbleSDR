@@ -26,11 +26,11 @@ AudioQT::~AudioQT()
 {
 }
 
-int AudioQT::StartInput(int _inputSampleRate)
+int AudioQT::StartInput(QString inputDeviceName, int _inputSampleRate)
 {
     inputSampleRate = _inputSampleRate;
     //qaDevice = QAudioDeviceInfo::defaultInputDevice();
-    qaInputDevice = FindInputDeviceByName(settings->inputDeviceName);
+    qaInputDevice = FindInputDeviceByName(inputDeviceName);
 
     //DumpDeviceInfo(qaInputDevice); //Use this to see supported formats
 
@@ -95,13 +95,13 @@ void AudioQT::ProcessInputData()
     receiver->ProcessBlock(cpxInBuffer,cpxOutBuffer,frameCount);
 }
 
-int AudioQT::StartOutput(int _outputSampleRate)
+int AudioQT::StartOutput(QString outputDeviceName, int _outputSampleRate)
 {
     //Don't set sample rate in construct, only here do we know actual rate
     outputSampleRate = _outputSampleRate;
 
     //qaDevice = QAudioDeviceInfo::defaultOutputDevice();
-    qaOutputDevice = FindOutputDeviceByName(settings->outputDeviceName);
+    qaOutputDevice = FindOutputDeviceByName(outputDeviceName);
 
     //DumpDeviceInfo(qaOutputDevice); //Use this to see supported formats
 

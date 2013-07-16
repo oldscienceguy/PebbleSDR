@@ -220,7 +220,7 @@ bool Receiver::On()
 	}
 
 	//This should always be last because it starts samples flowing through the processBlocks
-    audioOutput->StartOutput(audioOutRate);
+    audioOutput->StartOutput(sdr->outputDeviceName, audioOutRate);
 	sdr->Start();
 
 	return true;

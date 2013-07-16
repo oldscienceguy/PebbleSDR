@@ -16,8 +16,8 @@ class Audio : public QObject
 public:
     Audio(QObject *parent = 0);
     ~Audio();
-    virtual int StartInput(int inputSampleRate)=0;
-    virtual int StartOutput(int outputSampleRate)=0;
+    virtual int StartInput(QString inputDeviceName, int inputSampleRate)=0;
+    virtual int StartOutput(QString outputDeviceName, int outputSampleRate)=0;
 	virtual int Stop()=0;
 	virtual int Flush()=0;
 	virtual int Pause()=0;
