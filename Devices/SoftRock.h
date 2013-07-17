@@ -32,7 +32,7 @@ public:
 	void WriteSettings();
 
 	double SetFrequency(double fRequested, double fCurrent);
-	void ShowOptions();
+    void SetupOptionUi(QWidget *parent);
 	double GetStartupFrequency();
 	int GetStartupMode();
 	double GetHighLimit();
@@ -89,9 +89,7 @@ private:
 	double SRFreq2Freq(qint32 iFreq);
 	qint32 Freq2SRFreq(double iFreq);
 
-	//Dialog stuff
-	QDialog *softRockOptions;
-	Ui::SoftRockOptions *sro;
+    Ui::SoftRockOptions *optionUi;
 
 	double SR_ENSEMBLE_Startup;
 	double SR_ENSEMBLE_Low;

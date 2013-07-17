@@ -45,7 +45,6 @@ public:
 	virtual bool Connect()=0;
 	virtual bool Disconnect()=0;
 	virtual double SetFrequency(double fRequested,double fCurrent)=0;
-	virtual void ShowOptions()=0;
 	//If SDR device is not using sound card, start/stop thread that returns data
 	//Ignored unless overridden
 	virtual void Start()=0;
@@ -114,6 +113,9 @@ signals:
     void Restart();
 
 protected:
+    //Needed to determine when it's safe to fetch options for display
+    bool connected;
+
     QDialog *sdrOptions;
     Ui::SdrOptions *sd;
 

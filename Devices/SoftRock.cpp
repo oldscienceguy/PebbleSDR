@@ -19,11 +19,12 @@ SoftRock::SoftRock(Receiver *_receiver,SDRDEVICE dev,Settings *_settings) : SDR(
     InitSettings("softrock");
     ReadSettings();
 
+    optionUi = NULL;
+
 	//Note: This uses libusb 0.1 not 1.0
 	// See http://www.libusb.org/ and http://libusb.sourceforge.net/doc/ for details of API
 	// Look for libusb0.dll, libusb0.sys, lib0_x86.dll, libusb0_x64.dll, libusb0_x64.sys if you have problems
 	//Todo: Is there a crash bug if no libusb drivers are found on system?  Lib should handle and return error code
-	softRockOptions = NULL;
 
 	//Set up libusb
 	if (!isLibUsbLoaded) {
@@ -51,8 +52,6 @@ SoftRock::~SoftRock()
 #else
 #endif
 	}
-	if (softRockOptions != NULL && softRockOptions->isVisible())
-		softRockOptions->hide();
 }
 void SoftRock::Start()
 {
@@ -638,91 +637,90 @@ void SoftRock::serialNumberChanged(int s)
 {
 	SetSerialNumber(s);
 }
-void SoftRock::ShowOptions()
+void SoftRock::SetupOptionUi(QWidget *parent)
 {
+    if (optionUi != NULL)
+        delete optionUi;
+    optionUi = new Ui::SoftRockOptions();
+    optionUi->setupUi(parent);
+    parent->setVisible(true);
+
     QFont smFont = settings->smFont;
     QFont medFont = settings->medFont;
     QFont lgFont = settings->lgFont;
 
-	if (softRockOptions == NULL)
-	{
-		softRockOptions = new QDialog();
-		sro = new Ui::SoftRockOptions();
-		sro->setupUi(softRockOptions);
+    optionUi->automaticButton->setFont(medFont);
+    optionUi->filter0Button->setFont(medFont);
+    optionUi->filter1Button->setFont(medFont);
+    optionUi->filter2Button->setFont(medFont);
+    optionUi->filter3Button->setFont(medFont);
+    optionUi->label->setFont(medFont);
+    optionUi->serialBox->setFont(medFont);
+    optionUi->serialLabel->setFont(medFont);
+    optionUi->si570Label->setFont(medFont);
+    optionUi->versionLabel->setFont(medFont);
 
-        sro->automaticButton->setFont(medFont);
-        sro->cancelButton->setFont(medFont);
-        sro->filter0Button->setFont(medFont);
-        sro->filter1Button->setFont(medFont);
-        sro->filter2Button->setFont(medFont);
-        sro->filter3Button->setFont(medFont);
-        sro->label->setFont(medFont);
-        sro->okButton->setFont(medFont);
-        sro->serialBox->setFont(medFont);
-        sro->serialLabel->setFont(medFont);
-        sro->si570Label->setFont(medFont);
-        sro->versionLabel->setFont(medFont);
-
-		sro->serialBox->addItem("0",0);
-		sro->serialBox->addItem("1",1);
-		sro->serialBox->addItem("2",2);
-		sro->serialBox->addItem("3",3);
-		sro->serialBox->addItem("4",4);
-		sro->serialBox->addItem("5",5);
-		sro->serialBox->addItem("6",6);
-		sro->serialBox->addItem("7",7);
-		sro->serialBox->addItem("8",8);
-		sro->serialBox->addItem("9",9);
+    optionUi->serialBox->addItem("0",0);
+    optionUi->serialBox->addItem("1",1);
+    optionUi->serialBox->addItem("2",2);
+    optionUi->serialBox->addItem("3",3);
+    optionUi->serialBox->addItem("4",4);
+    optionUi->serialBox->addItem("5",5);
+    optionUi->serialBox->addItem("6",6);
+    optionUi->serialBox->addItem("7",7);
+    optionUi->serialBox->addItem("8",8);
+    optionUi->serialBox->addItem("9",9);
 
 
-		//connects
-		connect(sro->automaticButton,SIGNAL(clicked(bool)),this,SLOT(selectAutomatic(bool)));
-		connect(sro->filter0Button,SIGNAL(clicked(bool)),this,SLOT(selectInput0(bool)));
-		connect(sro->filter1Button,SIGNAL(clicked(bool)),this,SLOT(selectInput1(bool)));
-		connect(sro->filter2Button,SIGNAL(clicked(bool)),this,SLOT(selectInput2(bool)));
-		connect(sro->filter3Button,SIGNAL(clicked(bool)),this,SLOT(selectInput3(bool)));
-		connect(sro->serialBox,SIGNAL(currentIndexChanged(int)),this,SLOT(serialNumberChanged(int)));
+    //connects
+    connect(optionUi->automaticButton,SIGNAL(clicked(bool)),this,SLOT(selectAutomatic(bool)));
+    connect(optionUi->filter0Button,SIGNAL(clicked(bool)),this,SLOT(selectInput0(bool)));
+    connect(optionUi->filter1Button,SIGNAL(clicked(bool)),this,SLOT(selectInput1(bool)));
+    connect(optionUi->filter2Button,SIGNAL(clicked(bool)),this,SLOT(selectInput2(bool)));
+    connect(optionUi->filter3Button,SIGNAL(clicked(bool)),this,SLOT(selectInput3(bool)));
+    connect(optionUi->serialBox,SIGNAL(currentIndexChanged(int)),this,SLOT(serialNumberChanged(int)));
 
-	}
 
-	//Test: If we can see version then comm to SR is ok
-	short vMaj = 0,vMin = 0;
-	QString ver = "";
-	if (Version(&vMaj, &vMin))
-		ver = ver.sprintf("Version: %d.%d",vMaj,vMin);
-	else
-		ver = "Error connecting with SoftRock";
-	sro->versionLabel->setText(ver);
+    //This can only be displayed when power is on
+    if (connected) {
+        //Test: If we can see version then comm to SR is ok
+        short vMaj = 0,vMin = 0;
+        QString ver = "";
+        if (Version(&vMaj, &vMin))
+            ver = ver.sprintf("Version: %d.%d",vMaj,vMin);
+        else
+            ver = "Error connecting with SoftRock";
+        optionUi->versionLabel->setText(ver);
 
-	QString si570 = "";
-	si570 = si570.sprintf("Si570: %.0f Hz",GetLOFrequency());
-	sro->si570Label->setText(si570);
+        QString si570 = "";
+        si570 = si570.sprintf("Si570: %.0f Hz",GetLOFrequency());
+        optionUi->si570Label->setText(si570);
 
-	QString serial = "";
-	serial = serial.sprintf("Serial #: PE0FKO-%d",GetSerialNumber());
-	sro->serialLabel->setText(serial);
+        QString serial = "";
+        serial = serial.sprintf("Serial #: PE0FKO-%d",GetSerialNumber());
+        optionUi->serialLabel->setText(serial);
 
-	//Show current BPF option
-	qint16 inp;
-	bool enabled;
-	if (GetAutoBPF(enabled))
-	{
-		if (enabled)
-			sro->automaticButton->setChecked(true);
-		else if (GetInputMux(inp))
-		{
-			if (inp == 0) sro->filter0Button->setChecked(true);
-			else if (inp == 1) sro->filter1Button->setChecked(true);
-			else if (inp == 2) sro->filter2Button->setChecked(true);
-			else if (inp == 3) sro->filter3Button->setChecked(true);
-		}
-	}
-	//Show current min/max settings (div by 4 to show actual frequency)
-	//short r7,r8,r9,r10,r11,r12;
-	//GetRegisters(r7,r8,r9,r10,r11,r12); //Don't know where the min/max data is stored
+        //Show current BPF option
+        qint16 inp;
+        bool enabled;
+        if (GetAutoBPF(enabled))
+        {
+            if (enabled)
+                optionUi->automaticButton->setChecked(true);
+            else if (GetInputMux(inp))
+            {
+                if (inp == 0) optionUi->filter0Button->setChecked(true);
+                else if (inp == 1) optionUi->filter1Button->setChecked(true);
+                else if (inp == 2) optionUi->filter2Button->setChecked(true);
+                else if (inp == 3) optionUi->filter3Button->setChecked(true);
+            }
+        }
+        //Show current min/max settings (div by 4 to show actual frequency)
+        //short r7,r8,r9,r10,r11,r12;
+        //GetRegisters(r7,r8,r9,r10,r11,r12); //Don't know where the min/max data is stored
 
-	int sn = GetSerialNumber();
-	sro->serialBox->setCurrentIndex(sn);
+        int sn = GetSerialNumber();
+        optionUi->serialBox->setCurrentIndex(sn);
+    }
 
-	softRockOptions->show();
 }

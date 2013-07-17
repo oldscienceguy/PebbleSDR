@@ -38,6 +38,7 @@ SDR::SDR(Receiver *_receiver, SDRDEVICE dev,Settings *_settings)
     producerBuffer = NULL;
     sdrOptions = NULL;
     sd = NULL;
+    connected = false;
 }
 
 SDR::~SDR(void)
@@ -140,10 +141,6 @@ void SDR::ShowSdrOptions(bool b)
 
         sd->iqGain->setValue(iqGain);
 
-        sd->iqBalanceGain->setValue(iqBalanceGain * 1000);
-        sd->iqBalancePhase->setValue(iqBalancePhase * 1000);
-        sd->iqEnableBalance->setChecked(iqBalanceEnable);
-
         sd->IQSettings->addItem("I/Q (normal)",IQ);
         sd->IQSettings->addItem("Q/I (swap)",QI);
         sd->IQSettings->addItem("I Only",IONLY);
@@ -151,12 +148,16 @@ void SDR::ShowSdrOptions(bool b)
         sd->IQSettings->setCurrentIndex(iqOrder);
         connect(sd->IQSettings,SIGNAL(currentIndexChanged(int)),this,SLOT(IQOrderChanged(int)));
 
+        sd->iqEnableBalance->setChecked(iqBalanceEnable);
+
         sd->iqBalancePhase->setMaximum(500);
         sd->iqBalancePhase->setMinimum(-500);
+        sd->iqBalancePhase->setValue(iqBalancePhase * 1000);
         connect(sd->iqBalancePhase,SIGNAL(valueChanged(int)),this,SLOT(BalancePhaseChanged(int)));
 
         sd->iqBalanceGain->setMaximum(1250);
         sd->iqBalanceGain->setMinimum(750);
+        sd->iqBalanceGain->setValue(iqBalanceGain * 1000);
         connect(sd->iqBalanceGain,SIGNAL(valueChanged(int)),this,SLOT(BalanceGainChanged(int)));
 
         connect(sd->iqEnableBalance,SIGNAL(toggled(bool)),this,SLOT(BalanceEnabledChanged(bool)));

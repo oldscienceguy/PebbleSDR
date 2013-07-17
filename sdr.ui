@@ -67,9 +67,9 @@
      <widget class="QLabel" name="label_2">
       <property name="geometry">
        <rect>
-        <x>334</x>
+        <x>346</x>
         <y>29</y>
-        <width>53</width>
+        <width>50</width>
         <height>16</height>
        </rect>
       </property>
@@ -136,8 +136,8 @@
      <widget class="QLineEdit" name="startupEdit">
       <property name="geometry">
        <rect>
-        <x>396</x>
-        <y>8</y>
+        <x>397</x>
+        <y>6</y>
         <width>83</width>
         <height>16</height>
        </rect>
@@ -297,9 +297,9 @@
      <widget class="QComboBox" name="sourceBox">
       <property name="geometry">
        <rect>
-        <x>81</x>
+        <x>66</x>
         <y>4</y>
-        <width>165</width>
+        <width>221</width>
         <height>18</height>
        </rect>
       </property>
@@ -357,8 +357,8 @@
       </property>
       <property name="geometry">
        <rect>
-        <x>252</x>
-        <y>5</y>
+        <x>308</x>
+        <y>2</y>
         <width>57</width>
         <height>18</height>
        </rect>
@@ -423,7 +423,7 @@
        </font>
       </property>
       <property name="text">
-       <string>Phase: 0.123</string>
+       <string>Phase: 0</string>
       </property>
      </widget>
      <widget class="QLabel" name="iqBalanceGainLabel">
@@ -441,7 +441,7 @@
        </font>
       </property>
       <property name="text">
-       <string>Gain: 0.123</string>
+       <string>Gain: 1</string>
       </property>
      </widget>
      <widget class="QSlider" name="iqBalancePhase">
