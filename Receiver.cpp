@@ -79,19 +79,10 @@ bool Receiver::On()
 {
 	powerOn = true;
 
-    if (sdr == NULL)
-        //First time since launch
-        sdr = SDR::Factory(this, settings->sdrDevice, settings);
-    else if (sdr->GetDevice() != settings->sdrDevice) {
-        //Changed, create new one
-        delete sdr;
-        sdr = SDR::Factory(this, settings->sdrDevice, settings);
-    } else {
-        //Device unchanged, delete and recreate for now because there are dependencies in SDR constructor
-        delete sdr;
-        sdr = SDR::Factory(this, settings->sdrDevice, settings);
-    }
+    if (sdr != NULL)
+        delete sdr; //Handle case where we created a temp sdr for settings
 
+    sdr = SDR::Factory(this, settings->sdrDevice, settings);
 
 	if (!sdr->Connect()){
 		QMessageBox::information(NULL,"Pebble","No Receiver connected to USB");
@@ -247,9 +238,8 @@ bool Receiver::Off()
 	//Now clean up rest
 	if (sdr != NULL){
 		sdr->Disconnect();
-        //Don't delete SDR, we may turn it back on
-        //delete sdr;
-        //sdr = NULL;
+        delete sdr;
+        sdr = NULL;
 	}
 	if (demod != NULL) {
 		delete demod;
@@ -505,13 +495,10 @@ void Receiver::SdrOptionsPressed()
 {
     //2 states, power on and off
     //If power on, use active sdr to make changes
-    //If we showing options and power is off, make sure we have a clean sdr object
-    //SDR selector may have changed
-    if (sdr != NULL) {
-        sdr->ShowSdrOptions(false); //Make sure any option window is closed
-        delete sdr;
+    if (sdr == NULL) {
+        //Power is off, create temporary one so we can set settings
+        sdr = SDR::Factory(this, settings->sdrDevice, settings);
     }
-    sdr = SDR::Factory(this, settings->sdrDevice, settings);
     sdr->ShowSdrOptions(true);
 }
 void Receiver::CloseSdrOptions()
