@@ -93,29 +93,33 @@ void SDR::ShowSdrOptions(bool b)
         sd->setupUi(sdrOptions);
         sdrOptions->setWindowTitle("Pebble Settings");
 
-        //Audio devices may have been plugged or unplugged, refresh list on each show
-        //This will use PortAudio or QTAudio depending on configuration
-        inputDevices = Audio::InputDeviceList();
-        outputDevices = Audio::OutputDeviceList();
-        //Adding items triggers selection, block signals until list is complete
-        sd->sourceBox->blockSignals(true);
-        sd->sourceBox->clear();
         int id;
         QString dn;
-        //Input devices may be restricted form some SDRs
-        for (int i=0; i<inputDevices.count(); i++)
-        {
-            //This is portAudio specific format ID:Name
-            //AudioQt will emulate
-            id = inputDevices[i].left(2).toInt();
-            dn = inputDevices[i].mid(3);
-            sd->sourceBox->addItem(dn, id);
-            if (dn == inputDeviceName)
-                sd->sourceBox->setCurrentIndex(i);
+        if (this->UsesAudioInput()) {
+            //Audio devices may have been plugged or unplugged, refresh list on each show
+            //This will use PortAudio or QTAudio depending on configuration
+            inputDevices = Audio::InputDeviceList();
+            //Adding items triggers selection, block signals until list is complete
+            sd->sourceBox->blockSignals(true);
+            sd->sourceBox->clear();
+            //Input devices may be restricted form some SDRs
+            for (int i=0; i<inputDevices.count(); i++)
+            {
+                //This is portAudio specific format ID:Name
+                //AudioQt will emulate
+                id = inputDevices[i].left(2).toInt();
+                dn = inputDevices[i].mid(3);
+                sd->sourceBox->addItem(dn, id);
+                if (dn == inputDeviceName)
+                    sd->sourceBox->setCurrentIndex(i);
+            }
+            sd->sourceBox->blockSignals(false);
+            connect(sd->sourceBox,SIGNAL(currentIndexChanged(int)),this,SLOT(InputChanged(int)));
+        } else {
+            sd->sourceLabel->setVisible(false);
+            sd->sourceBox->setVisible(false);
         }
-        sd->sourceBox->blockSignals(false);
-        connect(sd->sourceBox,SIGNAL(currentIndexChanged(int)),this,SLOT(InputChanged(int)));
-
+        outputDevices = Audio::OutputDeviceList();
         sd->outputBox->blockSignals(true);
         sd->outputBox->clear();
         for (int i=0; i<outputDevices.count(); i++)
@@ -164,25 +168,6 @@ void SDR::ShowSdrOptions(bool b)
 
         connect(sd->iqBalanceReset,SIGNAL(clicked()),this,SLOT(BalanceReset()));
 
-        //Serial box only applies to SoftRocks for now
-        sd->serialBox->addItem("Any",-1);
-        sd->serialBox->addItem("0",0);
-        sd->serialBox->addItem("1",1);
-        sd->serialBox->addItem("2",2);
-        sd->serialBox->addItem("3",3);
-        sd->serialBox->addItem("4",4);
-        sd->serialBox->addItem("5",5);
-        sd->serialBox->addItem("6",6);
-        sd->serialBox->addItem("7",7);
-        sd->serialBox->addItem("8",8);
-        sd->serialBox->addItem("9",9);
-        if (sdrDevice == SDR::SR_ENSEMBLE||sdrDevice==SDR::SR_ENSEMBLE_2M||sdrDevice==SDR::SR_ENSEMBLE_4M||
-            sdrDevice==SDR::SR_ENSEMBLE_6M || sdrDevice==SDR::SR_ENSEMBLE_LF || sdrDevice==SDR::SR_V9)
-            sd->serialBox->setEnabled(true);
-        else
-            sd->serialBox->setEnabled(false);
-        sd->serialBox->setCurrentIndex(sdrNumber+1);
-
         //Set up options and get allowable sampleRates from device
 
         int numSr;
@@ -199,6 +184,10 @@ void SDR::ShowSdrOptions(bool b)
 
         connect(sd->closeButton,SIGNAL(clicked(bool)),this,SLOT(CloseOptions(bool)));
 
+        //Careful here: Fragile coding practice
+        //We're calling a virtual function in a base class method and expect it to call the over-ridden method in derived class
+        //This only works because ShowSdrOptions() is being called via a pointer to the derived class
+        //Some other method that's called from the base class could not do this
         this->SetupOptionUi(sd->sdrSpecific);
 
     }

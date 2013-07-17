@@ -611,7 +611,6 @@ void HPSDR::ShowOptions()
 		hpo = new Ui::HPSDROptions();
 		hpo->setupUi(hpsdrOptions);
 
-        hpo->buttonBox->setFont(medFont);
         hpo->enableDither->setFont(medFont);
         hpo->enablePreamp->setFont(medFont);
         hpo->enableRandom->setFont(medFont);
@@ -634,9 +633,6 @@ void HPSDR::ShowOptions()
 		connect(hpo->enablePreamp,SIGNAL(clicked(bool)),this,SLOT(preampChanged(bool)));
 		connect(hpo->enableDither,SIGNAL(clicked(bool)),this,SLOT(ditherChanged(bool)));
 		connect(hpo->enableRandom,SIGNAL(clicked(bool)),this,SLOT(randomChanged(bool)));
-
-		connect(hpo->buttonBox,SIGNAL(accepted()),this,SLOT(optionsAccepted()));
-
 	}
 
 	hpo->speedBox->setCurrentIndex(sSpeed);

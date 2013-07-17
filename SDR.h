@@ -63,6 +63,8 @@ public:
     virtual void SetupOptionUi(QWidget *parent);
     //Called by settings to write device options to ini file
     virtual void WriteOptionUi() {}
+    //Assume each device uses audio input.  Devices that don't should over-ride and return false to hide options
+    virtual bool UsesAudioInput() {return true;}
 
 	SDRDEVICE GetDevice();
 	void SetDevice(SDRDEVICE m);

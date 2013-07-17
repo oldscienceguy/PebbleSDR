@@ -29,6 +29,7 @@ public:
     double GetGain();
     QString GetDeviceName();
     int GetSampleRate();
+    bool UsesAudioInput() {return false;}
 
 protected:
 

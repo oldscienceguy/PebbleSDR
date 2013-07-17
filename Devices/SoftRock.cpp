@@ -148,8 +148,10 @@ void SoftRock::WriteSettings()
 bool SoftRock::Connect()
 {
 	//No USB to connect to for SR Lite
-	if (sdrDevice == SR_LITE || !isLibUsbLoaded)
+    if (sdrDevice == SR_LITE || !isLibUsbLoaded) {
+        connected = true;
 		return true;
+    }
 	int numFound = 0;
     int ret;
 	while(true){
@@ -168,8 +170,10 @@ bool SoftRock::Connect()
 		//Is it the right serial number?
 		//unsigned serial = dev->descriptor.iSerialNumber; //This is NOT the SoftRock serial number suffix
 		int serial = GetSerialNumber();
-        if (sdrNumber == -1 || serial == sdrNumber)
+        if (sdrNumber == -1 || serial == sdrNumber) {
+            connected = true;
 			return true; //We've got it
+        }
 		//Not ours, close and keep looking
         ret = libusb_release_interface(hDev,0);
         USBUtil::CloseDevice(hDev);
@@ -180,8 +184,10 @@ bool SoftRock::Connect()
 }
 bool SoftRock::Disconnect()
 {
-	if (sdrDevice == SR_LITE || !isLibUsbLoaded)
+    if (sdrDevice == SR_LITE || !isLibUsbLoaded) {
+        connected = false;
 		return true;
+    }
 
 	//usb_reset(hDev); //Same as unplugging and plugging back in
 	if (hDev) {
@@ -189,6 +195,7 @@ bool SoftRock::Disconnect()
         USBUtil::CloseDevice(hDev);
 		hDev = NULL;
 	}
+    connected = false;
 	return true;
 }
 
@@ -615,27 +622,39 @@ bool SoftRock::GetCWLevel()
 
 //Dialog stuff
 void SoftRock::selectAutomatic(bool b) {
+    if (!connected)
+        return;
 	SetAutoBPF(true); 
 }
 void SoftRock::selectInput0(bool b) {
-	//Turn off ABPF
+    if (!connected)
+        return;
+    //Turn off ABPF
 	SetAutoBPF(false);
 	SetInputMux(0);
 }
 void SoftRock::selectInput1(bool b) {
-	SetAutoBPF(false);
+    if (!connected)
+        return;
+    SetAutoBPF(false);
 	SetInputMux(1);
 }
 void SoftRock::selectInput2(bool b) {
-	SetAutoBPF(false);
+    if (!connected)
+        return;
+    SetAutoBPF(false);
 	SetInputMux(2);
 }
 void SoftRock::selectInput3(bool b) {
-	SetInputMux(3);
+    if (!connected)
+        return;
+    SetInputMux(3);
 }
 void SoftRock::serialNumberChanged(int s)
 {
-	SetSerialNumber(s);
+    if (!connected)
+        return;
+    SetSerialNumber(s);
 }
 void SoftRock::SetupOptionUi(QWidget *parent)
 {

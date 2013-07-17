@@ -124,6 +124,7 @@ public:
 	double GetGain();
 	QString GetDeviceName();
 	int GetSampleRate(); //Base override so we get match SR to HPSDR BW
+    bool UsesAudioInput() {return false;}
 
 	void ReadSettings();
 	void WriteSettings();

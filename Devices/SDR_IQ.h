@@ -72,6 +72,7 @@ public:
 	bool Disconnect();
 	double SetFrequency(double fRequested, double fCurrent);
 	void ShowOptions();
+    bool UsesAudioInput() {return false;}
 
 	void Start(); //Start stop thread
 	void Stop();

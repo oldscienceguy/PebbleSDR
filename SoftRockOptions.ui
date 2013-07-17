@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>496</width>
-    <height>100</height>
+    <height>150</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -24,7 +24,7 @@
    </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="title">
@@ -39,9 +39,15 @@
       <height>17</height>
      </rect>
     </property>
+    <property name="maximumSize">
+     <size>
+      <width>16777215</width>
+      <height>18</height>
+     </size>
+    </property>
     <property name="font">
      <font>
-      <pointsize>7</pointsize>
+      <pointsize>10</pointsize>
      </font>
     </property>
     <property name="text">
@@ -57,9 +63,15 @@
       <height>17</height>
      </rect>
     </property>
+    <property name="maximumSize">
+     <size>
+      <width>16777215</width>
+      <height>18</height>
+     </size>
+    </property>
     <property name="font">
      <font>
-      <pointsize>7</pointsize>
+      <pointsize>10</pointsize>
      </font>
     </property>
     <property name="text">
@@ -75,9 +87,15 @@
       <height>17</height>
      </rect>
     </property>
+    <property name="maximumSize">
+     <size>
+      <width>16777215</width>
+      <height>18</height>
+     </size>
+    </property>
     <property name="font">
      <font>
-      <pointsize>7</pointsize>
+      <pointsize>10</pointsize>
      </font>
     </property>
     <property name="text">
@@ -93,9 +111,15 @@
       <height>17</height>
      </rect>
     </property>
+    <property name="maximumSize">
+     <size>
+      <width>16777215</width>
+      <height>18</height>
+     </size>
+    </property>
     <property name="font">
      <font>
-      <pointsize>7</pointsize>
+      <pointsize>10</pointsize>
      </font>
     </property>
     <property name="text">
@@ -111,9 +135,15 @@
       <height>17</height>
      </rect>
     </property>
+    <property name="maximumSize">
+     <size>
+      <width>16777215</width>
+      <height>18</height>
+     </size>
+    </property>
     <property name="font">
      <font>
-      <pointsize>7</pointsize>
+      <pointsize>10</pointsize>
      </font>
     </property>
     <property name="text">
@@ -124,15 +154,21 @@
   <widget class="QLabel" name="versionLabel">
    <property name="geometry">
     <rect>
-     <x>18</x>
-     <y>4</y>
+     <x>9</x>
+     <y>6</y>
      <width>156</width>
      <height>16</height>
     </rect>
    </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>18</height>
+    </size>
+   </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="text">
@@ -142,15 +178,21 @@
   <widget class="QLabel" name="si570Label">
    <property name="geometry">
     <rect>
-     <x>135</x>
-     <y>5</y>
+     <x>10</x>
+     <y>48</y>
      <width>148</width>
      <height>16</height>
     </rect>
    </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>18</height>
+    </size>
+   </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="text">
@@ -160,15 +202,21 @@
   <widget class="QLabel" name="serialLabel">
    <property name="geometry">
     <rect>
-     <x>18</x>
-     <y>20</y>
+     <x>9</x>
+     <y>27</y>
      <width>107</width>
      <height>16</height>
     </rect>
    </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>18</height>
+    </size>
+   </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="text">
@@ -178,30 +226,42 @@
   <widget class="QComboBox" name="serialBox">
    <property name="geometry">
     <rect>
-     <x>216</x>
-     <y>43</y>
+     <x>183</x>
+     <y>24</y>
      <width>51</width>
      <height>18</height>
     </rect>
    </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>18</height>
+    </size>
+   </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
   </widget>
   <widget class="QLabel" name="label">
    <property name="geometry">
     <rect>
-     <x>162</x>
-     <y>46</y>
+     <x>138</x>
+     <y>28</y>
      <width>46</width>
      <height>13</height>
     </rect>
    </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>18</height>
+    </size>
+   </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="text">

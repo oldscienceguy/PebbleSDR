@@ -1162,7 +1162,6 @@ void FunCube::ShowOptions()
         fco->Band->setFont(medFont);
         fco->BiasCurrent->setFont(medFont);
         fco->BiasTee->setFont(medFont);
-        fco->defaultsButton->setFont(medFont);
         fco->frequencyLabel->setFont(medFont);
         fco->IFFilter->setFont(medFont);
         fco->IFGain1->setFont(medFont);
@@ -1195,7 +1194,6 @@ void FunCube::ShowOptions()
         fco->MixerFilter->setFont(medFont);
         fco->MixerGain->setFont(medFont);
         fco->RFFilter->setFont(medFont);
-        fco->saveButton->setFont(medFont);
         fco->versionLabel->setFont(medFont);
 
         fco->BiasTee->addItem("Off",0);
@@ -1309,11 +1307,7 @@ void FunCube::ShowOptions()
         fco->IFGain6->addItem("+15dB",TIG6E_P15_0DB);
         connect(fco->IFGain6,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain6Changed(int)));
 
-
         connect(fco->IFFilter,SIGNAL(currentIndexChanged(int)),this,SLOT(IFFilterChanged(int)));
-
-        connect(fco->defaultsButton,SIGNAL(clicked(bool)),this,SLOT(DefaultClicked(bool)));
-        connect(fco->saveButton,SIGNAL(clicked(bool)),this,SLOT(SaveClicked(bool)));
 
     }  //End dialog set up
 

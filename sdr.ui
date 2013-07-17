@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>500</width>
-    <height>274</height>
+    <height>309</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -34,7 +34,7 @@
      <property name="minimumSize">
       <size>
        <width>0</width>
-       <height>60</height>
+       <height>75</height>
       </size>
      </property>
      <property name="frameShape">
@@ -256,6 +256,39 @@
        </font>
       </property>
      </widget>
+     <widget class="QLabel" name="sourceLabel">
+      <property name="geometry">
+       <rect>
+        <x>6</x>
+        <y>52</y>
+        <width>46</width>
+        <height>13</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>I/Q Input</string>
+      </property>
+     </widget>
+     <widget class="QComboBox" name="sourceBox">
+      <property name="geometry">
+       <rect>
+        <x>74</x>
+        <y>51</y>
+        <width>221</width>
+        <height>18</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>7</pointsize>
+       </font>
+      </property>
+     </widget>
     </widget>
    </item>
    <item>
@@ -269,7 +302,7 @@
      <property name="minimumSize">
       <size>
        <width>0</width>
-       <height>100</height>
+       <height>150</height>
       </size>
      </property>
      <property name="frameShape">
@@ -285,7 +318,7 @@
      <property name="minimumSize">
       <size>
        <width>0</width>
-       <height>70</height>
+       <height>40</height>
       </size>
      </property>
      <property name="frameShape">
@@ -294,27 +327,12 @@
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <widget class="QComboBox" name="sourceBox">
-      <property name="geometry">
-       <rect>
-        <x>66</x>
-        <y>4</y>
-        <width>221</width>
-        <height>18</height>
-       </rect>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>7</pointsize>
-       </font>
-      </property>
-     </widget>
      <widget class="QSlider" name="iqBalanceGain">
       <property name="geometry">
        <rect>
-        <x>127</x>
-        <y>27</y>
-        <width>155</width>
+        <x>121</x>
+        <y>5</y>
+        <width>140</width>
         <height>16</height>
        </rect>
       </property>
@@ -333,51 +351,12 @@
        <enum>Qt::Horizontal</enum>
       </property>
      </widget>
-     <widget class="QLabel" name="label_8">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>8</y>
-        <width>46</width>
-        <height>13</height>
-       </rect>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>10</pointsize>
-       </font>
-      </property>
-      <property name="text">
-       <string>I/Q Input</string>
-      </property>
-     </widget>
-     <widget class="QComboBox" name="serialBox">
-      <property name="enabled">
-       <bool>true</bool>
-      </property>
-      <property name="geometry">
-       <rect>
-        <x>308</x>
-        <y>2</y>
-        <width>57</width>
-        <height>18</height>
-       </rect>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>7</pointsize>
-       </font>
-      </property>
-      <property name="currentIndex">
-       <number>-1</number>
-      </property>
-     </widget>
      <widget class="QCheckBox" name="iqEnableBalance">
       <property name="geometry">
        <rect>
-        <x>6</x>
-        <y>25</y>
-        <width>111</width>
+        <x>3</x>
+        <y>2</y>
+        <width>83</width>
         <height>17</height>
        </rect>
       </property>
@@ -387,14 +366,14 @@
        </font>
       </property>
       <property name="text">
-       <string>Enable I/Q Balance</string>
+       <string>I/Q Balance</string>
       </property>
      </widget>
      <widget class="QPushButton" name="iqBalanceReset">
       <property name="geometry">
        <rect>
-        <x>270</x>
-        <y>44</y>
+        <x>23</x>
+        <y>21</y>
         <width>59</width>
         <height>16</height>
        </rect>
@@ -411,9 +390,9 @@
      <widget class="QLabel" name="iqBalancePhaseLabel">
       <property name="geometry">
        <rect>
-        <x>356</x>
-        <y>45</y>
-        <width>71</width>
+        <x>362</x>
+        <y>23</y>
+        <width>49</width>
         <height>16</height>
        </rect>
       </property>
@@ -429,9 +408,9 @@
      <widget class="QLabel" name="iqBalanceGainLabel">
       <property name="geometry">
        <rect>
-        <x>173</x>
-        <y>48</y>
-        <width>75</width>
+        <x>171</x>
+        <y>23</y>
+        <width>50</width>
         <height>16</height>
        </rect>
       </property>
@@ -448,8 +427,8 @@
       <property name="geometry">
        <rect>
         <x>313</x>
-        <y>28</y>
-        <width>155</width>
+        <y>4</y>
+        <width>140</width>
         <height>16</height>
        </rect>
       </property>

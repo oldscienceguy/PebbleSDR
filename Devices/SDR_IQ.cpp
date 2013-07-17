@@ -967,7 +967,6 @@ void SDR_IQ::ShowOptions()
 
         iqo->bandwidthBox->setFont(medFont);
         iqo->bootLabel->setFont(medFont);
-        iqo->cancelButton->setFont(medFont);
         iqo->firmwareLabel->setFont(medFont);
         iqo->ifGainBox->setFont(medFont);
         iqo->interfaceVersionLabel->setFont(medFont);
@@ -975,7 +974,6 @@ void SDR_IQ::ShowOptions()
         iqo->label_2->setFont(medFont);
         iqo->label_3->setFont(medFont);
         iqo->nameLabel->setFont(medFont);
-        iqo->okButton->setFont(medFont);
         iqo->rfGainBox->setFont(medFont);
         iqo->serialNumberLabel->setFont(medFont);
 

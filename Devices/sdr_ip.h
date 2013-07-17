@@ -37,6 +37,7 @@ public:
     QString GetDeviceName();
     void SetupOptionUi(QWidget *parent);
     void WriteOptionUi();
+    bool UsesAudioInput() {return false;}
 
     int GetSampleRate();
     int* GetSampleRates(int &len);  //Returns array of allowable rates

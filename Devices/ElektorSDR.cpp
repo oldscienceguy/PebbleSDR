@@ -671,9 +671,7 @@ void ElektorSDR::ShowOptions()
 
         eo->automaticButton->setFont(medFont);
         eo->calButton->setFont(medFont);
-        eo->cancelButton->setFont(medFont);
         eo->mwButton->setFont(medFont);
-        eo->okButton->setFont(medFont);
         eo->pre1Button->setFont(medFont);
         eo->pre2Button->setFont(medFont);
         eo->pre3Button->setFont(medFont);
