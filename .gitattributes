@@ -57,7 +57,6 @@ Resources/edit.png -text
 /SDRIQOptions.ui -text
 /Settings.cpp -text
 /Settings.h -text
-/Settings.ui -text
 /SignalProcessing.cpp -text
 /SignalProcessing.h -text
 /SignalSpectrum.cpp -text
