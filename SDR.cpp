@@ -60,6 +60,22 @@ SDR::~SDR(void)
 
 }
 
+//Must be called from derived class constructor to work correctly
+void SDR::InitSettings(QString fname)
+{
+    //Use ini files to avoid any registry problems or install/uninstall
+    //Scope::UserScope puts file C:\Users\...\AppData\Roaming\N1DDY
+    //Scope::SystemScope puts file c:\ProgramData\n1ddy
+
+    QString path = QCoreApplication::applicationDirPath();
+#ifdef Q_OS_MAC
+        //Pebble.app/contents/macos = 25
+        path.chop(25);
+#endif
+    qSettings = new QSettings(path + "/PebbleData/" + fname +".ini",QSettings::IniFormat);
+
+}
+
 void SDR::ShowSdrOptions(bool b)
 {
     if (!b && sdrOptions == NULL)

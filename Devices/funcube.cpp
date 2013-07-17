@@ -319,18 +319,12 @@ FunCube::FunCube(Receiver *_receiver, SDRDEVICE dev,Settings *_settings):
 
 	fcdOptionsDialog = NULL;
 
-	QString path = QCoreApplication::applicationDirPath();
-#ifdef Q_OS_MAC
-        //Pebble.app/contents/macos = 25
-        path.chop(25);
-#endif
-
     if (sdrDevice == SDR::FUNCUBE)
-        qSettings = new QSettings(path+"/PebbleData/funcube.ini",QSettings::IniFormat);
+        InitSettings("funcube");
     else
-        qSettings = new QSettings(path+"/PebbleData/funcube_plus.ini",QSettings::IniFormat);
-
+        InitSettings("funcube_plus");
 	ReadSettings();
+
     //Test, This causes FCD to crash in HID on exit
     fcdSetFreqHz = true; //Seems to be the way new FCD+ code is working
     hidDev = NULL;

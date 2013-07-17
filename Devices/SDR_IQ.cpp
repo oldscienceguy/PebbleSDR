@@ -11,13 +11,7 @@ SDR_IQ::SDR_IQ(Receiver *_receiver, SDRDEVICE dev,Settings *_settings):SDR(_rece
     if (!settings)
         return; //Init only
 
-	QString path = QCoreApplication::applicationDirPath();
-#ifdef Q_OS_MAC
-        //Pebble.app/contents/macos = 25
-        path.chop(25);
-#endif
-
-    qSettings = new QSettings(path+"/PebbleData/sdriq.ini",QSettings::IniFormat);
+    InitSettings("sdr_iq");
 	ReadSettings();
 
 	ftHandle = NULL;

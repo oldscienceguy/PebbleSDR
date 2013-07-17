@@ -15,17 +15,9 @@ SoftRock::SoftRock(Receiver *_receiver,SDRDEVICE dev,Settings *_settings) : SDR(
         return;
 
 	hDev = NULL;
-	//Use ini files to avoid any registry problems or install/uninstall
-	//Scope::UserScope puts file C:\Users\...\AppData\Roaming\N1DDY
-	//Scope::SystemScope puts file c:\ProgramData\n1ddy
-	QString path = QCoreApplication::applicationDirPath();
-#ifdef Q_OS_MAC
-        //Pebble.app/contents/macos = 25
-        path.chop(25);
-#endif
 
-    qSettings = new QSettings(path+"/PebbleData/softrock.ini",QSettings::IniFormat);
-	ReadSettings();
+    InitSettings("softrock");
+    ReadSettings();
 
 	//Note: This uses libusb 0.1 not 1.0
 	// See http://www.libusb.org/ and http://libusb.sourceforge.net/doc/ for details of API

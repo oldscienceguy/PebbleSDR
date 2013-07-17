@@ -18,13 +18,7 @@ HPSDR::HPSDR(Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_receiv
 	mercuryFW=0;
 	penelopeFW=0;
 
-	QString path = QCoreApplication::applicationDirPath();
-#ifdef Q_OS_MAC
-        //Pebble.app/contents/macos = 25
-        path.chop(25);
-#endif
-
-    qSettings = new QSettings(path+"/PebbleData/hpsdr.ini",QSettings::IniFormat);
+    InitSettings("hpsdr");
 	ReadSettings();
 
 	//Set up libusb

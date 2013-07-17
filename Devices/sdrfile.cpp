@@ -10,13 +10,7 @@ SDRFile::SDRFile(Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_re
     if (!settings)
         return; //No init
 
-    QString path = QCoreApplication::applicationDirPath();
-#ifdef Q_OS_MAC
-        //Pebble.app/contents/macos = 25
-        path.chop(25);
-#endif
-
-    qSettings = new QSettings(path+"/PebbleData/sdrfile.ini",QSettings::IniFormat);
+    InitSettings("sdrfile");
     ReadSettings();
 
     framesPerBuffer = settings->framesPerBuffer;
@@ -143,7 +137,7 @@ void SDRFile::ReadSettings()
 
 void SDRFile::WriteSettings()
 {
-
+    SDR::WriteSettings();
 }
 
 double SDRFile::GetStartupFrequency()

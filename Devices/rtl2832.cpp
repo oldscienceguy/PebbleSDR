@@ -70,12 +70,7 @@ RTL2832::RTL2832 (Receiver *_receiver, SDRDEVICE dev, Settings *_settings): SDR(
     if (!settings)
         return;
 
-    QString path = QCoreApplication::applicationDirPath();
-#ifdef Q_OS_MAC
-        //Pebble.app/contents/macos = 25
-        path.chop(25);
-#endif
-    qSettings = new QSettings(path+"/PebbleData/rtl2832.ini",QSettings::IniFormat);
+    InitSettings("rtl2832");
     ReadSettings();
 
     //crystalFreqHz = DEFAULT_CRYSTAL_FREQUENCY;

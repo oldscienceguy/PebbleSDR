@@ -81,6 +81,7 @@ public:
     void IncrementConsumerBuffer() {nextConsumerDataBuf = (nextConsumerDataBuf +1 ) % numDataBufs;}
 
     void ShowSdrOptions(bool b);
+    void InitSettings(QString fname);
 
     //Hack, these should eventually be access methods
     STARTUP startup;

@@ -28,12 +28,7 @@ SDR_IP::SDR_IP(Receiver *_receiver, SDR::SDRDEVICE dev, Settings *_settings)
 {
     settings = _settings;
 
-    QString path = QCoreApplication::applicationDirPath();
-#ifdef Q_OS_MAC
-        //Pebble.app/contents/macos = 25
-        path.chop(25);
-#endif
-    qSettings = new QSettings(path+"/PebbleData/sdr_ip.ini",QSettings::IniFormat);
+    InitSettings("sdr_ip");
     ReadSettings();
 
     optionUi = NULL;
