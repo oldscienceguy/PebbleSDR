@@ -14,6 +14,7 @@
 #include "Devices/sdr_ip.h"
 #include "SoundCard.h"
 #include "Receiver.h"
+#include "QMessageBox"
 
 
 SDR::SDR(Receiver *_receiver, SDRDEVICE dev,Settings *_settings)
@@ -44,6 +45,9 @@ SDR::~SDR(void)
     if (!settings)
         return;
 
+    if (sdrOptions != NULL)
+        sdrOptions->hide();
+
 	if (audioInput != NULL) {
 		delete audioInput;
 	}
@@ -58,6 +62,12 @@ SDR::~SDR(void)
 
 void SDR::ShowSdrOptions(bool b)
 {
+    if (!b && sdrOptions == NULL)
+        return; //We want to close options, but there's nothing to close
+    else if (sdrOptions != NULL) {
+        sdrOptions->setVisible(b); //Show
+        return;
+    }
     if (sdrOptions == NULL) {
         int cur;
 
@@ -170,6 +180,8 @@ void SDR::ShowSdrOptions(bool b)
         sd->sampleRateBox->blockSignals(false);
         connect(sd->sampleRateBox,SIGNAL(currentIndexChanged(int)),this,SLOT(SampleRateChanged(int)));
 
+        connect(sd->closeButton,SIGNAL(clicked(bool)),this,SLOT(CloseOptions(bool)));
+
         this->SetupOptionUi(sd->sdrSpecific);
 
     }
@@ -179,6 +191,12 @@ void SDR::ShowSdrOptions(bool b)
     else
         sdrOptions->hide();
 
+}
+
+void SDR::CloseOptions(bool b)
+{
+    if (sdrOptions != NULL)
+        sdrOptions->close();
 }
 
 void SDR::SampleRateChanged(int i)
@@ -277,6 +295,20 @@ void SDR::BalanceReset()
     sd->iqBalancePhase->setValue(0);
 }
 
+void SDR::ResetAllSettings(bool b)
+{
+    //Confirm
+    QMessageBox::StandardButton bt = QMessageBox::question(NULL,
+            tr("Confirm Reset"),
+            tr("Are you sure you want to reset all settings (ini files)")
+            );
+    if (bt != QMessageBox::Ok)
+        return;
+
+    //Delete all ini files and restart
+
+    emit Restart();
+}
 
 //Settings common to all devices
 //Make sure to call SDR::ReadSettings() in any derived class
@@ -289,7 +321,7 @@ void SDR::ReadSettings()
     sampleRate = qSettings->value("SampleRate", 48000).toInt();
     sdrNumber = qSettings->value("sdrNumber",-1).toInt();
     iqGain = qSettings->value("iqGain",1).toDouble();
-    iqOrder = (IQORDER)qSettings->value("IQOrder", Settings::IQ).toInt();
+    iqOrder = (IQORDER)qSettings->value("IQOrder", SDR::IQ).toInt();
     iqBalanceGain = qSettings->value("iqBalanceGain",1).toDouble();
     iqBalancePhase = qSettings->value("iqBalancePhase",0).toDouble();
     iqBalanceEnable = qSettings->value("iqBalanceEnable",false).toBool();
@@ -410,16 +442,9 @@ void SDR::SetDevice(SDRDEVICE m)
 
 void SDR::SetupOptionUi(QWidget *parent)
 {
-    parent->setVisible(false);
+    //Do nothing by default to leave empty frame in dialog
+    //parent->setVisible(false);
     return;
-    //Deleting childres messes things up, just hide
-    //Default if not overridden - Remove any previous option widget
-#if 0
-    QObjectList children = parent->children();
-    for (int i=0; i<children.count(); i++) {
-        delete children[i]; //Delete controls created by sdr specific option widget
-    }
-#endif
 }
 
 void SDR::InitProducerConsumer(int _numDataBufs, int _producerBufferSize)

@@ -467,7 +467,6 @@ FORMS += \
     spectrumwidget.ui \
     SoftRockOptions.ui \
     smeterwidget.ui \
-    Settings.ui \
     SDRIQOptions.ui \
     ReceiverWidget.ui \
     pebbleii.ui \

@@ -44,7 +44,6 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     settingsMenu->setFont(medFont);
 	ui.settingsButton->setMenu(settingsMenu);
 #endif
-    connect(ui.settingsButton,SIGNAL(clicked(bool)),receiver,SLOT(ShowSettings(bool)));
 
 	//Set up filter option lists
 	//Broadcast 15Khz 20 hz -15 khz
@@ -94,10 +93,10 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	connect(ui.loButton,SIGNAL(toggled(bool)),this,SLOT(setLoMode(bool)));
     ui.powerButton->setCheckable(true); //Make it a toggle button
     ui.recButton->setCheckable(true);
-    ui.sdrOptions->setCheckable(true);
+    //ui.sdrOptions->setCheckable(true);
     connect(ui.powerButton,SIGNAL(toggled(bool)),this,SLOT(powerToggled(bool)));
     connect(ui.recButton,SIGNAL(toggled(bool)),receiver,SLOT(RecToggled(bool)));
-    connect(ui.sdrOptions,SIGNAL(toggled(bool)),receiver,SLOT(SdrOptionsToggled(bool)));
+    connect(ui.sdrOptions,SIGNAL(pressed()),receiver,SLOT(SdrOptionsPressed()));
 
     connect(ui.anfButton,SIGNAL(toggled(bool)),this,SLOT(anfButtonToggled(bool)));
 	connect(ui.nbButton,SIGNAL(toggled(bool)),this,SLOT(nbButtonToggled(bool)));
@@ -188,6 +187,8 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     sdrSelector->addItem("File",SDR::FILE);
     sdrSelector->addItem("RTL2832 Family",SDR::DVB_T);
 
+    int cur = sdrSelector->findData(global->settings->sdrDevice);
+    sdrSelector->setCurrentIndex(cur);
     connect(sdrSelector,SIGNAL(currentIndexChanged(int)),this,SLOT(ReceiverChanged(int)));
 
 
@@ -830,6 +831,11 @@ double ReceiverWidget::GetNixieNumber()
 
 void ReceiverWidget::ReceiverChanged(int i)
 {
+    //Power is off when this is called
+    int cur = ui.sdrSelector->currentIndex();
+    global->settings->sdrDevice = (SDR::SDRDEVICE)ui.sdrSelector->itemData(cur).toInt();
+    //Close the sdr option window if open
+    receiver->CloseSdrOptions();
 }
 
 //Updates all the nixies to display a number

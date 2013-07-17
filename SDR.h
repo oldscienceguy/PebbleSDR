@@ -80,7 +80,6 @@ public:
     void ReleaseFilledBuffer() {semNumFilledBuffers->release();}
     void IncrementConsumerBuffer() {nextConsumerDataBuf = (nextConsumerDataBuf +1 ) % numDataBufs;}
 
-//Begin settings testing - Initial copy from settings.h
     void ShowSdrOptions(bool b);
 
     //Hack, these should eventually be access methods
@@ -108,7 +107,10 @@ public:
     double iqBalanceGain;
     double iqBalancePhase;
     bool iqBalanceEnable;
-//End settings testing
+
+signals:
+    //Settings changed, turn off and restart with new settings
+    void Restart();
 
 protected:
     QDialog *sdrOptions;
@@ -121,9 +123,9 @@ protected:
     QStringList inputDevices;
     QStringList outputDevices;
 
+    SDRDEVICE sdrDevice;
 	Audio *audioInput;
 	Receiver *receiver;
-	SDRDEVICE sdrDevice;
 	double startupFrequency; //0 means auto-set
 	Settings *settings;
 	bool isLibUsbLoaded;
@@ -170,7 +172,8 @@ private slots:
     void BalanceGainChanged(int v);
     void BalanceEnabledChanged(bool b);
     void BalanceReset();
-
+    void ResetAllSettings(bool b);
+    void CloseOptions(bool b);
 };
 
 //Generic thread that can be used in producer/consumer models for devices that don't use soundcard

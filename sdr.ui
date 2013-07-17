@@ -478,13 +478,13 @@
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <property name="leftMargin">
-       <number>2</number>
+       <number>12</number>
       </property>
       <property name="topMargin">
        <number>2</number>
       </property>
       <property name="rightMargin">
-       <number>2</number>
+       <number>12</number>
       </property>
       <property name="bottomMargin">
        <number>2</number>
@@ -521,6 +521,13 @@
          </size>
         </property>
        </spacer>
+      </item>
+      <item>
+       <widget class="QPushButton" name="closeButton">
+        <property name="text">
+         <string>Close</string>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>

@@ -323,6 +323,8 @@ Receiver::~Receiver(void)
 {
 	if (settings != NULL)
 		delete settings;
+    if (sdr != NULL)
+        delete sdr;
 }
 void Receiver::SetDataSelection(ReceiverWidget::DATA_SELECTION d)
 {
@@ -499,26 +501,23 @@ void Receiver::SetMixer(int f)
     }
 }
 
-void Receiver::SdrOptionsToggled(bool b)
+void Receiver::SdrOptionsPressed()
 {
     //2 states, power on and off
     //If power on, use active sdr to make changes
-    //If off, create new sdr
-    if (!powerOn) {
-        if (sdr == NULL)
-            sdr = SDR::Factory(this, settings->sdrDevice, settings);
+    //If we showing options and power is off, make sure we have a clean sdr object
+    //SDR selector may have changed
+    if (sdr != NULL) {
+        sdr->ShowSdrOptions(false); //Make sure any option window is closed
+        delete sdr;
     }
-    sdr->ShowSdrOptions(b);
+    sdr = SDR::Factory(this, settings->sdrDevice, settings);
+    sdr->ShowSdrOptions(true);
 }
-
-void Receiver::ShowSettings(bool b)
+void Receiver::CloseSdrOptions()
 {
-	settings->ShowSettings();
-}
-
-void Receiver::ShowSdrSettings(bool b)
-{
-    sdr->ShowOptions();
+    if (sdr != NULL)
+        sdr->ShowSdrOptions(false);
 }
 
 //processing flow for audio samples, called from SoundCard PortAudio callback
@@ -570,18 +569,18 @@ void Receiver::ProcessBlock(CPX *in, CPX *out, int frameCount)
 	{
         switch(sdr->iqOrder)
 		{
-        case Settings::IQ:
+        case SDR::IQ:
 				//No change, this is the default order
 				break;
-        case Settings::QI:
+        case SDR::QI:
 				tmp = in[i].im;
 				in[i].im = in[i].re;
 				in[i].re = tmp;
 				break;
-        case Settings::IONLY:
+        case SDR::IONLY:
 				in[i].im = in[i].re;
 				break;
-        case Settings::QONLY:
+        case SDR::QONLY:
 				in[i].re = in[i].im;
 				break;
 		}

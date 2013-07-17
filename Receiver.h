@@ -71,12 +71,11 @@ public:
     ReceiverWidget *receiverWidget;
     public slots:
 		void Restart();
-		void ShowSettings(bool b);
-		void ShowSdrSettings(bool b);
         void OutputData(const char *d);
         void OutputData (QString s);
         void RecToggled(bool on);
-        void SdrOptionsToggled(bool b);
+        void SdrOptionsPressed();
+        void CloseSdrOptions();
 
 private:
 	FFT *fft;
