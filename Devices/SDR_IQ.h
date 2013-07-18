@@ -71,7 +71,7 @@ public:
 	bool Connect();
 	bool Disconnect();
 	double SetFrequency(double fRequested, double fCurrent);
-	void ShowOptions();
+    void SetupOptionUi(QWidget *parent);
     bool UsesAudioInput() {return false;}
 
 	void Start(); //Start stop thread
@@ -132,6 +132,8 @@ public:
 
 
 private:
+    Ui::SDRIQOptions *optionUi;
+
 	QMutex mutex;
 	FT_HANDLE ftHandle;
 	CPX *inBuffer;
@@ -164,12 +166,8 @@ private:
 	int ifGain;
 	BANDWIDTH bandwidth;
 
-	//Dialog stuff
-	QDialog *sdrIQOptions;
-	Ui::SDRIQOptions *iqo;
-
 	//Settings
-	double sStartup;
+    double sDefaultStartup;
 	double sLow;
 	double sHigh;
 	int sStartupMode;

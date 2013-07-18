@@ -68,7 +68,10 @@ void SoftRock::Stop()
 void SoftRock::ReadSettings()
 {
     SDR::ReadSettings();
+
 	//Device Settings
+    sdrNumber = qSettings->value("sdrNumber",-1).toInt();
+
 	//Keep si570 frequency within 'reasonable' range, not exactly to spec
 	//Standard si570 support 4000000 to 160000000
 	//Limits will be based on divider settings for each radio
@@ -112,6 +115,9 @@ void SoftRock::ReadSettings()
 void SoftRock::WriteSettings()
 {
     SDR::WriteSettings();
+
+    qSettings->setValue("sdrNumber",sdrNumber);
+
 	qSettings->setValue("SR_ENSEMBLE/Startup",SR_ENSEMBLE_Startup);
 	qSettings->setValue("SR_ENSEMBLE/Low",SR_ENSEMBLE_Low);
 	qSettings->setValue("SR_ENSEMBLE/High",SR_ENSEMBLE_High);

@@ -88,20 +88,9 @@ public:
     STARTUP startup;
     double startupFreq;
     double lastFreq;
-    int lastMode;
-    int lastDisplayMode; //Spectrum, waterfall, etc
     QString inputDeviceName;
     QString outputDeviceName;
     int sampleRate;
-    //If Output Sample Rate is above this, then we try to reduce it by skipping samples when we output
-    int decimateLimit;
-    bool postMixerDecimate; //If true, then downsample to decimate limit after mixer
-    int framesPerBuffer;
-    double dbOffset; //DB calibration for spectrum and smeter
-    int sdrNumber; //For SoftRocks, selects last digit in serial number
-    //Increment for left-right and up-down in spectrum display
-    int leftRightIncrement;
-    int upDownIncrement;
 
     double iqGain; //Normalize device so incoming IQ levels are consistent
     IQORDER iqOrder;

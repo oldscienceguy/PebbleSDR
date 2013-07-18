@@ -90,6 +90,7 @@ private:
 	qint32 Freq2SRFreq(double iFreq);
 
     Ui::SoftRockOptions *optionUi;
+    int sdrNumber; //For SoftRocks, selects last digit in serial number
 
 	double SR_ENSEMBLE_Startup;
 	double SR_ENSEMBLE_Low;

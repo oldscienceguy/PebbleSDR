@@ -144,6 +144,7 @@ void SDR::ShowSdrOptions(bool b)
         connect(sd->startupEdit,SIGNAL(editingFinished()),this,SLOT(StartupFrequencyChanged()));
 
         sd->iqGain->setValue(iqGain);
+        connect(sd->iqGain,SIGNAL(valueChanged(double)),this,SLOT(IQGainChanged(double)));
 
         sd->IQSettings->addItem("I/Q (normal)",IQ);
         sd->IQSettings->addItem("Q/I (swap)",QI);
@@ -325,7 +326,6 @@ void SDR::ReadSettings()
     inputDeviceName = qSettings->value("InputDeviceName", "").toString();
     outputDeviceName = qSettings->value("OutputDeviceName", "").toString();
     sampleRate = qSettings->value("SampleRate", 48000).toInt();
-    sdrNumber = qSettings->value("sdrNumber",-1).toInt();
     iqGain = qSettings->value("iqGain",1).toDouble();
     iqOrder = (IQORDER)qSettings->value("IQOrder", SDR::IQ).toInt();
     iqBalanceGain = qSettings->value("iqBalanceGain",1).toDouble();
@@ -341,7 +341,6 @@ void SDR::WriteSettings()
     qSettings->setValue("InputDeviceName", inputDeviceName);
     qSettings->setValue("OutputDeviceName", outputDeviceName);
     qSettings->setValue("SampleRate",sampleRate);
-    qSettings->setValue("sdrNumber",sdrNumber);
     qSettings->setValue("iqGain",iqGain);
     qSettings->setValue("IQOrder", iqOrder);
     qSettings->setValue("iqBalanceGain", iqBalanceGain);

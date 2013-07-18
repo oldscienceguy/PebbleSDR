@@ -15,7 +15,7 @@ SDR_IQ::SDR_IQ(Receiver *_receiver, SDRDEVICE dev,Settings *_settings):SDR(_rece
 	ReadSettings();
 
 	ftHandle = NULL;
-	sdrIQOptions = NULL;
+    optionUi = NULL;
 	inBuffer = NULL;
 	outBuffer = NULL;
     readBuf = readBufProducer = NULL;
@@ -63,9 +63,6 @@ SDR_IQ::~SDR_IQ(void)
 
 	WriteSettings();
 
-	if (sdrIQOptions != NULL && sdrIQOptions->isVisible())
-		sdrIQOptions->hide();
-
 	//Let FTDI DLL know we're done, otherwise we won't be able to re-open same device in this session
 	if (ftHandle != NULL)
 		FT_Close(ftHandle);
@@ -82,7 +79,7 @@ SDR_IQ::~SDR_IQ(void)
 void SDR_IQ::ReadSettings()
 {
     SDR::ReadSettings();
-	sStartup = qSettings->value("Startup",10000000).toDouble();
+    sDefaultStartup = qSettings->value("DefaultStartup",10000000).toDouble();
 	sLow = qSettings->value("Low",150000).toDouble();
 	sHigh = qSettings->value("High",33000000).toDouble();
 		sStartupMode = qSettings->value("StartupMode",dmAM).toInt();
@@ -95,7 +92,7 @@ void SDR_IQ::ReadSettings()
 void SDR_IQ::WriteSettings()
 {
     SDR::WriteSettings();
-	qSettings->setValue("Startup",sStartup);
+    qSettings->setValue("DefaultStartup",sDefaultStartup);
 	qSettings->setValue("Low",sLow);
 	qSettings->setValue("High",sHigh);
 	qSettings->setValue("StartupMode",sStartupMode);
@@ -191,16 +188,18 @@ bool SDR_IQ::Connect()
     if (ftStatus != FT_OK) //Don't care how many bytes actually got read
         return false;
 
+    connected = true;
 	return true;
 }
 bool SDR_IQ::Disconnect()
 {
+    connected = false;
 	return true;
 }
 
 double SDR_IQ::GetStartupFrequency()
 {
-	return sStartup;
+    return sDefaultStartup;
 }
 
 int SDR_IQ::GetStartupMode()
@@ -953,65 +952,66 @@ void SDR_IQ::bandwidthChanged(int i)
 	}
 	sBandwidth = bandwidth; //If settings are saved, this is saved
 }
-void SDR_IQ::ShowOptions()
+void SDR_IQ::SetupOptionUi(QWidget *parent)
 {
+    if (optionUi != NULL)
+        delete optionUi;
+    optionUi = new Ui::SDRIQOptions;
+    optionUi->setupUi(parent);
+    parent->setVisible(true);
+
     QFont smFont = settings->smFont;
     QFont medFont = settings->medFont;
     QFont lgFont = settings->lgFont;
 
-	if (sdrIQOptions == NULL)
-	{
-		sdrIQOptions = new QDialog();
-		iqo = new Ui::SDRIQOptions();
-		iqo->setupUi(sdrIQOptions);
+    optionUi->bandwidthBox->setFont(medFont);
+    optionUi->bootLabel->setFont(medFont);
+    optionUi->firmwareLabel->setFont(medFont);
+    optionUi->ifGainBox->setFont(medFont);
+    optionUi->interfaceVersionLabel->setFont(medFont);
+    optionUi->label->setFont(medFont);
+    optionUi->label_2->setFont(medFont);
+    optionUi->label_3->setFont(medFont);
+    optionUi->nameLabel->setFont(medFont);
+    optionUi->rfGainBox->setFont(medFont);
+    optionUi->serialNumberLabel->setFont(medFont);
 
-        iqo->bandwidthBox->setFont(medFont);
-        iqo->bootLabel->setFont(medFont);
-        iqo->firmwareLabel->setFont(medFont);
-        iqo->ifGainBox->setFont(medFont);
-        iqo->interfaceVersionLabel->setFont(medFont);
-        iqo->label->setFont(medFont);
-        iqo->label_2->setFont(medFont);
-        iqo->label_3->setFont(medFont);
-        iqo->nameLabel->setFont(medFont);
-        iqo->rfGainBox->setFont(medFont);
-        iqo->serialNumberLabel->setFont(medFont);
+    optionUi->rfGainBox->addItem("  0db");
+    optionUi->rfGainBox->addItem("-10db");
+    optionUi->rfGainBox->addItem("-20db");
+    optionUi->rfGainBox->addItem("-30db");
+    connect(optionUi->rfGainBox,SIGNAL(currentIndexChanged(int)),this,SLOT(rfGainChanged(int)));
 
-		iqo->rfGainBox->addItem("  0db");
-		iqo->rfGainBox->addItem("-10db");
-		iqo->rfGainBox->addItem("-20db");
-		iqo->rfGainBox->addItem("-30db");
-		connect(iqo->rfGainBox,SIGNAL(currentIndexChanged(int)),this,SLOT(rfGainChanged(int)));
+    optionUi->ifGainBox->addItem("  0db");
+    optionUi->ifGainBox->addItem(" +6db");
+    optionUi->ifGainBox->addItem("+12db");
+    optionUi->ifGainBox->addItem("+18db");
+    optionUi->ifGainBox->addItem("+24db");
+    connect(optionUi->ifGainBox,SIGNAL(currentIndexChanged(int)),this,SLOT(ifGainChanged(int)));
 
-		iqo->ifGainBox->addItem("  0db");
-		iqo->ifGainBox->addItem(" +6db");
-		iqo->ifGainBox->addItem("+12db");
-		iqo->ifGainBox->addItem("+18db");
-		iqo->ifGainBox->addItem("+24db");
-		connect(iqo->ifGainBox,SIGNAL(currentIndexChanged(int)),this,SLOT(ifGainChanged(int)));
+    optionUi->bandwidthBox->addItem(" 5KHz");
+    optionUi->bandwidthBox->addItem(" 10KHz");
+    optionUi->bandwidthBox->addItem(" 25KHz");
+    optionUi->bandwidthBox->addItem(" 50KHz");
+    optionUi->bandwidthBox->addItem("100KHz");
+    optionUi->bandwidthBox->addItem("150KHz");
+    optionUi->bandwidthBox->addItem("190KHz");
+    connect(optionUi->bandwidthBox,SIGNAL(currentIndexChanged(int)),this,SLOT(bandwidthChanged(int)));
 
-		iqo->bandwidthBox->addItem(" 5KHz");
-		iqo->bandwidthBox->addItem(" 10KHz");
-		iqo->bandwidthBox->addItem(" 25KHz");
-		iqo->bandwidthBox->addItem(" 50KHz");
-		iqo->bandwidthBox->addItem("100KHz");
-		iqo->bandwidthBox->addItem("150KHz");
-		iqo->bandwidthBox->addItem("190KHz");
-		connect(iqo->bandwidthBox,SIGNAL(currentIndexChanged(int)),this,SLOT(bandwidthChanged(int)));
 
-	}
-	iqo->nameLabel->setText("Name: " + targetName);
-	iqo->serialNumberLabel->setText("Serial #: " + serialNumber);
-	iqo->firmwareLabel->setText("Firmware Version: " + QString::number(firmwareVersion));
-	iqo->bootLabel->setText("Bootcode Version: " + QString::number(bootcodeVersion));
-	iqo->interfaceVersionLabel->setText("Interface Version: " + QString::number(interfaceVersion));
+    if (connected) {
+        optionUi->nameLabel->setText("Name: " + targetName);
+        optionUi->serialNumberLabel->setText("Serial #: " + serialNumber);
+        optionUi->firmwareLabel->setText("Firmware Version: " + QString::number(firmwareVersion));
+        optionUi->bootLabel->setText("Bootcode Version: " + QString::number(bootcodeVersion));
+        optionUi->interfaceVersionLabel->setText("Interface Version: " + QString::number(interfaceVersion));
 
-	if (rfGain != 0)
-		iqo->rfGainBox->setCurrentIndex(rfGain / -10);
-	if (ifGain != 0)
-		iqo->ifGainBox->setCurrentIndex(ifGain / 6);
+        if (rfGain != 0)
+            optionUi->rfGainBox->setCurrentIndex(rfGain / -10);
+        if (ifGain != 0)
+            optionUi->ifGainBox->setCurrentIndex(ifGain / 6);
 
-	iqo->bandwidthBox->setCurrentIndex(sBandwidth);
+        optionUi->bandwidthBox->setCurrentIndex(sBandwidth);
+    }
 
-	sdrIQOptions->show();
 }
