@@ -74,6 +74,7 @@ Resources/edit.png -text
 /cpx.cpp -text
 /cpx.h -text
 /defs.h -text
+/directinput.ui -text
 /fftbasic.cpp -text
 /fftbasic.h -text
 /ftd2xx.h -text

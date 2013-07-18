@@ -475,7 +475,8 @@ FORMS += \
     iqbalanceoptions.ui \
     funcubeoptions.ui \
     sdr-ip.ui \
-    sdr.ui
+    sdr.ui \
+    directinput.ui
 
 RESOURCES += \
     resources.qrc

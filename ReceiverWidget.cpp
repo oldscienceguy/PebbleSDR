@@ -146,9 +146,6 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	ui.nixie10m->installEventFilter(this);
 	ui.nixie100m->installEventFilter(this);
     ui.nixie1g->installEventFilter(this);
-    ui.directEntry->installEventFilter(this); //So we can grab Enter key
-
-    ui.directEntry->setInputMask("0000000.000"); //All digits, none required
 
     ui.recButton->setEnabled(false);
 
@@ -182,8 +179,8 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     sdrSelector->addItem("HPSDR USB",SDR::HPSDR_USB);
     //sdrSelector->addItem("HPSDR TCP",SDR::HPSDR_TCP);
     sdrSelector->addItem("SDR Widget",SDR::SDRWIDGET);
-    sdrSelector->addItem("FUNcube Dongle",SDR::FUNCUBE);
-    sdrSelector->addItem("FUNcube Dongle Plus",SDR::FUNCUBE_PLUS);
+    sdrSelector->addItem("FUNcube Pro",SDR::FUNCUBE);
+    sdrSelector->addItem("FUNcube Pro+",SDR::FUNCUBE_PLUS);
     sdrSelector->addItem("File",SDR::FILE);
     sdrSelector->addItem("RTL2832 Family",SDR::DVB_T);
 
@@ -191,6 +188,17 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     sdrSelector->setCurrentIndex(cur);
     connect(sdrSelector,SIGNAL(currentIndexChanged(int)),this,SLOT(ReceiverChanged(int)));
 
+    directInputWidget = new QWidget();
+    directInputUi = new Ui::DirectInput;
+    directInputUi->setupUi(directInputWidget);
+    //Direct input is modal to avoid any confusion with other UI
+    directInputWidget->move(500,500);
+    directInputWidget->setWindowModality(Qt::WindowModal);
+    directInputWidget->setWindowFlags(Qt::Popup); //No bar
+    //directInputUi->directEntry->setInputMask("0000000"); //All digits, none required
+    connect(directInputUi->directEntry,SIGNAL(returnPressed()),this,SLOT(directEntryAccepted()));
+    connect(directInputUi->enterButton,SIGNAL(clicked()),this,SLOT(directEntryAccepted()));
+    connect(directInputUi->cancelButton,SIGNAL(clicked()),this,SLOT(directEntryCanceled()));
 
 }
 
@@ -210,11 +218,34 @@ void ReceiverWidget::mixerChanged(int m, bool b)
     SetFrequency(loFrequency + m);
 }
 
+//User hit enter, esc
+void ReceiverWidget::directEntryAccepted()
+{
+    double freq = QString(directInputUi->directEntry->text()).toDouble();
+    if (freq > 0) {
+        //Freq is in kHx
+        freq *= 1000.0;
+        //Direct is always LO mode
+        setLoMode(true);
+        SetFrequency(freq);
+    }
+
+    directInputWidget->close();
+}
+
+void ReceiverWidget::directEntryCanceled()
+{
+    directInputWidget->close();
+}
+
 //Filters all nixie events
 bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
 {
     static int scrollCounter = 0; //Used to slow down and smooth freq changes from scroll wheel
     static const int smoothing = 10;
+
+    if (!powerOn)
+        return false;
 
     //If the event (any type) is in a nixie we may need to know which one
     if (o == ui.nixie1) {
@@ -263,11 +294,10 @@ bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
             QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
             int key =  keyEvent->key();
             if (key >= '0' && key <= '9') {
-                num->display(key - '0');
-                double d = GetNixieNumber();
-                SetFrequency(d);
-                //Set freq on each digit entry?
-                //Or let user keep typing in direct entry fashion, moving focus as necessary?
+                directInputWidget->show();
+                directInputUi->directEntry->setFocus();
+                directInputUi->directEntry->setText(QString::number(key-'0'));
+                //Modal direct entry window is now active until user completes edit with Enter
                 return true;
             } else if (key == Qt::Key_Up) {
                 int v = qBound(0.0, num->value() + 1, 9.0);
@@ -325,25 +355,6 @@ bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
             return true;
         }
     }
-	//Handle enter from direct entry freq box
-	if (o == ui.directEntry) {
-		if (e->type() == QEvent::KeyPress) {
-			QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
-			//qDebug("Ate key press %d", keyEvent->key());
-			if (keyEvent->key() == Qt::Key_Enter ||
-				keyEvent->key() == Qt::Key_Return) {
-				double freq = QString(ui.directEntry->text()).toDouble();
-                if (freq > 0) {
-                    //Freq is in kHx
-                    freq *= 1000.0;
-                    //Direct is always LO mode
-                    setLoMode(true);
-					SetFrequency(freq);
-                    return true;
-                }
-			}
-		}
-	}
 
 	return false; //Allow ojects to see event
     //or
@@ -852,9 +863,6 @@ void ReceiverWidget::ReceiverChanged(int i)
 //Updates all the nixies to display a number
 void ReceiverWidget::DisplayNixieNumber(double n)
 {
-    //Direct entry disply in khz
-    ui.directEntry->setText(QString::number(n / 1000.0,'f',3));
-
 	qint32 d = n; //Saves us having to cast to int below to get mod
     ui.nixie1g->display( (d / 1000000000)%10);
     ui.nixie100m->display( (d / 100000000)%10);

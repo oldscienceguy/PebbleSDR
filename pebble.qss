@@ -19,7 +19,7 @@ QPushButton { color: red }
 
 
 /* Make selected frames metal grey background */
-QDialog, QFrame#comboFrame, QFrame#tunerFrame, QFrame#buttonFrame, QFrame#sliderFrame, QFrame#dataFrame, QFrame#spectrumFrame, QFrame#bandFrame{
+QDialog, QFrame#comboFrame, QFrame#tunerFrame, QFrame#buttonFrame, QFrame#sliderFrame, QFrame#dataFrame, QFrame#spectrumFrame, QFrame#bandFrame,QWidget#DirectInput{
 	/*
 	Looking for close match to R390a or similar from that era
 	This is a shade of LightSteelBlue that's pretty close on a Mac

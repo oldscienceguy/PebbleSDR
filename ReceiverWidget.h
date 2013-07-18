@@ -3,6 +3,7 @@
 #include "gpl.h"
 
 #include "ui/ui_receiverwidget.h"
+#include "ui/ui_directinput.h"
 #include "spectrumwidget.h"
 #include "smeterwidget.h"
 #include "demod.h"
@@ -58,6 +59,8 @@ public:
 	public slots:
 		void setLoMode(bool b);
 		void powerToggled(bool b);
+        void directEntryAccepted();
+        void directEntryCanceled();
 
 
 signals:
@@ -67,6 +70,8 @@ protected:
 
 private:
 	Receiver *receiver;
+    QWidget *directInputWidget;
+    Ui::DirectInput *directInputUi;
 
     void DisplayNixieNumber(double d);
     double GetNixieNumber();
