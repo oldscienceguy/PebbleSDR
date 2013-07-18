@@ -213,6 +213,41 @@ void ReceiverWidget::mixerChanged(int m, bool b)
 //Filters all nixie events
 bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
 {
+    static int scrollCounter = 0; //Used to slow down and smooth freq changes from scroll wheel
+    static const int smoothing = 10;
+
+    //If the event (any type) is in a nixie we may need to know which one
+    if (o == ui.nixie1) {
+        tunerStep=1;
+    }
+    else if (o == ui.nixie10) {
+        tunerStep=10;
+    }
+    else if (o == ui.nixie100) {
+        tunerStep=100;
+    }
+    else if (o == ui.nixie1k) {
+        tunerStep=1000;
+    }
+    else if (o == ui.nixie10k) {
+        tunerStep=10000;
+    }
+    else if (o == ui.nixie100k) {
+        tunerStep=100000;
+    }
+    else if (o == ui.nixie1m) {
+        tunerStep=1000000;
+    }
+    else if (o == ui.nixie10m) {
+        tunerStep=10000000;
+    }
+    else if (o == ui.nixie100m) {
+        tunerStep=100000000;
+    }
+    else if (o == ui.nixie1g) {
+        tunerStep=1000000000;
+    }
+
     if (o->inherits("QLCDNumber")) {
         QLCDNumber *num = (QLCDNumber *) o;
 
@@ -249,37 +284,6 @@ bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
             }
         } else if (e->type() == QEvent::MouseButtonRelease) {
             //Clicking on a digit sets tuning step and resets lower digits to zero
-            if (o == ui.nixie1) {
-                tunerStep=1;
-            }
-            else if (o == ui.nixie10) {
-                tunerStep=10;
-            }
-            else if (o == ui.nixie100) {
-                tunerStep=100;
-            }
-            else if (o == ui.nixie1k) {
-                tunerStep=1000;
-            }
-            else if (o == ui.nixie10k) {
-                tunerStep=10000;
-            }
-            else if (o == ui.nixie100k) {
-                tunerStep=100000;
-            }
-            else if (o == ui.nixie1m) {
-                tunerStep=1000000;
-            }
-            else if (o == ui.nixie10m) {
-                tunerStep=10000000;
-            }
-            else if (o == ui.nixie100m) {
-                tunerStep=100000000;
-            }
-            else if (o == ui.nixie1g) {
-                tunerStep=1000000000;
-            }
-
             frequency = (int)(frequency/tunerStep) * tunerStep;
             SetFrequency(frequency);
 
@@ -291,25 +295,30 @@ bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
             QPoint angleDelta = wheelEvent->angleDelta();
 
             if (angleDelta.ry() == 0) {
-                if (angleDelta.rx() > 0) {
+                //Left-Right scrolling Same as up-down for now
+                if ((angleDelta.rx() > 0) && (++scrollCounter > smoothing)) {
                     //Scroll Right
-                    frequency += 100;
+                    scrollCounter = 0;
+                    frequency += tunerStep;
                     SetFrequency(frequency);
-                } else if (angleDelta.rx() < 0) {
+                } else if ((angleDelta.rx() < 0) && (++scrollCounter > smoothing)) {
                     //Scroll Left
-                    frequency -= 100;
+                    scrollCounter = 0;
+                    frequency -= tunerStep;
                     SetFrequency(frequency);
 
                 }
             } else if (angleDelta.rx() == 0) {
-                if (angleDelta.ry() > 0) {
+                //Up-down scrolling
+                if ((angleDelta.ry() > 0) && (++scrollCounter > smoothing)) {
                     //Scroll Down
-                    frequency -= 1000;
+                    scrollCounter = 0;
+                    frequency -= tunerStep;
                     SetFrequency(frequency);
-
-                } else if (angleDelta.ry() < 0) {
+                } else if ((angleDelta.ry() < 0) && (++scrollCounter > smoothing)) {
                     //Scroll Up
-                    frequency += 1000;
+                    scrollCounter = 0;
+                    frequency += tunerStep;
                     SetFrequency(frequency);
                 }
             }
