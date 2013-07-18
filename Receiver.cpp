@@ -18,7 +18,6 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	//Read ini file or set defaults if no ini file exists
 	settings = new Settings();
     global->settings = settings;
-	connect(settings,SIGNAL(Restart()),this,SLOT(Restart()));
 
     //Move to constructor
     recordingPath = QCoreApplication::applicationDirPath();
@@ -91,7 +90,9 @@ bool Receiver::On()
 	}
 
     //Don't set title until we connect.  Some drivers handle multiple devices (RTL2832) and we need connection data
-    QApplication::activeWindow()->setWindowTitle("Pebble: " + sdr->GetDeviceName());
+    //QApplication::activeWindow()->setWindowTitle("Pebble: " + sdr->GetDeviceName());
+
+    connect(sdr,SIGNAL(Restart()),this,SLOT(Restart()));
 
     sampleRate = downSample1Rate = sdr->GetSampleRate();
     framesPerBuffer = downSample1Frames = settings->framesPerBuffer;
@@ -392,7 +393,8 @@ void Receiver::Restart()
 		//Tell receiver widget to power off, then on.
 		//Receiver widget controls logic and will call receiver as necessary
 		receiverWidget->powerToggled(false);
-		receiverWidget->powerToggled(true);
+        //Just power off for now
+        //receiverWidget->powerToggled(true);
 	}
 }
 double Receiver::SetFrequency(double fRequested, double fCurrent)

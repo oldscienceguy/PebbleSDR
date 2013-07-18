@@ -23,8 +23,8 @@ public:
 	void Stop();
 
 	double SetFrequency(double fRequested, double fCurrent);
-	void ShowOptions();
-	double GetStartupFrequency();
+    void SetupOptionUi(QWidget *parent);
+    double GetStartupFrequency();
 	int GetStartupMode();
 	double GetHighLimit();
 	double GetLowLimit();
@@ -73,8 +73,6 @@ private slots:
 	void IFGainModeChanged(int s);
 	void IFRCFilterChanged(int s);
 	void IFFilterChanged(int s);
-	void DefaultClicked(bool b);
-	void SaveClicked(bool b);
 
 
 private:
@@ -84,8 +82,7 @@ private:
 	bool HIDSet(char cmd, unsigned char value);
 
 	//Options
-	QDialog *fcdOptionsDialog;
-	Ui::FunCubeOptions *fco;
+    Ui::FunCubeOptions *optionUi;
 
 	//FCD Data
 	void ReadFCDOptions();

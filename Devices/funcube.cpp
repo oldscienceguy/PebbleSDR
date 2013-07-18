@@ -317,7 +317,7 @@ FunCube::FunCube(Receiver *_receiver, SDRDEVICE dev,Settings *_settings):
     if (!settings)
         return;
 
-	fcdOptionsDialog = NULL;
+    optionUi = NULL;
 
     if (sdrDevice == SDR::FUNCUBE)
         InitSettings("funcube");
@@ -339,8 +339,6 @@ FunCube::~FunCube(void)
         return;
 	WriteSettings();
 	Disconnect();
-	if (fcdOptionsDialog != NULL && fcdOptionsDialog->isVisible())
-		fcdOptionsDialog->hide();
     hid_exit();
 }
 bool FunCube::Connect()
@@ -371,6 +369,7 @@ bool FunCube::Connect()
 
     free(hidPath);
     hidPath = NULL;
+    connected = true;
     return true;
 }
 
@@ -382,6 +381,7 @@ bool FunCube::Disconnect()
     if (hidDev != NULL)
         hid_close(hidDev);
     hidDev = NULL;
+    connected = false;
 	return true;
 }
 
@@ -449,6 +449,8 @@ void FunCube::Stop()
 
 int FunCube::HIDWrite(unsigned char *data, int length)
 {
+    if (!connected)
+        return HID_TIMEOUT;
 
     return hid_write(hidDev,data,length);
 }
@@ -461,6 +463,9 @@ int FunCube::HIDWrite(unsigned char *data, int length)
  */
 int FunCube::HIDRead(unsigned char *data, int length)
 {
+    if (!connected)
+        return HID_TIMEOUT;
+
 	memset(data,0x00,length); // Clear out the response buffer
     int bytesRead = hid_read(hidDev,data,length);
     //Caller does not expect or handle report# returned from windows
@@ -482,12 +487,12 @@ double FunCube::SetFrequency(double fRequested, double fCurrent)
     unsigned char buf[maxPacketSize+1];
 
 	//Apply correction factor
-	double fCorrected;
+    double fCorrected;
 	int nFreq;
 	if (fcdSetFreqHz) {
 		//hz resolution
-		fCorrected = fRequested * (sOffset/1000000.0);
-		nFreq = fCorrected;
+        fCorrected = fRequested * (sOffset/1000000.0);
+        nFreq = fCorrected;
 		buf[0]=0; // Report ID, ignored
 		buf[1]=FCD_HID_CMD_SET_FREQUENCY_HZ;
 		buf[2]=(unsigned char)nFreq;
@@ -497,8 +502,8 @@ double FunCube::SetFrequency(double fRequested, double fCurrent)
 	} else {
 		//khz resolution, round up to nearest khz and truncate
 		fRequested = (int)((fRequested+500)/1000) * 1000; //No resolution below 1khz
-		fCorrected = fRequested * (sOffset/1000000.0);
-		nFreq = fCorrected/1000;
+        fCorrected = fRequested * (sOffset/1000000.0);
+        nFreq = fCorrected/1000;
 
 		buf[0]=0; // Report ID, ignored
 		buf[1]=FCD_HID_CMD_SET_FREQUENCY;
@@ -543,6 +548,9 @@ double FunCube::SetFrequency(double fRequested, double fCurrent)
 
 bool FunCube::HIDSet(char cmd, unsigned char value)
 {
+    if (!connected)
+        return false;
+
     unsigned char outBuf[maxPacketSize+1];
     unsigned char inBuf[maxPacketSize];
 
@@ -566,6 +574,9 @@ bool FunCube::HIDSet(char cmd, unsigned char value)
 
 bool FunCube::HIDGet(char cmd, void *data, int len)
 {
+    if (!connected)
+        return false;
+
     unsigned char outBuf[maxPacketSize+1]; //HID Write skips report id 0 and adj buffer, so we need +1 to send 64
     unsigned char inBuf[maxPacketSize];
 
@@ -642,7 +653,7 @@ void FunCube::SetIQCorrection(qint16 phase, quint16 gain)
 
 void FunCube::LNAGainChanged(int s)
 {
-    int v = fco->LNAGain->itemData(s).toInt();
+    int v = optionUi->LNAGain->itemData(s).toInt();
 	SetLNAGain(v);
 }
 void FunCube::SetLNAGain(int v)
@@ -656,7 +667,7 @@ void FunCube::SetLNAGain(int v)
 
 void FunCube::LNAEnhanceChanged(int s)
 {
-    int v = fco->LNAEnhance->itemData(s).toInt();
+    int v = optionUi->LNAEnhance->itemData(s).toInt();
 	SetLNAEnhance(v);
 }
 void FunCube::SetLNAEnhance(int v)
@@ -685,69 +696,69 @@ void FunCube::BandChanged(int s)
 {
     //If FCD+ there are no bands, just populate combo
     if (sdrDevice == FUNCUBE_PLUS) {
-        fco->RFFilter->clear();
-        fco->RFFilter->addItem("0 to 4 LPF",TRFE_0_4);
-        fco->RFFilter->addItem("4 to 8 LPF",TRFE_4_8);
-        fco->RFFilter->addItem("8 to 16 LPF",TRFE_8_16);
-        fco->RFFilter->addItem("16 to 32 LPF",TRFE_16_32);
-        fco->RFFilter->addItem("32 to 75 LPF",TRFE_32_75);
-        fco->RFFilter->addItem("75 to 125 LPF",TRFE_75_125);
-        fco->RFFilter->addItem("125 to 250 LPF",TRFE_125_250);
-        fco->RFFilter->addItem("145 LPF",TRFE_145);
-        fco->RFFilter->addItem("410 to 875 LPF",TRFE_410_875);
-        fco->RFFilter->addItem("435 LPF",TRFE_435);
-        fco->RFFilter->addItem("875 to 2000 LPF",TRFE_875_2000);
+        optionUi->RFFilter->clear();
+        optionUi->RFFilter->addItem("0 to 4 LPF",TRFE_0_4);
+        optionUi->RFFilter->addItem("4 to 8 LPF",TRFE_4_8);
+        optionUi->RFFilter->addItem("8 to 16 LPF",TRFE_8_16);
+        optionUi->RFFilter->addItem("16 to 32 LPF",TRFE_16_32);
+        optionUi->RFFilter->addItem("32 to 75 LPF",TRFE_32_75);
+        optionUi->RFFilter->addItem("75 to 125 LPF",TRFE_75_125);
+        optionUi->RFFilter->addItem("125 to 250 LPF",TRFE_125_250);
+        optionUi->RFFilter->addItem("145 LPF",TRFE_145);
+        optionUi->RFFilter->addItem("410 to 875 LPF",TRFE_410_875);
+        optionUi->RFFilter->addItem("435 LPF",TRFE_435);
+        optionUi->RFFilter->addItem("875 to 2000 LPF",TRFE_875_2000);
 
         return;
     }
-    int v = fco->Band->itemData(s).toInt();
+    int v = optionUi->Band->itemData(s).toInt();
 	SetBand(v);
 	//Change RFFilter options to match band
-    fco->RFFilter->clear();
+    optionUi->RFFilter->clear();
 	switch (v) {
 	case 0:
-        fco->RFFilter->addItem("268mhz LPF",TRFE_LPF268MHZ);
-        fco->RFFilter->addItem("299mhz LPF",TRFE_LPF299MHZ);
+        optionUi->RFFilter->addItem("268mhz LPF",TRFE_LPF268MHZ);
+        optionUi->RFFilter->addItem("299mhz LPF",TRFE_LPF299MHZ);
 		break;
 	case 1:
-        fco->RFFilter->addItem("509mhz LPF",TRFE_LPF509MHZ);
-        fco->RFFilter->addItem("656mhz LPF",TRFE_LPF656MHZ);
+        optionUi->RFFilter->addItem("509mhz LPF",TRFE_LPF509MHZ);
+        optionUi->RFFilter->addItem("656mhz LPF",TRFE_LPF656MHZ);
 		break;
 	case 2:
-        fco->RFFilter->addItem("360mhz LPF",TRFE_BPF360MHZ);
-        fco->RFFilter->addItem("380mhz LPF",TRFE_BPF380MHZ);
-        fco->RFFilter->addItem("405mhz LPF",TRFE_BPF405MHZ);
-        fco->RFFilter->addItem("425mhz LPF",TRFE_BPF425MHZ);
-        fco->RFFilter->addItem("450mhz LPF",TRFE_BPF450MHZ);
-        fco->RFFilter->addItem("475mhz LPF",TRFE_BPF475MHZ);
-        fco->RFFilter->addItem("505mhz LPF",TRFE_BPF505MHZ);
-        fco->RFFilter->addItem("540mhz LPF",TRFE_BPF540MHZ);
-        fco->RFFilter->addItem("575mhz LPF",TRFE_BPF575MHZ);
-        fco->RFFilter->addItem("615mhz LPF",TRFE_BPF615MHZ);
-        fco->RFFilter->addItem("670mhz LPF",TRFE_BPF670MHZ);
-        fco->RFFilter->addItem("720mhz LPF",TRFE_BPF720MHZ);
-        fco->RFFilter->addItem("760mhz LPF",TRFE_BPF760MHZ);
-        fco->RFFilter->addItem("840mhz LPF",TRFE_BPF840MHZ);
-        fco->RFFilter->addItem("890mhz LPF",TRFE_BPF890MHZ);
-        fco->RFFilter->addItem("970mhz LPF",TRFE_BPF970MHZ);
+        optionUi->RFFilter->addItem("360mhz LPF",TRFE_BPF360MHZ);
+        optionUi->RFFilter->addItem("380mhz LPF",TRFE_BPF380MHZ);
+        optionUi->RFFilter->addItem("405mhz LPF",TRFE_BPF405MHZ);
+        optionUi->RFFilter->addItem("425mhz LPF",TRFE_BPF425MHZ);
+        optionUi->RFFilter->addItem("450mhz LPF",TRFE_BPF450MHZ);
+        optionUi->RFFilter->addItem("475mhz LPF",TRFE_BPF475MHZ);
+        optionUi->RFFilter->addItem("505mhz LPF",TRFE_BPF505MHZ);
+        optionUi->RFFilter->addItem("540mhz LPF",TRFE_BPF540MHZ);
+        optionUi->RFFilter->addItem("575mhz LPF",TRFE_BPF575MHZ);
+        optionUi->RFFilter->addItem("615mhz LPF",TRFE_BPF615MHZ);
+        optionUi->RFFilter->addItem("670mhz LPF",TRFE_BPF670MHZ);
+        optionUi->RFFilter->addItem("720mhz LPF",TRFE_BPF720MHZ);
+        optionUi->RFFilter->addItem("760mhz LPF",TRFE_BPF760MHZ);
+        optionUi->RFFilter->addItem("840mhz LPF",TRFE_BPF840MHZ);
+        optionUi->RFFilter->addItem("890mhz LPF",TRFE_BPF890MHZ);
+        optionUi->RFFilter->addItem("970mhz LPF",TRFE_BPF970MHZ);
 		break;
 	case 3:
-        fco->RFFilter->addItem("1300mhz LPF",TRFE_BPF1300MHZ);
-        fco->RFFilter->addItem("1320mhz LPF",TRFE_BPF1320MHZ);
-        fco->RFFilter->addItem("1360mhz LPF",TRFE_BPF1360MHZ);
-        fco->RFFilter->addItem("1410mhz LPF",TRFE_BPF1410MHZ);
-        fco->RFFilter->addItem("1445mhz LPF",TRFE_BPF1445MHZ);
-        fco->RFFilter->addItem("1460mhz LPF",TRFE_BPF1460MHZ);
-        fco->RFFilter->addItem("1490mhz LPF",TRFE_BPF1490MHZ);
-        fco->RFFilter->addItem("1530mhz LPF",TRFE_BPF1530MHZ);
-        fco->RFFilter->addItem("1560mhz LPF",TRFE_BPF1560MHZ);
-        fco->RFFilter->addItem("1590mhz LPF",TRFE_BPF1590MHZ);
-        fco->RFFilter->addItem("1640mhz LPF",TRFE_BPF1640MHZ);
-        fco->RFFilter->addItem("1660mhz LPF",TRFE_BPF1660MHZ);
-        fco->RFFilter->addItem("1680mhz LPF",TRFE_BPF1680MHZ);
-        fco->RFFilter->addItem("1700mhz LPF",TRFE_BPF1700MHZ);
-        fco->RFFilter->addItem("1720mhz LPF",TRFE_BPF1720MHZ);
-        fco->RFFilter->addItem("1750mhz LPF",TRFE_BPF1750MHZ);
+        optionUi->RFFilter->addItem("1300mhz LPF",TRFE_BPF1300MHZ);
+        optionUi->RFFilter->addItem("1320mhz LPF",TRFE_BPF1320MHZ);
+        optionUi->RFFilter->addItem("1360mhz LPF",TRFE_BPF1360MHZ);
+        optionUi->RFFilter->addItem("1410mhz LPF",TRFE_BPF1410MHZ);
+        optionUi->RFFilter->addItem("1445mhz LPF",TRFE_BPF1445MHZ);
+        optionUi->RFFilter->addItem("1460mhz LPF",TRFE_BPF1460MHZ);
+        optionUi->RFFilter->addItem("1490mhz LPF",TRFE_BPF1490MHZ);
+        optionUi->RFFilter->addItem("1530mhz LPF",TRFE_BPF1530MHZ);
+        optionUi->RFFilter->addItem("1560mhz LPF",TRFE_BPF1560MHZ);
+        optionUi->RFFilter->addItem("1590mhz LPF",TRFE_BPF1590MHZ);
+        optionUi->RFFilter->addItem("1640mhz LPF",TRFE_BPF1640MHZ);
+        optionUi->RFFilter->addItem("1660mhz LPF",TRFE_BPF1660MHZ);
+        optionUi->RFFilter->addItem("1680mhz LPF",TRFE_BPF1680MHZ);
+        optionUi->RFFilter->addItem("1700mhz LPF",TRFE_BPF1700MHZ);
+        optionUi->RFFilter->addItem("1720mhz LPF",TRFE_BPF1720MHZ);
+        optionUi->RFFilter->addItem("1750mhz LPF",TRFE_BPF1750MHZ);
 		break;
 	}
 	//We're not keeping filter values per band yet, so just set filter to first value
@@ -755,7 +766,7 @@ void FunCube::BandChanged(int s)
 }
 void FunCube::RFFilterChanged(int s)
 {
-    int v = fco->RFFilter->itemData(s).toInt();
+    int v = optionUi->RFFilter->itemData(s).toInt();
 	SetRFFilter(v);
 }
 void FunCube::SetRFFilter(int v)
@@ -771,7 +782,7 @@ void FunCube::SetRFFilter(int v)
 
 void FunCube::MixerGainChanged(int s)
 {
-    int v = fco->MixerGain->itemData(s).toInt();
+    int v = optionUi->MixerGain->itemData(s).toInt();
 	SetMixerGain(v);
 }
 void FunCube::SetMixerGain(int v)
@@ -784,7 +795,7 @@ void FunCube::SetMixerGain(int v)
 
 void FunCube::BiasCurrentChanged(int s)
 {
-    int v = fco->BiasCurrent->itemData(s).toInt();
+    int v = optionUi->BiasCurrent->itemData(s).toInt();
 	SetBiasCurrent(v);
 }
 void FunCube::SetBiasCurrent(int v)
@@ -814,14 +825,14 @@ void FunCube::BiasTeeChanged(int s)
 {
     if (sdrDevice == SDR::FUNCUBE)
         return; //Not supported
-    int v = fco->BiasTee->itemData(s).toInt();
+    int v = optionUi->BiasTee->itemData(s).toInt();
 
     SetBiasTee(v);
 }
 
 void FunCube::MixerFilterChanged(int s)
 {
-    int v = fco->MixerFilter->itemData(s).toInt();
+    int v = optionUi->MixerFilter->itemData(s).toInt();
 	SetMixerFilter(v);
 }
 void FunCube::SetMixerFilter(int v)
@@ -837,7 +848,7 @@ void FunCube::SetMixerFilter(int v)
 
 void FunCube::IFGain1Changed(int s)
 {
-    int v = fco->IFGain1->itemData(s).toInt();
+    int v = optionUi->IFGain1->itemData(s).toInt();
 	SetIFGain1(v);
 }
 void FunCube::SetIFGain1(int v)
@@ -853,7 +864,7 @@ void FunCube::SetIFGain1(int v)
 
 void FunCube::IFGain2Changed(int s)
 {
-    int v = fco->IFGain2->itemData(s).toInt();
+    int v = optionUi->IFGain2->itemData(s).toInt();
 	SetIFGain2(v);
 }
 void FunCube::SetIFGain2(int v)
@@ -869,7 +880,7 @@ void FunCube::SetIFGain2(int v)
 
 void FunCube::IFGain3Changed(int s)
 {
-    int v = fco->IFGain3->itemData(s).toInt();
+    int v = optionUi->IFGain3->itemData(s).toInt();
 	SetIFGain3(v);
 }
 void FunCube::SetIFGain3(int v)
@@ -885,7 +896,7 @@ void FunCube::SetIFGain3(int v)
 
 void FunCube::IFGain4Changed(int s)
 {
-    int v = fco->IFGain4->itemData(s).toInt();
+    int v = optionUi->IFGain4->itemData(s).toInt();
 	SetIFGain4(v);
 }
 void FunCube::SetIFGain4(int v)
@@ -901,7 +912,7 @@ void FunCube::SetIFGain4(int v)
 
 void FunCube::IFGain5Changed(int s)
 {
-    int v = fco->IFGain5->itemData(s).toInt();
+    int v = optionUi->IFGain5->itemData(s).toInt();
 	SetIFGain5(v);
 }
 void FunCube::SetIFGain5(int v)
@@ -917,7 +928,7 @@ void FunCube::SetIFGain5(int v)
 
 void FunCube::IFGain6Changed(int s)
 {
-    int v = fco->IFGain6->itemData(s).toInt();
+    int v = optionUi->IFGain6->itemData(s).toInt();
 	SetIFGain6(v);
 }
 void FunCube::SetIFGain6(int v)
@@ -933,7 +944,7 @@ void FunCube::SetIFGain6(int v)
 
 void FunCube::IFGainModeChanged(int s)
 {
-    int v = fco->IFGainMode->itemData(s).toInt();
+    int v = optionUi->IFGainMode->itemData(s).toInt();
 	SetIFGainMode(v);
 }
 void FunCube::SetIFGainMode(int v)
@@ -949,7 +960,7 @@ void FunCube::SetIFGainMode(int v)
 
 void FunCube::IFRCFilterChanged(int s)
 {
-    int v = fco->IFRCFilter->itemData(s).toInt();
+    int v = optionUi->IFRCFilter->itemData(s).toInt();
 	SetIFRCFilter(v);
 }
 void FunCube::SetIFRCFilter(int v)
@@ -965,7 +976,7 @@ void FunCube::SetIFRCFilter(int v)
 
 void FunCube::IFFilterChanged(int s)
 {
-    int v = fco->IFFilter->itemData(s).toInt();
+    int v = optionUi->IFFilter->itemData(s).toInt();
 	SetIFFilter(v);
 }
 void FunCube::SetIFFilter(int v)
@@ -976,34 +987,6 @@ void FunCube::SetIFFilter(int v)
 	fcdIFFilter = v;
 }
 
-void FunCube::DefaultClicked(bool)
-{
-	SetLNAGain(-1);
-	SetLNAEnhance(-1);
-	SetBand(-1);
-	SetRFFilter(-1);
-	SetMixerGain(-1);
-	SetBiasCurrent(-1);
-    SetBiasTee(0);
-	SetMixerFilter(-1);
-	SetIFGain1(-1);
-	SetIFGain2(-1);
-	SetIFGain3(-1);
-	SetIFGain4(-1);
-	SetIFGain5(-1);
-	SetIFGain6(-1);
-	SetIFGainMode(-1);
-	SetIFRCFilter(-1);
-	SetIFFilter(-1);
-	fcdOptionsDialog->hide();
-	//Reopen to read new values
-	ShowOptions();
-
-}
-void FunCube::SaveClicked(bool)
-{
-	fcdOptionsDialog->hide();
-}
 
 void FunCube::ReadFCDOptions()
 {
@@ -1148,313 +1131,312 @@ void FunCube::ReadFCDOptions()
 
 }
 
-void FunCube::ShowOptions()
+void FunCube::SetupOptionUi(QWidget *parent)
 {
+    if (optionUi != NULL)
+        delete optionUi;
+    optionUi = new Ui::FunCubeOptions();
+    optionUi->setupUi(parent);
+    parent->setVisible(true);
+
     QFont smFont = settings->smFont;
     QFont medFont = settings->medFont;
     QFont lgFont = settings->lgFont;
 
-	if (fcdOptionsDialog == NULL) {
-		fcdOptionsDialog = new QDialog();
-        fco = new Ui::FunCubeOptions();
-        fco->setupUi(fcdOptionsDialog);
+    optionUi->Band->setFont(medFont);
+    optionUi->BiasCurrent->setFont(medFont);
+    optionUi->BiasTee->setFont(medFont);
+    optionUi->frequencyLabel->setFont(medFont);
+    optionUi->IFFilter->setFont(medFont);
+    optionUi->IFGain1->setFont(medFont);
+    optionUi->IFGain2->setFont(medFont);
+    optionUi->IFGain3->setFont(medFont);
+    optionUi->IFGain4->setFont(medFont);
+    optionUi->IFGain5->setFont(medFont);
+    optionUi->IFGain6->setFont(medFont);
+    optionUi->IFGainMode->setFont(medFont);
+    optionUi->IFRCFilter->setFont(medFont);
+    optionUi->label->setFont(medFont);
+    optionUi->label_10->setFont(medFont);
+    optionUi->label_11->setFont(medFont);
+    optionUi->label_12->setFont(medFont);
+    optionUi->label_13->setFont(medFont);
+    optionUi->label_14->setFont(medFont);
+    optionUi->label_15->setFont(medFont);
+    optionUi->label_16->setFont(medFont);
+    optionUi->label_17->setFont(medFont);
+    optionUi->label_2->setFont(medFont);
+    optionUi->label_3->setFont(medFont);
+    optionUi->label_4->setFont(medFont);
+    optionUi->label_5->setFont(medFont);
+    optionUi->label_6->setFont(medFont);
+    optionUi->label_7->setFont(medFont);
+    optionUi->label_8->setFont(medFont);
+    optionUi->label_9->setFont(medFont);
+    optionUi->LNAEnhance->setFont(medFont);
+    optionUi->LNAGain->setFont(medFont);
+    optionUi->MixerFilter->setFont(medFont);
+    optionUi->MixerGain->setFont(medFont);
+    optionUi->RFFilter->setFont(medFont);
+    optionUi->versionLabel->setFont(medFont);
 
-        fco->Band->setFont(medFont);
-        fco->BiasCurrent->setFont(medFont);
-        fco->BiasTee->setFont(medFont);
-        fco->frequencyLabel->setFont(medFont);
-        fco->IFFilter->setFont(medFont);
-        fco->IFGain1->setFont(medFont);
-        fco->IFGain2->setFont(medFont);
-        fco->IFGain3->setFont(medFont);
-        fco->IFGain4->setFont(medFont);
-        fco->IFGain5->setFont(medFont);
-        fco->IFGain6->setFont(medFont);
-        fco->IFGainMode->setFont(medFont);
-        fco->IFRCFilter->setFont(medFont);
-        fco->label->setFont(medFont);
-        fco->label_10->setFont(medFont);
-        fco->label_11->setFont(medFont);
-        fco->label_12->setFont(medFont);
-        fco->label_13->setFont(medFont);
-        fco->label_14->setFont(medFont);
-        fco->label_15->setFont(medFont);
-        fco->label_16->setFont(medFont);
-        fco->label_17->setFont(medFont);
-        fco->label_2->setFont(medFont);
-        fco->label_3->setFont(medFont);
-        fco->label_4->setFont(medFont);
-        fco->label_5->setFont(medFont);
-        fco->label_6->setFont(medFont);
-        fco->label_7->setFont(medFont);
-        fco->label_8->setFont(medFont);
-        fco->label_9->setFont(medFont);
-        fco->LNAEnhance->setFont(medFont);
-        fco->LNAGain->setFont(medFont);
-        fco->MixerFilter->setFont(medFont);
-        fco->MixerGain->setFont(medFont);
-        fco->RFFilter->setFont(medFont);
-        fco->versionLabel->setFont(medFont);
+    optionUi->BiasTee->addItem("Off",0);
+    optionUi->BiasTee->addItem("On", 1);
+    connect(optionUi->BiasTee,SIGNAL(currentIndexChanged(int)),this,SLOT(BiasTeeChanged(int)));
 
-        fco->BiasTee->addItem("Off",0);
-        fco->BiasTee->addItem("On", 1);
-        connect(fco->BiasTee,SIGNAL(currentIndexChanged(int)),this,SLOT(BiasTeeChanged(int)));
+    optionUi->LNAGain->addItem("-5.0db",TLGE_N5_0DB);
+    optionUi->LNAGain->addItem("-2.5db",TLGE_N2_5DB);
+    optionUi->LNAGain->addItem("+0.0db",TLGE_P0_0DB);
+    optionUi->LNAGain->addItem("+2.5db",TLGE_P2_5DB);
+    optionUi->LNAGain->addItem("+5.0db",TLGE_P5_0DB);
+    optionUi->LNAGain->addItem("+7.5db",TLGE_P7_5DB);
+    optionUi->LNAGain->addItem("+10.0db",TLGE_P10_0DB);
+    optionUi->LNAGain->addItem("+12.5db",TLGE_P12_5DB);
+    optionUi->LNAGain->addItem("+15.0db",TLGE_P15_0DB);
+    optionUi->LNAGain->addItem("+17.5db",TLGE_P17_5DB);
+    optionUi->LNAGain->addItem("+20.0db",TLGE_P20_0DB);
+    optionUi->LNAGain->addItem("+25.0db",TLGE_P25_0DB);
+    optionUi->LNAGain->addItem("+30.0db",TLGE_P30_0DB);
+    connect(optionUi->LNAGain,SIGNAL(currentIndexChanged(int)),this,SLOT(LNAGainChanged(int)));
 
-        fco->LNAGain->addItem("-5.0db",TLGE_N5_0DB);
-        fco->LNAGain->addItem("-2.5db",TLGE_N2_5DB);
-        fco->LNAGain->addItem("+0.0db",TLGE_P0_0DB);
-        fco->LNAGain->addItem("+2.5db",TLGE_P2_5DB);
-        fco->LNAGain->addItem("+5.0db",TLGE_P5_0DB);
-        fco->LNAGain->addItem("+7.5db",TLGE_P7_5DB);
-        fco->LNAGain->addItem("+10.0db",TLGE_P10_0DB);
-        fco->LNAGain->addItem("+12.5db",TLGE_P12_5DB);
-        fco->LNAGain->addItem("+15.0db",TLGE_P15_0DB);
-        fco->LNAGain->addItem("+17.5db",TLGE_P17_5DB);
-        fco->LNAGain->addItem("+20.0db",TLGE_P20_0DB);
-        fco->LNAGain->addItem("+25.0db",TLGE_P25_0DB);
-        fco->LNAGain->addItem("+30.0db",TLGE_P30_0DB);
-        connect(fco->LNAGain,SIGNAL(currentIndexChanged(int)),this,SLOT(LNAGainChanged(int)));
+    optionUi->MixerGain->addItem("4db",TMGE_P4_0DB);
+    optionUi->MixerGain->addItem("12db",TMGE_P12_0DB);
+    connect(optionUi->MixerGain,SIGNAL(currentIndexChanged(int)),this,SLOT(MixerGainChanged(int)));
 
-        fco->MixerGain->addItem("4db",TMGE_P4_0DB);
-        fco->MixerGain->addItem("12db",TMGE_P12_0DB);
-        connect(fco->MixerGain,SIGNAL(currentIndexChanged(int)),this,SLOT(MixerGainChanged(int)));
+    optionUi->IFGain1->addItem("-3dB",TIG1E_N3_0DB);
+    optionUi->IFGain1->addItem("+6dB",TIG1E_P6_0DB);
+    connect(optionUi->IFGain1,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain1Changed(int)));
 
-        fco->IFGain1->addItem("-3dB",TIG1E_N3_0DB);
-        fco->IFGain1->addItem("+6dB",TIG1E_P6_0DB);
-        connect(fco->IFGain1,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain1Changed(int)));
+    optionUi->LNAEnhance->addItem("Off",TLEE_OFF);
+    optionUi->LNAEnhance->addItem("0",TLEE_0);
+    optionUi->LNAEnhance->addItem("1",TLEE_1);
+    optionUi->LNAEnhance->addItem("2",TLEE_2);
+    optionUi->LNAEnhance->addItem("3",TLEE_3);
+    connect(optionUi->LNAEnhance,SIGNAL(currentIndexChanged(int)),this,SLOT(LNAEnhanceChanged(int)));
 
-        fco->LNAEnhance->addItem("Off",TLEE_OFF);
-        fco->LNAEnhance->addItem("0",TLEE_0);
-        fco->LNAEnhance->addItem("1",TLEE_1);
-        fco->LNAEnhance->addItem("2",TLEE_2);
-        fco->LNAEnhance->addItem("3",TLEE_3);
-        connect(fco->LNAEnhance,SIGNAL(currentIndexChanged(int)),this,SLOT(LNAEnhanceChanged(int)));
+    optionUi->Band->addItem("VHF II",TBE_VHF2);
+    optionUi->Band->addItem("VHF III",TBE_VHF3);
+    optionUi->Band->addItem("UHF",TBE_UHF);
+    optionUi->Band->addItem("L band",TBE_LBAND);
+    connect(optionUi->Band,SIGNAL(currentIndexChanged(int)),this,SLOT(BandChanged(int)));
+    connect(optionUi->RFFilter,SIGNAL(currentIndexChanged(int)),this,SLOT(RFFilterChanged(int)));
 
-        fco->Band->addItem("VHF II",TBE_VHF2);
-        fco->Band->addItem("VHF III",TBE_VHF3);
-        fco->Band->addItem("UHF",TBE_UHF);
-        fco->Band->addItem("L band",TBE_LBAND);
-        connect(fco->Band,SIGNAL(currentIndexChanged(int)),this,SLOT(BandChanged(int)));
-        connect(fco->RFFilter,SIGNAL(currentIndexChanged(int)),this,SLOT(RFFilterChanged(int)));
+    optionUi->BiasCurrent->addItem("00 L band",TBCE_LBAND);
+    optionUi->BiasCurrent->addItem("01",TBCE_1);
+    optionUi->BiasCurrent->addItem("10",TBCE_2);
+    optionUi->BiasCurrent->addItem("11 V/U band",TBCE_VUBAND);
+    connect(optionUi->BiasCurrent,SIGNAL(currentIndexChanged(int)),this,SLOT(BiasCurrentChanged(int)));
 
-        fco->BiasCurrent->addItem("00 L band",TBCE_LBAND);
-        fco->BiasCurrent->addItem("01",TBCE_1);
-        fco->BiasCurrent->addItem("10",TBCE_2);
-        fco->BiasCurrent->addItem("11 V/U band",TBCE_VUBAND);
-        connect(fco->BiasCurrent,SIGNAL(currentIndexChanged(int)),this,SLOT(BiasCurrentChanged(int)));
+    optionUi->MixerFilter->addItem("1.9MHz",TMFE_1_9MHZ);
+    optionUi->MixerFilter->addItem("2.3MHz",TMFE_2_3MHZ);
+    optionUi->MixerFilter->addItem("2.7MHz",TMFE_2_7MHZ);
+    optionUi->MixerFilter->addItem("3.0MHz",TMFE_3_0MHZ);
+    optionUi->MixerFilter->addItem("3.4MHz",TMFE_3_4MHZ);
+    optionUi->MixerFilter->addItem("3.8MHz",TMFE_3_8MHZ);
+    optionUi->MixerFilter->addItem("4.2MHz",TMFE_4_2MHZ);
+    optionUi->MixerFilter->addItem("4.6MHz",TMFE_4_6MHZ);
+    optionUi->MixerFilter->addItem("27MHz",TMFE_27_0MHZ);
+    connect(optionUi->MixerFilter,SIGNAL(currentIndexChanged(int)),this,SLOT(MixerFilterChanged(int)));
 
-        fco->MixerFilter->addItem("1.9MHz",TMFE_1_9MHZ);
-        fco->MixerFilter->addItem("2.3MHz",TMFE_2_3MHZ);
-        fco->MixerFilter->addItem("2.7MHz",TMFE_2_7MHZ);
-        fco->MixerFilter->addItem("3.0MHz",TMFE_3_0MHZ);
-        fco->MixerFilter->addItem("3.4MHz",TMFE_3_4MHZ);
-        fco->MixerFilter->addItem("3.8MHz",TMFE_3_8MHZ);
-        fco->MixerFilter->addItem("4.2MHz",TMFE_4_2MHZ);
-        fco->MixerFilter->addItem("4.6MHz",TMFE_4_6MHZ);
-        fco->MixerFilter->addItem("27MHz",TMFE_27_0MHZ);
-        connect(fco->MixerFilter,SIGNAL(currentIndexChanged(int)),this,SLOT(MixerFilterChanged(int)));
+    optionUi->IFGainMode->addItem("Linearity",TIGME_LINEARITY);
+    optionUi->IFGainMode->addItem("Sensitivity",TIGME_SENSITIVITY);
+    connect(optionUi->IFGainMode,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGainModeChanged(int)));
 
-        fco->IFGainMode->addItem("Linearity",TIGME_LINEARITY);
-        fco->IFGainMode->addItem("Sensitivity",TIGME_SENSITIVITY);
-        connect(fco->IFGainMode,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGainModeChanged(int)));
+    optionUi->IFRCFilter->addItem("1.0MHz",TIRFE_1_0MHZ);
+    optionUi->IFRCFilter->addItem("1.2MHz",TIRFE_1_2MHZ);
+    optionUi->IFRCFilter->addItem("1.8MHz",TIRFE_1_8MHZ);
+    optionUi->IFRCFilter->addItem("2.6MHz",TIRFE_2_6MHZ);
+    optionUi->IFRCFilter->addItem("3.4MHz",TIRFE_3_4MHZ);
+    optionUi->IFRCFilter->addItem("4.4MHz",TIRFE_4_4MHZ);
+    optionUi->IFRCFilter->addItem("5.3MHz",TIRFE_5_3MHZ);
+    optionUi->IFRCFilter->addItem("6.4MHz",TIRFE_6_4MHZ);
+    optionUi->IFRCFilter->addItem("7.7MHz",TIRFE_7_7MHZ);
+    optionUi->IFRCFilter->addItem("9.0MHz",TIRFE_9_0MHZ);
+    optionUi->IFRCFilter->addItem("10.6MHz",TIRFE_10_6MHZ);
+    optionUi->IFRCFilter->addItem("12.4MHz",TIRFE_12_4MHZ);
+    optionUi->IFRCFilter->addItem("14.7MHz",TIRFE_14_7MHZ);
+    optionUi->IFRCFilter->addItem("17.6MHz",TIRFE_17_6MHZ);
+    optionUi->IFRCFilter->addItem("21.0MHz",TIRFE_21_0MHZ);
+    optionUi->IFRCFilter->addItem("21.4MHz",TIRFE_21_4MHZ);
+    connect(optionUi->IFRCFilter,SIGNAL(currentIndexChanged(int)),this,SLOT(IFRCFilterChanged(int)));
 
-        fco->IFRCFilter->addItem("1.0MHz",TIRFE_1_0MHZ);
-        fco->IFRCFilter->addItem("1.2MHz",TIRFE_1_2MHZ);
-        fco->IFRCFilter->addItem("1.8MHz",TIRFE_1_8MHZ);
-        fco->IFRCFilter->addItem("2.6MHz",TIRFE_2_6MHZ);
-        fco->IFRCFilter->addItem("3.4MHz",TIRFE_3_4MHZ);
-        fco->IFRCFilter->addItem("4.4MHz",TIRFE_4_4MHZ);
-        fco->IFRCFilter->addItem("5.3MHz",TIRFE_5_3MHZ);
-        fco->IFRCFilter->addItem("6.4MHz",TIRFE_6_4MHZ);
-        fco->IFRCFilter->addItem("7.7MHz",TIRFE_7_7MHZ);
-        fco->IFRCFilter->addItem("9.0MHz",TIRFE_9_0MHZ);
-        fco->IFRCFilter->addItem("10.6MHz",TIRFE_10_6MHZ);
-        fco->IFRCFilter->addItem("12.4MHz",TIRFE_12_4MHZ);
-        fco->IFRCFilter->addItem("14.7MHz",TIRFE_14_7MHZ);
-        fco->IFRCFilter->addItem("17.6MHz",TIRFE_17_6MHZ);
-        fco->IFRCFilter->addItem("21.0MHz",TIRFE_21_0MHZ);
-        fco->IFRCFilter->addItem("21.4MHz",TIRFE_21_4MHZ);
-        connect(fco->IFRCFilter,SIGNAL(currentIndexChanged(int)),this,SLOT(IFRCFilterChanged(int)));
+    optionUi->IFGain2->addItem("0dB",TIG2E_P0_0DB);
+    optionUi->IFGain2->addItem("+3dB",TIG2E_P3_0DB);
+    optionUi->IFGain2->addItem("+6dB",TIG2E_P6_0DB);
+    optionUi->IFGain2->addItem("+9dB",TIG2E_P9_0DB);
+    connect(optionUi->IFGain2,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain2Changed(int)));
 
-        fco->IFGain2->addItem("0dB",TIG2E_P0_0DB);
-        fco->IFGain2->addItem("+3dB",TIG2E_P3_0DB);
-        fco->IFGain2->addItem("+6dB",TIG2E_P6_0DB);
-        fco->IFGain2->addItem("+9dB",TIG2E_P9_0DB);
-        connect(fco->IFGain2,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain2Changed(int)));
+    optionUi->IFGain3->addItem("0dB",TIG3E_P0_0DB);
+    optionUi->IFGain3->addItem("+3dB",TIG3E_P3_0DB);
+    optionUi->IFGain3->addItem("+6dB",TIG3E_P6_0DB);
+    optionUi->IFGain3->addItem("+9dB",TIG3E_P9_0DB);
+    connect(optionUi->IFGain3,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain3Changed(int)));
 
-        fco->IFGain3->addItem("0dB",TIG3E_P0_0DB);
-        fco->IFGain3->addItem("+3dB",TIG3E_P3_0DB);
-        fco->IFGain3->addItem("+6dB",TIG3E_P6_0DB);
-        fco->IFGain3->addItem("+9dB",TIG3E_P9_0DB);
-        connect(fco->IFGain3,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain3Changed(int)));
+    optionUi->IFGain4->addItem("0dB",TIG4E_P0_0DB);
+    optionUi->IFGain4->addItem("+1dB",TIG4E_P1_0DB);
+    optionUi->IFGain4->addItem("+2dB",TIG4E_P2_0DB);
+    connect(optionUi->IFGain4,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain4Changed(int)));
 
-        fco->IFGain4->addItem("0dB",TIG4E_P0_0DB);
-        fco->IFGain4->addItem("+1dB",TIG4E_P1_0DB);
-        fco->IFGain4->addItem("+2dB",TIG4E_P2_0DB);
-        connect(fco->IFGain4,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain4Changed(int)));
+    optionUi->IFGain5->addItem("+3dB",TIG5E_P3_0DB);
+    optionUi->IFGain5->addItem("+6dB",TIG5E_P6_0DB);
+    optionUi->IFGain5->addItem("+9dB",TIG5E_P9_0DB);
+    optionUi->IFGain5->addItem("+12dB",TIG5E_P12_0DB);
+    optionUi->IFGain5->addItem("+15dB",TIG5E_P15_0DB);
+    connect(optionUi->IFGain5,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain5Changed(int)));
 
-        fco->IFGain5->addItem("+3dB",TIG5E_P3_0DB);
-        fco->IFGain5->addItem("+6dB",TIG5E_P6_0DB);
-        fco->IFGain5->addItem("+9dB",TIG5E_P9_0DB);
-        fco->IFGain5->addItem("+12dB",TIG5E_P12_0DB);
-        fco->IFGain5->addItem("+15dB",TIG5E_P15_0DB);
-        connect(fco->IFGain5,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain5Changed(int)));
+    optionUi->IFGain6->addItem("+3dB",TIG6E_P3_0DB);
+    optionUi->IFGain6->addItem("+6dB",TIG6E_P6_0DB);
+    optionUi->IFGain6->addItem("+9dB",TIG6E_P9_0DB);
+    optionUi->IFGain6->addItem("+12dB",TIG6E_P12_0DB);
+    optionUi->IFGain6->addItem("+15dB",TIG6E_P15_0DB);
+    connect(optionUi->IFGain6,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain6Changed(int)));
 
-        fco->IFGain6->addItem("+3dB",TIG6E_P3_0DB);
-        fco->IFGain6->addItem("+6dB",TIG6E_P6_0DB);
-        fco->IFGain6->addItem("+9dB",TIG6E_P9_0DB);
-        fco->IFGain6->addItem("+12dB",TIG6E_P12_0DB);
-        fco->IFGain6->addItem("+15dB",TIG6E_P15_0DB);
-        connect(fco->IFGain6,SIGNAL(currentIndexChanged(int)),this,SLOT(IFGain6Changed(int)));
+    connect(optionUi->IFFilter,SIGNAL(currentIndexChanged(int)),this,SLOT(IFFilterChanged(int)));
 
-        connect(fco->IFFilter,SIGNAL(currentIndexChanged(int)),this,SLOT(IFFilterChanged(int)));
+    if (connected) {
+        //Get current options from device
+        ReadFCDOptions();
+        int index =0;
 
-    }  //End dialog set up
+        //Common to FCD and FCD+
+        if (sdrDevice == FUNCUBE)
+            optionUi->versionLabel->setText("FunCube: "+fcdVersion);
+        else
+            optionUi->versionLabel->setText("FunCube+: "+fcdVersion);
 
-    //Get current options from device
-    ReadFCDOptions();
-    int index =0;
+        optionUi->frequencyLabel->setText("Freq: "+QString::number(fcdFreq,'f',0));
 
-    //Common to FCD and FCD+
-    if (sdrDevice == FUNCUBE)
-        fco->versionLabel->setText("FunCube: "+fcdVersion);
-    else
-        fco->versionLabel->setText("FunCube+: "+fcdVersion);
+        index = optionUi->RFFilter->findData(fcdRFFilter);
+        optionUi->RFFilter->setCurrentIndex(index);
 
-    fco->frequencyLabel->setText("Freq: "+QString::number(fcdFreq,'f',0));
+        index = optionUi->IFFilter->findData(fcdIFFilter);
+        optionUi->IFFilter->setCurrentIndex(index);
 
-    index = fco->RFFilter->findData(fcdRFFilter);
-    fco->RFFilter->setCurrentIndex(index);
+        index = optionUi->IFGain1->findData(fcdIFGain1);
+        optionUi->IFGain1->setCurrentIndex(index);
 
-    index = fco->IFFilter->findData(fcdIFFilter);
-    fco->IFFilter->setCurrentIndex(index);
+        index = optionUi->MixerGain->findData(fcdMixerGain);
+        optionUi->MixerGain->setCurrentIndex(index);
 
-    index = fco->IFGain1->findData(fcdIFGain1);
-    fco->IFGain1->setCurrentIndex(index);
+        index = optionUi->LNAGain->findData(fcdLNAGain);
+        optionUi->LNAGain->setCurrentIndex(index);
 
-    index = fco->MixerGain->findData(fcdMixerGain);
-    fco->MixerGain->setCurrentIndex(index);
+        if (sdrDevice == FUNCUBE) {
+            //FCD only
+            optionUi->LNAEnhance->setEnabled(true);
+            optionUi->Band->setEnabled(true);
+            optionUi->BiasCurrent->setEnabled(true);
+            optionUi->MixerFilter->setEnabled(true);
+            optionUi->IFGainMode->setEnabled(true);
+            optionUi->IFRCFilter->setEnabled(true);
+            optionUi->IFGain2->setEnabled(true);
+            optionUi->IFGain3->setEnabled(true);
+            optionUi->IFGain4->setEnabled(true);
+            optionUi->IFGain5->setEnabled(true);
+            optionUi->IFGain6->setEnabled(true);
+            optionUi->BiasTee->setEnabled(false);
 
-    index = fco->LNAGain->findData(fcdLNAGain);
-    fco->LNAGain->setCurrentIndex(index);
+            optionUi->IFFilter->clear();  //Changes for FCD or FCD +
+            optionUi->IFFilter->addItem("2.15MHz",TIFE_2_15MHZ);
+            optionUi->IFFilter->addItem("2.20MHz",TIFE_2_20MHZ);
+            optionUi->IFFilter->addItem("2.24MHz",TIFE_2_24MHZ);
+            optionUi->IFFilter->addItem("2.28MHz",TIFE_2_28MHZ);
+            optionUi->IFFilter->addItem("2.30MHz",TIFE_2_30MHZ);
+            optionUi->IFFilter->addItem("2.40MHz",TIFE_2_40MHZ);
+            optionUi->IFFilter->addItem("2.45MHz",TIFE_2_45MHZ);
+            optionUi->IFFilter->addItem("2.50MHz",TIFE_2_50MHZ);
+            optionUi->IFFilter->addItem("2.55MHz",TIFE_2_55MHZ);
+            optionUi->IFFilter->addItem("2.60MHz",TIFE_2_60MHZ);
+            optionUi->IFFilter->addItem("2.70MHz",TIFE_2_70MHZ);
+            optionUi->IFFilter->addItem("2.75MHz",TIFE_2_75MHZ);
+            optionUi->IFFilter->addItem("2.80MHz",TIFE_2_80MHZ);
+            optionUi->IFFilter->addItem("2.90MHz",TIFE_2_90MHZ);
+            optionUi->IFFilter->addItem("2.95MHz",TIFE_2_95MHZ);
+            optionUi->IFFilter->addItem("3.00MHz",TIFE_3_00MHZ);
+            optionUi->IFFilter->addItem("3.10MHz",TIFE_3_10MHZ);
+            optionUi->IFFilter->addItem("3.20MHz",TIFE_3_20MHZ);
+            optionUi->IFFilter->addItem("3.30MHz",TIFE_3_30MHZ);
+            optionUi->IFFilter->addItem("3.40MHz",TIFE_3_40MHZ);
+            optionUi->IFFilter->addItem("3.60MHz",TIFE_3_60MHZ);
+            optionUi->IFFilter->addItem("3.70MHz",TIFE_3_70MHZ);
+            optionUi->IFFilter->addItem("3.80MHz",TIFE_3_80MHZ);
+            optionUi->IFFilter->addItem("3.90MHz",TIFE_3_90MHZ);
+            optionUi->IFFilter->addItem("4.10MHz",TIFE_4_10MHZ);
+            optionUi->IFFilter->addItem("4.30MHz",TIFE_4_30MHZ);
+            optionUi->IFFilter->addItem("4.40MHz",TIFE_4_40MHZ);
+            optionUi->IFFilter->addItem("4.60MHz",TIFE_4_60MHZ);
+            optionUi->IFFilter->addItem("4.80MHz",TIFE_4_80MHZ);
+            optionUi->IFFilter->addItem("5.00MHz",TIFE_5_00MHZ);
+            optionUi->IFFilter->addItem("5.30MHz",TIFE_5_30MHZ);
+            optionUi->IFFilter->addItem("5.50MHz",TIFE_5_50MHZ);
 
-    if (sdrDevice == FUNCUBE) {
-        //FCD only
-        fco->LNAEnhance->setEnabled(true);
-        fco->Band->setEnabled(true);
-        fco->BiasCurrent->setEnabled(true);
-        fco->MixerFilter->setEnabled(true);
-        fco->IFGainMode->setEnabled(true);
-        fco->IFRCFilter->setEnabled(true);
-        fco->IFGain2->setEnabled(true);
-        fco->IFGain3->setEnabled(true);
-        fco->IFGain4->setEnabled(true);
-        fco->IFGain5->setEnabled(true);
-        fco->IFGain6->setEnabled(true);
-        fco->BiasTee->setEnabled(false);
+            index = optionUi->Band->findData(fcdBand);
+            optionUi->Band->setCurrentIndex(index);
+            BandChanged(index);
 
-        fco->IFFilter->clear();  //Changes for FCD or FCD +
-        fco->IFFilter->addItem("2.15MHz",TIFE_2_15MHZ);
-        fco->IFFilter->addItem("2.20MHz",TIFE_2_20MHZ);
-        fco->IFFilter->addItem("2.24MHz",TIFE_2_24MHZ);
-        fco->IFFilter->addItem("2.28MHz",TIFE_2_28MHZ);
-        fco->IFFilter->addItem("2.30MHz",TIFE_2_30MHZ);
-        fco->IFFilter->addItem("2.40MHz",TIFE_2_40MHZ);
-        fco->IFFilter->addItem("2.45MHz",TIFE_2_45MHZ);
-        fco->IFFilter->addItem("2.50MHz",TIFE_2_50MHZ);
-        fco->IFFilter->addItem("2.55MHz",TIFE_2_55MHZ);
-        fco->IFFilter->addItem("2.60MHz",TIFE_2_60MHZ);
-        fco->IFFilter->addItem("2.70MHz",TIFE_2_70MHZ);
-        fco->IFFilter->addItem("2.75MHz",TIFE_2_75MHZ);
-        fco->IFFilter->addItem("2.80MHz",TIFE_2_80MHZ);
-        fco->IFFilter->addItem("2.90MHz",TIFE_2_90MHZ);
-        fco->IFFilter->addItem("2.95MHz",TIFE_2_95MHZ);
-        fco->IFFilter->addItem("3.00MHz",TIFE_3_00MHZ);
-        fco->IFFilter->addItem("3.10MHz",TIFE_3_10MHZ);
-        fco->IFFilter->addItem("3.20MHz",TIFE_3_20MHZ);
-        fco->IFFilter->addItem("3.30MHz",TIFE_3_30MHZ);
-        fco->IFFilter->addItem("3.40MHz",TIFE_3_40MHZ);
-        fco->IFFilter->addItem("3.60MHz",TIFE_3_60MHZ);
-        fco->IFFilter->addItem("3.70MHz",TIFE_3_70MHZ);
-        fco->IFFilter->addItem("3.80MHz",TIFE_3_80MHZ);
-        fco->IFFilter->addItem("3.90MHz",TIFE_3_90MHZ);
-        fco->IFFilter->addItem("4.10MHz",TIFE_4_10MHZ);
-        fco->IFFilter->addItem("4.30MHz",TIFE_4_30MHZ);
-        fco->IFFilter->addItem("4.40MHz",TIFE_4_40MHZ);
-        fco->IFFilter->addItem("4.60MHz",TIFE_4_60MHZ);
-        fco->IFFilter->addItem("4.80MHz",TIFE_4_80MHZ);
-        fco->IFFilter->addItem("5.00MHz",TIFE_5_00MHZ);
-        fco->IFFilter->addItem("5.30MHz",TIFE_5_30MHZ);
-        fco->IFFilter->addItem("5.50MHz",TIFE_5_50MHZ);
+            index = optionUi->LNAEnhance->findData(fcdLNAEnhance);
+            optionUi->LNAEnhance->setCurrentIndex(index);
 
-        index = fco->Band->findData(fcdBand);
-        fco->Band->setCurrentIndex(index);
-        BandChanged(index);
+            index = optionUi->BiasCurrent->findData(fcdBiasCurrent);
+            optionUi->BiasCurrent->setCurrentIndex(index);
 
-        index = fco->LNAEnhance->findData(fcdLNAEnhance);
-        fco->LNAEnhance->setCurrentIndex(index);
+            index = optionUi->MixerFilter->findData(fcdMixerFilter);
+            optionUi->MixerFilter->setCurrentIndex(index);
 
-        index = fco->BiasCurrent->findData(fcdBiasCurrent);
-        fco->BiasCurrent->setCurrentIndex(index);
+            index = optionUi->IFGainMode->findData(fcdIFGainMode);
+            optionUi->IFGainMode->setCurrentIndex(index);
 
-        index = fco->MixerFilter->findData(fcdMixerFilter);
-        fco->MixerFilter->setCurrentIndex(index);
+            index = optionUi->IFRCFilter->findData(fcdIFRCFilter);
+            optionUi->IFRCFilter->setCurrentIndex(index);
 
-        index = fco->IFGainMode->findData(fcdIFGainMode);
-        fco->IFGainMode->setCurrentIndex(index);
+            index = optionUi->IFGain2->findData(fcdIFGain2);
+            optionUi->IFGain2->setCurrentIndex(index);
 
-        index = fco->IFRCFilter->findData(fcdIFRCFilter);
-        fco->IFRCFilter->setCurrentIndex(index);
+            index = optionUi->IFGain3->findData(fcdIFGain3);
+            optionUi->IFGain3->setCurrentIndex(index);
 
-        index = fco->IFGain2->findData(fcdIFGain2);
-        fco->IFGain2->setCurrentIndex(index);
+            index = optionUi->IFGain4->findData(fcdIFGain4);
+            optionUi->IFGain4->setCurrentIndex(index);
 
-        index = fco->IFGain3->findData(fcdIFGain3);
-        fco->IFGain3->setCurrentIndex(index);
+            index = optionUi->IFGain5->findData(fcdIFGain5);
+            optionUi->IFGain5->setCurrentIndex(index);
 
-        index = fco->IFGain4->findData(fcdIFGain4);
-        fco->IFGain4->setCurrentIndex(index);
+            index = optionUi->IFGain6->findData(fcdIFGain6);
+            optionUi->IFGain6->setCurrentIndex(index);
 
-        index = fco->IFGain5->findData(fcdIFGain5);
-        fco->IFGain5->setCurrentIndex(index);
+        } else {
+            //FCD+ only
+            optionUi->LNAEnhance->setEnabled(false);
+            optionUi->Band->setEnabled(false);
+            optionUi->BiasCurrent->setEnabled(false);
+            optionUi->MixerFilter->setEnabled(false);
+            optionUi->IFGainMode->setEnabled(false);
+            optionUi->IFRCFilter->setEnabled(false);
+            optionUi->IFGain2->setEnabled(false);
+            optionUi->IFGain3->setEnabled(false);
+            optionUi->IFGain4->setEnabled(false);
+            optionUi->IFGain5->setEnabled(false);
+            optionUi->IFGain6->setEnabled(false);
+            optionUi->BiasTee->setEnabled(true);
 
-        index = fco->IFGain6->findData(fcdIFGain6);
-        fco->IFGain6->setCurrentIndex(index);
+            optionUi->IFFilter->clear();
+            optionUi->IFFilter->addItem("200KHz",TIFE_200KHZ);
+            optionUi->IFFilter->addItem("300KHz",TIFE_300KHZ);
+            optionUi->IFFilter->addItem("600KHz",TIFE_600KHZ);
+            optionUi->IFFilter->addItem("1536KHz",TIFE_1536KHZ);
+            optionUi->IFFilter->addItem("5MHz",TIFE_5MHZ);
+            optionUi->IFFilter->addItem("6MHz",TIFE_6MHZ);
+            optionUi->IFFilter->addItem("7MHz",TIFE_7MHZ);
+            optionUi->IFFilter->addItem("8MHz",TIFE_8MHZ);
 
-    } else {
-        //FCD+ only
-        fco->LNAEnhance->setEnabled(false);
-        fco->Band->setEnabled(false);
-        fco->BiasCurrent->setEnabled(false);
-        fco->MixerFilter->setEnabled(false);
-        fco->IFGainMode->setEnabled(false);
-        fco->IFRCFilter->setEnabled(false);
-        fco->IFGain2->setEnabled(false);
-        fco->IFGain3->setEnabled(false);
-        fco->IFGain4->setEnabled(false);
-        fco->IFGain5->setEnabled(false);
-        fco->IFGain6->setEnabled(false);
-        fco->BiasTee->setEnabled(true);
+            index = optionUi->BiasTee->findData(fcdBiasTee);
+            optionUi->BiasTee->setCurrentIndex(index);
 
-        fco->IFFilter->clear();
-        fco->IFFilter->addItem("200KHz",TIFE_200KHZ);
-        fco->IFFilter->addItem("300KHz",TIFE_300KHZ);
-        fco->IFFilter->addItem("600KHz",TIFE_600KHZ);
-        fco->IFFilter->addItem("1536KHz",TIFE_1536KHZ);
-        fco->IFFilter->addItem("5MHz",TIFE_5MHZ);
-        fco->IFFilter->addItem("6MHz",TIFE_6MHZ);
-        fco->IFFilter->addItem("7MHz",TIFE_7MHZ);
-        fco->IFFilter->addItem("8MHz",TIFE_8MHZ);
-
-        index = fco->BiasTee->findData(fcdBiasTee);
-        fco->BiasTee->setCurrentIndex(index);
-
-        //Call BandChanged to set RF Filter options, even though FCD+ doesn have band
-        BandChanged(0);
-        //Add BiasTee to UI
+            //Call BandChanged to set RF Filter options, even though FCD+ doesn have band
+            BandChanged(0);
+            //Add BiasTee to UI
+        }
     }
-
-	fcdOptionsDialog->show();
 }
 
 double FunCube::GetStartupFrequency()
@@ -1523,6 +1505,9 @@ int *FunCube::GetSampleRates(int &len)
 void FunCube::ReadSettings()
 {
     SDR::ReadSettings();
+    //We need to over-ride the default sampleRate in SDR with FCD specific default
+    sampleRate = GetSampleRate();
+
     sFCDStartup = qSettings->value("FCDStartup",162450000).toDouble();
     sFCDPlusStartup = qSettings->value("FCDPlusStartup",10000000).toDouble();
     //FCD official range is 64 to 1.7 with no gaps

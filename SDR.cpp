@@ -184,6 +184,7 @@ void SDR::ShowSdrOptions(bool b)
         connect(sd->sampleRateBox,SIGNAL(currentIndexChanged(int)),this,SLOT(SampleRateChanged(int)));
 
         connect(sd->closeButton,SIGNAL(clicked(bool)),this,SLOT(CloseOptions(bool)));
+        connect(sd->resetAllButton,SIGNAL(clicked(bool)),this,SLOT(ResetAllSettings(bool)));
 
         //Careful here: Fragile coding practice
         //We're calling a virtual function in a base class method and expect it to call the over-ridden method in derived class
@@ -307,14 +308,18 @@ void SDR::ResetAllSettings(bool b)
     //Confirm
     QMessageBox::StandardButton bt = QMessageBox::question(NULL,
             tr("Confirm Reset"),
-            tr("Are you sure you want to reset all settings (ini files)")
+            tr("Are you sure you want to reset all settings for this device")
             );
-    if (bt != QMessageBox::Ok)
-        return;
+    if (bt == QMessageBox::Ok || bt == QMessageBox::Yes) {
+        //Delete ini files and restart
+        if (sdrOptions != NULL)
+            sdrOptions->close();
+        emit Restart();
 
-    //Delete all ini files and restart
-
-    emit Restart();
+        QString fName = qSettings->fileName();
+        QFile f(fName);
+        f.remove();
+    }
 }
 
 //Settings common to all devices

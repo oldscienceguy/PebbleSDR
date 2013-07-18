@@ -466,6 +466,8 @@ void ReceiverWidget::powerToggled(bool on)
         //Don't allow SDR changes when receiver is on
         ui.sdrSelector->setEnabled(true);
 
+        //Make sure pwr and rec buttons are off
+        ui.powerButton->setChecked(false);
         ui.recButton->setChecked(false);
         ui.recButton->setEnabled(false);
 
