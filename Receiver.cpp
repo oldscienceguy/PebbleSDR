@@ -239,6 +239,9 @@ bool Receiver::Off()
 
 	//Now clean up rest
 	if (sdr != NULL){
+        //Save any run time settings
+        sdr->lastFreq = frequency;
+
 		sdr->Disconnect();
         delete sdr;
         sdr = NULL;
@@ -307,8 +310,6 @@ bool Receiver::Off()
 }
 void Receiver::Close()
 {
-    //Save any run time settings
-    sdr->lastFreq = frequency;
     Off();
 }
 Receiver::~Receiver(void)
