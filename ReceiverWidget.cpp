@@ -188,13 +188,12 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     sdrSelector->setCurrentIndex(cur);
     connect(sdrSelector,SIGNAL(currentIndexChanged(int)),this,SLOT(ReceiverChanged(int)));
 
-    directInputWidget = new QWidget();
+    //Widget must have a parent
+    directInputWidget = new QWidget(this->window(), Qt::Popup);
     directInputUi = new Ui::DirectInput;
     directInputUi->setupUi(directInputWidget);
     //Direct input is modal to avoid any confusion with other UI
-    directInputWidget->move(500,500);
-    directInputWidget->setWindowModality(Qt::WindowModal);
-    directInputWidget->setWindowFlags(Qt::Popup); //No bar
+    //directInputWidget->setWindowModality(Qt::WindowModal);
     //directInputUi->directEntry->setInputMask("0000000"); //All digits, none required
     connect(directInputUi->directEntry,SIGNAL(returnPressed()),this,SLOT(directEntryAccepted()));
     connect(directInputUi->enterButton,SIGNAL(clicked()),this,SLOT(directEntryAccepted()));
@@ -294,6 +293,8 @@ bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
             QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
             int key =  keyEvent->key();
             if (key >= '0' && key <= '9') {
+                QPoint pt = this->window()->pos();
+                directInputWidget->move(pt.x()+50,pt.y()+35);
                 directInputWidget->show();
                 directInputUi->directEntry->setFocus();
                 directInputUi->directEntry->setText(QString::number(key-'0'));
