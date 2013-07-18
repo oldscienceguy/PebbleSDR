@@ -38,7 +38,7 @@ QMainWindow {
 	background-color: #8D99A6;
 }
 
-QLineEdit {
+QLineEdit, QTextEdit {
 	height: 16px;
 	font-family: "Lucida Grande";
 	font-size: 10px;

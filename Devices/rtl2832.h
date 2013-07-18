@@ -13,7 +13,6 @@ public:
     bool Connect();
     bool Disconnect();
     double SetFrequency(double fRequested,double fCurrent);
-    void ShowOptions();
     void Start();
     void Stop();
     void ReadSettings();
@@ -27,6 +26,7 @@ public:
     QString GetDeviceName();
     int GetSampleRate(); //Returns current sample rate
     int* GetSampleRates(int &len);  //Returns array of allowable rates
+    bool UsesAudioInput() {return false;}
 
     //bool SetSampleRate(quint32 sampleRate);
 

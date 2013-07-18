@@ -311,6 +311,7 @@ bool Receiver::Off()
 void Receiver::Close()
 {
     Off();
+    settings->WriteSettings();
 }
 Receiver::~Receiver(void)
 {

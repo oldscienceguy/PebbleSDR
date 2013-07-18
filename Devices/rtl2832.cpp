@@ -181,7 +181,7 @@ bool RTL2832::Connect()
         qDebug("Failed to open rtlsdr device #%d", dev_index);
         return false;
     }
-
+    connected = true;
     return true;
 #if 0
     //For testing
@@ -221,6 +221,7 @@ bool RTL2832::Connect()
 bool RTL2832::Disconnect()
 {
     rtlsdr_close(dev);
+    connected = false;
     dev = NULL;
     return true;
 }
@@ -237,11 +238,6 @@ double RTL2832::SetFrequency(double fRequested, double fCurrent)
 
     return rtlFrequency;
 }
-
-void RTL2832::ShowOptions()
-{
-}
-
 
 void RTL2832::Start()
 {
