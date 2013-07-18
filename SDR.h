@@ -87,7 +87,6 @@ public:
     //Hack, these should eventually be access methods
     STARTUP startup;
     double startupFreq;
-    double lastFreq;
     QString inputDeviceName;
     QString outputDeviceName;
     int sampleRate;
@@ -98,6 +97,11 @@ public:
     double iqBalanceGain;
     double iqBalancePhase;
     bool iqBalanceEnable;
+
+    double lastFreq;
+    int lastMode;
+    int lastDisplayMode; //Spectrum, waterfall, etc
+
 
 signals:
     //Settings changed, turn off and restart with new settings

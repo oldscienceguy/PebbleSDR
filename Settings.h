@@ -20,9 +20,6 @@ public:
 
 	//Hack, these should eventually be access methods
     SDR::SDRDEVICE sdrDevice;
-	double lastFreq;
-	int lastMode;
-	int lastDisplayMode; //Spectrum, waterfall, etc
 	//If Output Sample Rate is above this, then we try to reduce it by skipping samples when we output
 	int decimateLimit;
 	bool postMixerDecimate; //If true, then downsample to decimate limit after mixer

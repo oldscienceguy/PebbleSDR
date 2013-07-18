@@ -9,6 +9,7 @@
 
 class Receiver;
 class Settings;
+class SDR;
 
 class Global
 {
@@ -18,6 +19,7 @@ public:
 
 	QDebug *pLogfile;
     Receiver *receiver;
+    SDR *sdr;
     char *revision;
     Settings *settings;
     double minDb; //Smallest db we'll return from FFT

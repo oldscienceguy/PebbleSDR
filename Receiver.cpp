@@ -82,6 +82,7 @@ bool Receiver::On()
         delete sdr; //Handle case where we created a temp sdr for settings
 
     sdr = SDR::Factory(this, settings->sdrDevice, settings);
+    global->sdr = sdr;
 
 	if (!sdr->Connect()){
 		QMessageBox::information(NULL,"Pebble","No Receiver connected to USB");
@@ -199,10 +200,10 @@ bool Receiver::On()
         receiverWidget->SetMode((DEMODMODE)sdr->GetStartupMode());
     }
     else if (sdr->startup == SDR::LASTFREQ) {
-		frequency = settings->lastFreq;
+        frequency = sdr->lastFreq;
         receiverWidget->SetFrequency(frequency);
 
-		receiverWidget->SetMode((DEMODMODE)settings->lastMode);
+        receiverWidget->SetMode((DEMODMODE)sdr->lastMode);
 	}
 	else {
 		frequency = 10000000;
@@ -241,6 +242,7 @@ bool Receiver::Off()
 		sdr->Disconnect();
         delete sdr;
         sdr = NULL;
+        global->sdr = NULL;
 	}
 	if (demod != NULL) {
 		delete demod;
@@ -305,10 +307,9 @@ bool Receiver::Off()
 }
 void Receiver::Close()
 {
-	Off();
-	//Save any run time settings
-	settings->lastFreq = frequency;
-	settings->WriteSettings();
+    //Save any run time settings
+    sdr->lastFreq = frequency;
+    Off();
 }
 Receiver::~Receiver(void)
 {
@@ -433,7 +434,7 @@ void Receiver::SetMode(DEMODMODE m)
 {
 	if(demod != NULL) {
         demod->SetDemodMode(m, sampleRate, downSample1Rate);
-		settings->lastMode = m;
+        sdr->lastMode = m;
 	}
 }	
 void Receiver::SetFilter(int lo, int hi)

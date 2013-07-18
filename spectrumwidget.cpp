@@ -6,6 +6,8 @@
 #include <QMouseEvent>
 #include <QKeyEvent>
 
+class Receiver;
+
 SpectrumWidget::SpectrumWidget(QWidget *parent)
 	: QWidget(parent)
 {
@@ -173,7 +175,7 @@ void SpectrumWidget::Run(bool r)
     }
 
 	if (r) {
-        ui.displayBox->setCurrentIndex(global->settings->lastDisplayMode); //Initial display mode
+        ui.displayBox->setCurrentIndex(global->sdr->lastDisplayMode); //Initial display mode
 		isRunning = true;
 	}
 	else {
@@ -400,7 +402,7 @@ void SpectrumWidget::plotSelectionChanged(SignalSpectrum::DISPLAYMODE mode)
 	if (signalSpectrum != NULL) {
 		signalSpectrum->SetDisplayMode(mode);
 	}
-    global->settings->lastDisplayMode = mode;
+    global->sdr->lastDisplayMode = mode;
 
 	spectrumMode = mode;
 	repaint();

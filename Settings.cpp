@@ -44,15 +44,12 @@ void Settings::ReadSettings()
 	//Todo: Make strings constants
 	//If we don' specify a group, "General" is assumed
     sdrDevice = (SDR::SDRDEVICE)qSettings->value("sdrDevice", SDR::SR_V9).toInt();
-    lastFreq = qSettings->value("LastFreq", 10000000).toDouble();
     decimateLimit = qSettings->value("DecimateLimit", 24000).toInt();
     postMixerDecimate = qSettings->value("PostMixerDecimate",true).toBool();
     //Be careful about changing this, has global impact
     framesPerBuffer = qSettings->value("FramesPerBuffer",2048).toInt();
 
     dbOffset = qSettings->value("dbOffset",-60).toFloat();
-	lastMode = qSettings->value("LastMode",0).toInt();
-	lastDisplayMode = qSettings->value("LastDisplayMode",0).toInt();
 	leftRightIncrement = qSettings->value("LeftRightIncrement",10).toInt();
 	upDownIncrement = qSettings->value("UpDownIncrement",100).toInt();
 }
@@ -62,10 +59,7 @@ void Settings::WriteSettings()
 {
     //No UI Settings, only in file
     qSettings->setValue("sdrDevice",sdrDevice);
-    qSettings->setValue("LastFreq",lastFreq);
     qSettings->setValue("dbOffset",dbOffset);
-	qSettings->setValue("LastMode",lastMode);
-	qSettings->setValue("LastDisplayMode",lastDisplayMode);
 	qSettings->setValue("DecimateLimit",decimateLimit);
 	qSettings->setValue("PostMixerDecimate",postMixerDecimate);
 	qSettings->setValue("FramesPerBuffer",framesPerBuffer);

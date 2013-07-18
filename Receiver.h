@@ -68,6 +68,7 @@ public:
 	SignalStrength *GetSignalStrength() {return signalStrength;}
 	SignalSpectrum *GetSignalSpectrum() {return signalSpectrum;}
 	IQBalance *GetIQBalance(){return iqBalance;}
+
     ReceiverWidget *receiverWidget;
     public slots:
 		void Restart();

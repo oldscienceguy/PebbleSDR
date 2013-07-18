@@ -26,7 +26,7 @@ Global::Global()
 
     minDb = -130; //Same as SpectraVue
     maxDb = 10;
-
+    sdr = NULL;
     perform.InitPerformance();
 }
 Global::~Global()

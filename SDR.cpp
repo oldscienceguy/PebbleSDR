@@ -336,6 +336,9 @@ void SDR::ReadSettings()
     iqBalanceGain = qSettings->value("iqBalanceGain",1).toDouble();
     iqBalancePhase = qSettings->value("iqBalancePhase",0).toDouble();
     iqBalanceEnable = qSettings->value("iqBalanceEnable",false).toBool();
+    lastFreq = qSettings->value("LastFreq", 10000000).toDouble();
+    lastMode = qSettings->value("LastMode",0).toInt();
+    lastDisplayMode = qSettings->value("LastDisplayMode",0).toInt();
 
 }
 //Make sure to call SDR::WriteSettings() in any derived class
@@ -351,6 +354,9 @@ void SDR::WriteSettings()
     qSettings->setValue("iqBalanceGain", iqBalanceGain);
     qSettings->setValue("iqBalancePhase", iqBalancePhase);
     qSettings->setValue("iqBalanceEnable", iqBalanceEnable);
+    qSettings->setValue("LastFreq",lastFreq);
+    qSettings->setValue("LastMode",lastMode);
+    qSettings->setValue("LastDisplayMode",lastDisplayMode);
 
 }
 
