@@ -69,7 +69,7 @@ public:
     bool LibUSBWriteReg(quint16 index, quint16 address, quint16 value, quint16 length);
     //LibUSBReadReg();
 
-    libusb_device *dev;
+    //libusb_device *dev;
     libusb_device_handle* hDev;
     quint16 timeout;
 
