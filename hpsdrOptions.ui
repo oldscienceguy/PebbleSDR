@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>500</width>
+    <width>496</width>
     <height>150</height>
    </rect>
   </property>
@@ -16,15 +16,15 @@
   <widget class="QGroupBox" name="groupBox">
    <property name="geometry">
     <rect>
-     <x>0</x>
-     <y>0</y>
+     <x>4</x>
+     <y>4</y>
      <width>161</width>
      <height>111</height>
     </rect>
    </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="title">
@@ -86,15 +86,15 @@
   <widget class="QGroupBox" name="groupBox_2">
    <property name="geometry">
     <rect>
-     <x>172</x>
-     <y>0</y>
+     <x>168</x>
+     <y>4</y>
      <width>191</width>
      <height>108</height>
     </rect>
    </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="title">
@@ -166,15 +166,15 @@
   <widget class="QGroupBox" name="groupBox_3">
    <property name="geometry">
     <rect>
-     <x>372</x>
-     <y>-4</y>
-     <width>161</width>
-     <height>131</height>
+     <x>362</x>
+     <y>2</y>
+     <width>128</width>
+     <height>143</height>
     </rect>
    </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="title">
@@ -184,7 +184,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>10</y>
+      <y>16</y>
       <width>82</width>
       <height>17</height>
      </rect>
@@ -197,7 +197,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>30</y>
+      <y>34</y>
       <width>82</width>
       <height>17</height>
      </rect>
@@ -210,7 +210,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>50</y>
+      <y>52</y>
       <width>82</width>
       <height>17</height>
      </rect>
@@ -242,7 +242,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>90</y>
+      <y>88</y>
       <width>82</width>
       <height>17</height>
      </rect>
@@ -258,7 +258,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>110</y>
+      <y>108</y>
       <width>111</width>
       <height>17</height>
      </rect>

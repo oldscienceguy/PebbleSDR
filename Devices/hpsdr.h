@@ -116,8 +116,8 @@ public:
 	void Stop();
 
 	double SetFrequency(double fRequested, double fCurrent);
-	void ShowOptions();
-	double GetStartupFrequency();
+    void SetupOptionUi(QWidget *parent);
+    double GetStartupFrequency();
 	int GetStartupMode();
 	double GetHighLimit();
 	double GetLowLimit();
@@ -241,11 +241,7 @@ private:
 	int mercuryFW;
 	int penelopeFW;
 
-
-
-	//Dialog stuff
-	QDialog *hpsdrOptions;
-	Ui::HPSDROptions *hpo;
+    Ui::HPSDROptions *optionUi;
 
 
 };

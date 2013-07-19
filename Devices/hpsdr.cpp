@@ -21,6 +21,8 @@ HPSDR::HPSDR(Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_receiv
     InitSettings("hpsdr");
 	ReadSettings();
 
+    optionUi = NULL;
+
 	//Set up libusb
 	if (!isLibUsbLoaded) {
 		//Explicit load.  DLL may not exist on users system, in which case we can only suppoprt non-USB devices like SoftRock Lite
@@ -43,10 +45,6 @@ HPSDR::HPSDR(Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_receiv
 HPSDR::~HPSDR()
 {
 	WriteSettings();
-
-	//Close dialog if open
-	if (hpsdrOptions != NULL && hpsdrOptions->isVisible())
-		hpsdrOptions->hide();
 
 #ifdef LIBUSB_VERSION1
     if (hDev && isLibUsbLoaded) {
@@ -317,11 +315,13 @@ bool HPSDR::Connect()
 	//int count = WriteI2C(0x1a,foo,2);
 
 
+    connected = true;
 	return true;
 }
 
 bool HPSDR::Disconnect()
 {
+    connected = false;
 	return Close();
 }
 
@@ -586,10 +586,11 @@ void HPSDR::randomChanged(bool b)
 	//Change immediately
 	SendConfig();
 }
+
 void HPSDR::optionsAccepted()
 {
 	//Save settings are are not immediate mode
-	sSpeed = hpo->speedBox->currentIndex();
+    sSpeed = optionUi->speedBox->currentIndex();
 
 	//Save to hpsdr.ini
 	WriteSettings();
@@ -599,80 +600,78 @@ void HPSDR::optionsAccepted()
 
 }
 
-void HPSDR::ShowOptions()
+void HPSDR::SetupOptionUi(QWidget *parent)
 {
+    if (optionUi != NULL)
+        delete optionUi;
+    optionUi = new Ui::HPSDROptions();
+    optionUi->setupUi(parent);
+    parent->setVisible(true);
+
     QFont smFont = settings->smFont;
     QFont medFont = settings->medFont;
     QFont lgFont = settings->lgFont;
 
-	if (hpsdrOptions == NULL)
-	{
-		hpsdrOptions = new QDialog();
-		hpo = new Ui::HPSDROptions();
-		hpo->setupUi(hpsdrOptions);
+    optionUi->enableDither->setFont(medFont);
+    optionUi->enablePreamp->setFont(medFont);
+    optionUi->enableRandom->setFont(medFont);
+    optionUi->hasExcalibur->setFont(medFont);
+    optionUi->hasJanus->setFont(medFont);
+    optionUi->hasMercury->setFont(medFont);
+    optionUi->hasMetis->setFont(medFont);
+    optionUi->hasOzy->setFont(medFont);
+    optionUi->hasPenelope->setFont(medFont);
+    optionUi->label->setFont(medFont);
+    optionUi->mercuryLabel->setFont(medFont);
+    optionUi->ozyFX2Label->setFont(medFont);
+    optionUi->ozyLabel->setFont(medFont);
+    optionUi->penelopeLabel->setFont(medFont);
+    optionUi->speedBox->setFont(medFont);
 
-        hpo->enableDither->setFont(medFont);
-        hpo->enablePreamp->setFont(medFont);
-        hpo->enableRandom->setFont(medFont);
-        hpo->hasExcalibur->setFont(medFont);
-        hpo->hasJanus->setFont(medFont);
-        hpo->hasMercury->setFont(medFont);
-        hpo->hasMetis->setFont(medFont);
-        hpo->hasOzy->setFont(medFont);
-        hpo->hasPenelope->setFont(medFont);
-        hpo->label->setFont(medFont);
-        hpo->mercuryLabel->setFont(medFont);
-        hpo->ozyFX2Label->setFont(medFont);
-        hpo->ozyLabel->setFont(medFont);
-        hpo->penelopeLabel->setFont(medFont);
-        hpo->speedBox->setFont(medFont);
+    optionUi->speedBox->addItem("48 Khz",0);
+    optionUi->speedBox->addItem("96 Khz",1);
+    optionUi->speedBox->addItem("192 Khz",2);
+    connect(optionUi->enablePreamp,SIGNAL(clicked(bool)),this,SLOT(preampChanged(bool)));
+    connect(optionUi->enableDither,SIGNAL(clicked(bool)),this,SLOT(ditherChanged(bool)));
+    connect(optionUi->enableRandom,SIGNAL(clicked(bool)),this,SLOT(randomChanged(bool)));
 
-		hpo->speedBox->addItem("48 Khz",0);
-		hpo->speedBox->addItem("96 Khz",1);
-		hpo->speedBox->addItem("192 Khz",2);
-		connect(hpo->enablePreamp,SIGNAL(clicked(bool)),this,SLOT(preampChanged(bool)));
-		connect(hpo->enableDither,SIGNAL(clicked(bool)),this,SLOT(ditherChanged(bool)));
-		connect(hpo->enableRandom,SIGNAL(clicked(bool)),this,SLOT(randomChanged(bool)));
-	}
-
-	hpo->speedBox->setCurrentIndex(sSpeed);
+    optionUi->speedBox->setCurrentIndex(sSpeed);
 	if (sPreamp == C3_LT2208_PREAMP_ON)
-		hpo->enablePreamp->setChecked(true);
+        optionUi->enablePreamp->setChecked(true);
 	if (sDither == C3_LT2208_DITHER_ON)
-		hpo->enableDither->setChecked(true);
+        optionUi->enableDither->setChecked(true);
 	if (sRandom == C3_LT2208_RANDOM_ON)
-		hpo->enableRandom->setChecked(true);
+        optionUi->enableRandom->setChecked(true);
 
 	//hardwired config for now, just ozy and mercury
-	hpo->hasOzy->setChecked(true);
-	hpo->hasMetis->setEnabled(false);
-	hpo->hasMercury->setChecked(true);
-	hpo->hasMercury->setEnabled(false);
-	hpo->hasPenelope->setEnabled(false);
-	hpo->hasJanus->setEnabled(false);
-	hpo->hasExcalibur->setEnabled(false);
+    optionUi->hasOzy->setChecked(true);
+    optionUi->hasMetis->setEnabled(false);
+    optionUi->hasMercury->setChecked(true);
+    optionUi->hasMercury->setEnabled(false);
+    optionUi->hasPenelope->setEnabled(false);
+    optionUi->hasJanus->setEnabled(false);
+    optionUi->hasExcalibur->setEnabled(false);
 
 	if (!ozyFX2FW.isEmpty())
-		hpo->ozyFX2Label->setText("Ozy FX2: " + ozyFX2FW);
+        optionUi->ozyFX2Label->setText("Ozy FX2: " + ozyFX2FW);
 	else
-		hpo->ozyFX2Label->setText("Ozy FX2: No Firmware");
+        optionUi->ozyFX2Label->setText("Ozy FX2: No Firmware");
 
 	if (ozyFW)
-		hpo->ozyLabel->setText("Ozy: " + QString::number(ozyFW));
+        optionUi->ozyLabel->setText("Ozy: " + QString::number(ozyFW));
 	else
-		hpo->ozyLabel->setText("Ozy: No Firmware");
+        optionUi->ozyLabel->setText("Ozy: No Firmware");
 
 	if (mercuryFW)
-		hpo->mercuryLabel->setText("Mercury: " + QString::number(mercuryFW));
+        optionUi->mercuryLabel->setText("Mercury: " + QString::number(mercuryFW));
 	else
-		hpo->mercuryLabel->setText("Mercury: No Firmware");
+        optionUi->mercuryLabel->setText("Mercury: No Firmware");
 
 	if (penelopeFW)
-		hpo->penelopeLabel->setText("Penelope: " + QString::number(penelopeFW));
+        optionUi->penelopeLabel->setText("Penelope: " + QString::number(penelopeFW));
 	else
-		hpo->penelopeLabel->setText("Penelope: No Firmware");
+        optionUi->penelopeLabel->setText("Penelope: No Firmware");
 
-	hpsdrOptions->show();
 }
 
 double HPSDR::GetStartupFrequency()
@@ -723,6 +722,9 @@ int HPSDR::GetSampleRate()
 
 bool HPSDR::WriteOutputBuffer(char * commandBuf)
 {
+    if (!connected)
+        return false;
+
 	outputBuffer[0] = OZY_SYNC;
 	outputBuffer[1] = OZY_SYNC;
 	outputBuffer[2] = OZY_SYNC;
