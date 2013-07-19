@@ -57,7 +57,8 @@ public:
 	static const int C1_SPEED_48KHZ = 0x00;
 	static const int C1_SPEED_96KHZ = 0x01;
 	static const int C1_SPEED_192KHZ = 0x02;
-	//What 10mhz clock do we use
+    static const int C1_SPEED_384KHZ = 0x03;
+    //What 10mhz clock do we use
 	static const int C1_10MHZ_ATLAS = 0x00; //Excalibur
 	static const int C1_10MHZ_PENELOPE = 0x04;
 	static const int C1_10MHZ_MERCURY = 0x08;
@@ -125,6 +126,7 @@ public:
 	QString GetDeviceName();
 	int GetSampleRate(); //Base override so we get match SR to HPSDR BW
     bool UsesAudioInput() {return false;}
+    int* GetSampleRates(int &len); //Returns array of allowable rates and length of array as ref
 
 	void ReadSettings();
 	void WriteSettings();

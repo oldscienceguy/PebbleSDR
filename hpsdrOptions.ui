@@ -18,7 +18,7 @@
     <rect>
      <x>4</x>
      <y>4</y>
-     <width>161</width>
+     <width>178</width>
      <height>111</height>
     </rect>
    </property>
@@ -35,12 +35,12 @@
      <rect>
       <x>10</x>
       <y>20</y>
-      <width>141</width>
+      <width>159</width>
       <height>16</height>
      </rect>
     </property>
     <property name="text">
-     <string>OzyFX2:</string>
+     <string>OzyFX2 (.hex):</string>
     </property>
    </widget>
    <widget class="QLabel" name="mercuryLabel">
@@ -48,12 +48,12 @@
      <rect>
       <x>10</x>
       <y>60</y>
-      <width>131</width>
+      <width>160</width>
       <height>16</height>
      </rect>
     </property>
     <property name="text">
-     <string>Mercury:</string>
+     <string>Mercury FPGA:</string>
     </property>
    </widget>
    <widget class="QLabel" name="ozyLabel">
@@ -61,12 +61,12 @@
      <rect>
       <x>10</x>
       <y>40</y>
-      <width>151</width>
+      <width>162</width>
       <height>16</height>
      </rect>
     </property>
     <property name="text">
-     <string>Ozy:</string>
+     <string>Ozy FPGA (.rbf):</string>
     </property>
    </widget>
    <widget class="QLabel" name="penelopeLabel">
@@ -74,21 +74,21 @@
      <rect>
       <x>10</x>
       <y>80</y>
-      <width>141</width>
+      <width>162</width>
       <height>16</height>
      </rect>
     </property>
     <property name="text">
-     <string>Penelope:</string>
+     <string>Penelope FPGA:</string>
     </property>
    </widget>
   </widget>
   <widget class="QGroupBox" name="groupBox_2">
    <property name="geometry">
     <rect>
-     <x>168</x>
+     <x>192</x>
      <y>4</y>
-     <width>191</width>
+     <width>159</width>
      <height>108</height>
     </rect>
    </property>
@@ -100,34 +100,11 @@
    <property name="title">
     <string>Options</string>
    </property>
-   <widget class="QLabel" name="label">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>20</y>
-      <width>46</width>
-      <height>13</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Speed</string>
-    </property>
-   </widget>
-   <widget class="QComboBox" name="speedBox">
-    <property name="geometry">
-     <rect>
-      <x>70</x>
-      <y>20</y>
-      <width>81</width>
-      <height>16</height>
-     </rect>
-    </property>
-   </widget>
    <widget class="QCheckBox" name="enableDither">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>40</y>
+      <x>8</x>
+      <y>24</y>
       <width>141</width>
       <height>17</height>
      </rect>
@@ -139,8 +116,8 @@
    <widget class="QCheckBox" name="enableRandom">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>60</y>
+      <x>8</x>
+      <y>46</y>
       <width>141</width>
       <height>17</height>
      </rect>
@@ -152,8 +129,8 @@
    <widget class="QCheckBox" name="enablePreamp">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>80</y>
+      <x>8</x>
+      <y>68</y>
       <width>121</width>
       <height>17</height>
      </rect>

@@ -71,6 +71,23 @@ HPSDR::~HPSDR()
 void HPSDR::ReadSettings()
 {
     SDR::ReadSettings();
+    //Determine sSpeed from sampleRate
+    switch (sampleRate) {
+    case 48000:
+        sSpeed = C1_SPEED_48KHZ;
+        break;
+    case 96000:
+        sSpeed = C1_SPEED_96KHZ;
+        break;
+    case 192000:
+        sSpeed = C1_SPEED_192KHZ;
+        break;
+    case 384000:
+        sSpeed = C1_SPEED_384KHZ;
+        break;
+    }
+
+
 	sStartup = qSettings->value("Startup",10000000).toDouble();
 	sLow = qSettings->value("Low",150000).toDouble();
 	sHigh = qSettings->value("High",33000000).toDouble();
@@ -92,7 +109,7 @@ void HPSDR::ReadSettings()
 	sSDRW_DG8SAQ_SetFreq = qSettings->value("SDRW_DG8SAQ_SetFreq",true).toBool();
 
 	//Harware options
-	sSpeed = qSettings->value("Speed",C1_SPEED_48KHZ).toInt();
+    //sSpeed = qSettings->value("Speed",C1_SPEED_48KHZ).toInt();
 	sPTT = qSettings->value("PTT",C0_MOX_INACTIVE).toInt();
 	s10Mhz = qSettings->value("10Mhz",C1_10MHZ_MERCURY).toInt();
 	s122Mhz = qSettings->value("122Mhz",C1_122MHZ_MERCURY).toInt();
@@ -116,7 +133,7 @@ void HPSDR::WriteSettings()
 	qSettings->setValue("VID",sVID);
 	qSettings->setValue("FPGA",sFpga);
 	qSettings->setValue("FW",sFW);
-	qSettings->setValue("Speed",sSpeed);
+    //qSettings->setValue("Speed",sSpeed);
 	qSettings->setValue("NoInit",sNoInit);
 	qSettings->setValue("SDRW_DG8SAQ_SetFreq",sSDRW_DG8SAQ_SetFreq);
 	qSettings->setValue("PTT",sPTT);
@@ -296,7 +313,7 @@ bool HPSDR::Connect()
 
 		ozyFX2FW = GetFirmwareInfo();
 		if (ozyFX2FW!=NULL) {
-			qDebug()<<"New Firmware version :"<<ozyFX2FW;
+            qDebug()<<"New Firmware FX2FW version :"<<ozyFX2FW;
 		} else {
 			qDebug()<<"Firmware upload failed";
 			return false;
@@ -565,6 +582,9 @@ void HPSDR::preampChanged(bool b)
 	else
 		sPreamp = C3_LT2208_PREAMP_OFF;
 
+    //Save to hpsdr.ini
+    WriteSettings();
+
 	//Change immediately
 	SendConfig();
 }
@@ -574,6 +594,9 @@ void HPSDR::ditherChanged(bool b)
 		sDither = C3_LT2208_DITHER_ON;
 	else
 		sDither = C3_LT2208_DITHER_OFF;
+
+    //Save to hpsdr.ini
+    WriteSettings();
 
 	//Change immediately
 	SendConfig();
@@ -585,6 +608,9 @@ void HPSDR::randomChanged(bool b)
 	else
 		sRandom = C3_LT2208_RANDOM_OFF;
 
+    //Save to hpsdr.ini
+    WriteSettings();
+
 	//Change immediately
 	SendConfig();
 }
@@ -592,7 +618,6 @@ void HPSDR::randomChanged(bool b)
 void HPSDR::optionsAccepted()
 {
 	//Save settings are are not immediate mode
-    sSpeed = optionUi->speedBox->currentIndex();
 
 	//Save to hpsdr.ini
 	WriteSettings();
@@ -623,21 +648,15 @@ void HPSDR::SetupOptionUi(QWidget *parent)
     optionUi->hasMetis->setFont(medFont);
     optionUi->hasOzy->setFont(medFont);
     optionUi->hasPenelope->setFont(medFont);
-    optionUi->label->setFont(medFont);
     optionUi->mercuryLabel->setFont(medFont);
     optionUi->ozyFX2Label->setFont(medFont);
     optionUi->ozyLabel->setFont(medFont);
     optionUi->penelopeLabel->setFont(medFont);
-    optionUi->speedBox->setFont(medFont);
 
-    optionUi->speedBox->addItem("48 Khz",0);
-    optionUi->speedBox->addItem("96 Khz",1);
-    optionUi->speedBox->addItem("192 Khz",2);
     connect(optionUi->enablePreamp,SIGNAL(clicked(bool)),this,SLOT(preampChanged(bool)));
     connect(optionUi->enableDither,SIGNAL(clicked(bool)),this,SLOT(ditherChanged(bool)));
     connect(optionUi->enableRandom,SIGNAL(clicked(bool)),this,SLOT(randomChanged(bool)));
 
-    optionUi->speedBox->setCurrentIndex(sSpeed);
 	if (sPreamp == C3_LT2208_PREAMP_ON)
         optionUi->enablePreamp->setChecked(true);
 	if (sDither == C3_LT2208_DITHER_ON)
@@ -655,24 +674,24 @@ void HPSDR::SetupOptionUi(QWidget *parent)
     optionUi->hasExcalibur->setEnabled(false);
 
 	if (!ozyFX2FW.isEmpty())
-        optionUi->ozyFX2Label->setText("Ozy FX2: " + ozyFX2FW);
+        optionUi->ozyFX2Label->setText("Ozy FX2 (.hex): " + ozyFX2FW);
 	else
-        optionUi->ozyFX2Label->setText("Ozy FX2: No Firmware");
+        optionUi->ozyFX2Label->setText("Ozy FX2 (.hex): No Firmware");
 
 	if (ozyFW)
-        optionUi->ozyLabel->setText("Ozy: " + QString::number(ozyFW));
+        optionUi->ozyLabel->setText("Ozy FPGA (.rbf): " + QString::number(ozyFW));
 	else
-        optionUi->ozyLabel->setText("Ozy: No Firmware");
+        optionUi->ozyLabel->setText("Ozy FPGA (.rbf): No Firmware");
 
 	if (mercuryFW)
-        optionUi->mercuryLabel->setText("Mercury: " + QString::number(mercuryFW));
+        optionUi->mercuryLabel->setText("Mercury FPGA (.rbf): " + QString::number(mercuryFW));
 	else
-        optionUi->mercuryLabel->setText("Mercury: No Firmware");
+        optionUi->mercuryLabel->setText("Mercury FPGA (.rbf): No Firmware");
 
 	if (penelopeFW)
-        optionUi->penelopeLabel->setText("Penelope: " + QString::number(penelopeFW));
+        optionUi->penelopeLabel->setText("Penelope FPGA (.rbf): " + QString::number(penelopeFW));
 	else
-        optionUi->penelopeLabel->setText("Penelope: No Firmware");
+        optionUi->penelopeLabel->setText("Penelope FPGA (.rbf): No Firmware");
 
 }
 
@@ -710,6 +729,8 @@ QString HPSDR::GetDeviceName()
 }
 int HPSDR::GetSampleRate()
 {
+    return sampleRate;
+#if 0
 	switch (sSpeed) {
 	case C1_SPEED_48KHZ:
 		return 48000;
@@ -720,7 +741,19 @@ int HPSDR::GetSampleRate()
 	default:
 		return 48000;
 	}
+#endif
 }
+int *HPSDR::GetSampleRates(int &len)
+{
+    len = 3;
+    //Ugly, but couldn't find easy way to init with {1,2,3} array initializer
+    sampleRates[0] = 48000;
+    sampleRates[1] = 96000;
+    sampleRates[2] = 192000;
+    //sampleRates[3] = 384000; //Hermes only
+    return sampleRates;
+}
+
 
 bool HPSDR::WriteOutputBuffer(char * commandBuf)
 {
