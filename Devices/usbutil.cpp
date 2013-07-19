@@ -70,8 +70,8 @@ bool USBUtil::LibUSBInit()
 bool USBUtil::InitLibUsb()
 {
 #ifdef LIBUSB_VERSION1
-    int res = libusb_init(NULL);
-    return true;
+    int ret = libusb_init(NULL);
+    return ret == 0 ? true: false;
 #else
     usb_init(NULL);
     usb_find_busses();
@@ -83,8 +83,10 @@ bool USBUtil::OpenDevice(libusb_device *dev, libusb_device_handle **phDev)
 {
 #ifdef LIBUSB_VERSION1
     int ret = libusb_open(dev,phDev);
-    if (ret < 0 )
+    if (ret < 0 ) {
         *phDev = NULL;
+        return false;
+    }
     return true;
 #else
     hDev = usb_open(dev);
@@ -104,19 +106,19 @@ bool USBUtil::CloseDevice(libusb_device_handle *hDev)
 bool USBUtil::SetConfiguration(libusb_device_handle *hDev,int config)
 {
 #ifdef LIBUSB_VERSION1
-    libusb_set_configuration(hDev,config);
+    int ret = libusb_set_configuration(hDev,config);
 #else
     usb_set_configuration(hDev,config);
 #endif
-    return true;
+    return ret == 0 ? true: false;
 }
 bool USBUtil::Claim_interface(libusb_device_handle *hDev, int iface)
 {
 #ifdef LIBUSB_VERSION1
-    libusb_claim_interface(hDev,iface);
+    int ret = libusb_claim_interface(hDev,iface);
 #else
 #endif
-    return true;
+    return ret == 0 ? true: false;
 }
 /*
 libusb_error {
