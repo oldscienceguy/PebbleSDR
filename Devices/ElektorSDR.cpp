@@ -28,7 +28,7 @@ ElektorSDR::ElektorSDR(Receiver *_receiver, SDRDEVICE dev,Settings *_settings):S
 
 	ftHandle = NULL;
 	ftWriteBuffer = NULL;
-	elektorOptions = NULL;
+    optionUi = NULL;
 	if (!isFtdiLoaded) {
         if (!USBUtil::LoadFtdi()) {
 			QMessageBox::information(NULL,"Pebble","ftd2xx.dll could not be loaded.  Elektor communication is disabled.");
@@ -147,6 +147,7 @@ bool ElektorSDR::Connect()
 	ftPortValue = 0;
 	ftWriteBufferCount = 0;
 
+    connected = true;
 	return true;
 }
 bool ElektorSDR::Disconnect()
@@ -164,6 +165,7 @@ bool ElektorSDR::Disconnect()
 	ftHandle = NULL;
 	ftWriteBuffer = NULL;
 
+    connected = false;
 	return true;
 }
 
@@ -360,6 +362,9 @@ void ElektorSDR::I2C_Byte(UCHAR byte)
 */
 void ElektorSDR::setInput(int input)
 {
+    if (!connected)
+        return;
+
 	if (!isFtdiLoaded)
 		return;
 
@@ -627,6 +632,8 @@ int ElektorSDR::getInput()
 */
 void ElektorSDR::setAttenuator(int attenuator)
 {
+    if (!connected)
+        return;
 	if (!isFtdiLoaded)
 		return;
 
@@ -657,46 +664,45 @@ void ElektorSDR::setAtten0(bool b) {setAttenuator(0);}
 void ElektorSDR::setAtten1(bool b) {setAttenuator(1);}
 void ElektorSDR::setAtten2(bool b) {setAttenuator(2);}
 
-void ElektorSDR::ShowOptions()
+void ElektorSDR::SetupOptionUi(QWidget *parent)
 {
+    if (optionUi != NULL)
+        delete optionUi;
+    optionUi = new Ui::ElektorOptions();
+    optionUi->setupUi(parent);
+    parent->setVisible(true);
+
     QFont smFont = settings->smFont;
     QFont medFont = settings->medFont;
     QFont lgFont = settings->lgFont;
 
-	if (elektorOptions == NULL)
-	{
-		elektorOptions = new QDialog();
-		eo = new Ui::ElektorOptions();
-		eo->setupUi(elektorOptions);
+    optionUi->automaticButton->setFont(medFont);
+    optionUi->calButton->setFont(medFont);
+    optionUi->mwButton->setFont(medFont);
+    optionUi->pre1Button->setFont(medFont);
+    optionUi->pre2Button->setFont(medFont);
+    optionUi->pre3Button->setFont(medFont);
+    optionUi->pre4Button->setFont(medFont);
+    optionUi->swButton->setFont(medFont);
+    optionUi->tenDbButton->setFont(medFont);
+    optionUi->twentyDbButton->setFont(medFont);
+    optionUi->widebandButton->setFont(medFont);
+    optionUi->zeroDbButton->setFont(medFont);
 
-        eo->automaticButton->setFont(medFont);
-        eo->calButton->setFont(medFont);
-        eo->mwButton->setFont(medFont);
-        eo->pre1Button->setFont(medFont);
-        eo->pre2Button->setFont(medFont);
-        eo->pre3Button->setFont(medFont);
-        eo->pre4Button->setFont(medFont);
-        eo->swButton->setFont(medFont);
-        eo->tenDbButton->setFont(medFont);
-        eo->twentyDbButton->setFont(medFont);
-        eo->widebandButton->setFont(medFont);
-        eo->zeroDbButton->setFont(medFont);
-		
-		connect(eo->automaticButton,SIGNAL(clicked(bool)),this,SLOT(setInput0(bool)));
-		connect(eo->widebandButton,SIGNAL(clicked(bool)),this,SLOT(setInput0(bool)));
-		connect(eo->mwButton,SIGNAL(clicked(bool)),this,SLOT(setInput1(bool)));
-		connect(eo->swButton,SIGNAL(clicked(bool)),this,SLOT(setInput2(bool)));
-		connect(eo->calButton,SIGNAL(clicked(bool)),this,SLOT(setInput7(bool)));
-		connect(eo->pre1Button,SIGNAL(clicked(bool)),this,SLOT(setInput3(bool)));
-		connect(eo->pre2Button,SIGNAL(clicked(bool)),this,SLOT(setInput4(bool)));
-		connect(eo->pre3Button,SIGNAL(clicked(bool)),this,SLOT(setInput5(bool)));
-		connect(eo->pre4Button,SIGNAL(clicked(bool)),this,SLOT(setInput6(bool)));
-		connect(eo->zeroDbButton,SIGNAL(clicked(bool)),this,SLOT(setAtten0(bool)));
-		connect(eo->tenDbButton,SIGNAL(clicked(bool)),this,SLOT(setAtten1(bool)));
-		connect(eo->twentyDbButton,SIGNAL(clicked(bool)),this,SLOT(setAtten2(bool)));
-	}
-	elektorOptions->show();
+    connect(optionUi->automaticButton,SIGNAL(clicked(bool)),this,SLOT(setInput0(bool)));
+    connect(optionUi->widebandButton,SIGNAL(clicked(bool)),this,SLOT(setInput0(bool)));
+    connect(optionUi->mwButton,SIGNAL(clicked(bool)),this,SLOT(setInput1(bool)));
+    connect(optionUi->swButton,SIGNAL(clicked(bool)),this,SLOT(setInput2(bool)));
+    connect(optionUi->calButton,SIGNAL(clicked(bool)),this,SLOT(setInput7(bool)));
+    connect(optionUi->pre1Button,SIGNAL(clicked(bool)),this,SLOT(setInput3(bool)));
+    connect(optionUi->pre2Button,SIGNAL(clicked(bool)),this,SLOT(setInput4(bool)));
+    connect(optionUi->pre3Button,SIGNAL(clicked(bool)),this,SLOT(setInput5(bool)));
+    connect(optionUi->pre4Button,SIGNAL(clicked(bool)),this,SLOT(setInput6(bool)));
+    connect(optionUi->zeroDbButton,SIGNAL(clicked(bool)),this,SLOT(setAtten0(bool)));
+    connect(optionUi->tenDbButton,SIGNAL(clicked(bool)),this,SLOT(setAtten1(bool)));
+    connect(optionUi->twentyDbButton,SIGNAL(clicked(bool)),this,SLOT(setAtten2(bool)));
 }
+
 #if (0)
 //---------------------------------------------------------------------------
 #include <Dialogs.hpp>

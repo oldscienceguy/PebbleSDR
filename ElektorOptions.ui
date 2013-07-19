@@ -22,9 +22,15 @@
      <height>16</height>
     </rect>
    </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>18</height>
+    </size>
+   </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="text">
@@ -34,15 +40,21 @@
   <widget class="QRadioButton" name="pre1Button">
    <property name="geometry">
     <rect>
-     <x>4</x>
-     <y>92</y>
+     <x>150</x>
+     <y>9</y>
      <width>105</width>
      <height>16</height>
     </rect>
    </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>18</height>
+    </size>
+   </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="text">
@@ -58,9 +70,15 @@
      <height>16</height>
     </rect>
    </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>18</height>
+    </size>
+   </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="text">
@@ -70,15 +88,21 @@
   <widget class="QRadioButton" name="pre4Button">
    <property name="geometry">
     <rect>
-     <x>151</x>
-     <y>17</y>
+     <x>149</x>
+     <y>76</y>
      <width>105</width>
      <height>16</height>
     </rect>
    </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>18</height>
+    </size>
+   </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="text">
@@ -94,9 +118,15 @@
      <height>16</height>
     </rect>
    </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>18</height>
+    </size>
+   </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="text">
@@ -106,21 +136,27 @@
     <bool>true</bool>
    </property>
    <property name="checked">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
   </widget>
   <widget class="QRadioButton" name="calButton">
    <property name="geometry">
     <rect>
-     <x>151</x>
-     <y>39</y>
+     <x>3</x>
+     <y>93</y>
      <width>105</width>
      <height>16</height>
     </rect>
    </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>18</height>
+    </size>
+   </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="text">
@@ -136,9 +172,15 @@
      <height>16</height>
     </rect>
    </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>18</height>
+    </size>
+   </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="text">
@@ -148,15 +190,21 @@
   <widget class="QRadioButton" name="pre3Button">
    <property name="geometry">
     <rect>
-     <x>5</x>
-     <y>134</y>
+     <x>150</x>
+     <y>53</y>
      <width>105</width>
      <height>16</height>
     </rect>
    </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>18</height>
+    </size>
+   </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="text">
@@ -166,15 +214,21 @@
   <widget class="QRadioButton" name="pre2Button">
    <property name="geometry">
     <rect>
-     <x>5</x>
-     <y>113</y>
+     <x>150</x>
+     <y>30</y>
      <width>105</width>
      <height>16</height>
     </rect>
    </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>18</height>
+    </size>
+   </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="text">
@@ -190,9 +244,15 @@
      <height>16</height>
     </rect>
    </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>18</height>
+    </size>
+   </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="text">
@@ -208,9 +268,15 @@
      <height>16</height>
     </rect>
    </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>18</height>
+    </size>
+   </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="text">
@@ -226,9 +292,15 @@
      <height>16</height>
     </rect>
    </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>18</height>
+    </size>
+   </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
+     <pointsize>10</pointsize>
     </font>
    </property>
    <property name="text">

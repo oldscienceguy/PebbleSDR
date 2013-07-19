@@ -19,8 +19,8 @@ public:
 
 	//Sets requested freq, returns actual which may be different due to step
 	double SetFrequency(double fRequested,double fCurrent); 
-	void ShowOptions(); //SDR specific options page
-	double GetStartupFrequency();
+    void SetupOptionUi(QWidget *parent);
+    double GetStartupFrequency();
 	int GetStartupMode();
 	double GetHighLimit();
 	double GetLowLimit();
@@ -81,9 +81,7 @@ private:
 	int attenuator;
 	int inputMux; //-1 = automatic
 
-	//Dialog stuff
-	QDialog *elektorOptions;
-	Ui::ElektorOptions *eo;
+    Ui::ElektorOptions *optionUi;
 
 	double ELEKTOR_Startup;
 	double ELEKTOR_Low;
