@@ -131,7 +131,7 @@ macx {
 	SOURCES += Devices/hid-mac.c
 
 	#INSTALLS is called when we manually make -install or add it to the Qt project build steps
-	pebbleData.files = eibireadme.txt eibi.csv bands.csv memory.csv Help.htm gpl.h ReleaseNotes.txt
+	pebbleData.files = eibireadme.txt eibi.csv bands.csv memory.csv Help.htm gpl.h ReleaseNotes.txt HPSDR/ozyfw-sdr1k.hex HPSDR/Ozy_Janus.rbf
 
 	#We want this to be whatever the release or debug directory is or added to bundle
 	#This will copy the files into the app bundle, same place ini files go
@@ -325,7 +325,9 @@ OTHER_FILES += \
     eibireadme.txt \
     memory.csv \
 	FrequencyList-SantaCruz.csv \
-    pebble.qss
+    pebble.qss \
+    HPSDR/ozyfw-sdr1k.hex \
+    HPSDR/Ozy_Janus.rbf
 
 HEADERS += \
     spectrumwidget.h \

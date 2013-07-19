@@ -30,6 +30,7 @@ Devices/wavfile.h -text
 /FIRFilter.h -text
 /Firmware.txt -text
 /GPL.h -text
+HPSDR/Ozy_Janus.rbf -text
 /Help.htm -text
 /IIRFilter.cpp -text
 /IIRFilter.h -text
