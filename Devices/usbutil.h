@@ -57,6 +57,7 @@ public:
             unsigned char *data, uint16_t length, unsigned int timeout);
     int LibUSBControlMsg(uint8_t reqType, uint8_t req, uint16_t value, uint16_t index,
             unsigned char *data, uint16_t length, unsigned int timeout);
+    static libusb_device *FindDevice(int PID, int VID, int multiple);
 
 #endif
     static libusb_device_handle * LibUSB_FindAndOpenDevice(int PID, int VID, int multiple);
@@ -72,7 +73,6 @@ public:
     //libusb_device *dev;
     libusb_device_handle* hDev;
     quint16 timeout;
-
 
 };
 

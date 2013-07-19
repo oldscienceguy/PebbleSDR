@@ -228,6 +228,43 @@ libusb_device_handle * USBUtil::LibUSB_FindAndOpenDevice(int PID, int VID, int m
 #endif
 }
 
+libusb_device * USBUtil::FindDevice(int PID, int VID, int multiple)
+{
+    int numFound = 0;
+
+    libusb_device *dev; //Our device (hopefully)
+    libusb_device **devs; //List of all the devices found
+
+    int cnt = libusb_get_device_list(NULL,&devs);
+    if (cnt < 0) {
+        qDebug("No Devices Found");
+        return NULL;
+    }
+    int i=0;
+    while ((dev = devs[i++]) != NULL) {
+        libusb_device_descriptor desc;
+        int r = libusb_get_device_descriptor(dev, &desc);
+        if (r < 0) {
+            libusb_free_device_list(devs,1);
+            qDebug("Failed to get descriptor");
+            return NULL;
+        }
+        if ( VID == desc.idVendor && PID == desc.idProduct) {
+            //Got our device
+            //There may be multiple devices and caller wants Nth device
+            if (numFound++ == multiple) {
+                libusb_free_device_list(devs,1);
+                return dev;
+            }
+        }
+
+    }
+
+    libusb_free_device_list(devs,1);
+    return NULL;
+
+}
+
 //Dumps device info to debug for now
 void USBUtil::ListDevices()
 {
