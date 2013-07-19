@@ -183,11 +183,11 @@ private:
 	CPX outBuffer[2048];
 
 #ifdef LIBUSB_VERSION1
-    libusb_device *dev;
+    //libusb_device *dev;
     libusb_device_handle* hDev;
     //SDR-Widget testing
     libusb_device_handle* swhDev; //DG8SAQ protocol
-    libusb_device *swdev;
+    //libusb_device *swdev;
 
 #else
 	struct usb_device *dev;

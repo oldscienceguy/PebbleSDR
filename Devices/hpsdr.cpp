@@ -142,13 +142,11 @@ bool HPSDR::Open()
 	int result;
 	// Default is config #0, Select config #1 for SoftRock
 	// Can't claim interface if config != 1
-    result = USBUtil::SetConfiguration(hDev, 1);
-	if (result < 0)
+    if (!USBUtil::SetConfiguration(hDev, 1))
 		return false;
 
 	// Claim interface #0.
-    result = USBUtil::Claim_interface(hDev,0);
-	if (result < 0)
+    if (!USBUtil::Claim_interface(hDev,0))
 		return false;
 	//Some comments say that altinterface needs to be set to use usb_bulk_read, doesn't appear to be the case
 	//result = usb_set_altinterface(hDev,0);
@@ -159,7 +157,7 @@ bool HPSDR::Open()
 	if(sdrDevice == SDR::SDRWIDGET) {
 #if (1)
 		//3/12/11 Per Alex: All communications now go through hDev, no more dg8saq device
-		swdev = dev;
+        //swdev = dev;
 		swhDev = hDev;
 #else
 		//Get the DG8SAQ device so we can send commands
@@ -209,6 +207,7 @@ bool HPSDR::Connect()
 {
 	if (!Open())
 		return false;
+#if 0
 	//Testing access to device descriptor strings
     unsigned char sn[256];
     libusb_device_descriptor desc;
@@ -222,6 +221,7 @@ bool HPSDR::Connect()
 			qDebug()<<"No Serial number";
 		}
 	}
+#endif
 
 	//This setting allows the user to load and manage the firmware directly if Pebble has a problem for some reason
 	//If no init flag, just send Ozy config
@@ -864,7 +864,7 @@ bool HPSDR::LoadFirmware(QString filename)
         path.chop(25);
 #endif
 
-    QFile rbfFile(path + "/PebbleData" + filename);
+    QFile rbfFile(path + "/PebbleData/" + filename);
 	if (!rbfFile.open(QIODevice::ReadOnly))
 		return false;
 	//Read file and send to Ozy 64bytes at a time
@@ -989,7 +989,9 @@ bool HPSDR::SetLED(int which, bool on)
 {
 	int val;
 	val = on ? 1:0;
+    //usb_control_msg(hDev,reqType, req, value, data, index, length, timeout);
+    //int result = usb_control_msg(hDev, VENDOR_REQ_TYPE_OUT, OZY_SET_LED,val, which, NULL, 0, OZY_TIMEOUT);
     int result = USBUtil::ControlMsg(hDev, VENDOR_REQ_TYPE_OUT, OZY_SET_LED,
                          which, val, NULL, 0, OZY_TIMEOUT);
-	return result<0 ? false:true;
+    return result<0 ? false:true;
 }
