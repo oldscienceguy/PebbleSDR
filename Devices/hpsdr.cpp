@@ -207,6 +207,8 @@ bool HPSDR::Connect()
 {
 	if (!Open())
 		return false;
+    connected = true;
+
 #if 0
 	//Testing access to device descriptor strings
     unsigned char sn[256];
@@ -314,8 +316,6 @@ bool HPSDR::Connect()
 	//char foo[] = {0x1e,0x00};
 	//int count = WriteI2C(0x1a,foo,2);
 
-
-    connected = true;
 	return true;
 }
 
@@ -369,11 +369,13 @@ void HPSDR::RunProducerThread()
 #ifdef LIBUSB_VERSION1
     int actual;
     result = libusb_bulk_transfer(hDev,IN_ENDPOINT6,inputBuffer,sizeof(inputBuffer),&actual,OZY_TIMEOUT);
+    if (result == 0) {
+        int remainingBytes = actual;
 #else
     result = usb_bulk_read(hDev, IN_ENDPOINT6, inputBuffer, sizeof(inputBuffer), OZY_TIMEOUT);
-#endif
     if (result > 0) {
-		int remainingBytes = result;
+        int remainingBytes = result;
+#endif
 		int len;
 		int bufPtr = 0;
 		while (remainingBytes > 0){
@@ -510,7 +512,7 @@ bool HPSDR::SetSpeed(int speed)
         unsigned char buf[8];
 		//Per Alex 3/12/11 wValue is now 0 and wIndex is speed, switched from earlier version
         //int result = usb_control_msg(hDev, VENDOR_REQ_TYPE_IN, 0x71, 0, speed, buf, sizeof(buf), OZY_TIMEOUT);
-        int result = USBUtil::ControlMsg(hDev,VENDOR_REQ_TYPE_IN,0x71,speed,0,buf,sizeof(buf),OZY_TIMEOUT);
+        int result = USBUtil::ControlMsg(hDev,VENDOR_REQ_TYPE_IN,0x71, 0, speed, buf,sizeof(buf),OZY_TIMEOUT);
         if (result>0){
 			buf[result]=0x00; //Null term string
 			return true;
@@ -532,7 +534,7 @@ double HPSDR::SetFrequency(double fRequested, double fCurrent)
 		//Convert to DG8SAQ 11:21 format, assume 4 x mult
 		double freq = (fRequested*4) / 1000000;  //Convert to Mhz
 		qint32 iFreq = (qint32)(freq * 0x200000ul);
-        int result = USBUtil::ControlMsg(hDev,VENDOR_REQ_TYPE_OUT,0x32,0,0,(unsigned char*)&iFreq,4,OZY_TIMEOUT);
+        int result = USBUtil::ControlMsg(hDev,VENDOR_REQ_TYPE_OUT, 0x32,0, 0, (unsigned char*)&iFreq, 4, OZY_TIMEOUT);
         //int result = usb_control_msg(swhDev, VENDOR_REQ_TYPE_OUT, 0x32, 0, 0, (char*)&iFreq, 4, OZY_TIMEOUT);
 		if (result<0)
 			return fCurrent;
@@ -740,14 +742,18 @@ bool HPSDR::WriteOutputBuffer(char * commandBuf)
 #ifdef LIBUSB_VERSION1
     int actual;
     result = libusb_bulk_transfer(hDev,OUT_ENDPOINT2,outputBuffer,BUFSIZE,&actual,OZY_TIMEOUT);
+    if (result < 0 || actual != BUFSIZE) {
+        qDebug()<<"Error writing output buffer";
+        return false;
+    }
 #else
     result = usb_bulk_write(hDev, OUT_ENDPOINT2, outputBuffer, BUFSIZE, OZY_TIMEOUT);
-#endif
     if (result != BUFSIZE) {
 		qDebug()<<"Error writing output buffer";
 		return false;
 	}
-	return true;
+#endif
+    return true;
 }
 
 int HPSDR::WriteRam(int fx2StartAddr, unsigned char *buf, int count)
@@ -759,7 +765,7 @@ int HPSDR::WriteRam(int fx2StartAddr, unsigned char *buf, int count)
 		//Chunk into blocks of MAX_PACKET_SIZE
 		int numBytes = bytesRemaining > MAX_PACKET_SIZE ? MAX_PACKET_SIZE : bytesRemaining;
         int result = USBUtil::ControlMsg(hDev,VENDOR_REQ_TYPE_OUT,OZY_WRITE_RAM,
-            0, fx2StartAddr+bytesWritten, buf+bytesWritten, numBytes, OZY_TIMEOUT);
+            fx2StartAddr+bytesWritten, 0, buf+bytesWritten, numBytes, OZY_TIMEOUT);
         //int result = usb_control_msg(hDev, VENDOR_REQ_TYPE_OUT, OZY_WRITE_RAM,
         //	fx2StartAddr+bytesWritten, 0, buf+bytesWritten, numBytes, OZY_TIMEOUT);
 		if (result > 0)
@@ -796,7 +802,7 @@ bool HPSDR::LoadFpga(QString filename)
 	}
 	//Tell Ozy loading FPGA (no data sent)
 	int result;
-    result = USBUtil::ControlMsg(hDev, VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, FL_BEGIN, 0, NULL, 0, OZY_TIMEOUT);
+    result = USBUtil::ControlMsg(hDev, VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, 0, FL_BEGIN, NULL, 0, OZY_TIMEOUT);
     //result = usb_control_msg(hDev, VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, 0, FL_BEGIN, NULL, 0, OZY_TIMEOUT);
 	if (result < 0) {
 		rbfFile.close();
@@ -808,7 +814,7 @@ bool HPSDR::LoadFpga(QString filename)
     unsigned char buf[MAX_PACKET_SIZE];
     while((bytesRead = rbfFile.read((char*)buf,sizeof(buf))) > 0) {
 
-        result = USBUtil::ControlMsg(hDev, VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, FL_XFER, 0, buf, bytesRead, OZY_TIMEOUT);
+        result = USBUtil::ControlMsg(hDev, VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, 0, FL_XFER,  buf, bytesRead, OZY_TIMEOUT);
         //result = usb_control_msg(hDev, VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, 0, FL_XFER, buf, bytesRead, OZY_TIMEOUT);
 		if (result < 0) {
 			rbfFile.close();
@@ -817,7 +823,7 @@ bool HPSDR::LoadFpga(QString filename)
 	}
 	rbfFile.close();
 	//Tell Ozy done with FPGA load
-    result = USBUtil::ControlMsg(hDev, VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, FL_END, 0, NULL, 0, OZY_TIMEOUT);
+    result = USBUtil::ControlMsg(hDev, VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, 0, FL_END, NULL, 0, OZY_TIMEOUT);
     //result = usb_control_msg(hDev, VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, 0, FL_END, NULL, 0, OZY_TIMEOUT);
 	if (result < 0)
 		return false;
@@ -954,7 +960,7 @@ QString HPSDR::GetFirmwareInfo()
 	int index = 0;
     unsigned char bytes[9]; //Version string is 8 char + null
 	int size = 8;
-    int result = USBUtil::ControlMsg(hDev, VENDOR_REQ_TYPE_IN, OZY_SDR1K_CTL, index, SDR1K_CTL_READ_VERSION, bytes, size, OZY_TIMEOUT);
+    int result = USBUtil::ControlMsg(hDev, VENDOR_REQ_TYPE_IN, OZY_SDR1K_CTL, SDR1K_CTL_READ_VERSION,index, bytes, size, OZY_TIMEOUT);
     //int result = usb_control_msg(hDev, VENDOR_REQ_TYPE_IN, OZY_SDR1K_CTL, SDR1K_CTL_READ_VERSION, index, bytes, size, OZY_TIMEOUT);
 	if (result > 0) {
 		bytes[result] = 0x00; //Null terminate string
@@ -972,8 +978,8 @@ int HPSDR::WriteI2C(int i2c_addr, unsigned char byte[], int length)
 	   hDev,
 	   VENDOR_REQ_TYPE_OUT,
 	   OZY_I2C_WRITE,
-       0,
        i2c_addr,
+       0,
        byte,
 	   length,
 	   OZY_TIMEOUT
@@ -991,7 +997,6 @@ bool HPSDR::SetLED(int which, bool on)
 	val = on ? 1:0;
     //usb_control_msg(hDev,reqType, req, value, data, index, length, timeout);
     //int result = usb_control_msg(hDev, VENDOR_REQ_TYPE_OUT, OZY_SET_LED,val, which, NULL, 0, OZY_TIMEOUT);
-    int result = USBUtil::ControlMsg(hDev, VENDOR_REQ_TYPE_OUT, OZY_SET_LED,
-                         which, val, NULL, 0, OZY_TIMEOUT);
+    int result = USBUtil::ControlMsg(hDev, VENDOR_REQ_TYPE_OUT, OZY_SET_LED, val, which,  NULL, 0, OZY_TIMEOUT);
     return result<0 ? false:true;
 }
