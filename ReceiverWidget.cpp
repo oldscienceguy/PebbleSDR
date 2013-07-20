@@ -178,7 +178,6 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     sdrSelector->addItem("RFSpace SDR-IP",SDR::SDR_IP_TCP);
     sdrSelector->addItem("HPSDR USB",SDR::HPSDR_USB);
     //sdrSelector->addItem("HPSDR TCP",SDR::HPSDR_TCP);
-    sdrSelector->addItem("SDR Widget",SDR::SDRWIDGET);
     sdrSelector->addItem("FUNcube Pro",SDR::FUNCUBE);
     sdrSelector->addItem("FUNcube Pro+",SDR::FUNCUBE_PLUS);
     sdrSelector->addItem("File",SDR::FILE);

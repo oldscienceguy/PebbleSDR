@@ -19,6 +19,7 @@ HPSDR::HPSDR(Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_receiv
 	penelopeFW=0;
 
     InitSettings("hpsdr");
+
 	ReadSettings();
 
     optionUi = NULL;
@@ -94,8 +95,8 @@ void HPSDR::ReadSettings()
 	sStartupMode = qSettings->value("StartupMode",dmAM).toInt();
 	sGainPreampOn = qSettings->value("GainPreampOn",3.0).toDouble();
 	sGainPreampOff = qSettings->value("GainPreampOff",20.0).toDouble();
-	sPID = qSettings->value("PID",0x0007).toInt();
-	sVID = qSettings->value("VID",0xfffe).toInt();
+    sPID = qSettings->value("PID",0x0007).toInt();
+    sVID = qSettings->value("VID",0xfffe).toInt();
 	//NOTE: I had problems with various combinations of hex and rbf files
 	//The most current ones I found were the 'PennyMerge' version which can be found here
 	//svn://64.245.179.219/svn/repos_sdr_windows/PowerSDR/branches/kd5tfd/PennyMerge
@@ -152,6 +153,7 @@ void HPSDR::WriteSettings()
 //Gets called several times from connect
 bool HPSDR::Open()
 {
+    //USBUtil::ListDevices();
 	//Keep dev for later use, it has all the descriptor information
     hDev = USBUtil::LibUSB_FindAndOpenDevice(sPID,sVID,0);
 	if (hDev == NULL)
@@ -169,34 +171,6 @@ bool HPSDR::Open()
 	//result = usb_set_altinterface(hDev,0);
 	//if (result < 0)
 	//	return false;
-
-	//SDR Widget
-	if(sdrDevice == SDR::SDRWIDGET) {
-#if (1)
-		//3/12/11 Per Alex: All communications now go through hDev, no more dg8saq device
-        //swdev = dev;
-		swhDev = hDev;
-#else
-		//Get the DG8SAQ device so we can send commands
-        swdev = USBUtil::LibUSB_FindDevice(0x05dc,0x16c0,0);
-		if (swdev == NULL)
-			return false; //No devices match and/or serial number not found
-        USBUtil::OpenDevice(swDev,&swhDev);
-		if (swhDev == NULL)
-			return false;
-		int result;
-		// Can't claim interface if config != 1
-		result = usb_set_configuration(swhDev, 1);
-		if (result < 0)
-			return false;
-
-		// Claim interface #0.
-		result = usb_claim_interface(swhDev,0);
-		if (result < 0)
-			return false;
-#endif
-
-	}
 
 	return true;
 }
@@ -245,9 +219,6 @@ bool HPSDR::Connect()
 	//This setting allows the user to load and manage the firmware directly if Pebble has a problem for some reason
 	//If no init flag, just send Ozy config
 	//If no firmware is loaded this will return error
-	if (sdrDevice == SDR::SDRWIDGET)
-		return SetSpeed(sSpeed);
-
 	if (sNoInit) {
 		return SendConfig();
 	}
@@ -525,40 +496,11 @@ bool HPSDR::SendConfig()
 //Set sample rate to 48k, 96k or 192k
 bool HPSDR::SetSpeed(int speed)
 {
-	if(sdrDevice == SDR::SDRWIDGET) {
-        unsigned char buf[8];
-		//Per Alex 3/12/11 wValue is now 0 and wIndex is speed, switched from earlier version
-        //int result = usb_control_msg(hDev, VENDOR_REQ_TYPE_IN, 0x71, 0, speed, buf, sizeof(buf), OZY_TIMEOUT);
-        int result = USBUtil::ControlMsg(hDev,VENDOR_REQ_TYPE_IN,0x71, 0, speed, buf,sizeof(buf),OZY_TIMEOUT);
-        if (result>0){
-			buf[result]=0x00; //Null term string
-			return true;
-		} else {
-			return false;
-		}
-	}
 	return false;
 }
 
 double HPSDR::SetFrequency(double fRequested, double fCurrent)
 {
-	//WIP, Send freq change via SR
-	if ((sdrDevice == SDR::SDRWIDGET) && sSDRW_DG8SAQ_SetFreq) {
-		if (swhDev == NULL)
-			return false;
-		//Send speed via DG8SAQ protocol for now, hpsdr commands not supported yet
-		//Code from softrock.cpp
-		//Convert to DG8SAQ 11:21 format, assume 4 x mult
-		double freq = (fRequested*4) / 1000000;  //Convert to Mhz
-		qint32 iFreq = (qint32)(freq * 0x200000ul);
-        int result = USBUtil::ControlMsg(hDev,VENDOR_REQ_TYPE_OUT, 0x32,0, 0, (unsigned char*)&iFreq, 4, OZY_TIMEOUT);
-        //int result = usb_control_msg(swhDev, VENDOR_REQ_TYPE_OUT, 0x32, 0, 0, (char*)&iFreq, 4, OZY_TIMEOUT);
-		if (result<0)
-			return fCurrent;
-		else
-			return fRequested;
-	}
-
 	char cmd[5];
 	qint32 freq = fRequested;
 	cmd[0] = C0_FREQUENCY; //Bits set receiver# (if > 1) are we setting for

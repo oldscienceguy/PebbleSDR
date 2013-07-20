@@ -403,10 +403,6 @@ SDR *SDR::Factory(Receiver *receiver, SDR::SDRDEVICE dev, Settings *settings)
     case SDR::HPSDR_USB:
 		sdr = new HPSDR(receiver, SDR::HPSDR_USB,settings);
 		break;
-	case SDR::SDRWIDGET:
-		sdr = new HPSDR(receiver, SDR::SDRWIDGET,settings);
-		break;
-
 	case SDR::FUNCUBE:
 		sdr = new FunCube(receiver, SDR::FUNCUBE,settings);
 		break;
