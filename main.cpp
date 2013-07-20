@@ -11,7 +11,10 @@ int main(int argc, char *argv[])
     app.setStyleSheet( qssFile.readAll() );
     qssFile.close();
 
-	PebbleII w;
+    // Qt::FramelessWindowHint No title, size, nothing
+    // Qt::WindowTitleHint
+    // Qt::Tool thin tile, no full screen default, close button hides not quits
+    PebbleII w(0, 0);
 	w.show();
     return app.exec();
 }
