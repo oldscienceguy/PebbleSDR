@@ -72,6 +72,8 @@ public:
 	bool PTT();
 	bool GetCWLevel();
 
+    void FifiGetSvn();
+
 
 	private slots:
 		void selectAutomatic(bool b);

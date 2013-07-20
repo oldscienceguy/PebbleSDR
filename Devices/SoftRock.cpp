@@ -178,6 +178,8 @@ bool SoftRock::Connect()
 		int serial = GetSerialNumber();
         if (sdrNumber == -1 || serial == sdrNumber) {
             connected = true;
+            //FifiGetSvn(); //We may want to add specific support for FiFi in the future
+
 			return true; //We've got it
         }
 		//Not ours, close and keep looking
@@ -625,6 +627,20 @@ bool SoftRock::GetCWLevel()
 {
 	return false;
 }
+
+//FiFi Specific
+//0xAB Fifi Read
+void SoftRock::FifiGetSvn()
+{
+    quint32 svn;
+    int result = usbCtrlMsgIn(0xAB, 0, 0, (unsigned char *) &svn, sizeof(svn));
+    if (result == 0)
+        return;
+    else
+        qDebug()<<svn;
+
+}
+//OxAC Fifi Write
 
 //Dialog stuff
 void SoftRock::selectAutomatic(bool b) {
