@@ -61,6 +61,7 @@ public:
 		void powerToggled(bool b);
         void directEntryAccepted();
         void directEntryCanceled();
+        void showDataFrame(bool b);
 
 
 signals:

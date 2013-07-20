@@ -19,7 +19,7 @@ SMeterWidget::SMeterWidget(QWidget *parent)
 
     ui.sourceBox->addItem("Inst");
     ui.sourceBox->addItem("Avg");
-    ui.sourceBox->addItem("CW");
+    //ui.sourceBox->addItem("CW");
     //Get from settings
     QFont medFont("Lucida Grande",9);
     ui.sourceBox->setFont(medFont);

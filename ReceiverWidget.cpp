@@ -199,11 +199,20 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     connect(directInputUi->enterButton,SIGNAL(clicked()),this,SLOT(directEntryAccepted()));
     connect(directInputUi->cancelButton,SIGNAL(clicked()),this,SLOT(directEntryCanceled()));
 
+    ui.dataFrame->setVisible(false);
+    ui.dataButton->setCheckable(true);
+    connect(ui.dataButton,SIGNAL(clicked(bool)),this,SLOT(showDataFrame(bool)));
+
 }
 
 ReceiverWidget::~ReceiverWidget(void)
 {
 	
+}
+
+void ReceiverWidget::showDataFrame(bool b)
+{
+    ui.dataFrame->setVisible(b);
 }
 
 void ReceiverWidget::mixerChanged(int m)

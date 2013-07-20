@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>571</width>
-    <height>285</height>
+    <height>279</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -1606,7 +1606,7 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>125</width>
+           <width>148</width>
            <height>25</height>
           </rect>
          </property>
@@ -1618,7 +1618,7 @@
          </property>
          <property name="minimumSize">
           <size>
-           <width>80</width>
+           <width>148</width>
            <height>25</height>
           </size>
          </property>
@@ -2156,9 +2156,15 @@
       <item>
        <layout class="QVBoxLayout" name="verticalLayout">
         <property name="spacing">
-         <number>-1</number>
+         <number>5</number>
+        </property>
+        <property name="leftMargin">
+         <number>2</number>
         </property>
         <property name="topMargin">
+         <number>2</number>
+        </property>
+        <property name="rightMargin">
          <number>2</number>
         </property>
         <property name="bottomMargin">
@@ -2215,6 +2221,9 @@
       <enum>QFrame::Raised</enum>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <property name="leftMargin">
+       <number>2</number>
+      </property>
       <property name="topMargin">
        <number>2</number>
       </property>
@@ -2224,6 +2233,19 @@
       <property name="bottomMargin">
        <number>2</number>
       </property>
+      <item>
+       <widget class="QToolButton" name="dataButton">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>16</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Data</string>
+        </property>
+       </widget>
+      </item>
       <item>
        <spacer name="horizontalSpacer_2">
         <property name="orientation">
