@@ -83,10 +83,7 @@ private:
 
     Ui::ElektorOptions *optionUi;
 
-	double ELEKTOR_Startup;
 	double ELEKTOR_Low;
 	double ELEKTOR_High;
-	int ELEKTOR_StartupMode;
-	double ELEKTOR_Gain;
 
 };

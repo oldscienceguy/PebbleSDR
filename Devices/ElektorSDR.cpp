@@ -61,21 +61,15 @@ void ElektorSDR::Stop()
 void ElektorSDR::ReadSettings()
 {
     SDR::ReadSettings();
-	ELEKTOR_Startup = qSettings->value("Startup",10000000).toDouble();
 	ELEKTOR_Low = qSettings->value("Low",150000).toDouble();
 	ELEKTOR_High = qSettings->value("High",30000000).toDouble();
-	ELEKTOR_StartupMode = qSettings->value("StartupMode",dmAM).toInt();
-	ELEKTOR_Gain = qSettings->value("Gain",0.25).toDouble();
 
 }
 void ElektorSDR::WriteSettings()
 {
     SDR::WriteSettings();
-	qSettings->setValue("Startup",ELEKTOR_Startup);
 	qSettings->setValue("Low",ELEKTOR_Low);
 	qSettings->setValue("High",ELEKTOR_High);
-	qSettings->setValue("StartupMode",ELEKTOR_StartupMode);
-	qSettings->setValue("Gain",ELEKTOR_Gain);
 
 	qSettings->sync();
 }
@@ -172,9 +166,9 @@ bool ElektorSDR::Disconnect()
 double ElektorSDR::GetStartupFrequency()
 {
 	if (sdrDevice==ELEKTOR)
-		return ELEKTOR_Startup;
+        return startupFreq;
 	else if(sdrDevice == ELEKTOR_PA)
-		return ELEKTOR_Startup;
+        return startupFreq;
 	else
 		return 0;
 }
@@ -182,9 +176,9 @@ double ElektorSDR::GetStartupFrequency()
 int ElektorSDR::GetStartupMode()
 {
 	if (sdrDevice==ELEKTOR)
-		return ELEKTOR_StartupMode;
+        return startup;
 	else if(sdrDevice == ELEKTOR_PA)
-		return ELEKTOR_StartupMode;
+        return startup;
 	else
 		return 0;
 }
@@ -212,9 +206,9 @@ double ElektorSDR::GetLowLimit()
 double ElektorSDR::GetGain()
 {
 	if (sdrDevice==ELEKTOR)
-		return ELEKTOR_Gain;
+        return iqGain;
 	else if(sdrDevice == ELEKTOR_PA)
-		return ELEKTOR_Gain;
+        return iqGain;
 	else
 		return 0;
 }
@@ -694,10 +688,12 @@ void ElektorSDR::SetupOptionUi(QWidget *parent)
     connect(optionUi->mwButton,SIGNAL(clicked(bool)),this,SLOT(setInput1(bool)));
     connect(optionUi->swButton,SIGNAL(clicked(bool)),this,SLOT(setInput2(bool)));
     connect(optionUi->calButton,SIGNAL(clicked(bool)),this,SLOT(setInput7(bool)));
+
     connect(optionUi->pre1Button,SIGNAL(clicked(bool)),this,SLOT(setInput3(bool)));
     connect(optionUi->pre2Button,SIGNAL(clicked(bool)),this,SLOT(setInput4(bool)));
     connect(optionUi->pre3Button,SIGNAL(clicked(bool)),this,SLOT(setInput5(bool)));
     connect(optionUi->pre4Button,SIGNAL(clicked(bool)),this,SLOT(setInput6(bool)));
+
     connect(optionUi->zeroDbButton,SIGNAL(clicked(bool)),this,SLOT(setAtten0(bool)));
     connect(optionUi->tenDbButton,SIGNAL(clicked(bool)),this,SLOT(setAtten1(bool)));
     connect(optionUi->twentyDbButton,SIGNAL(clicked(bool)),this,SLOT(setAtten2(bool)));
