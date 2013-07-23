@@ -190,13 +190,14 @@ CPX * Morse::ProcessBlockSuperRatt(CPX *in)
         //Update sMeter
         //db = powerToDb(power);
         //rcv->GetSignalStrength()->setExtValue(db);
+#if 0
         if (isMark)
             //rcv->GetSignalStrength()->setExtValue(-13); //Full scale
             rcv->receiverWidget->DataBit(true);
         else
             //rcv->GetSignalStrength()->setExtValue(-127); //0
             rcv->receiverWidget->DataBit(false);
-
+#endif
         switch (countingState) {
         case NOT_COUNTING:
             //Initial state when we're looking for something to start syncing with

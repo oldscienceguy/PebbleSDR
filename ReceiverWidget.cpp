@@ -68,7 +68,7 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     ui.dataSelectionBox->addItem("CW",CW_DATA);
     ui.dataSelectionBox->addItem("RTTY",RTTY_DATA);
     connect(ui.dataSelectionBox,SIGNAL(currentIndexChanged(int)),this,SLOT(dataSelectionChanged(int)));
-    SetDataMode((BAND_DATA));
+    SetDataMode((NO_DATA));
 
 	loMode = true;
 	//Set intial gain slider position
@@ -199,8 +199,6 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     connect(directInputUi->cancelButton,SIGNAL(clicked()),this,SLOT(directEntryCanceled()));
 
     ui.dataFrame->setVisible(false);
-    ui.dataButton->setCheckable(true);
-    connect(ui.dataButton,SIGNAL(clicked(bool)),this,SLOT(showDataFrame(bool)));
 
 }
 
@@ -655,21 +653,27 @@ void ReceiverWidget::dataSelectionChanged(int s)
     //enums are stored as user data with each menu item
     dataSelection = (DATA_SELECTION)ui.dataSelectionBox->itemData(s).toInt();
     receiver->SetDataSelection(dataSelection);
-    if (dataSelection == NO_DATA)
-        ui.dataEdit->clear();
-}
 
-//Change to DataPower so we can use as real time tuner
-void ReceiverWidget::DataBit(bool onOff)
-{
-    if (onOff)
-        ui.dataBar->setValue(100);
-    else
-        ui.dataBar->setValue(0);
+    //Move to header
+    Ui::dataMorse *dataUi;
+    switch (dataSelection) {
+        case NO_DATA:
+            ui.dataFrame->setVisible(false);
+            break;
+        case CW_DATA:
+            dataUi = new Ui::dataMorse();
+            dataUi->setupUi(ui.dataFrame);
+            ui.dataFrame->setVisible(true);
+            break;
+        default:
+            ui.dataFrame->setVisible(true);
+            break;
+    }
 }
 
 void ReceiverWidget::OutputData(const char *d)
 {
+    //WIP Data specific UI
     switch (dataSelection) {
     case NO_DATA:
         //Display version information, help, etc
@@ -677,12 +681,12 @@ void ReceiverWidget::OutputData(const char *d)
     case BAND_DATA:
         //FM RDS initially
         //No scroll, static display
-        ui.dataEdit->clear(); //Look for faster way
-        ui.dataEdit->setText(d);
+        //ui.dataEdit->clear(); //Look for faster way
+        //ui.dataEdit->setText(d);
         break;
     case CW_DATA:
-        ui.dataEdit->insertPlainText(d); //At cursor
-        ui.dataEdit->moveCursor(QTextCursor::End);
+        //ui.dataEdit->insertPlainText(d); //At cursor
+        //ui.dataEdit->moveCursor(QTextCursor::End);
         break;
     case RTTY_DATA:
         break;

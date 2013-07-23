@@ -45,9 +45,7 @@ HPSDR/Ozy_Janus.rbf -text
 /PebbleQt.pro -text
 /PortAudio.lib -text
 /Receiver.cpp -text
-/Receiver.h -text
 /ReceiverWidget.cpp -text
-/ReceiverWidget.h -text
 /ReceiverWidget.ui -text
 References/CuteSDR102.pdf -text
 /ReleaseNotes.txt -text
@@ -74,6 +72,7 @@ Resources/edit.png -text
 /build.tmpl -text
 /cpx.cpp -text
 /cpx.h -text
+/data-morse.ui -text
 /defs.h -text
 /directinput.ui -text
 /fftbasic.cpp -text

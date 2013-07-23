@@ -478,7 +478,8 @@ FORMS += \
     funcubeoptions.ui \
     sdr-ip.ui \
     sdr.ui \
-    directinput.ui
+    directinput.ui \
+    data-morse.ui
 
 RESOURCES += \
     resources.qrc
