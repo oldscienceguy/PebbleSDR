@@ -361,7 +361,6 @@ HEADERS += \
 	iqbalance.h \
     global.h \
     goertzel.h \
-    morse.h \
     filters/fir.h \
     filters/filtercoef.h \
     filters/iir.h \
@@ -401,8 +400,9 @@ HEADERS += \
     Devices/sdr-ip/sdrinterface.h \
     Devices/sdr-ip/threadwrapper.h \
     Devices/sdr-ip/protocoldefs.h \
-    Decoders/oregonscientificsensordecode.h \
-    Devices/wavfile.h
+    Devices/wavfile.h \
+    Decoders/OregonScientific/oregonscientificsensordecode.h \
+    Decoders/morse/morse.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -434,7 +434,6 @@ SOURCES += \
     iqbalance.cpp \
     global.cpp \
     goertzel.cpp \
-    morse.cpp \
     filters/fir.cpp \
     filters/iir.cpp \
     demod/wfmdemod.cpp \
@@ -462,8 +461,9 @@ SOURCES += \
     Devices/sdr-ip/ad6620.cpp \
     Devices/sdr-ip/netiobase.cpp \
     Devices/sdr-ip/sdrinterface.cpp \
-    Decoders/oregonscientificsensordecode.cpp \
-    Devices/wavfile.cpp
+    Devices/wavfile.cpp \
+    Decoders/OregonScientific/oregonscientificsensordecode.cpp \
+	Decoders/morse/morse.cpp
 
 FORMS += \
     spectrumwidget.ui \
