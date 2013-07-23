@@ -70,6 +70,9 @@ public:
 	IQBalance *GetIQBalance(){return iqBalance;}
 
     ReceiverWidget *receiverWidget;
+
+    Morse *getMorse() {return morse;}
+
     public slots:
 		void Restart();
         void OutputData(const char *d);

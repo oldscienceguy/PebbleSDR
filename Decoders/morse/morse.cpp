@@ -123,6 +123,8 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
     spaceCount = 0;
     countsPerDashThreshold = MIN_DOT_COUNT;
 
+    dataUi = NULL;
+
 }
 
 Morse::~Morse()
@@ -131,6 +133,12 @@ Morse::~Morse()
     if (powerBuf != NULL) free (powerBuf);
     if (toneBuf != NULL) free (toneBuf);
 
+}
+
+void Morse::SetupDataUi(QWidget *parent)
+{
+    dataUi = new Ui::dataMorse();
+    dataUi->setupUi(parent);
 }
 
 //Returns tcw in ms for any given WPM

@@ -5,6 +5,7 @@
 #include "goertzel.h"
 #include "qframe"
 #include "QTextEdit"
+#include "ui/ui_data-morse.h"
 
 class Receiver;
 
@@ -16,6 +17,8 @@ class Morse : public SignalProcessing
 public:
     Morse(int sr, int fc);
     ~Morse();
+
+    void SetupDataUi(QWidget *parent);
 
     CPX * ProcessBlock(CPX * in);
     CPX * ProcessBlockSuperRatt(CPX * in);
@@ -43,6 +46,8 @@ public:
 
 protected:
     Receiver *rcv;
+    Ui::dataMorse *dataUi;
+
 
     Goertzel *cwGoertzel;
     int goertzelFreq; //CW tone we're looking for, normally 700hz

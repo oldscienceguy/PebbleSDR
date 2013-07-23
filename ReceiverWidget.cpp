@@ -63,10 +63,10 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     //wfmFilterOptions << "80000"<<"40000";
 	ui.filterBox->addItems(amFilterOptions); //Default
 
-    ui.dataSelectionBox->addItem("Off",NO_DATA);
-    ui.dataSelectionBox->addItem("Band",BAND_DATA);
-    ui.dataSelectionBox->addItem("CW",CW_DATA);
-    ui.dataSelectionBox->addItem("RTTY",RTTY_DATA);
+    ui.dataSelectionBox->addItem("No Data",NO_DATA);
+    ui.dataSelectionBox->addItem("Band Data",BAND_DATA);
+    ui.dataSelectionBox->addItem("CW Decoder",CW_DATA);
+    ui.dataSelectionBox->addItem("RTTY Decoder",RTTY_DATA);
     connect(ui.dataSelectionBox,SIGNAL(currentIndexChanged(int)),this,SLOT(dataSelectionChanged(int)));
     SetDataMode((NO_DATA));
 
@@ -650,6 +650,9 @@ void ReceiverWidget::filterSelectionChanged(QString f)
 
 void ReceiverWidget::dataSelectionChanged(int s)
 {
+    if (!powerOn)
+        return;
+
     //enums are stored as user data with each menu item
     dataSelection = (DATA_SELECTION)ui.dataSelectionBox->itemData(s).toInt();
     receiver->SetDataSelection(dataSelection);
@@ -661,8 +664,10 @@ void ReceiverWidget::dataSelectionChanged(int s)
             ui.dataFrame->setVisible(false);
             break;
         case CW_DATA:
-            dataUi = new Ui::dataMorse();
-            dataUi->setupUi(ui.dataFrame);
+            //Send CW decoder the UI element so it can interact directly
+            //Otherwise all the UI specifics from each decoder will leak into ReceiverWidget
+            //and have to be maintained in two places.
+            receiver->getMorse()->SetupDataUi(ui.dataFrame);
             ui.dataFrame->setVisible(true);
             break;
         default:

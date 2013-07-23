@@ -399,10 +399,19 @@ void SpectrumWidget::SetFilter(int lo, int hi)
 
 void SpectrumWidget::plotSelectionChanged(SignalSpectrum::DISPLAYMODE mode)
 {
+    if (mode == SignalSpectrum::NODISPLAY) {
+        ui.labelFrame->setVisible(false);
+        ui.plotFrame->setVisible(false);
+    } else {
+        ui.labelFrame->setVisible(true);
+        ui.plotFrame->setVisible(true);
+    }
+
 	if (signalSpectrum != NULL) {
 		signalSpectrum->SetDisplayMode(mode);
 	}
-    global->sdr->lastDisplayMode = mode;
+    if (global->sdr != NULL)
+        global->sdr->lastDisplayMode = mode;
 
 	spectrumMode = mode;
 	repaint();
