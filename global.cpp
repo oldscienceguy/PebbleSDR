@@ -21,7 +21,7 @@ Global::Global()
 	}
     revision = new char[80];
     //See PebbleQt.pro for DEFINES statement that creates PEBBLE_VERSION
-    sprintf(revision,"Rev: %s %s",PEBBLE_VERSION, PEBBLE_DATE);
+    sprintf(revision,"Build: %s %s",PEBBLE_VERSION, PEBBLE_DATE);
     //qDebug(revision);
 
     minDb = -130; //Same as SpectraVue

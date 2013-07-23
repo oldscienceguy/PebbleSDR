@@ -33,6 +33,7 @@ SDRFile::~SDRFile(void)
 {
     if (!settings)
         return;
+    WriteSettings();
     Stop();
     Disconnect();
 }
