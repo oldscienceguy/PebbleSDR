@@ -671,7 +671,7 @@ void ReceiverWidget::dataSelectionChanged(int s)
             ui.dataFrame->setVisible(true);
             break;
         default:
-            ui.dataFrame->setVisible(true);
+            ui.dataFrame->setVisible(false);
             break;
     }
 }

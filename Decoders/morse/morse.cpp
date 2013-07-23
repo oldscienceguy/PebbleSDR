@@ -137,8 +137,10 @@ Morse::~Morse()
 
 void Morse::SetupDataUi(QWidget *parent)
 {
-    dataUi = new Ui::dataMorse();
-    dataUi->setupUi(parent);
+    if (dataUi == NULL) {
+        dataUi = new Ui::dataMorse();
+        dataUi->setupUi(parent);
+    }
 }
 
 //Returns tcw in ms for any given WPM
