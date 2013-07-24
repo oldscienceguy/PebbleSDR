@@ -137,7 +137,12 @@ Morse::~Morse()
 
 void Morse::SetupDataUi(QWidget *parent)
 {
-    if (dataUi == NULL) {
+    if (parent == NULL) {
+        //We want to delete
+        if (dataUi != NULL)
+            delete dataUi;
+        dataUi = NULL;
+    } else if (dataUi == NULL) {
         dataUi = new Ui::dataMorse();
         dataUi->setupUi(parent);
     }
@@ -187,6 +192,9 @@ void Morse::SetReceiver(Receiver *_rcv)
 
 void Morse::OutputData(const char* d)
 {
+    if (dataUi == NULL)
+        return;
+
     dataUi->dataEdit->insertPlainText(d); //At cursor
     dataUi->dataEdit->moveCursor(QTextCursor::End);
 }

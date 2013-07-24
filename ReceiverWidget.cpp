@@ -457,10 +457,10 @@ DEMODMODE ReceiverWidget::GetMode()
 //
 void ReceiverWidget::powerToggled(bool on) 
 {
-    powerOn = on;
 
 	if (on) {
-		if (!receiver->Power(true)) {
+        powerOn = true;
+        if (!receiver->Power(true)) {
 			ui.powerButton->setChecked(false); //Turn power button back off
 			return; //Error setting up receiver
 		}
@@ -489,6 +489,9 @@ void ReceiverWidget::powerToggled(bool on)
 	} else {
 		//Turning power off, shut down receiver widget display BEFORE telling receiver to clean up
 		//Objects
+        //Make sure we reset data frame
+        SetDataMode(NO_DATA);
+        powerOn = false;
 
         //Don't allow SDR changes when receiver is on
         ui.sdrSelector->setEnabled(true);
@@ -653,12 +656,24 @@ void ReceiverWidget::dataSelectionChanged(int s)
     if (!powerOn)
         return;
 
+    //Clear any previous data selection
+    switch(dataSelection) {
+        case CW_DATA:
+
+            //Reset decoder
+            receiver->getMorse()->SetupDataUi(NULL);
+            //Delete all children
+            foreach (QObject *obj, ui.dataFrame->children()) {
+                //Normally we get a grid layout object, uiFrame, dataFrame
+                delete obj;
+            }
+            break;
+    }
+
     //enums are stored as user data with each menu item
     dataSelection = (DATA_SELECTION)ui.dataSelectionBox->itemData(s).toInt();
     receiver->SetDataSelection(dataSelection);
 
-    //Move to header
-    Ui::dataMorse *dataUi;
     switch (dataSelection) {
         case NO_DATA:
             ui.dataFrame->setVisible(false);
@@ -671,6 +686,7 @@ void ReceiverWidget::dataSelectionChanged(int s)
             ui.dataFrame->setVisible(true);
             break;
         default:
+            //Todo, delete any previous active dataUI
             ui.dataFrame->setVisible(false);
             break;
     }
