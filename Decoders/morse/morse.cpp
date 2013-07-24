@@ -185,6 +185,12 @@ void Morse::SetReceiver(Receiver *_rcv)
     rcv = _rcv;
 }
 
+void Morse::OutputData(const char* d)
+{
+    dataUi->dataEdit->insertPlainText(d); //At cursor
+    dataUi->dataEdit->moveCursor(QTextCursor::End);
+}
+
 CPX * Morse::ProcessBlockSuperRatt(CPX *in)
 {
     bool isMark;
@@ -290,7 +296,7 @@ CPX * Morse::ProcessBlockSuperRatt(CPX *in)
                 //Process char
                 if (pendingChar) {
                     //qDebug("%d",lastChar);
-                    rcv->OutputData(MorseToAscii(lastChar));
+                    OutputData(MorseToAscii(lastChar));
                     lastChar = 0;
                     pendingChar = false;
                     pendingWord = true;
@@ -299,7 +305,7 @@ CPX * Morse::ProcessBlockSuperRatt(CPX *in)
             if (lastSpaceCount >= countsPerWordSpace) {
                 //Process word
                 if (pendingWord) {
-                    rcv->OutputData(" ");
+                    OutputData(" ");
                     pendingWord = false;
                 }
             }
@@ -360,10 +366,10 @@ CPX * Morse::ProcessBlock(CPX * in)
                     if (markCount > countsPerDot) {
                         //Valid, is it long enough for dash?
                         if (markCount > countsPerDash) {
-                            rcv->OutputData("-");
+                            OutputData("-");
 
                         } else {
-                            rcv->OutputData(".");
+                            OutputData(".");
                         }
                         markCount = 0;
                         spaceCount = 1;

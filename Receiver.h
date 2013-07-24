@@ -75,8 +75,6 @@ public:
 
     public slots:
 		void Restart();
-        void OutputData(const char *d);
-        void OutputData (QString s);
         void RecToggled(bool on);
         void SdrOptionsPressed();
         void CloseSdrOptions();

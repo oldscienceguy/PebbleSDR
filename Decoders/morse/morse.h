@@ -44,6 +44,7 @@ public:
     const char * MorseToDotDash(quint16 morse);
 
 
+    void OutputData(const char *d);
 protected:
     Receiver *rcv;
     Ui::dataMorse *dataUi;

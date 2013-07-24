@@ -50,8 +50,6 @@ public:
 	SpectrumWidget *getSpectrumWidget() {return ui.spectrumWidget;};
 	SMeterWidget *getSMeterWidget() {return ui.sMeterWidget;};
 
-    void OutputData(const char *d);
-
     void DisplayBand(double freq);
 
 	public slots:

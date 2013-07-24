@@ -676,29 +676,6 @@ void ReceiverWidget::dataSelectionChanged(int s)
     }
 }
 
-void ReceiverWidget::OutputData(const char *d)
-{
-    //WIP Data specific UI
-    switch (dataSelection) {
-    case NO_DATA:
-        //Display version information, help, etc
-        break;
-    case BAND_DATA:
-        //FM RDS initially
-        //No scroll, static display
-        //ui.dataEdit->clear(); //Look for faster way
-        //ui.dataEdit->setText(d);
-        break;
-    case CW_DATA:
-        //ui.dataEdit->insertPlainText(d); //At cursor
-        //ui.dataEdit->moveCursor(QTextCursor::End);
-        break;
-    case RTTY_DATA:
-        break;
-    }
-
-
-}
 
 void ReceiverWidget::modeSelectionChanged(QString m) 
 {

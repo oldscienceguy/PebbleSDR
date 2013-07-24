@@ -334,16 +334,6 @@ void Receiver::SetDataSelection(ReceiverWidget::DATA_SELECTION d)
     }
 }
 
-void Receiver::OutputData(const char *d)
-{
-    receiverWidget->OutputData(d);
-}
-void Receiver::OutputData(QString s)
-{
-    //receiverWidget->OutputData(s.toAscii());  //toAscii deprecated
-    receiverWidget->OutputData(s.toLatin1());
-}
-
 //Connected to ReceiverWidget REC button
 /*
  * Records to standard file name in data directory
