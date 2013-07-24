@@ -598,6 +598,329 @@ const char * Morse::MorseToDotDash(quint16 morse)
 }
 
 /*
+Working on understanding and implementing FLDIGI Algorithms
+Portions from JSDR
+Copyright (C) 2008, 2009, 2010
+Jan van Katwijk (J.vanKatwijk@gmail.com
+
+From AG1LE Blog
+Main modules are in CW.CXX  and MORSE.CXX.  After initialization the  cw:rx_process() function receives new audio data 512 samples on continuous basis (this block size is actually configured in sound.h  - see #define SCBLOCKSIZE  ).
+
+Once a block of data is received, there are some checks done if user has changed the low pass filter bandwidth. Then the  algorithm creates a baseband signal by mixing with audio carrier frequency of selected signal. The next step is to run a low pass filter,  demodulate by taking the magnitude of the signal and finally running the envelope through a moving average filter.  There is also AGC (automatic gain control) function with fast attack and slow decay. A check is done if squelch is on and if signal exceeds squelch value (this is to reduce noise created errors).  If the signal has upward trend the control gets passed to handle_event() function and same is done with downward trend.  Handle_event() keeps track of  "dits" and "dahs"  and eventually returns decoded character using morse::rx_lookup() function.
+
+There is actually much more going on than the above simple explanation. The software keeps track of morse speed, automatic gain control,  dit/dah ratio and various other parameters.  Also, the user interface is updated - if you have signal scope on the signal amplitude value is updated between characters etc.
+*/
+
+CPX * Morse::ProcessBlockFldigi(CPX *in)
+{
+    //Check to see if low pass filter bandwidth has changes
+
+    //Mix
+
+    //LP Filter
+
+    //Demod by taking magnitude of signal and running through moving average filter
+
+    //AGC
+
+    //Upward or Downward trend?
+
+    //Handle event to track dits and dahs
+
+}
+
+// Compare two timestamps, and return the difference between them in usecs.
+
+int Morse::usec_diff(unsigned int earlier, unsigned int later)
+{
+// Compare the timestamps.
+// At 4 WPM, the dash length is 3*(1200000/4)=900,000 usecs, and
+// the word gap is 2,100,000 usecs.
+    if (earlier >= later) {
+        return 0;
+    } else
+        return (int) (((double) (later - earlier) * USECS_PER_SEC) / sampleRate);
+}
+
+//=======================================================================
+// cw_update_tracking()
+// This gets called everytime we have a dot dash sequence or a dash dot
+// sequence. Since we have semi validated tone durations, we can try and
+// track the cw speed by adjusting the cw_adaptive_receive_threshold variable.
+// This is done with moving average filters for both dot & dash.
+//=======================================================================
+void Morse::update_tracking(int idot, int idash)
+{
+    int dot, dash;
+    if (idot > cw_lower_limit && idot < cw_upper_limit)
+        dot = idot;
+    else
+        dot = cw_send_dot_length;
+    if (idash > cw_lower_limit && idash < cw_upper_limit)
+        dash = idash;
+    else
+        dash = cw_send_dash_length;
+
+    //!!cw_adaptive_receive_threshold = (long int)trackingfilter->run((dash + dot) / 2);
+
+//	if (!use_matched_filter)
+        sync_parameters();
+}
+
+// sync_parameters()
+// Synchronize the dot, dash, end of element, end of character, and end
+// of word timings and ranges to new values of Morse speed, or receive tolerance.
+void Morse::sync_parameters()
+{
+    int lowerwpm, upperwpm, nusymbollen, nufsymlen;
+
+    int wpm = usedefaultWPM ? progdefaults.defCWspeed : progdefaults.CWspeed;
+    int fwpm = progdefaults.CWfarnsworth;
+
+    cw_send_dot_length = DOT_MAGIC / progdefaults.CWspeed;
+
+    cw_send_dash_length = 3 * cw_send_dot_length;
+
+    nusymbollen = (int)(sampleRate * 1.2 / wpm);
+    nufsymlen = (int)(sampleRate * 1.2 / fwpm);
+
+    if (symbollen != nusymbollen ||
+        nufsymlen != fsymlen ||
+        risetime  != progdefaults.CWrisetime ||
+        QSKshape  != progdefaults.QSKshape ) {
+        risetime = progdefaults.CWrisetime;
+        QSKshape = progdefaults.QSKshape;
+        symbollen = nusymbollen;
+        fsymlen = nufsymlen;
+        //!!makeshape();
+    }
+
+// check if user changed the tracking or the cw default speed
+    if ((cwTrack != progdefaults.CWtrack) ||
+        (cw_send_speed != progdefaults.CWspeed)) {
+        //!!trackingfilter->reset();
+        cw_adaptive_receive_threshold = 2 * cw_send_dot_length;
+        //!!put_cwRcvWPM(cw_send_speed);
+    }
+    cwTrack = progdefaults.CWtrack;
+    cw_send_speed = progdefaults.CWspeed;
+
+// Receive parameters:
+    lowerwpm = cw_send_speed - progdefaults.CWrange;
+    upperwpm = cw_send_speed + progdefaults.CWrange;
+    if (lowerwpm < progdefaults.CWlowerlimit)
+        lowerwpm = progdefaults.CWlowerlimit;
+    if (upperwpm > progdefaults.CWupperlimit)
+        upperwpm = progdefaults.CWupperlimit;
+    cw_lower_limit = 2 * DOT_MAGIC / upperwpm;
+    cw_upper_limit = 2 * DOT_MAGIC / lowerwpm;
+
+    if (cwTrack)
+        cw_receive_speed = DOT_MAGIC / (cw_adaptive_receive_threshold / 2);
+    else {
+        cw_receive_speed = cw_send_speed;
+        cw_adaptive_receive_threshold = 2 * cw_send_dot_length;
+    }
+
+    if (cw_receive_speed > 0)
+        cw_receive_dot_length = DOT_MAGIC / cw_receive_speed;
+    else
+        cw_receive_dot_length = DOT_MAGIC / 5;
+
+    cw_receive_dash_length = 3 * cw_receive_dot_length;
+
+    cw_noise_spike_threshold = cw_receive_dot_length / 2;
+
+}
+
+bool Morse::FldigiProcessEvent(CW_EVENT event)
+{
+    static int space_sent = true;	// for word space logic
+    static int last_element = 0;	// length of last dot/dash
+    int element_usec;		// Time difference in usecs
+
+    //!!Don't know where this is supposed to be defined
+    char **c;
+
+    switch (event) {
+        //Reset everything and start over
+        case CW_RESET:
+            sync_parameters();
+            cw_receive_state = RS_IDLE;
+            cw_rr_current = 0;			// reset decoding pointer
+            cw_ptr = 0;
+            memset(cw_buffer, 0, sizeof(cw_buffer));
+            smpl_ctr = 0;					// reset audio sample counter
+            memset(rx_rep_buf, 0, sizeof(rx_rep_buf));
+            break;
+
+            break;
+        //Tone filter output is trending up
+        case CW_KEYDOWN:
+            if (cw_receive_state == RS_IN_TONE) {
+                //We can't be processing a tone and also get a keydown event
+                return false;
+            }
+            // first tone in idle state reset audio sample counter
+            if (cw_receive_state == RS_IDLE) {
+                smpl_ctr = 0;
+                memset(rx_rep_buf, 0, sizeof(rx_rep_buf));
+                cw_rr_current = 0;
+                cw_ptr = 0;
+            }
+
+            //Continue counting tone duration
+            // save the timestamp
+            cw_rr_start_timestamp = smpl_ctr;
+            // Set state to indicate we are inside a tone.
+            old_cw_receive_state = cw_receive_state;
+            cw_receive_state = RS_IN_TONE;
+            //!!What does CW_ERROR mean, no char?
+            return CW_ERROR;
+
+            break;
+        //Tone filter output is trending down
+        case CW_KEYUP:
+            // The receive state is expected to be inside a tone.
+            if (cw_receive_state != RS_IN_TONE)
+                return CW_ERROR;
+            // Save the current timestamp so we can see how long tone was
+            cw_rr_end_timestamp = smpl_ctr;
+            element_usec = usec_diff(cw_rr_start_timestamp, cw_rr_end_timestamp);
+
+            // make sure our timing values are up to date
+            sync_parameters();
+
+            // If the tone length is shorter than any noise cancelling
+            // threshold that has been set, then ignore this tone.
+            if (cw_noise_spike_threshold > 0
+                && element_usec < cw_noise_spike_threshold) {
+                cw_receive_state = RS_IDLE;
+                return CW_ERROR;
+            }
+
+            // Set up to track speed on dot-dash or dash-dot pairs for this test to work, we need a dot dash pair or a
+            // dash dot pair to validate timing from and force the speed tracking in the right direction. This method
+            // is fundamentally different than the method in the unix cw project. Great ideas come from staring at the
+            // screen long enough!. Its kind of simple really ... when you have no idea how fast or slow the cw is...
+            // the only way to get a threshold is by having both code elements and setting the threshold between them
+            // knowing that one is supposed to be 3 times longer than the other. with straight key code... this gets
+            // quite variable, but with most faster cw sent with electronic keyers, this is one relationship that is
+            // quite reliable. Lawrence Glaister (ve7it@shaw.ca)
+            if (last_element > 0) {
+                // check for dot dash sequence (current should be 3 x last)
+                if ((element_usec > 2 * last_element) &&
+                    (element_usec < 4 * last_element)) {
+                    update_tracking(last_element, element_usec);
+                }
+                // check for dash dot sequence (last should be 3 x current)
+                if ((last_element > 2 * element_usec) &&
+                    (last_element < 4 * element_usec)) {
+                    update_tracking(element_usec, last_element);
+                }
+            }
+            last_element = element_usec;
+
+            // ok... do we have a dit or a dah?
+            // a dot is anything shorter than 2 dot times
+            if (element_usec <= cw_adaptive_receive_threshold) {
+                rx_rep_buf[cw_rr_current++] = CW_DOT_REPRESENTATION;
+                //		printf("%d dit ", last_element/1000);  // print dot length
+                cw_buffer[cw_ptr++] = (float)last_element;
+            } else {
+                // a dash is anything longer than 2 dot times
+                rx_rep_buf[cw_rr_current++] = CW_DASH_REPRESENTATION;
+                cw_buffer[cw_ptr++] = (float)last_element;
+            }
+
+            // We just added a representation to the receive buffer.
+            // If it's full, then reset everything as it probably noise
+            if (cw_rr_current == RECEIVE_CAPACITY - 1) {
+                cw_receive_state = RS_IDLE;
+                cw_rr_current = 0;	// reset decoding pointer
+                cw_ptr = 0;
+                smpl_ctr = 0;		// reset audio sample counter
+                return CW_ERROR;
+            } else {
+                // zero terminate representation
+                rx_rep_buf[cw_rr_current] = 0;
+                cw_buffer[cw_ptr] = 0.0;
+            }
+            // All is well.  Move to the more normal after-tone state.
+            cw_receive_state = RS_AFTER_TONE;
+            return CW_ERROR;
+            break; //case CW_KEYUP
+
+        //Update timings etc
+        case CW_QUERY:
+
+            // this should be called quite often (faster than inter-character gap) It looks after timing
+            // key up intervals and determining when a character, a word space, or an error char '*' should be returned.
+            // CW_SUCCESS is returned when there is a printable character. Nothing to do if we are in a tone
+            if (cw_receive_state == RS_IN_TONE)
+                return CW_ERROR;
+            // in this call we expect a pointer to a char to be valid
+            //!!This is first use of 'c', couldn't find definition in fldigi
+            if (c == NULL) {
+                // else we had no place to put character...
+                cw_receive_state = RS_IDLE;
+                cw_rr_current = 0;
+                cw_ptr = 0;
+                // reset decoding pointer
+                return CW_ERROR;
+            }
+
+
+            // compute length of silence so far
+            sync_parameters();
+            element_usec = usec_diff(cw_rr_end_timestamp, smpl_ctr);
+            // SHORT time since keyup... nothing to do yet
+            if (element_usec < (2 * cw_receive_dot_length))
+                return CW_ERROR;
+            // MEDIUM time since keyup... check for character space
+            // one shot through this code via receive state logic
+            // FARNSWOTH MOD HERE -->
+            if (element_usec >= (2 * cw_receive_dot_length) &&
+                element_usec <= (4 * cw_receive_dot_length) &&
+                cw_receive_state == RS_AFTER_TONE) {
+                // Look up the representation
+                //cout << "CW_QUERY medium time after keyup: " << rx_rep_buf;
+                //!!*c = morse::rx_lookup(rx_rep_buf);
+                //cout <<": " << *c <<flush;
+                if (*c == NULL) {
+                    // invalid decode... let user see error
+                    *c = "*";
+                }
+                cw_receive_state = RS_IDLE;
+                cw_rr_current = 0;	// reset decoding pointer
+                space_sent = false;
+                cw_ptr = 0;
+
+                return CW_SUCCESS;
+            }
+
+            // LONG time since keyup... check for a word space
+            // FARNSWOTH MOD HERE -->
+            if ((element_usec > (4 * cw_receive_dot_length)) && !space_sent) {
+                *c = " ";
+                space_sent = true;
+                return CW_SUCCESS;
+            }
+            // should never get here... catch all
+            return CW_ERROR;
+
+            break; //case CW_QUERY
+
+    }
+    // should never get here... catch all
+    return CW_ERROR;
+}
+
+
+
+
+
+/*
   Abbreviations, assume letter space between char or not?
 AA	All after (used after question mark to request a repetition)
 AB	All before (similarly)
