@@ -706,6 +706,10 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 
         //global->perform.StartPerformance();
 
+        //Data decoders come before demod
+        if (dataSelection == ReceiverWidget::CW_DATA)
+            nextStep = morse->ProcessBlock(nextStep);
+
         nextStep = demod->ProcessBlock(nextStep, downConvertLen);
 
         //global->perform.StopPerformance(100);
@@ -714,9 +718,6 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
           Todo: Add post demod FFT to check FM stereo and other composite formats
         */
 
-        //Testing Goertzel
-        if (dataSelection == ReceiverWidget::CW_DATA)
-            nextStep = morse->ProcessBlock(nextStep);
 
         //global->perform.StartPerformance();
 
