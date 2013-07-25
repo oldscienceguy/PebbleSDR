@@ -20,11 +20,8 @@
 class CPX
 {
 public:
-	inline CPX(void)
-		{re=0; im=0;}
 
-    inline CPX(double r, double i)
-		{re = r;im = i;}
+    inline CPX(double r=0.0, double i=0.0) : re(r), im(i) { }
 
 	inline CPX(const CPX &cx)
 		{re=cx.re; im=cx.im;}
@@ -32,44 +29,142 @@ public:
     ~CPX(void){}
 
     double re, im;
-	inline void clear() {re = im = 0;}
+    double real() { return re; }
+    void real(double R) {re = R;}
+    double imag() { return im; }
+    void imag(double I) {im = I;}
 
-	inline CPX operator +(CPX a)
-		{return CPX (re + a.re ,im + a.im);}
+    inline void clear() {re = im = 0.0;}
 
-	inline CPX operator -(CPX a)
-		{return CPX (re - a.re, im - a.im);}
+    //Every operator should have ref (&) and normal version
+    //cpx1 = cpx2 + cpx3
+    inline CPX operator +(CPX a) {
+        return CPX (re + a.re ,im + a.im);}
 
-	//Convolution
-	CPX operator *(CPX y);
-	//Same as scale
-    inline CPX operator *(double a)
-		{ return CPX(re * a, im * a);}
+    inline CPX& operator+=(const CPX& a) {
+        re += a.re;
+        im += a.im;
+        return *this;
+        }
 
-	CPX operator /(CPX y);
+    //cpx1 = cpx2 - cpx3
+    inline CPX operator -(const CPX &a) {
+        return CPX (re - a.re, im - a.im);}
+
+    inline CPX& operator-=(const CPX& a) {
+        re -= a.re;
+        im -= a.im;
+        return *this;
+    }
+
+    //cpx1 = cpx2 * cpx3 (Convolution)
+    inline CPX& operator*=(const CPX& a) {
+        double temp = re * a.re - im * a.im;
+        im = re * a.im + im * a.re;
+        re = temp;
+        return *this;
+    }
+
+    inline CPX operator*(const CPX& a) const {
+        return CPX(re * a.re - im * a.im,  re * a.im + im * a.re);
+    }
+
+    //cpx1 = cpx2 * double (Same as scale)
+    inline CPX operator *(double a) const {
+        return CPX(re * a, im * a);
+    }
+
+    inline CPX& operator*=(double a) {
+        re *= a;
+        im *= a;
+        return *this;
+    }
+
+    //Same as '*'
+    inline CPX scale(double a) {
+        return *this * a;
+    }
+
+
+    //cpx1 = cpx2 / cpx3
+    inline CPX& operator/=(const CPX& y) {
+        double temp, denom = y.re*y.re + y.im*y.im;
+        if (denom == 0.0) denom = 1e-10;
+        temp = (re * y.re + im * y.im) / denom;
+        im = (im * y.re - re * y.im) / denom;
+        re = temp;
+        return *this;
+    }
+    inline CPX operator/(const CPX& y) const {
+        double denom = y.re*y.re + y.im*y.im;
+        if (denom == 0.0) denom = 1e-10;
+        return CPX((re * y.re + im * y.im) / denom,  (im * y.re - re * y.im) / denom);
+    }
+
+    //fldigi uses
+    // Z = (complex conjugate of X) * Y
+    // Z1 = x1 + jy1, or Z1 = |Z1|exp(jP1)
+    // Z2 = x2 + jy2, or Z2 = |Z2|exp(jP2)
+    // Z = (x1 - jy1) * (x2 + jy2)
+    // or Z = |Z1|*|Z2| exp (j (P2 - P1))
+    inline CPX& operator%=(const CPX& y) {
+        double temp = re * y.re + im * y.im;
+        im = re * y.im - im * y.re;
+        re = temp;
+        return *this;
+    }
+    inline CPX operator%(const CPX& y) const {
+        CPX z;
+        z.re = re * y.re + im * y.im;
+        z.im = re * y.im - im * y.re;
+        return z;
+    }
+
+    // n = |Z| * |Z|
+    inline double norm() const {
+        return (re * re + im * im);
+    }
+    //Squared version of magnitudeMagnitude = re^2 + im^2
+    inline double sqrMag() {
+        return re * re + im * im;
+    }
+
+    // Z = x + jy
+    // Z = |Z|exp(jP)
+    // arg returns P
+    inline double arg() const {
+        return atan2(im, re);
+    }
+    //Alternative implementation from Pebble
+    //Convert to Polar phase()
+    //This is also the arg() function (see wikipedia)
+    /*
+    inline double arg() {
+        return this->phase();
+    }
+    */
+
+
 	bool operator ==(CPX a)
 	{return re == a.re && im == a.im;}
 
 	bool operator !=(CPX a)
 	{return re != a.re || im != a.im;}
-
-	//Scale re*a, im*a
-    inline CPX scale(double a)
-		{return CPX(re * a, im * a);}
 	
 	//Complex conjugate (see wikipedia).  im has opposite sign of original
-	inline CPX conj()
-	{return CPX(re,-im);}
+    inline CPX conj() {
+        return CPX(re,-im);
+    }
 
 	//In Polar notation, signals are represented by magnitude and phase (angle)
 	//Complex and Polar notation are interchangable.  See Steve Smith pg 162
 	//Convert to Polar mag()
-    inline double mag()
-	{return sqrt(re*re + im*im);}//hypot(re,im);}
-	//Convert to Polar phase()
-	//This is also the arg() function (see wikipedia)
-    inline double arg()
-	{return this->phase();}
+    // n = |Z|
+    inline double mag() const {
+        return sqrt(norm());
+    }
+
+
     double phase();
 	//Convert Cartesion to Polar
 	//WARNING: CPX IS USED TO KEEP POLAR, BUT VALUES ARE NOT REAL/IMAGINARY, THEY ARE MAG/PHASE
@@ -80,9 +175,6 @@ public:
 	inline CPX PolarToCart()
 	{return CPX(re * cos(im), re * sin(im));}
 
-	//Squared version of magnitudeMagnitude = re^2 + im^2
-    inline double sqrMag()
-		{return re*re + im*im;}
 };
 
 //Methods for operating on an array of CPX
@@ -193,3 +285,15 @@ inline void free16(void *memory)
         free(((void**)memory)[-1]);
 
 }
+
+//From fldigi complex.h
+inline 	CPX cmac (const CPX *a, const CPX *b, int ptr, int len) {
+        CPX z;
+        ptr %= len;
+        for (int i = 0; i < len; i++) {
+            z += a[i] * b[ptr];
+            ptr = (ptr + 1) % len;
+        }
+        return z;
+    }
+

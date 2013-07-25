@@ -15,22 +15,7 @@ extern void SSEMultCPX(CPX * c, CPX * a, CPX * b, int size);
 extern void SSEMagCPX(CPX * c, CPX * a, int size);
 extern void SSESqMagCPX(CPX * c, CPX * a, int size);
 
-//Convolution
-CPX CPX::operator *(CPX y)
-{
-	CPX z;
-	z.re = re * y.re - im * y.im;
-	z.im = im * y.re + re * y.im;
-	return z;
-}
-CPX CPX::operator /(CPX y)
-{
-    double d = y.re * y.re + y.im * y.im;
-	CPX z;
-	z.re = (re * y.re + im * y.im) / d;
-	z.im = (y.re * im - y.im * re) / d;
-	return z;
-}
+
 double CPX::phase()
 {
     double tmp;
