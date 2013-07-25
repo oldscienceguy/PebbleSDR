@@ -373,13 +373,103 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
 
     dataUi = NULL;
 
+    //fldigi constructors
+    //!!cap |= CAP_BW;
+
+    //!!mode = MODE_CW;
+    freqlock = false;
+    usedefaultWPM = false;
+    frequency = progdefaults.CWsweetspot;
+    //!!tx_frequency = get_txfreq_woffset();
+    risetime = progdefaults.CWrisetime;
+    QSKshape = progdefaults.QSKshape;
+
+    cw_ptr = 0;
+    clrcount = CLRCOUNT;
+
+    //!!Fix, this is a different sample rate?
+    sampleRate = CWSampleRate;
+    fragmentsize = CWMaxSymLen;
+
+    cw_speed  = progdefaults.CWspeed;
+    bandwidth = progdefaults.CWbandwidth;
+
+    cw_send_speed = cw_speed;
+    cw_receive_speed = cw_speed;
+    cw_adaptive_receive_threshold = 2 * DOT_MAGIC / cw_speed;
+    cw_noise_spike_threshold = cw_adaptive_receive_threshold / 4;
+    cw_send_dot_length = DOT_MAGIC / cw_send_speed;
+    cw_send_dash_length = 3 * cw_send_dot_length;
+    symbollen = (int)(sampleRate * 1.2 / progdefaults.CWspeed);
+    fsymlen = (int)(sampleRate * 1.2 / progdefaults.CWfarnsworth);
+
+    memset(rx_rep_buf, 0, sizeof(rx_rep_buf));
+
+// block of variables that get updated each time speed changes
+    pipesize = (22 * sampleRate * 12) / (progdefaults.CWspeed * 160);
+    if (pipesize < 0) pipesize = 512;
+    if (pipesize > MAX_PIPE_SIZE) pipesize = MAX_PIPE_SIZE;
+
+    cwTrack = true;
+    phaseacc = 0.0;
+    FFTphase = 0.0;
+    FIRphase = 0.0;
+    FFTvalue = 0.0;
+    FIRvalue = 0.0;
+    pipeptr = 0;
+    clrcount = 0;
+
+    upper_threshold = progdefaults.CWupper;
+    lower_threshold = progdefaults.CWlower;
+    for (int i = 0; i < MAX_PIPE_SIZE; clearpipe[i++] = 0.0);
+
+    agc_peak = 1.0;
+    //!!in_replay = 0;
+
+    use_fft_filter = progdefaults.CWuse_fft_filter;
+    use_matched_filter = progdefaults.CWmfilt;
+
+    bandwidth = progdefaults.CWbandwidth;
+    if (use_matched_filter)
+        progdefaults.CWbandwidth = bandwidth = 2.0 * progdefaults.CWspeed / 1.2;
+
+    hilbert = new C_FIR_filter(); // hilbert transform used by FFT filter
+    hilbert->init_hilbert(37, 1);
+
+    cw_FIR_filter = new C_FIR_filter();
+    cw_FIR_filter->init_lowpass (CW_FIRLEN, DEC_RATIO, progdefaults.CWspeed/(1.2 * sampleRate));
+
+    //overlap and add filter length should be a factor of 2
+    // low pass implementation
+    FilterFFTLen = 4096;
+    //!!cw_FFT_filter = new fftfilt(progdefaults.CWspeed/(1.2 * samplerate), FilterFFTLen);
+
+    // bit filter based on 10 msec rise time of CW waveform
+    int bfv = (int)(sampleRate * .010 / DEC_RATIO);
+    bitfilter = new Cmovavg(bfv);
+
+    trackingfilter = new Cmovavg(TRACKING_FILTER_SIZE);
+
+    //!!makeshape(); //Transmit?
+    sync_parameters();
+    //!!REQ(static_cast<void (waterfall::*)(int)>(&waterfall::Bandwidth), wf, (int)bandwidth);
+    //!!REQ(static_cast<int (Fl_Value_Slider2::*)(double)>(&Fl_Value_Slider2::value), sldrCWbandwidth, (int)bandwidth);
+    update_Status();
 }
+
 
 Morse::~Morse()
 {
     if (cwGoertzel != NULL) delete cwGoertzel;
     if (powerBuf != NULL) free (powerBuf);
     if (toneBuf != NULL) free (toneBuf);
+
+    if (hilbert) delete hilbert;
+    if (cw_FIR_filter) delete cw_FIR_filter;
+    //if (cw_FFT_filter) delete cw_FFT_filter;
+    if (bitfilter) delete bitfilter;
+    if (trackingfilter) delete trackingfilter;
+
 
 }
 
@@ -444,6 +534,14 @@ void Morse::OutputData(const char* d)
         return;
 
     dataUi->dataEdit->insertPlainText(d); //At cursor
+    dataUi->dataEdit->moveCursor(QTextCursor::End);
+}
+void Morse::OutputData(const char c)
+{
+    if (dataUi == NULL)
+        return;
+    QString s(c);
+    dataUi->dataEdit->insertPlainText(s); //At cursor
     dataUi->dataEdit->moveCursor(QTextCursor::End);
 }
 
@@ -732,8 +830,273 @@ Once a block of data is received, there are some checks done if user has changed
 There is actually much more going on than the above simple explanation. The software keeps track of morse speed, automatic gain control,  dit/dah ratio and various other parameters.  Also, the user interface is updated - if you have signal scope on the signal amplitude value is updated between characters etc.
 */
 
+static bool cwprocessing = false;
+
+//Main function
+int Morse::rx_process(const double *buf, int len)
+{
+    if (cwprocessing) return 0;
+    cwprocessing = true;
+    reset_rx_filter();
+
+    //if (use_fft_filter)
+    //    rx_FFTprocess(buf, len);
+    //else
+        rx_FIRprocess(buf, len);
+
+    //!!if (!clrcount--) clear_syncscope();
+
+    //!!display_metric(metric);
+    cwprocessing = false;
+
+    return 0;
+}
+
+// SHOULD ONLY BE CALLED FROM THE rx_processing loop
+void Morse::reset_rx_filter()
+{
+    //if (use_fft_filter != progdefaults.CWuse_fft_filter ||
+    if(	use_matched_filter != progdefaults.CWmfilt ||
+        cw_speed != progdefaults.CWspeed ||
+        (bandwidth != progdefaults.CWbandwidth && !use_matched_filter)) {
+
+        use_fft_filter = progdefaults.CWuse_fft_filter;
+        use_matched_filter = progdefaults.CWmfilt;
+        cw_send_speed = cw_speed = progdefaults.CWspeed;
+
+        if (use_matched_filter)
+            progdefaults.CWbandwidth = bandwidth = 2.0 * progdefaults.CWspeed / 1.2;
+        else
+            bandwidth = progdefaults.CWbandwidth;
+
+        //if (use_fft_filter) { // FFT filter
+        //	cw_FFT_filter->create_lpf(progdefaults.CWspeed/(1.2 * samplerate));
+        //	FFTphase = 0;
+        //} else { // FIR filter
+            cw_FIR_filter->init_lowpass (CW_FIRLEN, DEC_RATIO, progdefaults.CWspeed/(1.2 * sampleRate));
+            FIRphase = 0;
+        //}
+        //!!REQ(static_cast<void (waterfall::*)(int)>(&waterfall::Bandwidth),
+            //wf, (int)bandwidth);
+        //!!REQ(static_cast<int (Fl_Value_Slider2::*)(double)>(&Fl_Value_Slider2::value),
+            //sldrCWbandwidth, (int)bandwidth);
+
+        pipesize = (22 * sampleRate * 12) / (progdefaults.CWspeed * 160);
+        if (pipesize < 0) pipesize = 512;
+        if (pipesize > MAX_PIPE_SIZE) pipesize = MAX_PIPE_SIZE;
+
+        cw_adaptive_receive_threshold = 2 * DOT_MAGIC / cw_speed;
+        cw_noise_spike_threshold = cw_adaptive_receive_threshold / 4;
+        cw_send_dot_length = DOT_MAGIC / cw_send_speed;
+        cw_send_dash_length = 3 * cw_send_dot_length;
+        symbollen = (int)(sampleRate * 1.2 / progdefaults.CWspeed);
+        fsymlen = (int)(sampleRate * 1.2 / progdefaults.CWfarnsworth);
+
+        phaseacc = 0.0;
+        FFTphase = 0.0;
+        FIRphase = 0.0;
+        FFTvalue = 0.0;
+        FIRvalue = 0.0;
+        pipeptr = 0;
+        clrcount = 0;
+
+        clrRepBuf();
+
+        agc_peak = 0;
+        //!!clear_syncscope();
+    }
+#if 0
+    if (lower_threshold != progdefaults.CWlower ||
+        upper_threshold != progdefaults.CWupper) {
+        lower_threshold = progdefaults.CWlower;
+        upper_threshold = progdefaults.CWupper;
+        clear_syncscope();
+    }
+#endif
+}
+void Morse::rx_FIRprocess(const double *buf, int len)
+{
+    CPX z;
+
+    while (len-- > 0) {
+        z = CPX ( *buf * cos(FIRphase), *buf * sin(FIRphase) );
+        buf++;
+
+        FIRphase += TWOPI * frequency / sampleRate;
+        if (FIRphase > M_PI)
+            FIRphase -= TWOPI;
+        else if (FIRphase < M_PI)
+            FIRphase += TWOPI;
+
+        if (cw_FIR_filter->run ( z, z )) {
+
+// update the basic sample counter used for morse timing
+            smpl_ctr += DEC_RATIO;
+// demodulate
+            FIRvalue = z.mag();
+            FIRvalue = bitfilter->run(FIRvalue);
+
+            decode_stream(FIRvalue);
+        }
+    }
+}
 
 
+void Morse::rx_init()
+{
+    cw_receive_state = RS_IDLE;
+    smpl_ctr = 0;
+    cw_rr_current = 0;
+    cw_ptr = 0;
+    agc_peak = 0;
+    //!!set_scope_mode(Digiscope::SCOPE);
+
+    update_Status();
+    usedefaultWPM = false;
+    scope_clear = true;
+}
+
+void Morse::init()
+{
+    //!! No waterfall
+    //!!bool wfrev = wf->Reverse();
+    //!!bool wfsb = wf->USB();
+    //!!reverse = wfrev ^ !wfsb;
+
+#if 0
+    //Waterfall
+    if (progdefaults.StartAtSweetSpot)
+        set_freq(progdefaults.CWsweetspot);
+    else if (progStatus.carrier != 0) {
+        set_freq(progStatus.carrier);
+#if !BENCHMARK_MODE
+        progStatus.carrier = 0;
+#endif
+    }
+#endif
+    //!!else
+    //!!    set_freq(wf->Carrier());
+
+    trackingfilter->reset();
+    cw_adaptive_receive_threshold = (long int)trackingfilter->run(2 * cw_send_dot_length);
+    //!put_cwRcvWPM(cw_send_speed);
+    for (int i = 0; i < OUTBUFSIZE; i++)
+        outbuf[i] = qskbuf[i] = 0.0;
+    rx_init();
+    use_paren = progdefaults.CW_use_paren;
+    prosigns = progdefaults.CW_prosigns;
+    stopflag = false;
+}
+
+//=======================================================================
+//update_syncscope()
+//Routine called to update the display on the sync scope display.
+//For CW this is an o scope pattern that shows the cw data stream.
+//=======================================================================
+
+void Morse::update_Status()
+{
+    //!!put_MODEstatus("CW %s Rx %d", usedefaultWPM ? "*" : " ", cw_receive_speed);
+
+}
+
+
+int Morse::normalize(float *v, int n, int twodots)
+{
+    if( n == 0 ) return 0 ;
+
+    float max = v[0];
+    float min = v[0];
+    int j;
+
+    /* find max and min values */
+    for (j=1; j<n; j++) {
+        float vj = v[j];
+        if (vj > max)	max = vj;
+        else if (vj < min)	min = vj;
+    }
+    /* all values 0 - no need to normalize or decode */
+    if (max == 0.0) return 0;
+
+    /* scale values between  [0,1] -- if Max longer than 2 dots it was "dah" and should be 1.0, otherwise it was "dit" and should be 0.33 */
+    float ratio = (max > twodots) ? 1.0 : 0.33 ;
+    ratio /= max ;
+    for (j=0; j<n; j++) v[j] *= ratio;
+    return (1);
+}
+
+//Called with value indicating level of tone detected
+void Morse::decode_stream(double value)
+{
+    const char *c, *somc;
+    char *cptr;
+
+    // Compute a variable threshold value for tone detection
+    // Fast attack and slow decay.
+    if (value > agc_peak)
+        agc_peak = decayavg(agc_peak, value, 20);
+    else
+        agc_peak = decayavg(agc_peak, value, 800);
+
+    metric = clamp(agc_peak * 2e3 , 0.0, 100.0);
+
+    // save correlation amplitude value for the sync scope
+    // normalize if possible
+    if (agc_peak)
+        value /= agc_peak;
+    else
+        value = 0;
+
+    //Syncscope?
+    pipe[pipeptr] = value;
+    if (++pipeptr == pipesize)
+        pipeptr = 0;
+
+    //!!Ignore squelch for now
+    //if (!progStatus.sqlonoff || metric > progStatus.sldrSquelchValue ) {
+    if (true) {
+        // Power detection using hysterisis detector
+        // upward trend means tone starting
+        if ((value > progdefaults.CWupper) && (cw_receive_state != RS_IN_TONE)) {
+            FldigiProcessEvent(CW_KEYDOWN_EVENT, NULL);
+        }
+        // downward trend means tone stopping
+        if ((value < progdefaults.CWlower) && (cw_receive_state == RS_IN_TONE)) {
+            FldigiProcessEvent(CW_KEYUP_EVENT, NULL);
+        }
+    }
+
+    if (FldigiProcessEvent(CW_QUERY_EVENT, &c) == CW_SUCCESS) {
+        //!!update_syncscope();
+#if 0
+        //!!Ignore SOM decoding, we might just get rid of it
+        if (progdefaults.CWuseSOMdecoding) {
+            somc = find_winner(cw_buffer, cw_adaptive_receive_threshold);
+            cptr = (char*)somc;
+            if (somc != NULL) {
+                while (*cptr != '\0')
+                    put_rx_char(progdefaults.rx_lowercase ? tolower(*cptr++) : *cptr++,FTextBase::CTRL);
+            }
+            if (strlen(c) == 1 && *c == ' ')
+                put_rx_char(progdefaults.rx_lowercase ? tolower(*c) : *c);
+            cw_ptr = 0;
+            memset(cw_buffer, 0, sizeof(cw_buffer));
+        } else
+#else
+        {
+            //Output character(s)
+            if (strlen(c) == 1) {
+                //!!put_rx_char(progdefaults.rx_lowercase ? tolower(*c) : *c);
+                OutputData(progdefaults.rx_lowercase ? tolower(*c) : *c);
+            } else while (*c) {
+                //!!put_rx_char(progdefaults.rx_lowercase ? tolower(*c++) : *c++, FTextBase::CTRL);
+                OutputData(progdefaults.rx_lowercase ? tolower(*c++) : *c++);
+            }
+        }
+#endif
+    }
+
+}
 
 CPX * Morse::ProcessBlockFldigi(CPX *in)
 {
@@ -866,18 +1229,15 @@ void Morse::clrRepBuf()
     smpl_ctr = 0;					// reset audio sample counter
 }
 
-bool Morse::FldigiProcessEvent(CW_EVENT event)
+bool Morse::FldigiProcessEvent(CW_EVENT event, const char **c)
 {
     static int space_sent = true;	// for word space logic
     static int last_element = 0;	// length of last dot/dash
     int element_usec;		// Time difference in usecs
 
-    //!!Don't know where this is supposed to be defined
-    const char **c;
-
     switch (event) {
         //Reset everything and start over
-        case CW_RESET:
+        case CW_RESET_EVENT:
             sync_parameters();
             cw_receive_state = RS_IDLE;
             memset(cw_buffer, 0, sizeof(cw_buffer));
@@ -886,7 +1246,7 @@ bool Morse::FldigiProcessEvent(CW_EVENT event)
 
             break;
         //Tone filter output is trending up
-        case CW_KEYDOWN:
+        case CW_KEYDOWN_EVENT:
             if (cw_receive_state == RS_IN_TONE) {
                 //We can't be processing a tone and also get a keydown event
                 return false;
@@ -907,7 +1267,7 @@ bool Morse::FldigiProcessEvent(CW_EVENT event)
 
             break;
         //Tone filter output is trending down
-        case CW_KEYUP:
+        case CW_KEYUP_EVENT:
             // The receive state is expected to be inside a tone.
             if (cw_receive_state != RS_IN_TONE)
                 return CW_ERROR;
@@ -979,7 +1339,7 @@ bool Morse::FldigiProcessEvent(CW_EVENT event)
             break; //case CW_KEYUP
 
         //Update timings etc
-        case CW_QUERY:
+        case CW_QUERY_EVENT:
 
             // this should be called quite often (faster than inter-character gap) It looks after timing
             // key up intervals and determining when a character, a word space, or an error char '*' should be returned.

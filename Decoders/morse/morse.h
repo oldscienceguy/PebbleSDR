@@ -6,6 +6,7 @@
 #include "qframe"
 #include "QTextEdit"
 #include "ui/ui_data-morse.h"
+#include "../fldigifilters.h"
 
 class Receiver;
 
@@ -24,7 +25,34 @@ struct {
     int CWupperlimit = 50; // Upper TX limit (WPM)
     std::string CW_prosigns = "=~<>%+&{}"; //CW prosigns BT AA AS AR SK KN INT HM VE
     bool CW_use_paren = false; //Use open paren character; typically used in MARS ops
+    double CWsweetspot = 1000.0; //Default CW tracking point (Hz)
+    bool StartAtSweetSpot = false; //Always start new modems at sweet spot frequencies
+    double CWupper = 0.6; //Detector hysterisis, upper threshold
+    double CWlower = 0.4; //Detector hysterisis, lower threshold
+    bool rx_lowercase = false; //Print Rx in lowercase for CW, RTTY, CONTESTIA and THROB
+    int CWbandwidth = 150; //Filter bandwidth (Hz)
+    bool CWmfilt = false; //Matched Filter in use
+    bool CWuse_fft_filter = false; //Use FFT overlap and add convolution filter
 }progdefaults;
+
+struct {
+    int		carrier;
+    bool	sqlonoff;
+    double  sldrSquelchValue;
+
+} progStatus;
+
+//Utility functions from fldigi
+inline double clamp(double x, double min, double max)
+{
+    return (x < min) ? min : ((x > max) ? max : x);
+}
+
+inline double decayavg(double average, double input, double weight)
+{
+    if (weight <= 1.0) return input;
+    return input * (1.0 / weight) + average * (1.0 - (1.0 / weight));
+}
 
 //Replace original Pebble lookup with this so we have one method
 #define	MorseTableSize	256
@@ -97,6 +125,7 @@ public:
     void SetElementLengths(int dotCount);
 
     void OutputData(const char *d);
+    void OutputData(const char c);
 
 protected:
     Receiver *rcv;
@@ -145,7 +174,59 @@ protected:
     int element; //1 if dash, 0 if dot
 
     //FLDigi rename vars after working
+    void reset_rx_filter();
+    void rx_FIRprocess(const double *buf, int len);
+    int rx_process(const double *buf, int len);
     MorseCode morseCode;
+    void decode_stream(double value);
+    double agc_peak; // threshold for tone detection
+    int normalize(float *v, int n, int twodots);
+    void rx_init();
+    void update_Status();
+    void init();
+
+    #define CLRCOUNT 16
+    #define	DEC_RATIO	16
+    #define CW_FIRLEN   512
+    // Maximum number of signs (dit or dah) in a Morse char.
+    #define WGT_SIZE 7
+
+    //Filters
+    #define TRACKING_FILTER_SIZE 16
+    C_FIR_filter	*hilbert;   // Hilbert filter precedes sinc filter
+    //!fftfilt			*cw_FFT_filter; // sinc / matched filter
+    C_FIR_filter	*cw_FIR_filter; // linear phase finite impulse response filter
+
+    Cmovavg		*bitfilter;
+    Cmovavg		*trackingfilter;
+
+    int bitfilterlen;
+
+    bool use_paren;
+    std::string prosigns;
+    bool stopflag;
+    int bandwidth; //CW filter bandwidth
+    int fragmentsize;
+    bool use_fft_filter;
+    double lower_threshold;
+    double upper_threshold;
+    int FilterFFTLen;
+    bool use_matched_filter;
+    double frequency;
+    bool freqlock;
+
+    double		phaseacc;		// used by NCO for rx/tx tones
+    double		FFTphase;
+    double		FIRphase;
+    double		FFTvalue;
+    double		FIRvalue;
+
+
+    //!!Check usage
+    #define	OUTBUFSIZE	16384
+    double outbuf[OUTBUFSIZE];
+    double qskbuf[OUTBUFSIZE];			// signal array for qsk drive
+
 
     // Receive buffering
     #define	RECEIVE_CAPACITY	256
@@ -159,10 +240,22 @@ protected:
     int cw_ptr;
     int clrcount;
 
-    int			symbollen;		// length of a dot in sound samples (tx)
-    int			fsymlen;        	// length of extra interelement space (farnsworth)
-    double risetime;			    	// leading/trailing edge rise time (msec)
-    int QSKshape;                   		// leading/trailing edge shape factor
+    //!!What is this?  decimated decoder rate?
+    #define	CWSampleRate 8000
+    #define	CWMaxSymLen		4096		// AG1LE: - was 4096
+
+    #define MAX_PIPE_SIZE (22 * CWSampleRate * 12 / 800)
+    double pipe[MAX_PIPE_SIZE+1];			// storage for sync scope data
+    double clearpipe[MAX_PIPE_SIZE+1];
+    //!!mbuffer<double, MAX_PIPE_SIZE + 1, 4> scopedata;
+    int pipeptr;
+    int pipesize;
+    bool scope_clear;
+
+    int symbollen;  // length of a dot in sound samples (tx)
+    int fsymlen; // length of extra interelement space (farnsworth)
+    double risetime; // leading/trailing edge rise time (msec)
+    int QSKshape; // leading/trailing edge shape factor
 
     // CW function return status codes.
     #define	CW_SUCCESS	0
@@ -177,9 +270,9 @@ protected:
     void update_tracking(int idot, int idash);
     void sync_parameters();
 
-    enum CW_EVENT {CW_RESET, CW_KEYDOWN, CW_KEYUP, CW_QUERY};
+    enum CW_EVENT {CW_RESET_EVENT, CW_KEYDOWN_EVENT, CW_KEYUP_EVENT, CW_QUERY_EVENT};
     enum CW_RX_STATE {RS_IDLE, RS_IN_TONE, RS_AFTER_TONE};
-    bool FldigiProcessEvent(CW_EVENT event);
+    bool FldigiProcessEvent(CW_EVENT event, const char **c);
     CW_RX_STATE		cw_receive_state;	// Indicates receive state
     CW_RX_STATE		old_cw_receive_state;
     CW_EVENT		cw_event;			// functions used by cw process routine
@@ -193,6 +286,8 @@ protected:
     int cw_speed;
     int cw_bandwidth;
     int cw_squelch;
+    double	metric;
+
     int cw_send_speed;				// Initially 18 WPM
     int cw_receive_speed;				// Initially 18 WPM
     bool usedefaultWPM;				// use default WPM
