@@ -72,6 +72,251 @@
 
 */
 
+//Fldigi and earlier code
+/* ---------------------------------------------------------------------- */
+
+/*
+ * Morse code characters table.  This table allows lookup of the Morse
+ * shape of a given alphanumeric character.  Shapes are held as a string,
+ * with '-' representing dash, and '.' representing dot.  The table ends
+ * with a NULL entry.
+ *
+ * This is the main table from which the other tables are computed.
+ *
+ * The Prosigns are also defined in the configuration.h file
+ * The user can specify the character which substitutes for the prosign
+ */
+
+static CW_TABLE cw_table[] = {
+    /* Prosigns characters can be redefined in progdefaults.CW_prosigns */
+    {'=',	"<BT>",   "-...-"	}, // 0 2 LF or new paragraph
+    {'~',	"<AA>",   ".-.-"	}, // 1 CR/LF
+    {'<',	"<AS>",   ".-..."	}, // 2 Please Wait
+    {'>',	"<AR>",   ".-.-."	}, // 3 End of Message, sometimes shown as '+'
+    {'%',	"<SK>",   "...-.-"	}, // 4 End of QSO or End of Work
+    {'+',	"<KN>",   "-.--."	}, // 5 Invitation to a specific station to transmit, compared to K which is general
+    {'&',	"<INT>",  "..-.-"	}, // 6
+    {'{',	"<HM>",   "....--"	}, // 7
+    {'}',	"<VE>",   "...-."	}, // 8
+    /*
+     * Additional prosigns from earlier Pebble that aren't integrated yet
+        //Prosigns, no interletter spacing http://en.wikipedia.org/wiki/Prosigns_for_Morse_Code
+        //Special abreviations http://en.wikipedia.org/wiki/Morse_code_abbreviations
+        //Supposed to have inter-letter spacing, but often sent as single 'letter'
+        //Non English extensions (TBD from Wikipedia)
+        {"(ER)", 0x100, "· · · · · · · ·"}, //Error
+        {"(SN)", 0x22, "· · · - · "}, //Understood
+        {"(CL)", 0x1a4, "- · - · · - · ·"}, //Going off air
+        {"(CT)", 0x35, "- · - · -"}, //Start copying (same as KA)
+        {"(DT)", 0x67, "- · · - - -"}, //Shift to Wabun code
+        {"(SOS)",0x238, "· · · - - - · · ·"},
+        {"(BK)", 0xc5, "- . . . - . -"}, //Break (Bk)
+
+     */
+
+    /* ASCII 7bit letters */
+    {'A',	"A",	".-"	},
+    {'B',	"B",	"-..."	},
+    {'C',	"C",	"-.-."	},
+    {'D',	"D",	"-.."	},
+    {'E',	"E",	"."		},
+    {'F',	"F",	"..-."	},
+    {'G',	"G",	"--."	},
+    {'H',	"H",	"...."	},
+    {'I',	"I",	".."	},
+    {'J',	"J",	".---"	},
+    {'K',	"K",	"-.-"	},
+    {'L',	"L",	".-.."	},
+    {'M',	"M",	"--"	},
+    {'N',	"N",	"-."	},
+    {'O',	"O",	"---"	},
+    {'P',	"P",	".--."	},
+    {'Q',	"Q",	"--.-"	},
+    {'R',	"R",	".-."	},
+    {'S',	"S",	"..."	},
+    {'T',	"T",	"-"		},
+    {'U',	"U",	"..-"	},
+    {'V',	"V",	"...-"	},
+    {'W',	"W",	".--"	},
+    {'X',	"X",	"-..-"	},
+    {'Y',	"Y",	"-.--"	},
+    {'Z',	"Z",	"--.."	},
+    /* Numerals */
+    {'0',	"0",	"-----"	},
+    {'1',	"1",	".----"	},
+    {'2',	"2",	"..---"	},
+    {'3',	"3",	"...--"	},
+    {'4',	"4",	"....-"	},
+    {'5',	"5",	"....."	},
+    {'6',	"6",	"-...."	},
+    {'7',	"7",	"--..."	},
+    {'8',	"8",	"---.."	},
+    {'9',	"9",	"----."	},
+    /* Punctuation */
+    {'\\',	"\\",	".-..-."	},
+    {'\'',	"'",	".----."	},
+    {'$',	"$",	"...-..-"	},
+    {'(',	"(",	"-.--."		},
+    {')',	")",	"-.--.-"	},
+    {',',	",",	"--..--"	},
+    {'-',	"-",	"-....-"	},
+    {'.',	".",	".-.-.-"	},
+    {'/',	"/",	"-..-."		},
+    {':',	":",	"---..."	},
+    {';',	";",	"-.-.-."	},
+    {'?',	"?",	"..--.."	},
+    {'_',	"_",	"..--.-"	},
+    {'@',	"@",	".--.-."	},
+    {'!',	"!",	"-.-.--"	},
+    {0, NULL, NULL}
+};
+
+// ISO 8859-1 accented characters
+//	{"\334\374",	"\334\374",	"..--"},	// U diaeresis
+//	{"\304\344",	"\304\344",	".-.-"},	// A diaeresis
+//	{"\307\347",	"\307\347",	"-.-.."},	// C cedilla
+//	{"\326\366",	"\325\366",	"---."},	// O diaeresis
+//	{"\311\351",	"\311\351",	"..-.."},	// E acute
+//	{"\310\350",	"\310\350",".-..-"},	// E grave
+//	{"\305\345",	"\305\345",	".--.-"},	// A ring
+//	{"\321\361",	"\321\361",	"--.--"},	// N tilde
+//	ISO 8859-2 accented characters
+//	{"\252",		"\252",		"----" },	// S cedilla
+//	{"\256",		"\256",		"--..-"},	// Z dot above
+
+
+/**
+ * cw_tokenize_representation()
+ *
+ * Return a token value, in the range 2-255, for a lookup table representation.
+ * The routine returns 0 if no valid token could be made from the string.  To
+ * avoid casting the value a lot in the caller (we want to use it as an array
+ * index), we actually return an unsigned int.
+ *
+ * This token algorithm is designed ONLY for valid CW representations; that is,
+ * strings composed of only '.' and '-', and in this case, strings shorter than
+ * eight characters.  The algorithm simply turns the representation into a
+ * 'bitmask', based on occurrences of '.' and '-'.  The first bit set in the
+ * mask indicates the start of data (hence the 7-character limit).  This mask
+ * is viewable as an integer in the range 2 (".") to 255 ("-------"), and can
+ * be used as an index into a fast lookup array.
+ */
+unsigned int MorseCode::tokenize_representation(const char *representation)
+{
+    unsigned int token;	/* Return token value */
+    const char *sptr;	/* Pointer through string */
+
+    /*
+     * Our algorithm can handle only 6 characters of representation.
+     * And we insist on there being at least one character, too.
+     */
+    if (strlen(representation) > 6 || strlen(representation) < 1)
+        return 0;
+
+    /*
+     * Build up the token value based on the dots and dashes.  Start the
+     * token at 1 - the sentinel (start) bit.
+     */
+    for (sptr = representation, token = 1; *sptr != 0; sptr++) {
+        /*
+         * Left-shift the sentinel (start) bit.
+         */
+        token <<= 1;
+
+        /*
+         * If the next element is a dash, OR in another bit.  If it is
+         * not a dash or a dot, then there is an error in the repres-
+         * entation string.
+         */
+        if (*sptr == CW_DASH_REPRESENTATION)
+            token |= 1;
+        else if (*sptr != CW_DOT_REPRESENTATION)
+            return 0;
+    }
+
+    /* Return the value resulting from our tokenization of the string. */
+    return token;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void MorseCode::init()
+{
+    CW_TABLE *cw;	/* Pointer to table entry */
+    unsigned int i;
+    long code;
+    int len;
+// Update the char / prosign relationship
+    if (progdefaults.CW_prosigns.length() == 9) {
+        for (int i = 0; i < 9; i++) {
+            cw_table[i].chr = progdefaults.CW_prosigns[i];
+        }
+    }
+// Clear the RX & TX tables
+    for (i = 0; i < MorseTableSize; i++) {
+        cw_tx_lookup[i].code = 0x04;
+        cw_tx_lookup[i].prt = 0;
+        cw_rx_lookup[i] = 0;
+    }
+// For each main table entry, create a token entry.
+    for (cw = cw_table; cw->chr != 0; cw++) {
+        if ((cw->chr == '(') && !progdefaults.CW_use_paren) continue;
+        if ((cw->chr == '<') && progdefaults.CW_use_paren) continue;
+        i = tokenize_representation(cw->rpr);
+        if (i != 0)
+            cw_rx_lookup[i] = cw;
+    }
+// Build TX table
+    for (cw = cw_table; cw->chr != 0; cw++) {
+        if ((cw->chr == '(') && !progdefaults.CW_use_paren) continue;
+        if ((cw->chr == '<') && progdefaults.CW_use_paren) continue;
+        len = strlen(cw->rpr);
+        code = 0x04;
+        while (len-- > 0) {
+            if (cw->rpr[len] == CW_DASH_REPRESENTATION) {
+                code = (code << 1) | 1;
+                code = (code << 1) | 1;
+                code = (code << 1) | 1;
+            } else
+                code = (code << 1) | 1;
+            code <<= 1;
+        }
+        cw_tx_lookup[(int)cw->chr].code = code;
+        cw_tx_lookup[(int)cw->chr].prt = cw->prt;
+    }
+}
+
+const char *MorseCode::rx_lookup(char *r)
+{
+    int			token;
+    CW_TABLE *cw;
+
+    if ((token = tokenize_representation(r)) == 0)
+        return NULL;
+
+    if ((cw = cw_rx_lookup[token]) == NULL)
+        return NULL;
+
+    return cw->prt;
+}
+
+const char *MorseCode::tx_print(int c)
+{
+    if (cw_tx_lookup[toupper(c)].prt)
+        return cw_tx_lookup[toupper(c)].prt;
+    else
+        return "";
+}
+
+unsigned long MorseCode::tx_lookup(int c)
+{
+    return cw_tx_lookup[toupper(c)].code;
+}
+
+
+
+//Original Pebble lookup
+
 //Relative lengths of elements in Tcw terms
 #define DOT_TCW 1
 #define DASH_TCW 3
@@ -83,6 +328,9 @@
 
 Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
 {
+    morseCode.init();
+    clrRepBuf();
+
     //Setup Goertzel
     cwGoertzel = new Goertzel(sr, fc);
     //Process Goertzel at 8k sample rate
@@ -225,7 +473,7 @@ CPX * Morse::ProcessBlockSuperRatt(CPX *in)
         switch (countingState) {
         case NOT_COUNTING:
             //Initial state when we're looking for something to start syncing with
-            lastChar = 0;
+            clrRepBuf();
             if (isMark) {
                 //Start counting
                 countingState = MARK_COUNTING;
@@ -290,11 +538,11 @@ CPX * Morse::ProcessBlockSuperRatt(CPX *in)
             if (lastSpaceCount >= countsPerElementSpace) {
                 //Process any pending elements
                 if (pendingElement) {
-                    //If we haven't started a char, set hob
-                    if (lastChar == 0)
-                        lastChar = 1;
-                    lastChar = lastChar << 1; //Shift left to make room
-                    lastChar = lastChar | element; //Set lob
+                    if (element == 0)
+                        rx_rep_buf[cw_rr_current++] = CW_DOT_REPRESENTATION;
+                    else
+                        rx_rep_buf[cw_rr_current++] = CW_DASH_REPRESENTATION;
+
                     pendingChar = true;
                     pendingElement = false;
                     pendingWord = false;
@@ -303,9 +551,8 @@ CPX * Morse::ProcessBlockSuperRatt(CPX *in)
             if (lastSpaceCount >= countsPerCharSpace) {
                 //Process char
                 if (pendingChar) {
-                    //qDebug("%d",lastChar);
-                    OutputData(MorseToAscii(lastChar));
-                    lastChar = 0;
+                    OutputData(morseCode.rx_lookup(rx_rep_buf));
+                    clrRepBuf();
                     pendingChar = false;
                     pendingWord = true;
                 }
@@ -470,132 +717,6 @@ CPX * Morse::ProcessBlock(CPX * in)
     return in;
 }
 
-struct morseChar {
-    const char* ascii;
-    quint16 binaryValue; //'1' = start '0'=dit '1'=dash
-    const char* dotDash;
-};
-
-//Same encoding as my SuperRatt code in 1983, see 6502 asm code extract below
-// TABLE OF CW CODES IN ASCII ORDER FROM 0x20 TO 0x5F
-// 1ST HIGH BIT IN # SIGNALS START OF CODE
-// 0=DOT 1=DASH
-//
-
-morseChar morseAsciiOrder[] = {
-    {" ", 0x00, "na"}, //Space Ascii 0x20
-    {"!", 0x6b, "— · — · — —"},
-    {"\"",0x52, "· — · · — ·"},
-    {"#", 0x00, "na"},
-    {"$", 0x89, "· · · — · · —"},
-    {"%", 0x00, "na"},
-    {"&", 0x28, "· — · · ·"},
-    {"\'",0x5e, "· — — — — ·"},
-    {"(", 0x36, "— · — — ·"},
-    {")", 0x6D, "— · — — · —"},
-    {"*", 0x00, "na"},
-    {"+", 0x2a, "· — · — ·"},
-    {",", 0x73, "— — · · — —"},
-    {"-", 0x61, "— · · · · —"},
-    {".", 0x55, "· — · — · —"},
-    {"/", 0x32, "— · · — ·"}, //Ascii 0x2f
-
-    {"0", 0x3f, "— — — — —"},
-    {"1", 0x2f, "· — — — —"},
-    {"2", 0x27, "· · — — —"},
-    {"3", 0x23, "· · · — —"},
-    {"4", 0x21, "· · · · —"},
-    {"5", 0x20, "· · · · ·"},
-    {"6", 0x30, "— · · · ·"},
-    {"7", 0x38, "— — · · ·"},
-    {"8", 0x3c, "— — — · ·"},
-    {"9", 0x3e, "— — — — ·"}, //Ascii 0x39
-
-    {":", 0x78, "— — — · · ·"},
-    {";", 0x6A, "— · — · — ·"}, //Also 'Starting signal'
-    {"<", 0x00, "na"},
-    {"=", 0x31, "— · · · —"},
-    {">", 0x00, "na"},
-    {"?", 0x4c, "· · — — · ·"},
-    {"@", 0x5a, "· — — · — ·"},
-
-    {"a", 0x05, "· —"}, //Ascii 0x41
-    {"b", 0x18, "— · · ·"},
-    {"c", 0x1a, "— · — ·"},
-    {"d", 0x0c, "— · ·"},
-    {"e", 0x02, "·"},
-    {"f", 0x12, "· · — ·"},
-    {"g", 0x0e, "— — ·"},
-    {"h", 0x10, "· · · ·"},
-    {"i", 0x04, "· ·"},
-    {"j", 0x17, "· — — —"},
-    {"k", 0x0d, "— · —"}, //Also 'Invitation to transmit'
-    {"l", 0x14, "· — · ·"},
-    {"m", 0x07, "— —"},
-    {"n", 0x06, "— ·"},
-    {"o", 0x0f, "— — —"},
-    {"p", 0x16, "· — — ·"},
-    {"q", 0x1d, "— — · —"},
-    {"r", 0x0a, "· — ·"},
-    {"s", 0x08, "· · ·"},
-    {"t", 0x03, "—"},
-    {"u", 0x09, "· · —"},
-    {"v", 0x11, "· · · —"},
-    {"w", 0x0b, "· — —"},
-    {"x", 0x1d, "— · · —"},
-    {"y", 0x1b, "— · — —"},
-    {"z", 0x1c, "— — · ·"},
-    {"[", 0x00, "na"},
-    {"\\",0x00, "na"},
-    {"]", 0x00, "na"},
-    {"^", 0x00, "na"},
-    {"_", 0x4d, "· · — — · —"},
-
-    //Prosigns, no interletter spacing http://en.wikipedia.org/wiki/Prosigns_for_Morse_Code
-    {"(ER)", 0x100, "· · · · · · · ·"}, //Error
-    {"(SN)", 0x22, "· · · - · "}, //Understood
-    {"(AA)", 0x15, "· - · -"}, //AA CR/LF
-    {"(BT)", 0x31, "- · · · -"}, //2 LF or new paragraph
-    {"(CL)", 0x1a4, "- · - · · - · ·"}, //Going off air
-    {"(CT)", 0x35, "- · - · -"}, //Start copying (same as KA)
-    {"(DT)", 0x67, "- · · - - -"}, //Shift to Wabun code
-    {"(KN)", 0x36, "- · - - ·"}, //Invitation to a specific station to transmit, compared to K which is general
-    {"(SOS)",0x238, "· · · - - - · · ·"},
-    {"(BK)", 0xc5, "- . . . - . -"}, //Break (Bk)
-    {"(AR)", 0x2a, ". - . - ."}, //End of Message (AR), sometimes shown as '+'
-    {"(SK)", 0x45, ". . . - . -"}, //End of QSO (SK) or End of Work
-    {"(AS)", 0x28, ". - . . ."}, // Please Wait (AS)
-
-    //Special abreviations http://en.wikipedia.org/wiki/Morse_code_abbreviations
-    //Supposed to have inter-letter spacing, but often sent as single 'letter'
-    //Add other abrevaitions later
-
-    //Non English extensions (TBD from Wikipedia)
-
-
-
-};
-
-//Converts morse as binary (high order bit always 1 followed by 0 for dot and 1 for dash) to ascii
-const char * Morse::MorseToAscii(quint16 morse)
-{
-    //Non optimized
-    for (int i=0; i<sizeof(morseAsciiOrder); i++) {
-        if (morseAsciiOrder[i].binaryValue == morse)
-            return morseAsciiOrder[i].ascii;
-    }
-    return "*"; //error
-
-}
-const char * Morse::MorseToDotDash(quint16 morse)
-{
-    //Non optimized
-    for (int i=0; i<sizeof(morseAsciiOrder); i++) {
-        if (morseAsciiOrder[i].binaryValue == morse)
-            return morseAsciiOrder[i].dotDash;
-    }
-    return "*"; //Error
-}
 
 /*
 Working on understanding and implementing FLDIGI Algorithms
@@ -610,6 +731,9 @@ Once a block of data is received, there are some checks done if user has changed
 
 There is actually much more going on than the above simple explanation. The software keeps track of morse speed, automatic gain control,  dit/dah ratio and various other parameters.  Also, the user interface is updated - if you have signal scope on the signal amplitude value is updated between characters etc.
 */
+
+
+
 
 CPX * Morse::ProcessBlockFldigi(CPX *in)
 {
@@ -733,6 +857,15 @@ void Morse::sync_parameters()
 
 }
 
+//All the things we need to do to start a new char
+void Morse::clrRepBuf()
+{
+    memset(rx_rep_buf, 0, sizeof(rx_rep_buf));
+    cw_rr_current = 0;
+    cw_ptr = 0;
+    smpl_ctr = 0;					// reset audio sample counter
+}
+
 bool Morse::FldigiProcessEvent(CW_EVENT event)
 {
     static int space_sent = true;	// for word space logic
@@ -740,18 +873,15 @@ bool Morse::FldigiProcessEvent(CW_EVENT event)
     int element_usec;		// Time difference in usecs
 
     //!!Don't know where this is supposed to be defined
-    char **c;
+    const char **c;
 
     switch (event) {
         //Reset everything and start over
         case CW_RESET:
             sync_parameters();
             cw_receive_state = RS_IDLE;
-            cw_rr_current = 0;			// reset decoding pointer
-            cw_ptr = 0;
             memset(cw_buffer, 0, sizeof(cw_buffer));
-            smpl_ctr = 0;					// reset audio sample counter
-            memset(rx_rep_buf, 0, sizeof(rx_rep_buf));
+            clrRepBuf();
             break;
 
             break;
@@ -763,10 +893,7 @@ bool Morse::FldigiProcessEvent(CW_EVENT event)
             }
             // first tone in idle state reset audio sample counter
             if (cw_receive_state == RS_IDLE) {
-                smpl_ctr = 0;
-                memset(rx_rep_buf, 0, sizeof(rx_rep_buf));
-                cw_rr_current = 0;
-                cw_ptr = 0;
+                clrRepBuf();
             }
 
             //Continue counting tone duration
@@ -885,7 +1012,7 @@ bool Morse::FldigiProcessEvent(CW_EVENT event)
                 cw_receive_state == RS_AFTER_TONE) {
                 // Look up the representation
                 //cout << "CW_QUERY medium time after keyup: " << rx_rep_buf;
-                //!!*c = morse::rx_lookup(rx_rep_buf);
+                *c = morseCode.rx_lookup(rx_rep_buf);
                 //cout <<": " << *c <<flush;
                 if (*c == NULL) {
                     // invalid decode... let user see error

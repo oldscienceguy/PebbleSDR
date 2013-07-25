@@ -9,6 +9,61 @@
 
 class Receiver;
 
+//This comes from configuration.h in fldigi
+struct {
+    int defCWspeed = 24; //Default speed (WPM)
+    int CWspeed = 18; //Transmit speed (WPM)
+    double CWrisetime = 4.0; //Leading and trailing edge rise times (milliseconds)
+    //QSK edge shape. Values are as follows
+    //0: Hanning; 1: BlackmanRaised cosine = Hannin
+    int QSKshape = 0;                                 \
+    bool CWtrack = true; //Automatic receive speed tracking
+    int CWfarnsworth = 18; //Speed for Farnsworth timing (WPM)
+    int CWrange = 10; //Tracking range for CWTRACK (WPM)
+    int CWlowerlimit = 5; //Lower RX limit (WPM)
+    int CWupperlimit = 50; // Upper TX limit (WPM)
+    std::string CW_prosigns = "=~<>%+&{}"; //CW prosigns BT AA AS AR SK KN INT HM VE
+    bool CW_use_paren = false; //Use open paren character; typically used in MARS ops
+}progdefaults;
+
+//Replace original Pebble lookup with this so we have one method
+#define	MorseTableSize	256
+
+//What goes into rep_buf as we receive
+#define	CW_DOT_REPRESENTATION	'.'
+#define	CW_DASH_REPRESENTATION	'-'
+
+
+struct CW_TABLE {
+    char chr;	/* The character(s) represented */
+    const char *prt;	/* The printable representation of the character */
+    const char *rpr;	/* Dot-dash shape of the character */
+};
+
+struct CW_XMT_TABLE {
+    unsigned long code;
+    const    char *prt;
+};
+
+class MorseCode {
+public:
+    MorseCode() {
+        init();
+    }
+    ~MorseCode() {
+    }
+    void init();
+    const char	*rx_lookup(char *r);
+    unsigned long	tx_lookup(int c);
+    const char *tx_print(int c);
+private:
+    CW_TABLE 		*cw_rx_lookup[256];
+    CW_XMT_TABLE 	cw_tx_lookup[256];
+    unsigned int 	tokenize_representation(const char *representation);
+};
+
+
+
 //We need to inherit from QObject so we can filter events.
 //Remove if we eventually create a separate 'morse widget' object for UI
 class Morse : public SignalProcessing
@@ -40,10 +95,6 @@ public:
 
     //Sets WPM and related conters
     void SetElementLengths(int dotCount);
-
-    const char * MorseToAscii(quint16 morse);
-    const char * MorseToDotDash(quint16 morse);
-
 
     void OutputData(const char *d);
 
@@ -92,37 +143,21 @@ protected:
     bool pendingChar;
     bool pendingWord;
     int element; //1 if dash, 0 if dot
-    unsigned char lastChar;
 
     //FLDigi rename vars after working
+    MorseCode morseCode;
+
     // Receive buffering
     #define	RECEIVE_CAPACITY	256
     //This holds dots and dashes as they are received, way longer than any letter or phrase
     char rx_rep_buf[RECEIVE_CAPACITY];
-    //What goes into rep_buf
-    #define	CW_DOT_REPRESENTATION	'.'
-    #define	CW_DASH_REPRESENTATION	'-'
 
     int cw_rr_current;				// Receive buffer current location
+    void clrRepBuf(); //Reset rx_rep_buf and related pointers
 
     float cw_buffer[512];
     int cw_ptr;
     int clrcount;
-
-    //This comes from configuration.h in fldigi
-    struct {
-        int defCWspeed; //Default speed (WPM)
-        int CWspeed; //Transmit speed (WPM)
-        double CWrisetime; //Leading and trailing edge rise times (milliseconds)
-        //QSK edge shape. Values are as follows
-        //0: Hanning; 1: BlackmanRaised cosine = Hannin
-        int QSKshape;                                 \
-        bool CWtrack; //Automatic receive speed tracking
-        int CWfarnsworth; //Speed for Farnsworth timing (WPM)
-        int CWrange; //Tracking range for CWTRACK (WPM)
-        int CWlowerlimit; //Lower RX limit (WPM)
-        int CWupperlimit; // Upper TX limit (WPM)
-    }progdefaults;
 
     int			symbollen;		// length of a dot in sound samples (tx)
     int			fsymlen;        	// length of extra interelement space (farnsworth)
