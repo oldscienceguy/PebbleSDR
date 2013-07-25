@@ -402,7 +402,8 @@ HEADERS += \
     Devices/sdr-ip/protocoldefs.h \
     Devices/wavfile.h \
     Decoders/OregonScientific/oregonscientificsensordecode.h \
-    Decoders/morse/morse.h
+    Decoders/morse/morse.h \
+    Decoders/fldigifilters.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -463,7 +464,8 @@ SOURCES += \
     Devices/sdr-ip/sdrinterface.cpp \
     Devices/wavfile.cpp \
     Decoders/OregonScientific/oregonscientificsensordecode.cpp \
-	Decoders/morse/morse.cpp
+	Decoders/morse/morse.cpp \
+    Decoders/fldigifilters.cpp
 
 FORMS += \
     spectrumwidget.ui \

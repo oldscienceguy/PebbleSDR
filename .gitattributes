@@ -3,6 +3,8 @@
 /AGC.h -text
 /Butterworth.cpp -text
 /Butterworth.h -text
+Decoders/fldigifilters.cpp -text
+Decoders/fldigifilters.h -text
 /Demod.cpp -text
 /Demod.h -text
 Devices/ElektorSDR.cpp -text
