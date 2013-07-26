@@ -38,6 +38,10 @@ bool WavFile::OpenRead(QString fname)
     bool gotFmtChunk = false;
     bool gotDataChunk = false;
     bool gotFactChunk = false;
+    //Init our extended fields so we know if they've been read
+    factSubChunk.loFreq = 0;
+    factSubChunk.mode = 255; //zero is AM so we need to indicate not valid
+    factSubChunk.spare1 = 0;
 
     while (!wavFile->atEnd()) {
         len = wavFile->read((char*)&subChunk,sizeof(SUB_CHUNK));
@@ -63,10 +67,6 @@ bool WavFile::OpenRead(QString fname)
             break; //Out of while !file end
 
         } else if (subChunk.id[0]=='f' && subChunk.id[1]=='a' && subChunk.id[2]=='c' && subChunk.id[3] == 't') {
-            //Init our extended fields so we know if they've been read
-            factSubChunk.loFreq = 0;
-            factSubChunk.mode = 0;
-            factSubChunk.spare1 = 0;
             len = wavFile->read((char*)&factSubChunk,subChunk.size);
             if (len<0)
                 return false;

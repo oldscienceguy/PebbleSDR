@@ -82,6 +82,7 @@ bool SDRFile::Connect()
 }
 bool SDRFile::Disconnect()
 {
+    WriteSettings();
     wavFileRead.Close();
     wavFileWrite.Close();
     return true;
@@ -153,7 +154,11 @@ double SDRFile::GetStartupFrequency()
 
 int SDRFile::GetStartupMode()
 {
-    return wavFileRead.GetMode();
+    int startupMode =  wavFileRead.GetMode();
+    if (startupMode < 255)
+        return startupMode;
+    else
+        return SDR::lastMode;
 }
 double SDRFile::GetHighLimit()
 {
