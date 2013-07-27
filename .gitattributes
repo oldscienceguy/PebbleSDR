@@ -73,6 +73,9 @@ Resources/edit.png -text
 /audio.h -text
 /audioqt.cpp -text
 /audioqt.h -text
+/bargraphmeter.cpp -text
+/bargraphmeter.h -text
+/bargraphmeter.ui -text
 /build.tmpl -text
 /cpx.cpp -text
 /cpx.h -text

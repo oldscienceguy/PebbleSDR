@@ -403,7 +403,8 @@ HEADERS += \
     Devices/wavfile.h \
     Decoders/OregonScientific/oregonscientificsensordecode.h \
     Decoders/morse/morse.h \
-    Decoders/fldigifilters.h
+    Decoders/fldigifilters.h \
+    bargraphmeter.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -465,7 +466,8 @@ SOURCES += \
     Devices/wavfile.cpp \
     Decoders/OregonScientific/oregonscientificsensordecode.cpp \
 	Decoders/morse/morse.cpp \
-    Decoders/fldigifilters.cpp
+    Decoders/fldigifilters.cpp \
+    bargraphmeter.cpp
 
 FORMS += \
     spectrumwidget.ui \
@@ -481,7 +483,8 @@ FORMS += \
     sdr-ip.ui \
     sdr.ui \
     directinput.ui \
-    data-morse.ui
+    data-morse.ui \
+    bargraphmeter.ui
 
 RESOURCES += \
     resources.qrc
