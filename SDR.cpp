@@ -496,7 +496,7 @@ bool SDR::IsFreeBufferAvailable()
     //Make sure we have at least 1 data buffer available without blocking
     int freeBuf = semNumFreeBuffers->available();
     if (freeBuf == 0) {
-        qDebug()<<"No free buffer available, ignoring block.";
+        //qDebug()<<"No free buffer available, ignoring block.";
         return false;
     }
     return true;
@@ -511,7 +511,7 @@ void SDR::AcquireFreeBuffer()
     //Todo:  Add back-pressure to reduce sample rate if not keeping up
     int available = semNumFreeBuffers->available();
     if ( available < 5) { //Ouput when we get within 5 of overflow
-        qDebug("Limited Free buffers available %d",available);
+        //qDebug("Limited Free buffers available %d",available);
         freeBufferOverflow = true;
     } else {
         freeBufferOverflow = false;
@@ -529,7 +529,7 @@ void SDR::AcquireFilledBuffer()
     //Todo:  Add back-pressure to reduce sample rate if not keeping up
     int available = semNumFilledBuffers->available();
     if ( available > (numDataBufs - 5)) { //Ouput when we get within 5 of overflow
-        qDebug("Filled buffers available %d",available);
+        //qDebug("Filled buffers available %d",available);
         filledBufferOverflow = true;
     } else {
         filledBufferOverflow = false;
