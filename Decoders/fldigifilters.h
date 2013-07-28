@@ -30,6 +30,7 @@ public:
     C_FIR_filter ();
     ~C_FIR_filter ();
     void init (int len, int dec, double *ifil, double *qfil);
+    //freq is the normalized freq.  So a 1khz lp filter at 8ksps = 0.125
     void init_lowpass (int len, int dec, double freq );
     void init_bandpass (int len, int dec, double freq1, double freq2);
     void init_hilbert (int len, int dec);
