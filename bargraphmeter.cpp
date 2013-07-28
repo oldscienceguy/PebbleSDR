@@ -1,6 +1,7 @@
 #include "bargraphmeter.h"
 #include "ui_bargraphmeter.h"
 #include <QPainter>
+#include <QTimer>
 
 BargraphMeter::BargraphMeter(QWidget *parent) :
     QWidget(parent),
@@ -11,11 +12,38 @@ BargraphMeter::BargraphMeter(QWidget *parent) :
     maxLevel = 100;
     currentLevel = 50;
     barColor = Qt::red;
+
+    //Set refresh interval
+    refreshRate = 5;
+    refreshTimer = new QTimer(this);
+    connect(refreshTimer, SIGNAL(timeout()), this, SLOT(refreshMeter()));
+
 }
 
 BargraphMeter::~BargraphMeter()
 {
     delete ui;
+}
+
+void BargraphMeter::start()
+{
+    refreshTimer->start(refreshRate);
+}
+
+void BargraphMeter::stop()
+{
+    refreshTimer->stop();
+}
+
+void BargraphMeter::setRefreshRate(quint16 _rate)
+{
+    refreshRate = _rate;
+}
+
+void BargraphMeter::refreshMeter()
+{
+    update();
+
 }
 
 void BargraphMeter::setMax(quint16 _max)
@@ -29,7 +57,6 @@ void BargraphMeter::setMin(quint16 _min)
 void BargraphMeter::setValue(quint16 _value)
 {
     currentLevel = _value;
-    update();
 }
 
 void BargraphMeter::paintEvent(QPaintEvent * event)
