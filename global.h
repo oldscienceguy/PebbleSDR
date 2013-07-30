@@ -6,6 +6,7 @@
 #include "QDebug"
 #include "QFile"
 #include "perform.h"
+#include "testbench.h"
 
 class Receiver;
 class Settings;
@@ -25,6 +26,7 @@ public:
     double minDb; //Smallest db we'll return from FFT
     double maxDb;
     Perform perform;
+    CTestBench* testBench;
 
 
 private:

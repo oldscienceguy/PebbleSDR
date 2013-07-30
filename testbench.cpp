@@ -42,9 +42,6 @@
 #include "ui_testbench.h"
 #include <QDebug>
 
-CTestBench* g_pTestBench = NULL;		//pointer to this class is global so everybody can access
-double g_TestValue= 0.0;
-
 #define USE_FILE 0
 //#define FILE_NAME "SSB-7210000Hz_001.wav"
 #define FILE_NAME "fmstereo250Khz.wav"
@@ -161,6 +158,9 @@ CTestBench::CTestBench(QWidget *parent) :
 
     //m_pWFmMod = new CWFmMod();
 
+    connect(ui->horizontalSliderTest,SIGNAL(valueChanged(int)),this,SLOT(OnTestSlider1(int)));
+    testBenchValue = 0.0;
+
 }
 
 CTestBench::~CTestBench()
@@ -191,8 +191,7 @@ void CTestBench::showEvent(QShowEvent *event)
 
 void CTestBench::OnTestSlider1(int val)
 {
-	g_TestValue = (double)val/100.0;
-qDebug()<<"Test Val = "<<g_TestValue;
+    testBenchValue = (double)val/100.0;
 }
 
 //////////////////////////////////////////////////////////////////////

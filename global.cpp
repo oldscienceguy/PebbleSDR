@@ -28,6 +28,11 @@ Global::Global()
     maxDb = 10;
     sdr = NULL;
     perform.InitPerformance();
+
+    //Setup test bench
+    testBench = new CTestBench();
+    testBench->Init();
+
 }
 Global::~Global()
 {

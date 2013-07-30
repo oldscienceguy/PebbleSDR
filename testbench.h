@@ -49,9 +49,6 @@
 #include "demod/wfmdemod.h"
 
 
-extern double g_TestValue;
-
-
 //////////////////////////////////////////////////////////////////////
 //  global defines
 //////////////////////////////////////////////////////////////////////
@@ -132,6 +129,11 @@ public:
 	double m_SweepStartFrequency;
 	double m_SweepStopFrequency;
 	double m_SweepRate;
+
+    //Added by RAL
+    //These variables are controlled by testbench UI and can be used anywhere we need a temporary control
+    //Example would be an adjustable gain somewhere we don't have a UI to change.
+    double testBenchValue;
 
 public slots:
 	void Reset();		//called by GUI Reset button
@@ -227,7 +229,5 @@ private:
     //CWFmMod* m_pWFmMod;
 
 };
-
-extern CTestBench* g_pTestBench;
 
 #endif // TESTBENCH_H

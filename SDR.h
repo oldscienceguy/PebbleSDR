@@ -102,6 +102,8 @@ public:
     int lastMode;
     int lastDisplayMode; //Spectrum, waterfall, etc
 
+    bool isTestBenchChecked;
+
 
 signals:
     //Settings changed, turn off and restart with new settings
@@ -172,6 +174,7 @@ private slots:
     void BalanceReset();
     void ResetAllSettings(bool b);
     void CloseOptions(bool b);
+    void TestBenchChanged(bool b);
 };
 
 //Generic thread that can be used in producer/consumer models for devices that don't use soundcard

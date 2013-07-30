@@ -89,6 +89,16 @@ bool Receiver::On()
 		return false;
 	}
 
+    if (sdr->isTestBenchChecked) {
+        //Position test bench relative to window
+        //Todo
+        global->testBench->setVisible(true);
+        //Keep focus on us
+        mainWindow->activateWindow(); //Makes main active
+        mainWindow->raise(); //Brings it to the top
+        mainWindow->setFocus(); //Makes sure it has keyboard focus
+    }
+
     //Don't set title until we connect.  Some drivers handle multiple devices (RTL2832) and we need connection data
     //QApplication::activeWindow()->setWindowTitle("Pebble: " + sdr->GetDeviceName());
 
@@ -222,6 +232,9 @@ bool Receiver::On()
 bool Receiver::Off()
 {
 	powerOn = false;
+
+    if (global->testBench->isVisible())
+        global->testBench->setVisible(false);
 
     if (isRecording) {
         recordingFile.Close();

@@ -289,6 +289,24 @@
        </font>
       </property>
      </widget>
+     <widget class="QCheckBox" name="testBenchBox">
+      <property name="geometry">
+       <rect>
+        <x>394</x>
+        <y>50</y>
+        <width>87</width>
+        <height>18</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Test Bench</string>
+      </property>
+     </widget>
     </widget>
    </item>
    <item>

@@ -95,6 +95,22 @@ QLabel {
 	color: white;
 }
 
+QSpinBox {
+	font-family: "Lucida Grande";
+	font-size: 10px;
+	font-weight: "normal";
+	color: white;
+	background-color: #8D99A6; /*Same as BG color*/
+}
+
+QCheckBox {
+	font-family: "Lucida Grande";
+	font-size: 10px;
+	font-weight: "normal";
+	color: white;
+	background-color: #8D99A6; /*Same as BG color*/
+}
+
 QRadioButton {
 	font-family: "Lucida Grande";
 	font-size: 10px;
@@ -106,6 +122,7 @@ QRadioButton {
 QRadioButton::indicator::unchecked{
 	/* Empty for now */
 }
+
 QToolButton, QPushButton {
 	height: 16px;
 	font-family: "Lucida Grande";

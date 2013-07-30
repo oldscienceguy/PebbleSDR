@@ -184,7 +184,7 @@
      <item>
       <widget class="QComboBox" name="comboBoxProfile">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -192,8 +192,19 @@
        <property name="minimumSize">
         <size>
          <width>160</width>
-         <height>22</height>
+         <height>18</height>
         </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>18</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>10</pointsize>
+        </font>
        </property>
       </widget>
      </item>
@@ -624,7 +635,7 @@
           <x>10</x>
           <y>110</y>
           <width>131</width>
-          <height>22</height>
+          <height>18</height>
          </rect>
         </property>
        </widget>

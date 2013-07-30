@@ -186,6 +186,9 @@ void SDR::ShowSdrOptions(bool b)
         connect(sd->closeButton,SIGNAL(clicked(bool)),this,SLOT(CloseOptions(bool)));
         connect(sd->resetAllButton,SIGNAL(clicked(bool)),this,SLOT(ResetAllSettings(bool)));
 
+        sd->testBenchBox->setChecked(isTestBenchChecked);
+        connect(sd->testBenchBox, SIGNAL(toggled(bool)), this, SLOT(TestBenchChanged(bool)));
+
         //Careful here: Fragile coding practice
         //We're calling a virtual function in a base class method and expect it to call the over-ridden method in derived class
         //This only works because ShowSdrOptions() is being called via a pointer to the derived class
@@ -205,6 +208,12 @@ void SDR::CloseOptions(bool b)
 {
     if (sdrOptions != NULL)
         sdrOptions->close();
+}
+
+void SDR::TestBenchChanged(bool b)
+{
+    isTestBenchChecked = b;
+    WriteSettings();
 }
 
 void SDR::SampleRateChanged(int i)
@@ -339,6 +348,7 @@ void SDR::ReadSettings()
     lastFreq = qSettings->value("LastFreq", 10000000).toDouble();
     lastMode = qSettings->value("LastMode",0).toInt();
     lastDisplayMode = qSettings->value("LastDisplayMode",0).toInt();
+    isTestBenchChecked = qSettings->value("TestBench",false).toBool();
 
 }
 //Make sure to call SDR::WriteSettings() in any derived class
@@ -357,7 +367,7 @@ void SDR::WriteSettings()
     qSettings->setValue("LastFreq",lastFreq);
     qSettings->setValue("LastMode",lastMode);
     qSettings->setValue("LastDisplayMode",lastDisplayMode);
-
+    qSettings->setValue("TestBench",isTestBenchChecked);
 }
 
 //Static
