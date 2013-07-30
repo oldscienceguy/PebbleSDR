@@ -350,6 +350,29 @@ void SDR::ReadSettings()
     lastDisplayMode = qSettings->value("LastDisplayMode",0).toInt();
     isTestBenchChecked = qSettings->value("TestBench",false).toBool();
 
+    qSettings->beginGroup(tr("Testbench"));
+
+    global->testBench->m_SweepStartFrequency = qSettings->value(tr("SweepStartFrequency"),0.0).toDouble();
+    global->testBench->m_SweepStopFrequency = qSettings->value(tr("SweepStopFrequency"),1.0).toDouble();
+    global->testBench->m_SweepRate = qSettings->value(tr("SweepRate"),0.0).toDouble();
+    global->testBench->m_DisplayRate = qSettings->value(tr("DisplayRate"),10).toInt();
+    global->testBench->m_VertRange = qSettings->value(tr("VertRange"),10000).toInt();
+    global->testBench->m_TrigIndex = qSettings->value(tr("TrigIndex"),0).toInt();
+    global->testBench->m_TrigLevel = qSettings->value(tr("TrigLevel"),100).toInt();
+    global->testBench->m_HorzSpan = qSettings->value(tr("HorzSpan"),100).toInt();
+    global->testBench->m_Profile = qSettings->value(tr("Profile"),0).toInt();
+    global->testBench->m_TimeDisplay = qSettings->value(tr("TimeDisplay"),false).toBool();
+    global->testBench->m_GenOn = qSettings->value(tr("GenOn"),false).toBool();
+    global->testBench->m_PeakOn = qSettings->value(tr("PeakOn"),false).toBool();
+    global->testBench->m_PulseWidth = qSettings->value(tr("PulseWidth"),0.0).toDouble();
+    global->testBench->m_PulsePeriod = qSettings->value(tr("PulsePeriod"),0.0).toDouble();
+    global->testBench->m_SignalPower = qSettings->value(tr("SignalPower"),0.0).toDouble();
+    global->testBench->m_NoisePower = qSettings->value(tr("NoisePower"),0.0).toDouble();
+    global->testBench->m_UseFmGen = qSettings->value(tr("UseFmGen"),false).toBool();
+
+    qSettings->endGroup();
+
+
 }
 //Make sure to call SDR::WriteSettings() in any derived class
 void SDR::WriteSettings()
@@ -368,6 +391,29 @@ void SDR::WriteSettings()
     qSettings->setValue("LastMode",lastMode);
     qSettings->setValue("LastDisplayMode",lastDisplayMode);
     qSettings->setValue("TestBench",isTestBenchChecked);
+
+    qSettings->beginGroup(tr("Testbench"));
+
+    qSettings->setValue(tr("SweepStartFrequency"),global->testBench->m_SweepStartFrequency);
+    qSettings->setValue(tr("SweepStopFrequency"),global->testBench->m_SweepStopFrequency);
+    qSettings->setValue(tr("SweepRate"),global->testBench->m_SweepRate);
+    qSettings->setValue(tr("DisplayRate"),global->testBench->m_DisplayRate);
+    qSettings->setValue(tr("VertRange"),global->testBench->m_VertRange);
+    qSettings->setValue(tr("TrigIndex"),global->testBench->m_TrigIndex);
+    qSettings->setValue(tr("TimeDisplay"),global->testBench->m_TimeDisplay);
+    qSettings->setValue(tr("HorzSpan"),global->testBench->m_HorzSpan);
+    qSettings->setValue(tr("TrigLevel"),global->testBench->m_TrigLevel);
+    qSettings->setValue(tr("Profile"),global->testBench->m_Profile);
+    qSettings->setValue(tr("GenOn"),global->testBench->m_GenOn);
+    qSettings->setValue(tr("PeakOn"),global->testBench->m_PeakOn);
+    qSettings->setValue(tr("PulseWidth"),global->testBench->m_PulseWidth);
+    qSettings->setValue(tr("PulsePeriod"),global->testBench->m_PulsePeriod);
+    qSettings->setValue(tr("SignalPower"),global->testBench->m_SignalPower);
+    qSettings->setValue(tr("NoisePower"),global->testBench->m_NoisePower);
+    qSettings->setValue(tr("UseFmGen"),global->testBench->m_UseFmGen);
+
+    qSettings->endGroup();
+
 }
 
 //Static
