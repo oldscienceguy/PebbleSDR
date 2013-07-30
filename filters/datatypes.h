@@ -8,8 +8,7 @@
 #ifndef DATATYPES_H
 #define DATATYPES_H
 
-//#include <math.h>
-#include "qmath.h"
+#include <QtGlobal> //For datatypes
 #include "cpx.h"
 
 
