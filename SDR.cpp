@@ -1,7 +1,10 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-#include <QLibrary>
 
+//Ignore warnings about OS X version unsupported (QT 5.1 bug)
+#pragma clang diagnostic ignored "-W#warnings"
+
+#include <QLibrary>
 #include "sdr.h"
 #include "settings.h"
 #include "Devices/SoftRock.h"
@@ -478,6 +481,9 @@ SDR *SDR::Factory(Receiver *receiver, SDR::SDRDEVICE dev, Settings *settings)
 	case SDR::NOSDR:
 		sdr = NULL;
 		break;
+    default:
+        sdr = NULL;
+        break;
 	}
 	return sdr;
 }

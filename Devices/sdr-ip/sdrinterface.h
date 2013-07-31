@@ -38,6 +38,9 @@
 #ifndef SDRINTERFACE_H
 #define SDRINTERFACE_H
 
+//Ignore warnings about OS X version unsupported (QT 5.1 bug)
+#pragma clang diagnostic ignored "-W#warnings"
+
 #include "netiobase.h"
 #include "ad6620.h"
 #include "protocoldefs.h"

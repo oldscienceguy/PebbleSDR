@@ -78,9 +78,9 @@ const char* PROF_STR[NUM_PROFILES] =
     "Post Mixer",   //2
     "Post BandPass",//3
     "Post Demod",   //4
-    "", //5
-    "", //6
-    ""  //7
+    "Profile 5", //5
+    "Profile 6", //6
+    "Profile 7"  //7
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -696,8 +696,8 @@ void CTestBench::DisplayData(int length, TYPECPX* pBuf, double samplerate, int p
 			while(intime >= scrntime)
 			{
 				ChkForTrigger( (int)pBuf[i].re );
-				m_TimeBuf1[m_TimeScrnPos] = (int)pBuf[i].re;
-				m_TimeBuf2[m_TimeScrnPos++] = (int)pBuf[i].im;
+                m_TimeBuf1[m_TimeScrnPos] = (int)pBuf[i].re * 32767;
+                m_TimeBuf2[m_TimeScrnPos++] = (int)pBuf[i].im * 32767;
 				scrntime = (double)m_TimeScrnPos*m_TimeScrnPixel;
 				if( m_TimeScrnPos >= m_Rect.width() )
 				{

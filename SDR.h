@@ -4,6 +4,7 @@
 /*
 Base class for SDR Receivers
 */
+
 #include <QObject>
 #include <QString>
 #include <QThread>

@@ -125,8 +125,8 @@ public:
 	};
 private:
 	quint16 Length;
-	quint16 tmp16;
-	quint32 tmp32;
+    //quint16 tmp16; //Not used
+    //quint32 tmp32; //Not used
 };
 
 #endif // ASCPMSG_H

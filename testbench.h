@@ -39,6 +39,9 @@
 #ifndef TESTBENCH_H
 #define TESTBENCH_H
 
+//Ignore warnings about OS X version unsupported (QT 5.1 bug)
+#pragma clang diagnostic ignored "-W#warnings"
+
 #include <QDialog>
 #include <QtGui>
 #include <QFrame>

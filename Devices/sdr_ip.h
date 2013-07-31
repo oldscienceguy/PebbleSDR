@@ -1,6 +1,9 @@
 #ifndef SDR_IP_H
 #define SDR_IP_H
 
+//Ignore warnings about OS X version unsupported (QT 5.1 bug)
+#pragma clang diagnostic ignored "-W#warnings"
+
 #include "gpl.h"
 #include <QThread>
 #include <QMutex>
