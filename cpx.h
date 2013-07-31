@@ -8,6 +8,10 @@
 #include "defs.h"
 
 
+//Ignore warnings about C++ 11 features
+#pragma clang diagnostic ignored "-Wc++11-extensions"
+//Ignore warnings about OS X version unsupported (QT 5.1 bug)
+#pragma clang diagnostic ignored "-W#warnings"
 
 //If SIMD is true, then all CPX arrays are byte aligned for use with fftw
 //and SIMD platform routines are used wherever possible.
@@ -190,8 +194,12 @@ public:
     inline double & Re(int i) {return cpxBuffer[i].re;}
     inline double & Im(int i) {return cpxBuffer[i].im;}
 
-    //Don't use array operator which won't work on CPXBuf *, use Cpx() instead
-    //inline CPX & operator [](int i) {return cpxBuffer[i];}
+    //Conversion operators
+    //Explicit converter allows CPXBuf to be use anywhere we need a CPX*
+    explicit operator const CPX* () const {return cpxBuffer;}
+
+    //Array operators don't work on pointers, ie CPXBuf *, use Cpx() instead
+    inline CPX & operator [](int i) {return cpxBuffer[i];}
 
     inline void Copy(CPX *out)
         {memcpy(out,cpxBuffer,sizeof(CPX) * size);}
