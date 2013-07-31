@@ -19,6 +19,17 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	settings = new Settings();
     global->settings = settings;
 
+    mainWindow = main;
+    receiverWidget = rw;
+
+    //Get dim of primary screen
+    QRect pos = qApp->screens()[0]->geometry();
+    pos.setX(pos.right() - main->width()); //bump tight to right
+    pos.setY(0); //Top
+    pos.setWidth(-1);
+    pos.setHeight(-1);
+    mainWindow->setGeometry(pos );
+
     //Move to constructor
     recordingPath = QCoreApplication::applicationDirPath();
 #ifdef Q_OS_MAC
@@ -33,9 +44,6 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
     //Testing 1 place to switch between PortAudio and QTAudio
     //WARNING: When you change this, delete pebble.ini or manually reset all settings because input/output names may change
     Audio::useQtAudio = false; //Read from setting TBD
-
-	mainWindow = main;
-	receiverWidget = rw;
 
 	//ReceiverWidget link back
 	receiverWidget->SetReceiver(this);
@@ -92,6 +100,10 @@ bool Receiver::On()
     if (sdr->isTestBenchChecked) {
         //Position test bench relative to window
         //Todo
+        global->testBench->Init(); //Sets up last device settings used
+        //Anchor in upper left
+        global->testBench->setGeometry(0,0,-1,-1);
+
         global->testBench->setVisible(true);
         //Keep focus on us
         mainWindow->activateWindow(); //Makes main active
@@ -554,6 +566,9 @@ void Receiver::ProcessBlock(CPX *in, CPX *out, int frameCount)
 	//if (frameCount != framesPerBuffer)
 	//	audio->inBufferUnderflowCount++; //Treat like in buffer underflow
 
+    //Inject signal from test bench if desired
+    global->testBench->CreateGeneratorSamples(frameCount, in, sampleRate);
+
     if (isRecording)
         recordingFile.WriteSamples(in,frameCount);
 
@@ -597,7 +612,7 @@ void Receiver::ProcessBlock(CPX *in, CPX *out, int frameCount)
 	//Normalize device gain
 	//Note that we DO modify IN buffer in this step
 	sdrGain = sdr->GetGain(); //Allow sdr to change gain while running
-    //if (sdrGain != 1)
+    if (sdrGain != 1)
         CPXBuf::scale(in,in,sdrGain * sdr->iqGain,framesPerBuffer);
 
 	//End of common processing for both receive chains, pick one
@@ -614,6 +629,9 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 {
 	CPX *nextStep = in;
 
+    //Incoming almost raw data
+    global->testBench->DisplayData(frameCount,nextStep,sampleRate,PROFILE_1);
+
     //global->perform.StartPerformance();
     /*
       3 step decimation
@@ -629,23 +647,18 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
     nextStep = noiseBlanker->ProcessBlock(nextStep);
     nextStep = noiseBlanker->ProcessBlock2(nextStep);
 
-	//Spectrum display, in buffer is not modified
-	//Spectrum is displayed before mixer, so that changes in mixer don't change spectrum
-	//
-	signalSpectrum->Unprocessed(nextStep, 
-		0,//audio->inBufferUnderflowCount,
-		0,//audio->inBufferOverflowCount,
-		0,//audio->outBufferUnderflowCount,
-		0);//audio->outBufferOverflowCount);
+    //Spectrum display, in buffer is not modified
+    //Spectrum is displayed before mixer, so that changes in mixer don't change spectrum
+    //
+    signalSpectrum->Unprocessed(nextStep,
+        0,//audio->inBufferUnderflowCount,
+        0,//audio->inBufferOverflowCount,
+        0,//audio->outBufferUnderflowCount,
+        0);//audio->outBufferOverflowCount);
 	//audio->ClearCounts();
     //global->perform.StopPerformance(100);
 
 	//Signal (Specific frequency) processing
-	//Mixer shows no loss in testing
-    //!!Test - trying this in wfm step
-    //nextStep = mixer->ProcessBlock(nextStep);
-	//float post = SignalProcessing::TotalPower(nextStep,frameCount); 
-    //signalSpectrum->PostMixer(nextStep);
 
 	//DOWNSAMPLED from here on
 	//Todo: Variable output sample rate based on mode, requires changing output stream when mode changes
@@ -681,9 +694,15 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
         resampRate = (downSampleWfm1Rate*1.0) / (audioOutRate*1.0);
 
     } else {
+
         //Replaces Mixer.cpp
         downConvert1.SetFrequency(mixerFrequency);
         int downConvertLen = downConvert1.ProcessData(framesPerBuffer,nextStep,workingBuf);
+
+        //Mixer shows no loss in testing
+        //nextStep = mixer->ProcessBlock(nextStep);
+        //float post = SignalProcessing::TotalPower(nextStep,frameCount);
+        global->testBench->DisplayData(downSample1Frames,nextStep,downSample1Rate,PROFILE_2);
 
         //global->perform.StopPerformance(100);
 
@@ -693,7 +712,8 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
         nextStep = bpFilter->ProcessBlock(nextStep);
         //Crude AGC, too much fluctuation
         //CPXBuf::scale(nextStep,nextStep,pre/post,frameCount);
-        signalSpectrum->PostBandPass(nextStep,downConvertLen);
+        global->testBench->DisplayData(downSample1Frames,nextStep,downSample1Rate,PROFILE_3);
+
         //global->perform.StopPerformance(100);
 
         //global->perform.StartPerformance();
@@ -724,6 +744,7 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
             nextStep = morse->ProcessBlock(nextStep);
 
         nextStep = demod->ProcessBlock(nextStep, downConvertLen);
+        global->testBench->DisplayData(downSample1Frames,nextStep,downSample1Rate,PROFILE_4);
 
         //global->perform.StopPerformance(100);
 
@@ -774,15 +795,12 @@ void Receiver::ProcessBlockFreqDomain(CPX *in, CPX *out, int frameCount)
 	fft->DoFFTWForward(in,NULL,frameCount);
 	//fft->freqDomain is in 0 to sampleRate order, not -F to 0 to +F
 
-	//Pass freqDomain to SignalSpectrum for display
-	signalSpectrum->MakeSpectrum(fft,signalSpectrum->Unprocessed());
 
 	//Frequency domain mixer?
 
 
 	//Filter in place
 	bpFilter->Convolution(fft);
-	signalSpectrum->MakeSpectrum(fft,signalSpectrum->PostBandPass());
 
 	//Convert back to time domain for final processing using fft internal buffers
 	fft->DoFFTWInverse(NULL,NULL,fftSize);

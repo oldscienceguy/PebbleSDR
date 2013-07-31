@@ -70,17 +70,17 @@
 #define TRIGSTATE_WAITDISPLAY 3
 
 
-//list of defined profiles
+//list of defined profiles that matches with #defines in header
 const char* PROF_STR[NUM_PROFILES] =
 {
-	"Off",
-	"PreFilter",
-	"PostFilter",
-	"PostAGC",
-	"PostDemod",
-	"Soundcard",
-	"Profile 6",
-	"Noise Blanker"
+    "Off",          //0
+    "Incoming I/Q", //1
+    "Post Mixer",   //2
+    "Post BandPass",//3
+    "Post Demod",   //4
+    "", //5
+    "", //6
+    ""  //7
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -136,7 +136,7 @@ CTestBench::CTestBench(QWidget *parent) :
 						m_GenSampleRate);
 	m_Fft.SetFFTAve(FFT_AVE);
 	ui->setupUi(this);
-	setWindowTitle("CuteSDR Test Bench");
+    setWindowTitle("Pebble Test Bench");
 	ui->textEdit->clear();
 	m_pTimer = new QTimer(this);
 	connect(m_pTimer, SIGNAL(timeout()), this, SLOT(OnTimer()));
@@ -211,10 +211,11 @@ void CTestBench::Init()
 	ui->comboBoxTrig->setCurrentIndex(m_TrigIndex);
 
 
-	tmp = m_Profile;
-	for(int i=0; i<NUM_PROFILES; i++)
+    ui->comboBoxProfile->blockSignals(true);
+    ui->comboBoxProfile->clear();
+    for(int i=0; i<NUM_PROFILES; i++)
 		ui->comboBoxProfile->addItem(PROF_STR[i],i);
-	m_Profile = tmp;
+    ui->comboBoxProfile->blockSignals(false);
 	ui->comboBoxProfile->setCurrentIndex(m_Profile);
 
 	ui->spinBoxStart->setValue(m_SweepStartFrequency/1000.0);
@@ -479,8 +480,9 @@ if( (m_SweepFrequency>-31250) && (m_SweepFrequency<31250) )
 	if(!m_UseFmGen)
 	{
 		//create complex sin/cos signal
-		pBuf[i].re = amp*cos(m_SweepAcc);
-		pBuf[i].im = amp*sin(m_SweepAcc);
+        //Normalize to -1 to +1
+        pBuf[i].re = amp*cos(m_SweepAcc) / 32767;
+        pBuf[i].im = amp*sin(m_SweepAcc) / 32767;
 		//inc phase accummulator with normalized freqeuency step
 
 
@@ -491,6 +493,8 @@ if( (m_SweepFrequency>-31250) && (m_SweepFrequency<31250) )
 //			m_SweepFrequency = m_SweepStartFrequency;	//restart sweep when end is reached
 	}
 
+    //!! Add function to insert noise in SDR signal for testing
+    //Different types of noise generators
 		//////////////////  Gaussian Noise generator
 		// Generate two uniform random numbers between -1 and +1
 		// that are inside the unit circle
@@ -656,13 +660,18 @@ void CTestBench::DisplayData(int length, TYPECPX* pBuf, double samplerate, int p
 		emit ResetSignal();
 		return;
 	}
+
 	m_NewDataIsCpx = true;
 	if(! m_TimeDisplay)
 	{	//if displaying frequency domain data
 		//accumulate samples into m_FftInBuf until have enough to perform an FFT
 		for(int i=0; i<length; i++)
 		{
-			m_FftInBuf[m_FftBufPos++] = pBuf[i];
+            //CuteSDR uses +/- 32767 format, we use -1 to +1 format
+            //So we have to reverse to use in test bench
+            //!!Would be better to convert test bench and related fft to use same floating point representation
+            m_FftInBuf[m_FftBufPos++] = (pBuf[i] * 32767.0);
+
 			if(m_FftBufPos >= TEST_FFTSIZE )
 			{
 				m_FftBufPos = 0;
@@ -1089,6 +1098,7 @@ QPoint LineBuf[TB_MAX_SCREENSIZE];
 	m_2DPixmap = m_OverlayPixmap.copy(0,0,w,h);
 	QPainter painter2(&m_2DPixmap);
 	//get new scaled fft data
+
 	if(m_CurrentDataIsCpx)
 	{
 		m_Fft.GetScreenIntegerFFTData( h, w,
@@ -1112,9 +1122,9 @@ QPoint LineBuf[TB_MAX_SCREENSIZE];
 	for(i=0; i<w; i++)
 	{
 		LineBuf[i].setX(i);
-		LineBuf[i].setY(fftbuf[i]);
+        LineBuf[i].setY(fftbuf[i]);
 		if(fftbuf[i] < m_FftPkBuf[i])
-			m_FftPkBuf[i] = fftbuf[i];
+            m_FftPkBuf[i] = fftbuf[i];
 	}
 	painter2.setPen( Qt::green );
 	painter2.drawPolyline(LineBuf,w);

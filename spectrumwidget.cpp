@@ -19,9 +19,6 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
     ui.displayBox->addItem("I/Q");
     ui.displayBox->addItem("Phase");
     ui.displayBox->addItem("Off");
-    //Testing, may not leave these in live product
-    ui.displayBox->addItem("Post Mixer");
-    ui.displayBox->addItem("Post BandPass");
     ui.displayBox->setCurrentIndex(-1);
 
     connect(ui.displayBox,SIGNAL(currentIndexChanged(int)),this,SLOT(displayChanged(int)));
@@ -604,10 +601,6 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
     double *spectrum = NULL;
 	if (spectrumMode == SignalSpectrum::SPECTRUM || spectrumMode == SignalSpectrum::WATERFALL)
 		spectrum = signalSpectrum->Unprocessed();
-	else if (spectrumMode == SignalSpectrum::POSTMIXER)
-		spectrum = signalSpectrum->PostMixer();
-	else if (spectrumMode == SignalSpectrum::POSTBANDPASS)
-		spectrum = signalSpectrum->PostBandPass();
 
 	//Experiments in averaging to smooth spectrum and waterfall
 	//Too much and we get mush
@@ -686,9 +679,7 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
         paintCursor(painter, Qt::black);
 
 
-	} else if (spectrumMode == SignalSpectrum::WATERFALL ||
-			   spectrumMode == SignalSpectrum::POSTMIXER  ||
-			   spectrumMode == SignalSpectrum::POSTBANDPASS){
+    } else if (spectrumMode == SignalSpectrum::WATERFALL) {
 		//Waterfall
         //Scroll fr rect 1 pixel to create new line
         //plotArea->scroll(0,1,0,0, fr.width(), fr.height()); //This has to be done before attaching painter
@@ -789,12 +780,6 @@ void SpectrumWidget::displayChanged(int item)
         break;
     case 4:
         plotSelectionChanged(SignalSpectrum::NODISPLAY);
-        break;
-    case 5:
-        plotSelectionChanged(SignalSpectrum::POSTMIXER);
-        break;
-    case 6:
-        plotSelectionChanged(SignalSpectrum::POSTBANDPASS);
         break;
     }
 }

@@ -19,8 +19,6 @@ SignalSpectrum::SignalSpectrum(int sr, int ns, Settings *set):
 	//Output buffers
 	rawIQ = CPXBuf::malloc(numSamples);
     unprocessed = new double[fftSize];
-    postMixer = new double[fftSize];
-    postBandPass = new double[fftSize];
     fft = new FFT(fftSize);
 
     tmp_cpx = CPXBuf::malloc(fftSize);
@@ -50,8 +48,6 @@ SignalSpectrum::SignalSpectrum(int sr, int ns, Settings *set):
 SignalSpectrum::~SignalSpectrum(void)
 {
 	if (unprocessed != NULL) {free (unprocessed);}
-	if (postMixer != NULL) {free (postMixer);}
-	if (postBandPass != NULL) {free (postBandPass);}
 	if (window != NULL) {free (window);}
 	if (window_cpx != NULL) {CPXBuf::free(window_cpx);}
 	if (tmp_cpx != NULL) {CPXBuf::free(tmp_cpx);}
@@ -62,19 +58,6 @@ void SignalSpectrum::SetDisplayMode(DISPLAYMODE m)
 	displayMode = m;
 }
 
-void SignalSpectrum::PostMixer(CPX *in)
-{
-	if (displayMode == POSTMIXER)
-		MakeSpectrum(in, postMixer, numSamples);
-}
-
-//Bandpass can occur post decimation, in which case we won't have numSamples samples
-//So we pass in a size from the receive chain
-void SignalSpectrum::PostBandPass(CPX *in, int size)
-{
-	if (displayMode == POSTBANDPASS)
-		MakeSpectrum(in, postBandPass, size);
-}
 void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double outUnder, double outOver)
 {	
 	inBufferUnderflowCount = inUnder;
