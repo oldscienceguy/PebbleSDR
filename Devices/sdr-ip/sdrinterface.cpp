@@ -953,7 +953,7 @@ void CSdrInterface::ProcessUdpData(char* pBuf, qint64 Length)
     //use packet length to determine whether 24 or 16 bit data format
     if(PKT_LENGTH_24 == Length)
     {	//24 bit I/Q data
-        scale = 0.05; //Normalize to other SDR - we need a common way to calibrate all devices
+        scale = 1; //Normalize to other if needed SDR - we need a common way to calibrate all devices
         m_PacketSize = (PKT_LENGTH_24-4)/6;		//number of complex samples in packet = 240 (6 bytes per cpx)
         //pBuf[0] =
         //pBuf[1] =
@@ -981,14 +981,15 @@ void CSdrInterface::ProcessUdpData(char* pBuf, qint64 Length)
             data.bytes.b2 = pBuf[i+1];
             data.bytes.b3 = pBuf[i+2];
             //SDR-IP IQ order is reversed from other radios, so re in spec = im and vice vs
-            //cpxtmp.re = (double)data.all/8388608;//65536.0;
-            cpxtmp.im = (double)data.all/8388608;//65536.0;
+            //Even though we have 24 bit data, it's in 32 bit signed int
+            //CuteSDR normalizes to 16 bit format by dividing by 65535
+            //We normalize by 2^32 (4294967298) / 2  or 2147483648 because we have neg and pos freq.
+            cpxtmp.im = (double)data.all/2147483647; //8388608;
             cpxtmp.im *= scale;
             data.bytes.b1 = pBuf[i+3];		//combine 3 bytes into 32 bit signed int
             data.bytes.b2 = pBuf[i+4];
             data.bytes.b3 = pBuf[i+5];
-            //cpxtmp.im = (double)data.all/8388608;//65536.0;
-            cpxtmp.re = (double)data.all/8388608;//65536.0;
+            cpxtmp.re = (double)data.all/2147483647; //8388608;
             cpxtmp.re *= scale;
             m_pInQueue[numSamplesInBuffer++] = cpxtmp;
             //qDebug()<<"RE/IM"<<cpxtmp.re<<"/"<<cpxtmp.im;
@@ -1002,7 +1003,7 @@ void CSdrInterface::ProcessUdpData(char* pBuf, qint64 Length)
     //This is used at higher bw 1.8m
     else if(PKT_LENGTH_16 == Length)
     {	//16 bit I/Q data
-        scale = 10.0;
+        scale = 1;
         m_PacketSize = (PKT_LENGTH_16-4)/4;	//number of complex samples in packet
         seq.bytes.b0 = pBuf[2];
         seq.bytes.b1 = pBuf[3];
@@ -1020,13 +1021,13 @@ void CSdrInterface::ProcessUdpData(char* pBuf, qint64 Length)
         {	//use 'seq' as temp variable to combine bytes into short int
             seq.bytes.b0 = pBuf[i+0];
             seq.bytes.b1 = pBuf[i+1];
-            //cpxtmp.re = (double)seq.sall/32768.0;
-            cpxtmp.im = (double)seq.sall/32768.0;
+
+            //Normalize to 2^16 / 2
+            cpxtmp.im = (double)seq.sall/32767.0;
             cpxtmp.im *= scale;
             seq.bytes.b0 = pBuf[i+2];
             seq.bytes.b1 = pBuf[i+3];
-            //cpxtmp.im = (double)seq.sall/32768.0;
-            cpxtmp.re = (double)seq.sall/32768.0;
+            cpxtmp.re = (double)seq.sall/32767.0;
             cpxtmp.re *= scale;
             m_pInQueue[numSamplesInBuffer++] = cpxtmp;
             if (numSamplesInBuffer >= sdr_ip->framesPerBuffer) {
