@@ -161,6 +161,17 @@ CTestBench::CTestBench(QWidget *parent) :
     connect(ui->horizontalSliderTest,SIGNAL(valueChanged(int)),this,SLOT(OnTestSlider1(int)));
     testBenchValue = 0.0;
 
+    debugOn = true;
+    ui->debugBox->setChecked(debugOn);
+    connect(ui->debugBox,SIGNAL(toggled(bool)),this,SLOT(OnDebugBox(bool)));
+
+    connect(ui->debugClearButton,SIGNAL(clicked(bool)),this,SLOT(OnDebugClear(bool)));
+
+    noiseOn = false;
+    ui->noiseCheckBox->setChecked(noiseOn);
+    connect(ui->noiseCheckBox,SIGNAL(clicked(bool)),this,SLOT(OnNoiseBox(bool)));
+
+
 }
 
 CTestBench::~CTestBench()
@@ -192,6 +203,21 @@ void CTestBench::showEvent(QShowEvent *event)
 void CTestBench::OnTestSlider1(int val)
 {
     testBenchValue = (double)val/100.0;
+}
+
+void CTestBench::OnDebugBox(bool b)
+{
+    debugOn = b;
+}
+
+void CTestBench::OnDebugClear(bool b)
+{
+    ui->textEdit->clear();
+}
+
+void CTestBench::OnNoiseBox(bool b)
+{
+    noiseOn = b;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -498,7 +524,7 @@ if( (m_SweepFrequency>-31250) && (m_SweepFrequency<31250) )
 		//////////////////  Gaussian Noise generator
 		// Generate two uniform random numbers between -1 and +1
 		// that are inside the unit circle
-		if(m_NoisePower > -160.0)
+        if(noiseOn && m_NoisePower > -160.0)
 		{	//create and add noise samples to signal
 			do {
 				u1 = 1.0 - 2.0 * (double)rand()/(double)RAND_MAX ;
@@ -977,7 +1003,8 @@ void CTestBench::ChkForTrigger(qint32 sample)
 //////////////////////////////////////////////////////////////////////
 void CTestBench::GotTxt(QString Str)
 {
-	ui->textEdit->append(Str);
+    if (debugOn)
+        ui->textEdit->append(Str);
 }
 
 /////////////////////////////////////////////////////////////////////

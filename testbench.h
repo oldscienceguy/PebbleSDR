@@ -137,6 +137,8 @@ public:
     //These variables are controlled by testbench UI and can be used anywhere we need a temporary control
     //Example would be an adjustable gain somewhere we don't have a UI to change.
     double testBenchValue;
+    bool debugOn;
+    bool noiseOn;
 
 public slots:
 	void Reset();		//called by GUI Reset button
@@ -163,6 +165,9 @@ public slots:
 	void OnSignalPwr(int pwr);
 	void OnNoisePwr(int pwr);
 	void OnTestSlider1(int val);
+    void OnDebugBox(bool b);
+    void OnDebugClear(bool b);
+    void OnNoiseBox(bool b);
 
 signals:
 	void ResetSignal();		//internal signals from worker thread called functions
