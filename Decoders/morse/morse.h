@@ -7,7 +7,7 @@
 #include "QTextEdit"
 #include "ui/ui_data-morse.h"
 #include "../fldigifilters.h"
-//!!testing
+
 #include "demod/downconvert.h"
 #include "Demod.h"
 
@@ -19,10 +19,6 @@ class Receiver;
 struct {
     int defCWspeed = 24; //Default speed (WPM)
     int CWspeed = 18; //Transmit speed (WPM)
-    double CWrisetime = 4.0; //Leading and trailing edge rise times (milliseconds)
-    //QSK edge shape. Values are as follows
-    //0: Hanning; 1: BlackmanRaised cosine = Hannin
-    int QSKshape = 0;                                 \
     bool CWtrack = true; //Automatic receive speed tracking
     int CWfarnsworth = 18; //Speed for Farnsworth timing (WPM)
     int CWrange = 10; //Tracking range for CWTRACK (WPM)
@@ -34,8 +30,7 @@ struct {
     double CWupper = 0.6; //Detector hysterisis, upper threshold
     double CWlower = 0.4; //Detector hysterisis, lower threshold
     bool rx_lowercase = false; //Print Rx in lowercase for CW, RTTY, CONTESTIA and THROB
-    int CWbandwidth = 150; //Filter bandwidth (Hz)
-    bool CWmfilt = false; //Matched Filter in use
+
     bool CWuse_fft_filter = false; //Use FFT overlap and add convolution filter
 }progdefaults;
 
@@ -195,15 +190,14 @@ protected:
     MorseCode morseCode;
     void decode_stream(double value);
     double agc_peak; // threshold for tone detection
-    int normalize(float *v, int n, int twodots);
+
     void rx_init();
     void init();
 
     //Used for syncscope and can be removed
     #define CLRCOUNT 16
-    //Fldigi samplerate is 8x, then decimated in filter by 16 - Filter does MAC every DEC_RATIO samples
-    //So filter is running at 8k/16 or 500sps?
-    //Also smpl_cntr is updated 500sps or 2ms per increment
+    //Fldigi samplerate is 8x
+    //Filter does MAC every DEC_RATIO samples
 
     #define	DEC_RATIO	16 //Decimation Ratio replaced with modemDecimateFactor
     #define CW_FIRLEN   512
@@ -224,13 +218,11 @@ protected:
     bool use_paren;
     std::string prosigns;
     bool stopflag;
-    int bandwidth; //CW filter bandwidth
-    int fragmentsize;
     bool use_fft_filter;
     double lower_threshold;
     double upper_threshold;
     int FilterFFTLen;
-    bool use_matched_filter;
+
     bool freqlock;
 
     //Use by NCO in mixer to mix cwToneFrequency
@@ -240,12 +232,6 @@ protected:
 
     double		FFTvalue;
     double		FIRvalue;
-
-
-    //!!Check usage
-    #define	OUTBUFSIZE	16384
-    double outbuf[OUTBUFSIZE];
-    double qskbuf[OUTBUFSIZE];			// signal array for qsk drive
 
 
     // Receive buffering
@@ -262,21 +248,6 @@ protected:
 
     //Modem sample rate, device sample rate decimated to this
     #define	CWSampleRate 8000
-    #define	CWMaxSymLen		4096		// AG1LE: - was 4096
-
-    //All this can be removed if we don't use for our version of syncscope
-    #define MAX_PIPE_SIZE (22 * CWSampleRate * 12 / 800)
-    double pipe[MAX_PIPE_SIZE+1];			// storage for sync scope data
-    double clearpipe[MAX_PIPE_SIZE+1];
-    //!!mbuffer<double, MAX_PIPE_SIZE + 1, 4> scopedata;
-    int pipeptr;
-    int pipesize;
-    bool scope_clear;
-
-    int symbollen;  // length of a dot in sound samples (tx)
-    int fsymlen; // length of extra interelement space (farnsworth)
-    double risetime; // leading/trailing edge rise time (msec)
-    int QSKshape; // leading/trailing edge shape factor
 
     // CW function return status codes.
     #define	CW_SUCCESS	0
@@ -305,30 +276,26 @@ protected:
 
     // user configurable data - local copy passed in from gui
     int cw_speed;
-    int cw_bandwidth;
     int cw_squelch;
     double	metric;
 
-    int cw_send_speed;				// Initially 18 WPM
     int cw_receive_speed;				// Initially 18 WPM
     bool usedefaultWPM;				// use default WPM
 
     // for CW modem use only
     bool	cwTrack;
-    bool	cwLock;
-    double	cwRcvWPM;
-    double	cwXmtWPM;
 
     //Needs description
     int cw_upper_limit;
     int cw_lower_limit;
     // Receiving parameters:
+    //Used to restore to base case when something changes or we get lost
+    int cw_default_speed;
+    long int cw_default_dot_length; //Was cw_send_dot_length
+    long int cw_default_dash_length;
+
     long int cw_receive_dot_length;		// Length of a receive Dot, in Usec
     long int cw_receive_dash_length;		// Length of a receive Dash, in Usec
-
-    //Check usage, we don't support send
-    long int cw_send_dot_length;			// Length of a send Dot, in Usec
-    long int cw_send_dash_length;			// Length of a send Dash, in Usec
     long int cw_adaptive_receive_threshold;		// 2-dot threshold for adaptive speed
 
 };

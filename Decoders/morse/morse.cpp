@@ -381,38 +381,23 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
 
     //fldigi constructors
     squelchValue = progStatus.sldrSquelchValue;
-    //!!cap |= CAP_BW;
 
-    //!!mode = MODE_CW;
     freqlock = false;
     usedefaultWPM = false;
-    //!!tx_frequency = get_txfreq_woffset();
-    risetime = progdefaults.CWrisetime;
-    QSKshape = progdefaults.QSKshape;
 
     cw_ptr = 0;
     clrcount = CLRCOUNT;
 
-    fragmentsize = CWMaxSymLen;
-
-    cw_speed  = progdefaults.CWspeed;
-    bandwidth = progdefaults.CWbandwidth;
-
-    cw_send_speed = cw_speed;
+    cw_speed  = progdefaults.CWspeed; //!!Whats the difference between speed, default speed and receive speed?
+    cw_default_speed = cw_speed;
     cw_receive_speed = cw_speed;
-    cw_adaptive_receive_threshold = 2 * DOT_MAGIC / cw_speed;
+
+    cw_adaptive_receive_threshold = 2 * DOT_MAGIC / cw_default_speed;
     cw_noise_spike_threshold = cw_adaptive_receive_threshold / 4;
-    cw_send_dot_length = DOT_MAGIC / cw_send_speed;
-    cw_send_dash_length = 3 * cw_send_dot_length;
-    symbollen = (int)(modemSampleRate * 1.2 / progdefaults.CWspeed);
-    fsymlen = (int)(modemSampleRate * 1.2 / progdefaults.CWfarnsworth);
+    cw_default_dot_length = DOT_MAGIC / cw_default_speed;
+    cw_default_dash_length = 3 * cw_default_dot_length;
 
     memset(rx_rep_buf, 0, sizeof(rx_rep_buf));
-
-// block of variables that get updated each time speed changes
-    pipesize = (22 * modemSampleRate * 12) / (progdefaults.CWspeed * 160);
-    if (pipesize < 0) pipesize = 512;
-    if (pipesize > MAX_PIPE_SIZE) pipesize = MAX_PIPE_SIZE;
 
     cwTrack = true;
     phaseacc = 0.0;
@@ -420,23 +405,15 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
     FIRphase = 0.0;
     FFTvalue = 0.0;
     FIRvalue = 0.0;
-    pipeptr = 0;
     clrcount = 0;
 
     //Upper and lower don't seem to be used, just progdefaults.CWUpper
     upper_threshold = progdefaults.CWupper;
     lower_threshold = progdefaults.CWlower;
-    for (int i = 0; i < MAX_PIPE_SIZE; clearpipe[i++] = 0.0);
 
     agc_peak = 1.0;
-    //!!in_replay = 0;
 
     use_fft_filter = progdefaults.CWuse_fft_filter;
-    use_matched_filter = progdefaults.CWmfilt;
-
-    bandwidth = progdefaults.CWbandwidth;
-    if (use_matched_filter)
-        progdefaults.CWbandwidth = bandwidth = 2.0 * progdefaults.CWspeed / 1.2;
 
     hilbert = new C_FIR_filter(); // hilbert transform used by FFT filter
     hilbert->init_hilbert(37, 1);
@@ -457,7 +434,6 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
 
     trackingfilter = new Cmovavg(TRACKING_FILTER_SIZE);
 
-    //!!makeshape(); //Transmit?
     sync_parameters();
 
     modemDownConvert.SetDataRate(sampleRate,modemSampleRate);
@@ -888,8 +864,8 @@ RAL Notes
 fldigi sample rate is 8k
 mixer runs at sample rate
 then is filtered
-filter decimates by DEC_RATIO and returns result every DEC_RATIO samples
-So filter is effectively operating at 8k/16 or 500 samples/sec?
+filter returns result every DEC_RATIO samples
+
 */
 
 // SHOULD ONLY BE CALLED FROM THE rx_processing loop
@@ -899,18 +875,10 @@ void Morse::reset_rx_filter()
 {
     //If anything had changed from the defaults we started with, rest
     //if (use_fft_filter != progdefaults.CWuse_fft_filter ||
-    if(	use_matched_filter != progdefaults.CWmfilt ||
-        cw_speed != progdefaults.CWspeed ||
-        (bandwidth != progdefaults.CWbandwidth && !use_matched_filter)) {
+    if(	cw_speed != progdefaults.CWspeed ) {
 
         use_fft_filter = progdefaults.CWuse_fft_filter;
-        use_matched_filter = progdefaults.CWmfilt;
-        cw_send_speed = cw_speed = progdefaults.CWspeed;
-
-        if (use_matched_filter)
-            progdefaults.CWbandwidth = bandwidth = 2.0 * progdefaults.CWspeed / 1.2;
-        else
-            bandwidth = progdefaults.CWbandwidth;
+        cw_speed = cw_default_speed = progdefaults.CWspeed;
 
         //if (use_fft_filter) { // FFT filter
         //	cw_FFT_filter->create_lpf(progdefaults.CWspeed/(1.2 * modemSampleRate));
@@ -919,34 +887,22 @@ void Morse::reset_rx_filter()
             cw_FIR_filter->init_lowpass (CW_FIRLEN, DEC_RATIO , progdefaults.CWspeed/(1.2 * modemSampleRate));
             FIRphase = 0;
         //}
-        //!!REQ(static_cast<void (waterfall::*)(int)>(&waterfall::Bandwidth),
-            //wf, (int)bandwidth);
-        //!!REQ(static_cast<int (Fl_Value_Slider2::*)(double)>(&Fl_Value_Slider2::value),
-            //sldrCWbandwidth, (int)bandwidth);
-
-        pipesize = (22 * modemSampleRate * 12) / (progdefaults.CWspeed * 160);
-        if (pipesize < 0) pipesize = 512;
-        if (pipesize > MAX_PIPE_SIZE) pipesize = MAX_PIPE_SIZE;
 
         cw_adaptive_receive_threshold = 2 * DOT_MAGIC / cw_speed;
         cw_noise_spike_threshold = cw_adaptive_receive_threshold / 4;
-        cw_send_dot_length = DOT_MAGIC / cw_send_speed;
-        cw_send_dash_length = 3 * cw_send_dot_length;
-        symbollen = (int)(modemSampleRate * 1.2 / progdefaults.CWspeed);
-        fsymlen = (int)(modemSampleRate * 1.2 / progdefaults.CWfarnsworth);
+        cw_default_dot_length = DOT_MAGIC / cw_default_speed;
+        cw_default_dash_length = 3 * cw_default_dot_length;
 
         phaseacc = 0.0;
         FFTphase = 0.0;
         FIRphase = 0.0;
         FFTvalue = 0.0;
         FIRvalue = 0.0;
-        pipeptr = 0;
         clrcount = 0;
 
         clrRepBuf();
 
         agc_peak = 0;
-        //!!clear_syncscope();
     }
 #if 0
     if (lower_threshold != progdefaults.CWlower ||
@@ -981,8 +937,7 @@ CPX * Morse::ProcessBlockFldigi(CPX *in)
 
     reset_rx_filter();
 
-    //!!This mixes and changes in buffer!  Copy to working buf
-
+    //Downconverter first mixes in place, ie changes in!  So we have to work with a copy
     CPXBuf::copy(workingBuf->Ptr(),in,numSamples);
 
     //We need to account for modemOffset in ReceiverWidget
@@ -1052,49 +1007,20 @@ void Morse::rx_init()
     cw_rr_current = 0;
     cw_ptr = 0;
     agc_peak = 0;
-    //!!set_scope_mode(Digiscope::SCOPE);
 
     usedefaultWPM = false;
-    scope_clear = true;
 }
 
 void Morse::init()
 {
     //We don't have separate waterfall like fldigi does, remove waterfall code everywhere
     trackingfilter->reset();
-    cw_adaptive_receive_threshold = (long int)trackingfilter->run(2 * cw_send_dot_length);
-    //put_cwRcvWPM(cw_send_speed);
-    for (int i = 0; i < OUTBUFSIZE; i++)
-        outbuf[i] = qskbuf[i] = 0.0;
+    cw_adaptive_receive_threshold = (long int)trackingfilter->run(2 * cw_default_dot_length);
+
     rx_init();
     use_paren = progdefaults.CW_use_paren;
     prosigns = progdefaults.CW_prosigns;
     stopflag = false;
-}
-
-//Not called anywhere, used by SOM which we may skip
-int Morse::normalize(float *v, int n, int twodots)
-{
-    if( n == 0 ) return 0 ;
-
-    float max = v[0];
-    float min = v[0];
-    int j;
-
-    /* find max and min values */
-    for (j=1; j<n; j++) {
-        float vj = v[j];
-        if (vj > max)	max = vj;
-        else if (vj < min)	min = vj;
-    }
-    /* all values 0 - no need to normalize or decode */
-    if (max == 0.0) return 0;
-
-    /* scale values between  [0,1] -- if Max longer than 2 dots it was "dah" and should be 1.0, otherwise it was "dit" and should be 0.33 */
-    float ratio = (max > twodots) ? 1.0 : 0.33 ;
-    ratio /= max ;
-    for (j=0; j<n; j++) v[j] *= ratio;
-    return (1);
 }
 
 //Called with value indicating level of tone detected
@@ -1124,13 +1050,8 @@ void Morse::decode_stream(double value)
     else
         value = 0;
 
-    //Syncscope?
-    pipe[pipeptr] = value;
-    if (++pipeptr == pipesize)
-        pipeptr = 0;
-
     //qDebug()<<"CW Value "<<value;
-progStatus.sqlonoff = false; //!!testing
+
     //Check squelch to avoid noise errors
     if (!progStatus.sqlonoff || metric > squelchValue ) {
         // Power detection using hysterisis detector
@@ -1145,33 +1066,12 @@ progStatus.sqlonoff = false; //!!testing
     }
 
     if (FldigiProcessEvent(CW_QUERY_EVENT, &c) == CW_SUCCESS) {
-        //!!update_syncscope();
-#if 0
-        //!!Ignore SOM decoding, we might just get rid of it
-        if (progdefaults.CWuseSOMdecoding) {
-            somc = find_winner(cw_buffer, cw_adaptive_receive_threshold);
-            cptr = (char*)somc;
-            if (somc != NULL) {
-                while (*cptr != '\0')
-                    put_rx_char(progdefaults.rx_lowercase ? tolower(*cptr++) : *cptr++,FTextBase::CTRL);
-            }
-            if (strlen(c) == 1 && *c == ' ')
-                put_rx_char(progdefaults.rx_lowercase ? tolower(*c) : *c);
-            cw_ptr = 0;
-            memset(cw_buffer, 0, sizeof(cw_buffer));
-        } else
-#else
-        {
-            //Output character(s)
-            if (strlen(c) == 1) {
-                //!!put_rx_char(progdefaults.rx_lowercase ? tolower(*c) : *c);
-                OutputData(progdefaults.rx_lowercase ? tolower(*c) : *c);
-            } else while (*c) {
-                //!!put_rx_char(progdefaults.rx_lowercase ? tolower(*c++) : *c++, FTextBase::CTRL);
-                OutputData(progdefaults.rx_lowercase ? tolower(*c++) : *c++);
-            }
+        //Output character(s)
+        if (strlen(c) == 1) {
+            OutputData(progdefaults.rx_lowercase ? tolower(*c) : *c);
+        } else while (*c) {
+            OutputData(progdefaults.rx_lowercase ? tolower(*c++) : *c++);
         }
-#endif
     }
 
 }
@@ -1180,13 +1080,15 @@ progStatus.sqlonoff = false; //!!testing
 
 int Morse::usec_diff(unsigned int earlier, unsigned int later)
 {
-// Compare the timestamps.
-// At 4 WPM, the dash length is 3*(1200000/4)=900,000 usecs, and
-// the word gap is 2,100,000 usecs.
+    // Compare the timestamps.
+    // At 4 WPM, the dash length is 3*(1200000/4)=900,000 usecs, and
+    // the word gap is 2,100,000 usecs.
     if (earlier >= later) {
         return 0;
-    } else
-        return (int) (((double) (later - earlier) * USECS_PER_SEC) / modemSampleRate);
+    } else {
+        int usec = (int) (((double) (later - earlier) * USECS_PER_SEC) / modemSampleRate);
+        return usec;
+    }
 }
 
 //=======================================================================
@@ -1202,16 +1104,15 @@ void Morse::update_tracking(int idot, int idash)
     if (idot > cw_lower_limit && idot < cw_upper_limit)
         dot = idot;
     else
-        dot = cw_send_dot_length;
+        dot = cw_default_dot_length;
     if (idash > cw_lower_limit && idash < cw_upper_limit)
         dash = idash;
     else
-        dash = cw_send_dash_length;
+        dash = cw_default_dash_length;
 
-    //!!cw_adaptive_receive_threshold = (long int)trackingfilter->run((dash + dot) / 2);
+    cw_adaptive_receive_threshold = (long int)trackingfilter->run((dash + dot) / 2);
 
-//	if (!use_matched_filter)
-        sync_parameters();
+    sync_parameters();
 }
 
 // sync_parameters()
@@ -1219,42 +1120,27 @@ void Morse::update_tracking(int idot, int idash)
 // of word timings and ranges to new values of Morse speed, or receive tolerance.
 void Morse::sync_parameters()
 {
-    int lowerwpm, upperwpm, nusymbollen, nufsymlen;
+    int lowerwpm, upperwpm, nusymbollen;
 
     int wpm = usedefaultWPM ? progdefaults.defCWspeed : progdefaults.CWspeed;
     int fwpm = progdefaults.CWfarnsworth;
 
-    cw_send_dot_length = DOT_MAGIC / progdefaults.CWspeed;
+    cw_default_dot_length = DOT_MAGIC / progdefaults.CWspeed;
+    cw_default_dash_length = 3 * cw_default_dot_length;
 
-    cw_send_dash_length = 3 * cw_send_dot_length;
 
-    nusymbollen = (int)(modemSampleRate * 1.2 / wpm);
-    nufsymlen = (int)(modemSampleRate * 1.2 / fwpm);
-
-    if (symbollen != nusymbollen ||
-        nufsymlen != fsymlen ||
-        risetime  != progdefaults.CWrisetime ||
-        QSKshape  != progdefaults.QSKshape ) {
-        risetime = progdefaults.CWrisetime;
-        QSKshape = progdefaults.QSKshape;
-        symbollen = nusymbollen;
-        fsymlen = nufsymlen;
-        //!!makeshape();
-    }
-
-// check if user changed the tracking or the cw default speed
-    if ((cwTrack != progdefaults.CWtrack) ||
-        (cw_send_speed != progdefaults.CWspeed)) {
-        //!!trackingfilter->reset();
-        cw_adaptive_receive_threshold = 2 * cw_send_dot_length;
-        //!!put_cwRcvWPM(cw_send_speed);
+    // check if user changed the tracking or the cw default speed
+    if (cwTrack != progdefaults.CWtrack ||
+        (cw_default_speed != progdefaults.CWspeed)) {
+        trackingfilter->reset();
+        cw_adaptive_receive_threshold = 2 * cw_default_dot_length;
     }
     cwTrack = progdefaults.CWtrack;
-    cw_send_speed = progdefaults.CWspeed;
+    cw_default_speed = progdefaults.CWspeed;
 
-// Receive parameters:
-    lowerwpm = cw_send_speed - progdefaults.CWrange;
-    upperwpm = cw_send_speed + progdefaults.CWrange;
+    // Receive parameters:
+    lowerwpm = cw_default_speed - progdefaults.CWrange;
+    upperwpm = cw_default_speed + progdefaults.CWrange;
     if (lowerwpm < progdefaults.CWlowerlimit)
         lowerwpm = progdefaults.CWlowerlimit;
     if (upperwpm > progdefaults.CWupperlimit)
@@ -1265,8 +1151,8 @@ void Morse::sync_parameters()
     if (cwTrack)
         cw_receive_speed = DOT_MAGIC / (cw_adaptive_receive_threshold / 2);
     else {
-        cw_receive_speed = cw_send_speed;
-        cw_adaptive_receive_threshold = 2 * cw_send_dot_length;
+        cw_receive_speed = cw_default_speed;
+        cw_adaptive_receive_threshold = 2 * cw_default_dot_length;
     }
 
     if (cw_receive_speed > 0)
@@ -1407,7 +1293,7 @@ bool Morse::FldigiProcessEvent(CW_EVENT event, const char **c)
             if (cw_receive_state == RS_IN_TONE)
                 return CW_ERROR;
             // in this call we expect a pointer to a char to be valid
-            //!!This is first use of 'c', couldn't find definition in fldigi
+
             if (c == NULL) {
                 // else we had no place to put character...
                 cw_receive_state = RS_IDLE;
