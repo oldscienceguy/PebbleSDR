@@ -12,11 +12,9 @@ BargraphMeter::BargraphMeter(QWidget *parent) :
     maxLevel = 100;
     currentLevel = 50;
     barColor = Qt::red;
-
-    //Set refresh interval
-    refreshRate = 5;
-    refreshTimer = new QTimer(this);
-    connect(refreshTimer, SIGNAL(timeout()), this, SLOT(refreshMeter()));
+    running = false;
+    //Thread safe display update
+    connect(this, SIGNAL(newData()), this, SLOT(refreshMeter()));
 
 }
 
@@ -27,22 +25,18 @@ BargraphMeter::~BargraphMeter()
 
 void BargraphMeter::start()
 {
-    refreshTimer->start(refreshRate);
+    running = true;
 }
 
 void BargraphMeter::stop()
 {
-    refreshTimer->stop();
-}
-
-void BargraphMeter::setRefreshRate(quint16 _rate)
-{
-    refreshRate = _rate;
+    running = false;
 }
 
 void BargraphMeter::refreshMeter()
 {
-    update();
+    if (running)
+        update();
 
 }
 
@@ -54,9 +48,13 @@ void BargraphMeter::setMin(quint16 _min)
 {
     minLevel = _min;
 }
+
+//Its possible (likely) that setValue will be called from another thread, so we can't update display directly
+//Emit new signal instead
 void BargraphMeter::setValue(quint16 _value)
 {
     currentLevel = _value;
+    emit newData();
 }
 
 void BargraphMeter::paintEvent(QPaintEvent * event)

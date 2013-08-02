@@ -3,7 +3,7 @@
 
 //Will eventually be used for smeter, cw tuning, etc
 //See Qt LevelMeter example
-
+#include "global.h"
 #include <QWidget>
 
 namespace Ui {
@@ -21,7 +21,6 @@ public:
     void setMin(quint16 _min);
     void setMax(quint16 _max);
     void setValue(quint16 _value);
-    void setRefreshRate(quint16 _rate);
     void start();
     void stop();
 
@@ -30,16 +29,17 @@ public:
 public slots:
     void refreshMeter();
 
+signals:
+    void newData();
+
 private:
     Ui::BargraphMeter *ui;
-
+    bool running;
     quint16 minLevel;
     quint16 maxLevel;
     quint16 currentLevel;
-    quint16 refreshRate;
     QColor backgroundColor;
     QColor barColor;
-    QTimer *refreshTimer;
 
 
 };
