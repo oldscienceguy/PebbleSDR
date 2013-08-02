@@ -67,6 +67,13 @@ QSlider::groove:horizontal {
 	 background: #A9B3BC;
 	 margin: 2px 0;
  }
+ QSlider::groove:vertical {
+	  border: 1px solid #999999;
+	  width: 8px; /* the groove expands to the size of the slider by default. by giving it a height, it has a fixed size */
+	  background: #A9B3BC;
+	  left: 2px;
+	  right: 0px;
+  }
 
 QSlider::handle:horizontal {
 	 background: #708090;
@@ -75,6 +82,13 @@ QSlider::handle:horizontal {
 	 margin: -4px 0; /* handle is placed by default on the contents rect of the groove. Expand outside the groove */
 	 border-radius: 3px;
  }
+ QSlider::handle:vertical {
+	  background: #708090;
+	  border: 1px solid #5c5c5c;
+	  height: 3px; /* plus radius and border */
+	  margin: 0 -4px; /* handle is placed by default on the contents rect of the groove. Expand outside the groove */
+	  border-radius: 3px;
+  }
 
 
 /*Color of groove after thumb*/
