@@ -52,6 +52,7 @@ void Settings::ReadSettings()
     dbOffset = qSettings->value("dbOffset",-60).toFloat();
 	leftRightIncrement = qSettings->value("LeftRightIncrement",10).toInt();
 	upDownIncrement = qSettings->value("UpDownIncrement",100).toInt();
+    modeOffset = qSettings->value("ModeOffset",1000).toInt(); //CW tone
 }
 
 //Save to disk
@@ -65,6 +66,7 @@ void Settings::WriteSettings()
 	qSettings->setValue("FramesPerBuffer",framesPerBuffer);
 	qSettings->setValue("LeftRightIncrement",leftRightIncrement);
 	qSettings->setValue("UpDownIncrement",upDownIncrement);
+    qSettings->setValue("ModeOffset",modeOffset);
 
 	qSettings->sync();
 }

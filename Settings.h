@@ -27,6 +27,7 @@ public:
 	//Increment for left-right and up-down in spectrum display
 	int leftRightIncrement;
 	int upDownIncrement;
+    int modeOffset; //tone offset for CW
 
     //Fonts for consisten UI
     QFont smFont;
