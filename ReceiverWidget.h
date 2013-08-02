@@ -89,7 +89,7 @@ private:
 	int lowMixer;
 	bool powerOn;
 	DEMODMODE mode;
-	int modeOffset; //make CW +-700 instead of actual freq
+    int modeOffset; //make CW +- tone instead of actual freq
     Presets *presets;
 
     DATA_SELECTION dataSelection;

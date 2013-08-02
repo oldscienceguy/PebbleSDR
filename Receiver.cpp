@@ -452,6 +452,9 @@ void Receiver::SetMode(DEMODMODE m)
         demod->SetDemodMode(m, sampleRate, downSample1Rate);
         sdr->lastMode = m;
 	}
+    if (morse != NULL && (m == dmCWL || m == dmCWU)) {
+        morse->setCWMode(m);
+    }
 }	
 void Receiver::SetFilter(int lo, int hi)
 {

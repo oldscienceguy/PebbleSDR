@@ -396,11 +396,11 @@ void ReceiverWidget::SetFrequency(double f)
 	{
 		//Ask the receiver if requested freq is within limits and step size
 		//Set actual frequency to next higher or lower step
-		//Receiver is set with modeOffset, but we keep display at what was actually set
-        loFrequency = receiver->SetFrequency(f + modeOffset, frequency ) - modeOffset;
+        loFrequency = receiver->SetFrequency(f, frequency );
         frequency = loFrequency;
 		mixer = 0;
-		receiver->SetMixer(mixer);
+        //Mixer is actually set including modeOffset so we hear tone, but display shows actual freq
+        receiver->SetMixer(mixer + modeOffset);
 
 	} else {
 		//Mixer is delta between what's displayed and last LO Frequency
@@ -410,7 +410,7 @@ void ReceiverWidget::SetFrequency(double f)
         if (mixer < lowMixer || mixer > highMixer) {
             setLoMode(true); //Switch to LO mode, resets mixer etc
             //Set LO to new freq and contine
-            loFrequency = receiver->SetFrequency(f + modeOffset, loFrequency );
+            loFrequency = receiver->SetFrequency(f, loFrequency );
             frequency = loFrequency;
             //Back to Mixer mode
             setLoMode(false);
@@ -524,7 +524,7 @@ void ReceiverWidget::setLoMode(bool b)
         //LO Mode
         ui.loButton->setChecked(true); //Make sure button is toggled if called from presets
         mixer=0;
-		receiver->SetMixer(mixer);
+        receiver->SetMixer(mixer + modeOffset);
 		SetFrequency(loFrequency);
 	} else {
 		//Mixer Mode
@@ -600,6 +600,18 @@ void ReceiverWidget::findStationButtonClicked()
 
 }
 
+/*
+8/1/13 Review these settings which were done in Pebble toddler years
+CuteSDR defaults are always centered on 0
+AM: -5k +5k
+SAM -5k +5k
+FM: -5k +5k
+WFM: -100k +100k
+USB: 0 5k
+LSB -5k 0
+CWU: -1k 1k
+CWL: -1k 1k
+*/
 void ReceiverWidget::filterSelectionChanged(QString f)
 {
 	int filter = f.toInt();
@@ -608,10 +620,10 @@ void ReceiverWidget::filterSelectionChanged(QString f)
 	{
 	case dmLSB:
 		lo=-filter;
-		hi = -50;
+        hi = 0;
 		break;
 	case dmUSB:
-		lo=50;
+        lo=0;
 		hi=filter;
 		break;
 	case dmAM:
@@ -620,21 +632,42 @@ void ReceiverWidget::filterSelectionChanged(QString f)
 		lo=-filter/2;
 		hi=filter/2;
 		break;
+    /*
+     * This gets very confusing, so for the record ...
+     * Let F = freq of actual CW carrier.  This is what we want to see on freq and spectrum Display
+     * But we actuall want to hear a tone of 'modeOffset' or 800hz
+     * If mode is CWU we expect to tune from low to high, so we subtact 800hz to set device/mixer frequency
+     * So lets say F=10k and Pebble shows 10k.  Device will be set to 9200 and we hear 800hz tone
+     * Tunint higher decreases tone, tuning lower increases
+     *
+     * If mode is CWL, tuneing higher increases tone, tuning lower decreases
+     * This is all taken care of when we set the mixer frequency by offsetting modemOffset
+     *
+     * So far so good, but now we have to make sure our filters always keey the freq including offset in band
+     * To test this we should be able to go from 1200 to 250 hz filter without losing audio tone.
+     * We want to put our 800hz tone in the middle of the filter
+     * So we take the filter width and add 1/2 it to the modeOffset and 1/2 to the filter itself
+     *
+    */
 	case dmCWU:
-		lo=50;
-		hi=filter;
+        //modeOffset = -800
+        //We want 1200hz filter to run from -1600 to -400 so modeOffset is right in the middle
+        lo = 0 - (modeOffset * .5); // 0 - - 400 = 400
+        hi = filter - (modeOffset * .5); // 1200 - - 400 = 1600
 		break;
 	case dmCWL:
-		lo=-filter;
-		hi= -50;
-		break;
+        //modeOffset = +800
+        lo = -filter - (modeOffset * .5); //-1200 - 400 = -1600
+        hi = 0 - (modeOffset * .5); // 0 - 400 = -400
+        break;
+    //Same as CW but with no offset tone, drop if not needed
 	case dmDIGU:
-		lo=200;
+        lo=0;
 		hi=filter;
 		break;
 	case dmDIGL:
 		lo=-filter;
-		hi= -200;
+        hi= 0;
 		break;
     case dmFMMono:
     case dmFMStereo:
@@ -701,10 +734,12 @@ void ReceiverWidget::modeSelectionChanged(QString m)
 	{
 	//Todo: Work on this, still not accurately reflecting click
 	case dmCWU:
-		modeOffset = -700;
+        //Subtract modeOffset from actual freq so we hear upper tone
+        modeOffset = -global->settings->modeOffset; //Same as CW decoder
 		break;
 	case dmCWL:
-		modeOffset = 700;
+        //Add modeOffset to actual tuned freq so we hear lower tone
+        modeOffset = global->settings->modeOffset;
 		break;
 	default:
 		modeOffset = 0;
