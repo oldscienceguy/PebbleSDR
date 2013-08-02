@@ -7,8 +7,13 @@
 #include "QTextEdit"
 #include "ui/ui_data-morse.h"
 #include "../fldigifilters.h"
+//!!testing
+#include "demod/downconvert.h"
+#include "Demod.h"
 
 class Receiver;
+
+#pragma clang diagnostic ignored "-Wc++11-extensions"
 
 //This comes from configuration.h in fldigi
 struct {
@@ -25,7 +30,6 @@ struct {
     int CWupperlimit = 50; // Upper TX limit (WPM)
     std::string CW_prosigns = "=~<>%+&{}"; //CW prosigns BT AA AS AR SK KN INT HM VE
     bool CW_use_paren = false; //Use open paren character; typically used in MARS ops
-    double CWsweetspot = 1000.0; //Default CW tracking point (Hz)
     bool StartAtSweetSpot = false; //Always start new modems at sweet spot frequencies
     double CWupper = 0.6; //Detector hysterisis, upper threshold
     double CWlower = 0.4; //Detector hysterisis, lower threshold
@@ -36,9 +40,10 @@ struct {
 }progdefaults;
 
 struct {
-    int		carrier;
-    bool	sqlonoff;
-    double  sldrSquelchValue;
+    //int		carrier = 1000; //??
+    bool	sqlonoff = true; //
+    double  sldrSquelchValue = 5.0; //Should be adjustable to improve noise induced errors
+    //double  sldrSquelchValue = 1.0; //Should be adjustable to improve noise induced errors
 
 } progStatus;
 
@@ -96,6 +101,7 @@ private:
 //Remove if we eventually create a separate 'morse widget' object for UI
 class Morse : public SignalProcessing
 {
+    Q_OBJECT
 
 public:
     Morse(int sr, int fc);
@@ -108,6 +114,7 @@ public:
     CPX * ProcessBlockFldigi(CPX *in);
 
     void SetReceiver(Receiver *_rcv);
+    void setCWMode(DEMODMODE m);
 
 
     //Updated by ProcessBlock and holds power levels.
@@ -127,15 +134,20 @@ public:
     void OutputData(const char *d);
     void OutputData(const char c);
 
+public slots:
+    void squelchChanged(int v);
+
 protected:
     Receiver *rcv;
     Ui::dataMorse *dataUi;
-
+    CPXBuf *workingBuf;
+    int squelchValue;
+    DEMODMODE cwMode;
 
     Goertzel *cwGoertzel;
-    int goertzelFreq; //CW tone we're looking for, normally 700hz
-    int goertzelSampleRate; //Goertzel filter only needs 8k sample rate.  Bigger means more bins and slower
-    int decimateFactor; //receiver sample rate decmiate factor to get to goertzel sample rate
+    int modemFrequency; //CW tone we're looking for.  This is the goertzel freq or the NCO freq for mixer approach
+    int modemSampleRate; //Modem (Goretzel or other) only needs 8k sample rate.  Bigger means more bins and slower
+    int modemDecimateFactor; //receiver sample rate decmiate factor to get to modem sample rate
     int powerBufSize;
     int toneBufSize;
 
@@ -174,9 +186,13 @@ protected:
     int element; //1 if dash, 0 if dot
 
     //FLDigi rename vars after working
+
+    CDownConvert modemDownConvert; //Get to modem rate and mix
+
+    CPX mixer(CPX in);
     void reset_rx_filter();
     void rx_FIRprocess(const double *buf, int len);
-    int rx_process(const double *buf, int len);
+
     MorseCode morseCode;
     void decode_stream(double value);
     double agc_peak; // threshold for tone detection
@@ -185,8 +201,13 @@ protected:
     void update_Status();
     void init();
 
+    //Used for syncscope and can be removed
     #define CLRCOUNT 16
-    #define	DEC_RATIO	16
+    //Fldigi samplerate is 8x, then decimated in filter by 16 - Filter does MAC every DEC_RATIO samples
+    //So filter is running at 8k/16 or 500sps?
+    //Also smpl_cntr is updated 500sps or 2ms per increment
+
+    #define	DEC_RATIO	16 //Decimation Ratio replaced with modemDecimateFactor
     #define CW_FIRLEN   512
     // Maximum number of signs (dit or dah) in a Morse char.
     #define WGT_SIZE 7
@@ -212,12 +233,13 @@ protected:
     double upper_threshold;
     int FilterFFTLen;
     bool use_matched_filter;
-    double frequency;
     bool freqlock;
 
-    double		phaseacc;		// used by NCO for rx/tx tones
+    //Use by NCO in mixer to mix cwToneFrequency
+    double		phaseacc;
     double		FFTphase;
     double		FIRphase;
+
     double		FFTvalue;
     double		FIRvalue;
 
@@ -240,10 +262,11 @@ protected:
     int cw_ptr;
     int clrcount;
 
-    //!!What is this?  decimated decoder rate?
+    //Modem sample rate, device sample rate decimated to this
     #define	CWSampleRate 8000
     #define	CWMaxSymLen		4096		// AG1LE: - was 4096
 
+    //All this can be removed if we don't use for our version of syncscope
     #define MAX_PIPE_SIZE (22 * CWSampleRate * 12 / 800)
     double pipe[MAX_PIPE_SIZE+1];			// storage for sync scope data
     double clearpipe[MAX_PIPE_SIZE+1];

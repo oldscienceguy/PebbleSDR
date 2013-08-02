@@ -120,24 +120,18 @@
        </spacer>
       </item>
       <item>
-       <widget class="QProgressBar" name="dataBar">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
+       <widget class="BargraphMeter" name="dataBar" native="true">
+        <property name="minimumSize">
+         <size>
+          <width>80</width>
+          <height>0</height>
+         </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>75</width>
-          <height>18</height>
+          <width>16777215</width>
+          <height>14</height>
          </size>
-        </property>
-        <property name="value">
-         <number>0</number>
-        </property>
-        <property name="textVisible">
-         <bool>false</bool>
         </property>
        </widget>
       </item>
@@ -220,11 +214,44 @@
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="QSlider" name="squelchSlider">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>18</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="minimum">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>BargraphMeter</class>
+   <extends>QWidget</extends>
+   <header location="global">bargraphmeter.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
