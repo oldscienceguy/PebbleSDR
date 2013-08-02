@@ -104,6 +104,7 @@ Resources/edit.png -text
 /sdr-ip.ui -text
 /sdr.ui -text
 /smeterwidget.cpp -text
+/smeterwidget.h -text
 /smeterwidget.ui -text
 /spectrumwidget.cpp -text
 /spectrumwidget.h -text
