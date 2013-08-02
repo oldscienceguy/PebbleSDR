@@ -1,7 +1,7 @@
 #pragma once
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-
+#include "global.h"
 #include "ui/ui_receiverwidget.h"
 #include "ui/ui_directinput.h"
 #include "ui/ui_data-morse.h"

@@ -459,9 +459,6 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
 
     //!!makeshape(); //Transmit?
     sync_parameters();
-    //!!REQ(static_cast<void (waterfall::*)(int)>(&waterfall::Bandwidth), wf, (int)bandwidth);
-    //!!REQ(static_cast<int (Fl_Value_Slider2::*)(double)>(&Fl_Value_Slider2::value), sldrCWbandwidth, (int)bandwidth);
-    update_Status();
 
     modemDownConvert.SetDataRate(sampleRate,modemSampleRate);
     modemDownConvert.SetFrequency(modemFrequency);
@@ -985,11 +982,12 @@ CPX * Morse::ProcessBlockFldigi(CPX *in)
     reset_rx_filter();
 
     //!!This mixes and changes in buffer!  Copy to working buf
-    //Kind of working, get some characters at least
+
     CPXBuf::copy(workingBuf->Ptr(),in,numSamples);
-    //Do we need to account for modemOffset in ReceiverWidget?
-    //Actual freq for CWU will be freq + 800 for CWL will be freq -800.  And we want actual freq to be at baseband
-    //
+
+    //We need to account for modemOffset in ReceiverWidget
+    //Actual freq for CWU will be freq + modemFrequency for CWL will be freq -modemFrequency.
+    //And we want actual freq to be at baseband
     if (cwMode == dmCWL)
         modemDownConvert.SetFrequency(-modemFrequency);
     else if (cwMode == dmCWU)
@@ -999,19 +997,7 @@ CPX * Morse::ProcessBlockFldigi(CPX *in)
     //Now at 8k modem rate
     //Verify that testbench post banpass signal looks the same, just at 8k sample rate
     global->testBench->DisplayData(numModemSamples,this->out, modemSampleRate, PROFILE_5);
-#if 0
 
-    //for (int i=0; i<numSamples; i++) {
-    //If Goretzel is 8k and Receiver is 96k, decimate factor is 12.  Only process every 12th sample
-    for (int i=0; i<numModemSamples; i++) {
-        //!! Does fldigi expect -1 to +1 or - 32767 to + 32767?
-        //I think -1 to +1 PAFloat32
-        z= out[i];
-        if (cw_FIR_filter->run ( z, z )) {
-        //if (i % DEC_RATIO == 0) {
-#endif
-    //Not working yet
-    int decCount = 0;
     for (int i = 0; i<numModemSamples; i++) {
 #if 0
         //ModemFrequency is the RF freq within the bandpass that has the narrow CW signal we want.
@@ -1019,38 +1005,33 @@ CPX * Morse::ProcessBlockFldigi(CPX *in)
         //In Pebble, we've already done that and just need to get it to baseband
         z = CPX (cos(FIRphase), sin(FIRphase) ) * out[i];
         z *= 1.95;
-        //FIRphase += TWOPI * (modemFrequency / modemSampleRate); //Stupid integer math error
         FIRphase += TWOPI * (double)modemFrequency / (double)modemSampleRate;
         if (FIRphase > M_PI)
             FIRphase -= TWOPI;
         else if (FIRphase < M_PI)
             FIRphase += TWOPI;
-#else
-        z = out[i];
 #endif
-        //This gives us -modemFrequency to 0 or 0 to +modemFrequency depending on USB/LSB bandpass
+        z = out[i] * 10; //A little gain
 
-        //Now we decimated to modemSampleRate by only taking every modemDecmiateRate samples
-        //cw_FIR_filter does MAC and returns 1 every DEC_RATIO samples
+        //cw_FIR_filter does MAC and returns 1 result every DEC_RATIO samples
         //LowPass filter establishes the detection bandwidth (freq)
         //and Detection time (DEC_RATIO)
         //If the LP filter passes the tone, we have detection
         //We need some sort of AGC here to get consistent tone thresholds
         if (cw_FIR_filter->run ( z, z )) {
-            //Save filtered output for testbench
-            workingBuf->Ptr()[decCount++] = z;
 
             //smpl_ctr keeps track of uSecs
             //Since cw_FIR_filter only returns every DEC_RATIO (16) samples, smpl_ctr increases in DEC_RATIO increments
             smpl_ctr += DEC_RATIO;
 
-            // demodulate
-            //!! We need to scale.  Why? Check
+            // demodulate and get power in signal
             FIRvalue = z.mag(); //sqrt sum of squares
             //or
-            //FIRvalue = z.sqrMag() * 10; //just sum of squares
+            //FIRvalue = z.sqrMag(); //just sum of squares
 
-            FIRvalue = bitfilter->run(FIRvalue); //Moving average to handle jitter during CW rise and fall periods
+            //Moving average to handle jitter during CW rise and fall periods
+            FIRvalue = bitfilter->run(FIRvalue);
+            //Main logic for timing and character decoding
             decode_stream(FIRvalue);
         }
 
@@ -1058,44 +1039,11 @@ CPX * Morse::ProcessBlockFldigi(CPX *in)
         //Its possible we get called right after dataUi has been been instantiated
         //since receive loop is running when CW window is opened
         if (dataUi != NULL && dataUi->dataBar!=NULL)
-            dataUi->dataBar->setValue(metric);
-
+            dataUi->dataBar->setValue(metric); //Tuning bar
     }
-    global->testBench->DisplayData(decCount,workingBuf->Ptr(), modemSampleRate/DEC_RATIO, PROFILE_6);
-
-    // metric is clamped between 0 and 100
-    //!!display_metric(metric);
 
     return in;
 }
-
-void Morse::rx_FIRprocess(const double *buf, int len)
-{
-    CPX z;
-
-    while (len-- > 0) {
-        z = CPX ( *buf * cos(FIRphase), *buf * sin(FIRphase) );
-        buf++;
-
-        FIRphase += TWOPI * modemFrequency / modemSampleRate;
-        if (FIRphase > M_PI)
-            FIRphase -= TWOPI;
-        else if (FIRphase < M_PI)
-            FIRphase += TWOPI;
-
-        if (cw_FIR_filter->run ( z, z )) {
-
-// update the basic sample counter used for morse timing
-            smpl_ctr += DEC_RATIO;
-// demodulate
-            FIRvalue = z.mag();
-            FIRvalue = bitfilter->run(FIRvalue);
-
-            decode_stream(FIRvalue);
-        }
-    }
-}
-
 
 void Morse::rx_init()
 {
@@ -1106,35 +1054,16 @@ void Morse::rx_init()
     agc_peak = 0;
     //!!set_scope_mode(Digiscope::SCOPE);
 
-    update_Status();
     usedefaultWPM = false;
     scope_clear = true;
 }
 
 void Morse::init()
 {
-    //!! No waterfall
-    //!!bool wfrev = wf->Reverse();
-    //!!bool wfsb = wf->USB();
-    //!!reverse = wfrev ^ !wfsb;
-
-#if 0
-    //Waterfall
-    if (progdefaults.StartAtSweetSpot)
-        set_freq(progdefaults.CWsweetspot);
-    else if (progStatus.carrier != 0) {
-        set_freq(progStatus.carrier);
-#if !BENCHMARK_MODE
-        progStatus.carrier = 0;
-#endif
-    }
-#endif
-    //!!else
-    //!!    set_freq(wf->Carrier());
-
+    //We don't have separate waterfall like fldigi does, remove waterfall code everywhere
     trackingfilter->reset();
     cw_adaptive_receive_threshold = (long int)trackingfilter->run(2 * cw_send_dot_length);
-    //!put_cwRcvWPM(cw_send_speed);
+    //put_cwRcvWPM(cw_send_speed);
     for (int i = 0; i < OUTBUFSIZE; i++)
         outbuf[i] = qskbuf[i] = 0.0;
     rx_init();
@@ -1142,19 +1071,6 @@ void Morse::init()
     prosigns = progdefaults.CW_prosigns;
     stopflag = false;
 }
-
-//=======================================================================
-//update_syncscope()
-//Routine called to update the display on the sync scope display.
-//For CW this is an o scope pattern that shows the cw data stream.
-//=======================================================================
-
-void Morse::update_Status()
-{
-    //!!put_MODEstatus("CW %s Rx %d", usedefaultWPM ? "*" : " ", cw_receive_speed);
-
-}
-
 
 //Not called anywhere, used by SOM which we may skip
 int Morse::normalize(float *v, int n, int twodots)

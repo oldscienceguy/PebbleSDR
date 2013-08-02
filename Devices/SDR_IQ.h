@@ -8,10 +8,11 @@ And Moe Wheatley AE4JY  <http://www.moetronix.com> for ActiveX app example
 FTDI DLL is also used for Elektor SDR
 */
 #include "gpl.h"
+#include "global.h"
+#include "sdr.h"
 #include <QThread>
 #include <QMutex>
 #include <QSettings>
-#include "sdr.h"
 #include "cpx.h"
 #include "ui/ui_sdriqoptions.h"
 

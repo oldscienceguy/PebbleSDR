@@ -1,6 +1,8 @@
 #pragma once
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
+#include "global.h"
+
 #include "QObject"
 #include "signalprocessing.h"
 #include <iostream>

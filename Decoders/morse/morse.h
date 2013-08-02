@@ -191,14 +191,12 @@ protected:
 
     CPX mixer(CPX in);
     void reset_rx_filter();
-    void rx_FIRprocess(const double *buf, int len);
 
     MorseCode morseCode;
     void decode_stream(double value);
     double agc_peak; // threshold for tone detection
     int normalize(float *v, int n, int twodots);
     void rx_init();
-    void update_Status();
     void init();
 
     //Used for syncscope and can be removed

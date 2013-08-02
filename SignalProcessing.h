@@ -64,10 +64,10 @@ public:
 
 private:
     //Testing Ooura DFT
-    FFTOoura *offt;
-    double *offtSinCosTable;
-    int *offtWorkArea;
-    CPX *offtBuf;
+    //FFTOoura *offt;
+    //double *offtSinCosTable;
+    //int *offtWorkArea;
+    //CPX *offtBuf;
 
     fftw_plan plan_fwd;
     fftw_plan plan_rev;

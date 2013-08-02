@@ -4,6 +4,7 @@
 /*
 Base class for SDR Receivers
 */
+#include "global.h"
 
 #include <QObject>
 #include <QString>

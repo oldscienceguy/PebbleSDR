@@ -1,12 +1,12 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
+#include "hpsdr.h"
 #include <QMessageBox>
 #include <QCoreApplication>
 #include <QFile>
 #include <QDebug>
 #include "Demod.h"
 #include "receiver.h"
-#include "hpsdr.h"
 
 HPSDR::HPSDR(Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_receiver, dev,_settings)
 {
