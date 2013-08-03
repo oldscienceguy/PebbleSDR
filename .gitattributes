@@ -3,6 +3,8 @@
 /AGC.h -text
 /Butterworth.cpp -text
 /Butterworth.h -text
+DSP/fftbasic.cpp -text
+DSP/fftbasic.h -text
 Decoders/fldigifilters.cpp -text
 Decoders/fldigifilters.h -text
 /Demod.cpp -text
@@ -82,8 +84,6 @@ Resources/edit.png -text
 /data-morse.ui -text
 /defs.h -text
 /directinput.ui -text
-/fftbasic.cpp -text
-/fftbasic.h -text
 /ftd2xx.h -text
 /funcubeoptions.ui -text
 /global.cpp -text

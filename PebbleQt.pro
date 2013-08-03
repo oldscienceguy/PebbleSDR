@@ -357,7 +357,6 @@ HEADERS += \
     AGC.h \
     audio.h \
     audioqt.h \
-    fftbasic.h \
 	iqbalance.h \
     global.h \
     goertzel.h \
@@ -406,7 +405,8 @@ HEADERS += \
     Decoders/fldigifilters.h \
     bargraphmeter.h \
     testbench.h \
-    DSP/fft.h
+    DSP/fft.h \
+    DSP/fftbasic.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -434,7 +434,6 @@ SOURCES += \
     AGC.cpp \
     audio.cpp \
     audioqt.cpp \
-    fftbasic.cpp \
     iqbalance.cpp \
     global.cpp \
     goertzel.cpp \
@@ -471,7 +470,8 @@ SOURCES += \
     Decoders/fldigifilters.cpp \
     bargraphmeter.cpp \
     testbench.cpp \
-    DSP/fft.cpp
+    DSP/fft.cpp \
+    DSP/fftbasic.cpp
 
 FORMS += \
     spectrumwidget.ui \
