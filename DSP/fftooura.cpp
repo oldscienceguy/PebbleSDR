@@ -108,17 +108,17 @@ void FFTOoura::FFTInverse(CPX *in, CPX *out, int size)
         CPXBuf::copy(freqDomain, in, size);
     }
     //Size is 2x fftSize because offt works on double[] re-im-re-im et
-    cdft(2*size, -1, (double*)timeDomain, offtWorkArea, offtSinCosTable);
+    cdft(2*size, -1, (double*)freqDomain, offtWorkArea, offtSinCosTable);
 
     if (out != NULL)
-        CPXBuf::copy(out, timeDomain, fftSize);
+        CPXBuf::copy(out, freqDomain, fftSize);
 
 
 }
 
 
 
-//Original base ooura code
+//Original ooura high level functions
 /*
 -------- Complex DFT (Discrete Fourier Transform) --------
     [definition]
@@ -166,12 +166,6 @@ void FFTOoura::FFTInverse(CPX *in, CPX *out, int size)
  */
 void FFTOoura::cdft(int n, int isgn, double *a, int *ip, double *w)
 {
-    void makewt(int nw, int *ip, double *w);
-    void bitrv2(int n, int *ip, double *a);
-    void bitrv2conj(int n, int *ip, double *a);
-    void cftfsub(int n, double *a, double *w);
-    void cftbsub(int n, double *a, double *w);
-
     if (n > (ip[0] << 2)) {
         makewt(n >> 2, ip, w);
     }
@@ -239,13 +233,6 @@ void FFTOoura::cdft(int n, int isgn, double *a, int *ip, double *w)
 */
 void FFTOoura::rdft(int n, int isgn, double *a, int *ip, double *w)
 {
-    void makewt(int nw, int *ip, double *w);
-    void makect(int nc, int *ip, double *c);
-    void bitrv2(int n, int *ip, double *a);
-    void cftfsub(int n, double *a, double *w);
-    void cftbsub(int n, double *a, double *w);
-    void rftfsub(int n, double *a, int nc, double *c);
-    void rftbsub(int n, double *a, int nc, double *c);
     int nw, nc;
     double xi;
 
@@ -324,14 +311,6 @@ void FFTOoura::rdft(int n, int isgn, double *a, int *ip, double *w)
 */
 void FFTOoura::ddct(int n, int isgn, double *a, int *ip, double *w)
 {
-    void makewt(int nw, int *ip, double *w);
-    void makect(int nc, int *ip, double *c);
-    void bitrv2(int n, int *ip, double *a);
-    void cftfsub(int n, double *a, double *w);
-    void cftbsub(int n, double *a, double *w);
-    void rftfsub(int n, double *a, int nc, double *c);
-    void rftbsub(int n, double *a, int nc, double *c);
-    void dctsub(int n, double *a, int nc, double *c);
     int j, nw, nc;
     double xr;
 
@@ -429,14 +408,6 @@ void FFTOoura::ddct(int n, int isgn, double *a, int *ip, double *w)
  */
 void FFTOoura::ddst(int n, int isgn, double *a, int *ip, double *w)
 {
-    void makewt(int nw, int *ip, double *w);
-    void makect(int nc, int *ip, double *c);
-    void bitrv2(int n, int *ip, double *a);
-    void cftfsub(int n, double *a, double *w);
-    void cftbsub(int n, double *a, double *w);
-    void rftfsub(int n, double *a, int nc, double *c);
-    void rftbsub(int n, double *a, int nc, double *c);
-    void dstsub(int n, double *a, int nc, double *c);
     int j, nw, nc;
     double xr;
 
@@ -524,12 +495,6 @@ void FFTOoura::ddst(int n, int isgn, double *a, int *ip, double *w)
  */
 void FFTOoura::dfct(int n, double *a, double *t, int *ip, double *w)
 {
-    void makewt(int nw, int *ip, double *w);
-    void makect(int nc, int *ip, double *c);
-    void bitrv2(int n, int *ip, double *a);
-    void cftfsub(int n, double *a, double *w);
-    void rftfsub(int n, double *a, int nc, double *c);
-    void dctsub(int n, double *a, int nc, double *c);
     int j, k, l, m, mh, nw, nc;
     double xr, xi, yr, yi;
 
@@ -653,12 +618,6 @@ void FFTOoura::dfct(int n, double *a, double *t, int *ip, double *w)
  */
 void FFTOoura::dfst(int n, double *a, double *t, int *ip, double *w)
 {
-    void makewt(int nw, int *ip, double *w);
-    void makect(int nc, int *ip, double *c);
-    void bitrv2(int n, int *ip, double *a);
-    void cftfsub(int n, double *a, double *w);
-    void rftfsub(int n, double *a, int nc, double *c);
-    void dstsub(int n, double *a, int nc, double *c);
     int j, k, l, m, mh, nw, nc;
     double xr, xi, yr, yi;
 
@@ -740,12 +699,11 @@ void FFTOoura::dfst(int n, double *a, double *t, int *ip, double *w)
 
 /* -------- initializing routines -------- */
 //These are utility functions for main FFT functions above
-//Eventually we should make these private members and update code
+//Made these private members, same as cuteSDR.  But cuteSDR may have modified implementation, this is the original
 
 //Initializes sine/cosine table
-void makewt(int nw, int *ip, double *w)
+void FFTOoura::makewt(int nw, int *ip, double *w)
 {
-    void bitrv2(int n, int *ip, double *a);
     int j, nwh;
     double delta, x, y;
 
@@ -773,7 +731,7 @@ void makewt(int nw, int *ip, double *w)
 }
 
 
-void makect(int nc, int *ip, double *c)
+void FFTOoura::makect(int nc, int *ip, double *c)
 {
     int j, nch;
     double delta;
@@ -795,7 +753,7 @@ void makect(int nc, int *ip, double *c)
 /* -------- child routines -------- */
 
 
-void bitrv2(int n, int *ip, double *a)
+void FFTOoura::bitrv2(int n, int *ip, double *a)
 {
     int j, j1, k, k1, l, m, m2;
     double xr, xi, yr, yi;
@@ -895,7 +853,7 @@ void bitrv2(int n, int *ip, double *a)
 }
 
 
-void bitrv2conj(int n, int *ip, double *a)
+void FFTOoura::bitrv2conj(int n, int *ip, double *a)
 {
     int j, j1, k, k1, l, m, m2;
     double xr, xi, yr, yi;
@@ -1004,10 +962,8 @@ void bitrv2conj(int n, int *ip, double *a)
 }
 
 
-void cftfsub(int n, double *a, double *w)
+void FFTOoura::cftfsub(int n, double *a, double *w)
 {
-    void cft1st(int n, double *a, double *w);
-    void cftmdl(int n, int l, double *a, double *w);
     int j, j1, j2, j3, l;
     double x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i;
 
@@ -1056,10 +1012,8 @@ void cftfsub(int n, double *a, double *w)
 }
 
 
-void cftbsub(int n, double *a, double *w)
+void FFTOoura::cftbsub(int n, double *a, double *w)
 {
-    void cft1st(int n, double *a, double *w);
-    void cftmdl(int n, int l, double *a, double *w);
     int j, j1, j2, j3, l;
     double x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i;
 
@@ -1108,7 +1062,7 @@ void cftbsub(int n, double *a, double *w)
 }
 
 
-void cft1st(int n, double *a, double *w)
+void FFTOoura::cft1st(int n, double *a, double *w)
 {
     int j, k1, k2;
     double wk1r, wk1i, wk2r, wk2i, wk3r, wk3i;
@@ -1213,7 +1167,7 @@ void cft1st(int n, double *a, double *w)
 }
 
 
-void cftmdl(int n, int l, double *a, double *w)
+void FFTOoura::cftmdl(int n, int l, double *a, double *w)
 {
     int j, j1, j2, j3, k, k1, k2, m, m2;
     double wk1r, wk1i, wk2r, wk2i, wk3r, wk3i;
@@ -1340,7 +1294,7 @@ void cftmdl(int n, int l, double *a, double *w)
 }
 
 
-void rftfsub(int n, double *a, int nc, double *c)
+void FFTOoura::rftfsub(int n, double *a, int nc, double *c)
 {
     int j, k, kk, ks, m;
     double wkr, wki, xr, xi, yr, yi;
@@ -1365,7 +1319,7 @@ void rftfsub(int n, double *a, int nc, double *c)
 }
 
 
-void rftbsub(int n, double *a, int nc, double *c)
+void FFTOoura::rftbsub(int n, double *a, int nc, double *c)
 {
     int j, k, kk, ks, m;
     double wkr, wki, xr, xi, yr, yi;
@@ -1392,7 +1346,7 @@ void rftbsub(int n, double *a, int nc, double *c)
 }
 
 
-void dctsub(int n, double *a, int nc, double *c)
+void FFTOoura::dctsub(int n, double *a, int nc, double *c)
 {
     int j, k, kk, ks, m;
     double wkr, wki, xr;
@@ -1413,7 +1367,7 @@ void dctsub(int n, double *a, int nc, double *c)
 }
 
 
-void dstsub(int n, double *a, int nc, double *c)
+void FFTOoura::dstsub(int n, double *a, int nc, double *c)
 {
     int j, k, kk, ks, m;
     double wkr, wki, xr;
