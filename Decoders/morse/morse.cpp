@@ -380,13 +380,12 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
     dataUi = NULL;
 
     //fldigi constructors
-    squelchValue = progStatus.sldrSquelchValue;
+    squelchIncrement = 0.5;
+    squelchValue = 2.0;
+    sqlonoff = true;
 
     freqlock = false;
     usedefaultWPM = false;
-
-    cw_ptr = 0;
-    clrcount = CLRCOUNT;
 
     cw_speed  = progdefaults.CWspeed; //!!Whats the difference between speed, default speed and receive speed?
     cw_default_speed = cw_speed;
@@ -405,7 +404,6 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
     FIRphase = 0.0;
     FFTvalue = 0.0;
     FIRvalue = 0.0;
-    clrcount = 0;
 
     //Upper and lower don't seem to be used, just progdefaults.CWUpper
     upper_threshold = progdefaults.CWupper;
@@ -440,6 +438,12 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
     modemDownConvert.SetFrequency(modemFrequency);
 
     cwMode = dmCWL;
+
+    //Used to update display from main thread.
+    connect(this, SIGNAL(newOutput()), this, SLOT(refreshOutput()));
+
+    outputOn = true;
+
 }
 
 
@@ -464,7 +468,6 @@ void Morse::SetupDataUi(QWidget *parent)
     if (parent == NULL) {
         //We want to delete
         if (dataUi != NULL) {
-            dataUi->dataBar->stop();
             delete dataUi;
         }
         dataUi = NULL;
@@ -473,19 +476,27 @@ void Morse::SetupDataUi(QWidget *parent)
         //Create new one
         dataUi = new Ui::dataMorse();
         dataUi->setupUi(parent);
-        dataUi->dataBar->start();
 
-        dataUi->squelchSlider->setMinimum(1);
-        dataUi->squelchSlider->setMaximum(20);
+        dataUi->dataBar->setMin(0);
+        dataUi->dataBar->setMax(10);
+
+        dataUi->squelchSlider->setMinimum(0);
+        dataUi->squelchSlider->setMaximum(10 / squelchIncrement);
         dataUi->squelchSlider->setSingleStep(1);
+        dataUi->squelchSlider->setValue(squelchValue);
         connect(dataUi->squelchSlider,SIGNAL(valueChanged(int)),this,SLOT(squelchChanged(int)));
+
+        dataUi->dataEdit->setAutoFormatting(QTextEdit::AutoNone);
+        dataUi->dataEdit->setAcceptRichText(false);
+        dataUi->dataEdit->setReadOnly(true);
+        dataUi->dataEdit->setUndoRedoEnabled(false);
+        dataUi->dataEdit->setWordWrapMode(QTextOption::WordWrap);
+
+        connect(dataUi->resetButton,SIGNAL(clicked()),this,SLOT(resetOutput()));
+        dataUi->onBox->setChecked(true);
+        connect(dataUi->onBox,SIGNAL(toggled(bool)), this, SLOT(onBoxChecked(bool)));
     }
 
-    dataUi->dataEdit->setAutoFormatting(QTextEdit::AutoNone);
-    dataUi->dataEdit->setAcceptRichText(false);
-    dataUi->dataEdit->setReadOnly(true);
-    dataUi->dataEdit->setUndoRedoEnabled(false);
-    dataUi->dataEdit->setWordWrapMode(QTextOption::WordWrap);
 }
 
 //Returns tcw in ms for any given WPM
@@ -535,6 +546,34 @@ void Morse::setCWMode(DEMODMODE m)
     cwMode = m;
 }
 
+void Morse::onBoxChecked(bool b)
+{
+    outputOn = b;
+}
+
+void Morse::resetOutput()
+{
+    dataUi->dataEdit->clear();
+    rx_init(); //Reset all data
+}
+
+//Handles newOuput signal
+void Morse::refreshOutput()
+{
+    if (!outputOn)
+        return;
+
+    outputBufMutex.lock();
+    dataUi->wpmLabel->setText(QString().sprintf("%d WPM",cw_receive_speed));
+
+    for (int i=0; i<outputBufIndex; i++) {
+        dataUi->dataEdit->insertPlainText(QString(outputBuf[i])); //At cursor
+        dataUi->dataEdit->moveCursor(QTextCursor::End);
+    }
+    outputBufIndex = 0;
+    outputBufMutex.unlock();
+}
+
 void Morse::OutputData(const char* d)
 {
     if (dataUi == NULL)
@@ -545,30 +584,29 @@ void Morse::OutputData(const char* d)
 }
 void Morse::OutputData(const char c)
 {
-    static char buf[] = "________________________________________";
-
     if (dataUi == NULL)
         return;
-    //Todo: Output dot dash version to label in UI line
-    //Crashes in text edit after 1 or 2 lines of text out
-    //Do we need to buffer words?  Not good for CW
-#if 1
-    //temp so we don't keep crashing
-    //times square scroll
-    for (int i=0; i<sizeof(buf) - 1; i++)
-        buf[i] = buf[i+1];
-    buf[sizeof(buf) - 1] = c; //Always at end
 
-    dataUi->wpmLabel->setText(QString(buf));
-#else
-    dataUi->dataEdit->insertPlainText(QString(c)); //At cursor
-    dataUi->dataEdit->moveCursor(QTextCursor::End);
-#endif
+    //Display can be accessing at same time, so we need to lock
+    outputBufMutex.lock();
+    if (outputBufIndex < sizeof(outputBuf)) {
+        outputBuf[outputBufIndex] = c;
+        outputBufIndex++;
+    }
+    outputBufMutex.unlock();
+    emit newOutput();
+
+    return;
 }
 
 void Morse::squelchChanged(int v)
 {
-    squelchValue = v;
+    if (v == 0) {
+        sqlonoff = false;
+    } else {
+        squelchValue = v * squelchIncrement; //Slider is in .5 increments so 2 inc = 1 squelch value
+        sqlonoff = true;
+    }
 }
 
 CPX * Morse::ProcessBlockSuperRatt(CPX *in)
@@ -898,7 +936,6 @@ void Morse::reset_rx_filter()
         FIRphase = 0.0;
         FFTvalue = 0.0;
         FIRvalue = 0.0;
-        clrcount = 0;
 
         clrRepBuf();
 
@@ -955,9 +992,7 @@ CPX * Morse::ProcessBlockFldigi(CPX *in)
 
     for (int i = 0; i<numModemSamples; i++) {
 #if 0
-        //ModemFrequency is the RF freq within the bandpass that has the narrow CW signal we want.
-        //In fldigi, this is set by clicking in waterfall
-        //In Pebble, we've already done that and just need to get it to baseband
+        //Mix to get modemFrequency at baseband so narrow filter can detect magnitude
         z = CPX (cos(FIRphase), sin(FIRphase) ) * out[i];
         z *= 1.95;
         FIRphase += TWOPI * (double)modemFrequency / (double)modemSampleRate;
@@ -966,7 +1001,7 @@ CPX * Morse::ProcessBlockFldigi(CPX *in)
         else if (FIRphase < M_PI)
             FIRphase += TWOPI;
 #endif
-        z = out[i] * 10; //A little gain
+        z = out[i] * 1.95; //A little gain - same as fldigi
 
         //cw_FIR_filter does MAC and returns 1 result every DEC_RATIO samples
         //LowPass filter establishes the detection bandwidth (freq)
@@ -1003,9 +1038,7 @@ CPX * Morse::ProcessBlockFldigi(CPX *in)
 void Morse::rx_init()
 {
     cw_receive_state = RS_IDLE;
-    smpl_ctr = 0;
-    cw_rr_current = 0;
-    cw_ptr = 0;
+    clrRepBuf();
     agc_peak = 0;
 
     usedefaultWPM = false;
@@ -1053,7 +1086,7 @@ void Morse::decode_stream(double value)
     //qDebug()<<"CW Value "<<value;
 
     //Check squelch to avoid noise errors
-    if (!progStatus.sqlonoff || metric > squelchValue ) {
+    if (!sqlonoff || metric > squelchValue ) {
         // Power detection using hysterisis detector
         // upward trend means tone starting
         if ((value > progdefaults.CWupper) && (cw_receive_state != RS_IN_TONE)) {
@@ -1065,6 +1098,7 @@ void Morse::decode_stream(double value)
         }
     }
 
+    //Is there a character ready to ouput
     if (FldigiProcessEvent(CW_QUERY_EVENT, &c) == CW_SUCCESS) {
         //Output character(s)
         if (strlen(c) == 1) {
@@ -1120,10 +1154,7 @@ void Morse::update_tracking(int idot, int idash)
 // of word timings and ranges to new values of Morse speed, or receive tolerance.
 void Morse::sync_parameters()
 {
-    int lowerwpm, upperwpm, nusymbollen;
-
-    int wpm = usedefaultWPM ? progdefaults.defCWspeed : progdefaults.CWspeed;
-    int fwpm = progdefaults.CWfarnsworth;
+    int lowerwpm, upperwpm;
 
     cw_default_dot_length = DOT_MAGIC / progdefaults.CWspeed;
     cw_default_dash_length = 3 * cw_default_dot_length;
@@ -1170,9 +1201,8 @@ void Morse::sync_parameters()
 void Morse::clrRepBuf()
 {
     memset(rx_rep_buf, 0, sizeof(rx_rep_buf));
-    cw_rr_current = 0;
-    cw_ptr = 0;
-    smpl_ctr = 0;					// reset audio sample counter
+    cw_rr_current = 0; //Index to rx_rep_buf
+    smpl_ctr = 0; //Start timer over
 }
 
 bool Morse::FldigiProcessEvent(CW_EVENT event, const char **c)
@@ -1186,7 +1216,6 @@ bool Morse::FldigiProcessEvent(CW_EVENT event, const char **c)
         case CW_RESET_EVENT:
             sync_parameters();
             cw_receive_state = RS_IDLE;
-            memset(cw_buffer, 0, sizeof(cw_buffer));
             clrRepBuf();
             break;
 
@@ -1259,11 +1288,9 @@ bool Morse::FldigiProcessEvent(CW_EVENT event, const char **c)
             if (element_usec <= cw_adaptive_receive_threshold) {
                 rx_rep_buf[cw_rr_current++] = CW_DOT_REPRESENTATION;
                 //		printf("%d dit ", last_element/1000);  // print dot length
-                cw_buffer[cw_ptr++] = (float)last_element;
             } else {
                 // a dash is anything longer than 2 dot times
                 rx_rep_buf[cw_rr_current++] = CW_DASH_REPRESENTATION;
-                cw_buffer[cw_ptr++] = (float)last_element;
             }
 
             // We just added a representation to the receive buffer.
@@ -1271,13 +1298,11 @@ bool Morse::FldigiProcessEvent(CW_EVENT event, const char **c)
             if (cw_rr_current == RECEIVE_CAPACITY - 1) {
                 cw_receive_state = RS_IDLE;
                 cw_rr_current = 0;	// reset decoding pointer
-                cw_ptr = 0;
                 smpl_ctr = 0;		// reset audio sample counter
                 return CW_ERROR;
             } else {
                 // zero terminate representation
                 rx_rep_buf[cw_rr_current] = 0;
-                cw_buffer[cw_ptr] = 0.0;
             }
             // All is well.  Move to the more normal after-tone state.
             cw_receive_state = RS_AFTER_TONE;
@@ -1298,7 +1323,6 @@ bool Morse::FldigiProcessEvent(CW_EVENT event, const char **c)
                 // else we had no place to put character...
                 cw_receive_state = RS_IDLE;
                 cw_rr_current = 0;
-                cw_ptr = 0;
                 // reset decoding pointer
                 return CW_ERROR;
             }
@@ -1327,7 +1351,6 @@ bool Morse::FldigiProcessEvent(CW_EVENT event, const char **c)
                 cw_receive_state = RS_IDLE;
                 cw_rr_current = 0;	// reset decoding pointer
                 space_sent = false;
-                cw_ptr = 0;
 
                 return CW_SUCCESS;
             }

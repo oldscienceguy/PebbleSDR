@@ -10,6 +10,7 @@
 
 #include "demod/downconvert.h"
 #include "Demod.h"
+#include <QMutex>
 
 class Receiver;
 
@@ -17,10 +18,8 @@ class Receiver;
 
 //This comes from configuration.h in fldigi
 struct {
-    int defCWspeed = 24; //Default speed (WPM)
     int CWspeed = 18; //Transmit speed (WPM)
     bool CWtrack = true; //Automatic receive speed tracking
-    int CWfarnsworth = 18; //Speed for Farnsworth timing (WPM)
     int CWrange = 10; //Tracking range for CWTRACK (WPM)
     int CWlowerlimit = 5; //Lower RX limit (WPM)
     int CWupperlimit = 50; // Upper TX limit (WPM)
@@ -34,13 +33,6 @@ struct {
     bool CWuse_fft_filter = false; //Use FFT overlap and add convolution filter
 }progdefaults;
 
-struct {
-    //int		carrier = 1000; //??
-    bool	sqlonoff = true; //
-    double  sldrSquelchValue = 5.0; //Should be adjustable to improve noise induced errors
-    //double  sldrSquelchValue = 1.0; //Should be adjustable to improve noise induced errors
-
-} progStatus;
 
 //Utility functions from fldigi
 inline double clamp(double x, double min, double max)
@@ -131,13 +123,19 @@ public:
 
 public slots:
     void squelchChanged(int v);
+    void refreshOutput();
+    void resetOutput();
+    void onBoxChecked(bool);
+
+signals:
+    void newOutput();
 
 protected:
     Receiver *rcv;
     Ui::dataMorse *dataUi;
     CPXBuf *workingBuf;
-    int squelchValue;
     DEMODMODE cwMode;
+
 
     Goertzel *cwGoertzel;
     int modemFrequency; //CW tone we're looking for.  This is the goertzel freq or the NCO freq for mixer approach
@@ -180,6 +178,14 @@ protected:
     bool pendingWord;
     int element; //1 if dash, 0 if dot
 
+    //Characters are output from the main receive thread and can't be output directly to textedit
+    //due to Qt requirement that only main thread does Gui output
+    //So we put characters into this buffer in thread and pick them up in GUI with timer
+    char outputBuf[256]; //Way bigger than we need
+    int outputBufIndex; //Position in output buf of next char, zero means buffer is empty
+    QMutex outputBufMutex;
+    bool outputOn;
+
     //FLDigi rename vars after working
 
     CDownConvert modemDownConvert; //Get to modem rate and mix
@@ -194,8 +200,6 @@ protected:
     void rx_init();
     void init();
 
-    //Used for syncscope and can be removed
-    #define CLRCOUNT 16
     //Fldigi samplerate is 8x
     //Filter does MAC every DEC_RATIO samples
 
@@ -242,10 +246,6 @@ protected:
     int cw_rr_current;				// Receive buffer current location
     void clrRepBuf(); //Reset rx_rep_buf and related pointers
 
-    float cw_buffer[512];
-    int cw_ptr;
-    int clrcount;
-
     //Modem sample rate, device sample rate decimated to this
     #define	CWSampleRate 8000
 
@@ -276,8 +276,10 @@ protected:
 
     // user configurable data - local copy passed in from gui
     int cw_speed;
-    int cw_squelch;
     double	metric;
+    double squelchIncrement; //Slider increments
+    double squelchValue; //If squelch is on, this is compared to metric
+    bool sqlonoff;
 
     int cw_receive_speed;				// Initially 18 WPM
     bool usedefaultWPM;				// use default WPM
