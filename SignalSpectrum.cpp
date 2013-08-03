@@ -19,7 +19,7 @@ SignalSpectrum::SignalSpectrum(int sr, int ns, Settings *set):
 	//Output buffers
 	rawIQ = CPXBuf::malloc(numSamples);
     unprocessed = new double[fftSize];
-    fft = new fftw();
+    fft = new FFTfftw();
     fft->FFTParams(fftSize, +1, 0, sr);
 
 
@@ -111,7 +111,7 @@ void SignalSpectrum::MakeSpectrum(CPX *in, double *sOut, int size)
         }
     }
 }
-void SignalSpectrum::MakeSpectrum(fftw *fft, double *sOut)
+void SignalSpectrum::MakeSpectrum(FFTfftw *fft, double *sOut)
 {
     //Only make spectrum often enough to match spectrum update rate, otherwise we just throw it away
     if (++skipFftsCounter >= skipFfts) {

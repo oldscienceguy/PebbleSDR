@@ -6,11 +6,11 @@
 #include "cpx.h"
 #include "../../fftw-3.3.1/api/fftw3.h"
 
-class fftw : public FFT
+class FFTfftw : public FFT
 {
 public:
-    fftw();
-    ~fftw();
+    FFTfftw();
+    ~FFTfftw();
     void FFTParams( qint32 size, bool invert, double dBCompensation, double sampleRate);
     void FFTForward(CPX * in, CPX * out, int size);
     void FFTMagnForward(CPX * in,int size,double baseline,double correction,double *fbr);

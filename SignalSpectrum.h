@@ -23,7 +23,7 @@ public:
 	//Pass in soundcard buffer under/overflow counts for display
 	void Unprocessed(CPX * in, double inUnder, double inOver,double outUnder, double outOver);
     void MakeSpectrum(CPX *in, double *out, int size); //Use if we just have CPX samples
-    void MakeSpectrum(fftw *fft, double *out); //Used if we already have FFT
+    void MakeSpectrum(FFTfftw *fft, double *out); //Used if we already have FFT
 
     int BinCount() {return fftSize;}
     double *Unprocessed() {return unprocessed;}
@@ -59,7 +59,7 @@ private:
 
     CPX *tmp_cpx;
 	CPX *window_cpx;
-    fftw *fft;
+    FFTfftw *fft;
 
     float dbOffset; //Used to calibrate power to db calculations
 

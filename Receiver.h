@@ -82,7 +82,7 @@ public:
         void CloseSdrOptions();
 
 private:
-    fftw *fft;
+    FFTfftw *fft;
 	int fftSize;
 	bool useFreqDomainChain;
 

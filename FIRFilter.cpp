@@ -88,9 +88,9 @@ FIRFilter::FIRFilter(int sr, int ns, bool _useFFT, int _numTaps, int _delay):
 		//to avoid circular convolution.
 		//Circular convolution appears as a ghost signal that does not show up in the spectrum at the
 		//mirror frequency of a signal in the lower part of the spectrum
-        fftFIR = new fftw();
+        fftFIR = new FFTfftw();
         fftFIR->FFTParams(numSamplesX2, +1, 0, sr);
-        fftSamples = new fftw();
+        fftSamples = new FFTfftw();
         fftSamples->FFTParams(numSamplesX2, +1, 0, sr);
 
         window = new double[numSamples];
@@ -140,7 +140,7 @@ void FIRFilter::setEnabled(bool b)
 	enabled = b;
 }
 //If DoFFTForward has already been called, use this to remain in frequency domain
-void FIRFilter::Convolution(fftw *fft)
+void FIRFilter::Convolution(FFTfftw *fft)
 {
 	//Do Convolution
 	CPXBuf::mult(fft->freqDomain,fft->freqDomain,fftFIR->freqDomain, fft->fftSize);

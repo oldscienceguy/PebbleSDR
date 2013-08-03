@@ -1,10 +1,10 @@
 #include "fftw.h"
 
-fftw::fftw() : FFT()
+FFTfftw::FFTfftw() : FFT()
 {
 }
 
-fftw::~fftw()
+FFTfftw::~FFTfftw()
 {
     fftw_destroy_plan(plan_fwd);
     fftw_destroy_plan(plan_rev);
@@ -16,7 +16,7 @@ fftw::~fftw()
     if (freqDomain) CPXBuf::free(freqDomain);
 }
 
-void fftw::FFTParams(qint32 size, bool invert, double dBCompensation, double sampleRate)
+void FFTfftw::FFTParams(qint32 size, bool invert, double dBCompensation, double sampleRate)
 {
     fftSize = size;
     half_sz = size/2;
@@ -35,7 +35,7 @@ void fftw::FFTParams(qint32 size, bool invert, double dBCompensation, double sam
 }
 
 //NOTE: size= # samples in 'in' buffer, 'out' must be == fftSize (set on construction) which is #bins
-void fftw::FFTForward(CPX * in, CPX * out, int size)
+void FFTfftw::FFTForward(CPX * in, CPX * out, int size)
 {
     //If in==NULL, use whatever is in timeDomain buffer
     if (in != NULL ) {
@@ -57,7 +57,7 @@ void fftw::FFTForward(CPX * in, CPX * out, int size)
 }
 
 //NOTE: size= # samples in 'in' buffer, 'out' must be == fftSize (set on construction) which is #bins
-void fftw::FFTInverse(CPX * in, CPX * out, int size)
+void FFTfftw::FFTInverse(CPX * in, CPX * out, int size)
 {
     //If in==NULL, use whatever is in freqDomain buffer
     if (in != NULL) {
@@ -74,7 +74,7 @@ void fftw::FFTInverse(CPX * in, CPX * out, int size)
 
 }
 //Utility to handle overlap/add using FFT buffers
-void fftw::OverlapAdd(CPX *out, int size)
+void FFTfftw::OverlapAdd(CPX *out, int size)
 {
     //Do Overlap-Add to reduce from 1/2 fftSize
 
@@ -87,7 +87,7 @@ void fftw::OverlapAdd(CPX *out, int size)
 }
 
 //NOTE: size= # samples in 'in' buffer, 'out' must be == fftSize (set on construction) which is #bins
-void fftw::FFTMagnForward (CPX * in, int size, double baseline, double correction, double *fbr)
+void FFTfftw::FFTMagnForward (CPX * in, int size, double baseline, double correction, double *fbr)
 {
     if (size < fftSize)
         //Make sure that buffer which does not have samples is zero'd out

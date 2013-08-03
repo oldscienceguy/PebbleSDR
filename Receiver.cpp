@@ -173,7 +173,7 @@ bool Receiver::On()
 	//Testing with frequency domain receive chain
 	//fft must be large enough to avoid circular convolution for filtering
 	fftSize = framesPerBuffer *2;
-    fft = new fftw();
+    fft = new FFTfftw();
     fft->FFTParams(fftSize, +1, 0, sampleRate);
 
 
