@@ -143,7 +143,7 @@ void FIRFilter::setEnabled(bool b)
 void FIRFilter::Convolution(FFTfftw *fft)
 {
 	//Do Convolution
-	CPXBuf::mult(fft->freqDomain,fft->freqDomain,fftFIR->freqDomain, fft->fftSize);
+    CPXBuf::mult(fft->getFreqDomain(),fft->getFreqDomain(),fftFIR->getFreqDomain(), fft->getFFTSize());
 }
 
 CPX * FIRFilter::ProcessBlock(CPX *in)
@@ -162,7 +162,7 @@ CPX * FIRFilter::ProcessBlock(CPX *in)
 		this->Convolution(fftSamples);
 		//freqDomain is now filtered in freq domain
 		//And return to time domain
-        fftSamples->FFTInverse(NULL, NULL, fftSamples->fftSize);
+        fftSamples->FFTInverse(NULL, NULL, fftSamples->getFFTSize());
 		//tmp1 is time domain
 		//Do Overlap-Add to reduce from 2X numSamples to numSamples
 		fftSamples->OverlapAdd(out,numSamples);
@@ -578,7 +578,7 @@ void FIRFilter::MakeFFTTaps()
     fftFIR->FFTForward(taps, NULL, numSamples); //
 
     // Do compensation here instead of in inverse FFT
-	CPXBuf::scale(fftFIR->freqDomain, fftFIR->freqDomain, one_over_norm, fftFIR->fftSize);
+    CPXBuf::scale(fftFIR->getFreqDomain(), fftFIR->getFreqDomain(), one_over_norm, fftFIR->getFFTSize());
 
 	//firTaps now has filter in frequency-domain and can be used for FFT convolution
 

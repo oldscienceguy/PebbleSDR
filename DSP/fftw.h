@@ -18,10 +18,6 @@ public:
 
     void OverlapAdd(CPX *out, int size);
 
-    CPX *timeDomain;
-    CPX *freqDomain;
-    int fftSize;
-
 private:
     fftw_plan plan_fwd;
     fftw_plan plan_rev;

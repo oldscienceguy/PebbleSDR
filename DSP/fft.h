@@ -22,6 +22,10 @@ public:
     void FreqDomainToMagnitude(CPX * freqBuf, int size, double baseline, double correction, double *fbr);
     //void OverlapAdd(CPX *out, int size);
 
+    int getFFTSize() {return fftSize;}
+    CPX *getFreqDomain() {return freqDomain;}
+    CPX *getTimeDomain() {return timeDomain;}
+
 protected:
     //Utility
     CPX *timeDomain;

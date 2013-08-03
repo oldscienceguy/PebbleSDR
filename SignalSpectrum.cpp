@@ -120,13 +120,13 @@ void SignalSpectrum::MakeSpectrum(FFTfftw *fft, double *sOut)
         if (displayUpdateComplete) {
             CPXBuf::clear(tmp_cpx, fftSize);
 
-            if (fftSize < fft->fftSize) {
+            if (fftSize < fft->getFFTSize()) {
                 //Decimate to fit spectrum binCount
-                int decimate = fft->fftSize / fftSize;
+                int decimate = fft->getFFTSize() / fftSize;
                 for (int i=0; i<fftSize; i++)
-                    tmp_cpx[i] = fft->freqDomain[i*decimate];
+                    tmp_cpx[i] = fft->getFreqDomain()[i*decimate];
             } else {
-                CPXBuf::copy(tmp_cpx,fft->freqDomain,fftSize);
+                CPXBuf::copy(tmp_cpx,fft->getFreqDomain(),fftSize);
             }
 
             fft->FreqDomainToMagnitude(tmp_cpx, fftSize, 0, dbOffset, sOut);
