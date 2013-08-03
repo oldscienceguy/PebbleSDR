@@ -66,8 +66,14 @@ void BargraphMeter::paintEvent(QPaintEvent * event)
 
     QRect bar = rect();
 
+    //Scale from min to max
+    //This assumes bargraph has more pixels than range between min and max
+    //If rect is 100px and max-min = 10, then scale is 10px for every value
+    int disp = currentLevel - minLevel; //zero base
+    disp = disp < 0 ? 0 : disp; //Never let it go below zero
+    int scale = bar.width() / (maxLevel - minLevel);
     //Left to Right orientation
-    bar.setRight(currentLevel);
+    bar.setRight(disp * scale);
 
 #if 0
     bar.setTop(rect().top() + (1.0 - m_peakHoldLevel) * rect().height());
