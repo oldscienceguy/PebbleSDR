@@ -405,8 +405,9 @@ HEADERS += \
     Decoders/fldigifilters.h \
     bargraphmeter.h \
     testbench.h \
-    DSP/fft.h \
-    DSP/fftbasic.h
+    DSP/fftbasic.h \
+    DSP/fftw.h \
+    DSP/fftcute.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -470,8 +471,9 @@ SOURCES += \
     Decoders/fldigifilters.cpp \
     bargraphmeter.cpp \
     testbench.cpp \
-    DSP/fft.cpp \
-    DSP/fftbasic.cpp
+    DSP/fftbasic.cpp \
+    DSP/fftw.cpp \
+    DSP/fftcute.cpp
 
 FORMS += \
     spectrumwidget.ui \

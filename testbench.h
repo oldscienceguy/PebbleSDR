@@ -48,7 +48,7 @@
 #include <QImage>
 
 #include "filters/datatypes.h"
-#include "dsp/fft.h"
+#include "dsp/fftcute.h"
 #include "demod/wfmdemod.h"
 
 

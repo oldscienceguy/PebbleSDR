@@ -1,4 +1,4 @@
-// fft.h: interface for the CFft class.
+// fftcute.h: interface for the CFft class from cuteSDR source
 //
 //  This is a somewhat modified version of Takuya OOURA's
 //     original radix 4 FFT package.
@@ -12,8 +12,8 @@
 //	2010-09-15  Initial creation MSW
 //	2011-03-27  Initial release
 //////////////////////////////////////////////////////////////////////
-#ifndef FFT_H
-#define FFT_H
+#ifndef FFT_CUTE
+#define FFT_CUTE
 
 #include "filters/datatypes.h"
 #include <QMutex>
@@ -84,4 +84,4 @@ private:
 	QMutex m_Mutex;		//for keeping threads from stomping on each other
 };
 
-#endif // FFT_H
+#endif // FFT_CUTE

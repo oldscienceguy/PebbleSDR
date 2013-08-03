@@ -8,8 +8,8 @@
 #ifndef DATATYPES_H
 #define DATATYPES_H
 
-#include <QtGlobal> //For datatypes
 #include "cpx.h"
+#include <QtGlobal> //For datatypes
 
 
 //define single or double precision reals and complex types

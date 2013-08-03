@@ -5,6 +5,8 @@
 /Butterworth.h -text
 DSP/fftbasic.cpp -text
 DSP/fftbasic.h -text
+DSP/fftw.cpp -text
+DSP/fftw.h -text
 Decoders/fldigifilters.cpp -text
 Decoders/fldigifilters.h -text
 /Demod.cpp -text
