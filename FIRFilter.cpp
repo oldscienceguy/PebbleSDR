@@ -88,8 +88,10 @@ FIRFilter::FIRFilter(int sr, int ns, bool _useFFT, int _numTaps, int _delay):
 		//to avoid circular convolution.
 		//Circular convolution appears as a ghost signal that does not show up in the spectrum at the
 		//mirror frequency of a signal in the lower part of the spectrum
-        fftFIR = new fftw(numSamplesX2);
-        fftSamples = new fftw(numSamplesX2);
+        fftFIR = new fftw();
+        fftFIR->FFTParams(numSamplesX2, +1, 0, sr);
+        fftSamples = new fftw();
+        fftSamples->FFTParams(numSamplesX2, +1, 0, sr);
 
         window = new double[numSamples];
 
@@ -154,13 +156,13 @@ CPX * FIRFilter::ProcessBlock(CPX *in)
 		//Convert in to freq domain
 		//DoFFTForward will copy in[numSamples] and pad with zeros to FFT size if necessary
 		//12/31/10: Avoid extra buffer copies and let FFT manage buffers
-		fftSamples->DoFFTWForward(in, NULL, numSamples);// pass size of in buffer, NOT size of FFT
+        fftSamples->FFTForward(in, NULL, numSamples);// pass size of in buffer, NOT size of FFT
 		//fftSamples->freqDomain is now in freq domain
 		//Mask freq domain by our filter
 		this->Convolution(fftSamples);
 		//freqDomain is now filtered in freq domain
 		//And return to time domain
-		fftSamples->DoFFTWInverse(NULL, NULL, fftSamples->fftSize);
+        fftSamples->FFTInverse(NULL, NULL, fftSamples->fftSize);
 		//tmp1 is time domain
 		//Do Overlap-Add to reduce from 2X numSamples to numSamples
 		fftSamples->OverlapAdd(out,numSamples);
@@ -573,7 +575,7 @@ void FIRFilter::MakeFFTTaps()
 	//Convert the time domain filter coefficients (taps[]) to frequency domain (fftTaps[])
 	//We then use the frequency domain (fftTaps[]) against the FFT we get from actual samples to apply the filter
 	//DoFFTForward will handle numSamples < fftSize and automatically pad with zeros
-	fftFIR->DoFFTWForward(taps, NULL, numSamples); //
+    fftFIR->FFTForward(taps, NULL, numSamples); //
 
     // Do compensation here instead of in inverse FFT
 	CPXBuf::scale(fftFIR->freqDomain, fftFIR->freqDomain, one_over_norm, fftFIR->fftSize);

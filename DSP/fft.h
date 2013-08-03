@@ -11,7 +11,7 @@ class FFT
 {
 public:
     FFT();
-    ~FFT();
+    virtual ~FFT();
     //Keep separate from constructor so we can change on the fly eventually
     //cutesdr usage
     virtual void FFTParams( qint32 size, bool invert, double dBCompensation, double sampleRate) = 0;

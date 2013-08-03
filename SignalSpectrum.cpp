@@ -19,7 +19,9 @@ SignalSpectrum::SignalSpectrum(int sr, int ns, Settings *set):
 	//Output buffers
 	rawIQ = CPXBuf::malloc(numSamples);
     unprocessed = new double[fftSize];
-    fft = new fftw(fftSize);
+    fft = new fftw();
+    fft->FFTParams(fftSize, +1, 0, sr);
+
 
     tmp_cpx = CPXBuf::malloc(fftSize);
 	//Create our window coefficients 
@@ -96,7 +98,7 @@ void SignalSpectrum::MakeSpectrum(CPX *in, double *sOut, int size)
             //I don't think this is critical section
             //mutex.lock();
 
-            fft->DoFFTWMagnForward (tmp_cpx, size, 0, dbOffset, sOut);
+            fft->FFTMagnForward (tmp_cpx, size, 0, dbOffset, sOut);
 
             //out now has the spectrum in db, -f..0..+f
             //mutex.unlock();

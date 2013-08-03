@@ -32,6 +32,20 @@ Appendix :
 #include "fftooura.h"
 #include <math.h>
 
+/*
+ * Spectrum Folding Example for ooura FFT
+ * Buffer[]:        0           N/2-1   N/2                 N-1
+ *
+ * FFT bins:        0           Most Positive (MP)                                  //Positive Freq
+ *                                      Most Negative (MN)  Least Negative(LN)      //Negative Freq
+ *
+ * Folded:          MN          LN                                                  // +/- freq order
+ *                                      0                   MP
+ *
+ * FFTW should be in same order, but is reversed, ie
+ * FFT bins:        LN          MN      MP                  0
+ */
+
 FFTOoura::FFTOoura() : FFT()
 {
     timeDomain = NULL;

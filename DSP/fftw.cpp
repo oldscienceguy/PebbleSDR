@@ -1,20 +1,7 @@
 #include "fftw.h"
 
-fftw::fftw(int size)
+fftw::fftw() : FFT()
 {
-    fftSize = size;
-    half_sz = size/2;
-
-    timeDomain = CPXBuf::malloc(size);
-    freqDomain = CPXBuf::malloc(size);
-
-    plan_fwd = fftw_plan_dft_1d(size , (double (*)[2])timeDomain, (double (*)[2])freqDomain, FFTW_FORWARD, FFTW_MEASURE);
-    plan_rev = fftw_plan_dft_1d(size , (double (*)[2])freqDomain, (double (*)[2])timeDomain, FFTW_BACKWARD, FFTW_MEASURE);
-    buf = CPXBuf::malloc(size);
-    CPXBuf::clear(buf, size);
-    overlap = CPXBuf::malloc(size);
-    CPXBuf::clear(overlap, size);
-
 }
 
 fftw::~fftw()
@@ -29,8 +16,26 @@ fftw::~fftw()
     if (freqDomain) CPXBuf::free(freqDomain);
 }
 
+void fftw::FFTParams(qint32 size, bool invert, double dBCompensation, double sampleRate)
+{
+    fftSize = size;
+    half_sz = size/2;
+
+    timeDomain = CPXBuf::malloc(size);
+    freqDomain = CPXBuf::malloc(size);
+
+    plan_fwd = fftw_plan_dft_1d(size , (double (*)[2])timeDomain, (double (*)[2])freqDomain, FFTW_FORWARD, FFTW_MEASURE);
+    plan_rev = fftw_plan_dft_1d(size , (double (*)[2])freqDomain, (double (*)[2])timeDomain, FFTW_BACKWARD, FFTW_MEASURE);
+    buf = CPXBuf::malloc(size);
+    CPXBuf::clear(buf, size);
+    overlap = CPXBuf::malloc(size);
+    CPXBuf::clear(overlap, size);
+
+
+}
+
 //NOTE: size= # samples in 'in' buffer, 'out' must be == fftSize (set on construction) which is #bins
-void fftw::DoFFTWForward(CPX * in, CPX * out, int size)
+void fftw::FFTForward(CPX * in, CPX * out, int size)
 {
     //If in==NULL, use whatever is in timeDomain buffer
     if (in != NULL ) {
@@ -52,7 +57,7 @@ void fftw::DoFFTWForward(CPX * in, CPX * out, int size)
 }
 
 //NOTE: size= # samples in 'in' buffer, 'out' must be == fftSize (set on construction) which is #bins
-void fftw::DoFFTWInverse(CPX * in, CPX * out, int size)
+void fftw::FFTInverse(CPX * in, CPX * out, int size)
 {
     //If in==NULL, use whatever is in freqDomain buffer
     if (in != NULL) {
@@ -82,7 +87,7 @@ void fftw::OverlapAdd(CPX *out, int size)
 }
 
 //NOTE: size= # samples in 'in' buffer, 'out' must be == fftSize (set on construction) which is #bins
-void fftw::DoFFTWMagnForward (CPX * in, int size, double baseline, double correction, double *fbr)
+void fftw::FFTMagnForward (CPX * in, int size, double baseline, double correction, double *fbr)
 {
     if (size < fftSize)
         //Make sure that buffer which does not have samples is zero'd out
@@ -113,36 +118,4 @@ void fftw::DoFFTWMagnForward (CPX * in, int size, double baseline, double correc
     FreqDomainToMagnitude(freqDomain, size, baseline, correction, fbr);
 }
 
-/*
- * Spectrum Folding Example for ooura FFT
- * Buffer[]:        0           N/2-1   N/2                 N-1
- *
- * FFT bins:        0           Most Positive (MP)                                  //Positive Freq
- *                                      Most Negative (MN)  Least Negative(LN)      //Negative Freq
- *
- * Folded:          MN          LN                                                  // +/- freq order
- *                                      0                   MP
- *
- * FFTW should be in same order, but is reversed, ie
- * FFT bins:        LN          MN      MP                  0
- */
 
-//This can be called directly if we've already done FFT
-//WARNING:  fbr must be large enough to hold 'size' values
-void fftw::FreqDomainToMagnitude(CPX * freqBuf, int size, double baseline, double correction, double *fbr)
-{
-    //calculate the magnitude of your complex frequency domain data (magnitude = sqrt(re^2 + im^2))
-    //convert magnitude to a log scale (dB) (magnitude_dB = 20*log10(magnitude))
-
-    // FFT output index 0 to N/2-1 - frequency output 0 to +Fs/2 Hz  ( 0 Hz DC term )
-    //This puts 0 to size/2 into size/2 to size-1 position
-    for (int i=0, j=size/2; i<size/2; i++,j++) {
-        fbr[j] = SignalProcessing::amplitudeToDb(freqBuf[i].mag() + baseline) + correction;
-    }
-    // FFT output index N/2 to N-1 - frequency output -Fs/2 to 0
-    // This puts size/2 to size-1 into 0 to size/2
-    //Works correctly with Ooura FFT
-    for (int i=size/2, j=0; i<size; i++,j++) {
-        fbr[j] = SignalProcessing::amplitudeToDb(freqBuf[i].mag() + baseline) + correction;
-    }
-}

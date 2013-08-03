@@ -173,7 +173,9 @@ bool Receiver::On()
 	//Testing with frequency domain receive chain
 	//fft must be large enough to avoid circular convolution for filtering
 	fftSize = framesPerBuffer *2;
-    fft = new fftw(fftSize);
+    fft = new fftw();
+    fft->FFTParams(fftSize, +1, 0, sampleRate);
+
 
     //These steps work on downSample1 rates
 
@@ -796,7 +798,7 @@ void Receiver::ProcessBlockFreqDomain(CPX *in, CPX *out, int frameCount)
 	CPX *nextStep = in;
 
 	//Convert to freq domain
-	fft->DoFFTWForward(in,NULL,frameCount);
+    fft->FFTForward(in,NULL,frameCount);
 	//fft->freqDomain is in 0 to sampleRate order, not -F to 0 to +F
 
 
@@ -807,7 +809,7 @@ void Receiver::ProcessBlockFreqDomain(CPX *in, CPX *out, int frameCount)
 	bpFilter->Convolution(fft);
 
 	//Convert back to time domain for final processing using fft internal buffers
-	fft->DoFFTWInverse(NULL,NULL,fftSize);
+    fft->FFTInverse(NULL,NULL,fftSize);
 	//Do overlap/add to reduce to frameCount
 	fft->OverlapAdd(out, frameCount);
 

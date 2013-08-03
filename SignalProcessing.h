@@ -3,8 +3,6 @@
 #include "gpl.h"
 #include "cpx.h"
 #include <QMutex>
-#include "../fftw-3.3.1/api/fftw3.h"
-#include "DSP/fftw.h"
 #include "global.h"
 
 #include "QObject"
