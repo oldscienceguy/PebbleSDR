@@ -10,9 +10,9 @@ BargraphMeter::BargraphMeter(QWidget *parent) :
     ui->setupUi(this);
     minLevel = 0;
     maxLevel = 100;
-    currentLevel = 50;
+    currentLevel = 0;
     barColor = Qt::red;
-    running = false;
+    running = true;
     //Thread safe display update
     connect(this, SIGNAL(newData()), this, SLOT(refreshMeter()));
 
