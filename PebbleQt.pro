@@ -327,7 +327,8 @@ OTHER_FILES += \
 	FrequencyList-SantaCruz.csv \
     pebble.qss \
     HPSDR/ozyfw-sdr1k.hex \
-    HPSDR/Ozy_Janus.rbf
+    HPSDR/Ozy_Janus.rbf \
+    codingstyle.txt
 
 HEADERS += \
     spectrumwidget.h \

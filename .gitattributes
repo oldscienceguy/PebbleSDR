@@ -81,6 +81,7 @@ Resources/edit.png -text
 /bargraphmeter.h -text
 /bargraphmeter.ui -text
 /build.tmpl -text
+/codingstyle.txt -text
 /cpx.cpp -text
 /cpx.h -text
 /data-morse.ui -text
