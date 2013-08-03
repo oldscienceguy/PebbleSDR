@@ -3,6 +3,8 @@
 /AGC.h -text
 /Butterworth.cpp -text
 /Butterworth.h -text
+DSP/fft.cpp -text
+DSP/fft.h -text
 DSP/fftbasic.cpp -text
 DSP/fftbasic.h -text
 DSP/fftw.cpp -text

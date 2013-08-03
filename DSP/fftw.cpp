@@ -15,15 +15,6 @@ fftw::fftw(int size)
     overlap = CPXBuf::malloc(size);
     CPXBuf::clear(overlap, size);
 
-#if 0
-    //Testing Ooura
-    //These are inplace transforms,ie out = in, of 1 dimensional data (dft_1d)
-    offt = new FFTOoura();
-    offtWorkArea = new int[fftSize]; //Work buffer for bit reversal, size at least 2+sqrt(n)
-    offtWorkArea[0] = 0; //Initializes w with sine/cosine values.  Only do this once
-    offtSinCosTable = new double[fftSize*5/4]; //sine/cosine table.  Check size
-    offtBuf = CPXBuf::malloc(fftSize+1);
-#endif
 }
 
 fftw::~fftw()
@@ -97,13 +88,6 @@ void fftw::DoFFTWMagnForward (CPX * in, int size, double baseline, double correc
         //Make sure that buffer which does not have samples is zero'd out
         CPXBuf::clear(timeDomain, fftSize);
 
-    //perform.StartPerformance();
-    //FFTW averages 25-30us (relative) between calls
-    //Ooura averages 35-40us (relative) between calls
-    //Confirmed with Mac CPU usage: avg 90% with Ooura vs 80% with fftwW, just using Ooura for Spectrum FFT!
-    //So Ooura is significantly slower!
-#if 1
-    //Use FFTW
     CPXBuf::copy(timeDomain, in, size);
     // For Ref plan_fwd = fftwf_plan_dft_1d(size , (float (*)[2])timeDomain, (float (*)[2])freqDomain, FFTW_FORWARD, FFTW_MEASURE);
     fftw_execute(plan_fwd);
@@ -127,16 +111,6 @@ void fftw::DoFFTWMagnForward (CPX * in, int size, double baseline, double correc
     }
 
     FreqDomainToMagnitude(freqDomain, size, baseline, correction, fbr);
-#else
-    //CPXBuf::copy(timeDomain, in, size);
-    CPXBuf::copy(offtBuf, in, size);
-
-    //Size is 2x fftSize because offt works on double[] re-im-re-im et
-    offt->cdft(2*size, +1, (double*)offtBuf, offtWorkArea, offtSinCosTable);
-    FreqDomainToMagnitude(offtBuf, size, baseline, correction, fbr);
-
-#endif
-    //perform.StopPerformance(5);
 }
 
 /*

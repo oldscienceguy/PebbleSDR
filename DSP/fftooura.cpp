@@ -32,11 +32,93 @@ Appendix :
 #include "fftooura.h"
 #include <math.h>
 
-FFTOoura::FFTOoura()
+FFTOoura::FFTOoura() : FFT()
 {
+    timeDomain = NULL;
+    freqDomain = NULL;
+}
+FFTOoura::~FFTOoura()
+{
+    if (timeDomain) CPXBuf::free(timeDomain);
+    if (freqDomain) CPXBuf::free(freqDomain);
+
+}
+
+void FFTOoura::FFTParams( qint32 size, bool invert, double dBCompensation, double sampleRate)
+{
+    //Testing Ooura
+    //These are inplace transforms,ie out = in, of 1 dimensional data (dft_1d)
+    //offt = new FFTOoura();
+    fftSize = size;
+    offtWorkArea = new int[size]; //Work buffer for bit reversal, size at least 2+sqrt(n)
+    offtWorkArea[0] = 0; //Initializes w with sine/cosine values.  Only do this once
+    offtSinCosTable = new double[size * 5 / 4]; //sine/cosine table.  Check size
+    timeDomain = CPXBuf::malloc(size + 1);
+}
+
+void FFTOoura::FFTForward(CPX *in, CPX *out, int size)
+{
+    //If in==NULL, use whatever is in timeDomain buffer
+    if (in != NULL ) {
+        if (size < fftSize)
+            //Make sure that buffer which does not have samples is zero'd out
+            //We can pad samples in the time domain because it does not impact frequency results in FFT
+            CPXBuf::clear(timeDomain,fftSize);
+
+        //Put the data in properly aligned FFTW buffer
+        CPXBuf::copy(timeDomain, in, size);
+    }
+    //Size is 2x fftSize because offt works on double[] re-im-re-im et
+    cdft(2*size, +1, (double*)timeDomain, offtWorkArea, offtSinCosTable);
+
+    //If out == NULL, just leave result in freqDomain buffer and let caller get it
+    if (out != NULL)
+        CPXBuf::copy(out, freqDomain, fftSize);
+
+}
+
+void FFTOoura::FFTMagnForward(CPX * in,int size,double baseline,double correction,double *fbr)
+{
+    if (size < fftSize)
+        //Make sure that buffer which does not have samples is zero'd out
+        CPXBuf::clear(timeDomain, fftSize);
+
+    //perform.StartPerformance();
+    //FFTW averages 25-30us (relative) between calls
+    //Ooura averages 35-40us (relative) between calls
+    //Confirmed with Mac CPU usage: avg 90% with Ooura vs 80% with fftwW, just using Ooura for Spectrum FFT!
+    //So Ooura is significantly slower!
+    CPXBuf::copy(timeDomain, in, size);
+
+    //Size is 2x fftSize because offt works on double[] re-im-re-im et
+    cdft(2*size, +1, (double*)timeDomain, offtWorkArea, offtSinCosTable);
+    FreqDomainToMagnitude(timeDomain, size, baseline, correction, fbr);
+    //perform.StopPerformance(5);
+
+}
+
+void FFTOoura::FFTInverse(CPX *in, CPX *out, int size)
+{
+    //If in==NULL, use whatever is in freqDomain buffer
+    if (in != NULL) {
+        if (size < fftSize)
+            //Make sure that buffer which does not have samples is zero'd out
+            CPXBuf::clear(freqDomain,fftSize);
+
+        CPXBuf::copy(freqDomain, in, size);
+    }
+    //Size is 2x fftSize because offt works on double[] re-im-re-im et
+    cdft(2*size, -1, (double*)timeDomain, offtWorkArea, offtSinCosTable);
+
+    if (out != NULL)
+        CPXBuf::copy(out, timeDomain, fftSize);
+
+
 }
 
 
+
+//Original base ooura code
 /*
 -------- Complex DFT (Discrete Fourier Transform) --------
     [definition]

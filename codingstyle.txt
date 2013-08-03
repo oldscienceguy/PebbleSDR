@@ -1,4 +1,8 @@
 This will eventually contain Pebble coding styles which as of 8/13 are all over the map and confusing.
+
+filenames should be all lower case, even if class names are not.  Mixed case file names cause problems in QT when include casing does not match the filename casing.  File FooBar.cpp and #include "foobar.cpp" will eventually cause Qt to try to change the case of the file
+
+
 As a start, this is the QT5 guidleines, not all of which I agree with
 
 Qt Coding Style

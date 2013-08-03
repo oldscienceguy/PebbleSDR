@@ -408,7 +408,8 @@ HEADERS += \
     testbench.h \
     DSP/fftbasic.h \
     DSP/fftw.h \
-    DSP/fftcute.h
+    DSP/fftcute.h \
+    DSP/fft.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -474,7 +475,8 @@ SOURCES += \
     testbench.cpp \
     DSP/fftbasic.cpp \
     DSP/fftw.cpp \
-    DSP/fftcute.cpp
+    DSP/fftcute.cpp \
+    DSP/fft.cpp
 
 FORMS += \
     spectrumwidget.ui \
