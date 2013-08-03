@@ -16,7 +16,7 @@ public:
 	~FIRFilter(void);
 	//Apply the filter, results in out
 	CPX * ProcessBlock(CPX *in);
-	void Convolution(FFT *fft);
+    void Convolution(fftw *fft);
 
 	//Create coefficients for filter
 	void setEnabled(bool b);
@@ -60,8 +60,8 @@ private:
     double *window;
 
 	//FFT versions
-	FFT *fftFIR;
-	FFT *fftSamples;
+    fftw *fftFIR;
+    fftw *fftSamples;
 
 	void FFTSetBandPass(float lo, float hi,WINDOWTYPE wtype);
 	void FFTSetLowPass(float cutoff, WINDOWTYPE wtype);

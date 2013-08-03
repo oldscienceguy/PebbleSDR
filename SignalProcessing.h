@@ -4,6 +4,7 @@
 #include "cpx.h"
 #include <QMutex>
 #include "../fftw-3.3.1/api/fftw3.h"
+#include "DSP/fftw.h"
 #include "DSP/fftooura.h"
 #include "global.h"
 
@@ -46,34 +47,6 @@ private:
 	int last; //Last new value index
 	QMutex mutex; //for MAC atomic
 
-};
-class FFT 
-{    
-public:
-    FFT(int size);
-    ~FFT();    
-    void DoFFTWForward(CPX * in, CPX * out, int size);    
-    void DoFFTWMagnForward(CPX * in,int size,double baseline,double correction,double *fbr);
-    void DoFFTWInverse(CPX * in, CPX * out, int size);
-    void FreqDomainToMagnitude(CPX * freqBuf, int size, double baseline, double correction, double *fbr);
-	void OverlapAdd(CPX *out, int size);
-
-	CPX *timeDomain;
-	CPX *freqDomain;
-	int fftSize;
-
-private:
-    //Testing Ooura DFT
-    //FFTOoura *offt;
-    //double *offtSinCosTable;
-    //int *offtWorkArea;
-    //CPX *offtBuf;
-
-    fftw_plan plan_fwd;
-    fftw_plan plan_rev;
-	CPX *buf;
-	CPX *overlap;
-	int half_sz;
 };
 
 class SignalProcessing : public QObject
