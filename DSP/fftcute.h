@@ -15,21 +15,26 @@
 #ifndef FFT_CUTE
 #define FFT_CUTE
 
+#include "fft.h"
 #include "filters/datatypes.h"
 #include <QMutex>
 
 #define MAX_FFT_SIZE 65536
 #define MIN_FFT_SIZE 512
 
-class CFft
+class CFft : public FFT
 {
 public:
 	CFft();
 	virtual ~CFft();
-	void SetFFTParams( qint32 size,
+    void FFTParams( qint32 size,
 						bool invert,
 						double dBCompensation,
 						double SampleFreq);
+    void FFTForward(CPX * in, CPX * out, int size);
+    void FFTMagnForward(CPX * in,int size,double baseline,double correction,double *fbr);
+    void FFTInverse(CPX * in, CPX * out, int size);
+
 	//Methods to obtain spectrum formated power vs frequency
 	void SetFFTAve( qint32 ave);
 	void ResetFFT();
@@ -38,10 +43,6 @@ public:
 									qint32 StartFreq, qint32 StopFreq,
 									qint32* OutBuf );
 	qint32 PutInDisplayFFT(qint32 n, TYPECPX* InBuf);
-
-	//Methods for doing Fast convolutions using forward and reverse FFT
-	void FwdFFT( TYPECPX* pInOutBuf);
-	void RevFFT( TYPECPX* pInOutBuf);
 
 private:
 	void FreeMemory();

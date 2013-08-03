@@ -3,6 +3,7 @@
 #include "QDebug"
 #include "QEvent"
 #include "Receiver.h"
+#include "testbench.h"
 
 /*
   CW Notes for reference

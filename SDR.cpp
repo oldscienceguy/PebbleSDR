@@ -18,6 +18,7 @@
 #include "SoundCard.h"
 #include "Receiver.h"
 #include "QMessageBox"
+#include "testbench.h"
 
 
 SDR::SDR(Receiver *_receiver, SDRDEVICE dev,Settings *_settings)

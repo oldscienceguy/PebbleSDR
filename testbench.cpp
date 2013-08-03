@@ -130,7 +130,7 @@ CTestBench::CTestBench(QWidget *parent) :
 	connect(this, SIGNAL(NewTimeData()), this,  SLOT( DrawTimePlot() ) );
 	connect( this, SIGNAL( SendTxt(QString)), this, SLOT( GotTxt(QString) ) );
 
-	m_Fft.SetFFTParams( 2048,
+    m_Fft.FFTParams( 2048,
                         false,
 						0.0,
 						m_GenSampleRate);
@@ -628,7 +628,7 @@ int i;
 	m_NoiseAmplitude = MAX_AMPLITUDE*pow(10.0, m_NoisePower/20.0);
 
 	//init FFT values
-    m_Fft.SetFFTParams(  TEST_FFTSIZE, false, 0.0,	m_DisplaySampleRate);
+    m_Fft.FFTParams(  TEST_FFTSIZE, false, 0.0,	m_DisplaySampleRate);
 	m_FftBufPos = 0;
 	m_Span = m_DisplaySampleRate;
 	m_Span = ( m_Span - (m_Span+5)%10 + 5);

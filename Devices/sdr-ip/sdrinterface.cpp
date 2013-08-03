@@ -1086,7 +1086,7 @@ void CSdrInterface::SetFftSize(qint32 size)
 {
 	m_FftSize = size;
 	m_FftBufPos = 0;
-	m_Fft.SetFFTParams( m_FftSize,
+    m_Fft.FFTParams( m_FftSize,
 						false,
 						m_GainCalibrationOffset,
 						m_SampleRate);

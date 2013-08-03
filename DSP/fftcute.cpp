@@ -26,7 +26,7 @@
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
-CFft::CFft()
+CFft::CFft() :FFT()
 {
 	m_Overload = false;
 	m_Invert = false;
@@ -44,7 +44,7 @@ CFft::CFft()
 	m_pFFTSumBuf = NULL;
 	m_pTranslateTbl = NULL;
 	m_dBCompensation = K_MAXDB;
-	SetFFTParams( 2048, false ,0.0, 1000);
+    FFTParams( 2048, false ,0.0, 1000);
 	SetFFTAve( 1);
 }
 
@@ -115,7 +115,7 @@ void CFft::SetFFTAve( qint32 ave)
 ///////////////////////////////////////////////////////////////////
 //FFT initialization and parameter setup function
 ///////////////////////////////////////////////////////////////////
-void CFft::SetFFTParams( qint32 size,
+void CFft::FFTParams( qint32 size,
 						 bool invert,
 						 double dBCompensation,
 						 double SampleFreq)
@@ -416,16 +416,26 @@ double dBGainFactor = -10.0/(MaxdB-MindB);
 //Interface for doing fast convolution filters.  Takes complex data
 // in pInOutBuf and does fwd or rev FFT and places back in same buffer.
 ///////////////////////////////////////////////////////////////////
-void CFft::FwdFFT( TYPECPX* pInOutBuf)
+void CFft::FFTForward(CPX * in, CPX * out, int size)
 {
-	bitrv2(m_FFTSize*2, m_pWorkArea + 2, (TYPEREAL*)pInOutBuf);
-	CpxFFT(m_FFTSize*2, (TYPEREAL*)pInOutBuf, m_pSinCosTbl);
+    bitrv2(m_FFTSize*2, m_pWorkArea + 2, (TYPEREAL*)in);
+    CpxFFT(m_FFTSize*2, (TYPEREAL*)in, m_pSinCosTbl);
+    //in and out are same buffer so we need to copy to freqDomain buffer to be consistent
+    CPXBuf::copy(freqDomain, in, m_FFTSize);
+
 }
 
-void CFft::RevFFT( TYPECPX* pInOutBuf)
+void CFft::FFTMagnForward(CPX *in, int size, double baseline, double correction, double *fbr)
 {
-	bitrv2conj(m_FFTSize*2, m_pWorkArea + 2, (TYPEREAL*)pInOutBuf);
-	cftbsub(m_FFTSize*2, (TYPEREAL*)pInOutBuf, m_pSinCosTbl);
+}
+
+void CFft::FFTInverse(CPX * in, CPX * out, int size)
+{
+    bitrv2conj(m_FFTSize*2, m_pWorkArea + 2, (TYPEREAL*)in);
+    cftbsub(m_FFTSize*2, (TYPEREAL*)in, m_pSinCosTbl);
+    //in and out are same buffer so we need to copy to freqDomain buffer to be consistent
+    CPXBuf::copy(timeDomain, in, m_FFTSize);
+
 }
 
 

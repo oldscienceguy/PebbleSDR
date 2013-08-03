@@ -71,9 +71,12 @@ void FFTOoura::FFTForward(CPX *in, CPX *out, int size)
     //Size is 2x fftSize because offt works on double[] re-im-re-im et
     cdft(2*size, +1, (double*)timeDomain, offtWorkArea, offtSinCosTable);
 
+    //in and out are same buffer so we need to copy to freqDomain buffer to be consistent
+    CPXBuf::copy(freqDomain, timeDomain, fftSize);
+
     //If out == NULL, just leave result in freqDomain buffer and let caller get it
     if (out != NULL)
-        CPXBuf::copy(out, freqDomain, fftSize);
+        CPXBuf::copy(out, timeDomain, fftSize);
 
 }
 
@@ -110,8 +113,11 @@ void FFTOoura::FFTInverse(CPX *in, CPX *out, int size)
     //Size is 2x fftSize because offt works on double[] re-im-re-im et
     cdft(2*size, -1, (double*)freqDomain, offtWorkArea, offtSinCosTable);
 
+    //in and out are same buffer so we need to copy to timeDomain buffer to be consistent
+    CPXBuf::copy(timeDomain, freqDomain, fftSize);
+
     if (out != NULL)
-        CPXBuf::copy(out, freqDomain, fftSize);
+        CPXBuf::copy(out, timeDomain, fftSize);
 
 
 }

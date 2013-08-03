@@ -9,11 +9,11 @@
 #include "QDebug"
 #include "QFile"
 #include "perform.h"
-#include "testbench.h"
 
 class Receiver;
 class Settings;
 class SDR;
+class CTestBench;
 
 class Global
 {

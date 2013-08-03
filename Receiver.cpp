@@ -8,6 +8,7 @@
 #include "Devices/hpsdr.h"
 #include "signalprocessing.h"
 #include "audioqt.h"
+#include "testbench.h"
 
 /*
 Core receiver logic, coordinates soundcard, fft, demod, etc

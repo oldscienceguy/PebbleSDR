@@ -3,6 +3,7 @@
 #include "global.h"
 #include <QDebug>
 #include "qcoreapplication.h"
+#include "testbench.h"
 
 Global::Global()
 {
