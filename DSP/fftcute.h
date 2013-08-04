@@ -66,7 +66,8 @@ private:
 	double* m_pFFTAveBuf;
 	double* m_pFFTSumBuf;
 	double* m_pFFTInBuf;
-	QMutex m_Mutex;		//for keeping threads from stomping on each other
+    //replaced with fftMutex in fft.h
+    //QMutex m_Mutex;		//for keeping threads from stomping on each other
 };
 
 #endif // FFT_CUTE

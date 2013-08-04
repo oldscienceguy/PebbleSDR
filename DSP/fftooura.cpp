@@ -82,14 +82,22 @@ void FFTOoura::FFTForward(CPX *in, CPX *out, int size)
     //Size is 2x fftSize because offt works on double[] re-im-re-im et
     cdft(2*size, +1, (double*)timeDomain, offtWorkArea, offtSinCosTable);
 
-    //in and out are same buffer so we need to copy to freqDomain buffer to be consistent
-    CPXBuf::copy(freqDomain, timeDomain, fftSize);
+    //See fftooura for spectrum folding model, cuteSDR uses same
+    // FFT output index N/2 to N-1 is frequency output -Fs/2 to 0hz (negative frequencies)
+    for( int unfolded = 0, folded = size/2 ; folded < size; unfolded++, folded++) {
+        freqDomain[unfolded] = timeDomain[folded]; //folded = 1024 to 2047 unfolded = 0 to 1023
+    }
+    // FFT output index 0 to N/2-1 is frequency output 0 to +Fs/2 Hz  (positive frequencies)
+    for( int unfolded = size/2, folded = 0; unfolded < size; unfolded++, folded++) {
+        freqDomain[unfolded] = timeDomain[folded]; //folded = 0 to 1023 unfolded = 1024 to 2047
+    }
+
+    FFT::FFTForward(freqDomain, out, size);
 
     //If out == NULL, just leave result in freqDomain buffer and let caller get it
     if (out != NULL)
-        CPXBuf::copy(out, timeDomain, fftSize);
+        CPXBuf::copy(out, freqDomain, fftSize);
 
-    FFT::FFTForward(freqDomain, out, size);
 
 }
 

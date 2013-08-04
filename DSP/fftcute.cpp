@@ -115,7 +115,7 @@ void CFft::FFTParams( qint32 _size, bool _invert, double _dBCompensation, double
     FFT::FFTParams(_size, _invert, _dBCompensation, _sampleRate);
 
     qint32 i;
-	m_Mutex.lock();
+    fftMutex.lock();
 
     if( dBCompensation != _dBCompensation )
     {
@@ -218,7 +218,7 @@ double WindowGain;
 
 #endif
 	}
-	m_Mutex.unlock();
+    fftMutex.unlock();
 	ResetFFT();
 }
 
@@ -227,7 +227,7 @@ double WindowGain;
 ///////////////////////////////////////////////////////////////////
 void CFft::ResetFFT()
 {
-	m_Mutex.lock();
+    fftMutex.lock();
     for(qint32 i=0; i<fftSize;i++)
 	{
 		m_pFFTAveBuf[i] = 0.0;
@@ -235,7 +235,7 @@ void CFft::ResetFFT()
 	}
 	m_AveCount = 0;
 	m_TotalCount = 0;
-	m_Mutex.unlock();
+    fftMutex.unlock();
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -244,11 +244,13 @@ void CFft::ResetFFT()
 //	For real data there should be  fftSize/2 InBuf data points
 //	For complex data there should be  fftSize InBuf data points
 //////////////////////////////////////////////////////////////////////
+
+//!!Replaced by FFTForward
 qint32 CFft::PutInDisplayFFT(qint32 n, TYPECPX* InBuf)
 {
     qint32 i;
 	m_Overload = false;
-	m_Mutex.lock();
+    fftMutex.lock();
 	double dtmp1;
 	for(i=0; i<n; i++)
 	{
@@ -263,7 +265,7 @@ qint32 CFft::PutInDisplayFFT(qint32 n, TYPECPX* InBuf)
 	//Calculate the complex FFT
     bitrv2(fftSize*2, m_pWorkArea + 2, m_pFFTInBuf);
     CpxFFT(fftSize*2, m_pFFTInBuf, m_pSinCosTbl);
-	m_Mutex.unlock();
+    fftMutex.unlock();
 	return m_TotalCount;
 }
 
@@ -281,36 +283,48 @@ void CFft::FFTForward(CPX * in, CPX * out, int size)
 
     qint32 i;
     m_Overload = false;
-    m_Mutex.lock();
+    fftMutex.lock();
     double dtmp1;
     for(i=0; i<size; i++)
     {
         if( in[i].re > OVER_LIMIT )	//flag overload if within OVLimit of max
             m_Overload = true;
         dtmp1 = m_pWindowTbl[i];
-        //NOTE: For some reason I and Q are swapped(demod I/Q does not apear to be swapped)
-        //possibly an issue with the FFT ?
-        timeDomain[i].im =dtmp1 * (in[i].re);//window the I data
-        timeDomain[i].re = dtmp1 * (in[i].im);	//window the Q data
+        //CuteSDR swapped I/Q here, but order is correct in Pebble
+        timeDomain[i].re = dtmp1 * (in[i].re); //window the I data
+        timeDomain[i].im = dtmp1 * (in[i].im); //window the Q data
     }
 
     bitrv2(fftSize*2, m_pWorkArea + 2, (TYPEREAL*)timeDomain);
+    //!!This still calculates cuteSDR power averages, remove from CpxFFT eventually since we do it in FFT
     CpxFFT(fftSize*2, (TYPEREAL*)timeDomain, m_pSinCosTbl);
 
     //See fftooura for spectrum folding model, cuteSDR uses same
-    // FFT output index 0 to N/2-1
-    // is frequency output 0 to +Fs/2 Hz  ( 0 Hz DC term )
-    for( int i = 0, j = size/2; i < size/2; i++, j++) {
-        freqDomain[i] = timeDomain[j];
+    // FFT output index N/2 to N-1 is frequency output -Fs/2 to 0hz (negative frequencies)
+    for( int unfolded = 0, folded = size/2 ; folded < size; unfolded++, folded++) {
+        freqDomain[unfolded] = timeDomain[folded]; //folded = 1024 to 2047 unfolded = 0 to 1023
     }
-    // FFT output index N/2 to N-1  (times 2 since complex samples)
-    // is frequency output -Fs/2 to 0
-    for( int i = size/2, j = 0; i < size; i++, j++) {
-        freqDomain[i] = timeDomain[j];
+    // FFT output index 0 to N/2-1 is frequency output 0 to +Fs/2 Hz  (positive frequencies)
+    for( int unfolded = size/2, folded = 0; unfolded < size; unfolded++, folded++) {
+        freqDomain[unfolded] = timeDomain[folded]; //folded = 0 to 1023 unfolded = 1024 to 2047
     }
 
-    FFT::FFTForward(freqDomain, out, size);
-    m_Mutex.unlock();
+    FFT::FFTForward(freqDomain, out, size); //This does average power calc and replaces cuteSdr specif code
+
+#if 0
+    //Test Pebble restuls with original cuteSDR calculations
+    for (int i=0; i<size; i++) {
+        if (FFTPwrSumBuf[i] != m_pFFTSumBuf[i])
+            qDebug()<<"FFT Sum []"<<i<<","<<FFTPwrSumBuf[i]<<","<<m_pFFTSumBuf[i];
+        if (FFTAvgBuf[i] != m_pFFTAveBuf[i])
+            qDebug()<<"FFT Avg []"<<i<<","<<FFTAvgBuf[i]<<","<<m_pFFTAveBuf[i];
+        if (FFTPwrAvgBuf[i] != m_pFFTPwrAveBuf[i])
+            qDebug()<<"FFT Pwr Avg []"<<i<<","<<FFTPwrAvgBuf[i]<<","<<m_pFFTPwrAveBuf[i];
+
+    }
+#endif
+
+    fftMutex.unlock();
 
 }
 
@@ -469,6 +483,9 @@ double x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i;
 	n = n>>1;
 	//now n = FFTSIZE
 
+    //Slightly confusing
+    // l is incrementing over CPX samples in a Real array[0-1096]
+    // j is incrementing over Real power output array [0-2048]
 	// FFT output index 0 to N/2-1
 	// is frequency output 0 to +Fs/2 Hz  ( 0 Hz DC term ) 
 	for( l=0,j=n/2; j<n; l+=2,j++)

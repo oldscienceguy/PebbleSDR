@@ -133,6 +133,7 @@ void FFT::FFTInverse(CPX *in, CPX *out, int size)
 }
 
 
+//!!Compare with cuteSDR logic, replace if necessary
 //This can be called directly if we've already done FFT
 //WARNING:  fbr must be large enough to hold 'size' values
 void FFT::FreqDomainToMagnitude(CPX * freqBuf, int size, double baseline, double correction, double *fbr)
@@ -166,7 +167,9 @@ void FFT::OverlapAdd(CPX *out, int size)
 
 }
 
-
+//!!This is called in cuteSDR with -32767 to +32767 representation.
+//!!Logic is the same, but constants will be different
+//!!Verify with -1 to +1
 void FFT::CalcPowerAverages(CPX* in, int size)
 {
 
@@ -191,11 +194,11 @@ void FFT::CalcPowerAverages(CPX* in, int size)
 
 #endif
 
-    const int movingAvgCnt = 1;
+    const int movingAvgLimit = 2;
     double samplePwr;
 
     bufferCnt++;
-    if(averageCnt < movingAvgCnt)
+    if(averageCnt < movingAvgLimit)
         averageCnt++;
 
     // FFT output index 0 to N/2-1
@@ -206,7 +209,7 @@ void FFT::CalcPowerAverages(CPX* in, int size)
         samplePwr = in[i].norm(); // or .sqrMag() = Power in sample
 
         //perform moving average on power up to m_AveSize then do exponential averaging after that
-        if(bufferCnt <= movingAvgCnt)
+        if(bufferCnt <= movingAvgLimit)
             FFTPwrSumBuf[i] = FFTPwrSumBuf[i] + samplePwr;
         else
             //Weighted by previous average
@@ -216,6 +219,7 @@ void FFT::CalcPowerAverages(CPX* in, int size)
         FFTPwrAvgBuf[i] = FFTPwrSumBuf[i]/(double)averageCnt;
 
         FFTAvgBuf[i] = log10( FFTPwrAvgBuf[i] + K_C) + K_B;
+
     }
 
 }
@@ -263,7 +267,7 @@ bool FFT::GetScreenIntegerFFTData(qint32 MaxHeight,
 
     //qDebug()<<"maxoffset dbgaindfact "<<dBmaxOffset << dBGainFactor;
 
-    //m_Mutex.lock();
+    fftMutex.lock();
     //If zoom has changed (startFreq-stopFreq) or width of plot area (window resize)
     //then recalculate
     if( (lastStartFreq != StartFreq) ||
@@ -363,7 +367,7 @@ bool FFT::GetScreenIntegerFFTData(qint32 MaxHeight,
 
         }
     }
-    //!!m_Mutex.unlock();
+    fftMutex.unlock();
 
     //!!return m_Overload;
     return false; //No overload

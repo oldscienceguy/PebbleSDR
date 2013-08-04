@@ -3,6 +3,7 @@
 #include "global.h"
 #include "cpx.h"
 #include "SignalProcessing.h"
+#include "QMutex"
 
 #define MAX_FFT_SIZE 65536
 #define MIN_FFT_SIZE 512
@@ -73,6 +74,9 @@ protected:
     double K_C;
     double K_B;
     double dBCompensation;
+
+    //This should replace m_mutex in fftcute
+    QMutex fftMutex; //Used to sync threads calling FFT and display calling Screen mapping
 
 
 
