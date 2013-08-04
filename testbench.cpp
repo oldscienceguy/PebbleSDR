@@ -704,8 +704,9 @@ void CTestBench::DisplayData(int length, TYPECPX* pBuf, double samplerate, int p
 				if(++m_DisplaySkipCounter >= m_DisplaySkipValue )
 				{
 					m_DisplaySkipCounter = 0;
-					m_Fft.PutInDisplayFFT( TEST_FFTSIZE, m_FftInBuf);
-					emit NewFftData();
+                    //!!m_Fft.PutInDisplayFFT( TEST_FFTSIZE, m_FftInBuf);
+                    m_Fft.FFTForward(m_FftInBuf,m_FftInBuf,TEST_FFTSIZE);
+                    emit NewFftData();
 				}
 			}
 		}
@@ -765,7 +766,9 @@ void CTestBench::DisplayData(int length, TYPEREAL* pBuf, double samplerate, int 
 				if(++m_DisplaySkipCounter >= m_DisplaySkipValue )
 				{
 					m_DisplaySkipCounter = 0;
-					m_Fft.PutInDisplayFFT( TEST_FFTSIZE, m_FftInBuf);
+                    //m_Fft.PutInDisplayFFT( TEST_FFTSIZE, m_FftInBuf);
+                    m_Fft.FFTForward(m_FftInBuf,m_FftInBuf,TEST_FFTSIZE);
+
 					emit NewFftData();
 				}
 			}
@@ -824,7 +827,9 @@ void CTestBench::DisplayData(int length, TYPEMONO16* pBuf, double samplerate, in
 				if(++m_DisplaySkipCounter >= m_DisplaySkipValue )
 				{
 					m_DisplaySkipCounter = 0;
-					m_Fft.PutInDisplayFFT( TEST_FFTSIZE, m_FftInBuf);
+                    //m_Fft.PutInDisplayFFT( TEST_FFTSIZE, m_FftInBuf);
+                    m_Fft.FFTForward(m_FftInBuf,m_FftInBuf,TEST_FFTSIZE);
+
 					emit NewFftData();
 				}
 			}
@@ -883,7 +888,9 @@ void CTestBench::DisplayData(int length, TYPESTEREO16* pBuf, double samplerate, 
 				if(++m_DisplaySkipCounter >= m_DisplaySkipValue )
 				{
 					m_DisplaySkipCounter = 0;
-					m_Fft.PutInDisplayFFT( TEST_FFTSIZE, m_FftInBuf);
+                    //m_Fft.PutInDisplayFFT( TEST_FFTSIZE, m_FftInBuf);
+                    m_Fft.FFTForward(m_FftInBuf,m_FftInBuf,TEST_FFTSIZE);
+
 					emit NewFftData();
 				}
 			}

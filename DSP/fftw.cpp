@@ -9,34 +9,27 @@ FFTfftw::~FFTfftw()
     fftw_destroy_plan(plan_fwd);
     fftw_destroy_plan(plan_rev);
 
-
     if (buf) CPXBuf::free(buf);
-    if (overlap) CPXBuf::free(overlap);
-    if (timeDomain) CPXBuf::free(timeDomain);
-    if (freqDomain) CPXBuf::free(freqDomain);
 }
 
-void FFTfftw::FFTParams(qint32 size, bool invert, double dBCompensation, double sampleRate)
+void FFTfftw::FFTParams(qint32 _size, bool _invert, double _dBCompensation, double _sampleRate)
 {
-    fftSize = size;
-    half_sz = size/2;
+    //Must call FFT base to properly init
+    FFT::FFTParams(_size, _invert, _dBCompensation, _sampleRate);
 
-    timeDomain = CPXBuf::malloc(size);
-    freqDomain = CPXBuf::malloc(size);
-
-    plan_fwd = fftw_plan_dft_1d(size , (double (*)[2])timeDomain, (double (*)[2])freqDomain, FFTW_FORWARD, FFTW_MEASURE);
-    plan_rev = fftw_plan_dft_1d(size , (double (*)[2])freqDomain, (double (*)[2])timeDomain, FFTW_BACKWARD, FFTW_MEASURE);
-    buf = CPXBuf::malloc(size);
-    CPXBuf::clear(buf, size);
-    overlap = CPXBuf::malloc(size);
-    CPXBuf::clear(overlap, size);
-
-
+    half_sz = fftSize / 2;
+    plan_fwd = fftw_plan_dft_1d(fftSize , (double (*)[2])timeDomain, (double (*)[2])freqDomain, FFTW_FORWARD, FFTW_MEASURE);
+    plan_rev = fftw_plan_dft_1d(fftSize , (double (*)[2])freqDomain, (double (*)[2])timeDomain, FFTW_BACKWARD, FFTW_MEASURE);
+    buf = CPXBuf::malloc(fftSize);
+    CPXBuf::clear(buf, fftSize);
 }
 
 //NOTE: size= # samples in 'in' buffer, 'out' must be == fftSize (set on construction) which is #bins
 void FFTfftw::FFTForward(CPX * in, CPX * out, int size)
 {
+    if (!fftParamsSet)
+        return;
+
     //If in==NULL, use whatever is in timeDomain buffer
     if (in != NULL ) {
         if (size < fftSize)
@@ -54,11 +47,15 @@ void FFTfftw::FFTForward(CPX * in, CPX * out, int size)
     if (out != NULL)
         CPXBuf::copy(out, freqDomain, fftSize);
 
+    FFT::FFTForward(freqDomain, out, size);
 }
 
 //NOTE: size= # samples in 'in' buffer, 'out' must be == fftSize (set on construction) which is #bins
 void FFTfftw::FFTInverse(CPX * in, CPX * out, int size)
 {
+    if (!fftParamsSet)
+        return;
+
     //If in==NULL, use whatever is in freqDomain buffer
     if (in != NULL) {
         if (size < fftSize)
@@ -73,22 +70,13 @@ void FFTfftw::FFTInverse(CPX * in, CPX * out, int size)
         CPXBuf::copy(out, timeDomain, fftSize);
 
 }
-//Utility to handle overlap/add using FFT buffers
-void FFTfftw::OverlapAdd(CPX *out, int size)
-{
-    //Do Overlap-Add to reduce from 1/2 fftSize
-
-    //Add the samples in 'in' to last overlap
-    CPXBuf::add(out, timeDomain, overlap, size);
-
-    //Save the upper 50% samples to  overlap for next run
-    CPXBuf::copy(overlap, (timeDomain+size), size);
-
-}
 
 //NOTE: size= # samples in 'in' buffer, 'out' must be == fftSize (set on construction) which is #bins
 void FFTfftw::FFTMagnForward (CPX * in, int size, double baseline, double correction, double *fbr)
 {
+    if (!fftParamsSet)
+        return;
+
     if (size < fftSize)
         //Make sure that buffer which does not have samples is zero'd out
         CPXBuf::clear(timeDomain, fftSize);

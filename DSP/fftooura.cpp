@@ -48,30 +48,27 @@ Appendix :
 
 FFTOoura::FFTOoura() : FFT()
 {
-    timeDomain = NULL;
-    freqDomain = NULL;
 }
 FFTOoura::~FFTOoura()
 {
-    if (timeDomain) CPXBuf::free(timeDomain);
-    if (freqDomain) CPXBuf::free(freqDomain);
-
 }
 
-void FFTOoura::FFTParams( qint32 size, bool invert, double dBCompensation, double sampleRate)
+void FFTOoura::FFTParams( qint32 _size, bool _invert, double _dBCompensation, double _sampleRate)
 {
-    //Testing Ooura
+    //Must call FFT base to properly init
+    FFT::FFTParams(_size, _invert, _dBCompensation, _sampleRate);
+
     //These are inplace transforms,ie out = in, of 1 dimensional data (dft_1d)
-    //offt = new FFTOoura();
-    fftSize = size;
-    offtWorkArea = new int[size]; //Work buffer for bit reversal, size at least 2+sqrt(n)
+    offtWorkArea = new int[fftSize]; //Work buffer for bit reversal, size at least 2+sqrt(n)
     offtWorkArea[0] = 0; //Initializes w with sine/cosine values.  Only do this once
-    offtSinCosTable = new double[size * 5 / 4]; //sine/cosine table.  Check size
-    timeDomain = CPXBuf::malloc(size + 1);
+    offtSinCosTable = new double[fftSize * 5 / 4]; //sine/cosine table.  Check size
 }
 
 void FFTOoura::FFTForward(CPX *in, CPX *out, int size)
 {
+    if (!fftParamsSet)
+        return;
+
     //If in==NULL, use whatever is in timeDomain buffer
     if (in != NULL ) {
         if (size < fftSize)
@@ -92,10 +89,15 @@ void FFTOoura::FFTForward(CPX *in, CPX *out, int size)
     if (out != NULL)
         CPXBuf::copy(out, timeDomain, fftSize);
 
+    FFT::FFTForward(freqDomain, out, size);
+
 }
 
 void FFTOoura::FFTMagnForward(CPX * in,int size,double baseline,double correction,double *fbr)
 {
+    if (!fftParamsSet)
+        return;
+
     if (size < fftSize)
         //Make sure that buffer which does not have samples is zero'd out
         CPXBuf::clear(timeDomain, fftSize);
@@ -116,6 +118,9 @@ void FFTOoura::FFTMagnForward(CPX * in,int size,double baseline,double correctio
 
 void FFTOoura::FFTInverse(CPX *in, CPX *out, int size)
 {
+    if (!fftParamsSet)
+        return;
+
     //If in==NULL, use whatever is in freqDomain buffer
     if (in != NULL) {
         if (size < fftSize)

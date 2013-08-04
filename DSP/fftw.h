@@ -11,18 +11,15 @@ class FFTfftw : public FFT
 public:
     FFTfftw();
     ~FFTfftw();
-    void FFTParams( qint32 size, bool invert, double dBCompensation, double sampleRate);
+    void FFTParams(qint32 _size, bool _invert, double _dBCompensation, double sampleRate);
     void FFTForward(CPX * in, CPX * out, int size);
     void FFTMagnForward(CPX * in,int size,double baseline,double correction,double *fbr);
     void FFTInverse(CPX * in, CPX * out, int size);
-
-    void OverlapAdd(CPX *out, int size);
 
 private:
     fftw_plan plan_fwd;
     fftw_plan plan_rev;
     CPX *buf;
-    CPX *overlap;
     int half_sz;
 };
 

@@ -19,18 +19,12 @@
 #include "filters/datatypes.h"
 #include <QMutex>
 
-#define MAX_FFT_SIZE 65536
-#define MIN_FFT_SIZE 512
-
 class CFft : public FFT
 {
 public:
 	CFft();
 	virtual ~CFft();
-    void FFTParams( qint32 size,
-						bool invert,
-						double dBCompensation,
-						double SampleFreq);
+    void FFTParams(qint32 _size, bool _invert, double _dBCompensation, double _SampleFreq);
     void FFTForward(CPX * in, CPX * out, int size);
     void FFTMagnForward(CPX * in,int size,double baseline,double correction,double *fbr);
     void FFTInverse(CPX * in, CPX * out, int size);
@@ -38,10 +32,6 @@ public:
 	//Methods to obtain spectrum formated power vs frequency
 	void SetFFTAve( qint32 ave);
 	void ResetFFT();
-	bool GetScreenIntegerFFTData(qint32 MaxHeight, qint32 MaxWidth,
-									double MaxdB, double MindB,
-									qint32 StartFreq, qint32 StopFreq,
-									qint32* OutBuf );
 	qint32 PutInDisplayFFT(qint32 n, TYPECPX* InBuf);
 
 private:
@@ -58,24 +48,18 @@ private:
 	void cftbsub(int n, TYPEREAL *a, TYPEREAL *w);
 
 	bool m_Overload;
-	bool m_Invert;
+
 	qint32 m_AveCount;
 	qint32 m_TotalCount;
-	qint32 m_FFTSize;
 	qint32 m_LastFFTSize;
 	qint32 m_AveSize;
-	qint32 m_StartFreq;
-	qint32 m_StopFreq;
-	qint32 m_BinMin;
-	qint32 m_BinMax;
-	qint32 m_PlotWidth;
 
 	double m_K_C;
 	double m_K_B;
-	double m_dBCompensation;
-	double m_SampleFreq;
+    double dBCompensation;
+
 	qint32* m_pWorkArea;
-	qint32* m_pTranslateTbl;
+
 	double* m_pSinCosTbl;
 	double* m_pWindowTbl;
 	double* m_pFFTPwrAveBuf;

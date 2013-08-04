@@ -29,12 +29,12 @@
 CFft::CFft() :FFT()
 {
 	m_Overload = false;
-	m_Invert = false;
+    invert = false;
 	m_AveSize = 1;
 	m_LastFFTSize = 0;
 	m_AveCount = 0;
 	m_TotalCount = 0;
-	m_FFTSize = 1024;
+    fftSize = 1024;
 	m_pWorkArea = NULL;
 	m_pSinCosTbl = NULL;
 	m_pWindowTbl = NULL;
@@ -42,8 +42,7 @@ CFft::CFft() :FFT()
 	m_pFFTAveBuf = NULL;
 	m_pFFTInBuf = NULL;
 	m_pFFTSumBuf = NULL;
-	m_pTranslateTbl = NULL;
-	m_dBCompensation = K_MAXDB;
+
     FFTParams( 2048, false ,0.0, 1000);
 	SetFFTAve( 1);
 }
@@ -90,11 +89,6 @@ void CFft::FreeMemory()
 		delete m_pFFTInBuf;
 		m_pFFTInBuf = NULL;
 	}
-	if(m_pTranslateTbl)
-	{
-		delete m_pTranslateTbl;
-		m_pTranslateTbl = NULL;
-	}
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -115,57 +109,43 @@ void CFft::SetFFTAve( qint32 ave)
 ///////////////////////////////////////////////////////////////////
 //FFT initialization and parameter setup function
 ///////////////////////////////////////////////////////////////////
-void CFft::FFTParams( qint32 size,
-						 bool invert,
-						 double dBCompensation,
-						 double SampleFreq)
+void CFft::FFTParams( qint32 _size, bool _invert, double _dBCompensation, double _sampleRate)
 {
-qint32 i;
-	if(size==0)
-		return;
+    //Must call FFT base to properly init
+    FFT::FFTParams(_size, _invert, _dBCompensation, _sampleRate);
+
+    qint32 i;
 	m_Mutex.lock();
-	m_BinMin = 0;		//force recalculation of plot variables
-	m_BinMax = 0;
-	m_StartFreq = 0;
-	m_StopFreq = 0;
-	m_PlotWidth = 0;
-	m_Invert = invert;
-	m_SampleFreq = SampleFreq;
-	if( m_dBCompensation != dBCompensation )
-	{							//reset of FFT params
+
+    if( dBCompensation != _dBCompensation )
+    {
+        //reset of FFT params
 		m_LastFFTSize = 0;
-		m_dBCompensation = dBCompensation;
+        dBCompensation = _dBCompensation;
 	}
 
-	if( size<MIN_FFT_SIZE )
-		m_FFTSize = MIN_FFT_SIZE;
-	else if( size>MAX_FFT_SIZE )
-		m_FFTSize = MAX_FFT_SIZE;
-	else
-		m_FFTSize = size;
-
-	if(m_LastFFTSize != m_FFTSize)
+    if(m_LastFFTSize != fftSize)
 	{
-		m_LastFFTSize = m_FFTSize;
+        m_LastFFTSize = fftSize;
 		FreeMemory();
-		m_pWindowTbl = new double[m_FFTSize];
-		m_pSinCosTbl = new double[m_FFTSize/2];
-		m_pWorkArea = new qint32[ (qint32)sqrt((double)m_FFTSize)+2];
-		m_pFFTPwrAveBuf = new double[m_FFTSize];
-		m_pFFTAveBuf = new double[m_FFTSize];
-		m_pFFTSumBuf = new double[m_FFTSize];
-		for(i=0; i<m_FFTSize; i++)
+        m_pWindowTbl = new double[fftSize];
+        m_pSinCosTbl = new double[fftSize/2];
+        m_pWorkArea = new qint32[ (qint32)sqrt((double)fftSize)+2];
+        m_pFFTPwrAveBuf = new double[fftSize];
+        m_pFFTAveBuf = new double[fftSize];
+        m_pFFTSumBuf = new double[fftSize];
+        for(i=0; i<fftSize; i++)
 		{
 			m_pFFTPwrAveBuf[i] = 0.0;
 			m_pFFTAveBuf[i] = 0.0;
 			m_pFFTSumBuf[i] = 0.0;
 		}
 		m_pWorkArea[0] = 0;
-		m_pFFTInBuf = new double[m_FFTSize*2];
-		m_pTranslateTbl = new qint32[m_FFTSize];
-		for(i=0; i<m_FFTSize*2; i++)
+        m_pFFTInBuf = new double[fftSize*2];
+
+        for(i=0; i<fftSize*2; i++)
 			m_pFFTInBuf[i] = 0.0;
-		makewt(m_FFTSize/2, m_pWorkArea, m_pSinCosTbl);
+        makewt(fftSize/2, m_pWorkArea, m_pSinCosTbl);
 
 //////////////////////////////////////////////////////////////////////
 // A pure input sin wave ... Asin(wt)... will produce an fft output 
@@ -183,57 +163,57 @@ qint32 i;
 //		range of 0 to -120dB the stored value is 0.0 to -12.0
 //   so final constant K_B = -8.663833		
 ///////////////////////////////////////////////////////////////////////
-		m_K_B = m_dBCompensation - 20*log10( (double)m_FFTSize*K_AMPMAX/2.0 );
+        m_K_B = dBCompensation - 20*log10( (double)fftSize*K_AMPMAX/2.0 );
 		m_K_C = pow( 10.0, (K_MINDB-m_K_B)/10.0 );
 		m_K_B = m_K_B/10.0;
 double WindowGain;
 #if 0
 		WindowGain = 1.0;
-		for(i=0; i<m_FFTSize; i++)	//Rectangle(no window)
+        for(i=0; i<fftSize; i++)	//Rectangle(no window)
 			m_pWindowTbl[i] = 1.0*WindowGain;
 #endif
 #if 1
 		WindowGain = 2.0;
-		for(i=0; i<m_FFTSize; i++)	//Hann
-			m_pWindowTbl[i] = WindowGain*(.5  - .5 *cos( (K_2PI*i)/(m_FFTSize-1) ));
+        for(i=0; i<fftSize; i++)	//Hann
+            m_pWindowTbl[i] = WindowGain*(.5  - .5 *cos( (K_2PI*i)/(fftSize-1) ));
 #endif
 #if 0
 		WindowGain = 1.852;
-		for(i=0; i<m_FFTSize; i++)	//Hamming
-			m_pWindowTbl[i] = WindowGain*(.54  - .46 *cos( (K_2PI*i)/(m_FFTSize-1) ));
+        for(i=0; i<fftSize; i++)	//Hamming
+            m_pWindowTbl[i] = WindowGain*(.54  - .46 *cos( (K_2PI*i)/(fftSize-1) ));
 #endif
 #if 0
 		WindowGain = 2.8;
-		for(i=0; i<m_FFTSize; i++)	//Blackman-Nuttall
+        for(i=0; i<fftSize; i++)	//Blackman-Nuttall
 			m_pWindowTbl[i] = WindowGain*(0.3635819
-				- 0.4891775*cos( (K_2PI*i)/(m_FFTSize-1) )
-				+ 0.1365995*cos( (2.0*K_2PI*i)/(m_FFTSize-1) )
-				- 0.0106411*cos( (3.0*K_2PI*i)/(m_FFTSize-1) ) );
+                - 0.4891775*cos( (K_2PI*i)/(fftSize-1) )
+                + 0.1365995*cos( (2.0*K_2PI*i)/(fftSize-1) )
+                - 0.0106411*cos( (3.0*K_2PI*i)/(fftSize-1) ) );
 #endif
 #if 0
 		WindowGain = 2.82;
-		for(i=0; i<m_FFTSize; i++)	//Blackman-Harris
+        for(i=0; i<fftSize; i++)	//Blackman-Harris
 			m_pWindowTbl[i] = WindowGain*(0.35875
-				- 0.48829*cos( (K_2PI*i)/(m_FFTSize-1) )
-				+ 0.14128*cos( (2.0*K_2PI*i)/(m_FFTSize-1) )
-				- 0.01168*cos( (3.0*K_2PI*i)/(m_FFTSize-1) ) );
+                - 0.48829*cos( (K_2PI*i)/(fftSize-1) )
+                + 0.14128*cos( (2.0*K_2PI*i)/(fftSize-1) )
+                - 0.01168*cos( (3.0*K_2PI*i)/(fftSize-1) ) );
 #endif
 #if 0
 		WindowGain = 2.8;
-		for(i=0; i<m_FFTSize; i++)	//Nuttall
+        for(i=0; i<fftSize; i++)	//Nuttall
 			m_pWindowTbl[i] = WindowGain*(0.355768
-				- 0.487396*cos( (K_2PI*i)/(m_FFTSize-1) )
-				+ 0.144232*cos( (2.0*K_2PI*i)/(m_FFTSize-1) )
-				- 0.012604*cos( (3.0*K_2PI*i)/(m_FFTSize-1) ) );
+                - 0.487396*cos( (K_2PI*i)/(fftSize-1) )
+                + 0.144232*cos( (2.0*K_2PI*i)/(fftSize-1) )
+                - 0.012604*cos( (3.0*K_2PI*i)/(fftSize-1) ) );
 #endif
 #if 0
 		WindowGain = 1.0;
-		for(i=0; i<m_FFTSize; i++)	//Flat Top 4 term
+        for(i=0; i<fftSize; i++)	//Flat Top 4 term
 			m_pWindowTbl[i] = WindowGain*(1.0
-					- 1.942604  * cos( (K_2PI*i)/(m_FFTSize-1) )
-					+ 1.340318 * cos( (2.0*K_2PI*i)/(m_FFTSize-1) )
-					- 0.440811 * cos( (3.0*K_2PI*i)/(m_FFTSize-1) )
-					+ 0.043097  * cos( (4.0*K_2PI*i)/(m_FFTSize-1) )
+                    - 1.942604  * cos( (K_2PI*i)/(fftSize-1) )
+                    + 1.340318 * cos( (2.0*K_2PI*i)/(fftSize-1) )
+                    - 0.440811 * cos( (3.0*K_2PI*i)/(fftSize-1) )
+                    + 0.043097  * cos( (4.0*K_2PI*i)/(fftSize-1) )
 				);
 
 #endif
@@ -248,7 +228,7 @@ double WindowGain;
 void CFft::ResetFFT()
 {
 	m_Mutex.lock();
-	for(qint32 i=0; i<m_FFTSize;i++)
+    for(qint32 i=0; i<fftSize;i++)
 	{
 		m_pFFTAveBuf[i] = 0.0;
 		m_pFFTSumBuf[i] = 0.0;
@@ -261,12 +241,12 @@ void CFft::ResetFFT()
 //////////////////////////////////////////////////////////////////////
 // "InBuf[]" is first multiplied by a window function, checked for overflow
 //	and then placed in the FFT input buffers and the FFT performed.
-//	For real data there should be  m_FFTSize/2 InBuf data points
-//	For complex data there should be  m_FFTSize InBuf data points
+//	For real data there should be  fftSize/2 InBuf data points
+//	For complex data there should be  fftSize InBuf data points
 //////////////////////////////////////////////////////////////////////
 qint32 CFft::PutInDisplayFFT(qint32 n, TYPECPX* InBuf)
 {
-qint32 i;
+    qint32 i;
 	m_Overload = false;
 	m_Mutex.lock();
 	double dtmp1;
@@ -281,160 +261,75 @@ qint32 i;
 		((TYPECPX*)m_pFFTInBuf)[i].re = dtmp1 * (InBuf[i].im);	//window the Q data
 	}
 	//Calculate the complex FFT
-	bitrv2(m_FFTSize*2, m_pWorkArea + 2, m_pFFTInBuf);
-	CpxFFT(m_FFTSize*2, m_pFFTInBuf, m_pSinCosTbl);
+    bitrv2(fftSize*2, m_pWorkArea + 2, m_pFFTInBuf);
+    CpxFFT(fftSize*2, m_pFFTInBuf, m_pSinCosTbl);
 	m_Mutex.unlock();
 	return m_TotalCount;
-}
-
-//////////////////////////////////////////////////////////////////////
-// The bin range is "start" to "stop" Hz.
-// The range of start to stop frequencies are mapped to the users
-// plot screen size so the users buffer will be filled with an array
-// of integers whos value is the pixel height and the index of the
-//  array is the x pixel coordinate.
-// The function returns true if the input is overloaded
-//   This routine converts the data to 32 bit integers and is useful
-//   when displaying fft data on the screen. 
-//		MaxHeight = Plot height in pixels(zero is top and increases down)
-//		MaxWidth =  Plot width in pixels
-//		StartFreq = freq in Hz
-//		StopFreq = freq in Hz
-//		MaxdB = FFT dB level corresponding to output value == 0
-//			must be <= to K_MAXDB
-//		MindB = FFT dB level  corresponding to output value == MaxHeight
-//			must be >= to K_MINDB
-//////////////////////////////////////////////////////////////////////
-bool CFft::GetScreenIntegerFFTData(qint32 MaxHeight,
-								qint32 MaxWidth,
-								double MaxdB,
-								double MindB,
-								qint32 StartFreq,
-								qint32 StopFreq,
-								qint32* OutBuf )
-{
-qint32 i;
-qint32 y;
-qint32 x;
-qint32 m;
-qint32 ymax = -10000;
-qint32 xprev = -1;
-qint32 maxbin;
-double dBmaxOffset = MaxdB/10.0;
-double dBGainFactor = -10.0/(MaxdB-MindB);
-
-//qDebug()<<"maxoffset dbgaindfact "<<dBmaxOffset << dBGainFactor;
-
-	m_Mutex.lock();
-	if( (m_StartFreq != StartFreq) ||
-		(m_StopFreq != StopFreq) ||
-		(m_PlotWidth != MaxWidth) )
-	{	//if something has changed need to redo translate table
-		m_StartFreq = StartFreq;
-		m_StopFreq = StopFreq;
-		m_PlotWidth = MaxWidth;
-		maxbin = m_FFTSize - 1;
-		m_BinMin = (qint32)((double)StartFreq*(double)m_FFTSize/m_SampleFreq);
-		m_BinMin += (m_FFTSize/2);
-		m_BinMax = (qint32)((double)StopFreq*(double)m_FFTSize/m_SampleFreq);
-		m_BinMax += (m_FFTSize/2);
-		if(m_BinMin < 0)	//don't allow these go outside the translate table
-			m_BinMin = 0;
-		if(m_BinMin >= maxbin)
-			m_BinMin = maxbin;
-		if(m_BinMax < 0)
-			m_BinMax = 0;
-		if(m_BinMax >= maxbin)
-			m_BinMax = maxbin;
-		if( (m_BinMax-m_BinMin) > m_PlotWidth )
-		{
-			//if more FFT points than plot points
-			for( i=m_BinMin; i<=m_BinMax; i++)
-				m_pTranslateTbl[i] = ( (i-m_BinMin)*m_PlotWidth )/(m_BinMax - m_BinMin);
-		}
-		else
-		{
-			//if more plot points than FFT points
-			for( i=0; i<m_PlotWidth; i++)
-				m_pTranslateTbl[i] = m_BinMin + ( i*(m_BinMax - m_BinMin) )/m_PlotWidth;
-		}
-	}
-
-	m = (m_FFTSize);
-	if( (m_BinMax-m_BinMin) > m_PlotWidth )
-	{
-		//if more FFT points than plot points
-		for( i=m_BinMin; i<=m_BinMax; i++ )
-		{
-			if(m_Invert)
-				y = (qint32)((double)MaxHeight*dBGainFactor*(m_pFFTAveBuf[(m-i)] - dBmaxOffset));
-			else
-				y = (qint32)((double)MaxHeight*dBGainFactor*(m_pFFTAveBuf[i] - dBmaxOffset));
-			if(y<0)
-				y = 0;
-			if(y > MaxHeight)
-				y = MaxHeight;
-			x = m_pTranslateTbl[i];	//get fft bin to plot x coordinate transform
-			if( x==xprev )	// still mappped to same fft bin coordinate
-			{
-				if(y < ymax)		//store only the max value
-				{
-					OutBuf[x] = y;
-					ymax = y;
-				}
-			}
-			else
-			{
-				OutBuf[x] = y;
-				xprev = x;
-				ymax = y;
-			}
-		}
-	}
-	else
-	{
-		//if more plot points than FFT points
-		for( x=0; x<m_PlotWidth; x++ )
-		{
-			i = m_pTranslateTbl[x];	//get plot to fft bin coordinate transform
-			if(m_Invert)
-				y = (qint32)((double)MaxHeight*dBGainFactor*(m_pFFTAveBuf[(m-i)] - dBmaxOffset));
-			else
-				y = (qint32)((double)MaxHeight*dBGainFactor*(m_pFFTAveBuf[i] - dBmaxOffset));
-			if(y<0)
-				y = 0;
-			if(y > MaxHeight)
-				y = MaxHeight;
-			OutBuf[x] = y;
-		}
-	}
-	m_Mutex.unlock();
-	return m_Overload;
 }
 
 ///////////////////////////////////////////////////////////////////
 //Interface for doing fast convolution filters.  Takes complex data
 // in pInOutBuf and does fwd or rev FFT and places back in same buffer.
 ///////////////////////////////////////////////////////////////////
+
+//This should be called by Pebble, returns FP and unfolds
+//CuteSDR should call CPXFFT
 void CFft::FFTForward(CPX * in, CPX * out, int size)
 {
-    bitrv2(m_FFTSize*2, m_pWorkArea + 2, (TYPEREAL*)in);
-    CpxFFT(m_FFTSize*2, (TYPEREAL*)in, m_pSinCosTbl);
-    //in and out are same buffer so we need to copy to freqDomain buffer to be consistent
-    CPXBuf::copy(freqDomain, in, m_FFTSize);
+    if (!fftParamsSet)
+        return;
+
+    qint32 i;
+    m_Overload = false;
+    m_Mutex.lock();
+    double dtmp1;
+    for(i=0; i<size; i++)
+    {
+        if( in[i].re > OVER_LIMIT )	//flag overload if within OVLimit of max
+            m_Overload = true;
+        dtmp1 = m_pWindowTbl[i];
+        //NOTE: For some reason I and Q are swapped(demod I/Q does not apear to be swapped)
+        //possibly an issue with the FFT ?
+        timeDomain[i].im =dtmp1 * (in[i].re);//window the I data
+        timeDomain[i].re = dtmp1 * (in[i].im);	//window the Q data
+    }
+
+    bitrv2(fftSize*2, m_pWorkArea + 2, (TYPEREAL*)timeDomain);
+    CpxFFT(fftSize*2, (TYPEREAL*)timeDomain, m_pSinCosTbl);
+
+    //See fftooura for spectrum folding model, cuteSDR uses same
+    // FFT output index 0 to N/2-1
+    // is frequency output 0 to +Fs/2 Hz  ( 0 Hz DC term )
+    for( int i = 0, j = size/2; i < size/2; i++, j++) {
+        freqDomain[i] = timeDomain[j];
+    }
+    // FFT output index N/2 to N-1  (times 2 since complex samples)
+    // is frequency output -Fs/2 to 0
+    for( int i = size/2, j = 0; i < size; i++, j++) {
+        freqDomain[i] = timeDomain[j];
+    }
+
+    FFT::FFTForward(freqDomain, out, size);
+    m_Mutex.unlock();
 
 }
 
 void CFft::FFTMagnForward(CPX *in, int size, double baseline, double correction, double *fbr)
 {
+    if (!fftParamsSet)
+        return;
+
 }
 
 void CFft::FFTInverse(CPX * in, CPX * out, int size)
 {
-    bitrv2conj(m_FFTSize*2, m_pWorkArea + 2, (TYPEREAL*)in);
-    cftbsub(m_FFTSize*2, (TYPEREAL*)in, m_pSinCosTbl);
+    if (!fftParamsSet)
+        return;
+
+    bitrv2conj(fftSize*2, m_pWorkArea + 2, (TYPEREAL*)in);
+    cftbsub(fftSize*2, (TYPEREAL*)in, m_pSinCosTbl);
     //in and out are same buffer so we need to copy to freqDomain buffer to be consistent
-    CPXBuf::copy(timeDomain, in, m_FFTSize);
+    CPXBuf::copy(timeDomain, in, fftSize);
 
 }
 
