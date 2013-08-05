@@ -188,6 +188,7 @@ void CFft::FFTForward(CPX * in, CPX * out, int size)
     qint32 i;
     fftInputOverload = false;
     fftMutex.lock();
+
     double dtmp1;
     for(i=0; i<size; i++)
     {
@@ -195,25 +196,18 @@ void CFft::FFTForward(CPX * in, CPX * out, int size)
             fftInputOverload = true;
         dtmp1 = m_pWindowTbl[i];
         //CuteSDR swapped I/Q here, but order is correct in Pebble
-        timeDomain[i].re = dtmp1 * (in[i].re); //window the I data
-        timeDomain[i].im = dtmp1 * (in[i].im); //window the Q data
+        workingBuf[i].re = dtmp1 * (in[i].re); //window the I data
+        workingBuf[i].im = dtmp1 * (in[i].im); //window the Q data
     }
 
-    bitrv2(fftSize*2, m_pWorkArea + 2, (TYPEREAL*)timeDomain);
-    //!!This still calculates cuteSDR power averages, remove from CpxFFT eventually since we do it in FFT
-    CpxFFT(fftSize*2, (TYPEREAL*)timeDomain, m_pSinCosTbl);
+    bitrv2(fftSize*2, m_pWorkArea + 2, (TYPEREAL*)workingBuf);
+    CpxFFT(fftSize*2, (TYPEREAL*)workingBuf, m_pSinCosTbl);
 
-    //See fftooura for spectrum folding model, cuteSDR uses same
-    // FFT output index N/2 to N-1 is frequency output -Fs/2 to 0hz (negative frequencies)
-    for( int unfolded = 0, folded = size/2 ; folded < size; unfolded++, folded++) {
-        freqDomain[unfolded] = timeDomain[folded]; //folded = 1024 to 2047 unfolded = 0 to 1023
-    }
-    // FFT output index 0 to N/2-1 is frequency output 0 to +Fs/2 Hz  (positive frequencies)
-    for( int unfolded = size/2, folded = 0; unfolded < size; unfolded++, folded++) {
-        freqDomain[unfolded] = timeDomain[folded]; //folded = 0 to 1023 unfolded = 1024 to 2047
-    }
+    CPXBuf::copy(freqDomain,workingBuf,size) ;
 
-    FFT::FFTForward(freqDomain, out, size); //This does average power calc and replaces cuteSdr specif code
+    //If out == NULL, just leave result in freqDomain buffer and let caller get it
+    if (out != NULL)
+        CPXBuf::copy(out, freqDomain, fftSize);
 
 #if 0
     //Test Pebble restuls with original cuteSDR calculations
@@ -234,9 +228,27 @@ void CFft::FFTForward(CPX * in, CPX * out, int size)
 
 void CFft::FFTMagnForward(CPX *in, int size, double baseline, double correction, double *fbr)
 {
+    // Not used, will be replaced by spectrum
+}
+
+void CFft::FFTSpectrum(CPX *in, int size)
+{
     if (!fftParamsSet)
         return;
+    FFTForward(in,workingBuf,size); //No need to copy to out, leave in freqDomain
 
+    //We to unfold here because CalcPowerAverages expects things in most neg to most pos order
+    //See fftooura for spectrum folding model, cuteSDR uses same
+    // FFT output index N/2 to N-1 is frequency output -Fs/2 to 0hz (negative frequencies)
+    for( int unfolded = 0, folded = size/2 ; folded < size; unfolded++, folded++) {
+        freqDomain[unfolded] = workingBuf[folded]; //folded = 1024 to 2047 unfolded = 0 to 1023
+    }
+    // FFT output index 0 to N/2-1 is frequency output 0 to +Fs/2 Hz  (positive frequencies)
+    for( int unfolded = size/2, folded = 0; unfolded < size; unfolded++, folded++) {
+        freqDomain[unfolded] = workingBuf[folded]; //folded = 0 to 1023 unfolded = 1024 to 2047
+    }
+
+    CalcPowerAverages(freqDomain,size);
 }
 
 void CFft::FFTInverse(CPX * in, CPX * out, int size)
@@ -244,10 +256,15 @@ void CFft::FFTInverse(CPX * in, CPX * out, int size)
     if (!fftParamsSet)
         return;
 
-    bitrv2conj(fftSize*2, m_pWorkArea + 2, (TYPEREAL*)in);
-    cftbsub(fftSize*2, (TYPEREAL*)in, m_pSinCosTbl);
+    CPXBuf::copy(workingBuf,in, size);  //In-place functions, use workingBuf to keep other buffers intact
+
+    bitrv2conj(fftSize*2, m_pWorkArea + 2, (TYPEREAL*)workingBuf);
+    cftbsub(fftSize*2, (TYPEREAL*)workingBuf, m_pSinCosTbl);
     //in and out are same buffer so we need to copy to freqDomain buffer to be consistent
-    CPXBuf::copy(timeDomain, in, fftSize);
+    CPXBuf::copy(timeDomain, workingBuf, fftSize);
+
+    if (out != NULL)
+        CPXBuf::copy(out, timeDomain, fftSize);
 
 }
 

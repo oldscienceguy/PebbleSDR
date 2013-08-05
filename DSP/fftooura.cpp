@@ -69,36 +69,38 @@ void FFTOoura::FFTForward(CPX *in, CPX *out, int size)
     if (!fftParamsSet)
         return;
 
-    //If in==NULL, use whatever is in timeDomain buffer
-    if (in != NULL ) {
-        if (size < fftSize)
-            //Make sure that buffer which does not have samples is zero'd out
-            //We can pad samples in the time domain because it does not impact frequency results in FFT
-            CPXBuf::clear(timeDomain,fftSize);
+    CPXBuf::copy(workingBuf,in, size);  //In-place functions, use workingBuf to keep other buffers intact
 
-        //Put the data in properly aligned FFTW buffer
-        CPXBuf::copy(timeDomain, in, size);
-    }
     //Size is 2x fftSize because offt works on double[] re-im-re-im et
-    cdft(2*size, +1, (double*)timeDomain, offtWorkArea, offtSinCosTable);
+    cdft(2*size, +1, (double*)workingBuf, offtWorkArea, offtSinCosTable);
 
-    //See fftooura for spectrum folding model, cuteSDR uses same
-    // FFT output index N/2 to N-1 is frequency output -Fs/2 to 0hz (negative frequencies)
-    for( int unfolded = 0, folded = size/2 ; folded < size; unfolded++, folded++) {
-        freqDomain[unfolded] = timeDomain[folded]; //folded = 1024 to 2047 unfolded = 0 to 1023
-    }
-    // FFT output index 0 to N/2-1 is frequency output 0 to +Fs/2 Hz  (positive frequencies)
-    for( int unfolded = size/2, folded = 0; unfolded < size; unfolded++, folded++) {
-        freqDomain[unfolded] = timeDomain[folded]; //folded = 0 to 1023 unfolded = 1024 to 2047
-    }
-
-    FFT::FFTForward(freqDomain, out, size);
+    CPXBuf::copy(freqDomain,workingBuf,size) ;
 
     //If out == NULL, just leave result in freqDomain buffer and let caller get it
     if (out != NULL)
         CPXBuf::copy(out, freqDomain, fftSize);
 
 
+}
+
+void FFTOoura::FFTSpectrum(CPX *in, int size)
+{
+    if (!fftParamsSet)
+        return;
+
+    FFTForward(in,workingBuf,size); //No need to copy to out, leave in freqBuf
+
+    //See fftooura for spectrum folding model, cuteSDR uses same
+    // FFT output index N/2 to N-1 is frequency output -Fs/2 to 0hz (negative frequencies)
+    for( int unfolded = 0, folded = size/2 ; folded < size; unfolded++, folded++) {
+        freqDomain[unfolded] = workingBuf[folded]; //folded = 1024 to 2047 unfolded = 0 to 1023
+    }
+    // FFT output index 0 to N/2-1 is frequency output 0 to +Fs/2 Hz  (positive frequencies)
+    for( int unfolded = size/2, folded = 0; unfolded < size; unfolded++, folded++) {
+        freqDomain[unfolded] = workingBuf[folded]; //folded = 0 to 1023 unfolded = 1024 to 2047
+    }
+
+    CalcPowerAverages(freqDomain,size);
 }
 
 void FFTOoura::FFTMagnForward(CPX * in,int size,double baseline,double correction,double *fbr)
@@ -115,11 +117,23 @@ void FFTOoura::FFTMagnForward(CPX * in,int size,double baseline,double correctio
     //Ooura averages 35-40us (relative) between calls
     //Confirmed with Mac CPU usage: avg 90% with Ooura vs 80% with fftwW, just using Ooura for Spectrum FFT!
     //So Ooura is significantly slower!
-    CPXBuf::copy(timeDomain, in, size);
+    CPXBuf::copy(workingBuf, in, size);
 
     //Size is 2x fftSize because offt works on double[] re-im-re-im et
-    cdft(2*size, +1, (double*)timeDomain, offtWorkArea, offtSinCosTable);
-    FreqDomainToMagnitude(timeDomain, size, baseline, correction, fbr);
+    cdft(2*size, +1, (double*)workingBuf, offtWorkArea, offtSinCosTable);
+
+    //See fftooura for spectrum folding model, cuteSDR uses same
+    // FFT output index N/2 to N-1 is frequency output -Fs/2 to 0hz (negative frequencies)
+    for( int unfolded = 0, folded = size/2 ; folded < size; unfolded++, folded++) {
+        freqDomain[unfolded] = workingBuf[folded]; //folded = 1024 to 2047 unfolded = 0 to 1023
+    }
+    // FFT output index 0 to N/2-1 is frequency output 0 to +Fs/2 Hz  (positive frequencies)
+    for( int unfolded = size/2, folded = 0; unfolded < size; unfolded++, folded++) {
+        freqDomain[unfolded] = workingBuf[folded]; //folded = 0 to 1023 unfolded = 1024 to 2047
+    }
+
+    FreqDomainToMagnitude(freqDomain, size, baseline, correction, fbr);
+
     //perform.StopPerformance(5);
 
 }
@@ -129,19 +143,12 @@ void FFTOoura::FFTInverse(CPX *in, CPX *out, int size)
     if (!fftParamsSet)
         return;
 
-    //If in==NULL, use whatever is in freqDomain buffer
-    if (in != NULL) {
-        if (size < fftSize)
-            //Make sure that buffer which does not have samples is zero'd out
-            CPXBuf::clear(freqDomain,fftSize);
+    CPXBuf::copy(workingBuf,in, size);  //In-place functions, use workingBuf to keep other buffers intact
 
-        CPXBuf::copy(freqDomain, in, size);
-    }
     //Size is 2x fftSize because offt works on double[] re-im-re-im et
-    cdft(2*size, -1, (double*)freqDomain, offtWorkArea, offtSinCosTable);
+    cdft(2*size, -1, (double*)workingBuf, offtWorkArea, offtSinCosTable);
 
-    //in and out are same buffer so we need to copy to timeDomain buffer to be consistent
-    CPXBuf::copy(timeDomain, freqDomain, fftSize);
+    CPXBuf::copy(timeDomain, workingBuf, fftSize);
 
     if (out != NULL)
         CPXBuf::copy(out, timeDomain, fftSize);

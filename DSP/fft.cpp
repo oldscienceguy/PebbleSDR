@@ -18,6 +18,7 @@ FFT::FFT() :
 
     timeDomain = NULL;
     freqDomain = NULL;
+    workingBuf = NULL;
     overlap = NULL;
 
     fftParamsSet = false; //Only set to true in FFT::FFTParams(...)
@@ -44,6 +45,7 @@ FFT::~FFT()
 {
     if (timeDomain) CPXBuf::free(timeDomain);
     if (freqDomain) CPXBuf::free(freqDomain);
+    if (workingBuf) CPXBuf::free(workingBuf);
     if (overlap) CPXBuf::free(overlap);
     if (plotTranslateTable) delete plotTranslateTable;
     if (FFTPwrAvgBuf != NULL)
@@ -88,6 +90,7 @@ void FFT::FFTParams(qint32 _size, bool _invert, double _dBCompensation, double _
 
     timeDomain = CPXBuf::malloc(fftSize);
     freqDomain = CPXBuf::malloc(fftSize);
+    workingBuf = CPXBuf::malloc(fftSize);
     overlap = CPXBuf::malloc(fftSize);
     CPXBuf::clear(overlap, fftSize);
 
@@ -145,23 +148,6 @@ void FFT::SetMovingAvgLimit( qint32 ave)
 void FFT::ResetFFT()
 {
     //Clear buffers?
-}
-
-//Base classes must call AFTER this to be safe
-void FFT::FFTForward(CPX *in, CPX *out, int size)
-{
-    //Do FFT work in base class
-    CalcPowerAverages(freqDomain,size);
-}
-
-void FFT::FFTMagnForward(CPX *in, int size, double baseline, double correction, double *fbr)
-{
-    //Do FFT work in base class
-}
-
-void FFT::FFTInverse(CPX *in, CPX *out, int size)
-{
-    //Do FFT work in base class
 }
 
 

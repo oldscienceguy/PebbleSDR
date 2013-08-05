@@ -46,8 +46,6 @@ void FFTfftw::FFTForward(CPX * in, CPX * out, int size)
     //If out == NULL, just leave result in freqDomain buffer and let caller get it
     if (out != NULL)
         CPXBuf::copy(out, freqDomain, fftSize);
-
-    FFT::FFTForward(freqDomain, out, size);
 }
 
 //NOTE: size= # samples in 'in' buffer, 'out' must be == fftSize (set on construction) which is #bins
@@ -68,6 +66,32 @@ void FFTfftw::FFTInverse(CPX * in, CPX * out, int size)
 
     if (out != NULL)
         CPXBuf::copy(out, timeDomain, fftSize);
+
+}
+
+void FFTfftw::FFTSpectrum(CPX *in, int size)
+{
+    if (!fftParamsSet)
+        return;
+
+    FFTForward(in,workingBuf,size); //No need to copy to out, leave in freqDomain
+    //FFTW does not appear to be in order as documented.  On-going mystery
+    /*
+     *From FFTW documentation
+     *From above, an FFTW_FORWARD transform corresponds to a sign of -1 in the exponent of the DFT.
+     *Note also that we use the standard “in-order” output ordering—the k-th output corresponds to the frequency k/n
+     *(or k/T, where T is your total sampling period).
+     *For those who like to think in terms of positive and negative frequencies,
+     *this means that the positive frequencies are stored in the first half of the output
+     *and the negative frequencies are stored in backwards order in the second half of the output.
+     *(The frequency -k/n is the same as the frequency (n-k)/n.)
+     */
+    for (int i=0, j = size-1; i < size/2; i++, j--) {
+        freqDomain[i] = workingBuf[j];
+        freqDomain[j] = workingBuf[i];
+    }
+
+    CalcPowerAverages(freqDomain,size);
 
 }
 

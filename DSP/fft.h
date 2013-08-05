@@ -34,12 +34,13 @@ public:
 
     //If in==NULL, use whatever is in timeDomain buffer
     //If out==NULL, leave result in freqDomain buffer and don't copy to out
-    virtual void FFTForward(CPX * in, CPX * out, int size);
-    virtual void FFTMagnForward(CPX * in,int size,double baseline,double correction,double *fbr);
+    virtual void FFTForward(CPX * in, CPX * out, int size) = 0;
+    virtual void FFTMagnForward(CPX * in,int size,double baseline,double correction,double *fbr) = 0;
+    virtual void FFTSpectrum(CPX *in, int size) = 0; //Replacing FFTMagnForward in most uses
 
     //If in==NULL, use whatever is in freqDomain buffer
     //If out==NULL, then leave result in timeDomain buffer and don't copy to out
-    virtual void FFTInverse(CPX * in, CPX * out, int size);
+    virtual void FFTInverse(CPX * in, CPX * out, int size) = 0;
 
     //Not virtual and common to all FFT implementations
     void FreqDomainToMagnitude(CPX * freqBuf, int size, double baseline, double correction, double *fbr);
@@ -61,8 +62,9 @@ public:
 
 protected:
     //Utility
-    CPX *timeDomain;
-    CPX *freqDomain;
+    CPX *timeDomain; //Should always be counted on to have last time domain results
+    CPX *freqDomain; //Should always be counted on to have last freqency domain results
+    CPX *workingBuf; //Used internally and should never be counted on for anything
     CPX *overlap;
     bool fftParamsSet; //Use to make sure base class calls FFT to init variables
 

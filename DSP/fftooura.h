@@ -13,6 +13,7 @@ public:
     void FFTForward(CPX * in, CPX * out, int size);
     void FFTMagnForward(CPX * in,int size,double baseline,double correction,double *fbr);
     void FFTInverse(CPX * in, CPX * out, int size);
+    void FFTSpectrum(CPX *in, int size);
 
 protected:
     //Complex DFT isgn indicates forward or inverse
