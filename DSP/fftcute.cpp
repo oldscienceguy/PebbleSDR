@@ -13,17 +13,6 @@
 #include <QDebug>
 
 //////////////////////////////////////////////////////////////////////
-// Local Defines
-//////////////////////////////////////////////////////////////////////
-
-#define K_AMPMAX 32767.0	//maximum sin wave Pk for 16 bit input data
-#define K_MAXDB 0.0			//specifies total range of FFT
-#define K_MINDB -220.0
-
-#define OVER_LIMIT 32000.0	//limit for detecting over ranging inputs
-
-
-//////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 CFft::CFft() :FFT()
@@ -202,7 +191,7 @@ void CFft::FFTForward(CPX * in, CPX * out, int size)
     double dtmp1;
     for(i=0; i<size; i++)
     {
-        if( in[i].re > OVER_LIMIT )	//flag overload if within OVLimit of max
+        if( in[i].re > overLimit )	//flag overload if within OVLimit of max
             fftInputOverload = true;
         dtmp1 = m_pWindowTbl[i];
         //CuteSDR swapped I/Q here, but order is correct in Pebble

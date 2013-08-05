@@ -54,8 +54,6 @@
 #define TB_VERT_DIVS 14 //18	//specify grid screen divisions
 #define TB_TIMEVERT_DIVS 10	//specify time display grid screen divisions
 
-#define MAX_AMPLITUDE 32767.0
-
 #define FFT_AVE 2
 
 #define TRIG_OFF 0
@@ -381,13 +379,13 @@ void CTestBench::OnPulsePeriod(int pperiod)
 void CTestBench::OnSignalPwr(int pwr)
 {
 	m_SignalPower = pwr;
-	m_SignalAmplitude = MAX_AMPLITUDE*pow(10.0, m_SignalPower/20.0);
+    m_SignalAmplitude = m_Fft.ampMax*pow(10.0, m_SignalPower/20.0);
 }
 
 void CTestBench::OnNoisePwr(int pwr)
 {
 	m_NoisePower = pwr;
-	m_NoiseAmplitude = MAX_AMPLITUDE*pow(10.0, m_NoisePower/20.0);
+    m_NoiseAmplitude = m_Fft.ampMax*pow(10.0, m_NoisePower/20.0);
 }
 
 void CTestBench::OnEnablePeak(bool enablepeak)
@@ -506,9 +504,9 @@ if( (m_SweepFrequency>-31250) && (m_SweepFrequency<31250) )
 	if(!m_UseFmGen)
 	{
 		//create complex sin/cos signal
-        //Normalize to -1 to +1
-        pBuf[i].re = amp*cos(m_SweepAcc) / 32767;
-        pBuf[i].im = amp*sin(m_SweepAcc) / 32767;
+
+        pBuf[i].re = amp*cos(m_SweepAcc);
+        pBuf[i].im = amp*sin(m_SweepAcc);
 		//inc phase accummulator with normalized freqeuency step
 
 
@@ -533,8 +531,8 @@ if( (m_SweepFrequency>-31250) && (m_SweepFrequency<31250) )
 			} while(r >= 1.0 || r == 0.0);
 			rad = sqrt(-2.0*log(r)/r);
 			//add noise samples to generator output
-			pBuf[i].re += (m_NoiseAmplitude*u1*rad);
-			pBuf[i].im += (m_NoiseAmplitude*u2*rad);
+            pBuf[i].re += (m_NoiseAmplitude*u1*rad) * 32767.0;
+            pBuf[i].im += (m_NoiseAmplitude*u2*rad) * 32767.0;
 		}
 	}
 	m_SweepAcc = (double)fmod((double)m_SweepAcc, K_2PI);	//keep radian counter bounded
@@ -624,8 +622,8 @@ int i;
 	m_SweepRateInc = m_SweepRate/m_GenSampleRate;
 //	if(m_UseFmGen)
 //		m_pWFmMod->SetSweep(m_SweepFreqNorm,m_SweepFrequency,m_SweepStopFrequency,m_SweepRateInc);
-	m_SignalAmplitude = MAX_AMPLITUDE*pow(10.0, m_SignalPower/20.0);
-	m_NoiseAmplitude = MAX_AMPLITUDE*pow(10.0, m_NoisePower/20.0);
+    m_SignalAmplitude = m_Fft.ampMax*pow(10.0, m_SignalPower/20.0);
+    m_NoiseAmplitude = m_Fft.ampMax*pow(10.0, m_NoisePower/20.0);
 
 	//init FFT values
     m_Fft.FFTParams(  TEST_FFTSIZE, false, 0.0,	m_DisplaySampleRate);
@@ -693,10 +691,7 @@ void CTestBench::DisplayData(int length, TYPECPX* pBuf, double samplerate, int p
 		//accumulate samples into m_FftInBuf until have enough to perform an FFT
 		for(int i=0; i<length; i++)
 		{
-            //CuteSDR uses +/- 32767 format, we use -1 to +1 format
-            //So we have to reverse to use in test bench
-            //!!Would be better to convert test bench and related fft to use same floating point representation
-            m_FftInBuf[m_FftBufPos++] = (pBuf[i] * 32767.0);
+            m_FftInBuf[m_FftBufPos++] = (pBuf[i]);
 
 			if(m_FftBufPos >= TEST_FFTSIZE )
 			{
@@ -722,8 +717,8 @@ void CTestBench::DisplayData(int length, TYPECPX* pBuf, double samplerate, int p
 			while(intime >= scrntime)
 			{
 				ChkForTrigger( (int)pBuf[i].re );
-                m_TimeBuf1[m_TimeScrnPos] = (int)pBuf[i].re * 32767;
-                m_TimeBuf2[m_TimeScrnPos++] = (int)pBuf[i].im * 32767;
+                m_TimeBuf1[m_TimeScrnPos] = (int)pBuf[i].re;
+                m_TimeBuf2[m_TimeScrnPos++] = (int)pBuf[i].im;
 				scrntime = (double)m_TimeScrnPos*m_TimeScrnPixel;
 				if( m_TimeScrnPos >= m_Rect.width() )
 				{

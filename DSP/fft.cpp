@@ -1,11 +1,21 @@
 #include "fft.h"
 
-#define K_AMPMAX 32767.0	//maximum sin wave Pk for 16 bit input data
-#define K_MAXDB 0.0			//specifies total range of FFT
-#define K_MINDB -220.0
-
-FFT::FFT()
+FFT::FFT() :
+    useIntegerFFT(false)
 {
+    maxFFTSize = 65536;
+    minFFTSize = 512;
+    maxDb = 0.0;			//specifies total range of FFT
+    minDb = -220.0;
+    if (useIntegerFFT) {
+        ampMax = 32767.0;	//maximum sin wave Pk for 16 bit input data
+        overLimit = 32000.0;	//limit for detecting over ranging inputs
+    } else {
+        ampMax = 1.0; //+/- 1 format
+        overLimit = 0.9;
+    }
+
+
     timeDomain = NULL;
     freqDomain = NULL;
     overlap = NULL;
@@ -13,7 +23,7 @@ FFT::FFT()
     fftParamsSet = false; //Only set to true in FFT::FFTParams(...)
 
     invert = false;
-    dBCompensation = K_MAXDB;
+    dBCompensation = maxDb;
 
 
     plotTranslateTable = NULL;
@@ -65,10 +75,10 @@ void FFT::FFTParams(qint32 _size, bool _invert, double _dBCompensation, double _
 {
     if (_size == 0)
         return; //Error
-    else if( _size < MIN_FFT_SIZE )
-        fftSize = MIN_FFT_SIZE;
-    else if( _size > MAX_FFT_SIZE )
-        fftSize = MAX_FFT_SIZE;
+    else if( _size < minFFTSize )
+        fftSize = minFFTSize;
+    else if( _size > maxFFTSize )
+        fftSize = maxFFTSize;
     else
         fftSize = _size;
 
@@ -82,9 +92,8 @@ void FFT::FFTParams(qint32 _size, bool _invert, double _dBCompensation, double _
     CPXBuf::clear(overlap, fftSize);
 
     //Init K_B and K_C constants for power conversion
-    //For +/- 32767 cuteSDR
-    K_B = dBCompensation - 20 * log10( (double)fftSize * K_AMPMAX/2.0 );
-    K_C = pow( 10.0, (K_MINDB - K_B)/10.0 );
+    K_B = dBCompensation - 20 * log10( (double)fftSize * ampMax/2.0 );
+    K_C = pow( 10.0, (minDb - K_B)/10.0 );
     K_B = K_B/10.0;
 
     if (FFTPwrAvgBuf != NULL)
@@ -190,9 +199,6 @@ void FFT::OverlapAdd(CPX *out, int size)
 
 }
 
-//!!This is called in cuteSDR with -32767 to +32767 representation.
-//!!Logic is the same, but constants will be different
-//!!Verify with -1 to +1
 void FFT::CalcPowerAverages(CPX* in, int size)
 {
 

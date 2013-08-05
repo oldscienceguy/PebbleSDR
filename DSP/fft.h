@@ -5,8 +5,7 @@
 #include "SignalProcessing.h"
 #include "QMutex"
 
-#define MAX_FFT_SIZE 65536
-#define MIN_FFT_SIZE 512
+
 
 //New base class for multiple FFT variations
 //This will eventually let us switch usage or at least document the various options
@@ -16,6 +15,16 @@ class FFT
 public:
     FFT();
     virtual ~FFT();
+    const bool useIntegerFFT; //Used as we switch cuteSDR code to +/-1
+
+    //Move defines to public constants
+    quint32 maxFFTSize;
+    quint32 minFFTSize;
+    double ampMax;	//maximum sin wave Pk for 16 bit input data
+    double maxDb;			//specifies total range of FFT
+    double minDb;
+    double overLimit;	//limit for detecting over ranging inputs
+
     //Keep separate from constructor so we can change on the fly eventually
     //cutesdr usage
     virtual void FFTParams(qint32 _size, bool _invert, double _dBCompensation, double _sampleRate);
