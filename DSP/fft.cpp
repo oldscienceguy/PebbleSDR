@@ -26,6 +26,7 @@ FFT::FFT()
     FFTPwrAvgBuf = NULL;
     FFTAvgBuf = NULL;
     FFTPwrSumBuf = NULL;
+    movingAvgLimit = 2;
 
 
 }
@@ -81,6 +82,7 @@ void FFT::FFTParams(qint32 _size, bool _invert, double _dBCompensation, double _
     CPXBuf::clear(overlap, fftSize);
 
     //Init K_B and K_C constants for power conversion
+    //For +/- 32767 cuteSDR
     K_B = dBCompensation - 20 * log10( (double)fftSize * K_AMPMAX/2.0 );
     K_C = pow( 10.0, (K_MINDB - K_B)/10.0 );
     K_B = K_B/10.0;
@@ -113,6 +115,27 @@ void FFT::FFTParams(qint32 _size, bool _invert, double _dBCompensation, double _
     lastPlotWidth = 0;
 
     fftParamsSet = true;
+}
+
+///////////////////////////////////////////////////////////////////
+//FFT initialization and parameter setup function
+///////////////////////////////////////////////////////////////////
+void FFT::SetMovingAvgLimit( qint32 ave)
+{
+    if(movingAvgLimit != ave)
+    {
+        if(ave>0)
+            movingAvgLimit = ave;
+        else
+            movingAvgLimit = 1;
+    }
+    ResetFFT();
+}
+
+//Subclasses should call in case we need to do anything
+void FFT::ResetFFT()
+{
+    //Clear buffers?
 }
 
 //Base classes must call AFTER this to be safe
@@ -194,7 +217,8 @@ void FFT::CalcPowerAverages(CPX* in, int size)
 
 #endif
 
-    const int movingAvgLimit = 2;
+    //This is called from code that is locked with fftMutex, don't re-lock or will hang
+
     double samplePwr;
 
     bufferCnt++;
@@ -224,7 +248,11 @@ void FFT::CalcPowerAverages(CPX* in, int size)
 
 }
 
-//Common routine borrowed from cuteSDR to scale to fit spectrum or waterfall display
+//Common routine borrowed from cuteSDR
+//Scales X axis to fit more FFT data in fewer pixels or fewer FFT data in more pixels
+//For cah pixel bin, calculates the scaled db y value for FFTAvgBuf
+//After calling this, we can plot directly from OutBuf[0 to plotWidth]
+
 //////////////////////////////////////////////////////////////////////
 // The bin range is "start" to "stop" Hz.
 // The range of start to stop frequencies are mapped to the users

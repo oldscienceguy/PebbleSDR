@@ -134,7 +134,7 @@ CTestBench::CTestBench(QWidget *parent) :
                         false,
 						0.0,
 						m_GenSampleRate);
-	m_Fft.SetFFTAve(FFT_AVE);
+    m_Fft.SetMovingAvgLimit(FFT_AVE);
 	ui->setupUi(this);
     setWindowTitle("Pebble Test Bench");
 	ui->textEdit->clear();
@@ -704,7 +704,6 @@ void CTestBench::DisplayData(int length, TYPECPX* pBuf, double samplerate, int p
 				if(++m_DisplaySkipCounter >= m_DisplaySkipValue )
 				{
 					m_DisplaySkipCounter = 0;
-                    //!!m_Fft.PutInDisplayFFT( TEST_FFTSIZE, m_FftInBuf);
                     m_Fft.FFTForward(m_FftInBuf,m_FftInBuf,TEST_FFTSIZE);
                     emit NewFftData();
 				}
@@ -766,7 +765,6 @@ void CTestBench::DisplayData(int length, TYPEREAL* pBuf, double samplerate, int 
 				if(++m_DisplaySkipCounter >= m_DisplaySkipValue )
 				{
 					m_DisplaySkipCounter = 0;
-                    //m_Fft.PutInDisplayFFT( TEST_FFTSIZE, m_FftInBuf);
                     m_Fft.FFTForward(m_FftInBuf,m_FftInBuf,TEST_FFTSIZE);
 
 					emit NewFftData();
@@ -827,7 +825,6 @@ void CTestBench::DisplayData(int length, TYPEMONO16* pBuf, double samplerate, in
 				if(++m_DisplaySkipCounter >= m_DisplaySkipValue )
 				{
 					m_DisplaySkipCounter = 0;
-                    //m_Fft.PutInDisplayFFT( TEST_FFTSIZE, m_FftInBuf);
                     m_Fft.FFTForward(m_FftInBuf,m_FftInBuf,TEST_FFTSIZE);
 
 					emit NewFftData();
@@ -888,7 +885,6 @@ void CTestBench::DisplayData(int length, TYPESTEREO16* pBuf, double samplerate, 
 				if(++m_DisplaySkipCounter >= m_DisplaySkipValue )
 				{
 					m_DisplaySkipCounter = 0;
-                    //m_Fft.PutInDisplayFFT( TEST_FFTSIZE, m_FftInBuf);
                     m_Fft.FFTForward(m_FftInBuf,m_FftInBuf,TEST_FFTSIZE);
 
 					emit NewFftData();

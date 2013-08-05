@@ -28,23 +28,16 @@
 //////////////////////////////////////////////////////////////////////
 CFft::CFft() :FFT()
 {
-	m_Overload = false;
+    fftInputOverload = false;
     invert = false;
-	m_AveSize = 1;
 	m_LastFFTSize = 0;
-	m_AveCount = 0;
-	m_TotalCount = 0;
     fftSize = 1024;
 	m_pWorkArea = NULL;
 	m_pSinCosTbl = NULL;
 	m_pWindowTbl = NULL;
-	m_pFFTPwrAveBuf = NULL;
-	m_pFFTAveBuf = NULL;
-	m_pFFTInBuf = NULL;
-	m_pFFTSumBuf = NULL;
 
     FFTParams( 2048, false ,0.0, 1000);
-	SetFFTAve( 1);
+    SetMovingAvgLimit( 1);
 }
 
 CFft::~CFft()
@@ -69,41 +62,6 @@ void CFft::FreeMemory()
 		delete m_pWindowTbl;
 		m_pWindowTbl = NULL;
 	}
-	if(m_pFFTPwrAveBuf)
-	{
-		delete m_pFFTPwrAveBuf;
-		m_pFFTPwrAveBuf = NULL;
-	}
-	if(m_pFFTAveBuf)
-	{
-		delete m_pFFTAveBuf;
-		m_pFFTAveBuf = NULL;
-	}
-	if(m_pFFTSumBuf)
-	{
-		delete m_pFFTSumBuf;
-		m_pFFTSumBuf = NULL;
-	}
-	if(m_pFFTInBuf)
-	{
-		delete m_pFFTInBuf;
-		m_pFFTInBuf = NULL;
-	}
-}
-
-///////////////////////////////////////////////////////////////////
-//FFT initialization and parameter setup function
-///////////////////////////////////////////////////////////////////
-void CFft::SetFFTAve( qint32 ave)
-{
-	if(m_AveSize != ave)
-	{
-		if(ave>0)
-			m_AveSize = ave;
-		else
-			m_AveSize = 1;
-	}
-	ResetFFT();
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -117,13 +75,6 @@ void CFft::FFTParams( qint32 _size, bool _invert, double _dBCompensation, double
     qint32 i;
     fftMutex.lock();
 
-    if( dBCompensation != _dBCompensation )
-    {
-        //reset of FFT params
-		m_LastFFTSize = 0;
-        dBCompensation = _dBCompensation;
-	}
-
     if(m_LastFFTSize != fftSize)
 	{
         m_LastFFTSize = fftSize;
@@ -131,41 +82,9 @@ void CFft::FFTParams( qint32 _size, bool _invert, double _dBCompensation, double
         m_pWindowTbl = new double[fftSize];
         m_pSinCosTbl = new double[fftSize/2];
         m_pWorkArea = new qint32[ (qint32)sqrt((double)fftSize)+2];
-        m_pFFTPwrAveBuf = new double[fftSize];
-        m_pFFTAveBuf = new double[fftSize];
-        m_pFFTSumBuf = new double[fftSize];
-        for(i=0; i<fftSize; i++)
-		{
-			m_pFFTPwrAveBuf[i] = 0.0;
-			m_pFFTAveBuf[i] = 0.0;
-			m_pFFTSumBuf[i] = 0.0;
-		}
 		m_pWorkArea[0] = 0;
-        m_pFFTInBuf = new double[fftSize*2];
-
-        for(i=0; i<fftSize*2; i++)
-			m_pFFTInBuf[i] = 0.0;
         makewt(fftSize/2, m_pWorkArea, m_pSinCosTbl);
 
-//////////////////////////////////////////////////////////////////////
-// A pure input sin wave ... Asin(wt)... will produce an fft output 
-//   peak of (N*A/1)^2  where N is FFT_SIZE.
-//		Kx = 2 for complex, 4 for real FFT
-// To convert to a Power dB range:
-//   PdBmax = 10*log10( (N*A/Kx)^2 + K_C ) + K_B
-//   PdBmin = 10*log10( 0 + K_C ) + K_B
-//  if (N*A/Kx)^2 >> K_C 
-//  Then K_B = PdBmax - 20*log10( N*A/Kx )
-//       K_C = 10 ^ ( (PdBmin-K_B)/10 )
-//  for power range of 0 to 100 dB with input(A) of 32767 and N=262144
-//			K_B = -86.63833  and K_C = 4.6114145e8
-// To eliminate the multiply by 10, divide by 10 so for an output
-//		range of 0 to -120dB the stored value is 0.0 to -12.0
-//   so final constant K_B = -8.663833		
-///////////////////////////////////////////////////////////////////////
-        m_K_B = dBCompensation - 20*log10( (double)fftSize*K_AMPMAX/2.0 );
-		m_K_C = pow( 10.0, (K_MINDB-m_K_B)/10.0 );
-		m_K_B = m_K_B/10.0;
 double WindowGain;
 #if 0
 		WindowGain = 1.0;
@@ -228,16 +147,11 @@ double WindowGain;
 void CFft::ResetFFT()
 {
     fftMutex.lock();
-    for(qint32 i=0; i<fftSize;i++)
-	{
-		m_pFFTAveBuf[i] = 0.0;
-		m_pFFTSumBuf[i] = 0.0;
-	}
-	m_AveCount = 0;
-	m_TotalCount = 0;
+    FFT::ResetFFT();
     fftMutex.unlock();
 }
 
+#if 0
 //////////////////////////////////////////////////////////////////////
 // "InBuf[]" is first multiplied by a window function, checked for overflow
 //	and then placed in the FFT input buffers and the FFT performed.
@@ -245,7 +159,7 @@ void CFft::ResetFFT()
 //	For complex data there should be  fftSize InBuf data points
 //////////////////////////////////////////////////////////////////////
 
-//!!Replaced by FFTForward
+//!!Replaced by FFTForward here for reference
 qint32 CFft::PutInDisplayFFT(qint32 n, TYPECPX* InBuf)
 {
     qint32 i;
@@ -268,6 +182,7 @@ qint32 CFft::PutInDisplayFFT(qint32 n, TYPECPX* InBuf)
     fftMutex.unlock();
 	return m_TotalCount;
 }
+#endif
 
 ///////////////////////////////////////////////////////////////////
 //Interface for doing fast convolution filters.  Takes complex data
@@ -282,13 +197,13 @@ void CFft::FFTForward(CPX * in, CPX * out, int size)
         return;
 
     qint32 i;
-    m_Overload = false;
+    fftInputOverload = false;
     fftMutex.lock();
     double dtmp1;
     for(i=0; i<size; i++)
     {
         if( in[i].re > OVER_LIMIT )	//flag overload if within OVLimit of max
-            m_Overload = true;
+            fftInputOverload = true;
         dtmp1 = m_pWindowTbl[i];
         //CuteSDR swapped I/Q here, but order is correct in Pebble
         timeDomain[i].re = dtmp1 * (in[i].re); //window the I data
@@ -357,9 +272,6 @@ void CFft::rftfsub(qint32 n, double *a, qint32 nc, double *c)
 qint32 j, k, kk, ks, m;
 double wkr, wki, xr, xi, yr, yi;
 
-	m_TotalCount++;
- 	if(m_AveCount < m_AveSize)
-		m_AveCount++;
     m = n >> 1;
     ks = 2 * nc/m;
     kk = 0;
@@ -382,6 +294,7 @@ double wkr, wki, xr, xi, yr, yi;
 		a[k+1] -= yi;
 		xr += (a[k+1]*a[k+1]);
 
+#if 0
 		//xr is real power  xi is imag power terms
 		//perform moving average on power up to m_AveSize then do exponential averaging after that
 		if(m_TotalCount <= m_AveSize)
@@ -399,12 +312,14 @@ double wkr, wki, xr, xi, yr, yi;
 
 		m_pFFTAveBuf[j] = log10(m_pFFTPwrAveBuf[j] + m_K_C) + m_K_B;
 		m_pFFTAveBuf[k] = log10(m_pFFTPwrAveBuf[k] + m_K_C) + m_K_B;
+#endif
 
 	}
 
 	a[0] *= a[0];						//calc DC term
 	xr = a[m]*a[m]+a[m+1]*a[m+1];		//calculate N/4(middle) term
 
+#if 0
 	//xr is real power  a[0] is imag power terms
 	//perform moving average on power up to m_AveSize then do exponential averaging after that
 	if(m_TotalCount <= m_AveSize)
@@ -422,6 +337,7 @@ double wkr, wki, xr, xi, yr, yi;
 
 	m_pFFTAveBuf[0] = log10(m_pFFTPwrAveBuf[0] + m_K_C) + m_K_B;
 	m_pFFTAveBuf[n/2] = log10(m_pFFTPwrAveBuf[n/2] + m_K_C) + m_K_B;
+#endif
 
 }
 
@@ -434,9 +350,6 @@ void CFft::CpxFFT(qint32 n, double *a, double *w)
 qint32 j, j1, j2, j3, l;
 double x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i;
     
-	m_TotalCount++;
- 	if(m_AveCount < m_AveSize)
-		m_AveCount++;
     l = 2;
     if (n > 8) {
         cft1st(n, a, w);
@@ -479,6 +392,11 @@ double x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i;
             a[j1 + 1] = x0i;
         }
     }
+
+#if 0
+    //Do not remove, left for reference
+    //Logic moved to FFT so it can be used with any FFT implementation
+
 	//n = 2*FFTSIZE 
 	n = n>>1;
 	//now n = FFTSIZE
@@ -512,6 +430,7 @@ double x0r, x0i, x1r, x1i, x2r, x2i, x3r, x3i;
 		m_pFFTPwrAveBuf[j] = m_pFFTSumBuf[j]/(double)m_AveCount;
 		m_pFFTAveBuf[j] = log10( m_pFFTPwrAveBuf[j] + m_K_C) + m_K_B;
 	}
+#endif
 
 }
 

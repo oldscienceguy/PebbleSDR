@@ -29,10 +29,7 @@ public:
     void FFTMagnForward(CPX * in,int size,double baseline,double correction,double *fbr);
     void FFTInverse(CPX * in, CPX * out, int size);
 
-	//Methods to obtain spectrum formated power vs frequency
-	void SetFFTAve( qint32 ave);
 	void ResetFFT();
-	qint32 PutInDisplayFFT(qint32 n, TYPECPX* InBuf);
 
 private:
 	void FreeMemory();
@@ -47,27 +44,27 @@ private:
 	void bitrv2conj(int n, int *ip, TYPEREAL *a);
 	void cftbsub(int n, TYPEREAL *a, TYPEREAL *w);
 
-	bool m_Overload;
-
-	qint32 m_AveCount;
-	qint32 m_TotalCount;
 	qint32 m_LastFFTSize;
-	qint32 m_AveSize;
-
-	double m_K_C;
-	double m_K_B;
-    double dBCompensation;
 
 	qint32* m_pWorkArea;
 
 	double* m_pSinCosTbl;
 	double* m_pWindowTbl;
-	double* m_pFFTPwrAveBuf;
+#if 0
+    //Replaced in FFT
+    qint32 m_AveCount;
+    qint32 m_TotalCount;
+    double m_K_C;
+    double m_K_B;
+    double dBCompensation;
+    double* m_pFFTPwrAveBuf;
 	double* m_pFFTAveBuf;
 	double* m_pFFTSumBuf;
 	double* m_pFFTInBuf;
     //replaced with fftMutex in fft.h
     //QMutex m_Mutex;		//for keeping threads from stomping on each other
+#endif
+
 };
 
 #endif // FFT_CUTE
