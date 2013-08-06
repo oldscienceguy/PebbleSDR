@@ -36,7 +36,7 @@ public:
     //If out==NULL, leave result in freqDomain buffer and don't copy to out
     virtual void FFTForward(CPX * in, CPX * out, int size) = 0;
     virtual void FFTMagnForward(CPX * in,int size,double baseline,double correction,double *fbr) = 0;
-    virtual void FFTSpectrum(CPX *in, int size) = 0; //Replacing FFTMagnForward in most uses
+    virtual void FFTSpectrum(CPX *in, double * out, int size) = 0; //Replacing FFTMagnForward in most uses
 
     //If in==NULL, use whatever is in freqDomain buffer
     //If out==NULL, then leave result in timeDomain buffer and don't copy to out
@@ -48,13 +48,13 @@ public:
 
     //WIP Calculate m_pFFTPwrAveBuf for any FFT.  Heavily embedded in cuteSDR
     //Compare with cuteSDR to see if we got it right
-    void CalcPowerAverages(CPX* in, int size);
+    void CalcPowerAverages(CPX* in, double *out, int size);
     void SetMovingAvgLimit( qint32 ave);
 
-    bool GetScreenIntegerFFTData(qint32 MaxHeight, qint32 MaxWidth,
-                                    double MaxdB, double MindB,
-                                    qint32 StartFreq, qint32 StopFreq,
-                                    qint32* OutBuf );
+    bool MapFFTToScreen(qint32 maxHeight, qint32 maxWidth,
+                                    double maxdB, double mindB,
+                                    qint32 startFreq, qint32 stopFreq,
+                                    qint32* outBuf );
 
     int getFFTSize() {return fftSize;}
     CPX *getFreqDomain() {return freqDomain;}
@@ -74,10 +74,10 @@ protected:
 
     bool fftInputOverload;
 
-    //Used by GetScreenIntegerFFTData
+    //Used by MapFFTToScreen
     qint32 *plotTranslateTable;
-    qint32 m_BinMin;
-    qint32 m_BinMax;
+    qint32 binLow; //lowest frequency to be displayed
+    qint32 binHigh; //highest frequency to be displayed
     qint32 lastStartFreq;
     qint32 lastStopFreq;
     qint32 lastPlotWidth;

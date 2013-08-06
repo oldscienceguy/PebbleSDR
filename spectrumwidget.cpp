@@ -629,6 +629,7 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 
 	if (spectrumMode == SignalSpectrum::SPECTRUM)
 	{
+#if 0
         //plotArea->fill(Qt::lightGray); //Erase to background color each time
         plotArea->fill(QColor("light yellow")); //Looks better and easier to see
         //BUG: Won't handle case where we have more pixels than samples
@@ -677,6 +678,43 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 
         //Paint cursor last because painter changes - hack
         paintCursor(painter, Qt::black);
+#else
+        //These shouldn't be allocated every call
+        qint32 fftMap[2048]; //!!Fix to dynamic max screen width
+        QPoint LineBuf[2048]; //[TB_MAX_SCREENSIZE];
+
+        //!!Draw frequency overlay
+        plotArea->fill(Qt::black); //Erase
+
+
+        //Convert to plot area coordinates
+        signalSpectrum->MapFFTToScreen(
+            plotArea->height(),
+            plotArea->width(),
+            //These are same as testbench
+            0,      //FFT dB level  corresponding to output value == MaxHeight
+            -140,   //FFT dB level corresponding to output value == 0
+            -sampleRate/2, //Low frequency
+            sampleRate/2, //High frequency
+            fftMap );
+
+        for (int i=0; i< plotArea->width(); i++)
+        {
+            LineBuf[i].setX(i);
+            LineBuf[i].setY(fftMap[i]);
+            //Keep track of peak values for optional display
+            //if(fftbuf[i] < m_FftPkBuf[i])
+            //    m_FftPkBuf[i] = fftMap[i];
+        }
+        plotPainter.setPen( Qt::green );
+        //Just connect the dots in LineBuf!
+        plotPainter.drawPolyline(LineBuf, plotArea->width());
+        painter.drawPixmap(plotFr, *plotArea);
+        paintCursor(painter, Qt::white);
+
+
+
+#endif
 
 
     } else if (spectrumMode == SignalSpectrum::WATERFALL) {

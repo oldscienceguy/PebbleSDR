@@ -28,8 +28,8 @@ FFT::FFT() :
 
 
     plotTranslateTable = NULL;
-    m_BinMin = 0;		//force recalculation of plot variables
-    m_BinMax = 0;
+    binLow = 0;		//force recalculation of plot variables
+    binHigh = 0;
 
     //These will be init on first use in CalcAverages
     bufferCnt = 0;
@@ -185,7 +185,7 @@ void FFT::OverlapAdd(CPX *out, int size)
 
 }
 
-void FFT::CalcPowerAverages(CPX* in, int size)
+void FFT::CalcPowerAverages(CPX* in, double *out, int size)
 {
 
 #if 0
@@ -236,6 +236,10 @@ void FFT::CalcPowerAverages(CPX* in, int size)
 
         FFTAvgBuf[i] = log10( FFTPwrAvgBuf[i] + K_C) + K_B;
 
+        //Skip copying to out if null
+        if (out != NULL)
+            out[i] = FFTAvgBuf[i];
+
     }
 
 }
@@ -263,17 +267,19 @@ void FFT::CalcPowerAverages(CPX* in, int size)
 //		MindB = FFT dB level  corresponding to output value == MaxHeight
 //			must be >= to K_MINDB
 //////////////////////////////////////////////////////////////////////
-bool FFT::GetScreenIntegerFFTData(qint32 MaxHeight,
-                                qint32 MaxWidth,
-                                double MaxdB,
-                                double MindB,
-                                qint32 StartFreq,
-                                qint32 StopFreq,
-                                qint32* OutBuf )
+bool FFT::MapFFTToScreen(qint32 maxHeight,
+                                qint32 maxWidth,
+                                double maxdB,
+                                double mindB,
+                                qint32 startFreq,
+                                qint32 stopFreq,
+                                qint32* outBuf )
 {
 
-    if (FFTAvgBuf == NULL)
-        return false; //Not set up yet
+    if (!fftParamsSet)
+        return false;
+
+    double *inBuf = FFTAvgBuf;
 
     qint32 i;
     qint32 y;
@@ -281,42 +287,41 @@ bool FFT::GetScreenIntegerFFTData(qint32 MaxHeight,
     qint32 m;
     qint32 ymax = -10000;
     qint32 xprev = -1;
-    qint32 maxbin;
-    double dBmaxOffset = MaxdB/10.0;
-    double dBGainFactor = -10.0/(MaxdB-MindB);
+    const qint32 binMax = fftSize -1;
+    double dBmaxOffset = maxdB/10.0;
+    double dBGainFactor = -10.0/(maxdB-mindB);
 
     //qDebug()<<"maxoffset dbgaindfact "<<dBmaxOffset << dBGainFactor;
 
     fftMutex.lock();
     //If zoom has changed (startFreq-stopFreq) or width of plot area (window resize)
     //then recalculate
-    if( (lastStartFreq != StartFreq) ||
-        (lastStopFreq != StopFreq) ||
-        (lastPlotWidth != MaxWidth) ) {
+    if( (lastStartFreq != startFreq) ||
+        (lastStopFreq != stopFreq) ||
+        (lastPlotWidth != maxWidth) ) {
         //if something has changed need to redo translate table
-        lastStartFreq = StartFreq;
-        lastStopFreq = StopFreq;
-        lastPlotWidth = MaxWidth;
+        lastStartFreq = startFreq;
+        lastStopFreq = stopFreq;
+        lastPlotWidth = maxWidth;
 
         //Find the beginning and ending FFT bins that correspond to Start and StopFreq
         //
-        maxbin = fftSize - 1;
-        //Ex: If no zoom, binMin will be 1/2 of fftSize or -1024
-        m_BinMin = (qint32)((double)StartFreq*(double)fftSize/sampleRate);
+        //Ex: If no zoom, binLow will be 1/2 of fftSize or -1024
+        binLow = (qint32)((double)startFreq*(double)fftSize/sampleRate);
         //Ex: makes it zero relative, so will be 0
-        m_BinMin += (fftSize/2);
+        binLow += (fftSize/2);
         //Ex: 1024 for full spectrum
-        m_BinMax = (qint32)((double)StopFreq*(double)fftSize/sampleRate);
+        binHigh = (qint32)((double)stopFreq*(double)fftSize/sampleRate);
         //Ex: now 2048
-        m_BinMax += (fftSize/2);
-        if(m_BinMin < 0)	//don't allow these go outside the translate table
-            m_BinMin = 0;
-        if(m_BinMin >= maxbin)
-            m_BinMin = maxbin;
-        if(m_BinMax < 0)
-            m_BinMax = 0;
-        if(m_BinMax >= maxbin)
-            m_BinMax = maxbin;
+        binHigh += (fftSize/2);
+        if(binLow < 0)	//don't allow these go outside the translate table
+            binLow = 0;
+        if(binLow >= binMax)
+            binLow = binMax;
+        if(binHigh < 0)
+            binHigh = 0;
+        if(binHigh >= binMax)
+            binHigh = binMax;
 
         //plotTranslateTable is the same size as FFT and each FFT index has a corresponding plotTranslateTable value
         //The values in plotTranslateTable are the x indexes to the actual plot screen
@@ -324,46 +329,46 @@ bool FFT::GetScreenIntegerFFTData(qint32 MaxHeight,
         //Example where plot width 1/3 of FFT size
         //FFT:  0   1   2   3   4   5   6   7   8   9   ...
         //Plot: 0   0   0   1   1   1   2   2   2   3   ...
-        if( (m_BinMax-m_BinMin) > lastPlotWidth )
+        if( (binHigh-binLow) > lastPlotWidth )
         {
             //if more FFT points than plot points, map min to max FFT to plot
-            for( i=m_BinMin; i<=m_BinMax; i++)
-                plotTranslateTable[i] = ( (i-m_BinMin)*lastPlotWidth )/(m_BinMax - m_BinMin);
+            for( i=binLow; i<=binHigh; i++)
+                plotTranslateTable[i] = ( (i-binLow)*lastPlotWidth )/(binHigh - binLow);
         }
         else
         {
             //if more plot points than FFT points
             for( i=0; i<lastPlotWidth; i++)
-                plotTranslateTable[i] = m_BinMin + ( i*(m_BinMax - m_BinMin) )/lastPlotWidth;
+                plotTranslateTable[i] = binLow + ( i*(binHigh - binLow) )/lastPlotWidth;
         }
     } //End recalc after change in window size etc
 
     m = fftSize;
-    if( (m_BinMax-m_BinMin) > lastPlotWidth )
+    if( (binHigh-binLow) > lastPlotWidth )
     {
         //if more FFT points than plot points
-        for( i=m_BinMin; i<=m_BinMax; i++ )
+        for( i=binLow; i<=binHigh; i++ )
         {
             if(invert)
-                y = (qint32)((double)MaxHeight * dBGainFactor * (FFTAvgBuf[(m-i)] - dBmaxOffset));
+                y = (qint32)((double)maxHeight * dBGainFactor * (inBuf[(m-i)] - dBmaxOffset));
             else
-                y = (qint32)((double)MaxHeight * dBGainFactor * (FFTAvgBuf[i] - dBmaxOffset));
+                y = (qint32)((double)maxHeight * dBGainFactor * (inBuf[i] - dBmaxOffset));
             if(y < 0)
                 y = 0;
-            if(y > MaxHeight)
-                y = MaxHeight;
+            if(y > maxHeight)
+                y = maxHeight;
             x = plotTranslateTable[i];	//get fft bin to plot x coordinate transform
             if( x == xprev )	// still mappped to same fft bin coordinate
             {
                 if(y < ymax)		//store only the max value
                 {
-                    OutBuf[x] = y;
+                    outBuf[x] = y;
                     ymax = y;
                 }
             }
             else
             {
-                OutBuf[x] = y;
+                outBuf[x] = y;
                 xprev = x;
                 ymax = y;
             }
@@ -376,14 +381,14 @@ bool FFT::GetScreenIntegerFFTData(qint32 MaxHeight,
         for( x=0; x<lastPlotWidth; x++ ) {
             i = plotTranslateTable[x];	//get plot to fft bin coordinate transform
             if(invert)
-                y = (qint32)((double)MaxHeight * dBGainFactor * (FFTAvgBuf[(m-i)] - dBmaxOffset));
+                y = (qint32)((double)maxHeight * dBGainFactor * (inBuf[(m-i)] - dBmaxOffset));
             else
-                y = (qint32)((double)MaxHeight * dBGainFactor * (FFTAvgBuf[i] - dBmaxOffset));
+                y = (qint32)((double)maxHeight * dBGainFactor * (inBuf[i] - dBmaxOffset));
             if(y<0)
                 y = 0;
-            if(y > MaxHeight)
-                y = MaxHeight;
-            OutBuf[x] = y;
+            if(y > maxHeight)
+                y = maxHeight;
+            outBuf[x] = y;
 
         }
     }

@@ -15,7 +15,7 @@ public:
     void FFTForward(CPX * in, CPX * out, int size);
     void FFTMagnForward(CPX * in,int size,double baseline,double correction,double *fbr);
     void FFTInverse(CPX * in, CPX * out, int size);
-    void FFTSpectrum(CPX *in, int size);
+    void FFTSpectrum(CPX *in, double *out, int size);
 
 private:
     fftw_plan plan_fwd;

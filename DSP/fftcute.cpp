@@ -231,7 +231,7 @@ void CFft::FFTMagnForward(CPX *in, int size, double baseline, double correction,
     // Not used, will be replaced by spectrum
 }
 
-void CFft::FFTSpectrum(CPX *in, int size)
+void CFft::FFTSpectrum(CPX *in, double *out, int size)
 {
     if (!fftParamsSet)
         return;
@@ -248,7 +248,7 @@ void CFft::FFTSpectrum(CPX *in, int size)
         freqDomain[unfolded] = workingBuf[folded]; //folded = 0 to 1023 unfolded = 1024 to 2047
     }
 
-    CalcPowerAverages(freqDomain,size);
+    CalcPowerAverages(freqDomain, out, size);
 }
 
 void CFft::FFTInverse(CPX * in, CPX * out, int size)

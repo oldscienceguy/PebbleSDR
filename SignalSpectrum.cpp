@@ -45,6 +45,7 @@ SignalSpectrum::SignalSpectrum(int sr, int ns, Settings *set):
     SetUpdatesPerSec(10);
     displayUpdateComplete = true;
     displayUpdateOverrun = 0;
+
 }
 
 SignalSpectrum::~SignalSpectrum(void)
@@ -98,7 +99,12 @@ void SignalSpectrum::MakeSpectrum(CPX *in, double *sOut, int size)
             //I don't think this is critical section
             //mutex.lock();
 
+#if 0
+            //Change #if here in sync with SpectrumWidget to switch between old and new paint
             fft->FFTMagnForward (tmp_cpx, size, 0, dbOffset, sOut);
+#else
+            fft->FFTSpectrum(tmp_cpx, sOut, size); //In unprocessed (rename)
+#endif
 
             //out now has the spectrum in db, -f..0..+f
             //mutex.unlock();
@@ -157,4 +163,17 @@ void SignalSpectrum::SetUpdatesPerSec(int updatespersec)
     updatesPerSec = updatespersec;
     skipFfts = sampleRate/(numSamples * updatesPerSec);
     skipFftsCounter = 0;
+}
+
+
+//See fft.cpp for details, this is here as a convenience so we don't have to expose FFT everywhere
+bool SignalSpectrum::MapFFTToScreen(qint32 maxHeight,
+                                qint32 maxWidth,
+                                double maxdB,
+                                double mindB,
+                                qint32 startFreq,
+                                qint32 stopFreq,
+                                qint32* outBuf )
+{
+    return fft->MapFFTToScreen(maxHeight,maxWidth,maxdB,mindB,startFreq,stopFreq,outBuf);
 }

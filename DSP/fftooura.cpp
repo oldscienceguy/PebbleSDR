@@ -83,7 +83,7 @@ void FFTOoura::FFTForward(CPX *in, CPX *out, int size)
 
 }
 
-void FFTOoura::FFTSpectrum(CPX *in, int size)
+void FFTOoura::FFTSpectrum(CPX *in, double *out, int size)
 {
     if (!fftParamsSet)
         return;
@@ -100,7 +100,7 @@ void FFTOoura::FFTSpectrum(CPX *in, int size)
         freqDomain[unfolded] = workingBuf[folded]; //folded = 0 to 1023 unfolded = 1024 to 2047
     }
 
-    CalcPowerAverages(freqDomain,size);
+    CalcPowerAverages(freqDomain, out, size);
 }
 
 void FFTOoura::FFTMagnForward(CPX * in,int size,double baseline,double correction,double *fbr)

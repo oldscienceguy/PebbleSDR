@@ -25,6 +25,11 @@ public:
     void MakeSpectrum(CPX *in, double *out, int size); //Use if we just have CPX samples
     void MakeSpectrum(FFTfftw *fft, double *out); //Used if we already have FFT
 
+    bool MapFFTToScreen(qint32 maxHeight, qint32 maxWidth,
+                                    double maxdB, double mindB,
+                                    qint32 startFreq, qint32 stopFreq,
+                                    qint32* outBuf );
+
     int BinCount() {return fftSize;}
     double *Unprocessed() {return unprocessed;}
 	CPX *RawIQ() {return rawIQ;}
