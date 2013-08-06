@@ -57,8 +57,10 @@ private:
     double zoom; //Percentage of total spectrum to display
 
 	Ui::SpectrumWidgetClass ui;
-    void paintCursor(QPainter &painter, QColor color);
-    void paintFixedArea(QPainter &painter);
+    void DrawCursor(QPainter &painter,QColor color);
+    void DrawOverlay();
+    void DrawSpectrum();
+    void DrawWaterfall();
 
 	//Event overrides
 	void paintEvent(QPaintEvent *event);
@@ -89,7 +91,9 @@ private:
 	//QString *message;
 	QStringList message;
 
-    QPixmap *plotArea;
+    QPixmap plotArea;
+    QPixmap plotOverlay;
+    QPixmap plotLabel;
 
     int dbRange;
 
@@ -98,6 +102,10 @@ private:
     double GetMouseFreq();
     double GetXYFreq(int x, int y);
     int GetMouseDb();
+
+    //Grid display, will change depending on plotArea size
+    int horizDivs;
+    int vertDivs;
 
 
 };

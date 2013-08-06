@@ -62,7 +62,6 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 
 	spectrumMode=SignalSpectrum::SPECTRUM;
 
-	plotArea = NULL;
 	//message = NULL;
 	signalSpectrum = NULL;
 	averageSpectrum = NULL;
@@ -75,7 +74,9 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
     //Spectrum power is converted to 8bit int for display
     //This array maps the colors for each power level
     //Technique from CuteSDR to get a smooth color palette across the spectrum
-#if 0
+#if 1
+    spectrumColors = new QColor[255];
+
     for( int i=0; i<256; i++)
     {
         if( (i<43) )
@@ -109,6 +110,7 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
     //Standard named colors
     //black, blue, green, cyan, yellow, magenta, red
 
+#if 0
     //Create color map from zero relative 0db to dbRange
     spectrumColors = new QColor[dbRange];
     for (int i=0; i<dbRange; i++) {
@@ -136,7 +138,7 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
             spectrumColors[i].setRgb(255,0,0); // Red
 
     }
-
+#endif
     //Turns on mouse events without requiring button press
     //This does not work if plotFrame is set in code or if both plotFrame and it's parent widgetFrame are set in code
     //But if I set in the designer poperty editor (all in hierarchy have to be set), we get events
@@ -166,10 +168,13 @@ void SpectrumWidget::Run(bool r)
     QRect plotFr = ui.plotFrame->geometry(); //relative to parent
 
     //plotArea has to be created after layout has done it's work, not in constructor
-    if (plotArea == NULL) {
-        plotArea = new QPixmap(plotFr.width(),plotFr.height());
-        plotArea->fill(Qt::black);
-    }
+    plotArea = QPixmap(plotFr.width(),plotFr.height());
+    plotArea.fill(Qt::black);
+    plotOverlay = QPixmap(plotFr.width(),plotFr.height());
+    plotOverlay.fill(Qt::black);
+    QRect plotLabelFr = ui.labelFrame->geometry();
+    plotLabel = QPixmap(plotLabelFr.width(),plotLabelFr.height());
+    plotLabel.fill(Qt::black);
 
 	if (r) {
         ui.displayBox->setCurrentIndex(global->sdr->lastDisplayMode); //Initial display mode
@@ -179,8 +184,9 @@ void SpectrumWidget::Run(bool r)
         ui.displayBox->setCurrentIndex(-1);
 		isRunning =false;
 		signalSpectrum = NULL;
-		plotArea = NULL; //Start with a  clean plot every time
-		update();
+        plotArea.fill(Qt::black); //Start with a  clean plot every time
+        plotOverlay.fill(Qt::black); //Start with a  clean plot every time
+        update();
 	}
 }
 void SpectrumWidget::SetMessage(QStringList s)
@@ -206,12 +212,17 @@ void SpectrumWidget::resizeEvent(QResizeEvent *event)
 {
     QRect plotFr = ui.plotFrame->geometry(); //relative to parent
 
-    if (plotArea != NULL) {
-        //Window resized
-        delete plotArea;
-        plotArea = new QPixmap(plotFr.width(),plotFr.height());
-        plotArea->fill(Qt::black);
-    }
+    //Window resized
+    plotArea = QPixmap(plotFr.width(),plotFr.height());
+    plotArea.fill(Qt::black);
+    plotOverlay = QPixmap(plotFr.width(),plotFr.height());
+    plotOverlay.fill(Qt::black);
+
+    QRect plotLabelFr = ui.labelFrame->geometry();
+    plotLabel = QPixmap(plotLabelFr.width(),plotLabelFr.height());
+    plotLabel.fill(Qt::black);
+
+    DrawOverlay(); //plotArea size changed
 
     event->accept(); //We don't handle
 }
@@ -223,7 +234,8 @@ double SpectrumWidget::GetMouseFreq()
     QPoint mp = QCursor::pos(); //Current mouse position in global coordinates
     mp = mapFromGlobal(mp); //Convert to widget relative
     QRect pf = this->ui.plotFrame->geometry();
-    if (!pf.contains(mp))
+    QRect lf = this->ui.labelFrame->geometry();
+    if (!pf.contains(mp) && !lf.contains(mp))
         return 0.0;
     return GetXYFreq(mp.x(),mp.y());
 }
@@ -355,7 +367,9 @@ void SpectrumWidget::mousePressEvent ( QMouseEvent * event )
 	if (!isRunning || signalSpectrum == NULL)
 		return;
     QRect pf = this->ui.plotFrame->geometry();
-    if (!pf.contains(event->pos()))
+    QRect lf = this->ui.labelFrame->geometry();
+
+    if (!pf.contains(event->pos()) && !lf.contains(event->pos()))
             return;
 
     Qt::MouseButton button = event->button();
@@ -386,12 +400,14 @@ void SpectrumWidget::SetMixer(int m, double f)
 {
 	fMixer = m;
 	loFreq = f;
+    DrawOverlay();
 }
 //Track bandpass so we can display with cursor
 void SpectrumWidget::SetFilter(int lo, int hi)
 {
 	loFilter = lo;
 	hiFilter = hi;
+    DrawOverlay();
 }
 
 void SpectrumWidget::plotSelectionChanged(SignalSpectrum::DISPLAYMODE mode)
@@ -411,7 +427,8 @@ void SpectrumWidget::plotSelectionChanged(SignalSpectrum::DISPLAYMODE mode)
         global->sdr->lastDisplayMode = mode;
 
 	spectrumMode = mode;
-	repaint();
+    DrawOverlay();
+    update();
 }
 void SpectrumWidget::SetSignalSpectrum(SignalSpectrum *s) 
 {
@@ -425,11 +442,17 @@ void SpectrumWidget::SetSignalSpectrum(SignalSpectrum *s)
 	}
 }
 // Diplays frequency cursor and filter range
-void SpectrumWidget::paintCursor(QPainter &painter, QColor color)
+//Now called from DrawOverlay
+void SpectrumWidget::DrawCursor(QPainter &painter, QColor color)
 {
-    painter.save(); //Push current state on stack
+    if (!isRunning)
+        return;
+
     QRect plotFr = ui.plotFrame->geometry(); //relative to parent
+
     int plotWidth = plotFr.width();
+    int plotHeight = plotFr.height();
+
     int hzPerPixel = sampleRate / plotWidth * zoom;
 
     //Show mixer cursor, fMixer varies from -f..0..+f relative to LO
@@ -442,25 +465,29 @@ void SpectrumWidget::paintCursor(QPainter &painter, QColor color)
         x1 = 0.5 * plotWidth; //Cursor doesn't move in other modes, keep centered
     }
 
-	QPen pen;
-	pen.setStyle(Qt::SolidLine);
-	pen.setWidth(1);
-	pen.setColor(color);
-	painter.setPen(pen);
+
+    //Show filter range
+    int xLo = x1 + loFilter/hzPerPixel;
+    int xHi = x1 + hiFilter/hzPerPixel;
+
+    //Shade filter area
+    painter.setBrush(Qt::SolidPattern);
+    painter.setOpacity(0.50);
+    painter.fillRect(xLo, 0,x1 - xLo - 1, plotHeight, Qt::gray);
+    painter.fillRect(x1+2, 0,xHi - x1 - 2, plotHeight, Qt::gray);
+
+    //Show filter boundaries
+    painter.setPen(QPen(Qt::cyan, 1,Qt::SolidLine));
+    painter.drawLine(xLo,0,xLo, plotFr.height()); //Extend line into label frame
+    painter.drawLine(xHi,0,xHi, plotFr.height()); //Extend line into label frame
+
+    //Main cursor, draw last so it's on top
+    painter.setOpacity(1.0);
+    painter.setPen(QPen(color, 1,Qt::SolidLine));
     painter.drawLine(x1,0,x1, plotFr.height()); //Extend line into label frame
 
-    //Show bandpass filter range in labelFrame
-    QRect fr = ui.labelFrame->geometry(); //relative to parent
-	int xLo = x1 + loFilter/hzPerPixel;
-	int xHi = x1 + hiFilter/hzPerPixel;
-    int y2 = fr.y() + 3; //Top of label frame
-    pen.setWidth(1);
-	pen.setColor(Qt::black);
-	//pen.setBrush(Qt::Dense5Pattern);
-	painter.setPen(pen); //If we don't set pen again, changes have no effect
-	painter.drawLine(xLo,y2,xHi,y2);
-    painter.drawLine(x1,fr.y(),x1, fr.y()+5); //small vert cursor in label frame
-
+#if 0
+    //!!Not working yet, where to display
     QString label;
     mouseFreq = GetMouseFreq() + loFreq;
     int mouseDb = GetMouseDb();
@@ -475,53 +502,7 @@ void SpectrumWidget::paintCursor(QPainter &painter, QColor color)
     //painter.translate(freqFr.x(),freqFr.y());
     painter.setFont(global->settings->medFont);
     painter.drawText(freqFr.bottomLeft(),label);
-    painter.restore(); //pop state from stack
-}
-
-void SpectrumWidget::paintFixedArea(QPainter &painter)
-{
-    painter.save();
-    //Draw scale
-    //labelRect X,Y will be relative to 0.0
-    QRect labelRect = ui.labelFrame->geometry();
-    //This makes logical 0,0 map to left,upper of labelFrame
-    painter.translate(labelRect.x(),labelRect.y());
-
-    painter.setPen(Qt::black);
-    painter.setFont(global->settings->smFont);
-
-    //Show actual hi/lo frequency range
-    double loRange = (loFreq - sampleRate/2 * zoom)/1000;
-    double midRange = loFreq/1000;
-    double hiRange = (loFreq + sampleRate/2 * zoom)/1000;
-    QString loText = QString::number(loRange,'f',0);
-    QString midText = QString::number(midRange,'f',0);
-    QString hiText = QString::number(hiRange,'f',0);
-    painter.drawText(0,labelRect.height()-2, loText+"k");
-    painter.drawText(labelRect.width()/2 - 15,labelRect.height()-2, midText+"k");
-    painter.drawText(labelRect.width() - 35,labelRect.height()-2, hiText+"k");
-
-    //Tics
-    //Draw center tick, then on either side
-    int labelMid = labelRect.width()/2;
-    int numTicks = labelMid / 10; //1 tick every N pixel regardless of spectrum width
-    int inc = labelMid / numTicks;
-
-    painter.drawLine(labelMid,5,labelMid,2);
-    for (int i=0; i<=numTicks; i++){
-        painter.drawLine(labelMid - i*inc,3, labelMid - i*inc, 2);
-        painter.drawLine(labelMid + i*inc,3, labelMid + i*inc, 2);
-    }
-
-    //Draw spectrum colors centered at bottom of label pane
-    if (spectrumMode == SignalSpectrum::WATERFALL) {
-        for (int i=0; i<dbRange; i++) {
-            painter.setPen(spectrumColors[i]);
-            painter.drawPoint(labelMid - 80 + i,labelRect.height()-2);
-            painter.drawPoint(labelMid - 80 + i,labelRect.height()-1);
-        }
-    }
-    painter.restore();
+#endif
 }
 
 void SpectrumWidget::paintEvent(QPaintEvent *e)
@@ -530,7 +511,8 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
     QPainter painter(this);
     QRect plotFr = ui.plotFrame->geometry(); //relative to parent
     int plotHeight = plotFr.height(); //Plot area height
-    int plotWidth = plotFr.width();
+    QRect plotLabelFr = ui.labelFrame->geometry();
+
 
 	//Make all painter coordinates 0,0 relative to plotFrame
 	//0,0 will be translated to 4,4 etc
@@ -552,200 +534,14 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
     if (spectrumMode == SignalSpectrum::NODISPLAY || signalSpectrum == NULL)
         return;
 
-    paintFixedArea(painter); //Find a way to only call this once
-    //Crashes if paintFixedArea called after QPainter below
-    //Are the two painters tied together somehow
-
-
-    //Map spectrum[] to display
-    int binCountRaw = signalSpectrum->BinCount(); //Total number of spectrum data available to us
-    int binCount = binCountRaw * zoom; //Number of spectrum data we'll actually display
-    int binMid = binCountRaw / 2;
-    int binStart = binMid - (binMid * zoom);
-    int binEnd = binMid + (binMid * zoom);
-
-    //binStart + plotWidth*binCount must be less than binCountRaw or we overflow spectrum[]
-    //scale samples to # pixels we have available
-    double binStep = (double) binCount / plotWidth;
-
-#if 0
-	painter.setFont(QFont("Arial", 7,QFont::Normal));
-	painter.setPen(Qt::red);
-	if (signalSpectrum->inBufferOverflowCount > 0)
-        painter.drawText(plotWidth-20,10,"over");
-	if (signalSpectrum->inBufferUnderflowCount > 0)
-		painter.drawText(0,10,"under");
-	painter.setPen(Qt::black);
-#endif
-
-    painter.translate(plotFr.x(),plotFr.y());
-
-	//In case we try to paint beyond plotFrame, set this AFTER area outside plotFrame has been painted
-    //painter.setClipRegion(fr); //This prevents us from painting into the labelFrame with new ui, so skip
-
-
-	//Calculate y scaling
-    /*
-     * We keep db between dbMin and dbMax at all times (0 and dbRange when zero based
-     * dbZeroAdj is the amount we add to any db to make sure it's zero to dbRange
-     */
-    double dbZeroAdj = abs(global->minDb); //Adj to get to zero base
-    //qDebug("dbZero %f dbRange %f",dbZeroAdj, dbRange);
-
-    //Scale dbRange to number of pixels we have
-    float y_scale = (float)(plotHeight) / dbRange;
-
-    double db = 0;
-	int plotX = 0;
-	int plotY = 0;
-    double *spectrum = NULL;
-	if (spectrumMode == SignalSpectrum::SPECTRUM || spectrumMode == SignalSpectrum::WATERFALL)
-		spectrum = signalSpectrum->Unprocessed();
-
-	//Experiments in averaging to smooth spectrum and waterfall
-	//Too much and we get mush
-    bool smoothing = true;
-    if (demodMode == dmCWL|| demodMode == dmCWU)
-		smoothing = false; //We want crisp cw in waterfall
-
-    if (spectrum != NULL && smoothing) {
-		if (averageSpectrum == NULL) {
-            averageSpectrum = new double[binCountRaw];
-            lastSpectrum = new double[binCountRaw];
-            memcpy(averageSpectrum, spectrum, binCountRaw * sizeof(double));
-		} else {
-            for (int i = 0; i < binCountRaw; i++)
-				averageSpectrum[i] = (lastSpectrum[i] + spectrum[i]) / 2;
-		}
-		//Save this spectrum for next iteration
-        memcpy(lastSpectrum, spectrum, binCountRaw * sizeof(double));
-		spectrum = averageSpectrum;
-	}
-
-    QPainter plotPainter(plotArea);
-
-    //Color code each bin and draw line
-    QColor plotColor;
-
 	if (spectrumMode == SignalSpectrum::SPECTRUM)
 	{
-#if 0
-        //plotArea->fill(Qt::lightGray); //Erase to background color each time
-        plotArea->fill(QColor("light yellow")); //Looks better and easier to see
-        //BUG: Won't handle case where we have more pixels than samples
-        int lastX = 0;
-        int lastY = 0;
-        for (int i=0; i<plotFr.width(); i++)
-		{
-			plotX = i;
-
-			//Taking average results in spectrum not being displayed correctly due to 'chunks'
-			//Just use every Nth sample and throw away the rest
-            //We should only be getting values from -130 to +10 in spectrum array
-            //but occasionally we get a garbage value which I think is caused by spectrum thread running while spectrum array is being update
-            //Rather than lock, we'll just bound the results and ignore
-            db = spectrum[binStart + qRound(binStep * i)]; //Spectrum is already bound to minDb and maxDb
-
-            //Make relative to zero.
-            db = qBound(global->minDb, db + spectrumOffset, global->maxDb);
-            db = qBound(0.0, db + dbZeroAdj, (double)dbRange);  //ensure zero base
-            db = qBound(0.0, db * spectrumGain, (double)dbRange);
-            //Experiment to use same colors as waterfall
-            //Too much color change to be useful, but maybe a single color change for strong signals?
-            //painter.setPen(spectrumColors[(int)db]);
-
-            //Test
-            //if (db < 0 || db > dbRange)
-            //    qDebug("Spectrum db value out of range. dbRange:%f, rawDb:%f db:%f",dbRange,rawDb,db);
-
-			//scale to fit our smaller Y axis
-			db *= y_scale;
-
-			//Vertical line from base of widget to height in db
-            db = plotHeight - db; //Make rel to bottom of frame
-            if (db > plotHeight)
-                db = plotHeight;  //Min
-
-            plotPainter.setPen(Qt::darkGray);
-            plotPainter.drawLine(plotX,plotHeight,plotX,db);
-            plotPainter.setPen(Qt::blue);
-            if (i>0)
-                plotPainter.drawLine(lastX,lastY,plotX,db);
-            lastX = plotX;
-            lastY = db;
-        }
-        painter.drawPixmap(0,0,plotFr.width(),plotFr.height(),*plotArea);
-
-        //Paint cursor last because painter changes - hack
-        paintCursor(painter, Qt::black);
-#else
-        //These shouldn't be allocated every call
-        qint32 fftMap[2048]; //!!Fix to dynamic max screen width
-        QPoint LineBuf[2048]; //[TB_MAX_SCREENSIZE];
-
-        //!!Draw frequency overlay
-        plotArea->fill(Qt::black); //Erase
-
-
-        //Convert to plot area coordinates
-        signalSpectrum->MapFFTToScreen(
-            plotArea->height(),
-            plotArea->width(),
-            //These are same as testbench
-            0,      //FFT dB level  corresponding to output value == MaxHeight
-            -140,   //FFT dB level corresponding to output value == 0
-            -sampleRate/2, //Low frequency
-            sampleRate/2, //High frequency
-            fftMap );
-
-        for (int i=0; i< plotArea->width(); i++)
-        {
-            LineBuf[i].setX(i);
-            LineBuf[i].setY(fftMap[i]);
-            //Keep track of peak values for optional display
-            //if(fftbuf[i] < m_FftPkBuf[i])
-            //    m_FftPkBuf[i] = fftMap[i];
-        }
-        plotPainter.setPen( Qt::green );
-        //Just connect the dots in LineBuf!
-        plotPainter.drawPolyline(LineBuf, plotArea->width());
-        painter.drawPixmap(plotFr, *plotArea);
-        paintCursor(painter, Qt::white);
-
-
-
-#endif
-
-
+        painter.drawPixmap(plotFr, plotArea); //Includes plotOverlay which was copied to plotArea
+        painter.drawPixmap(plotLabelFr,plotLabel);
     } else if (spectrumMode == SignalSpectrum::WATERFALL) {
-		//Waterfall
-        //Scroll fr rect 1 pixel to create new line
-        //plotArea->scroll(0,1,0,0, fr.width(), fr.height()); //This has to be done before attaching painter
-        plotArea->scroll(0,1,plotFr); //This has to be done before attaching painter
-
-		for (int i=0; i<plotArea->width(); i++)
-		{
-			plotX = i;
-			plotY = 0;
-
-            db = spectrum[binStart + qRound(binStep * i)];
-
-            //Make relative to zero.
-            db = qBound(global->minDb, db + spectrumOffset, global->maxDb);
-            db = qBound(0.0, db + dbZeroAdj, (double)dbRange);  //ensure zero base
-            db = qBound(0.0, db * spectrumGain, (double)dbRange);
-
-            plotColor = spectrumColors[(int)db];
-
-            plotPainter.setPen(plotColor);
-            plotPainter.drawPoint(plotX,plotY);
-
-		}
-        painter.drawPixmap(0,0,plotFr.width(),plotFr.height(),*plotArea);
-
-		//Draw cursor on top of image
-        paintCursor(painter, Qt::white);
-	}
+        painter.drawPixmap(plotFr, plotArea);
+        painter.drawPixmap(plotLabelFr,plotLabel);
+    }
 	else if (spectrumMode == SignalSpectrum::IQ || spectrumMode == SignalSpectrum::PHASE)
 	{
 		CPX *rawIQ = signalSpectrum->RawIQ();
@@ -837,11 +633,241 @@ void SpectrumWidget::dbGainChanged(int s)
 void SpectrumWidget::zoomChanged(int item)
 {
     zoom = ui.zoomBox->itemData(item).toDouble();
-    repaint();
+    DrawOverlay();
+    update();
 }
 
 //New Fft data is ready for display, update screen if last update is finished
 void SpectrumWidget::newFftData()
 {
-    repaint();
+    qint32 fftMap[2048]; //!!Fix to dynamic max screen width
+
+    double startFreq =  - (sampleRate/2); //Relative to 0
+    double endFreq = sampleRate/2;
+    startFreq = startFreq * zoom; //2x = zoom of 0.5
+    endFreq = endFreq * zoom;
+
+    //SpectrumGain of 1
+    qint16 maxDbDisplayed = 0;
+    qint16 minDbDisplayed = -140;
+    //Apply offset and gain options from UI
+    minDbDisplayed = minDbDisplayed - spectrumOffset;
+    maxDbDisplayed = minDbDisplayed - (minDbDisplayed / spectrumGain);
+
+    int plotWidth = plotArea.width();
+    int plotHeight = plotArea.height();
+
+    if (spectrumMode == SignalSpectrum::SPECTRUM) {
+        //These shouldn't be allocated every call
+        QPoint LineBuf[2048]; //[TB_MAX_SCREENSIZE];
+
+        //!!Draw frequency overlay
+        //first copy into 2Dbitmap the overlay bitmap.
+        plotArea = plotOverlay.copy(0,0,plotWidth,plotHeight);
+        //Painter has to be created AFTER we copy overlay since plotArea is being replaced each time
+        QPainter plotPainter(&plotArea);
+
+        //Convert to plot area coordinates
+        //This gets passed straight through to FFT MapFFTToScreen
+        signalSpectrum->MapFFTToScreen(
+            plotHeight,
+            plotWidth,
+            //These are same as testbench
+            maxDbDisplayed,      //FFT dB level  corresponding to output value == MaxHeight
+            minDbDisplayed,   //FFT dB level corresponding to output value == 0
+            startFreq, //-sampleRate/2, //Low frequency
+            endFreq, //sampleRate/2, //High frequency
+            fftMap );
+
+        for (int i=0; i< plotArea.width(); i++)
+        {
+            LineBuf[i].setX(i);
+            LineBuf[i].setY(fftMap[i]);
+            //Keep track of peak values for optional display
+            //if(fftbuf[i] < m_FftPkBuf[i])
+            //    m_FftPkBuf[i] = fftMap[i];
+        }
+        plotPainter.setPen( Qt::green );
+        //Just connect the dots in LineBuf!
+        plotPainter.drawPolyline(LineBuf, plotWidth);
+
+        //We can only display offscreen pixmap in paint() event, so call it to update
+        update();
+
+    } else if (spectrumMode == SignalSpectrum::WATERFALL) {
+        //Color code each bin and draw line
+        QPainter plotPainter(&plotArea);
+
+        QColor plotColor;
+
+        //Waterfall
+        //Scroll fr rect 1 pixel to create new line
+        QRect rect = plotArea.rect();
+        //rect.setBottom(rect.bottom() - 10); //Reserve the last 10 pix for labels
+        plotArea.scroll(0,1,rect);
+
+        //Instead of plot area coordinates we convert to screen color array
+        //Width is unchanged, but height is # colors we have for each db
+        signalSpectrum->MapFFTToScreen(
+            255, //Equates to spectrumColor array
+            plotWidth,
+            //These are same as testbench
+            maxDbDisplayed, //FFT dB level  corresponding to output value == MaxHeight
+            minDbDisplayed, //FFT dB level corresponding to output value == 0
+            startFreq, //Low frequency
+            endFreq, //High frequency
+            fftMap );
+
+        for (int i=0; i<plotArea.width(); i++)
+        {
+            plotColor = spectrumColors[255 - fftMap[i]];
+            plotPainter.setPen(plotColor);
+            plotPainter.drawPoint(i,0);
+
+        }
+
+        update();
+    }
+}
+
+void SpectrumWidget::DrawSpectrum()
+{
+
+}
+
+void SpectrumWidget::DrawWaterfall()
+{
+
+}
+
+void SpectrumWidget::DrawOverlay()
+{
+    if(plotOverlay.isNull())
+        return; //We haven't been created yet, empty
+
+    plotOverlay.fill(Qt::black); //Clear every time because we are update cursor and other info here also
+    plotLabel.fill(Qt::black);
+
+    int overlayWidth = plotOverlay.width();
+    int overlayHeight = plotOverlay.height();
+
+    if (overlayHeight < 60) {
+        horizDivs = 10;
+        vertDivs = 5; //Too crowded with small spectrum
+    } else {
+        horizDivs = 10;
+        vertDivs = 10;
+    }
+
+    int x,y;
+    float pixPerHdiv;
+    pixPerHdiv = (float)overlayWidth / (float)horizDivs;
+
+    float pixPerVdiv;
+    pixPerVdiv = (float)overlayHeight / (float)vertDivs;
+
+    QRect rect;
+    QPainter painter(&plotOverlay);
+    painter.initFrom(this);
+    QPainter labelPainter(&plotLabel);
+    labelPainter.initFrom(this);
+
+    int plotLabelHeight = plotLabel.height();
+
+    if (spectrumMode == SignalSpectrum::SPECTRUM) {
+        //draw vertical grids
+        //y = overlayHeight - overlayHeight/vertDivs;
+        for( int i = 1; i < horizDivs; i++)
+        {
+            x = (int)( (float)i*pixPerHdiv );
+            if(i==horizDivs/2)
+                painter.setPen(QPen(Qt::red, 1,Qt::DotLine));
+            else
+                painter.setPen(QPen(Qt::white, 1,Qt::DotLine));
+            painter.drawLine(x, 0, x , overlayHeight);
+            //painter.drawLine(x, overlayHeight-5, x , overlayHeight);
+        }
+
+        //draw horizontal grids
+        painter.setPen(QPen(Qt::white, 1,Qt::DotLine));
+        for( int i = 1; i<vertDivs; i++)
+        {
+            y = (int)( (float)i*pixPerVdiv );
+            painter.drawLine(0, y, overlayWidth, y);
+        }
+
+        DrawCursor(painter, Qt::white);
+        DrawCursor(labelPainter,Qt::white); //Continues into label area
+
+
+    } else if (spectrumMode == SignalSpectrum::WATERFALL) {
+#if 0
+        //Draw spectrum colors centered at bottom of label pane
+        for (int i=0; i<dbRange; i++) {
+            labelPainter.setPen(spectrumColors[i]);
+            labelPainter.drawPoint(overlayWidth/2 - 80 + i, plotLabelHeight);
+            labelPainter.drawPoint(overlayWidth/2 - 80 + i, plotLabelHeight);
+        }
+#endif
+        //We can't draw a cursor in scrolling waterfall unless we get into layers
+        //This just displays it in label area
+        DrawCursor(labelPainter,Qt::black);
+
+    }
+
+
+    //Draw the frequency scale
+
+    //Show actual hi/lo frequency range
+    quint32 horizLabels[horizDivs];
+    //zoom is fractional
+    //100,000 sps * 1.00 / 10 = 10,000 hz per division
+    //100,000 sps * 0.10 / 10 = 1000 hz per division
+    quint16 hzPerhDiv = sampleRate * zoom / horizDivs;
+
+    //horizDivs must be even number so middle is 0
+    //So for 10 divs we start out with [0] at low and [9] at high
+    int center = horizDivs / 2;
+    horizLabels[center] = loFreq/1000;
+    for (int i=1; i <horizDivs; i++) {
+        horizLabels[center + i] = (loFreq + (i * hzPerhDiv ))/1000;
+        horizLabels[center - i] = (loFreq - (i * hzPerhDiv ))/1000;
+    }
+
+    QFont overlayFont("Arial");
+    overlayFont.setPointSize(10);
+    overlayFont.setWeight(QFont::Normal);
+    labelPainter.setFont(overlayFont);
+
+    labelPainter.setPen(QPen(Qt::cyan,1,Qt::SolidLine));
+
+    for( int i=0; i <= horizDivs; i++) {
+        if (i==0) {
+            //Left justify
+            x = (int)( (float) i * pixPerHdiv);
+            rect.setRect(x ,0, (int)pixPerHdiv, plotLabelHeight);
+            labelPainter.drawText(rect, Qt::AlignLeft|Qt::AlignVCenter, QString::number(horizLabels[i],'f',0)+"k");
+
+        } else if (i == horizDivs) {
+            //Right justify
+            x = (int)( (float)i*pixPerHdiv - pixPerHdiv);
+            rect.setRect(x ,0, (int)pixPerHdiv, plotLabelHeight);
+            labelPainter.drawText(rect, Qt::AlignRight|Qt::AlignVCenter, QString::number(horizLabels[i],'f',0)+"k");
+
+        } else {
+            //Center justify
+            x = (int)( (float)i*pixPerHdiv - pixPerHdiv/2);
+            rect.setRect(x ,0, (int)pixPerHdiv, plotLabelHeight);
+            labelPainter.drawText(rect, Qt::AlignHCenter|Qt::AlignVCenter, QString::number(horizLabels[i],'f',0)+"k");
+
+        }
+
+    }
+
+
+    //If we're not running, display overlay as plotArea
+    if (!isRunning) {
+        plotArea = plotOverlay.copy(0,0,overlayWidth,overlayHeight);
+        update();
+    }
 }
