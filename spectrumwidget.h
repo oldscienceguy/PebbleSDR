@@ -42,8 +42,7 @@ signals:
 
 		private slots:
             void displayChanged(int item);
-            void dbOffsetChanged(int i);
-            void dbGainChanged(int t);
+            void maxDbChanged(int t);
             void zoomChanged(int item);
             void newFftData();
 private:
@@ -81,8 +80,10 @@ private:
 
 	int loFilter; //Used to display bandpass
 	int hiFilter;
-    double spectrumOffset;
-    double spectrumGain;
+    double spectrumOffset; //!!Remove
+    qint16 plotMaxDb; //Set by UI
+    qint16 plotMinDb;
+
 	SignalSpectrum::DISPLAYMODE spectrumMode;
 	int sampleRate;
 	DEMODMODE demodMode;

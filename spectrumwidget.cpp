@@ -23,30 +23,12 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 
     connect(ui.displayBox,SIGNAL(currentIndexChanged(int)),this,SLOT(displayChanged(int)));
 
-    //Sets db offset
-    ui.dbOffsetBox->addItem("Offset -40",-40);
-    ui.dbOffsetBox->addItem("Offset -30",-30);
-    ui.dbOffsetBox->addItem("Offset -20",-20);
-    ui.dbOffsetBox->addItem("Offset -10",-10);
-    ui.dbOffsetBox->addItem("Offset 0",0);
-    ui.dbOffsetBox->addItem("Offset +10",+10);
-    ui.dbOffsetBox->addItem("Offset +20",+20);
-    ui.dbOffsetBox->addItem("Offset +30",+30);
-    ui.dbOffsetBox->setCurrentIndex(4);
-    connect(ui.dbOffsetBox,SIGNAL(currentIndexChanged(int)),this,SLOT(dbOffsetChanged(int)));
-    spectrumOffset=0;
-
-    ui.dbGainBox->addItem("Gain: 0.50x",0.50);
-    ui.dbGainBox->addItem("Gain: 0.75x",0.75);
-    ui.dbGainBox->addItem("Gain: 1.00x",1.00); //Default
-    ui.dbGainBox->addItem("Gain: 1.25x",1.25);
-    ui.dbGainBox->addItem("Gain: 1.50x",1.50);
-    ui.dbGainBox->addItem("Gain: 2.00x",2.00);
-    ui.dbGainBox->addItem("Gain: 2.50x",2.50);
-    ui.dbGainBox->addItem("Gain: 3.00x",3.00);
-    ui.dbGainBox->setCurrentIndex(2);
-    connect(ui.dbGainBox,SIGNAL(currentIndexChanged(int)),this,SLOT(dbGainChanged(int)));
-    spectrumGain = 1;
+    plotMaxDb = -50; //!! Same as CuteSDR Save in settings
+    plotMinDb = -120;
+    ui.maxDbBox->setMinimum(plotMinDb);
+    ui.maxDbBox->setMaximum(-10);
+    ui.maxDbBox->setValue(plotMaxDb);
+    connect(ui.maxDbBox,SIGNAL(valueChanged(int)),this,SLOT(maxDbChanged(int)));
 
     //For 48k sample rate, 100% is +/- 24k
     ui.zoomBox->addItem("1.00x",1.00);
@@ -160,8 +142,7 @@ void SpectrumWidget::Run(bool r)
 {
     //Global is not initialized in constructor
     ui.displayBox->setFont(global->settings->medFont);
-    ui.dbOffsetBox->setFont(global->settings->medFont);
-    ui.dbGainBox->setFont(global->settings->medFont);
+    ui.maxDbBox->setFont(global->settings->medFont);
     ui.cursorLabel->setFont(global->settings->medFont);
     ui.zoomBox->setFont(global->settings->medFont);
 
@@ -258,14 +239,14 @@ int SpectrumWidget::GetMouseDb()
     mp = mapFromGlobal(mp); //Convert to widget relative
     QRect pf = this->ui.plotFrame->geometry();
     if (!pf.contains(mp))
-        return global->minDb;
+        return plotMinDb;
 
     //Find db at cursor
     int db = (pf.height() - mp.y()); //Num pixels
-    double scale = (double)dbRange/pf.height();
+    double scale = (double)(plotMaxDb - plotMinDb)/pf.height();
     db *= scale; //Scale to get db
     //Convert back to minDb relative
-    db += global->minDb - spectrumOffset;
+    db += plotMinDb;
     return db;
 }
 
@@ -551,7 +532,7 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 		IPen.setColor(Qt::red);
 		QPen.setColor(Qt::blue);
 		//apply gain 0-50
-        int gain = (spectrumGain * 1000);
+        int gain = 1; //(spectrumGain * 1000);
 
 		//int offset = -25; //hack
         int offset = plotHeight * -0.5;
@@ -617,16 +598,10 @@ void SpectrumWidget::displayChanged(int item)
     }
 }
 
-void SpectrumWidget::dbOffsetChanged(int s)
+void SpectrumWidget::maxDbChanged(int s)
 {
-    spectrumOffset = ui.dbOffsetBox->itemData(s).toInt();
-    repaint();
-}
-
-void SpectrumWidget::dbGainChanged(int s)
-{
-    spectrumGain = ui.dbGainBox->itemData(s).toDouble();
-    repaint();
+    plotMaxDb = ui.maxDbBox->value();
+    update();
 }
 
 void SpectrumWidget::zoomChanged(int item)
@@ -650,8 +625,8 @@ void SpectrumWidget::newFftData()
     qint16 maxDbDisplayed = 0;
     qint16 minDbDisplayed = -140;
     //Apply offset and gain options from UI
-    minDbDisplayed = minDbDisplayed - spectrumOffset;
-    maxDbDisplayed = minDbDisplayed - (minDbDisplayed / spectrumGain);
+    minDbDisplayed = plotMinDb; //minDbDisplayed - spectrumOffset;
+    maxDbDisplayed = plotMaxDb; //minDbDisplayed - (minDbDisplayed / spectrumGain);
 
     int plotWidth = plotArea.width();
     int plotHeight = plotArea.height();

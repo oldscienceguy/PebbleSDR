@@ -343,7 +343,7 @@ bool FFT::MapFFTToScreen(qint32 maxHeight,
         }
     } //End recalc after change in window size etc
 
-    m = fftSize;
+    m = fftSize - 1;
     if( (binHigh-binLow) > lastPlotWidth )
     {
         //if more FFT points than plot points

@@ -161,32 +161,38 @@
           </widget>
          </item>
          <item>
-          <widget class="QComboBox" name="dbGainBox">
+          <widget class="QSpinBox" name="maxDbBox">
+           <property name="minimumSize">
+            <size>
+             <width>90</width>
+             <height>0</height>
+            </size>
+           </property>
            <property name="maximumSize">
             <size>
-             <width>80</width>
+             <width>16777215</width>
              <height>18</height>
             </size>
            </property>
            <property name="font">
             <font>
-             <pointsize>8</pointsize>
+             <pointsize>10</pointsize>
             </font>
            </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="dbOffsetBox">
-           <property name="maximumSize">
-            <size>
-             <width>80</width>
-             <height>18</height>
-            </size>
+           <property name="prefix">
+            <string>Max dB: </string>
            </property>
-           <property name="font">
-            <font>
-             <pointsize>8</pointsize>
-            </font>
+           <property name="minimum">
+            <number>-140</number>
+           </property>
+           <property name="maximum">
+            <number>0</number>
+           </property>
+           <property name="singleStep">
+            <number>5</number>
+           </property>
+           <property name="value">
+            <number>0</number>
            </property>
           </widget>
          </item>
