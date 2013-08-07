@@ -175,5 +175,8 @@ bool SignalSpectrum::MapFFTToScreen(qint32 maxHeight,
                                 qint32 stopFreq,
                                 qint32* outBuf )
 {
-    return fft->MapFFTToScreen(maxHeight,maxWidth,maxdB,mindB,startFreq,stopFreq,outBuf);
+    if (fft!=NULL)
+        return fft->MapFFTToScreen(maxHeight,maxWidth,maxdB,mindB,startFreq,stopFreq,outBuf);
+    else
+        return false;
 }

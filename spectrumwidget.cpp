@@ -486,23 +486,6 @@ void SpectrumWidget::DrawCursor(QPainter &painter, QColor color)
     painter.setPen(QPen(color, 1,Qt::SolidLine));
     painter.drawLine(x1,0,x1, plotFr.height()); //Extend line into label frame
 
-#if 0
-    //!!Not working yet, where to display
-    QString label;
-    mouseFreq = GetMouseFreq() + loFreq;
-    int mouseDb = GetMouseDb();
-    if (mouseFreq > 0)
-        label.sprintf("%.3f kHz @ %ddB",mouseFreq / 1000.0,mouseDb);
-    else
-        label = "";
-
-    QRect freqFr = ui.cursorLabel->geometry();
-    QRect ctrlFr = ui.controlFrame->geometry();
-    painter.translate(ctrlFr.x(),ctrlFr.y()); //Relative to labelFrame
-    //painter.translate(freqFr.x(),freqFr.y());
-    painter.setFont(global->settings->medFont);
-    painter.drawText(freqFr.bottomLeft(),label);
-#endif
 }
 
 void SpectrumWidget::paintEvent(QPaintEvent *e)
@@ -533,6 +516,22 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 
     if (spectrumMode == SignalSpectrum::NODISPLAY || signalSpectrum == NULL)
         return;
+
+
+    //!!Not working yet, where to display
+    QString label;
+    mouseFreq = GetMouseFreq() + loFreq;
+    int mouseDb = GetMouseDb();
+    if (mouseFreq > 0)
+        label.sprintf("%.3f kHz @ %ddB",mouseFreq / 1000.0,mouseDb);
+    else
+        label = "";
+
+    QRect freqFr = ui.cursorLabel->geometry(); //Relative to controlFrame (parent)
+    QRect ctrlFr = ui.controlFrame->geometry(); //Relateive to spectrum widget (parent)
+    painter.setFont(global->settings->medFont);
+    //x is from freq frame, y is from ctrlFr (relative to spectrumWidget)
+    painter.drawText(freqFr.left(), ctrlFr.top() + (ctrlFr.height() * 0.7),label);
 
 	if (spectrumMode == SignalSpectrum::SPECTRUM)
 	{
