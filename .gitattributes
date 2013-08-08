@@ -1,4 +1,6 @@
 * text=auto !eol
+/AGC.cpp -text
+/AGC.h -text
 DSP/fft.cpp -text
 DSP/fft.h -text
 DSP/fftbasic.cpp -text
