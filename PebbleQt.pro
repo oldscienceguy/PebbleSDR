@@ -332,12 +332,30 @@ OTHER_FILES += \
 
 HEADERS += \
     spectrumwidget.h \
+	soundcard.h \
     smeterwidget.h \
+	signalstrength.h \
+	signalspectrum.h \
+	signalprocessing.h \
+	settings.h \
+	sdr.h \
+	receiverwidget.h \
+	receiver.h \
     presets.h \
     pebbleii.h \
+	noisefilter.h \
+	noiseblanker.h \
+	nco.h \
+	mixer.h \
+	iirfilter.h \
+	gpl.h \
+	firfilter.h \
+	demod.h \
     defs.h \
     cpx.h \
+	butterworth.h \
 	#build.h \
+	agc.h \
     audio.h \
     audioqt.h \
 	iqbalance.h \
@@ -391,33 +409,32 @@ HEADERS += \
     DSP/fftbasic.h \
     DSP/fftw.h \
     DSP/fftcute.h \
-    DSP/fft.h \
-    agc.h \
-    demod.h \
-    firfilter.h \
-    iirfilter.h \
-    butterworth.h \
-    gpl.h \
-    mixer.h \
-    nco.h \
-    noiseblanker.h \
-    noisefilter.h \
-    receiver.h \
-    receiverwidget.h \
-    sdr.h \
-    settings.h \
-    signalprocessing.h \
-    signalspectrum.h \
-    signalstrength.h \
-    soundcard.h
+    DSP/fft.h
 
 SOURCES += \
     spectrumwidget.cpp \
+	soundcard.cpp \
     smeterwidget.cpp \
+	signalstrength.cpp \
+	signalspectrum.cpp \
+	signalprocessing.cpp \
+	settings.cpp \
+	sdr.cpp \
+	receiverwidget.cpp \
+	receiver.cpp \
     presets.cpp \
     pebbleii.cpp \
+	noisefilter.cpp \
+	noiseblanker.cpp \
+	nco.cpp \
+	mixer.cpp \
     main.cpp \
+	iirfilter.cpp \
+	firfilter.cpp \
+	demod.cpp \
     cpx.cpp \
+	butterworth.cpp \
+	agc.cpp \
     audio.cpp \
     audioqt.cpp \
     iqbalance.cpp \
@@ -459,24 +476,7 @@ SOURCES += \
     DSP/fftbasic.cpp \
     DSP/fftw.cpp \
     DSP/fftcute.cpp \
-    DSP/fft.cpp \
-    agc.cpp \
-    demod.cpp \
-    firfilter.cpp \
-    iirfilter.cpp \
-    mixer.cpp \
-    butterworth.cpp \
-    nco.cpp \
-    noiseblanker.cpp \
-    noisefilter.cpp \
-    receiver.cpp \
-    receiverwidget.cpp \
-    sdr.cpp \
-    settings.cpp \
-    signalprocessing.cpp \
-    signalspectrum.cpp \
-    signalstrength.cpp \
-    soundcard.cpp
+    DSP/fft.cpp
 
 FORMS += \
     spectrumwidget.ui \
