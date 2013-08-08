@@ -343,7 +343,7 @@ bool FFT::MapFFTToScreen(qint32 maxHeight,
         }
     } //End recalc after change in window size etc
 
-    m = fftSize - 1;
+    m = fftSize - 1; //cuteSDR bug, in loop below if m=fftSize then m -i (when i==0) is outside of inBuf size
     if( (binHigh-binLow) > lastPlotWidth )
     {
         //if more FFT points than plot points
