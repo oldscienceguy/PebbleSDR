@@ -332,30 +332,12 @@ OTHER_FILES += \
 
 HEADERS += \
     spectrumwidget.h \
-    SoundCard.h \
     smeterwidget.h \
-    SignalStrength.h \
-    SignalSpectrum.h \
-    SignalProcessing.h \
-    Settings.h \
-    SDR.h \
-    ReceiverWidget.h \
-    Receiver.h \
     presets.h \
     pebbleii.h \
-    NoiseFilter.h \
-    NoiseBlanker.h \
-    NCO.h \
-    Mixer.h \
-    IIRFilter.h \
-    GPL.h \
-    FIRFilter.h \
-    Demod.h \
     defs.h \
     cpx.h \
-    Butterworth.h \
 	#build.h \
-    AGC.h \
     audio.h \
     audioqt.h \
 	iqbalance.h \
@@ -409,32 +391,33 @@ HEADERS += \
     DSP/fftbasic.h \
     DSP/fftw.h \
     DSP/fftcute.h \
-    DSP/fft.h
+    DSP/fft.h \
+    agc.h \
+    demod.h \
+    firfilter.h \
+    iirfilter.h \
+    butterworth.h \
+    gpl.h \
+    mixer.h \
+    nco.h \
+    noiseblanker.h \
+    noisefilter.h \
+    receiver.h \
+    receiverwidget.h \
+    sdr.h \
+    settings.h \
+    signalprocessing.h \
+    signalspectrum.h \
+    signalstrength.h \
+    soundcard.h
 
 SOURCES += \
     spectrumwidget.cpp \
-    SoundCard.cpp \
     smeterwidget.cpp \
-    SignalStrength.cpp \
-    SignalSpectrum.cpp \
-    SignalProcessing.cpp \
-    Settings.cpp \
-    SDR.cpp \
-    ReceiverWidget.cpp \
-    Receiver.cpp \
     presets.cpp \
     pebbleii.cpp \
-    NoiseFilter.cpp \
-    NoiseBlanker.cpp \
-    NCO.cpp \
-    Mixer.cpp \
     main.cpp \
-    IIRFilter.cpp \
-    FIRFilter.cpp \
-    Demod.cpp \
     cpx.cpp \
-    Butterworth.cpp \
-    AGC.cpp \
     audio.cpp \
     audioqt.cpp \
     iqbalance.cpp \
@@ -476,7 +459,24 @@ SOURCES += \
     DSP/fftbasic.cpp \
     DSP/fftw.cpp \
     DSP/fftcute.cpp \
-    DSP/fft.cpp
+    DSP/fft.cpp \
+    agc.cpp \
+    demod.cpp \
+    firfilter.cpp \
+    iirfilter.cpp \
+    mixer.cpp \
+    butterworth.cpp \
+    nco.cpp \
+    noiseblanker.cpp \
+    noisefilter.cpp \
+    receiver.cpp \
+    receiverwidget.cpp \
+    sdr.cpp \
+    settings.cpp \
+    signalprocessing.cpp \
+    signalspectrum.cpp \
+    signalstrength.cpp \
+    soundcard.cpp
 
 FORMS += \
     spectrumwidget.ui \
