@@ -31,7 +31,6 @@ HPSDR/Ozy_Janus.rbf -text
 References/CuteSDR102.pdf -text
 Resources/Pebble.icns -text
 Resources/edit.png -text
-/SDR.cpp -text
 /SDR.h -text
 /SDRIQOptions.ui -text
 /Settings.cpp -text
@@ -107,6 +106,7 @@ Resources/edit.png -text
 /receiverwidget.ui -text
 /releasenotes.txt -text
 /sdr-ip.ui -text
+/sdr.cpp -text
 /sdr.ui -text
 /smeterwidget.cpp -text
 /smeterwidget.h -text
