@@ -1,5 +1,4 @@
 * text=auto !eol
-/AGC.h -text
 /Butterworth.cpp -text
 /Butterworth.h -text
 DSP/fft.cpp -text
@@ -75,6 +74,7 @@ Resources/edit.png -text
 /SoundCard.cpp -text
 /SoundCard.h -text
 /agc.cpp -text
+/agc.h -text
 /audio.cpp -text
 /audio.h -text
 /audioqt.cpp -text
