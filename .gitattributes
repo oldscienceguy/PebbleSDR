@@ -88,7 +88,7 @@ hpsdr/ozy_janus.rbf -text
 /receiverwidget.cpp -text
 /receiverwidget.h -text
 /receiverwidget.ui -text
-references/CuteSDR102.pdf -text
+references/cutesdr102.pdf -text
 /releasenotes.txt -text
 resources/Pebble.icns -text
 resources/edit.png -text
