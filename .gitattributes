@@ -7,7 +7,6 @@ DSP/fftw.cpp -text
 DSP/fftw.h -text
 Decoders/fldigifilters.cpp -text
 Decoders/fldigifilters.h -text
-/Demod.cpp -text
 /Demod.h -text
 Devices/ElektorSDR.cpp -text
 Devices/ElektorSDR.h -text
@@ -88,6 +87,7 @@ Resources/edit.png -text
 /cpx.h -text
 /data-morse.ui -text
 /defs.h -text
+/demod.cpp -text
 /directinput.ui -text
 /ftd2xx.h -text
 /funcubeoptions.ui -text
