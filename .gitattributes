@@ -27,7 +27,6 @@ Devices/sdr_ip.h -text
 Devices/usb.h -text
 Devices/wavfile.cpp -text
 Devices/wavfile.h -text
-/FIRFilter.h -text
 /Firmware.txt -text
 /GPL.h -text
 HPSDR/Ozy_Janus.rbf -text
@@ -89,6 +88,7 @@ Resources/edit.png -text
 /directinput.ui -text
 /elektoroptions.ui -text
 /firfilter.cpp -text
+/firfilter.h -text
 /ftd2xx.h -text
 /funcubeoptions.ui -text
 /global.cpp -text
