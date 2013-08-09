@@ -1,5 +1,4 @@
 * text=auto !eol
-/AGC.cpp -text
 /AGC.h -text
 /Butterworth.cpp -text
 /Butterworth.h -text
@@ -75,6 +74,7 @@ Resources/edit.png -text
 /SoftRockOptions.ui -text
 /SoundCard.cpp -text
 /SoundCard.h -text
+/agc.cpp -text
 /audio.cpp -text
 /audio.h -text
 /audioqt.cpp -text
