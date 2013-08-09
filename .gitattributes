@@ -29,7 +29,6 @@ Devices/wavfile.cpp -text
 Devices/wavfile.h -text
 HPSDR/Ozy_Janus.rbf -text
 References/CuteSDR102.pdf -text
-/ReleaseNotes.txt -text
 Resources/Pebble.icns -text
 Resources/edit.png -text
 /SDR.cpp -text
@@ -106,6 +105,7 @@ Resources/edit.png -text
 /receiverwidget.cpp -text
 /receiverwidget.h -text
 /receiverwidget.ui -text
+/releasenotes.txt -text
 /sdr-ip.ui -text
 /sdr.ui -text
 /smeterwidget.cpp -text
