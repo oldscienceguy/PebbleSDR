@@ -1,5 +1,4 @@
 * text=auto !eol
-HPSDR/Ozy_Janus.rbf -text
 References/CuteSDR102.pdf -text
 Resources/Pebble.icns -text
 Resources/edit.png -text
@@ -61,6 +60,7 @@ dsp/fftw.h -text
 /global.h -text
 /gpl.h -text
 /help.htm -text
+hpsdr/Ozy_Janus.rbf -text
 /hpsdrOptions.ui -text
 /iirfilter.cpp -text
 /iirfilter.h -text
