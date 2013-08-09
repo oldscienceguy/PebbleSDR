@@ -20,7 +20,6 @@ decoders/fldigifilters.h -text
 /defs.h -text
 /demod.cpp -text
 /demod.h -text
-devices/SDR_IQ.cpp -text
 devices/SDR_IQ.h -text
 devices/SoftRock.cpp -text
 devices/SoftRock.h -text
@@ -37,6 +36,7 @@ devices/sdr-ip/sdrinterface.cpp -text
 devices/sdr-ip/sdrinterface.h -text
 devices/sdr_ip.cpp -text
 devices/sdr_ip.h -text
+devices/sdr_iq.cpp -text
 devices/usb.h -text
 devices/wavfile.cpp -text
 devices/wavfile.h -text
