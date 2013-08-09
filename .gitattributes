@@ -31,7 +31,6 @@ HPSDR/Ozy_Janus.rbf -text
 References/CuteSDR102.pdf -text
 Resources/Pebble.icns -text
 Resources/edit.png -text
-/SignalProcessing.cpp -text
 /SignalProcessing.h -text
 /SignalSpectrum.cpp -text
 /SignalSpectrum.h -text
@@ -108,6 +107,7 @@ Resources/edit.png -text
 /sdriqoptions.ui -text
 /settings.cpp -text
 /settings.h -text
+/signalprocessing.cpp -text
 /smeterwidget.cpp -text
 /smeterwidget.h -text
 /smeterwidget.ui -text
