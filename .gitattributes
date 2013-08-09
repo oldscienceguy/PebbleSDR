@@ -1,5 +1,4 @@
 * text=auto !eol
-/Butterworth.h -text
 DSP/fft.cpp -text
 DSP/fft.h -text
 DSP/fftbasic.cpp -text
@@ -83,6 +82,7 @@ Resources/edit.png -text
 /bargraphmeter.ui -text
 /build.tmpl -text
 /butterworth.cpp -text
+/butterworth.h -text
 /codingstyle.txt -text
 /cpx.cpp -text
 /cpx.h -text
