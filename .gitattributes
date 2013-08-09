@@ -28,7 +28,6 @@ Devices/usb.h -text
 Devices/wavfile.cpp -text
 Devices/wavfile.h -text
 HPSDR/Ozy_Janus.rbf -text
-/Mixer.cpp -text
 /Mixer.h -text
 /NCO.cpp -text
 /NCO.h -text
@@ -98,6 +97,7 @@ Resources/edit.png -text
 /iqbalance.h -text
 /iqbalanceoptions.ui -text
 /main.cpp -text
+/mixer.cpp -text
 /pebble.qss -text
 /pebbleii.cpp -text
 /pebbleii.h -text
