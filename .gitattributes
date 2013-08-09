@@ -28,7 +28,6 @@ Devices/usb.h -text
 Devices/wavfile.cpp -text
 Devices/wavfile.h -text
 HPSDR/Ozy_Janus.rbf -text
-/IIRFilter.cpp -text
 /IIRFilter.h -text
 /Mixer.cpp -text
 /Mixer.h -text
@@ -94,6 +93,7 @@ Resources/edit.png -text
 /gpl.h -text
 /help.htm -text
 /hpsdrOptions.ui -text
+/iirfilter.cpp -text
 /iqbalance.cpp -text
 /iqbalance.h -text
 /iqbalanceoptions.ui -text
