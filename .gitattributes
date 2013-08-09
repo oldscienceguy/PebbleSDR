@@ -27,7 +27,6 @@ Devices/sdr_ip.h -text
 Devices/usb.h -text
 Devices/wavfile.cpp -text
 Devices/wavfile.h -text
-/GPL.h -text
 HPSDR/Ozy_Janus.rbf -text
 /Help.htm -text
 /IIRFilter.cpp -text
@@ -93,6 +92,7 @@ Resources/edit.png -text
 /funcubeoptions.ui -text
 /global.cpp -text
 /global.h -text
+/gpl.h -text
 /hpsdrOptions.ui -text
 /iqbalance.cpp -text
 /iqbalance.h -text
