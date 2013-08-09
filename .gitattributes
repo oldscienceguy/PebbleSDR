@@ -28,7 +28,6 @@ Devices/usb.h -text
 Devices/wavfile.cpp -text
 Devices/wavfile.h -text
 HPSDR/Ozy_Janus.rbf -text
-/PortAudio.lib -text
 /Receiver.cpp -text
 /Receiver.h -text
 /ReceiverWidget.cpp -text
@@ -103,6 +102,7 @@ Resources/edit.png -text
 /pebbleii.ui -text
 /pebbleqt.pro -text
 /portaudio.h -text
+/portaudio.lib -text
 /presets.cpp -text
 /presets.h -text
 /presets.ui -text
