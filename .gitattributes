@@ -31,7 +31,6 @@ HPSDR/Ozy_Janus.rbf -text
 References/CuteSDR102.pdf -text
 Resources/Pebble.icns -text
 Resources/edit.png -text
-/SignalStrength.cpp -text
 /SignalStrength.h -text
 /SoftRockOptions.ui -text
 /SoundCard.cpp -text
@@ -108,6 +107,7 @@ Resources/edit.png -text
 /signalprocessing.h -text
 /signalspectrum.cpp -text
 /signalspectrum.h -text
+/signalstrength.cpp -text
 /smeterwidget.cpp -text
 /smeterwidget.h -text
 /smeterwidget.ui -text
