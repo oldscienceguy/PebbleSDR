@@ -131,7 +131,7 @@ macx {
 	SOURCES += Devices/hid-mac.c
 
 	#INSTALLS is called when we manually make -install or add it to the Qt project build steps
-	pebbleData.files = eibireadme.txt eibi.csv bands.csv memory.csv Help.htm gpl.h ReleaseNotes.txt HPSDR/ozyfw-sdr1k.hex HPSDR/Ozy_Janus.rbf
+	pebbleData.files = eibireadme.txt eibi.csv bands.csv memory.csv help.htm gpl.h releasenotes.txt hpsdr/ozyfw-sdr1k.hex hpsdr/ozy_janus.rbf
 
 	#We want this to be whatever the release or debug directory is or added to bundle
 	#This will copy the files into the app bundle, same place ini files go
@@ -316,18 +316,18 @@ DEFINES += \
 #QMAKE_LFLAGS += -static-libgcc
 
 OTHER_FILES += \
-    Help.htm \
-    Firmware.txt \
+    help.htm \
+    firmware.txt \
     build.tmpl \
-    ReleaseNotes.txt \
+    releasenotes.txt \
     bands.csv \
     eibi.csv \
     eibireadme.txt \
     memory.csv \
-	FrequencyList-SantaCruz.csv \
+	frequencylist-santacruz.csv \
     pebble.qss \
-    HPSDR/ozyfw-sdr1k.hex \
-    HPSDR/Ozy_Janus.rbf \
+    hpsdr/ozyfw-sdr1k.hex \
+    hpsdr/ozy_janus.rbf \
     codingstyle.txt
 
 HEADERS += \
@@ -370,46 +370,46 @@ HEADERS += \
     demod/rdsdecode.h \
     filters/fractresampler.h \
     filters/datatypes.h \
-    DSP/fftooura.h \
+    dsp/fftooura.h \
     perform.h \
-    Devices/sdrfile.h \
-    Devices/rtl2832.h \
-    Devices/SDR_IQ.h \
-    Devices/SoftRock.h \
-    Devices/hpsdr.h \
-    Devices/funcube.h \
-    Devices/ElektorSDR.h \
-    Devices/usbutil.h \
-    Devices/usb.h \
-    Devices/extio.h \
-    Devices/hidapi.h \
-    Devices/rtl-sdr/rtl-sdr.h \
-    Devices/rtl-sdr/rtl-sdr_export.h \
-    Devices/rtl-sdr/rtlsdr_i2c.h \
-    Devices/rtl-sdr/tuner_e4k.h \
-    Devices/rtl-sdr/tuner_fc0012.h \
-    Devices/rtl-sdr/tuner_fc0013.h \
-    Devices/rtl-sdr/tuner_fc2580.h \
-    Devices/rtl-sdr/tuner_r820t.h \
-    Devices/rtl-sdr/reg_field.h \
-    Devices/sdr_ip.h \
-    Devices/sdr-ip/dataprocess.h \
-    Devices/sdr-ip/ad6620.h \
-    Devices/sdr-ip/ascpmsg.h \
-    Devices/sdr-ip/netiobase.h \
-    Devices/sdr-ip/sdrinterface.h \
-    Devices/sdr-ip/threadwrapper.h \
-    Devices/sdr-ip/protocoldefs.h \
-    Devices/wavfile.h \
-    Decoders/OregonScientific/oregonscientificsensordecode.h \
-    Decoders/morse/morse.h \
-    Decoders/fldigifilters.h \
+    devices/sdrfile.h \
+    devices/rtl2832.h \
+    devices/sdr_iq.h \
+    devices/softrock.h \
+    devices/hpsdr.h \
+    devices/funcube.h \
+    devices/elektorsdr.h \
+    devices/usbutil.h \
+    devices/usb.h \
+    devices/extio.h \
+    devices/hidapi.h \
+    devices/rtl-sdr/rtl-sdr.h \
+    devices/rtl-sdr/rtl-sdr_export.h \
+    devices/rtl-sdr/rtlsdr_i2c.h \
+    devices/rtl-sdr/tuner_e4k.h \
+    devices/rtl-sdr/tuner_fc0012.h \
+    devices/rtl-sdr/tuner_fc0013.h \
+    devices/rtl-sdr/tuner_fc2580.h \
+    devices/rtl-sdr/tuner_r820t.h \
+    devices/rtl-sdr/reg_field.h \
+    devices/sdr_ip.h \
+    devices/sdr-ip/dataprocess.h \
+    devices/sdr-ip/ad6620.h \
+    devices/sdr-ip/ascpmsg.h \
+    devices/sdr-ip/netiobase.h \
+    devices/sdr-ip/sdrinterface.h \
+    devices/sdr-ip/threadwrapper.h \
+    devices/sdr-ip/protocoldefs.h \
+    devices/wavfile.h \
+    decoders/oregonscientific/oregonscientificsensordecode.h \
+    decoders/morse/morse.h \
+    decoders/fldigifilters.h \
     bargraphmeter.h \
     testbench.h \
-    DSP/fftbasic.h \
-    DSP/fftw.h \
-    DSP/fftcute.h \
-    DSP/fft.h
+    dsp/fftbasic.h \
+    dsp/fftw.h \
+    dsp/fftcute.h \
+    dsp/fft.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -446,47 +446,47 @@ SOURCES += \
     demod/downconvert.cpp \
     demod/rdsdecode.cpp \
     filters/fractresampler.cpp \
-    DSP/fftooura.cpp \
+    dsp/fftooura.cpp \
     perform.cpp \
-    Devices/sdrfile.cpp \
-    Devices/rtl2832.cpp \
-    Devices/SDR_IQ.cpp \
-    Devices/SoftRock.cpp \
-    Devices/hpsdr.cpp \
-    Devices/funcube.cpp \
-    Devices/ElektorSDR.cpp \
-	Devices/usbutil.cpp \
-    Devices/rtl-sdr/librtlsdr.c \
-    Devices/rtl-sdr/tuner_e4k.c \
-    Devices/rtl-sdr/tuner_fc0012.c \
-    Devices/rtl-sdr/tuner_fc0013.c \
-    Devices/rtl-sdr/tuner_fc2580.c \
-    Devices/rtl-sdr/tuner_r820t.c \
-    Devices/sdr_ip.cpp \
-    Devices/sdr-ip/dataprocess.cpp \
-    Devices/sdr-ip/ad6620.cpp \
-    Devices/sdr-ip/netiobase.cpp \
-    Devices/sdr-ip/sdrinterface.cpp \
-    Devices/wavfile.cpp \
-    Decoders/OregonScientific/oregonscientificsensordecode.cpp \
-	Decoders/morse/morse.cpp \
-    Decoders/fldigifilters.cpp \
+    devices/sdrfile.cpp \
+    devices/rtl2832.cpp \
+    devices/sdr_iq.cpp \
+    devices/softrock.cpp \
+    devices/hpsdr.cpp \
+    devices/funcube.cpp \
+    devices/elektorsdr.cpp \
+	devices/usbutil.cpp \
+    devices/rtl-sdr/librtlsdr.c \
+    devices/rtl-sdr/tuner_e4k.c \
+    devices/rtl-sdr/tuner_fc0012.c \
+    devices/rtl-sdr/tuner_fc0013.c \
+    devices/rtl-sdr/tuner_fc2580.c \
+    devices/rtl-sdr/tuner_r820t.c \
+    devices/sdr_ip.cpp \
+    devices/sdr-ip/dataprocess.cpp \
+    devices/sdr-ip/ad6620.cpp \
+    devices/sdr-ip/netiobase.cpp \
+    devices/sdr-ip/sdrinterface.cpp \
+    devices/wavfile.cpp \
+    decoders/oregonscientific/oregonscientificsensordecode.cpp \
+	decoders/morse/morse.cpp \
+    decoders/fldigifilters.cpp \
     bargraphmeter.cpp \
     testbench.cpp \
-    DSP/fftbasic.cpp \
-    DSP/fftw.cpp \
-    DSP/fftcute.cpp \
-    DSP/fft.cpp
+    dsp/fftbasic.cpp \
+    dsp/fftw.cpp \
+    dsp/fftcute.cpp \
+    dsp/fft.cpp
 
 FORMS += \
     spectrumwidget.ui \
-    SoftRockOptions.ui \
+    softrockoptions.ui \
     smeterwidget.ui \
-    SDRIQOptions.ui \
-    ReceiverWidget.ui \
+    sdriqptions.ui \
+    receiverwidget.ui \
     pebbleii.ui \
-    ElektorOptions.ui \
-    hpsdrOptions.ui \
+    elektoroptions.ui \
+    hpsdroptions.ui \
     iqbalanceoptions.ui \
     funcubeoptions.ui \
     sdr-ip.ui \
