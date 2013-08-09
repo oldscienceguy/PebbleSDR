@@ -5,8 +5,6 @@ DSP/fftbasic.cpp -text
 DSP/fftbasic.h -text
 DSP/fftw.cpp -text
 DSP/fftw.h -text
-Decoders/fldigifilters.cpp -text
-Decoders/fldigifilters.h -text
 Devices/ElektorSDR.cpp -text
 Devices/ElektorSDR.h -text
 Devices/SDR_IQ.cpp -text
@@ -47,6 +45,8 @@ Resources/edit.png -text
 /cpx.cpp -text
 /cpx.h -text
 /data-morse.ui -text
+decoders/fldigifilters.cpp -text
+decoders/fldigifilters.h -text
 /defs.h -text
 /demod.cpp -text
 /demod.h -text
