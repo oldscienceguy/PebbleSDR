@@ -28,7 +28,6 @@ Devices/usb.h -text
 Devices/wavfile.cpp -text
 Devices/wavfile.h -text
 HPSDR/Ozy_Janus.rbf -text
-/Receiver.cpp -text
 /Receiver.h -text
 /ReceiverWidget.cpp -text
 /ReceiverWidget.h -text
@@ -106,6 +105,7 @@ Resources/edit.png -text
 /presets.cpp -text
 /presets.h -text
 /presets.ui -text
+/receiver.cpp -text
 /sdr-ip.ui -text
 /sdr.ui -text
 /smeterwidget.cpp -text
