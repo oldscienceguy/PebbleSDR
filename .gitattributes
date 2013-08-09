@@ -20,12 +20,12 @@ decoders/fldigifilters.h -text
 /defs.h -text
 /demod.cpp -text
 /demod.h -text
-devices/ElektorSDR.h -text
 devices/SDR_IQ.cpp -text
 devices/SDR_IQ.h -text
 devices/SoftRock.cpp -text
 devices/SoftRock.h -text
 devices/elektorsdr.cpp -text
+devices/elektorsdr.h -text
 devices/funcube.cpp -text
 devices/funcube.h -text
 devices/hpsdr.cpp -text
