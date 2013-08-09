@@ -1,10 +1,4 @@
 * text=auto !eol
-DSP/fft.cpp -text
-DSP/fft.h -text
-DSP/fftbasic.cpp -text
-DSP/fftbasic.h -text
-DSP/fftw.cpp -text
-DSP/fftw.h -text
 HPSDR/Ozy_Janus.rbf -text
 References/CuteSDR102.pdf -text
 Resources/Pebble.icns -text
@@ -51,6 +45,12 @@ devices/usb.h -text
 devices/wavfile.cpp -text
 devices/wavfile.h -text
 /directinput.ui -text
+dsp/fft.cpp -text
+dsp/fft.h -text
+dsp/fftbasic.cpp -text
+dsp/fftbasic.h -text
+dsp/fftw.cpp -text
+dsp/fftw.h -text
 /elektoroptions.ui -text
 /firfilter.cpp -text
 /firfilter.h -text
