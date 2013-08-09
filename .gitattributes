@@ -28,7 +28,6 @@ Devices/usb.h -text
 Devices/wavfile.cpp -text
 Devices/wavfile.h -text
 HPSDR/Ozy_Janus.rbf -text
-/NoiseFilter.cpp -text
 /NoiseFilter.h -text
 /PebbleQt.pro -text
 /PortAudio.lib -text
@@ -98,6 +97,7 @@ Resources/edit.png -text
 /nco.h -text
 /noiseblanker.cpp -text
 /noiseblanker.h -text
+/noisefilter.cpp -text
 /pebble.qss -text
 /pebbleii.cpp -text
 /pebbleii.h -text
