@@ -90,8 +90,8 @@ hpsdr/ozy_janus.rbf -text
 /receiverwidget.ui -text
 references/cutesdr102.pdf -text
 /releasenotes.txt -text
-resources/Pebble.icns -text
 resources/edit.png -text
+resources/pebble.icns -text
 /sdr-ip.ui -text
 /sdr.cpp -text
 /sdr.h -text
