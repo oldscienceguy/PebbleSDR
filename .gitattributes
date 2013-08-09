@@ -1,6 +1,4 @@
 * text=auto !eol
-Resources/Pebble.icns -text
-Resources/edit.png -text
 /agc.cpp -text
 /agc.h -text
 /audio.cpp -text
@@ -92,6 +90,8 @@ hpsdr/Ozy_Janus.rbf -text
 /receiverwidget.ui -text
 references/CuteSDR102.pdf -text
 /releasenotes.txt -text
+resources/Pebble.icns -text
+resources/edit.png -text
 /sdr-ip.ui -text
 /sdr.cpp -text
 /sdr.h -text
