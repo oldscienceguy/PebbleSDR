@@ -58,6 +58,8 @@ dsp/fftw.h -text
 /gpl.h -text
 /help.htm -text
 hpsdr/ozy_janus.rbf -text
+hpsdr/ozy_janus_v1.7.rbf -text
+hpsdr/ozy_janus_v2.5.rbf -text
 /hpsdrOptions.ui -text
 /iirfilter.cpp -text
 /iirfilter.h -text
