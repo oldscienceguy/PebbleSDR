@@ -478,8 +478,11 @@ void Morse::SetupDataUi(QWidget *parent)
         dataUi = new Ui::dataMorse();
         dataUi->setupUi(parent);
 
+        dataUi->dataBar->setValue(0);
         dataUi->dataBar->setMin(0);
         dataUi->dataBar->setMax(10);
+        dataUi->dataBar->setNumTicks(10);
+        dataUi->dataBar->start();
 
         dataUi->squelchSlider->setMinimum(0);
         dataUi->squelchSlider->setMaximum(10 / squelchIncrement);

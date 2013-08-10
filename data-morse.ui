@@ -81,13 +81,13 @@
        <number>4</number>
       </property>
       <property name="topMargin">
-       <number>2</number>
+       <number>1</number>
       </property>
       <property name="rightMargin">
        <number>4</number>
       </property>
       <property name="bottomMargin">
-       <number>4</number>
+       <number>6</number>
       </property>
       <item>
        <widget class="QLabel" name="wpmLabel">
@@ -152,16 +152,22 @@
       </item>
       <item>
        <widget class="BargraphMeter" name="dataBar" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>100</verstretch>
+         </sizepolicy>
+        </property>
         <property name="minimumSize">
          <size>
           <width>80</width>
-          <height>0</height>
+          <height>18</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>14</height>
+          <height>16777215</height>
          </size>
         </property>
        </widget>

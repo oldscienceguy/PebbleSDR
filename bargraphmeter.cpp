@@ -14,9 +14,13 @@ BargraphMeter::BargraphMeter(QWidget *parent) :
     barColor = Qt::red;
     running = false;
     showLabelArea = false;
+    numTicks = 0;
+    showLabels = true;
+    showTicks = true;
+
 
     //Get our widget boundaries
-    QRect meterFr = this->geometry(); //relative to parent
+    QRect meterFr = ui->plotFrame->geometry(); //relative to parent
 
     plotArea = QPixmap(meterFr.width(),meterFr.height());
     plotArea.fill(Qt::black);
@@ -24,11 +28,11 @@ BargraphMeter::BargraphMeter(QWidget *parent) :
     plotOverlay = QPixmap(meterFr.width(),meterFr.height());
     plotOverlay.fill(Qt::black);
 
-    plotLabel = QPixmap(meterFr.width(),meterFr.height());
+    plotLabel = QPixmap(ui->labelFrame->width(),ui->labelFrame->height());
     plotLabel.fill(Qt::black);
-
     //Thread safe display update
     connect(this, SIGNAL(newData()), this, SLOT(refreshMeter()));
+
 
 }
 
@@ -41,14 +45,92 @@ void BargraphMeter::start()
 {
     currentLevel = minLevel;
     running = true;
-    update();
+
+    refreshMeter();
 }
 
 void BargraphMeter::stop()
 {
     currentLevel = minLevel;
+    refreshMeter();
     running = false;
+}
+
+void BargraphMeter::setColor(QColor _color)
+{
+    barColor = _color;
     update();
+}
+
+//Either setTicks or setLabels, not both
+void BargraphMeter::setLabels(QStringList _labels)
+{
+    //Ticks and labels must be same size
+    numTicks = _labels.size();
+    labels = _labels;
+}
+
+void BargraphMeter::setNumTicks(quint16 _ticks)
+{
+    if (numTicks != _ticks) {
+        //Only update if change
+        //labels must match #ticks
+        labels = QStringList();
+        numTicks = _ticks;
+    }
+}
+
+void BargraphMeter::drawOverlay()
+{
+    //Draw anything that only changes when resized
+    //Start clean
+    plotOverlay.fill(Qt::black);
+}
+
+void BargraphMeter::drawLabels()
+{
+    if (labels.size() == 0) {
+        return;
+    }
+    plotLabel.fill((Qt::black));
+    if (numTicks == 0)
+        return;
+    QPainter painter(&plotLabel);
+    painter.setPen(QPen(Qt::white, 1,Qt::SolidLine));
+
+    quint16 plotHeight = plotLabel.height();
+    quint16 plotWidth = plotLabel.width();
+
+    //Evenly split ticks
+    //numTicks are the visible ticks, each with a potential label
+    quint16 tickInc = plotWidth / (numTicks+1);
+    quint16 tickPix = plotHeight * 0.20;
+
+    QFont overlayFont("Arial");
+    overlayFont.setPointSize(7);
+    overlayFont.setWeight(QFont::Normal);
+    painter.setFont(overlayFont);
+
+    QFontMetrics metrics(overlayFont);
+
+    int x;
+    int ctr;
+    //don't draw at x==0, first tickInc on
+    for (int i=1; i<=numTicks; i++) {
+        x = i * tickInc;
+        //Draw tick from top to 25%, leaving middle clear
+        //painter.drawLine(i,0,i,tickPix);
+        painter.drawLine(x,0,x,2); //Draw up into plot area
+        //Draw tick from botton to 25%, leaving middle clear
+        //painter.drawLine(i,plotHeight,i,plotHeight - tickPix);
+        //Draw label text if specified
+        //adjust x to account for width so text is centered. will depend on hpix per char
+        if (i-1 < labels.size()) {
+            ctr = x - (labels[i-1].length() * metrics.averageCharWidth() / 2);  //Offset left 1/2 label pix width
+            painter.drawText(ctr, plotHeight-2,labels[i-1]);
+        }
+
+    }
 }
 
 void BargraphMeter::refreshMeter()
@@ -56,8 +138,12 @@ void BargraphMeter::refreshMeter()
     if (!running)
         return;
 
+    drawOverlay();
+    drawLabels();
+    plotArea = plotOverlay.copy(); //copy whole image and we'll draw on top of it
+
+
     QPainter painter(&plotArea);
-    plotArea.fill(Qt::black); //Erase previous graph
 
     //Scale from min to max
     //This assumes bargraph has more pixels than range between min and max
@@ -71,11 +157,10 @@ void BargraphMeter::refreshMeter()
 
     bar.setRight(disp * scale);
     painter.drawRect(bar);
-    painter.fillRect(bar, barColor);
+    //pattern brush lets overlay show through, solid will cover it up
+    painter.fillRect(bar, QBrush(barColor,Qt::Dense4Pattern));
 
-
-    if (running)
-        update();
+    update();
 
 }
 
@@ -100,9 +185,14 @@ void BargraphMeter::paintEvent(QPaintEvent * event)
 {
     Q_UNUSED(event)
     QPainter painter(this);
-    QRect plotFr = this->geometry(); //relative to parent
+    QRect plotFr = ui->plotFrame->geometry();
+    QRect labelFr = ui->labelFrame->geometry();
 
     painter.drawPixmap(plotFr, plotArea); //Includes plotOverlay which was copied to plotArea
+    if (labels.size() == 0)
+        ui->labelFrame->setVisible(false);
+    else
+        painter.drawPixmap(labelFr, plotLabel); //Includes plotOverlay which was copied to plotArea
 
 #if 0
     QPainter painter(this);

@@ -23,9 +23,13 @@ public:
     void setValue(qint16 _value);
     void start();
     void stop();
-
+    void setNumTicks(quint16 _ticks);
+    void setColor(QColor _color);
+    void setLabels(QStringList _labels);
 
     void paintEvent(QPaintEvent *event);
+    void drawOverlay();
+    void drawLabels();
 public slots:
     void refreshMeter();
 
@@ -41,13 +45,18 @@ protected:
     qint16 currentLevel;
     QColor backgroundColor;
     QColor barColor;
+    QStringList labels; //Optional labels
 
     bool showLabelArea;
+    bool showLabels;
+    bool showTicks;
 
     //Switching to pixmaps
     QPixmap plotArea;
     QPixmap plotOverlay;
     QPixmap plotLabel;
+
+    quint16 numTicks;
 
 
 };

@@ -37,8 +37,8 @@ private:
 
 	private slots:
 		void updateMeter();
-        void srcSelectionChanged(QString);
-
+        void instButtonClicked();
+        void avgButtonClicked();
 };
 
 #endif // SMeterWidget_H

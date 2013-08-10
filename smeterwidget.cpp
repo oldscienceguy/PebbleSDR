@@ -9,40 +9,27 @@ SMeterWidget::SMeterWidget(QWidget *parent) :QFrame(parent)
 	ui.setupUi(this);
 	signalStrength = NULL;
 
-	//Trying different fixes to prevent background color from hiding our painter
-	//this->setBackgroundRole(QPalette::Base); //
-	//this->setAttribute(Qt::WA_NoBackground);
-	//this->setAttribute(Qt::WA_OpaquePaintEvent);
-	//ui.plotArea->setAutoFillBackground(false);
-
-    ui.sourceBox->addItem("Inst");
-    ui.sourceBox->addItem("Avg");
-    //ui.sourceBox->addItem("CW");
-    //Get from settings
-    QFont medFont("Lucida Grande",9);
-    ui.sourceBox->setFont(medFont);
-
-    src = 0;
-    connect(ui.sourceBox,SIGNAL(currentIndexChanged(QString)),this,SLOT(srcSelectionChanged(QString)));
-
-    ui.barGraph->setMin(-120);
-    ui.barGraph->setMax(0);
-    ui.barGraph->setValue(-120);
-
+    instButtonClicked();
+    connect(ui.instButton,SIGNAL(clicked()),this,SLOT(instButtonClicked()));
+    connect(ui.avgButton,SIGNAL(clicked()),this,SLOT(avgButtonClicked()));
 
 }
 
 SMeterWidget::~SMeterWidget()
 {
 }
-void SMeterWidget::srcSelectionChanged(QString s)
+void SMeterWidget::instButtonClicked()
 {
-    if (s=="Avg")
-        src=1;
-    else if (s=="Inst")
-        src=0;
-    else
-        src=2;
+    src = 0;
+    ui.instButton->setFlat(false);
+    ui.avgButton->setFlat(true);
+
+}
+void SMeterWidget::avgButtonClicked()
+{
+    src = 1;
+    ui.instButton->setFlat(true);
+    ui.avgButton->setFlat(false);
 }
 
 
@@ -53,6 +40,19 @@ void SMeterWidget::SetSignalSpectrum(SignalSpectrum *s)
     //signalSpectrum = s;
     if (s!=NULL) {
         connect(s,SIGNAL(newFftData()),this,SLOT(updateMeter()));
+        ui.barGraph->setMin(-120);
+        ui.barGraph->setMax(0);
+        ui.barGraph->setValue(-120);
+        ui.barGraph->setColor(Qt::cyan); //!!Make multi color? or set threshold to show red > s9
+        QStringList labels;
+        //S1 is left most and not labeled
+        labels.append("S3");
+        labels.append("S6");
+        labels.append("S9");
+        labels.append("+15");
+        labels.append("+30");
+        labels.append("+45");
+        ui.barGraph->setLabels(labels);
     }
 }
 
