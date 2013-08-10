@@ -38,6 +38,7 @@
 #ifndef THREADWRAPPER_H
 #define THREADWRAPPER_H
 
+#include "global.h"
 #include <QObject>
 #include <QThread>
 #include <QMutex>

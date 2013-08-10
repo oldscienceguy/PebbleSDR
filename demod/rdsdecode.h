@@ -8,6 +8,7 @@
 #ifndef RDSDECODE_H
 #define RDSDECODE_H
 
+#include "global.h"
 #include <QtGlobal>
 #include "rbdsconstants.h"
 

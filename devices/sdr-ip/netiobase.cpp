@@ -38,6 +38,10 @@
 /*---------------------------------------------------------------------------*/
 /*------------------------> I N C L U D E S <--------------------------------*/
 /*---------------------------------------------------------------------------*/
+
+//Ignore warnings about OS X version unsupported (QT 5.1 bug)
+#pragma clang diagnostic ignored "-W#warnings"
+
 #include <QtNetwork>
 #include <QDebug>
 #include "netiobase.h"

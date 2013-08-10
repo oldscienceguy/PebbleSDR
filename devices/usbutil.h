@@ -1,6 +1,8 @@
 #ifndef USBUTIL_H
 #define USBUTIL_H
 
+#include "global.h"
+
 #include <QLibrary>
 #include "../d2xx/bin/ftd2xx.h"
 #include "../d2xx/libusb/libusb/libusb.h"

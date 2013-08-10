@@ -1,6 +1,7 @@
 #ifndef WAVFILE_H
 #define WAVFILE_H
 
+#include "global.h"
 #include "QFile"
 #include "cpx.h"
 

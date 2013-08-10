@@ -482,7 +482,7 @@ FORMS += \
     spectrumwidget.ui \
     softrockoptions.ui \
     smeterwidget.ui \
-    sdriqptions.ui \
+    sdriqoptions.ui \
     receiverwidget.ui \
     pebbleii.ui \
     elektoroptions.ui \

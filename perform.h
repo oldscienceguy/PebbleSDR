@@ -7,6 +7,10 @@
 //
 #if !defined(_INCLUDE_PERFORMXXX_H_)
 #define _INCLUDE_PERFORMXXX_H_
+
+//Ignore warnings about OS X version unsupported (QT 5.1 bug)
+#pragma clang diagnostic ignored "-W#warnings"
+
 #include "math.h"
 #include <QtGlobal>
 #include <QString>
