@@ -27,22 +27,11 @@ SMeterWidget::SMeterWidget(QWidget *parent)
     src = 0;
     connect(ui.sourceBox,SIGNAL(currentIndexChanged(QString)),this,SLOT(srcSelectionChanged(QString)));
 
-    //We only need to update smeter when we have new spectrum data to display
-    //signalSpectrum = s;
-    //if (s!=NULL)
-    //    connect(signalSpectrum,SIGNAL(newFftData()),this,SLOT(updateMeter()));
 
-#if 0
-	//Start paint thread
-	smt = new SMeterWidgetThread(this);
-	connect(smt,SIGNAL(repaint()),this,SLOT(updateMeter()));
-	smt->start();
-#endif
 }
 
 SMeterWidget::~SMeterWidget()
 {
-	smt->quit();
 }
 void SMeterWidget::srcSelectionChanged(QString s)
 {
@@ -54,6 +43,17 @@ void SMeterWidget::srcSelectionChanged(QString s)
         src=2;
 }
 
+
+void SMeterWidget::SetSignalSpectrum(SignalSpectrum *s)
+{
+    //We only need to update smeter when we have new spectrum data to display
+    //Use newFftData signal to trigger repaint instead of thread
+    //signalSpectrum = s;
+    if (s!=NULL) {
+        connect(s,SIGNAL(newFftData()),this,SLOT(updateMeter()));
+    }
+}
+
 void SMeterWidget::setSignalStrength(SignalStrength *ss)
 {
 	signalStrength = ss;
@@ -61,10 +61,11 @@ void SMeterWidget::setSignalStrength(SignalStrength *ss)
 void SMeterWidget::Run(bool r)
 {
 	isRunning = r;
+    updateMeter();
 }
 void SMeterWidget::updateMeter()
 {
-	repaint();
+    update();
 }
 
 void SMeterWidget::paintEvent(QPaintEvent *e)
@@ -132,26 +133,6 @@ void SMeterWidget::paintEvent(QPaintEvent *e)
 
 } 
 
-SMeterWidgetThread::SMeterWidgetThread(SMeterWidget *m)
-{
-    sm = m;
-    msSleep=100;
-}
-void SMeterWidgetThread::SetRefresh(int ms)
-{
-    msSleep = ms;
-} //Refresh rate in me
-void SMeterWidgetThread::run()
-{
-    for(;;) {
-    //We can't trigger a paint event cross thread, Qt design
-    //But we can trigger a signal which main thread will get and that can trigger repaint
-    //sw->repaint();
-    emit repaint();
-    //Sleep for resolution
-    msleep(msSleep);
-    }
-}
 
 
 

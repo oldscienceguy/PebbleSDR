@@ -9,6 +9,7 @@
 
 #include "ui/ui_smeterwidget.h"
 #include "signalstrength.h"
+#include "signalspectrum.h"
 
 class SMeterWidgetThread;
 
@@ -25,12 +26,12 @@ public:
 
 	void Run(bool r);
 
+    void SetSignalSpectrum(SignalSpectrum *s);
 private:
 	Ui::SMeterWidgetClass ui;
 	SignalStrength *signalStrength; //Where we get data from
 	void paintEvent(QPaintEvent *e);
 	bool isRunning;
-	SMeterWidgetThread *smt;
     int src; //Inst, Average, External
 
 	private slots:
@@ -38,18 +39,5 @@ private:
         void srcSelectionChanged(QString);
 
 };
-class SMeterWidgetThread:public QThread
-	{
-		Q_OBJECT
-		public:
-            SMeterWidgetThread(SMeterWidget *m);
-            void SetRefresh(int ms); //Refresh rate in me
-            void run();
-		signals:
-            void repaint();
-	private:
-		SMeterWidget * sm;
-		int msSleep;
-	};
 
 #endif // SMeterWidget_H

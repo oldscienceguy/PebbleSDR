@@ -46,9 +46,6 @@ public:
 	//Set tuner limits
 	void SetLimits(double highF, double lowF, int highM, int lowM);
 	void SetMessage(QStringList s);
-	//Direct access to sub-widgets
-	SpectrumWidget *getSpectrumWidget() {return ui.spectrumWidget;};
-	SMeterWidget *getSMeterWidget() {return ui.sMeterWidget;};
 
     void DisplayBand(double freq);
 

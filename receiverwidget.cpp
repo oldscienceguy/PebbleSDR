@@ -481,7 +481,8 @@ void ReceiverWidget::powerToggled(bool on)
 
 		//Give SMeter access to signal strength SignalProcessing block
 		ui.sMeterWidget->setSignalStrength(receiver->GetSignalStrength());
-		ui.spectrumWidget->SetSignalSpectrum(receiver->GetSignalSpectrum());
+        ui.sMeterWidget->SetSignalSpectrum(receiver->GetSignalSpectrum());
+        ui.spectrumWidget->SetSignalSpectrum(receiver->GetSignalSpectrum());
 
         ui.spectrumWidget->plotSelectionChanged((SignalSpectrum::DISPLAYMODE)global->sdr->lastDisplayMode);
         ui.bandType->setCurrentIndex(Band::HAM);
