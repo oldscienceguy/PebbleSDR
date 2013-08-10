@@ -45,7 +45,6 @@ Demod::Demod(int _inputRate, int _inputWfmRate, int ns) :
     wfmDemod = new CWFmDemod(inputWfmSampleRate, inputWfmSampleRate);
     ResetDemod();
 
-    connect(this,SIGNAL(OutputData(const char *)),global->receiver,SLOT(OutputData(const char *)));
 }
 
 Demod::~Demod()
@@ -447,7 +446,7 @@ void Demod::FMStereo(CPX * in, CPX * out, int bufSize)
     if (rdsUpdate) {
         //Formatted string for output windows
         sprintf(rdsBuf,"%s %s %s",pilotLock ? "Stereo" : "      ", rdsCallString, rdsString);
-        emit OutputData(rdsBuf);
+        //emit OutputData(rdsBuf);
 
     }
     return;

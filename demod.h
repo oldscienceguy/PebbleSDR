@@ -45,9 +45,6 @@ public:
 	static QString ModeToString(DEMODMODE dm);
 
 signals:
-    //We can't call receiver->OutputData directly because we're running in a different thread
-    //Signals and Slots solve the problem
-    void OutputData(const char *);
 
 private:
     DEMODMODE mode;
