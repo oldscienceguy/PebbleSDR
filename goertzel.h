@@ -1,7 +1,7 @@
 #ifndef GOERTZEL_H
 #define GOERTZEL_H
 
-#include "SignalProcessing.h"
+#include "signalprocessing.h"
 #include "QtGlobal"
 #include "cpx.h"
 

@@ -1,6 +1,6 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-#include "IIRFilter.h"
+#include "iirfilter.h"
 #include <string.h>
 #include <QtDebug>
 #include <limits>

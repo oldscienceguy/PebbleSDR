@@ -1,7 +1,7 @@
 #include "sdrfile.h"
-#include "Receiver.h"
-#include "Settings.h"
-#include "Demod.h"
+#include "receiver.h"
+#include "settings.h"
+#include "demod.h"
 #include "QFileDialog"
 
 SDRFile::SDRFile(Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_receiver, dev,_settings)

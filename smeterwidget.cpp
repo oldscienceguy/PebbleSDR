@@ -1,6 +1,6 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-#include "SMeterWidget.h"
+#include "smeterwidget.h"
 #include <QPainter>
 #include <QStylePainter>
 
@@ -27,10 +27,17 @@ SMeterWidget::SMeterWidget(QWidget *parent)
     src = 0;
     connect(ui.sourceBox,SIGNAL(currentIndexChanged(QString)),this,SLOT(srcSelectionChanged(QString)));
 
+    //We only need to update smeter when we have new spectrum data to display
+    //signalSpectrum = s;
+    //if (s!=NULL)
+    //    connect(signalSpectrum,SIGNAL(newFftData()),this,SLOT(updateMeter()));
+
+#if 0
 	//Start paint thread
 	smt = new SMeterWidgetThread(this);
 	connect(smt,SIGNAL(repaint()),this,SLOT(updateMeter()));
 	smt->start();
+#endif
 }
 
 SMeterWidget::~SMeterWidget()

@@ -2,7 +2,7 @@
 #include "math.h"
 #include "defs.h"
 #include "QtDebug"
-#include "FIRFilter.h"
+#include "firfilter.h"
 
 /*
   From SILabs DTMF paper http://www.silabs.com/Support%20Documents/TechnicalDocs/an218.pdf

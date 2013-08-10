@@ -1,7 +1,7 @@
 #ifndef RTL2832_H
 #define RTL2832_H
 
-#include "SDR.h"
+#include "sdr.h"
 #include "rtl-sdr/rtl-sdr.h"
 
 class RTL2832 : public SDR

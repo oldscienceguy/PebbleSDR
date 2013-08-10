@@ -6,7 +6,7 @@
 
 #include "hidapi.h"
 #include "qsettings.h"
-#include "SDR.h"
+#include "sdr.h"
 #include "ui_funcubeoptions.h"
 
 class FunCube : public SDR

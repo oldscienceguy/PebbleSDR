@@ -1,6 +1,6 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-#include "SignalSpectrum.h"
+#include "signalspectrum.h"
 #include "firfilter.h"
 
 SignalSpectrum::SignalSpectrum(int sr, int ns, Settings *set):

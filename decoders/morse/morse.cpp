@@ -2,7 +2,7 @@
 #include "QPainter"
 #include "QDebug"
 #include "QEvent"
-#include "Receiver.h"
+#include "receiver.h"
 #include "testbench.h"
 
 /*

@@ -4,7 +4,7 @@
 #include "gpl.h"
 #include "global.h"
 #include <QtCore>
-#include "receiverWidget.h"
+#include "receiverwidget.h"
 #include "demod.h"
 
 /*

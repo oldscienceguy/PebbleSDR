@@ -1,7 +1,7 @@
 #include "rtl2832.h"
-#include "Demod.h"
-#include "Settings.h"
-#include "Receiver.h"
+#include "demod.h"
+#include "settings.h"
+#include "receiver.h"
 
 /*
   Derived From and credit to:

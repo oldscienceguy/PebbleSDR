@@ -1,9 +1,9 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-#include "SoftRock.h"
+#include "softrock.h"
 #include <qmessagebox.h>
-#include "Settings.h"
-#include "Demod.h"
+#include "settings.h"
+#include "demod.h"
 #define _USE_MATH_DEFINES
 #include "math.h" //just for modf()!  replace
 

@@ -5,7 +5,7 @@
 #include <QCoreApplication>
 #include <QFile>
 #include <QDebug>
-#include "Demod.h"
+#include "demod.h"
 #include "receiver.h"
 
 HPSDR::HPSDR(Receiver *_receiver,SDRDEVICE dev,Settings *_settings): SDR(_receiver, dev,_settings)

@@ -1,6 +1,6 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-#include "SDR_IQ.h"
+#include "sdr_iq.h"
 #include "settings.h"
 #include "receiver.h"
 #include "qmessagebox.h"

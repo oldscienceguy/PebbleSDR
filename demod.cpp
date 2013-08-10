@@ -1,9 +1,9 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-#include "Demod.h"
+#include "demod.h"
 #include <string.h>
 #include "global.h"
-#include "Receiver.h"
+#include "receiver.h"
 
 const float Demod::usDeemphasisTime = 75E-6; //Use for US & Korea FM
 const float Demod::intlDeemphasisTime = 50E-6;  //Use for international FM

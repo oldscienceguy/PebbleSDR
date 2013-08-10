@@ -2,7 +2,7 @@
 #define IQBALANCE_H
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 
-#include "SignalProcessing.h"
+#include "signalprocessing.h"
 
 class IQBalance : public SignalProcessing
 {

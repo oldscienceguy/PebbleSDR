@@ -6,7 +6,7 @@
 #include <QMainWindow>
 #include <QtCore/QVariant>
 #include <QMutex>
-#include "Devices/softrock.h"
+#include "devices/softrock.h"
 #include "audio.h"
 #include "soundcard.h"
 #include "cpx.h"
@@ -25,7 +25,7 @@
 #include "firfilter.h"
 #include "agc.h"
 #include "iqbalance.h"
-#include "Decoders/morse/morse.h"
+#include "decoders/morse/morse.h"
 #include "filters/fir.h"
 #include "filters/fractresampler.h"
 #include "devices/wavfile.h"

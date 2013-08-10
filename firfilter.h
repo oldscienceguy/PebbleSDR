@@ -4,7 +4,7 @@
 #include "gpl.h"
 #include "signalprocessing.h"
 #include <QMutex>
-#include "DSP/fftw.h"
+#include "dsp/fftw.h"
 
 class FIRFilter :
 	public SignalProcessing

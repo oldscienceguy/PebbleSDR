@@ -1,6 +1,6 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-#include "NoiseBlanker.h"
+#include "noiseblanker.h"
 
 NoiseBlanker::NoiseBlanker(int r, int n):SignalProcessing(r,n)
 {

@@ -1,9 +1,9 @@
 #ifndef SDRFILE_H
 #define SDRFILE_H
 
-#include "SDR.h"
+#include "sdr.h"
 #include "QFile"
-#include "NCO.h"
+#include "nco.h"
 #include "wavfile.h"
 
 

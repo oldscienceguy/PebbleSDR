@@ -1,6 +1,6 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-#include "NCO.h"
+#include "nco.h"
 
 NCO::NCO(int sr, int ns) :
 	SignalProcessing(sr,ns)

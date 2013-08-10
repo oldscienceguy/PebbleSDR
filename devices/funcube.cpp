@@ -6,8 +6,8 @@
 #include "qmessagebox.h"
 #include "qcoreapplication.h"
 #include "funcube.h"
-#include "Demod.h"
-#include "Settings.h"
+#include "demod.h"
+#include "settings.h"
 
 // * = FCD PLUS
 #define FCD_HID_CMD_QUERY              1 // * Returns string with "FCDAPP version"

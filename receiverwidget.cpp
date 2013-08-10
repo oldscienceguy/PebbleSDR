@@ -9,7 +9,7 @@
 #include <QKeyEvent>
 #include <QMessageBox>
 #include <QLCDNumber>
-#include "ReceiverWidget.h"
+#include "receiverwidget.h"
 #include "receiver.h"
 #include "global.h"
 

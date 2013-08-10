@@ -1,7 +1,7 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include "string.h"
-#include "Butterworth.h"
+#include "butterworth.h"
 
 	//Predefined filters
 Butterworth::Butterworth(int p,int z,int fc,int fc2,int fs,float g,int t[],float y[])

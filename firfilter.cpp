@@ -1,6 +1,6 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-#include "FIRFilter.h"
+#include "firfilter.h"
 
 /*
 The best explanation I found for how FIR filters work was "Digital Filters, 3rd Edition" by R.W. Hamming

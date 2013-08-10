@@ -5,7 +5,7 @@
 #include "global.h"
 #include <QSettings>
 #include <QSemaphore>
-#include "SDR.h"
+#include "sdr.h"
 #include "ui/ui_hpsdroptions.h"
 
 

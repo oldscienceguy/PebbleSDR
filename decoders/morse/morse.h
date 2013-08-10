@@ -1,7 +1,7 @@
 #ifndef MORSE_H
 #define MORSE_H
 
-#include "SignalProcessing.h"
+#include "signalprocessing.h"
 #include "goertzel.h"
 #include "qframe"
 #include "QTextEdit"
@@ -9,7 +9,7 @@
 #include "../fldigifilters.h"
 
 #include "demod/downconvert.h"
-#include "Demod.h"
+#include "demod.h"
 #include <QMutex>
 
 class Receiver;

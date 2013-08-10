@@ -1,10 +1,10 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include "global.h"
-#include "Settings.h"
+#include "settings.h"
 #include "soundcard.h"
 #include "demod.h" //For DEMODMODE
-#include "Receiver.h"
+#include "receiver.h"
 #include "audioqt.h"
 
 Settings::Settings(void)

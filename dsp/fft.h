@@ -2,7 +2,7 @@
 #define FFT_H
 #include "global.h"
 #include "cpx.h"
-#include "SignalProcessing.h"
+#include "signalprocessing.h"
 #include "QMutex"
 
 

@@ -1,7 +1,7 @@
 #include "sdr_ip.h"
-#include "Demod.h"
-#include "Settings.h"
-#include "Receiver.h"
+#include "demod.h"
+#include "settings.h"
+#include "receiver.h"
 
 /*
  * SDR_IP inherits SDR and is the main Pebble device class

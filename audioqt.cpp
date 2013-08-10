@@ -2,8 +2,8 @@
 #include "gpl.h"
 #include "audioqt.h"
 #include <QDebug>
-#include "Settings.h"
-#include "Receiver.h"
+#include "settings.h"
+#include "receiver.h"
 
 AudioQT::AudioQT(Receiver *r,int fpb, Settings *s):Audio()
 {

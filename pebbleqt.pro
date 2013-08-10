@@ -128,7 +128,7 @@ macx {
 
 	#Mac only source files
 	#HIDAPI
-	SOURCES += Devices/hid-mac.c
+	SOURCES += devices/hid-mac.c
 
 	#INSTALLS is called when we manually make -install or add it to the Qt project build steps
 	pebbleData.files = eibireadme.txt eibi.csv bands.csv memory.csv help.htm gpl.h releasenotes.txt hpsdr/ozyfw-sdr1k.hex hpsdr/ozy_janus.rbf
@@ -217,7 +217,7 @@ win32 {
 	LIBS += C:/Program Files/Microsoft SDKs/Windows/v6.0A/Lib/setupapi.lib
 
 	#Win only source files
-	SOURCES += Devices/hid-win.c
+	SOURCES += devices/hid-win.c
 
 	CONFIG(release, debug|release) {
 		DESTDIR = ../WinRelease

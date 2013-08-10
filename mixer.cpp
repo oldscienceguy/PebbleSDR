@@ -1,6 +1,6 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-#include "Mixer.h"
+#include "mixer.h"
 
 Mixer::Mixer(int sr, int ns):SignalProcessing(sr,ns)
 {
@@ -24,7 +24,7 @@ void Mixer::SetFrequency(double f)
 /*
 From Rick Muething, KN6KB DCC 2010 DSP course and texts noted in GPL.h 
 For j = 0 to Number of Samples -1
-	USB Out I (j) = NCOCos(j) * I(j) –NCOSine(j) * Q(j)
+    USB Out I (j) = NCOCos(j) * I(j) NCOSine(j) * Q(j)
 	LSB Out Q(j) = NCOSin(j) * I(j) + NCOCos(j) * Q(j)
 Next j
 */

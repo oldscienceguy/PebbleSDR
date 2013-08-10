@@ -1,6 +1,6 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-#include "Cpx.h"
+#include "cpx.h"
 #include <vector>
 #include "../fftw3/fftw3.h"
 
