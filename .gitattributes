@@ -75,6 +75,9 @@ hpsdr/ozy_janus_v2.5.rbf -text
 /noiseblanker.h -text
 /noisefilter.cpp -text
 /noisefilter.h -text
+pebble[!!-~]icon.sketch/Data -text
+pebble[!!-~]icon.sketch/QuickLook/Preview.png -text
+pebble[!!-~]icon.sketch/QuickLook/Thumbnail.png -text
 /pebble.qss -text
 /pebbleii.cpp -text
 /pebbleii.h -text
