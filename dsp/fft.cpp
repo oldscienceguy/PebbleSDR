@@ -5,8 +5,10 @@ FFT::FFT() :
 {
     maxFFTSize = 65536;
     minFFTSize = 512;
-    maxDb = 0.0;			//specifies total range of FFT
-    minDb = -220.0;
+    //maxDb = 0.0;			//specifies total range of FFT
+    maxDb = global->maxDb;
+    //minDb = -220.0;
+    minDb = global->minDb;
     if (useIntegerFFT) {
         ampMax = 32767.0;	//maximum sin wave Pk for 16 bit input data
         overLimit = 32000.0;	//limit for detecting over ranging inputs

@@ -23,8 +23,9 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 
     connect(ui.displayBox,SIGNAL(currentIndexChanged(int)),this,SLOT(displayChanged(int)));
 
+    //Starting plot range
     plotMaxDb = -50; //!! Same as CuteSDR Save in settings
-    plotMinDb = -120;
+    plotMinDb = global->minDb;
     ui.maxDbBox->setMinimum(plotMinDb);
     ui.maxDbBox->setMaximum(-10);
     ui.maxDbBox->setValue(plotMaxDb);
@@ -622,8 +623,8 @@ void SpectrumWidget::newFftData()
     endFreq = endFreq * zoom;
 
     //SpectrumGain of 1
-    qint16 maxDbDisplayed = 0;
-    qint16 minDbDisplayed = -140;
+    qint16 maxDbDisplayed = global->maxDb;
+    qint16 minDbDisplayed = global->minDb;
     //Apply offset and gain options from UI
     minDbDisplayed = plotMinDb; //minDbDisplayed - spectrumOffset;
     maxDbDisplayed = plotMaxDb; //minDbDisplayed - (minDbDisplayed / spectrumGain);

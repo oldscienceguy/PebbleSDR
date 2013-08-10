@@ -2,7 +2,7 @@
 #include "gpl.h"
 #include "pebbleii.h"
 #include "global.h"
-
+#include "testbench.h"
 Global *global;
 
 //Qt::FramelessWindowHint is interesting, but requires us to create our own close, resize, etc
@@ -10,6 +10,11 @@ PebbleII::PebbleII(QWidget *parent, Qt::WindowFlags flags)
 : QMainWindow(parent,flags)
 {
     global = new Global(); //We need globals in constructors, so must be first thing we do
+    //Setup test bench here, not in global constructor or we get circular use with global constants
+    global->testBench = new CTestBench();
+    global->testBench->Init();
+
+
     ui.setupUi(this);
 	receiver = new Receiver(ui.receiverUI, this);
     global->receiver = receiver; //Many classes need access

@@ -40,18 +40,18 @@ void SMeterWidget::SetSignalSpectrum(SignalSpectrum *s)
     //signalSpectrum = s;
     if (s!=NULL) {
         connect(s,SIGNAL(newFftData()),this,SLOT(updateMeter()));
-        ui.barGraph->setMin(-120);
+        ui.barGraph->setMin(global->minDb);
         ui.barGraph->setMax(0);
-        ui.barGraph->setValue(-120);
+        ui.barGraph->setValue(global->minDb);
         ui.barGraph->setColor(Qt::cyan); //!!Make multi color? or set threshold to show red > s9
         QStringList labels;
         //S1 is left most and not labeled
         labels.append("S3");
-        labels.append("S6");
+        labels.append("S5");
+        labels.append("S7"); //-85db
         labels.append("S9");
-        labels.append("+15");
-        labels.append("+30");
-        labels.append("+45");
+        labels.append("+20");
+        labels.append("+40");
         ui.barGraph->setLabels(labels);
     }
 }
