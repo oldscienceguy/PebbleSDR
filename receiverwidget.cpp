@@ -488,7 +488,7 @@ void ReceiverWidget::powerToggled(bool on)
         ui.bandType->setCurrentIndex(Band::HAM);
 
 		ui.spectrumWidget->Run(true);
-		ui.sMeterWidget->Run(true);
+        ui.sMeterWidget->start();
 		setLoMode(true);
 
 	} else {
@@ -509,7 +509,7 @@ void ReceiverWidget::powerToggled(bool on)
         presets = NULL;
 
 		ui.spectrumWidget->Run(false);
-		ui.sMeterWidget->Run(false);
+        ui.sMeterWidget->stop();
 		//We have to make sure that widgets are stopped before cleaning up supporting objects
 		receiver->Power(false);
 

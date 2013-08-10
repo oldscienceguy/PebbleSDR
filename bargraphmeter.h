@@ -18,9 +18,9 @@ public:
     explicit BargraphMeter(QWidget *parent = 0);
     ~BargraphMeter();
     
-    void setMin(quint16 _min);
-    void setMax(quint16 _max);
-    void setValue(quint16 _value);
+    void setMin(qint16 _min);
+    void setMax(qint16 _max);
+    void setValue(qint16 _value);
     void start();
     void stop();
 
@@ -32,14 +32,22 @@ public slots:
 signals:
     void newData();
 
-private:
+protected:
     Ui::BargraphMeter *ui;
     bool running;
-    quint16 minLevel;
-    quint16 maxLevel;
-    quint16 currentLevel;
+    //scale can be neg and pos
+    qint16 minLevel;
+    qint16 maxLevel;
+    qint16 currentLevel;
     QColor backgroundColor;
     QColor barColor;
+
+    bool showLabelArea;
+
+    //Switching to pixmaps
+    QPixmap plotArea;
+    QPixmap plotOverlay;
+    QPixmap plotLabel;
 
 
 };

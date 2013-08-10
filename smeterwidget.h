@@ -10,6 +10,7 @@
 #include "ui/ui_smeterwidget.h"
 #include "signalstrength.h"
 #include "signalspectrum.h"
+#include "bargraphmeter.h"
 
 class SMeterWidgetThread;
 
@@ -24,14 +25,14 @@ public:
 	
 	void setSignalStrength (SignalStrength *ss);
 
-	void Run(bool r);
-
     void SetSignalSpectrum(SignalSpectrum *s);
+    void start();
+    void stop();
+
 private:
 	Ui::SMeterWidgetClass ui;
 	SignalStrength *signalStrength; //Where we get data from
-	void paintEvent(QPaintEvent *e);
-	bool isRunning;
+    //void paintEvent(QPaintEvent *e);
     int src; //Inst, Average, External
 
 	private slots:

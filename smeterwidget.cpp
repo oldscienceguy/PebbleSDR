@@ -4,11 +4,9 @@
 #include <QPainter>
 #include <QStylePainter>
 
-SMeterWidget::SMeterWidget(QWidget *parent)
-	: QFrame(parent)
+SMeterWidget::SMeterWidget(QWidget *parent) :QFrame(parent)
 {
 	ui.setupUi(this);
-	isRunning = false;
 	signalStrength = NULL;
 
 	//Trying different fixes to prevent background color from hiding our painter
@@ -26,6 +24,10 @@ SMeterWidget::SMeterWidget(QWidget *parent)
 
     src = 0;
     connect(ui.sourceBox,SIGNAL(currentIndexChanged(QString)),this,SLOT(srcSelectionChanged(QString)));
+
+    ui.barGraph->setMin(-120);
+    ui.barGraph->setMax(0);
+    ui.barGraph->setValue(-120);
 
 
 }
@@ -54,20 +56,38 @@ void SMeterWidget::SetSignalSpectrum(SignalSpectrum *s)
     }
 }
 
+void SMeterWidget::start()
+{
+    ui.barGraph->start();
+}
+
+void SMeterWidget::stop()
+{
+    ui.barGraph->stop();
+}
+
 void SMeterWidget::setSignalStrength(SignalStrength *ss)
 {
 	signalStrength = ss;
 }
-void SMeterWidget::Run(bool r)
-{
-	isRunning = r;
-    updateMeter();
-}
+
 void SMeterWidget::updateMeter()
 {
-    update();
+    float instFValue;
+    if (signalStrength != NULL) {
+        if (src == 0)
+            instFValue = signalStrength->instFValue();
+        else if (src == 1)
+            instFValue = signalStrength->avgFValue();
+        else
+            instFValue = signalStrength->extFValue();
+    }
+    else
+        instFValue = -127;
+    ui.barGraph->setValue(instFValue);
 }
 
+#if 0
 void SMeterWidget::paintEvent(QPaintEvent *e)
 {
 	//Don't need painter.begin and painter.end with this constructor
@@ -104,7 +124,7 @@ void SMeterWidget::paintEvent(QPaintEvent *e)
 		instFValue = -127;
 	//gcc int/int = int regardless of var type.
 	float percent = abs (instFValue + 127) / 114.0;
-	if (!isRunning)
+    if (!running)
 		percent = 0;
 
 	int plotX = percent * pa.width();
@@ -133,6 +153,6 @@ void SMeterWidget::paintEvent(QPaintEvent *e)
 
 } 
 
-
+#endif
 
 
