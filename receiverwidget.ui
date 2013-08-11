@@ -2171,6 +2171,21 @@
        </widget>
       </item>
       <item>
+       <widget class="QComboBox" name="agcBox">
+        <property name="maximumSize">
+         <size>
+          <width>60</width>
+          <height>18</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>8</pointsize>
+         </font>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QSlider" name="agcSlider">
         <property name="maximumSize">
          <size>
@@ -2355,33 +2370,6 @@
          </size>
         </property>
        </spacer>
-      </item>
-      <item>
-       <widget class="QComboBox" name="agcBox">
-        <property name="maximumSize">
-         <size>
-          <width>60</width>
-          <height>18</height>
-         </size>
-        </property>
-        <property name="font">
-         <font>
-          <pointsize>8</pointsize>
-         </font>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="label_2">
-        <property name="font">
-         <font>
-          <pointsize>8</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>AGC</string>
-        </property>
-       </widget>
       </item>
       <item>
        <widget class="QRadioButton" name="lpfButton">

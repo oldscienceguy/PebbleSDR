@@ -39,9 +39,9 @@ public:
 	double GetFrequency();
 	void SetMode(DEMODMODE m); 
     void SetDataMode(int _dataMode);
-	void SetGain(int g, int min = 10, int max = 100);
-	void SetAgcGainTop(int g);
-	void SetSquelch(int s);
+    void SetDisplayedGain(int g, int min = 10, int max = 100);
+    void SetDisplayedAgcThreshold(int g);
+    void SetDisplayedSquelch(int s);
 	DEMODMODE GetMode();
 	//Set tuner limits
 	void SetLimits(double highF, double lowF, int highM, int lowM);

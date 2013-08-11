@@ -48,7 +48,7 @@ public:
 	double SetFrequency(double fRequested, double fCurrent);
 	void SetMode(DEMODMODE m);
 	void SetGain(int g);
-	void SetAgcGainTop(int g);
+	void SetAgcThreshold(int g);
 	void SetSquelch(int s);
 	void SetMixer(int f);
 	void SetFilter(int lo, int hi);

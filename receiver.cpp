@@ -204,12 +204,13 @@ bool Receiver::On()
 	bpFilter->setEnabled(true);
 	
     agc = new AGC(downSample1Rate, downSample1Frames);
+    SetAgcMode(AGC::FAST); //Default mode
 
 	//Limit tuning range and mixer range
 	//Todo: Get from SDR and enforce in UI
 	receiverWidget->SetLimits(sdr->GetHighLimit(),sdr->GetLowLimit(),sampleRate/2,-sampleRate/2);
-	receiverWidget->SetGain(30,1,100);  //20%
-	receiverWidget->SetSquelch(-100);
+    receiverWidget->SetDisplayedGain(30,1,100);  //20%
+    receiverWidget->SetDisplayedSquelch(global->minDb);
 	
     if (sdr->GetDevice() == SDR::FILE || sdr->startup == SDR::DEFAULTFREQ) {
         frequency=sdr->GetStartupFrequency();
@@ -481,11 +482,11 @@ void Receiver::SetAgcMode(AGC::AGCMODE m)
 {
 	agc->setAgcMode(m);
 	//AGC sets a default gain with mode, update widget
-	receiverWidget->SetAgcGainTop(agc->getAgcGainTop());
+    receiverWidget->SetDisplayedAgcThreshold(agc->getAgcThreshold());
 }
-void Receiver::SetAgcGainTop(int g)
+void Receiver::SetAgcThreshold(int g)
 {
-	agc->setAgcGainTop(g);
+    agc->setAgcThreshold(g);
 }
 
 void Receiver::SetLpfEnabled(bool b)

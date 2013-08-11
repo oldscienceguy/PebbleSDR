@@ -36,7 +36,7 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	ui.modeBox->addItems(modes);
 
 	QStringList agcModes;
-	agcModes << "OFF" << "SLOW" << "MED" << "FAST" << "LONG";
+    agcModes << "FAST" << "MED" << "SLOW" << "LONG" << "OFF";
 	ui.agcBox->addItems(agcModes);
 
 #if 0
@@ -92,6 +92,11 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     connect(ui.bandCombo,SIGNAL(currentIndexChanged(int)),this,SLOT(bandChanged(int)));
     connect(ui.stationCombo,SIGNAL(currentIndexChanged(int)),this,SLOT(stationChanged(int)));
 
+    ui.squelchSlider->setMinimum(global->minDb);
+    ui.squelchSlider->setMaximum(global->maxDb);
+    ui.squelchSlider->setValue(global->minDb);
+    connect(ui.squelchSlider,SIGNAL(valueChanged(int)),this,SLOT(squelchSliderChanged(int)));
+
     currentBandIndex = -1;
 
 	connect(ui.loButton,SIGNAL(toggled(bool)),this,SLOT(setLoMode(bool)));
@@ -112,7 +117,6 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	connect(ui.filterBox,SIGNAL(currentIndexChanged(QString)),this,SLOT(filterSelectionChanged(QString)));
 	connect(ui.gainSlider,SIGNAL(valueChanged(int)),this,SLOT(gainSliderChanged(int)));
 	connect(ui.agcSlider,SIGNAL(valueChanged(int)),this,SLOT(agcSliderChanged(int)));
-	connect(ui.squelchSlider,SIGNAL(valueChanged(int)),this,SLOT(squelchSliderChanged(int)));
 	connect(ui.spectrumWidget,SIGNAL(mixerChanged(int)),this,SLOT(mixerChanged(int)));
     connect(ui.spectrumWidget,SIGNAL(mixerChanged(int,bool)),this,SLOT(mixerChanged(int,bool)));
     connect(ui.addMemoryButton,SIGNAL(clicked()),this,SLOT(addMemoryButtonClicked()));
@@ -469,6 +473,8 @@ void ReceiverWidget::powerToggled(bool on)
 			return; //Error setting up receiver
 		}
 
+        //Set squelch to default
+
         //Don't allow SDR changes when receiver is on
         ui.sdrSelector->setEnabled(false);
 
@@ -794,19 +800,19 @@ void ReceiverWidget::modeSelectionChanged(QString m)
 	ui.filterBox->blockSignals(false);
 	this->filterSelectionChanged(ui.filterBox->currentText());
 }
-void ReceiverWidget::SetAgcGainTop(int g)
+void ReceiverWidget::SetDisplayedAgcThreshold(int g)
 {
 	ui.agcSlider->setValue(g);
 }
 //Allows receiver to set gain and range
-void ReceiverWidget::SetGain(int g, int min, int max)
+void ReceiverWidget::SetDisplayedGain(int g, int min, int max)
 {
 	ui.gainSlider->setMinimum(min);
 	ui.gainSlider->setMaximum(max);
 	//Set gain slider and let signals do the rest
 	ui.gainSlider->setValue(g);
 }
-void ReceiverWidget::SetSquelch(int s)
+void ReceiverWidget::SetDisplayedSquelch(int s)
 {
 	ui.squelchSlider->setValue(s);
 	squelchSliderChanged(s);
@@ -815,7 +821,7 @@ void ReceiverWidget::agcSliderChanged(int g)
 {
     if (!powerOn)
         return;
-	receiver->SetAgcGainTop(g);
+    receiver->SetAgcThreshold(g);
 }
 
 void ReceiverWidget::gainSliderChanged(int g) 
