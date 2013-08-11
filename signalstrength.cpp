@@ -68,7 +68,7 @@ for(int i=0; i<length; i++)
 
 CPX * SignalStrength::ProcessBlock(CPX *in, int squelch)
 {
-	//Squelch values are -100db to 0db
+    //Squelch values are global->mindB to global->maxdB
 
 	//Same as TotalPower, except here we modify out if below squelch
     float tmp = 0.0;
@@ -87,7 +87,7 @@ CPX * SignalStrength::ProcessBlock(CPX *in, int squelch)
 
 		//we clearing whole buffer so audio is either on or off
 		//Sample by sample gives us gradual threshold, which sounds strange
-		if (avgValue < squelch) {
+        if (avgValue < squelch) {
 		//if (watts < squelchWatts) {
 			out[i].re = 0;
 			out[i].im = 0;
