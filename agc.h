@@ -7,17 +7,21 @@ class AGC :
 	public SignalProcessing
 {
 public:
-	enum AGCMODE {OFF,SLOW,MED,FAST,LONG};
+    //Keep in sync with order of selection box in receiverWidget
+    enum AGCMODE {FAST, MED, SLOW, LONG, OFF};
 
 	AGC(int sampleRate, int nSamples);
 	~AGC(void);
 	void setAgcMode(AGCMODE m);
-	void setAgcGainTop(int g);
-	int getAgcGainTop();
+    void setAgcThreshold(int g);
+    int getAgcThreshold();
 
 	CPX * ProcessBlock(CPX *in);
-	CPX * ProcessBlock2(CPX *in);
+    //CPX * ProcessBlock2(CPX *in);
 
+    //CPX *ProcessBlock3(CPX *in); //Testing cuteSDR algorithm
+
+    void SetParameters(bool UseHang, int Threshold, int ManualGain, int SlopeFactor, int Decay);
 private:
 	AGCMODE agcMode;
 	DelayLine *agcDelay;
@@ -57,6 +61,50 @@ private:
 
 	int delayTime;
 	int fastDelayTime;
+
+    //CuteSDR implementation
+    int thresholdFromUi;
+
+#define MAX_DELAY_BUF 2048
+
+    //internal copy of AGC settings parameters
+    bool m_UseHang;
+    int m_Threshold;
+    int m_ManualGain;
+    int m_Slope;
+    int m_Decay;
+    double m_SampleRate;
+
+    double m_SlopeFactor;
+    double m_ManualAgcGain;
+
+    double m_DecayAve;
+    double m_AttackAve;
+
+    double m_AttackRiseAlpha;
+    double m_AttackFallAlpha;
+    double m_DecayRiseAlpha;
+    double m_DecayFallAlpha;
+
+    double m_FixedGain;
+    double m_Knee;
+    double m_GainSlope;
+    double m_Peak;
+
+    int m_SigDelayPtr;
+    int m_MagBufPos;
+    int m_DelaySize;
+    int m_DelaySamples;
+    int m_WindowSamples;
+    int m_HangTime;
+    int m_HangTimer;
+
+    QMutex m_Mutex;		//for keeping threads from stomping on each other
+    CPX m_SigDelayBuf[MAX_DELAY_BUF];
+    double m_MagBuf[MAX_DELAY_BUF];
+
+
+
 
 
 	//Utility function, used in many calculations exp(x) = e^x
