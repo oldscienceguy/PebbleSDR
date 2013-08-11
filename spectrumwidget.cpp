@@ -798,7 +798,8 @@ void SpectrumWidget::DrawOverlay()
     //zoom is fractional
     //100,000 sps * 1.00 / 10 = 10,000 hz per division
     //100,000 sps * 0.10 / 10 = 1000 hz per division
-    quint16 hzPerhDiv = sampleRate * zoom / horizDivs;
+    //Bug with 16bit at 2msps rate
+    quint32 hzPerhDiv = sampleRate * zoom / horizDivs;
 
     //horizDivs must be even number so middle is 0
     //So for 10 divs we start out with [0] at low and [9] at high
