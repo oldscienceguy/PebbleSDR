@@ -116,8 +116,9 @@ void BargraphMeter::drawLabels()
     int x;
     int ctr;
     //don't draw at x==0, first tickInc on
-    for (int i=1; i<=numTicks; i++) {
-        x = i * tickInc;
+    for (int i=0; i<numTicks; i++) {
+        x = (i+1) * tickInc; //3px inc at 2 (0,1,2) 5(3,4,5) etc
+        x -= 1; //0 relative
         //Draw tick from top to 25%, leaving middle clear
         //painter.drawLine(i,0,i,tickPix);
         painter.drawLine(x,0,x,2); //Draw up into plot area
@@ -125,9 +126,9 @@ void BargraphMeter::drawLabels()
         //painter.drawLine(i,plotHeight,i,plotHeight - tickPix);
         //Draw label text if specified
         //adjust x to account for width so text is centered. will depend on hpix per char
-        if (i-1 < labels.size()) {
-            ctr = x - (labels[i-1].length() * metrics.averageCharWidth() / 2);  //Offset left 1/2 label pix width
-            painter.drawText(ctr, plotHeight-2,labels[i-1]);
+        if (i < labels.size()) {
+            ctr = x - (labels[i].length() * metrics.averageCharWidth() / 2);  //Offset left 1/2 label pix width
+            painter.drawText(ctr, plotHeight-2,labels[i]);
         }
 
     }
@@ -148,17 +149,18 @@ void BargraphMeter::refreshMeter()
     //Scale from min to max
     //This assumes bargraph has more pixels than range between min and max
     //If rect is 100px and max-min = 10, then scale is 10px for every value
+    int dbRange = maxLevel - minLevel;
     int disp = currentLevel - minLevel; //zero base
     disp = disp < 0 ? 0 : disp; //Never let it go below zero
-    float scale = (float)plotArea.width() / (float) (maxLevel - minLevel);
+    float scale = (float)disp / (float) (dbRange);
 
     //Left to Right orientation
     QRect bar = plotArea.rect();
 
-    bar.setRight(disp * scale);
+    bar.setRight(plotArea.width() * scale);
     painter.drawRect(bar);
     //pattern brush lets overlay show through, solid will cover it up
-    painter.fillRect(bar, QBrush(barColor,Qt::Dense4Pattern));
+    painter.fillRect(bar, QBrush(barColor,Qt::SolidPattern));
 
     update();
 
