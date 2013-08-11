@@ -55,8 +55,8 @@ public:
 	~SignalProcessing(void);
 
 	//Useful conversion functions
-    static inline double cpxToWatts(CPX cx) //Returns power (watts) for sample c
-		{return (cx.re * cx.re + cx.im * cx.im)/2;}
+    static inline double cpxToWatts(CPX cx); //Returns power (watts) for sample c
+
 	//Calculates the total power of all samples in buffer
     static double totalPower(CPX *in, int bsize);
 

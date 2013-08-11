@@ -17,6 +17,8 @@ SignalProcessing::~SignalProcessing(void)
 		CPXBuf::free(out);
 }
 
+
+
 //Returns the total power in the sample buffer, using Lynn formula
 double SignalProcessing::totalPower(CPX *in, int bsize)
 {
@@ -28,6 +30,14 @@ double SignalProcessing::totalPower(CPX *in, int bsize)
     }
 	return tmp;
 }
+
+//8/13 verified that powerToDb(cpxToWatts(in[i])) yields correct results compared to other SDR products
+double SignalProcessing::cpxToWatts(CPX cx)
+{
+    //Power, same as cpx.sqrMax()
+    return (cx.re * cx.re + cx.im * cx.im);
+}
+
 /*
 db tutorial from Steven Smith
 'bel' means power has changed by factor of 10
