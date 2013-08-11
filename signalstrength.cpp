@@ -5,13 +5,14 @@
 SignalStrength::SignalStrength(int sr, int ns):
 	SignalProcessing(sr,ns)
 {
-	instValue = 27.0; //If correction = -40, the 27 = -13 or full scale
-	avgValue = -127.0;
-    extValue = -127.0;
+    instValue = global->minDb;
+    avgValue = global->minDb;
+    extValue = global->minDb;
 	//Todo: This should be adj per receiver and user should be able to calibrate with known signal
 	//SRV9 -40
 	//SREnsemble 
-	correction = -40.0;  //Adj to -127db to -13db
+    //Set this using testbench signal to fixed db output and make sure instDb is same
+    correction = 0.0;
 
 }
 
@@ -31,19 +32,59 @@ ProcessBlock is called after we've mixed and filtered our samples, so *in contai
 Compute the total power of all the samples, convert to dB save
 Background thread will pick up instValue or avgValue and display
 */
+
+#if 0
+if(SampleRate != m_SampleRate)
+{	//need to recalculate any values dependent on sample rate
+    m_SampleRate = SampleRate;
+    m_AttackAlpha = (1.0-exp(-1.0/(m_SampleRate*ATTACK_TIMECONST)) );
+    m_DecayAlpha = (1.0-exp(-1.0/(m_SampleRate*DECAY_TIMECONST)) );
+//qDebug()<<"SMeter vals "<<m_AttackAlpha << m_DecayAlpha << SampleRate;
+}
+for(int i=0; i<length; i++)
+{
+    //calculate instantaeous power magnitude of pInData which is I*I + Q*Q
+    TYPECPX in = pInData[i];
+    //convert I/Q magnitude to dB power
+    TYPEREAL mag = 10.0*log10((in.re*in.re+in.im*in.im)/ MAX_PWR + 1e-50);
+    //calculate attack and decay average
+    m_AttackAve = (1.0-m_AttackAlpha)*m_AttackAve + m_AttackAlpha*mag;
+    m_DecayAve = (1.0-m_DecayAlpha)*m_DecayAve + m_DecayAlpha*mag;
+    if(m_AttackAve>m_DecayAve)
+    {	//if attack average is greater then must be increasing signal
+        m_AverageMag = m_AttackAve;	//use attack average value
+        m_DecayAve = m_AttackAve;	//force decay average to attack average
+    }
+    else
+    {	//is decreasing strength so use decay average
+        m_AverageMag = m_DecayAve;	//use decay average value
+    }
+    if(mag > m_PeakMag)
+        m_PeakMag = mag;		//save new peak (reset when read )
+}
+
+
+#endif
+
 CPX * SignalStrength::ProcessBlock(CPX *in, int squelch)
 {
 	//Squelch values are -100db to 0db
 
 	//Same as TotalPower, except here we modify out if below squelch
     float tmp = 0.0;
-	float watts = 0.0;
+    float pwr = 0.0;
+    float db = 0.0;
 	//double squelchWatts = dBm_2_Watts(squelch);
 	//sum(re^2 + im^2)
     for (int i = 0; i < numSamples; i++) {
 		//Total power of this sample pair
-        watts = cpxToWatts(in[i]);
-		tmp += watts;
+        pwr = cpxToWatts(in[i]); //Power in watts
+        db = powerToDb(pwr); //Watts to db
+        //Verified 8/13 comparing testbench gen output at all db levels
+        instValue = db;
+        //Weighted average 90/10
+        avgValue = 0.99 * avgValue + 0.01 * instValue;
+
 		//we clearing whole buffer so audio is either on or off
 		//Sample by sample gives us gradual threshold, which sounds strange
 		if (avgValue < squelch) {
@@ -55,38 +96,31 @@ CPX * SignalStrength::ProcessBlock(CPX *in, int squelch)
 		}
     }
 	
-    instValue = powerToDb(tmp);
-
-	//Weighted average 90/10
-    avgValue = 0.9 * avgValue + 0.1 * instValue;
 	return out;
 }
 float SignalStrength::instFValue() {
     float temp = instValue + correction;
-    if (temp > -13)
-        return -13.0;
-    else
-        return temp;
+    temp = temp > global->maxDb ? global->maxDb : temp;
+    temp = temp < global->minDb ? global->minDb : temp;
+    return temp;
 }
 
 float SignalStrength::avgFValue() {
     float temp = avgValue + correction;
-    if (temp > -13)
-        return -13.0;
-    else
-        return temp;
+    temp = temp > global->maxDb ? global->maxDb : temp;
+    temp = temp < global->minDb ? global->minDb : temp;
+    return temp;
 }
 
+//Used for testing with other values
 float SignalStrength::extFValue(){
-    if (extValue > -18)
-        return -18.0;
-    else
-        return extValue; //with or Without correction?
+    return extValue;
 }
 void SignalStrength::setExtValue(float v)
 {
     extValue = v;
 }
+
 char SignalStrength::instCValue() {
     return (char)(instValue + correction + (float)SPECDBMOFFSET);
 }
