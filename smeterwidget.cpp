@@ -40,18 +40,34 @@ void SMeterWidget::SetSignalSpectrum(SignalSpectrum *s)
     //signalSpectrum = s;
     if (s!=NULL) {
         connect(s,SIGNAL(newFftData()),this,SLOT(updateMeter()));
-        ui.barGraph->setMin(global->minDb);
-        ui.barGraph->setMax(0);
+        //We're going to adj max so we get even dist across scale
+        //If we assume 18db per tic (3 s-units), then range should be evenly divisible by 18
+        int dbRange = global->maxDb - global->minDb;
+        dbRange = (dbRange / 18) * 18; //Now even multiple
+        ui.barGraph->setMax(global->minDb + dbRange);
+        //Scale starts at S1, not S0 so add 6db to min
+        ui.barGraph->setMin(global->minDb - 6);
         ui.barGraph->setValue(global->minDb);
         ui.barGraph->setColor(Qt::cyan); //!!Make multi color? or set threshold to show red > s9
         QStringList labels;
         //S1 is left most and not labeled
-        labels.append("S3");
-        labels.append("S5");
-        labels.append("S7"); //-85db
-        labels.append("S9");
-        labels.append("+20");
-        labels.append("+40");
+        //+60 is right most and not labeled
+        //Range is -120 to -10
+        //So middle must equate to -55 to show correct values unless we adjust
+        //6db per inc
+        //labels.append("S1"); //-121db
+        //labels.append("S2"); //-115db
+        labels.append("S3"); //-109db
+        //labels.append("S4"); //-103db
+        //labels.append("S5"); //-97db
+        labels.append("S6"); //-91db
+        //labels.append("S7"); //-85db
+        //labels.append("S8"); //-79db
+        labels.append("S9"); //-73db
+        labels.append("+20"); // -55 (-53 to be exact)
+        labels.append("+40"); // -37 (-33 to be exact)
+        //labels.append("+60"); // -19db (-13 to be exact
+
         ui.barGraph->setLabels(labels);
     }
 }
