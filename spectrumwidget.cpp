@@ -615,6 +615,9 @@ void SpectrumWidget::zoomChanged(int item)
 //New Fft data is ready for display, update screen if last update is finished
 void SpectrumWidget::newFftData()
 {
+    if (!isRunning)
+        return;
+
     qint32 fftMap[2048]; //!!Fix to dynamic max screen width
 
     double startFreq =  - (sampleRate/2); //Relative to 0
