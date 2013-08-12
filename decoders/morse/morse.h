@@ -135,6 +135,7 @@ protected:
     Ui::dataMorse *dataUi;
     CPXBuf *workingBuf;
     DEMODMODE cwMode;
+    bool useNormalizingThreshold; //Switch how we compare tone values to determine rising or falling
 
 
     Goertzel *cwGoertzel;

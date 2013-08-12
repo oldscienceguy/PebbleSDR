@@ -440,6 +440,8 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
 
     cwMode = dmCWL;
 
+    init();
+
     //Used to update display from main thread.
     connect(this, SIGNAL(newOutput()), this, SLOT(refreshOutput()));
 
@@ -1039,12 +1041,13 @@ CPX * Morse::ProcessBlockFldigi(CPX *in)
     return in;
 }
 
+//Called on Reset from UI
 void Morse::rx_init()
 {
     cw_receive_state = RS_IDLE;
     clrRepBuf();
     agc_peak = 0;
-
+    useNormalizingThreshold = true; //Fldigi mode
     usedefaultWPM = false;
 }
 
@@ -1063,8 +1066,9 @@ void Morse::init()
 //Called with value indicating level of tone detected
 void Morse::decode_stream(double value)
 {
-    const char *c, *somc;
-    char *cptr;
+    const char *c;
+    double thresholdUp;
+    double thresholdDown;
 
     // Compute a variable threshold value for tone detection
     // Fast attack and slow decay.
@@ -1078,14 +1082,18 @@ void Morse::decode_stream(double value)
     metric = clamp(agc_peak * 2e3 , 0.0, 100.0);
     //metric = clamp(agc_peak * 1000 , 0.0, 100.0); //JSPR uses 1000, where does # come from?
 
-    global->testBench->SendDebugTxt(QString().sprintf("V: %f A: %f, M: %f",value, agc_peak, metric));
+    //global->testBench->SendDebugTxt(QString().sprintf("V: %f A: %f, M: %f",value, agc_peak, metric));
 
-    // save correlation amplitude value for the sync scope
-    // normalize if possible
-    if (agc_peak)
-        value /= agc_peak;
-    else
-        value = 0;
+    if (useNormalizingThreshold) {
+    // Calc threshold between rising and falling tones by normalizing value to agc_peak (Fldigi technique)
+        value = agc_peak > 0 ? value/agc_peak : 0;
+        thresholdUp = progdefaults.CWupper; //Fixed value because we normalize above
+        thresholdDown = progdefaults.CWlower;
+    } else {
+        //Super-Ratt and JSDR technique
+        thresholdUp = agc_peak * 0.67;
+        thresholdDown = agc_peak * 0.33;
+    }
 
     //qDebug()<<"CW Value "<<value;
 
@@ -1093,11 +1101,11 @@ void Morse::decode_stream(double value)
     if (!sqlonoff || metric > squelchValue ) {
         // Power detection using hysterisis detector
         // upward trend means tone starting
-        if ((value > progdefaults.CWupper) && (cw_receive_state != RS_IN_TONE)) {
+        if ((value > thresholdUp) && (cw_receive_state != RS_IN_TONE)) {
             FldigiProcessEvent(CW_KEYDOWN_EVENT, NULL);
         }
         // downward trend means tone stopping
-        if ((value < progdefaults.CWlower) && (cw_receive_state == RS_IN_TONE)) {
+        if ((value < thresholdDown) && (cw_receive_state == RS_IN_TONE)) {
             FldigiProcessEvent(CW_KEYUP_EVENT, NULL);
         }
     }
