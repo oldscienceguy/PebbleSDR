@@ -334,14 +334,14 @@ unsigned long MorseCode::tx_lookup(int c)
 Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
 {
     morseCode.init();
-    clrRepBuf();
+    resetDotDashBuf();
 
     workingBuf = new CPXBuf(numSamples);
 
     //Setup Goertzel
     cwGoertzel = new Goertzel(sr, fc);
-    //modemSampleRate = 8000;
-    modemSampleRate = CWSampleRate;
+    //Modem sample rate, device sample rate decimated to this before decoding
+    modemSampleRate = 8000;
     modemFrequency = global->settings->modeOffset;
     //Sample rate coming in is in sampleRate
     //modemSampleRate is typically 8k
@@ -389,26 +389,19 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
     usedefaultWPM = false;
 
     cw_speed  = progdefaults.CWspeed; //!!Whats the difference between speed, default speed and receive speed?
-    cw_default_speed = cw_speed;
-    cw_receive_speed = cw_speed;
+    receiveSpeedDefaultWpm = cw_speed;
+    receiveSpeedWpm = cw_speed;
 
-    cw_adaptive_receive_threshold = 2 * DOT_MAGIC / cw_default_speed;
-    cw_noise_spike_threshold = cw_adaptive_receive_threshold / 4;
-    cw_default_dot_length = DOT_MAGIC / cw_default_speed;
-    cw_default_dash_length = 3 * cw_default_dot_length;
+    calcDotDashLength(cw_speed);
 
-    memset(rx_rep_buf, 0, sizeof(rx_rep_buf));
+    memset(dotDashBuf, 0, sizeof(dotDashBuf));
 
-    cwTrack = true;
+    speedTracking = true;
     phaseacc = 0.0;
     FFTphase = 0.0;
     FIRphase = 0.0;
     FFTvalue = 0.0;
     FIRvalue = 0.0;
-
-    //Upper and lower don't seem to be used, just progdefaults.CWUpper
-    upper_threshold = progdefaults.CWupper;
-    lower_threshold = progdefaults.CWlower;
 
     agc_peak = 1.0;
 
@@ -433,7 +426,7 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
 
     trackingfilter = new Cmovavg(TRACKING_FILTER_SIZE);
 
-    sync_parameters();
+    syncTiming();
 
     modemDownConvert.SetDataRate(sampleRate,modemSampleRate);
     modemDownConvert.SetFrequency(modemFrequency);
@@ -570,7 +563,7 @@ void Morse::refreshOutput()
         return;
 
     outputBufMutex.lock();
-    dataUi->wpmLabel->setText(QString().sprintf("%d WPM",cw_receive_speed));
+    dataUi->wpmLabel->setText(QString().sprintf("%d WPM",receiveSpeedWpm));
 
     for (int i=0; i<outputBufIndex; i++) {
         dataUi->dataEdit->insertPlainText(QString(outputBuf[i])); //At cursor
@@ -641,7 +634,7 @@ CPX * Morse::ProcessBlockSuperRatt(CPX *in)
         switch (countingState) {
         case NOT_COUNTING:
             //Initial state when we're looking for something to start syncing with
-            clrRepBuf();
+            resetDotDashBuf();
             if (isMark) {
                 //Start counting
                 countingState = MARK_COUNTING;
@@ -707,9 +700,9 @@ CPX * Morse::ProcessBlockSuperRatt(CPX *in)
                 //Process any pending elements
                 if (pendingElement) {
                     if (element == 0)
-                        rx_rep_buf[cw_rr_current++] = CW_DOT_REPRESENTATION;
+                        dotDashBuf[dotDashBufIndex++] = CW_DOT_REPRESENTATION;
                     else
-                        rx_rep_buf[cw_rr_current++] = CW_DASH_REPRESENTATION;
+                        dotDashBuf[dotDashBufIndex++] = CW_DASH_REPRESENTATION;
 
                     pendingChar = true;
                     pendingElement = false;
@@ -719,8 +712,8 @@ CPX * Morse::ProcessBlockSuperRatt(CPX *in)
             if (lastSpaceCount >= countsPerCharSpace) {
                 //Process char
                 if (pendingChar) {
-                    OutputData(morseCode.rx_lookup(rx_rep_buf));
-                    clrRepBuf();
+                    OutputData(morseCode.rx_lookup(dotDashBuf));
+                    resetDotDashBuf();
                     pendingChar = false;
                     pendingWord = true;
                 }
@@ -922,7 +915,7 @@ void Morse::reset_rx_filter()
     if(	cw_speed != progdefaults.CWspeed ) {
 
         use_fft_filter = progdefaults.CWuse_fft_filter;
-        cw_speed = cw_default_speed = progdefaults.CWspeed;
+        cw_speed = receiveSpeedDefaultWpm = progdefaults.CWspeed;
 
         //if (use_fft_filter) { // FFT filter
         //	cw_FFT_filter->create_lpf(progdefaults.CWspeed/(1.2 * modemSampleRate));
@@ -932,10 +925,7 @@ void Morse::reset_rx_filter()
             FIRphase = 0;
         //}
 
-        cw_adaptive_receive_threshold = 2 * DOT_MAGIC / cw_speed;
-        cw_noise_spike_threshold = cw_adaptive_receive_threshold / 4;
-        cw_default_dot_length = DOT_MAGIC / cw_default_speed;
-        cw_default_dash_length = 3 * cw_default_dot_length;
+        calcDotDashLength(cw_speed);
 
         phaseacc = 0.0;
         FFTphase = 0.0;
@@ -943,7 +933,7 @@ void Morse::reset_rx_filter()
         FFTvalue = 0.0;
         FIRvalue = 0.0;
 
-        clrRepBuf();
+        resetDotDashBuf();
 
         agc_peak = 0;
     }
@@ -971,6 +961,24 @@ CPX Morse::mixer(CPX in)
 
     return z;
 }
+
+/*
+ * Prep for modem, downsample and mix to CWU or CWL offset freq
+ * For each sample
+ *  Call modem to get tone value (all samples first so we can do look ahead/back for analysis?, or sample at a time?)
+ *  Smooth to filter noise spikes and signal dropouts
+ *  Call decode_stream to turn into dot/dash/space/noise (rename)
+ *  Call state machine to process dot/dash
+ *  Check for character to output
+ *  Adapt timing values for next char
+ *
+ *  Other thoughts
+ *  Look back at previous tone values when short noise spike or signal drop occurs and infer that last in-range value should be coppied
+ *  to replace noise or signal drop?
+ *
+ *  Keep agc-Min value to track average noise floor to make value comparison more relevant?
+ *
+*/
 
 //My version of FIRprocess + rx_processing for Pebble
 CPX * Morse::ProcessBlockFldigi(CPX *in)
@@ -1018,7 +1026,7 @@ CPX * Morse::ProcessBlockFldigi(CPX *in)
 
             //smpl_ctr keeps track of uSecs
             //Since cw_FIR_filter only returns every DEC_RATIO (16) samples, smpl_ctr increases in DEC_RATIO increments
-            smpl_ctr += DEC_RATIO;
+            modemClock += DEC_RATIO;
 
             // demodulate and get power in signal
             FIRvalue = z.mag(); //sqrt sum of squares
@@ -1044,8 +1052,8 @@ CPX * Morse::ProcessBlockFldigi(CPX *in)
 //Called on Reset from UI
 void Morse::rx_init()
 {
-    cw_receive_state = RS_IDLE;
-    clrRepBuf();
+    receiveState = RS_IDLE;
+    resetDotDashBuf();
     agc_peak = 0;
     useNormalizingThreshold = true; //Fldigi mode
     usedefaultWPM = false;
@@ -1055,7 +1063,7 @@ void Morse::init()
 {
     //We don't have separate waterfall like fldigi does, remove waterfall code everywhere
     trackingfilter->reset();
-    cw_adaptive_receive_threshold = (long int)trackingfilter->run(2 * cw_default_dot_length);
+    adaptiveThresholdUsec = (quint32)trackingfilter->run(2 * receiveDotDefaultUsec);
 
     rx_init();
     use_paren = progdefaults.CW_use_paren;
@@ -1077,9 +1085,9 @@ void Morse::decode_stream(double value)
     else
         agc_peak = decayavg(agc_peak, value, 800);
 
-    //metric is what we use to determine rising or falling status
+    //metric is what we use to determine whether to squelch or not
     //Also what could be displayed on 0-100 tuning bar
-    metric = clamp(agc_peak * 2e3 , 0.0, 100.0);
+    metric = clamp(agc_peak * 2e3 , 0.0, 100.0); //Clamp to min max value, peak can never be higher or lower than this
     //metric = clamp(agc_peak * 1000 , 0.0, 100.0); //JSPR uses 1000, where does # come from?
 
     //global->testBench->SendDebugTxt(QString().sprintf("V: %f A: %f, M: %f",value, agc_peak, metric));
@@ -1087,10 +1095,11 @@ void Morse::decode_stream(double value)
     if (useNormalizingThreshold) {
     // Calc threshold between rising and falling tones by normalizing value to agc_peak (Fldigi technique)
         value = agc_peak > 0 ? value/agc_peak : 0;
-        thresholdUp = progdefaults.CWupper; //Fixed value because we normalize above
-        thresholdDown = progdefaults.CWlower;
+        thresholdUp = 0.60; //Fixed value because we normalize above
+        thresholdDown = 0.40;
     } else {
         //Super-Ratt and JSDR technique
+        //Divide agc_peak in thirds,  upper is rising, lower is falling, middle is stable
         thresholdUp = agc_peak * 0.67;
         thresholdDown = agc_peak * 0.33;
     }
@@ -1101,11 +1110,11 @@ void Morse::decode_stream(double value)
     if (!sqlonoff || metric > squelchValue ) {
         // Power detection using hysterisis detector
         // upward trend means tone starting
-        if ((value > thresholdUp) && (cw_receive_state != RS_IN_TONE)) {
+        if ((value > thresholdUp) && (receiveState != RS_IN_TONE)) {
             FldigiProcessEvent(CW_KEYDOWN_EVENT, NULL);
         }
         // downward trend means tone stopping
-        if ((value < thresholdDown) && (cw_receive_state == RS_IN_TONE)) {
+        if ((value < thresholdDown) && (receiveState == RS_IN_TONE)) {
             FldigiProcessEvent(CW_KEYUP_EVENT, NULL);
         }
     }
@@ -1124,7 +1133,7 @@ void Morse::decode_stream(double value)
 
 // Compare two timestamps, and return the difference between them in usecs.
 
-int Morse::usec_diff(unsigned int earlier, unsigned int later)
+quint32 Morse::modemClockToUsec(unsigned int earlier, unsigned int later)
 {
     // Compare the timestamps.
     // At 4 WPM, the dash length is 3*(1200000/4)=900,000 usecs, and
@@ -1137,6 +1146,16 @@ int Morse::usec_diff(unsigned int earlier, unsigned int later)
     }
 }
 
+//Recalcs all values that are speed related
+void Morse::calcDotDashLength(int speed)
+{
+    adaptiveThresholdUsec = 2 * DOT_MAGIC / speed;
+    noiseSpikeUsec = adaptiveThresholdUsec / 4;
+    receiveDotDefaultUsec = DOT_MAGIC / speed;
+    receiveDashDefaultUsec = 3 * receiveDotDefaultUsec;
+
+}
+
 //=======================================================================
 // cw_update_tracking()
 // This gets called everytime we have a dot dash sequence or a dash dot
@@ -1144,111 +1163,106 @@ int Morse::usec_diff(unsigned int earlier, unsigned int later)
 // track the cw speed by adjusting the cw_adaptive_receive_threshold variable.
 // This is done with moving average filters for both dot & dash.
 //=======================================================================
-void Morse::update_tracking(int idot, int idash)
+void Morse::updateAdaptiveThreshold(int idotUsec, int idashUsec)
 {
-    int dot, dash;
-    if (idot > cw_lower_limit && idot < cw_upper_limit)
-        dot = idot;
+    int dotUsec, dashUsec;
+    if (idotUsec > lowerLimitUsec && idotUsec < upperLimitUsec)
+        dotUsec = idotUsec;
     else
-        dot = cw_default_dot_length;
-    if (idash > cw_lower_limit && idash < cw_upper_limit)
-        dash = idash;
+        dotUsec = receiveDotDefaultUsec;
+    if (idashUsec > lowerLimitUsec && idashUsec < upperLimitUsec)
+        dashUsec = idashUsec;
     else
-        dash = cw_default_dash_length;
+        dashUsec = receiveDashDefaultUsec;
 
-    cw_adaptive_receive_threshold = (long int)trackingfilter->run((dash + dot) / 2);
+    adaptiveThresholdUsec = (quint32)trackingfilter->run((dashUsec + dotUsec) / 2);
 
-    sync_parameters();
+    syncTiming();
 }
 
 // sync_parameters()
 // Synchronize the dot, dash, end of element, end of character, and end
 // of word timings and ranges to new values of Morse speed, or receive tolerance.
-void Morse::sync_parameters()
+void Morse::syncTiming()
 {
     int lowerwpm, upperwpm;
 
-    cw_default_dot_length = DOT_MAGIC / progdefaults.CWspeed;
-    cw_default_dash_length = 3 * cw_default_dot_length;
-
+    calcDotDashLength(progdefaults.CWspeed); //Reset to starting point
 
     // check if user changed the tracking or the cw default speed
-    if (cwTrack != progdefaults.CWtrack ||
-        (cw_default_speed != progdefaults.CWspeed)) {
+    if (speedTracking != speedTrackingDefault ||
+        (receiveSpeedDefaultWpm != progdefaults.CWspeed)) {
         trackingfilter->reset();
-        cw_adaptive_receive_threshold = 2 * cw_default_dot_length;
+        adaptiveThresholdUsec = 2 * receiveDotDefaultUsec;
     }
-    cwTrack = progdefaults.CWtrack;
-    cw_default_speed = progdefaults.CWspeed;
+    speedTracking = speedTrackingDefault;
+    receiveSpeedDefaultWpm = progdefaults.CWspeed;
 
-    // Receive parameters:
-    lowerwpm = cw_default_speed - progdefaults.CWrange;
-    upperwpm = cw_default_speed + progdefaults.CWrange;
+    // If auto tracking speed, calc the lowest and highest wpm allowed by trackingRange
+    lowerwpm = receiveSpeedDefaultWpm - trackingWPMRange;
+    upperwpm = receiveSpeedDefaultWpm + trackingWPMRange;
     if (lowerwpm < progdefaults.CWlowerlimit)
         lowerwpm = progdefaults.CWlowerlimit;
     if (upperwpm > progdefaults.CWupperlimit)
         upperwpm = progdefaults.CWupperlimit;
-    cw_lower_limit = 2 * DOT_MAGIC / upperwpm;
-    cw_upper_limit = 2 * DOT_MAGIC / lowerwpm;
+    lowerLimitUsec = 2 * DOT_MAGIC / upperwpm;
+    upperLimitUsec = 2 * DOT_MAGIC / lowerwpm;
 
-    if (cwTrack)
-        cw_receive_speed = DOT_MAGIC / (cw_adaptive_receive_threshold / 2);
+    if (speedTracking)
+        receiveSpeedWpm = DOT_MAGIC / (adaptiveThresholdUsec / 2);
     else {
-        cw_receive_speed = cw_default_speed;
-        cw_adaptive_receive_threshold = 2 * cw_default_dot_length;
+        receiveSpeedWpm = receiveSpeedDefaultWpm;
+        adaptiveThresholdUsec = 2 * receiveDotDefaultUsec;
     }
 
-    if (cw_receive_speed > 0)
-        cw_receive_dot_length = DOT_MAGIC / cw_receive_speed;
+    if (receiveSpeedWpm > 0)
+        receiveDotUsec = DOT_MAGIC / receiveSpeedWpm;
     else
-        cw_receive_dot_length = DOT_MAGIC / 5;
+        receiveDotUsec = DOT_MAGIC / 5;
 
-    cw_receive_dash_length = 3 * cw_receive_dot_length;
+    receiveDashUsec = 3 * receiveDotUsec;
 
-    cw_noise_spike_threshold = cw_receive_dot_length / 2;
+    noiseSpikeUsec = receiveDotUsec / 2;
 
 }
 
 //All the things we need to do to start a new char
-void Morse::clrRepBuf()
+void Morse::resetDotDashBuf()
 {
-    memset(rx_rep_buf, 0, sizeof(rx_rep_buf));
-    cw_rr_current = 0; //Index to rx_rep_buf
-    smpl_ctr = 0; //Start timer over
+    memset(dotDashBuf, 0, sizeof(dotDashBuf));
+    dotDashBufIndex = 0; //Index to rx_rep_buf
+    modemClock = 0; //Start timer over
 }
 
 bool Morse::FldigiProcessEvent(CW_EVENT event, const char **c)
 {
-    static int space_sent = true;	// for word space logic
-    static int last_element = 0;	// length of last dot/dash
-    int element_usec;		// Time difference in usecs
 
     switch (event) {
         //Reset everything and start over
         case CW_RESET_EVENT:
-            sync_parameters();
-            cw_receive_state = RS_IDLE;
-            clrRepBuf();
+            syncTiming();
+            receiveState = RS_IDLE;
+            resetDotDashBuf();
             break;
 
             break;
         //Tone filter output is trending up
         case CW_KEYDOWN_EVENT:
-            if (cw_receive_state == RS_IN_TONE) {
+            if (receiveState == RS_IN_TONE) {
                 //We can't be processing a tone and also get a keydown event
                 return false;
             }
             // first tone in idle state reset audio sample counter
-            if (cw_receive_state == RS_IDLE) {
-                clrRepBuf();
+            if (receiveState == RS_IDLE) {
+                resetDotDashBuf();
             }
 
             //Continue counting tone duration
             // save the timestamp
-            cw_rr_start_timestamp = smpl_ctr;
+            toneStart = modemClock;
             // Set state to indicate we are inside a tone.
-            old_cw_receive_state = cw_receive_state;
-            cw_receive_state = RS_IN_TONE;
+            lastReceiveState = receiveState;
+            receiveState = RS_IN_TONE;
             //!!What does CW_ERROR mean, no char?
             return CW_ERROR;
 
@@ -1256,20 +1270,20 @@ bool Morse::FldigiProcessEvent(CW_EVENT event, const char **c)
         //Tone filter output is trending down
         case CW_KEYUP_EVENT:
             // The receive state is expected to be inside a tone.
-            if (cw_receive_state != RS_IN_TONE)
+            if (receiveState != RS_IN_TONE)
                 return CW_ERROR;
             // Save the current timestamp so we can see how long tone was
-            cw_rr_end_timestamp = smpl_ctr;
-            element_usec = usec_diff(cw_rr_start_timestamp, cw_rr_end_timestamp);
+            toneEnd = modemClock;
+            elementUsec = modemClockToUsec(toneStart, toneEnd);
 
             // make sure our timing values are up to date
-            sync_parameters();
+            syncTiming();
 
             // If the tone length is shorter than any noise cancelling
             // threshold that has been set, then ignore this tone.
-            if (cw_noise_spike_threshold > 0
-                && element_usec < cw_noise_spike_threshold) {
-                cw_receive_state = RS_IDLE;
+            if (noiseSpikeUsec > 0
+                && elementUsec < noiseSpikeUsec) {
+                receiveState = RS_IDLE;
                 return CW_ERROR;
             }
 
@@ -1281,43 +1295,43 @@ bool Morse::FldigiProcessEvent(CW_EVENT event, const char **c)
             // knowing that one is supposed to be 3 times longer than the other. with straight key code... this gets
             // quite variable, but with most faster cw sent with electronic keyers, this is one relationship that is
             // quite reliable. Lawrence Glaister (ve7it@shaw.ca)
-            if (last_element > 0) {
+            if (lastElementUsec > 0) {
                 // check for dot dash sequence (current should be 3 x last)
-                if ((element_usec > 2 * last_element) &&
-                    (element_usec < 4 * last_element)) {
-                    update_tracking(last_element, element_usec);
+                if ((elementUsec > 2 * lastElementUsec) &&
+                    (elementUsec < 4 * lastElementUsec)) {
+                    updateAdaptiveThreshold(lastElementUsec, elementUsec);
                 }
                 // check for dash dot sequence (last should be 3 x current)
-                if ((last_element > 2 * element_usec) &&
-                    (last_element < 4 * element_usec)) {
-                    update_tracking(element_usec, last_element);
+                if ((lastElementUsec > 2 * elementUsec) &&
+                    (lastElementUsec < 4 * elementUsec)) {
+                    updateAdaptiveThreshold(elementUsec, lastElementUsec);
                 }
             }
-            last_element = element_usec;
+            lastElementUsec = elementUsec;
 
             // ok... do we have a dit or a dah?
             // a dot is anything shorter than 2 dot times
-            if (element_usec <= cw_adaptive_receive_threshold) {
-                rx_rep_buf[cw_rr_current++] = CW_DOT_REPRESENTATION;
+            if (elementUsec <= adaptiveThresholdUsec) {
+                dotDashBuf[dotDashBufIndex++] = CW_DOT_REPRESENTATION;
                 //		printf("%d dit ", last_element/1000);  // print dot length
             } else {
                 // a dash is anything longer than 2 dot times
-                rx_rep_buf[cw_rr_current++] = CW_DASH_REPRESENTATION;
+                dotDashBuf[dotDashBufIndex++] = CW_DASH_REPRESENTATION;
             }
 
             // We just added a representation to the receive buffer.
             // If it's full, then reset everything as it probably noise
-            if (cw_rr_current == RECEIVE_CAPACITY - 1) {
-                cw_receive_state = RS_IDLE;
-                cw_rr_current = 0;	// reset decoding pointer
-                smpl_ctr = 0;		// reset audio sample counter
+            if (dotDashBufIndex == RECEIVE_CAPACITY - 1) {
+                receiveState = RS_IDLE;
+                dotDashBufIndex = 0;	// reset decoding pointer
+                modemClock = 0;		// reset audio sample counter
                 return CW_ERROR;
             } else {
                 // zero terminate representation
-                rx_rep_buf[cw_rr_current] = 0;
+                dotDashBuf[dotDashBufIndex] = 0;
             }
             // All is well.  Move to the more normal after-tone state.
-            cw_receive_state = RS_AFTER_TONE;
+            receiveState = RS_AFTER_TONE;
             return CW_ERROR;
             break; //case CW_KEYUP
 
@@ -1327,51 +1341,51 @@ bool Morse::FldigiProcessEvent(CW_EVENT event, const char **c)
             // this should be called quite often (faster than inter-character gap) It looks after timing
             // key up intervals and determining when a character, a word space, or an error char '*' should be returned.
             // CW_SUCCESS is returned when there is a printable character. Nothing to do if we are in a tone
-            if (cw_receive_state == RS_IN_TONE)
+            if (receiveState == RS_IN_TONE)
                 return CW_ERROR;
             // in this call we expect a pointer to a char to be valid
 
             if (c == NULL) {
                 // else we had no place to put character...
-                cw_receive_state = RS_IDLE;
-                cw_rr_current = 0;
+                receiveState = RS_IDLE;
+                dotDashBufIndex = 0;
                 // reset decoding pointer
                 return CW_ERROR;
             }
 
 
             // compute length of silence so far
-            sync_parameters();
-            element_usec = usec_diff(cw_rr_end_timestamp, smpl_ctr);
+            syncTiming();
+            elementUsec = modemClockToUsec(toneEnd, modemClock);
             // SHORT time since keyup... nothing to do yet
-            if (element_usec < (2 * cw_receive_dot_length))
+            if (elementUsec < (2 * receiveDotUsec))
                 return CW_ERROR;
             // MEDIUM time since keyup... check for character space
             // one shot through this code via receive state logic
             // FARNSWOTH MOD HERE -->
-            if (element_usec >= (2 * cw_receive_dot_length) &&
-                element_usec <= (4 * cw_receive_dot_length) &&
-                cw_receive_state == RS_AFTER_TONE) {
+            if (elementUsec >= (2 * receiveDotUsec) &&
+                elementUsec <= (4 * receiveDotUsec) &&
+                receiveState == RS_AFTER_TONE) {
                 // Look up the representation
                 //cout << "CW_QUERY medium time after keyup: " << rx_rep_buf;
-                *c = morseCode.rx_lookup(rx_rep_buf);
+                *c = morseCode.rx_lookup(dotDashBuf);
                 //cout <<": " << *c <<flush;
                 if (*c == NULL) {
                     // invalid decode... let user see error
                     *c = "*";
                 }
-                cw_receive_state = RS_IDLE;
-                cw_rr_current = 0;	// reset decoding pointer
-                space_sent = false;
+                receiveState = RS_IDLE;
+                dotDashBufIndex = 0;	// reset decoding pointer
+                spaceWasSent = false;
 
                 return CW_SUCCESS;
             }
 
             // LONG time since keyup... check for a word space
             // FARNSWOTH MOD HERE -->
-            if ((element_usec > (4 * cw_receive_dot_length)) && !space_sent) {
+            if ((elementUsec > (4 * receiveDotUsec)) && !spaceWasSent) {
                 *c = " ";
-                space_sent = true;
+                spaceWasSent = true;
                 return CW_SUCCESS;
             }
             // should never get here... catch all

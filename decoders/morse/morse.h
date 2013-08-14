@@ -19,15 +19,11 @@ class Receiver;
 //This comes from configuration.h in fldigi
 struct {
     int CWspeed = 18; //Transmit speed (WPM)
-    bool CWtrack = true; //Automatic receive speed tracking
-    int CWrange = 10; //Tracking range for CWTRACK (WPM)
     int CWlowerlimit = 5; //Lower RX limit (WPM)
     int CWupperlimit = 50; // Upper TX limit (WPM)
     std::string CW_prosigns = "=~<>%+&{}"; //CW prosigns BT AA AS AR SK KN INT HM VE
     bool CW_use_paren = false; //Use open paren character; typically used in MARS ops
     bool StartAtSweetSpot = false; //Always start new modems at sweet spot frequencies
-    double CWupper = 0.6; //Detector hysterisis, upper threshold
-    double CWlower = 0.4; //Detector hysterisis, lower threshold
     bool rx_lowercase = false; //Print Rx in lowercase for CW, RTTY, CONTESTIA and THROB
 
     bool CWuse_fft_filter = false; //Use FFT overlap and add convolution filter
@@ -121,6 +117,7 @@ public:
     void OutputData(const char *d);
     void OutputData(const char c);
 
+    void calcDotDashLength(int speed);
 public slots:
     void squelchChanged(int v);
     void refreshOutput();
@@ -216,7 +213,15 @@ protected:
     C_FIR_filter	*cw_FIR_filter; // linear phase finite impulse response filter
 
     Cmovavg		*bitfilter;
-    Cmovavg		*trackingfilter;
+
+    //Received CW speed can be fixed (set by user) or track actual dot/dash lengths being received
+    Cmovavg *trackingfilter;
+    void updateAdaptiveThreshold(int idotUsec, int idashUsec);
+    bool speedTracking;
+    bool speedTrackingDefault = true; //Automatic receive speed tracking
+
+    int trackingWPMRange = 10; //Tracking range for CWTRACK (WPM)
+
 
     int bitfilterlen;
 
@@ -224,8 +229,7 @@ protected:
     std::string prosigns;
     bool stopflag;
     bool use_fft_filter;
-    double lower_threshold;
-    double upper_threshold;
+
     int FilterFFTLen;
 
     bool freqlock;
@@ -242,13 +246,29 @@ protected:
     // Receive buffering
     #define	RECEIVE_CAPACITY	256
     //This holds dots and dashes as they are received, way longer than any letter or phrase
-    char rx_rep_buf[RECEIVE_CAPACITY];
+    char dotDashBuf[RECEIVE_CAPACITY];
 
-    int cw_rr_current;				// Receive buffer current location
-    void clrRepBuf(); //Reset rx_rep_buf and related pointers
+    // dotDash buffer current location
+    int dotDashBufIndex;
 
-    //Modem sample rate, device sample rate decimated to this
-    #define	CWSampleRate 8000
+    void resetDotDashBuf();
+
+    //Tone timing
+    //Modem clock ticks once for every sample, each tick represents 1/modemSampleRate second
+    //Times tones and silence
+    #define	USECS_PER_SEC	1000000	// Microseconds in a second
+    //All usec variable are quint32 because modemClock is quint32 and we don't want conversion errors
+    //quint32 is approx 71 minutes (70*60*USEC_PER_SEC)
+    quint32 modemClock; //!!Do we have to do anything special to handle overflow wrap back to 0?
+    quint32 modemClockToUsec(unsigned int earlier, unsigned int later);
+
+    unsigned int toneStart;		// Tone start timestamp
+    unsigned int toneEnd;		// Tone end timestamp
+    quint32 noiseSpikeUsec;		// Initially ignore any tone < 10mS
+    quint32 lastElementUsec = 0;	// length of last dot/dash
+    quint32 elementUsec = 0;		// Time difference in usecs
+    bool spaceWasSent = true;	// for word space logic
+
 
     // CW function return status codes.
     #define	CW_SUCCESS	0
@@ -257,23 +277,15 @@ protected:
     #define	DOT_MAGIC	1200000	// Dot length magic number.  The Dot length is 1200000/WPM Usec
     #define	TONE_SILENT	0	// 0Hz = silent 'tone'
 
-    #define	USECS_PER_SEC	1000000	// Microseconds in a second
 
-    int usec_diff(unsigned int earlier, unsigned int later);
-    void update_tracking(int idot, int idash);
-    void sync_parameters();
+    void syncTiming();
 
     enum CW_EVENT {CW_RESET_EVENT, CW_KEYDOWN_EVENT, CW_KEYUP_EVENT, CW_QUERY_EVENT};
     enum CW_RX_STATE {RS_IDLE, RS_IN_TONE, RS_AFTER_TONE};
     bool FldigiProcessEvent(CW_EVENT event, const char **c);
-    CW_RX_STATE		cw_receive_state;	// Indicates receive state
-    CW_RX_STATE		old_cw_receive_state;
+    CW_RX_STATE		receiveState;	// Indicates receive state
+    CW_RX_STATE		lastReceiveState;
     CW_EVENT		cw_event;			// functions used by cw process routine
-
-    unsigned int	smpl_ctr;		// sample counter for timing cw rx
-    unsigned int cw_rr_start_timestamp;		// Tone start timestamp
-    unsigned int cw_rr_end_timestamp;		// Tone end timestamp
-    long int cw_noise_spike_threshold;		// Initially ignore any tone < 10mS
 
     // user configurable data - local copy passed in from gui
     int cw_speed;
@@ -282,24 +294,23 @@ protected:
     double squelchValue; //If squelch is on, this is compared to metric
     bool sqlonoff;
 
-    int cw_receive_speed;				// Initially 18 WPM
+    //Fixed speed or computed speed based on actual dot/dash timing
+    int receiveSpeedWpm;				// Initially 18 WPM
+    quint32 receiveDotUsec;		// Length of a receive Dot, in Usec based on receiveSpeed
+    quint32 receiveDashUsec;		// Length of a receive Dash, in Usec based on receiveSpeed
+    //Used to restore to base case when something changes or we get lost
+    int receiveSpeedDefaultWpm;
+    quint32 receiveDotDefaultUsec; //Was cw_send_dot_length
+    quint32 receiveDashDefaultUsec;
+
     bool usedefaultWPM;				// use default WPM
 
-    // for CW modem use only
-    bool	cwTrack;
-
     //Needs description
-    int cw_upper_limit;
-    int cw_lower_limit;
+    int upperLimitUsec;
+    int lowerLimitUsec;
     // Receiving parameters:
-    //Used to restore to base case when something changes or we get lost
-    int cw_default_speed;
-    long int cw_default_dot_length; //Was cw_send_dot_length
-    long int cw_default_dash_length;
 
-    long int cw_receive_dot_length;		// Length of a receive Dot, in Usec
-    long int cw_receive_dash_length;		// Length of a receive Dash, in Usec
-    long int cw_adaptive_receive_threshold;		// 2-dot threshold for adaptive speed
+    quint32 adaptiveThresholdUsec;		// 2-dot threshold for adaptive speed
 
 };
 
