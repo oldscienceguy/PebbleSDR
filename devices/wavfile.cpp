@@ -1,11 +1,15 @@
 #include "wavfile.h"
 #include "QDebug"
 
+#include "global.h"
+#include "testbench.h"
+
 WavFile::WavFile()
 {
     fileParsed = false;
     writeMode = false;
     wavFile = NULL;
+
 }
 
 WavFile::~WavFile()
@@ -23,6 +27,9 @@ bool WavFile::OpenRead(QString fname)
     bool res = wavFile->open(QFile::ReadOnly);
     if (!res)
         return false;
+
+    qint64 dataChunkPos = 0;
+
     //Make sure we have a WAV file
     qint64 len = wavFile->read((char*)&riff,sizeof(riff));
     if (len <= 0)
@@ -39,14 +46,13 @@ bool WavFile::OpenRead(QString fname)
     bool gotDataChunk = false;
     bool gotFactChunk = false;
     //Init our extended fields so we know if they've been read
-    factSubChunk.loFreq = 0;
-    factSubChunk.mode = 255; //zero is AM so we need to indicate not valid
-    factSubChunk.spare1 = 0;
+    loFreq = 0;
+    mode = 255; //zero is AM so we need to indicate not valid
 
     while (!wavFile->atEnd()) {
         len = wavFile->read((char*)&subChunk,sizeof(SUB_CHUNK));
 
-        if (subChunk.id[0]=='f' && subChunk.id[1]=='m' && subChunk.id[2]=='t' && subChunk.id[3] == ' ') {
+        if (strncasecmp((char *)subChunk.id,"fmt ",4) == 0) {
 
             len = wavFile->read((char*)&fmtSubChunk,subChunk.size);
             if (len<0)
@@ -61,17 +67,62 @@ bool WavFile::OpenRead(QString fname)
                     wavFile->seek(wavFile->pos() + extraParamSize); //skip
             }
 
-            gotFmtChunk = true;
-        } else if (subChunk.id[0]=='d' && subChunk.id[1]=='a' && subChunk.id[2]=='t' && subChunk.id[3] == 'a') {
-            gotDataChunk = true;
-            break; //Out of while !file end
+            fmtChannels = fmtSubChunk.channels;
 
-        } else if (subChunk.id[0]=='f' && subChunk.id[1]=='a' && subChunk.id[2]=='c' && subChunk.id[3] == 't') {
+            gotFmtChunk = true;
+        } else if (strncasecmp((char *)subChunk.id,"data",4) == 0) {
+
+            gotDataChunk = true;
+            //There may be other chunks we need to find, mark and keep looking
+            dataChunkPos = wavFile->pos();
+
+        } else if (strncasecmp((char *)subChunk.id,"fact",4) == 0) {
             len = wavFile->read((char*)&factSubChunk,subChunk.size);
             if (len<0)
                 return false;
-            qDebug()<<"WAV LO Freq:"<<factSubChunk.loFreq;
             gotFactChunk = true;
+        } else  if (strncasecmp((char *)subChunk.id,"list",4) == 0) {
+
+            //!!Replace Pebble custom info with RIFF list/info chunks as used in Audacity.  More standard
+
+            //subChunk.size has following bytes
+            //I think this has all the Info labels and notes chunks included in size
+            len = wavFile->read(chunkBuf,subChunk.size);
+            //"INFO" (info chunk)
+            // quint8[4] label quint length (padded to even) quint8[?] null terminated value
+            int i = 0;
+            char tag[5]; //4 + null
+            quint8 value[256];
+            quint32 valueLen;
+            //First 4 bytes are subchunk, compare lowercased
+            if (strncasecmp(&chunkBuf[i],"info",4) == 0) {
+                //Loop after 'info' to get all tag/value pairs
+                i += 4;
+                while (i < len) {
+                    //Process info subchunk
+                    memcpy(tag, &chunkBuf[i],4);
+                    tag[4] = 0x00;
+                    i += 4;
+                    valueLen = (quint16)chunkBuf[i];
+                    i += 4;
+                    memcpy(value, &chunkBuf[i], valueLen); //Already null terminated
+                    i += valueLen;
+                    //!!Compare tag with Pebble data and set variables
+                    char* dontCare;
+                    if (strncasecmp(tag,"lofr",4) == 0)
+                        loFreq = strtol((char*)value,&dontCare,10);
+                    else if (strncasecmp(tag,"mode",4) == 0)
+                        mode = strtol((char*)value,&dontCare,10);
+
+                }
+            } else if(strncasecmp(&chunkBuf[i],"labl",4) == 0) {
+                //Process labl subchunk
+                i+=4;
+            } else if (strncasecmp(&chunkBuf[i],"note",4) == 0) {
+                //Process note subchunk
+                i+=4;
+            }
+
 
         } else {
             //Unsupported, skip and continue
@@ -82,15 +133,16 @@ bool WavFile::OpenRead(QString fname)
 
     if (!gotFmtChunk && !gotDataChunk)
         return false; //Missing chunks
+    wavFile->seek(dataChunkPos);
     //File pos is now at start of data, save for looping
-    dataStart = wavFile->pos();
+    dataStart = dataChunkPos;
 
     fileParsed = true;
 
     return true;
 }
 
-bool WavFile::OpenWrite(QString fname, int sampleRate, quint32 _loFreq, quint8 mode, quint8 spare)
+bool WavFile::OpenWrite(QString fname, int sampleRate, quint32 _loFreq, quint8 _mode, quint8 spare)
 {
     //qDebug()<<fname;
 
@@ -131,6 +183,7 @@ bool WavFile::OpenWrite(QString fname, int sampleRate, quint32 _loFreq, quint8 m
     fmtSubChunk.blockAlign = 2 * (16/8);  //NumChannels * BitsPerSample/8
     fmtSubChunk.bitsPerSample = sizeof(FMT_SUB_CHUNK);
 
+#if 0
     factSubChunkPre.id[0] = 'f';
     factSubChunkPre.id[1] = 'a';
     factSubChunkPre.id[2] = 'c';
@@ -139,8 +192,48 @@ bool WavFile::OpenWrite(QString fname, int sampleRate, quint32 _loFreq, quint8 m
 
     factSubChunk.numSamples = 0; //Not used
     factSubChunk.loFreq = _loFreq;
-    factSubChunk.mode = mode;
+    factSubChunk.mode = _mode;
     factSubChunk.spare1 = spare;
+#endif
+    listSubChunkPre.id[0] = 'l';
+    listSubChunkPre.id[1] = 'i';
+    listSubChunkPre.id[2] = 's';
+    listSubChunkPre.id[3] = 't';
+    listSubChunkPre.size = sizeof(LIST_SUB_CHUNK); //Must be kept in sync if we change anything below
+
+    listSubChunk.typeID[0] = 'i';
+    listSubChunk.typeID[1] = 'n';
+    listSubChunk.typeID[2] = 'f';
+    listSubChunk.typeID[3] = 'o';
+
+    int i = 0;
+    char buf[256];
+    quint32 len; //wav expects 4 byte len
+
+    //'lofr'freq[12] 10 digits for 2g plus null plus 1 for even
+    listSubChunk.text[i++] = 'l';
+    listSubChunk.text[i++] = 'o';
+    listSubChunk.text[i++] = 'f';
+    listSubChunk.text[i++] = 'r';
+    len = sprintf(buf,"%ul",_loFreq); // we need to know the length of the tag value
+    len++; //Length does not include null terminator and we want to copy that also
+    memcpy(&listSubChunk.text[i],&len,4); //Move len in internal format
+    i += 4;
+    memcpy(&listSubChunk.text[i],buf,len);
+    i += len;
+
+
+    //'mode'mode[4] 2 byte + null + 1 for even
+    listSubChunk.text[i++] = 'm';
+    listSubChunk.text[i++] = 'o';
+    listSubChunk.text[i++] = 'd';
+    listSubChunk.text[i++] = 'e';
+    len = sprintf(buf,"%u",_mode); // we need to know the length of the tag value
+    len++; //include Null
+    memcpy(&listSubChunk.text[i],&len,4); //Move len in internal format
+    i += 4;
+    memcpy(&listSubChunk.text[i],buf,len);
+    i += len;
 
     dataSubChunkPre.id[0] = 'd';
     dataSubChunkPre.id[1] = 'a';
@@ -175,15 +268,37 @@ int WavFile::ReadSamples(CPX *buf, int numSamples)
     int samplesRead = 0;
 
     if (fmtSubChunk.format == 1) {
-        bytesToRead = sizeof(PCM_DATA) * numSamples;
-        bytesRead = wavFile->read((char*)pcmBuf,bytesToRead);
-        if (bytesRead == -1)
-            samplesRead = 0;
-        else
-            samplesRead = bytesRead / sizeof(PCM_DATA);
-        for (int i=0; i<samplesRead; i++) {
-            buf[i].re = pcmBuf[i].left/32767.0;
-            buf[i].im = pcmBuf[i].right/32767.0;
+        if (fmtChannels == 2) {
+            bytesToRead = sizeof(PCM_DATA_2CH) * numSamples;
+
+            bytesRead = wavFile->read((char*)pcmBuf,bytesToRead);
+            if (bytesRead == -1)
+                samplesRead = 0;
+            else
+                samplesRead = bytesRead / sizeof(PCM_DATA_2CH);
+
+            for (int i=0; i<samplesRead; i++) {
+                buf[i].re = pcmBuf[i].left/32767.0;
+                buf[i].im = pcmBuf[i].right/32767.0;
+            }
+
+        } else if (fmtChannels == 1) {
+            //Mono, only need 1/2 samples since re and im are the same
+            bytesToRead = sizeof(qint16) * numSamples;
+            bytesRead = wavFile->read((char*)monoPcmBuf,bytesToRead);
+            if (bytesRead == -1)
+                samplesRead = 0;
+            else
+                samplesRead = bytesRead / sizeof(qint16);
+
+            //Convert to array of doubles so we can apply hilbert
+            for (int i =0; i<samplesRead; i++) {
+                //Testing with arrl cw files, have to reduce gain significantly
+                buf[i].re = monoPcmBuf[i] / 32767.0 * .005;
+                buf[i].im = 0; //This gives us mirror images pos and neg
+                //Steps afer this to get back to just positive spectrum are basically hilbert transformation
+                //Todo: Look at using hilbert transoformation here to get a more accurate real to cpx conversion
+            }
         }
 
     } else if (fmtSubChunk.format == 3) {
@@ -248,7 +363,7 @@ bool WavFile::WriteSamples(CPX* buf, int numSamples)
 
     int bytesWritten = 0;
     //Only support float for now, add PCM if we need it later
-    int bufLen = sizeof(PCM_DATA);
+    int bufLen = sizeof(PCM_DATA_2CH);
     for (int i=0; i<numSamples; i++) {
         //Convert float to +/- 32767
         pcmData.left = buf[i].re * 32767;
@@ -273,7 +388,10 @@ bool WavFile::Close()
     int bytesWritten;
     if (writeMode && wavFile != NULL) {
         //4 + (8 + SubChunk1Size) + (8 + SubChunk2Size) should be same as 36 + dataSubChunk.size
-        riff.size = 4 + (8 + fmtSubChunkPre.size) + (8 + dataSubChunkPre.size);
+        riff.size = 4 + (8 + fmtSubChunkPre.size) +
+                //(8 + factSubChunkPre.size)+ //Not using
+                (8 + listSubChunkPre.size)+
+                (8 + dataSubChunkPre.size);
 
         wavFile->seek(0); //Replace header data
         bytesWritten = wavFile->write((char*)&riff,sizeof(RIFF_CHUNK));
@@ -288,11 +406,21 @@ bool WavFile::Close()
         if (bytesWritten == -1)
             return false;
 
+#if 0
         bytesWritten = wavFile->write((char*)&factSubChunkPre,sizeof(SUB_CHUNK));
         if (bytesWritten == -1)
             return false;
 
         bytesWritten = wavFile->write((char*)&factSubChunk,sizeof(FACT_SUB_CHUNK));
+        if (bytesWritten == -1)
+            return false;
+#endif
+
+        bytesWritten = wavFile->write((char*)&listSubChunkPre,sizeof(SUB_CHUNK));
+        if (bytesWritten == -1)
+            return false;
+
+        bytesWritten = wavFile->write((char*)&listSubChunk,sizeof(LIST_SUB_CHUNK));
         if (bytesWritten == -1)
             return false;
 

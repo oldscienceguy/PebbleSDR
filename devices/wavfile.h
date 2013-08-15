@@ -60,6 +60,28 @@ The "data" subchunk contains the size of the data and the actual sound:
                                number.
 44        *   Data             The actual sound data.
 
+The "list' subchunk contains labels and notes that can be used for various purposes
+Offset	Size	Description	Value
+0x00	4	Chunk ID	"list" (0x6C696E74)
+0x04	4	Chunk Data Size	depends on contained text
+0x08	4	Type ID	"adtl" (0x6164746C)
+0x0c
+
+List of Text Labels and Names
+Offset	Size	Description	Value
+0x00	4	Chunk ID	"labl" (0x6C61626C)
+0x04	4	Chunk Data Size	depends on contained text
+0x08	4	Cue Point ID	0 - 0xFFFFFFFF
+0x0c        Text
+
+
+Offset	Size	Description	Value
+0x00	4	Chunk ID	"note" (0x6E6F7465)
+0x04	4	Chunk Data Size	depends on contained text
+0x08	4	Cue Point ID	0 - 0xFFFFFFFF
+0x0C        Text
+
+
 
 */
 //Cannonical wav file format
@@ -108,19 +130,24 @@ typedef struct FACT_SUB_CHUNK
 {
     //sub_chunk header here
     quint32 numSamples; //This is the only defined FACT item
-    //Extensions follow, non SDR files won't include this and subchunk length will be shorter
-    quint32 loFreq;
-    quint8 mode; //Demod mode during recording so we can restore on playback
-    quint8 spare1; //To keep on word boundaries
+    //Not used
 
 }FACT_SUB_CHUNK;
 
+//Chunk ID "list"
+typedef struct LIST_SUB_CHUNK
+{
+    quint8 typeID[4]; // I find "info" here, not "adtl" (0x6164746C)
+    quint8 text[64]; //fixed size, increase if we need it
+} LIST_SUB_CHUNK;
+
+
 //assumes 16bits per sample
-typedef struct PCM_DATA
+typedef struct PCM_DATA_2CH
 {
     qint16 left; //+/- 32767
     qint16 right;
-}PCM_DATA;
+}PCM_DATA_2CH;
 
 typedef struct FLOAT_DATA
 {
@@ -136,24 +163,30 @@ public:
     WavFile();
     ~WavFile();
     bool OpenRead(QString fname);
-    bool OpenWrite(QString fname, int sampleRate, quint32 loFreq, quint8 mode, quint8 spare);
+    bool OpenWrite(QString fname, int sampleRate, quint32 loFreq, quint8 _mode, quint8 spare);
     CPX ReadSample();
     int ReadSamples(CPX *buf, int numSamples);
     bool WriteSamples(CPX *buf, int numSamples);
     bool Close();
 
     int GetSampleRate();
-    quint32 GetLoFreq() {return factSubChunk.loFreq;}
-    quint8 GetMode() {return factSubChunk.mode;}
-    quint8 GetSpare() {return factSubChunk.spare1;}
+    quint32 GetLoFreq() {return loFreq;}
+    quint8 GetMode() {return mode;}
 
 protected:
+    //SDR tag/values read and written to wav
+    quint32 loFreq;
+    quint8 mode; //Demod mode during recording so we can restore on playback
+
+
     bool writeMode;
     bool fileParsed;
     quint16 dataStart; //Offset in file where data starts, allows us to loop continuously
     char tmpBuf[256];
-    PCM_DATA pcmBuf[4096]; //Max samples per read is 4096
+    //Use this buffer for both 1 and 2 channel files, numSamples is 1024 for 1 channel however
+    PCM_DATA_2CH pcmBuf[4096]; //Max samples per read is 4096
     FLOAT_DATA floatBuf[4096];
+    qint16 monoPcmBuf[2048];
 
     QFile *wavFile;
     //wav file data structs
@@ -164,8 +197,16 @@ protected:
     SUB_CHUNK dataSubChunkPre;
     SUB_CHUNK factSubChunkPre;
     FACT_SUB_CHUNK factSubChunk;
-    PCM_DATA pcmData;
+    SUB_CHUNK listSubChunkPre;
+    LIST_SUB_CHUNK listSubChunk;
+    PCM_DATA_2CH pcmData;
     FLOAT_DATA floatData;
+    char chunkBuf[256]; //Testing
+
+    //Data in subChunks that we use in loops
+    int fmtChannels; //# channels in file
+
+
 
 };
 
