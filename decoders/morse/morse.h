@@ -16,26 +16,15 @@ class Receiver;
 
 #pragma clang diagnostic ignored "-Wc++11-extensions"
 
-//This comes from configuration.h in fldigi
-struct {
-    int CWspeed = 18; //Transmit speed (WPM)
-    int CWlowerlimit = 5; //Lower RX limit (WPM)
-    int CWupperlimit = 50; // Upper TX limit (WPM)
-    std::string CW_prosigns = "=~<>%+&{}"; //CW prosigns BT AA AS AR SK KN INT HM VE
-    bool CW_use_paren = false; //Use open paren character; typically used in MARS ops
-    bool StartAtSweetSpot = false; //Always start new modems at sweet spot frequencies
-    bool rx_lowercase = false; //Print Rx in lowercase for CW, RTTY, CONTESTIA and THROB
-
-    bool CWuse_fft_filter = false; //Use FFT overlap and add convolution filter
-}progdefaults;
-
-
 //Utility functions from fldigi
 inline double clamp(double x, double min, double max)
 {
     return (x < min) ? min : ((x > max) ? max : x);
 }
 
+//Weight is the factor to weight the input when calculating the average
+//Weight=20: (input * 1/20) + average * (19/20) - Short average, only 20 loops to make average == steady input
+//Weight=800: (input * 1/800) + average * (799/800) - Long average, stead input would take 800 to == average
 inline double decayavg(double average, double input, double weight)
 {
     if (weight <= 1.0) return input;
@@ -76,6 +65,10 @@ private:
     CW_TABLE 		*cw_rx_lookup[256];
     CW_XMT_TABLE 	cw_tx_lookup[256];
     unsigned int 	tokenize_representation(const char *representation);
+    const bool useParen = false; //Use open paren character; typically used in MARS ops
+    const std::string prosigns = "=~<>%+&{}"; //CW prosigns BT AA AS AR SK KN INT HM VE
+
+
 };
 
 
@@ -117,7 +110,6 @@ public:
     void OutputData(const char *d);
     void OutputData(const char c);
 
-    void calcDotDashLength(int speed);
 public slots:
     void squelchChanged(int v);
     void refreshOutput();
@@ -201,13 +193,11 @@ protected:
     //Fldigi samplerate is 8x
     //Filter does MAC every DEC_RATIO samples
 
-    #define	DEC_RATIO	16 //Decimation Ratio replaced with modemDecimateFactor
-    #define CW_FIRLEN   512
-    // Maximum number of signs (dit or dah) in a Morse char.
-    #define WGT_SIZE 7
+    const static int DEC_RATIO	= 16; //Decimation Ratio replaced with modemDecimateFactor
+    const static int CW_FIRLEN = 512;
 
     //Filters
-    #define TRACKING_FILTER_SIZE 16
+    const static int TRACKING_FILTER_SIZE = 16;
     C_FIR_filter	*hilbert;   // Hilbert filter precedes sinc filter
     //!fftfilt			*cw_FFT_filter; // sinc / matched filter
     C_FIR_filter	*cw_FIR_filter; // linear phase finite impulse response filter
@@ -216,23 +206,20 @@ protected:
 
     //Received CW speed can be fixed (set by user) or track actual dot/dash lengths being received
     Cmovavg *trackingfilter;
-    void updateAdaptiveThreshold(int idotUsec, int idashUsec);
-    bool speedTracking;
-    bool speedTrackingDefault = true; //Automatic receive speed tracking
+    void updateAdaptiveThreshold(quint32 idotUsec, quint32 idashUsec);
+    bool speedTrackingCurrent;
+    bool speedTrackingInit = true; //Automatic receive speed tracking
 
-    int trackingWPMRange = 10; //Tracking range for CWTRACK (WPM)
+    const int trackingWPMRange = 10; //Tracking range for CWTRACK (WPM)
+    const int lowerWPMLimit = 5; //Lower RX limit (WPM)
+    const int upperWPMLimit = 50; // Upper RX limit (WPM)
 
 
     int bitfilterlen;
 
-    bool use_paren;
-    std::string prosigns;
-    bool stopflag;
-    bool use_fft_filter;
+    const bool useFFTFilter = false;
 
     int FilterFFTLen;
-
-    bool freqlock;
 
     //Use by NCO in mixer to mix cwToneFrequency
     double		phaseacc;
@@ -244,7 +231,7 @@ protected:
 
 
     // Receive buffering
-    #define	RECEIVE_CAPACITY	256
+    const static int RECEIVE_CAPACITY = 256;
     //This holds dots and dashes as they are received, way longer than any letter or phrase
     char dotDashBuf[RECEIVE_CAPACITY];
 
@@ -252,66 +239,62 @@ protected:
     int dotDashBufIndex;
 
     void resetDotDashBuf();
+    void resetModemClock();
 
     //Tone timing
     //Modem clock ticks once for every sample, each tick represents 1/modemSampleRate second
     //Times tones and silence
-    #define	USECS_PER_SEC	1000000	// Microseconds in a second
+    const static int USECS_PER_SEC = 1000000;	// Microseconds in a second
     //All usec variable are quint32 because modemClock is quint32 and we don't want conversion errors
     //quint32 is approx 71 minutes (70*60*USEC_PER_SEC)
     quint32 modemClock; //!!Do we have to do anything special to handle overflow wrap back to 0?
     quint32 modemClockToUsec(unsigned int earlier, unsigned int later);
 
-    unsigned int toneStart;		// Tone start timestamp
-    unsigned int toneEnd;		// Tone end timestamp
-    quint32 noiseSpikeUsec;		// Initially ignore any tone < 10mS
-    quint32 lastElementUsec = 0;	// length of last dot/dash
-    quint32 elementUsec = 0;		// Time difference in usecs
+    quint32 toneStart;		// Tone start timestamp
+    quint32 toneEnd;		// Tone end timestamp
+    quint32 usecNoiseSpike;		// Initially ignore any tone < 10mS
+    quint32 usecLastElement = 0;	// length of last dot/dash
+    quint32 usecElement = 0;		// Time difference in usecs
     bool spaceWasSent = true;	// for word space logic
 
-
-    // CW function return status codes.
-    #define	CW_SUCCESS	0
-    #define	CW_ERROR	-1
-    // Tone and timing magic numbers.
-    #define	DOT_MAGIC	1200000	// Dot length magic number.  The Dot length is 1200000/WPM Usec
-    #define	TONE_SILENT	0	// 0Hz = silent 'tone'
-
+    void calcDotDashLength(int _speed, quint32 & _usecDot, quint32 & _usecDash);
 
     void syncTiming();
 
-    enum CW_EVENT {CW_RESET_EVENT, CW_KEYDOWN_EVENT, CW_KEYUP_EVENT, CW_QUERY_EVENT};
-    enum CW_RX_STATE {RS_IDLE, RS_IN_TONE, RS_AFTER_TONE};
-    bool FldigiProcessEvent(CW_EVENT event, const char **c);
-    CW_RX_STATE		receiveState;	// Indicates receive state
-    CW_RX_STATE		lastReceiveState;
+    enum CW_EVENT {RESET_EVENT, KEYDOWN_EVENT, KEYUP_EVENT, QUERY_EVENT};
+    enum DECODE_STATE {IDLE, IN_TONE, AFTER_TONE};
+    bool FldigiProcessEvent(CW_EVENT event, const char **outStr);
+    DECODE_STATE		receiveState;	// Indicates receive state
+    DECODE_STATE		lastReceiveState;
     CW_EVENT		cw_event;			// functions used by cw process routine
 
     // user configurable data - local copy passed in from gui
-    int cw_speed;
     double	metric;
     double squelchIncrement; //Slider increments
     double squelchValue; //If squelch is on, this is compared to metric
     bool sqlonoff;
 
     //Fixed speed or computed speed based on actual dot/dash timing
-    int receiveSpeedWpm;				// Initially 18 WPM
-    quint32 receiveDotUsec;		// Length of a receive Dot, in Usec based on receiveSpeed
-    quint32 receiveDashUsec;		// Length of a receive Dash, in Usec based on receiveSpeed
+    int wpmSpeedCurrent;				// Initially 18 WPM
+    quint32 usecDotCurrent;		// Length of a receive Dot, in Usec based on receiveSpeed
+    quint32 usecDashCurrent;		// Length of a receive Dash, in Usec based on receiveSpeed
     //Used to restore to base case when something changes or we get lost
-    int receiveSpeedDefaultWpm;
-    quint32 receiveDotDefaultUsec; //Was cw_send_dot_length
-    quint32 receiveDashDefaultUsec;
+    const int wpmSpeedInit = 18;
+    quint32 usecDotInit; //Was cw_send_dot_length
+    quint32 usecDashInit;
 
     bool usedefaultWPM;				// use default WPM
+    const bool useLowercase = false; //Print Rx in lowercase for CW, RTTY, CONTESTIA and THROB
+
 
     //Needs description
-    int upperLimitUsec;
-    int lowerLimitUsec;
+    quint32 usecUpperLimit;
+    quint32 usecLowerLimit;
     // Receiving parameters:
 
-    quint32 adaptiveThresholdUsec;		// 2-dot threshold for adaptive speed
+    quint32 usecAdaptiveThreshold;		// 2-dot threshold for adaptive speed
 
+    void dumpStateMachine(QString why);
 };
 
 #endif // MORSE_H
