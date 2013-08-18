@@ -1346,13 +1346,14 @@ QRect rect;
 
 	//draw amplitude values
 	painter.setPen(Qt::darkYellow);
-	Font.setWeight(QFont::Light);
-	painter.setFont(Font);
+    Font.setWeight(QFont::Light);
+    painter.setFont(Font);
 	int dB = m_MaxdB;
 	for( int i=0; i<TB_VERT_DIVS-1; i++)
 	{
 		y = (int)( (float)i*pixperdiv );
-		painter.drawStaticText(5, y-1, QString::number(dB)+" dB");
+        //Was drawStaticText which was throwing Metric warnings.  DrawText is what we use everywhere else so...
+        painter.drawText(5, y-1, QString::number(dB)+" dB");
 		dB -= m_dBStepSize;
 	}
 	m_MindB = m_MaxdB - (TB_VERT_DIVS)*m_dBStepSize;
