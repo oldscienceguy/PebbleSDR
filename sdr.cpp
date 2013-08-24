@@ -448,6 +448,9 @@ SDR *SDR::Factory(Receiver *receiver, SDR::SDRDEVICE dev, Settings *settings)
 	case SDR::SR_ENSEMBLE_LF:
 		sdr = new SoftRock(receiver, SDR::SR_ENSEMBLE_LF,settings);
 		break;
+    case SDR::FiFi:
+        sdr = new SoftRock(receiver, SDR::FiFi,settings);
+        break;
 	case SDR::ELEKTOR:
 		sdr = new ElektorSDR(receiver, SDR::ELEKTOR,settings);
 		break;

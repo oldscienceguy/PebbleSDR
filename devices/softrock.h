@@ -94,6 +94,12 @@ private:
     Ui::SoftRockOptions *optionUi;
     int sdrNumber; //For SoftRocks, selects last digit in serial number
 
+    double FiFi_Startup;
+    double FiFi_Low;
+    double FiFi_High;
+    int FiFi_StartupMode;
+    double FiFi_Gain;
+
 	double SR_ENSEMBLE_Startup;
 	double SR_ENSEMBLE_Low;
 	double SR_ENSEMBLE_High;

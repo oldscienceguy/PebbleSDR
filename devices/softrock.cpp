@@ -76,7 +76,14 @@ void SoftRock::ReadSettings()
 	//Standard si570 support 4000000 to 160000000
 	//Limits will be based on divider settings for each radio
 
-	//si570 / 4.0
+    //si570 / 4.0
+    FiFi_Startup = qSettings->value("FiFi/Startup",10000000).toDouble();
+    FiFi_Low = qSettings->value("FiFi/Low",200000).toDouble();
+    FiFi_High = qSettings->value("FiFi/High",30000000).toDouble();
+    FiFi_StartupMode = qSettings->value("FiFi/StartupMode",dmAM).toInt();
+    FiFi_Gain = qSettings->value("FiFi/Gain",1.0).toDouble();
+
+    //si570 / 4.0
 	SR_ENSEMBLE_Startup = qSettings->value("SR_ENSEMBLE/Startup",10000000).toDouble();
 	SR_ENSEMBLE_Low = qSettings->value("SR_ENSEMBLE/Low",1000000).toDouble();
 	SR_ENSEMBLE_High = qSettings->value("SR_ENSEMBLE/High",40000000).toDouble();
@@ -117,6 +124,12 @@ void SoftRock::WriteSettings()
     SDR::WriteSettings();
 
     qSettings->setValue("sdrNumber",sdrNumber);
+
+    qSettings->setValue("FiFi/Startup",FiFi_Startup);
+    qSettings->setValue("FiFi/Low",FiFi_Low);
+    qSettings->setValue("FiFi/High",FiFi_High);
+    qSettings->setValue("FiFi/StartupMode",FiFi_StartupMode);
+    qSettings->setValue("FiFi/Gain",FiFi_Gain);
 
 	qSettings->setValue("SR_ENSEMBLE/Startup",SR_ENSEMBLE_Startup);
 	qSettings->setValue("SR_ENSEMBLE/Low",SR_ENSEMBLE_Low);
@@ -211,6 +224,7 @@ double SoftRock::GetStartupFrequency()
 {
 	switch (sdrDevice)
 	{
+    case FiFi: return FiFi_Startup;
 	case SR_V9: return SR_ENSEMBLE_Startup;
 	case SR_ENSEMBLE: return SR_ENSEMBLE_Startup;
 	case SR_ENSEMBLE_LF: return SR_ENSEMBLE_LF_Startup;
@@ -226,7 +240,8 @@ int SoftRock::GetStartupMode()
 {
 	switch (sdrDevice)
 	{
-	case SR_V9: return SR_ENSEMBLE_StartupMode;
+    case FiFi: return FiFi_StartupMode;
+    case SR_V9: return SR_ENSEMBLE_StartupMode;
 	case SR_ENSEMBLE: return SR_ENSEMBLE_StartupMode;
 	case SR_ENSEMBLE_LF: return SR_ENSEMBLE_LF_StartupMode;
 	case SR_ENSEMBLE_2M: return SR_ENSEMBLE_2M_StartupMode;
@@ -241,7 +256,8 @@ double SoftRock::GetHighLimit()
 {
 	switch (sdrDevice)
 	{
-	case SR_V9: return SR_ENSEMBLE_High;
+    case FiFi: return FiFi_High;
+    case SR_V9: return SR_ENSEMBLE_High;
 	case SR_ENSEMBLE: return SR_ENSEMBLE_High;
 	case SR_ENSEMBLE_LF: return SR_ENSEMBLE_LF_High;
 	case SR_ENSEMBLE_2M: return SR_ENSEMBLE_2M_High;
@@ -256,7 +272,8 @@ double SoftRock::GetLowLimit()
 {
 	switch (sdrDevice)
 	{
-	case SR_V9: return SR_ENSEMBLE_Low;
+    case FiFi: return FiFi_Low;
+    case SR_V9: return SR_ENSEMBLE_Low;
 	case SR_ENSEMBLE: return SR_ENSEMBLE_Low;
 	case SR_ENSEMBLE_LF: return SR_ENSEMBLE_LF_Low;
 	case SR_ENSEMBLE_2M: return SR_ENSEMBLE_2M_Low;
@@ -271,7 +288,8 @@ double SoftRock::GetGain()
 {
 	switch (sdrDevice)
 	{
-	case SR_V9: return SR_ENSEMBLE_Gain;
+    case FiFi: return FiFi_Gain;
+    case SR_V9: return SR_ENSEMBLE_Gain;
 	case SR_ENSEMBLE: return SR_ENSEMBLE_Gain;
 	case SR_ENSEMBLE_LF: return SR_ENSEMBLE_LF_Gain;
 	case SR_ENSEMBLE_2M: return SR_ENSEMBLE_2M_Gain;
@@ -287,7 +305,8 @@ QString SoftRock::GetDeviceName()
 	switch (sdrDevice)
 	{
 	case SR_LITE: return "SR Lite - Fixed"; break;
-	case SR_V9: return "SR V9 - ABPF"; break;
+    case FiFi: return "FiFi"; break;
+    case SR_V9: return "SR V9 - ABPF"; break;
 	case SR_ENSEMBLE: return "SoftRock Ensemble"; break;
 	case SR_ENSEMBLE_2M: return "SR Ensemble 2M"; break;
 	case SR_ENSEMBLE_4M: return "SR Ensemble 4M"; break;
@@ -452,8 +471,9 @@ bool SoftRock::SetFrequencyByValue(double dFreq)
 {
 	//Todo: Do we need to protect Si570 from invalid frequency range
 	//CMOS is typically 4mhz to 260mhz
-	if (dFreq < SI570_MIN || dFreq > SI570_MAX)
-		return false;
+    //Removed to allow FiFi to go to 200khz or 800k Si570 (x4)
+//	if (dFreq < SI570_MIN || dFreq > SI570_MAX)
+//		return false;
 	qint32 iFreq = Freq2SRFreq(dFreq);
     int result = usbCtrlMsgOut(0x32, 0, 0, (unsigned char*)&iFreq, 4);
 	return result >= 0;
@@ -496,6 +516,7 @@ double SoftRock::SetFrequency(double fRequested, double fCurrent) //In Hz
 	case SR_LITE:
 		return fRequested;
 		
+    case FiFi:
 	case SR_V9:
 	case SR_ENSEMBLE:
 	case SR_ENSEMBLE_LF:

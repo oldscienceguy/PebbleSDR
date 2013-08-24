@@ -181,6 +181,7 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     sdrSelector->addItem("SR Ensemble 6M",SDR::SR_ENSEMBLE_6M);
     sdrSelector->addItem("SR V9-ABPF",SDR::SR_V9);
     sdrSelector->addItem("SR LITE II",SDR::SR_LITE);
+    sdrSelector->addItem("FiFi",SDR::FiFi);
     sdrSelector->addItem("Elektor SDR",SDR::ELEKTOR);
     sdrSelector->addItem("RFSpace SDR-IQ",SDR::SDR_IQ_USB);
     sdrSelector->addItem("RFSpace SDR-IP",SDR::SDR_IP_TCP);
