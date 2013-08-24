@@ -28,6 +28,7 @@ enum DEMODMODE {
 	dmNONE
 };
 
+
 class Demod : public SignalProcessing
 {
     //Note:  If moc complier is not called, delete Makefile so it can be regenerated
@@ -43,6 +44,33 @@ public:
     void SetDemodMode(DEMODMODE mode, int _sourceSampleRate, int _audioSampleRate);
 	static DEMODMODE StringToMode(QString m);
 	static QString ModeToString(DEMODMODE dm);
+
+    struct DemodInfo {
+        DEMODMODE mode;
+        qint32 lowCutMin; //Low bandpass
+        qint32 highCutMax; //High bandpass
+        qint32 maxBandWidth; //for specified mode
+        //CuteSDR has other settings for variable bp filter, agc settings, etc which we don't use yet
+    };
+    //Must be in same order as DEMODMODE
+    //Verified with CuteSDR values
+    const DemodInfo demodInfo[13] = {
+        {dmAM,          -10000,     10000,      48000},
+        {dmSAM,         -10000,     10000,      48000},
+        {dmFMN,         -15000,     15000,      48000}, //Check FM
+        {dmFMMono,      -15000,     15000,      48000},
+        {dmFMStereo,    -100000,    100000,     100000},
+        {dmDSB,         -10000,     10000,      48000},
+        {dmLSB,         -20000,     0,          20000},
+        {dmUSB,         0,          20000,      20000},
+        {dmCWL,         -1000,      1000,       1000}, //Check CW
+        {dmCWU,         -1000,      1000,       1000},
+        {dmDIGL,        -20000,     0,          20000},
+        {dmDIGU,        0,          20000,      20000},
+        {dmNONE,        0,          0,          0}
+
+    };
+
 
 signals:
 
