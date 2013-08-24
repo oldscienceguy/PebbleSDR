@@ -16,7 +16,37 @@ SoftRock::SoftRock(Receiver *_receiver,SDRDEVICE dev,Settings *_settings) : SDR(
 
 	hDev = NULL;
 
-    InitSettings("softrock");
+    //Set ini file to specific version of SoftRock
+    switch(sdrDevice) {
+        case SR_ENSEMBLE:
+            InitSettings("softrock ensemble");
+            break;
+        case SR_ENSEMBLE_2M:
+            InitSettings("softrock ensemble 2m");
+            break;
+        case SR_ENSEMBLE_4M:
+            InitSettings("softrock ensemble 4m");
+            break;
+        case SR_ENSEMBLE_6M:
+            InitSettings("softrock ensemble 6m");
+            break;
+        case SR_ENSEMBLE_LF:
+            InitSettings("softrock ensemble lf");
+            break;
+        case SR_LITE:
+            InitSettings("softrock lite");
+            break;
+        case SR_V9:
+            InitSettings("softrock v9");
+            break;
+        case FiFi:
+            InitSettings("fifi");
+            break;
+        default:
+            InitSettings("softrock");
+            break;
+    }
+
     ReadSettings();
 
     optionUi = NULL;
@@ -76,90 +106,118 @@ void SoftRock::ReadSettings()
 	//Standard si570 support 4000000 to 160000000
 	//Limits will be based on divider settings for each radio
 
-    //si570 / 4.0
-    FiFi_Startup = qSettings->value("FiFi/Startup",10000000).toDouble();
-    FiFi_Low = qSettings->value("FiFi/Low",200000).toDouble();
-    FiFi_High = qSettings->value("FiFi/High",30000000).toDouble();
-    FiFi_StartupMode = qSettings->value("FiFi/StartupMode",dmAM).toInt();
-    FiFi_Gain = qSettings->value("FiFi/Gain",1.0).toDouble();
-
-    //si570 / 4.0
-	SR_ENSEMBLE_Startup = qSettings->value("SR_ENSEMBLE/Startup",10000000).toDouble();
-	SR_ENSEMBLE_Low = qSettings->value("SR_ENSEMBLE/Low",1000000).toDouble();
-	SR_ENSEMBLE_High = qSettings->value("SR_ENSEMBLE/High",40000000).toDouble();
-	SR_ENSEMBLE_StartupMode = qSettings->value("SR_ENSEMBLE/StartupMode",dmAM).toInt();
-	SR_ENSEMBLE_Gain = qSettings->value("SR_ENSEMBLE/Gain",1.0).toDouble();
-
-	//si570 / 0.8 = 5000000 to 200000000
-	SR_ENSEMBLE_2M_Startup = qSettings->value("SR_ENSEMBLE_2M/Startup",146000000).toDouble();
-	SR_ENSEMBLE_2M_Low = qSettings->value("SR_ENSEMBLE_2M/Low",100000000).toDouble();
-	SR_ENSEMBLE_2M_High = qSettings->value("SR_ENSEMBLE_2M/High",175000000).toDouble();
-	SR_ENSEMBLE_2M_StartupMode = qSettings->value("SR_ENSEMBLE_2M/StartupMode",dmFMN).toInt();
-	SR_ENSEMBLE_2M_Gain = qSettings->value("SR_ENSEMBLE_2M/Gain",1.0).toDouble();
-
-	//si570 / 1.33 = 3000000 to 120000000
-	SR_ENSEMBLE_4M_Startup = qSettings->value("SR_ENSEMBLE_4M/Startup",70000000).toDouble();
-	SR_ENSEMBLE_4M_Low = qSettings->value("SR_ENSEMBLE_4M/Low",60000000).toDouble();
-	SR_ENSEMBLE_4M_High = qSettings->value("SR_ENSEMBLE_4M/High",100000000).toDouble();
-		SR_ENSEMBLE_4M_StartupMode = qSettings->value("SR_ENSEMBLE_4M/StartupMode",dmFMN).toInt();
-	SR_ENSEMBLE_4M_Gain = qSettings->value("SR_ENSEMBLE_4M/Gain",1.0).toDouble();
-
-	//si570 / 1.33
-	SR_ENSEMBLE_6M_Startup = qSettings->value("SR_ENSEMBLE_6M/Startup",52000000).toDouble();
-	SR_ENSEMBLE_6M_Low = qSettings->value("SR_ENSEMBLE_6M/Low",40000000).toDouble();
-	SR_ENSEMBLE_6M_High = qSettings->value("SR_ENSEMBLE_6M/High",60000000).toDouble();
-		SR_ENSEMBLE_6M_StartupMode = qSettings->value("SR_ENSEMBLE_6M/StartupMode",dmFMN).toInt();
-	SR_ENSEMBLE_6M_Gain = qSettings->value("SR_ENSEMBLE_6M/Gain",1.0).toDouble();
-
-	//Extra div/4 stage, so 1/4 normal SR
-	SR_ENSEMBLE_LF_Startup = qSettings->value("SR_ENSEMBLE_LF/Startup",1000000).toDouble();
-	SR_ENSEMBLE_LF_Low = qSettings->value("SR_ENSEMBLE_LF/Low",150000).toDouble();
-	SR_ENSEMBLE_LF_High = qSettings->value("SR_ENSEMBLE_LF/High",4000000).toDouble();
-	SR_ENSEMBLE_LF_StartupMode = qSettings->value("SR_ENSEMBLE_LF/StartupMode",dmAM).toInt();
-	SR_ENSEMBLE_LF_Gain = qSettings->value("SR_ENSEMBLE_LF/Gain",1.0).toDouble();
-
+    switch(sdrDevice) {
+        case SR_LITE: //Need separate settings
+        case SR_V9: //Same as ensemble
+        case SR_ENSEMBLE:
+            //si570 / 4.0
+            SR_ENSEMBLE_Startup = qSettings->value("SR_ENSEMBLE/Startup",10000000).toDouble();
+            SR_ENSEMBLE_Low = qSettings->value("SR_ENSEMBLE/Low",1000000).toDouble();
+            SR_ENSEMBLE_High = qSettings->value("SR_ENSEMBLE/High",40000000).toDouble();
+            SR_ENSEMBLE_StartupMode = qSettings->value("SR_ENSEMBLE/StartupMode",dmAM).toInt();
+            SR_ENSEMBLE_Gain = qSettings->value("SR_ENSEMBLE/Gain",1.0).toDouble();
+            break;
+        case SR_ENSEMBLE_2M:
+            //si570 / 0.8 = 5000000 to 200000000
+            SR_ENSEMBLE_2M_Startup = qSettings->value("SR_ENSEMBLE_2M/Startup",146000000).toDouble();
+            SR_ENSEMBLE_2M_Low = qSettings->value("SR_ENSEMBLE_2M/Low",100000000).toDouble();
+            SR_ENSEMBLE_2M_High = qSettings->value("SR_ENSEMBLE_2M/High",175000000).toDouble();
+            SR_ENSEMBLE_2M_StartupMode = qSettings->value("SR_ENSEMBLE_2M/StartupMode",dmFMN).toInt();
+            SR_ENSEMBLE_2M_Gain = qSettings->value("SR_ENSEMBLE_2M/Gain",1.0).toDouble();
+            break;
+        case SR_ENSEMBLE_4M:
+            //si570 / 1.33 = 3000000 to 120000000
+            SR_ENSEMBLE_4M_Startup = qSettings->value("SR_ENSEMBLE_4M/Startup",70000000).toDouble();
+            SR_ENSEMBLE_4M_Low = qSettings->value("SR_ENSEMBLE_4M/Low",60000000).toDouble();
+            SR_ENSEMBLE_4M_High = qSettings->value("SR_ENSEMBLE_4M/High",100000000).toDouble();
+                SR_ENSEMBLE_4M_StartupMode = qSettings->value("SR_ENSEMBLE_4M/StartupMode",dmFMN).toInt();
+            SR_ENSEMBLE_4M_Gain = qSettings->value("SR_ENSEMBLE_4M/Gain",1.0).toDouble();
+            break;
+        case SR_ENSEMBLE_6M:
+            //si570 / 1.33
+            SR_ENSEMBLE_6M_Startup = qSettings->value("SR_ENSEMBLE_6M/Startup",52000000).toDouble();
+            SR_ENSEMBLE_6M_Low = qSettings->value("SR_ENSEMBLE_6M/Low",40000000).toDouble();
+            SR_ENSEMBLE_6M_High = qSettings->value("SR_ENSEMBLE_6M/High",60000000).toDouble();
+                SR_ENSEMBLE_6M_StartupMode = qSettings->value("SR_ENSEMBLE_6M/StartupMode",dmFMN).toInt();
+            SR_ENSEMBLE_6M_Gain = qSettings->value("SR_ENSEMBLE_6M/Gain",1.0).toDouble();
+            break;
+        case SR_ENSEMBLE_LF:
+            //Extra div/4 stage, so 1/4 normal SR
+            SR_ENSEMBLE_LF_Startup = qSettings->value("SR_ENSEMBLE_LF/Startup",1000000).toDouble();
+            SR_ENSEMBLE_LF_Low = qSettings->value("SR_ENSEMBLE_LF/Low",150000).toDouble();
+            SR_ENSEMBLE_LF_High = qSettings->value("SR_ENSEMBLE_LF/High",4000000).toDouble();
+            SR_ENSEMBLE_LF_StartupMode = qSettings->value("SR_ENSEMBLE_LF/StartupMode",dmAM).toInt();
+            SR_ENSEMBLE_LF_Gain = qSettings->value("SR_ENSEMBLE_LF/Gain",1.0).toDouble();
+            break;
+        case FiFi:
+            //si570 / 4.0
+            FiFi_Startup = qSettings->value("FiFi/Startup",10000000).toDouble();
+            FiFi_Low = qSettings->value("FiFi/Low",200000).toDouble();
+            FiFi_High = qSettings->value("FiFi/High",30000000).toDouble();
+            FiFi_StartupMode = qSettings->value("FiFi/StartupMode",dmAM).toInt();
+            FiFi_Gain = qSettings->value("FiFi/Gain",1.0).toDouble();
+            break;
+        default:
+            InitSettings("softrock");
+            break;
+    }
 }
+
 void SoftRock::WriteSettings()
 {
     SDR::WriteSettings();
 
     qSettings->setValue("sdrNumber",sdrNumber);
 
-    qSettings->setValue("FiFi/Startup",FiFi_Startup);
-    qSettings->setValue("FiFi/Low",FiFi_Low);
-    qSettings->setValue("FiFi/High",FiFi_High);
-    qSettings->setValue("FiFi/StartupMode",FiFi_StartupMode);
-    qSettings->setValue("FiFi/Gain",FiFi_Gain);
-
-	qSettings->setValue("SR_ENSEMBLE/Startup",SR_ENSEMBLE_Startup);
-	qSettings->setValue("SR_ENSEMBLE/Low",SR_ENSEMBLE_Low);
-	qSettings->setValue("SR_ENSEMBLE/High",SR_ENSEMBLE_High);
-	qSettings->setValue("SR_ENSEMBLE/StartupMode",SR_ENSEMBLE_StartupMode);
-	qSettings->setValue("SR_ENSEMBLE/Gain",SR_ENSEMBLE_Gain);
-
-	qSettings->setValue("SR_ENSEMBLE_2M/Startup",SR_ENSEMBLE_2M_Startup);
-	qSettings->setValue("SR_ENSEMBLE_2M/Low",SR_ENSEMBLE_2M_Low);
-	qSettings->setValue("SR_ENSEMBLE_2M/High",SR_ENSEMBLE_2M_High);
-	qSettings->setValue("SR_ENSEMBLE_2M/StartupMode",SR_ENSEMBLE_2M_StartupMode);
-	qSettings->setValue("SR_ENSEMBLE_2M/Gain",SR_ENSEMBLE_2M_Gain);
-
-	qSettings->setValue("SR_ENSEMBLE_4M/Startup",SR_ENSEMBLE_4M_Startup);
-	qSettings->setValue("SR_ENSEMBLE_4M/Low",SR_ENSEMBLE_4M_Low);
-	qSettings->setValue("SR_ENSEMBLE_4M/High",SR_ENSEMBLE_4M_High);
-	qSettings->setValue("SR_ENSEMBLE_4M/StartupMode",SR_ENSEMBLE_4M_StartupMode);
-	qSettings->setValue("SR_ENSEMBLE_4M/Gain",SR_ENSEMBLE_4M_Gain);
-
-	qSettings->setValue("SR_ENSEMBLE_6M/Startup",SR_ENSEMBLE_6M_Startup);
-	qSettings->setValue("SR_ENSEMBLE_6M/Low",SR_ENSEMBLE_6M_Low);
-	qSettings->setValue("SR_ENSEMBLE_6M/High",SR_ENSEMBLE_6M_High);
-	qSettings->setValue("SR_ENSEMBLE_6M/StartupMode",SR_ENSEMBLE_6M_StartupMode);
-	qSettings->setValue("SR_ENSEMBLE_6M/Gain",SR_ENSEMBLE_6M_Gain);
-
-	qSettings->setValue("SR_ENSEMBLE_LF/Startup",SR_ENSEMBLE_LF_Startup);
-	qSettings->setValue("SR_ENSEMBLE_LF/Low",SR_ENSEMBLE_LF_Low);
-	qSettings->setValue("SR_ENSEMBLE_LF/High",SR_ENSEMBLE_LF_High);
-	qSettings->setValue("SR_ENSEMBLE_LF/StartupMode",SR_ENSEMBLE_LF_StartupMode);
-	qSettings->setValue("SR_ENSEMBLE_LF/Gain",SR_ENSEMBLE_LF_Gain);
+    switch(sdrDevice) {
+        case SR_LITE:
+        case SR_V9:
+        case SR_ENSEMBLE:
+            qSettings->setValue("SR_ENSEMBLE/Startup",SR_ENSEMBLE_Startup);
+            qSettings->setValue("SR_ENSEMBLE/Low",SR_ENSEMBLE_Low);
+            qSettings->setValue("SR_ENSEMBLE/High",SR_ENSEMBLE_High);
+            qSettings->setValue("SR_ENSEMBLE/StartupMode",SR_ENSEMBLE_StartupMode);
+            qSettings->setValue("SR_ENSEMBLE/Gain",SR_ENSEMBLE_Gain);
+            break;
+        case SR_ENSEMBLE_2M:
+            qSettings->setValue("SR_ENSEMBLE_2M/Startup",SR_ENSEMBLE_2M_Startup);
+            qSettings->setValue("SR_ENSEMBLE_2M/Low",SR_ENSEMBLE_2M_Low);
+            qSettings->setValue("SR_ENSEMBLE_2M/High",SR_ENSEMBLE_2M_High);
+            qSettings->setValue("SR_ENSEMBLE_2M/StartupMode",SR_ENSEMBLE_2M_StartupMode);
+            qSettings->setValue("SR_ENSEMBLE_2M/Gain",SR_ENSEMBLE_2M_Gain);
+            break;
+        case SR_ENSEMBLE_4M:
+            qSettings->setValue("SR_ENSEMBLE_4M/Startup",SR_ENSEMBLE_4M_Startup);
+            qSettings->setValue("SR_ENSEMBLE_4M/Low",SR_ENSEMBLE_4M_Low);
+            qSettings->setValue("SR_ENSEMBLE_4M/High",SR_ENSEMBLE_4M_High);
+            qSettings->setValue("SR_ENSEMBLE_4M/StartupMode",SR_ENSEMBLE_4M_StartupMode);
+            qSettings->setValue("SR_ENSEMBLE_4M/Gain",SR_ENSEMBLE_4M_Gain);
+            break;
+        case SR_ENSEMBLE_6M:
+            qSettings->setValue("SR_ENSEMBLE_6M/Startup",SR_ENSEMBLE_6M_Startup);
+            qSettings->setValue("SR_ENSEMBLE_6M/Low",SR_ENSEMBLE_6M_Low);
+            qSettings->setValue("SR_ENSEMBLE_6M/High",SR_ENSEMBLE_6M_High);
+            qSettings->setValue("SR_ENSEMBLE_6M/StartupMode",SR_ENSEMBLE_6M_StartupMode);
+            qSettings->setValue("SR_ENSEMBLE_6M/Gain",SR_ENSEMBLE_6M_Gain);
+            break;
+        case SR_ENSEMBLE_LF:
+            qSettings->setValue("SR_ENSEMBLE_LF/Startup",SR_ENSEMBLE_LF_Startup);
+            qSettings->setValue("SR_ENSEMBLE_LF/Low",SR_ENSEMBLE_LF_Low);
+            qSettings->setValue("SR_ENSEMBLE_LF/High",SR_ENSEMBLE_LF_High);
+            qSettings->setValue("SR_ENSEMBLE_LF/StartupMode",SR_ENSEMBLE_LF_StartupMode);
+            qSettings->setValue("SR_ENSEMBLE_LF/Gain",SR_ENSEMBLE_LF_Gain);
+            break;
+        case FiFi:
+            qSettings->setValue("FiFi/Startup",FiFi_Startup);
+            qSettings->setValue("FiFi/Low",FiFi_Low);
+            qSettings->setValue("FiFi/High",FiFi_High);
+            qSettings->setValue("FiFi/StartupMode",FiFi_StartupMode);
+            qSettings->setValue("FiFi/Gain",FiFi_Gain);
+            break;
+        default:
+            InitSettings("softrock");
+            break;
+    }
 
 	qSettings->sync();
 }
