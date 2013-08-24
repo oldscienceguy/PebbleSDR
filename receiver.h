@@ -115,7 +115,7 @@ private:
 	int sampleRate;
 	int framesPerBuffer; //#samples in each callback
 	//sample rate and buffer size after down sampling step
-    int downSample1Frames;
+    int demodFrames;
     int downSample2Frames;
     FIRFilter *downSampleFilter;
 
@@ -124,8 +124,8 @@ private:
     CDownConvert downConvert1; //Get to reasonable rate for demod and following
     CDownConvert downConvertWfm1; //Special to get to 300k
     int audioOutRate;
-    int downSample1Rate;
-    int downSampleWfm1Rate;
+    int demodSampleRate;
+    int demodWfmSampleRate;
     CPX *workingBuf;
 
 

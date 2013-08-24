@@ -37,6 +37,9 @@
 //authors and should not be interpreted as representing official policies, either expressed
 //or implied, of Moe Wheatley.
 //==========================================================================================
+
+//Modified and adapted for Pebble
+
 #include "downconvert.h"
 #include "filters/filtercoef.h"
 //#include "gui/testbench.h"
@@ -93,9 +96,7 @@ void CDownConvert::DeleteFilters()
     }
 }
 
-//////////////////////////////////////////////////////////////////////
-// Sets NCO Frequency parameters
-//////////////////////////////////////////////////////////////////////
+//This is the mixer component used for tuning and completely replaces previous Pebble mixers
 void CDownConvert::SetFrequency(TYPEREAL NcoFreq)
 {
 TYPEREAL tmpf = NcoFreq + m_CW_Offset;
@@ -114,7 +115,7 @@ TYPEREAL tmpf = NcoFreq + m_CW_Offset;
 //////////////////////////////////////////////////////////////////////
 
 // Each DecBy2 filter has a max filter to eliminate alias
-// MaxBW = the maximum desired decimated result, typically 48k
+// MaxBW = the maximum desired decimated result, typically 48k or lower for demod, 8k or lower for digital decoders
 // Examples at 48k 10k
 //
 // CCicN3DecimateBy2 48000/(.5-.4985) = 32,000,000 2,000,000
@@ -127,6 +128,10 @@ TYPEREAL tmpf = NcoFreq + m_CW_Offset;
 // if MaxBW = 16000, then this will limit us to 96k! at 10k MaxBW 60k at 8K 48k
 // How do we decimate lower?
 // HB51TAP_MAX (.5-.333) 287,425 59,880
+
+//RL: NOTE!: MaxBW is just what is says, it's NOT desired sample rate. It's the max bandwidth required by the desired signal
+//  CW = 1khz for example, SSB = 20khz, AM/FM =48k, WFM = 100k etc.
+//  Caller must get returned sample rate and set rest of DSP chain to same.
 TYPEREAL CDownConvert::SetDataRate(TYPEREAL InRate, TYPEREAL MaxBW)
 {
 int n = 0;
