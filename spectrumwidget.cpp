@@ -449,8 +449,22 @@ void SpectrumWidget::DrawCursor(QPainter &painter, QColor color)
 
 
     //Show filter range
-    int xLo = x1 + loFilter/hzPerPixel;
-    int xHi = x1 + hiFilter/hzPerPixel;
+    //This doesn't work for CW because we have to take into account offset
+    int xLo, xHi;
+    int modeOffset = global->settings->modeOffset; //Move to constructor
+    int filterWidth = hiFilter - loFilter; //Could be pos or neg
+    if (demodMode == dmCWU) {
+        //loFilter = 500 hiFilter = 1500 modeOffset = 1000
+        //Filter should be displayed 0 to 1000 or -1000 to 0 relative to cursor
+        xLo = x1; //At the cursor
+        xHi = x1 + filterWidth / hzPerPixel;
+    } else if (demodMode == dmCWL) {
+        xLo = x1 - filterWidth / hzPerPixel;
+        xHi = x1;
+    } else {
+        xLo = x1 + loFilter/hzPerPixel;
+        xHi = x1 + hiFilter/hzPerPixel;
+    }
 
     //Shade filter area
     painter.setBrush(Qt::SolidPattern);
