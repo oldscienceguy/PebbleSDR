@@ -70,8 +70,9 @@ public slots:
     void squelchChanged(int v);
     void refreshOutput();
     void resetOutput();
-    void onBoxChecked(bool);
+    void onBoxChecked(bool b);
     void outputOptionChanged(int s);
+    void lockWPMChanged(bool b);
 
 signals:
     void newOutput();
@@ -163,8 +164,6 @@ protected:
     //Received CW speed can be fixed (set by user) or track actual dot/dash lengths being received
     Cmovavg *trackingfilter;
     void updateAdaptiveThreshold(quint32 idotUsec, quint32 idashUsec);
-    bool speedTrackingEnabled;
-    bool speedTrackingInit = true; //Automatic receive speed tracking
 
     const int trackingWPMRange = 10; //Tracking range for CWTRACK (WPM)
     const int lowerWPMLimit = 5; //Lower RX limit (WPM)
@@ -261,6 +260,9 @@ protected:
 
     enum OUTPUT_MODE{CHAR_ONLY,CHAR_AND_DOTDASH,DOTDASH};
     OUTPUT_MODE outputMode; //What we display in output
+
+    //Replaces tracking variables
+    bool lockWPM; //Locks the current WPM and disables tracking
 
     QString stateToString(DECODE_STATE state);
     void dumpStateMachine(QString why);

@@ -169,7 +169,6 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
     usecAdaptiveThreshold = 2 * DOT_MAGIC / wpmSpeedCurrent;
     usecNoiseSpike = usecAdaptiveThreshold / 4;
 
-    speedTrackingEnabled = true;
     phaseacc = 0.0;
     FFTphase = 0.0;
     FIRphase = 0.0;
@@ -273,7 +272,8 @@ void Morse::SetupDataUi(QWidget *parent)
         outputMode = CHAR_ONLY;
         connect(dataUi->outputOptionBox,SIGNAL(currentIndexChanged(int)),this,SLOT(outputOptionChanged(int)));
 
-
+        lockWPM = false;
+        connect(dataUi->lockWPMBox,SIGNAL(toggled(bool)),this,SLOT(lockWPMChanged(bool)));
     }
 
 }
@@ -333,6 +333,12 @@ void Morse::onBoxChecked(bool b)
 void Morse::outputOptionChanged(int s)
 {
     outputMode = (OUTPUT_MODE)dataUi->outputOptionBox->itemData(s).toInt();
+}
+
+void Morse::lockWPMChanged(bool b)
+{
+    lockWPM = b;
+    //Anything else?
 }
 
 void Morse::resetOutput()
@@ -785,6 +791,8 @@ void Morse::calcDotDashLength(int _speed, quint32 & _usecDot, quint32 & _usecDas
 // track the cw speed by adjusting the cw_adaptive_receive_threshold variable.
 // This is done with moving average filters for both dot & dash.
 //=======================================================================
+
+//This should be only place where adaptiveThreshold and wpmSpeedCurrent are changed
 void Morse::updateAdaptiveThreshold(quint32 idotUsec, quint32 idashUsec)
 {
     quint32 dotUsec, dashUsec;
@@ -801,7 +809,8 @@ void Morse::updateAdaptiveThreshold(quint32 idotUsec, quint32 idashUsec)
     usecAdaptiveThreshold = (quint32)trackingfilter->run((dashUsec + dotUsec) / 2);
 
     //Current speed estimate
-    wpmSpeedCurrent = DOT_MAGIC / (usecAdaptiveThreshold / 2);
+    if (!lockWPM)
+        wpmSpeedCurrent = DOT_MAGIC / (usecAdaptiveThreshold / 2);
 
 
 }
@@ -817,42 +826,6 @@ void Morse::updateAdaptiveThreshold(quint32 idotUsec, quint32 idashUsec)
 //UpdateAdaptiveThreshold called every dot/dash for timings that need to change faster
 void Morse::syncTiming()
 {
-    //int lowerwpm, upperwpm;
-
-#if 0
-    //wpm tracking moved to updateAdaptiveFilter to avoid confusion
-    speedTrackingEnabled = true; //Not supporting fixed speeds yet
-
-    // check if user changed the tracking
-    if (speedTrackingEnabled != speedTrackingInit) {
-        trackingfilter->reset();
-        usecAdaptiveThreshold = 2 * usecDotInit;
-    }
-
-    //Update current speed estimate based on threshold or preset
-    if (speedTrackingEnabled)
-        wpmSpeedCurrent = DOT_MAGIC / (usecAdaptiveThreshold / 2);
-    else {
-        //If we're not tracking, then everything stays at fixed values based in Init values
-        wpmSpeedCurrent = wpmSpeedInit;
-        calcDotDashLength(wpmSpeedCurrent, usecDotCurrent, usecDashCurrent);
-        usecAdaptiveThreshold = 2 * usecDotInit;
-    }
-
-    //After current WPM set, recalc upper and lower usec ranges for wpm
-    // If auto tracking speed, calc the lowest and highest wpm allowed by trackingRange
-    lowerwpm = wpmSpeedCurrent - trackingWPMRange;
-    upperwpm = wpmSpeedCurrent + trackingWPMRange;
-    if (lowerwpm < lowerWPMLimit)
-        lowerwpm = lowerWPMLimit;
-    if (upperwpm > upperWPMLimit)
-        upperwpm = upperWPMLimit;
-    //usecLowerLimit = 2 * DOT_MAGIC / upperwpm;
-    //usecUpperLimit = 2 * DOT_MAGIC / lowerwpm;
-    usecShortestMark = DOT_MAGIC / upperwpm;
-    usecLongestMark = DOT_MAGIC / lowerwpm;
-#endif
-
     //CalcDotDash handles special case where speed is zero
     calcDotDashLength(wpmSpeedCurrent, usecDotCurrent, usecDashCurrent);
     //Adaptive threshold is roughly 2 TCW, so midway between dot and dash
@@ -1293,9 +1266,9 @@ const char* Morse::spaceTiming(bool lookingForChar)
                     if (outputMode == CHAR_ONLY)
                         outStr = cw->display;
                     else if (outputMode == CHAR_AND_DOTDASH)
-                        outStr = QString().sprintf("%s (%s) ",cw->display,cw->dotDash).toLocal8Bit();
+                        outStr = QString().sprintf("%s [ %s ] ",cw->display,cw->dotDash).toLocal8Bit();
                     else if (outputMode == DOTDASH)
-                        outStr = QString().sprintf("%s ",cw->dotDash).toLocal8Bit();
+                        outStr = QString().sprintf(" [ %s ] ",cw->dotDash).toLocal8Bit();
                 } else {
                     // invalid decode... let user see error
                     outStr = "*";
