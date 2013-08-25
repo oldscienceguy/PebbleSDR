@@ -290,10 +290,12 @@ void Morse::lockWPMChanged(bool b)
     //Anything else?
 }
 
+//Called from reset button
 void Morse::resetOutput()
 {
     dataUi->dataEdit->clear();
     init(); //Reset all data
+    refreshOutput();
 }
 
 //Handles newOuput signal
@@ -421,20 +423,18 @@ CPX Morse::mixer(CPX in)
 
 void Morse::init()
 {
-    //We don't have separate waterfall like fldigi does, remove waterfall code everywhere
-    trackingfilter->reset();
-    usecAdaptiveThreshold = (quint32)trackingfilter->run(2 * usecDotInit);
-    usecMark = usecLastMark = 0;
+    wpmSpeedCurrent = wpmSpeedInit;
+    usecAdaptiveThreshold = 2 * DOT_MAGIC / wpmSpeedCurrent;
+    syncTiming(); //Based on wpmSpeedCurrent & adaptive threshold
 
-    lastReceiveState = receiveState; //We don't use lastReceiveState, here for completeness
-    receiveState = IDLE;
-    resetDotDashBuf();
-    resetModemClock(); //Start timer over
-
-    agc_peak = 0;
     useNormalizingThreshold = true; //Fldigi mode
-
+    agc_peak = 0;
     outputMode = CHAR_ONLY;
+    trackingfilter->reset();
+    resetModemClock();
+    resetDotDashBuf(); //So reset can refresh immediately
+    lastReceiveState = receiveState;
+    receiveState = IDLE; //Will reset clock and dot dash
 }
 
 // Compare two timestamps, and return the difference between them in usecs.
