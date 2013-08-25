@@ -7,7 +7,7 @@
 #include "QTextEdit"
 #include "ui/ui_data-morse.h"
 #include "../fldigifilters.h"
-
+#include "morsecode.h"
 #include "demod/downconvert.h"
 #include "demod.h"
 #include <QMutex>
@@ -30,48 +30,6 @@ inline double decayavg(double average, double input, double weight)
     if (weight <= 1.0) return input;
     return input * (1.0 / weight) + average * (1.0 - (1.0 / weight));
 }
-
-//Replace original Pebble lookup with this so we have one method
-#define	MorseTableSize	256
-
-//What goes into rep_buf as we receive
-#define	CW_DOT_REPRESENTATION	'.'
-#define	CW_DASH_REPRESENTATION	'-'
-
-
-struct CW_TABLE {
-    char chr;	/* The character(s) represented */
-    const char *prt;	/* The printable representation of the character */
-    const char *rpr;	/* Dot-dash shape of the character */
-};
-
-struct CW_XMT_TABLE {
-    unsigned long code;
-    const    char *prt;
-};
-
-class MorseCode {
-public:
-    MorseCode() {
-        init();
-    }
-    ~MorseCode() {
-    }
-    void init();
-    const char	*rx_lookup(char *r);
-    unsigned long	tx_lookup(int c);
-    const char *tx_print(int c);
-private:
-    CW_TABLE 		*cw_rx_lookup[256];
-    CW_XMT_TABLE 	cw_tx_lookup[256];
-    unsigned int 	tokenize_representation(const char *representation);
-    const bool useParen = false; //Use open paren character; typically used in MARS ops
-    const std::string prosigns = "=~<>%+&{}"; //CW prosigns BT AA AS AR SK KN INT HM VE
-
-
-};
-
-
 
 //We need to inherit from QObject so we can filter events.
 //Remove if we eventually create a separate 'morse widget' object for UI
