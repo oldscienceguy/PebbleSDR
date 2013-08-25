@@ -62,7 +62,7 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	amFilterOptions << "16000" << "12000" << "6000" << "3000";
 	lsbFilterOptions << "3000" << "2400" << "1800"; //lsb, usb
 	diglFilterOptions << "2400" << "1200" << "500" << "250" ;
-	cwFilterOptions << "1800" << "1200" << "500" << "250" ; //overlap with lsb at wide end
+    cwFilterOptions << "1000" << "500" << "250" << "100" << "50";
 	fmFilterOptions << "10000" << "7000" ;
     //wfmFilterOptions << "80000"<<"40000";
 	ui.filterBox->addItems(amFilterOptions); //Default
@@ -650,27 +650,28 @@ void ReceiverWidget::filterSelectionChanged(QString f)
      * But we actuall want to hear a tone of 'modeOffset' or 800hz
      * If mode is CWU we expect to tune from low to high, so we subtact 800hz to set device/mixer frequency
      * So lets say F=10k and Pebble shows 10k.  Device will be set to 9200 and we hear 800hz tone
-     * Tunint higher decreases tone, tuning lower increases
+     * Tuning higher decreases tone, tuning lower increases
      *
      * If mode is CWL, tuneing higher increases tone, tuning lower decreases
      * This is all taken care of when we set the mixer frequency by offsetting modemOffset
      *
-     * So far so good, but now we have to make sure our filters always keey the freq including offset in band
-     * To test this we should be able to go from 1200 to 250 hz filter without losing audio tone.
+     * So far so good, but now we have to make sure our filters always keep the freq including offset in band
+     * To test this we should be able to go from 1200 to 250 hz filter without losing 1k audio tone.
      * We want to put our 800hz tone in the middle of the filter
      * So we take the filter width and add 1/2 it to the modeOffset and 1/2 to the filter itself
      *
     */
-	case dmCWU:
-        //modeOffset = -800
-        //We want 1200hz filter to run from -1600 to -400 so modeOffset is right in the middle
-        lo = 0 - (modeOffset * .5); // 0 - - 400 = 400
-        hi = filter - (modeOffset * .5); // 1200 - - 400 = 1600
+    case dmCWU:
+        //modeOffset = -1000 (so we can use it directly in other places without comparing cwu and cwl)
+        //We want 500hz filter to run from 750 to 1250 so modeOffset is right in the middle
+        lo = -modeOffset - (filter/2); // --1000 - 250 = 750
+        hi = -modeOffset + (filter/2); // --1000 + 250 = 1250
 		break;
 	case dmCWL:
-        //modeOffset = +800
-        lo = -filter - (modeOffset * .5); //-1200 - 400 = -1600
-        hi = 0 - (modeOffset * .5); // 0 - 400 = -400
+        //modeOffset = +1000 (default)
+        //We want 500hz filter to run from -1250 to -750 so modeOffset is right in the middle
+        lo = -modeOffset - (filter/2); // - +1000 - 250 = -1250
+        hi = -modeOffset + (filter/2); // +1000 + 250 = -750
         break;
     //Same as CW but with no offset tone, drop if not needed
 	case dmDIGU:
