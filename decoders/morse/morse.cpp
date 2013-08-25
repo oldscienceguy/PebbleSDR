@@ -344,7 +344,7 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
     //Setup Goertzel
     cwGoertzel = new Goertzel(sr, fc);
     //Modem sample rate, device sample rate decimated to this before decoding
-    modemSampleRate = 8000;
+    modemSampleRate = 1000; //8000; //Desired bandwidth, not sample rate
     //See if we can decimate to this rate
     int actualModemRate = modemDownConvert.SetDataRate(sampleRate,modemSampleRate);
     modemSampleRate = actualModemRate;
@@ -394,7 +394,7 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
 
     usedefaultWPM = false;
 
-    wpmSpeedCurrent = wpmSpeedInit;
+    wpmSpeedCurrent = wpmSpeedFilter = wpmSpeedInit;
     calcDotDashLength(wpmSpeedInit, usecDotInit, usecDashInit);
 
     usecAdaptiveThreshold = 2 * DOT_MAGIC / wpmSpeedCurrent;
@@ -413,7 +413,7 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
     hilbert->init_hilbert(37, 1);
 
     cw_FIR_filter = new C_FIR_filter();
-    //Filter is at modem sample rate and self decimates with DEC_RATIO in LP filter
+    //Filter is at modem sample rate
     double f = wpmSpeedInit / (1.2 * modemSampleRate);
     cw_FIR_filter->init_lowpass (CW_FIRLEN, DEC_RATIO, f);
 
@@ -431,6 +431,8 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
     syncTiming();
 
     cwMode = dmCWL;
+    outputBufIndex = 0;
+
 
     init();
 
@@ -552,7 +554,7 @@ void Morse::onBoxChecked(bool b)
 void Morse::resetOutput()
 {
     dataUi->dataEdit->clear();
-    rx_init(); //Reset all data
+    init(); //Reset all data
 }
 
 //Handles newOuput signal
@@ -911,13 +913,13 @@ filter returns result every DEC_RATIO samples
 // SHOULD ONLY BE CALLED FROM THE rx_processing loop
 // This is called on every ProcessBlock loop to see if anything has changed between loops
 // Should be renamed checkForChanges() or something
-void Morse::reset_rx_filter()
+void Morse::syncFilterWithWpm()
 {
     //If anything had changed from the defaults we started with, rest
     //if (use_fft_filter != progdefaults.CWuse_fft_filter ||
-    if(	wpmSpeedCurrent != wpmSpeedInit ) {
+    if(	wpmSpeedCurrent != wpmSpeedFilter ) {
 
-        wpmSpeedCurrent = wpmSpeedInit;
+        wpmSpeedFilter = wpmSpeedCurrent;
 
         //if (use_fft_filter) { // FFT filter
         //	cw_FFT_filter->create_lpf(progdefaults.CWspeed/(1.2 * modemSampleRate));
@@ -927,30 +929,14 @@ void Morse::reset_rx_filter()
             FIRphase = 0;
         //}
 
-        calcDotDashLength(wpmSpeedCurrent, usecDotCurrent, usecDashCurrent);
-        usecAdaptiveThreshold = 2 * DOT_MAGIC / wpmSpeedCurrent;
-        usecNoiseSpike = usecAdaptiveThreshold / 4;
-
         phaseacc = 0.0;
         FFTphase = 0.0;
         FIRphase = 0.0;
         FFTvalue = 0.0;
         FIRvalue = 0.0;
 
-        resetDotDashBuf();
-        //!!Check this
-        //modemClock = 0; //Start timer over
-
         agc_peak = 0;
     }
-#if 0
-    if (lower_threshold != progdefaults.CWlower ||
-        upper_threshold != progdefaults.CWupper) {
-        lower_threshold = progdefaults.CWlower;
-        upper_threshold = progdefaults.CWupper;
-        clear_syncscope();
-    }
-#endif
 }
 
 //Not used in fldigi, but there for CPX samples
@@ -968,9 +954,14 @@ CPX Morse::mixer(CPX in)
     return z;
 }
 
-//Called on Reset from UI
-void Morse::rx_init()
+void Morse::init()
 {
+    //We don't have separate waterfall like fldigi does, remove waterfall code everywhere
+    trackingfilter->reset();
+    usecAdaptiveThreshold = (quint32)trackingfilter->run(2 * usecDotInit);
+    usecMark = usecLastMark = 0;
+
+    lastReceiveState = receiveState; //We don't use lastReceiveState, here for completeness
     receiveState = IDLE;
     resetDotDashBuf();
     resetModemClock(); //Start timer over
@@ -978,16 +969,6 @@ void Morse::rx_init()
     agc_peak = 0;
     useNormalizingThreshold = true; //Fldigi mode
     usedefaultWPM = false;
-}
-
-void Morse::init()
-{
-    //We don't have separate waterfall like fldigi does, remove waterfall code everywhere
-    trackingfilter->reset();
-    usecAdaptiveThreshold = (quint32)trackingfilter->run(2 * usecDotInit);
-    usecElement = usecLastElement = 0;
-
-    rx_init();
 }
 
 // Compare two timestamps, and return the difference between them in usecs.
@@ -1040,19 +1021,18 @@ void Morse::updateAdaptiveThreshold(quint32 idotUsec, quint32 idashUsec)
 
     usecAdaptiveThreshold = (quint32)trackingfilter->run((dashUsec + dotUsec) / 2);
 
-    //!!Sync timing immediately resets adaptive threshold!
-    syncTiming();
+    //syncTiming();
 }
 
 // sync_parameters()
 // Synchronize the dot, dash, end of element, end of character, and end
 // of word timings and ranges to new values of Morse speed, or receive tolerance.
+// Changes
+// usecNoiseSpike
+// useUpperLimit and usecLowerLimit based on wpm
 void Morse::syncTiming()
 {
     int lowerwpm, upperwpm;
-
-    //usecAdaptiveThreshold = 2 * DOT_MAGIC / wpmSpeedInit;
-    //usecNoiseSpike = usecAdaptiveThreshold / 4;
 
     // check if user changed the tracking
     if (speedTrackingCurrent != speedTrackingInit) {
@@ -1061,6 +1041,18 @@ void Morse::syncTiming()
     }
     speedTrackingCurrent = speedTrackingInit;
 
+
+    //Update current speed estimate based on threshold or preset
+    if (speedTrackingCurrent)
+        wpmSpeedCurrent = DOT_MAGIC / (usecAdaptiveThreshold / 2);
+    else {
+        //If we're not tracking, then everything stays at fixed values based in Init values
+        wpmSpeedCurrent = wpmSpeedInit;
+        calcDotDashLength(wpmSpeedCurrent, usecDotCurrent, usecDashCurrent);
+        usecAdaptiveThreshold = 2 * usecDotInit;
+    }
+
+    //After current WPM set, recalc upper and lower usec ranges for wpm
     // If auto tracking speed, calc the lowest and highest wpm allowed by trackingRange
     lowerwpm = wpmSpeedCurrent - trackingWPMRange;
     upperwpm = wpmSpeedCurrent + trackingWPMRange;
@@ -1073,19 +1065,11 @@ void Morse::syncTiming()
     usecLowerLimit = DOT_MAGIC / upperwpm;
     usecUpperLimit = DOT_MAGIC / lowerwpm;
 
-    if (speedTrackingCurrent)
-        wpmSpeedCurrent = DOT_MAGIC / (usecAdaptiveThreshold / 2);
-    else {
-        //If we're not tracking, then everything stays at fixed values based in Init values
-        wpmSpeedCurrent = wpmSpeedInit;
-        calcDotDashLength(wpmSpeedCurrent, usecDotCurrent, usecDashCurrent);
-        usecAdaptiveThreshold = 2 * usecDotInit;
-    }
-
     //CalcDotDash handles special case where speed is zero
     calcDotDashLength(wpmSpeedCurrent, usecDotCurrent, usecDashCurrent);
-
-    usecNoiseSpike = usecDotCurrent / 2;
+    //Make this zero to accept any inter mark space as valid
+    usecElementThreshold = 0;//usecDotCurrent / 2;
+    usecNoiseSpike = usecAdaptiveThreshold / 4;
 
 }
 
@@ -1102,6 +1086,8 @@ void Morse::resetModemClock()
     modemClock = 0;
     toneStart = 0;
     toneEnd = 0;
+    usecMark = 0;
+    usecSpace = 0;
 }
 
 /*
@@ -1128,7 +1114,8 @@ CPX * Morse::ProcessBlockFldigi(CPX *in)
 
     CPX z;
 
-    reset_rx_filter();
+    //If WPM changed in last block, dynamicall or by user, update filter with new speed
+    syncFilterWithWpm();
 
     //Downconverter first mixes in place, ie changes in!  So we have to work with a copy
     CPXBuf::copy(workingBuf->Ptr(),in,numSamples);
@@ -1143,11 +1130,13 @@ CPX * Morse::ProcessBlockFldigi(CPX *in)
 
     //!!Bug - SampleRate 44100 (wav file) to 8000 should reduce sample size by 5.5, but is still 2048
     int numModemSamples = modemDownConvert.ProcessData(numSamples, workingBuf->Ptr(), this->out);
-    //Now at 8k modem rate
-    //Verify that testbench post banpass signal looks the same, just at 8k sample rate
+    //Now at lower modem rate with bandwidth set by modemDownConvert in constructor
+    //Verify that testbench post banpass signal looks the same, just at modemSampleRate
     global->testBench->DisplayData(numModemSamples,this->out, modemSampleRate, PROFILE_5);
 
     for (int i = 0; i<numModemSamples; i++) {
+        modemClock++; //1 tick per sample
+
 #if 0
         //Mix to get modemFrequency at baseband so narrow filter can detect magnitude
         z = CPX (cos(FIRphase), sin(FIRphase) ) * out[i];
@@ -1167,17 +1156,13 @@ CPX * Morse::ProcessBlockFldigi(CPX *in)
         //We need some sort of AGC here to get consistent tone thresholds
         if (cw_FIR_filter->run ( z, z )) {
 
-            //smpl_ctr keeps track of uSecs
-            //Since cw_FIR_filter only returns every DEC_RATIO (16) samples, smpl_ctr increases in DEC_RATIO increments
-            modemClock += DEC_RATIO;
-
             // demodulate and get power in signal
             FIRvalue = z.mag(); //sqrt sum of squares
             //or
             //FIRvalue = z.sqrMag(); //just sum of squares
 
             //Moving average to handle jitter during CW rise and fall periods
-            //!!FIRvalue = bitfilter->run(FIRvalue);
+            FIRvalue = bitfilter->run(FIRvalue);
             //Main logic for timing and character decoding
             decode_stream(FIRvalue);
         }
@@ -1186,7 +1171,7 @@ CPX * Morse::ProcessBlockFldigi(CPX *in)
         //Its possible we get called right after dataUi has been been instantiated
         //since receive loop is running when CW window is opened
         if (dataUi != NULL && dataUi->dataBar!=NULL)
-            dataUi->dataBar->setValue(metric); //Tuning bar
+            dataUi->dataBar->setValue(squelchMetric); //Tuning bar
     }
 
     return in;
@@ -1207,7 +1192,7 @@ void Morse::decode_stream(double value)
 
     //metric is what we use to determine whether to squelch or not
     //Also what could be displayed on 0-100 tuning bar
-    metric = clamp(agc_peak * 2000 , 0.0, 100.0); //Clamp to min max value, peak can never be higher or lower than this
+    squelchMetric = clamp(agc_peak * 2000 , 0.0, 100.0); //Clamp to min max value, peak can never be higher or lower than this
     //metric = clamp(agc_peak * 1000 , 0.0, 100.0); //JSPR uses 1000, where does # come from?
 
     //global->testBench->SendDebugTxt(QString().sprintf("V: %f A: %f, M: %f",value, agc_peak, metric));
@@ -1226,31 +1211,29 @@ void Morse::decode_stream(double value)
     }
 
     //Check squelch to avoid noise errors
-    if (!sqlonoff || metric > squelchValue ) {
+    sqlonoff = false;
+    if (!sqlonoff || squelchMetric > squelchValue ) {
+        //State machine handles all transitions and decisions
+        //We just determine if value indicated key down or up status
+
         // Power detection using hysterisis detector
         // upward trend means tone starting
-        if ((value > thresholdUp) && (receiveState != IN_TONE)) {
-            FldigiProcessEvent(KEYDOWN_EVENT, NULL);
+        if (value > thresholdUp) {
+            stateMachine(TONE_EVENT);
         }
+
+        //Don't do anything if in the middle?  Prevents jitter that would occur if just compare with single value
+
         // downward trend means tone stopping
-        if ((value < thresholdDown) && (receiveState == IN_TONE)) {
-            FldigiProcessEvent(KEYUP_EVENT, NULL);
+        if (value < thresholdDown) {
+            stateMachine(NO_TONE_EVENT);
         }
+
+    } else {
+        //Light in-squelch indicator (TBD)
+        //Keep timing
+        qDebug()<<"In squelch";
     }
-
-    //Is there a character ready to ouput
-    const char *outStr;
-
-    FldigiProcessEvent(QUERY_EVENT, &outStr);
-    if (outStr != NULL) {
-        //Output character(s)
-        if (strlen(outStr) == 1) {
-            OutputData(useLowercase ? tolower(*outStr) : *outStr);
-        } else while (*outStr) {
-            OutputData(useLowercase ? tolower(*outStr++) : *outStr++);
-        }
-    }
-
 }
 
 /*
@@ -1275,221 +1258,313 @@ void Morse::decode_stream(double value)
 
 //Returns aren't used and are random
 //We could return next state just to be useful
-bool Morse::FldigiProcessEvent(CW_EVENT event, const char **outStr)
+bool Morse::stateMachine(CW_EVENT event)
 {
-    if (outStr != NULL)
-        *outStr = NULL; //Do this first so we never return garbage
+    const char *outStr;
+    //State sequence normally follows the same order as the switch statement
+    //For each state, handle all possible events
+    switch (receiveState) {
+        case IDLE:
+            switch (event) {
+                case RESET_EVENT:
+                    //Move to func and call from each state
+                    //dumpStateMachine("RESET_EVENT enter");
+                    lastReceiveState = receiveState; //We don't use lastReceiveState, here for completeness
+                    receiveState = IDLE;
+                    resetDotDashBuf();
+                    resetModemClock(); //Start timer over
+                    syncTiming();
+                    break;
 
-    switch (event) {
-        //Reset everything and start over from scratch
-        //Not called from anywhere, remove?  rx_init() does same?
-        case RESET_EVENT:
-            dumpStateMachine("RESET_EVENT enter");
-            syncTiming();
-            receiveState = IDLE;
-            resetDotDashBuf();
-            resetModemClock(); //Start timer over
+                //Tone filter output is trending up
+                case TONE_EVENT:
+                    resetDotDashBuf();
+                    resetModemClock(); //Start timer over
+                    lastReceiveState = receiveState;
+                    receiveState = MARK_TIMING;
+                    break;
 
-            return true;
+                //Tone filter output is trending down
+                case NO_TONE_EVENT:
+                    //Don't care about silence in idle state
+                    break;
+            }
+            break;
+        case MARK_TIMING:
+            switch (event) {
+                case RESET_EVENT:
+                    //!!Handle
+                    break;
+
+                case TONE_EVENT:
+                    //Keep timing
+                    //Check for long tuning tone and ignore ??
+                    break;
+
+                case NO_TONE_EVENT:
+                    //Transition from mark to space
+                    // Save the current timestamp so we can see how long tone was
+                    toneEnd = modemClock;
+                    usecMark = modemClockToUsec(toneStart, toneEnd);
+                    // If the tone length is shorter than any noise cancelling
+                    // threshold that has been set, then ignore this tone.
+                    if (usecNoiseSpike > 0
+                        && usecMark < usecNoiseSpike) {
+                        break; //Still in mark timing state
+                    }
+
+                    //dumpStateMachine("KEYUP_EVENT enter");
+                    usecSpace = 0;
+                    //Could be valid tone or could just be a short signal drop
+                    markHandled = false; //Defer to space timing
+                    lastReceiveState = receiveState;
+                    receiveState = INTER_ELEMENT_TIMING;
+                    break;
+            }
             break;
 
-        //Tone filter output is trending up
-        case KEYDOWN_EVENT:
-            dumpStateMachine("KEYDOWN_EVENT enter");
-            if (receiveState == IN_TONE) {
-                //We can't be processing a tone and also get a keydown event
-                return false;
+        case INTER_ELEMENT_TIMING:
+            switch (event) {
+                case RESET_EVENT:
+                    //Todo
+                    break;
+
+                case TONE_EVENT:
+                    //Looking for inter-element space
+                    //If enough time has gone by we've already handled in NO_TONE_EVENT
+                    if (!markHandled) {
+                        //Too short
+                        if (usecSpace < usecNoiseSpike) {
+                        //Just continue as if space never happened
+                            //Don't reset clock, we're still timing mark
+                            lastReceiveState = receiveState;
+                            receiveState = MARK_TIMING;
+                        } else {
+                        //Throw it away and start over
+                            lastReceiveState = receiveState;
+                            receiveState = IDLE;
+                        }
+                    } else {
+                        //If there was enough time for char out we wouldn't get here
+                        resetModemClock();
+                        lastReceiveState = receiveState;
+                        receiveState = MARK_TIMING;
+                    }
+                    break;
+
+                case NO_TONE_EVENT:
+                    usecSpace = modemClockToUsec(toneEnd, modemClock); //Time from tone end to now
+                    if (!markHandled && usecSpace > usecElementThreshold) {
+                        addMarkToDotDash();
+                        markHandled = true;
+                    }
+                    //Anything waiting for output?
+                    outStr = spaceTiming(true); //Looking for char
+                    if (outStr != NULL) {
+                        //We will only get a char between 2 and 4 TCW of space
+                        outputChar(outStr);
+                        //dumpStateMachine(outStr);
+                        usecLastSpace = usecSpace; //Almost always fixed because we start looking for char at 2x usecDot
+                        resetDotDashBuf(); //Ready for new char
+                        lastReceiveState = receiveState; //We don't use lastReceiveState, here for completeness
+                        receiveState = WORD_SPACE_TIMING;
+                    }
+                    break;
             }
-            // first tone in idle state reset audio sample counter
-            if (receiveState == IDLE) {
-                resetDotDashBuf();
-                resetModemClock(); //Start timer over
-
-            }
-
-            //Continue counting tone duration
-            // save the timestamp
-            toneStart = modemClock;
-            // Set state to indicate we are inside a tone.
-            lastReceiveState = receiveState; //We don't use lastReceiveState, here for completeness
-
-            receiveState = IN_TONE;
-
-            return true;
-
             break;
-        //Tone filter output is trending down
-        case KEYUP_EVENT:
-            dumpStateMachine("KEYUP_EVENT enter");
-            // The receive state is expected to be inside a tone.
-            if (receiveState != IN_TONE)
-                return false;
+        case WORD_SPACE_TIMING:
+            switch (event) {
+                case RESET_EVENT:
+                    //Todo
+                    break;
+                case TONE_EVENT:
+                    //Any char has already been output, just start timing tond
+#if 0
+                    //Anything waiting for output?
+                    outStr = spaceTiming(false);
+                    if (outStr != NULL) {
+                        outputChar(outStr);
+                        //dumpStateMachine(*outStr);
+                    }
+#endif
+                    usecLastSpace = usecSpace;
+                    resetDotDashBuf(); //Ready for new char
+                    resetModemClock();
+                    lastReceiveState = receiveState; //We don't use lastReceiveState, here for completeness
+                    receiveState = MARK_TIMING;
+                    break;
 
-            // Save the current timestamp so we can see how long tone was
-            toneEnd = modemClock;
-            usecElement = modemClockToUsec(toneStart, toneEnd);
-            // make sure our timing values are up to date
-            syncTiming();
+                case NO_TONE_EVENT:
+                    usecSpace = modemClockToUsec(toneEnd, modemClock); //Time from tone end to now
+                    //Anything waiting for output?
+                    outStr = spaceTiming(false);
+                    if (outStr != NULL) {
+                        outputChar(outStr);
+                        usecLastSpace = usecSpace;
 
-            // If the tone length is shorter than any noise cancelling
-            // threshold that has been set, then ignore this tone.
-            if (usecNoiseSpike > 0
-                && usecElement < usecNoiseSpike) {
-                receiveState = IDLE;
-                return false;
+                        //dumpStateMachine(*outStr);
+                        lastReceiveState = receiveState;
+                        receiveState = IDLE; //Takes care of resets
+                    }
+                    break;
             }
-
-            // Set up to track speed on dot-dash or dash-dot pairs for this test to work, we need a dot dash pair or a
-            // dash dot pair to validate timing from and force the speed tracking in the right direction. This method
-            // is fundamentally different than the method in the unix cw project. Great ideas come from staring at the
-            // screen long enough!. Its kind of simple really ... when you have no idea how fast or slow the cw is...
-            // the only way to get a threshold is by having both code elements and setting the threshold between them
-            // knowing that one is supposed to be 3 times longer than the other. with straight key code... this gets
-            // quite variable, but with most faster cw sent with electronic keyers, this is one relationship that is
-            // quite reliable. Lawrence Glaister (ve7it@shaw.ca)
-            if (usecLastElement > 0) {
-                // check for dot dash sequence (current should be 3 x last)
-                if ((usecElement > 2 * usecLastElement) &&
-                    (usecElement < 4 * usecLastElement)) {
-                    //usecLastElement is dot
-                    updateAdaptiveThreshold(usecLastElement, usecElement);
-                }
-                // check for dash dot sequence (last should be 3 x current)
-                if ((usecLastElement > 2 * usecElement) &&
-                    (usecLastElement < 4 * usecElement)) {
-                    //usecElement is dot and useLastElement is dash
-                    updateAdaptiveThreshold(usecElement, usecLastElement);
-                }
-            }
-            usecLastElement = usecElement;
-
-            // ok... do we have a dit or a dah?
-            // a dot is anything shorter than 2 dot times
-            if (usecElement <= usecAdaptiveThreshold) {
-                dotDashBuf[dotDashBufIndex++] = CW_DOT_REPRESENTATION;
-                //		printf("%d dit ", last_element/1000);  // print dot length
-            } else {
-                // a dash is anything longer than 2 dot times
-                dotDashBuf[dotDashBufIndex++] = CW_DASH_REPRESENTATION;
-            }
-
-            // We just added a representation to the receive buffer.
-            // If it's full, then reset everything as it probably noise
-            if (dotDashBufIndex == RECEIVE_CAPACITY - 1) {
-                receiveState = IDLE;
-                resetDotDashBuf();	// reset decoding pointer
-                resetModemClock();		// reset audio sample counter
-                return false;
-            } else {
-                // zero terminate representation
-                dotDashBuf[dotDashBufIndex] = 0;
-            }
-            // All is well.  Move to the more normal after-tone state.
-            receiveState = AFTER_TONE;
-            return false;
-
-            break; //case CW_KEYUP
-
-        //Update timings etc
-        //This gets called every 16 clock ticks, so keep it fast
-        case QUERY_EVENT:
-            dumpStateMachine("QUERY_EVENT enter");
-            // this should be called quite often (faster than inter-character gap) It looks after timing
-            // key up intervals and determining when a character, a word space, or an error char '*' should be returned.
-            // CW_SUCCESS is returned when there is a printable character. Nothing to do if we are in a tone
-            if (receiveState == IN_TONE)
-                return false;
-
-            // in this call we expect a pointer to a char to be valid
-
-            if (outStr == NULL) {
-                // else we had no place to put character...
-                receiveState = IDLE;
-                resetDotDashBuf();
-                // reset decoding pointer
-                return false;
-            }
-
-            // compute length of silence so far
-
-            syncTiming(); //Make sure all comparison values are current and in sync
-            usecElement = modemClockToUsec(toneEnd, modemClock); //Time from tone end to now
-
-            //dumpStateMachine("Usec Silence");
-
-            // SHORT time since keyup... nothing to do yet
-            if (usecElement < (2 * usecDotCurrent))
-                return false;
-
-            // MEDIUM time since keyup... check for character space
-            // one shot through this code via receive state logic
-            // FARNSWOTH MOD HERE -->
-            if (usecElement >= (2 * usecDotCurrent) &&
-                usecElement <= (4 * usecDotCurrent) &&
-                receiveState == AFTER_TONE) {
-                // Look up the representation
-                //cout << "CW_QUERY medium time after keyup: " << rx_rep_buf;
-                *outStr = morseCode.rx_lookup(dotDashBuf);
-                //cout <<": " << *c <<flush;
-                if (*outStr == NULL) {
-                    // invalid decode... let user see error
-                    *outStr = "*";
-                }
-
-                dumpStateMachine(*outStr);
-                receiveState = IDLE; //Continue counting silence
-                resetDotDashBuf();	// reset decoding pointer
-                //We're still timing and looking for word space
-                //DONT RESET MODEM CLOCK
-                spaceWasSent = false;
-
-                return true;
-            }
-
-            // LONG time since keyup... check for a word space
-            // FARNSWOTH MOD HERE -->
-            if ((usecElement > (4 * usecDotCurrent)) && !spaceWasSent) {
-                *outStr = " ";
-                dumpStateMachine("Word Space");
-                receiveState = IDLE;
-                resetDotDashBuf();
-                resetModemClock();
-                spaceWasSent = true;
-                return true;
-            }
-            // should never get here... catch all
-            // usecElem < 4x dotCurrent && not in AFTER_TONE
-
-            //dumpStateMachine("State Error");
-
-            return false;
-
-            break; //case CW_QUERY
-
+            break;
     }
     // should never get here... catch all
     return false;
 }
 
+//Got a tone that was long enough with a post tone space that was long enough
+void Morse::addMarkToDotDash()
+{
+    //Process last mark element
+    //uSecMark has timing
+    // make sure our timing values are up to date after every tone
+    syncTiming();
+
+    // Set up to track speed on dot-dash or dash-dot pairs for this test to work, we need a dot dash pair or a
+    // dash dot pair to validate timing from and force the speed tracking in the right direction. This method
+    // is fundamentally different than the method in the unix cw project. Great ideas come from staring at the
+    // screen long enough!. Its kind of simple really ... when you have no idea how fast or slow the cw is...
+    // the only way to get a threshold is by having both code elements and setting the threshold between them
+    // knowing that one is supposed to be 3 times longer than the other. with straight key code... this gets
+    // quite variable, but with most faster cw sent with electronic keyers, this is one relationship that is
+    // quite reliable. Lawrence Glaister (ve7it@shaw.ca)
+    if (usecLastMark > 0) {
+        // check for dot dash sequence (current should be 3 x last)
+        if ((usecMark > 2 * usecLastMark) &&
+            (usecMark < 4 * usecLastMark)) {
+            //usecLastElement is dot
+            updateAdaptiveThreshold(usecLastMark, usecMark);
+        }
+        // check for dash dot sequence (last should be 3 x current)
+        if ((usecLastMark > 2 * usecMark) &&
+            (usecLastMark < 4 * usecMark)) {
+            //usecElement is dot and useLastElement is dash
+            updateAdaptiveThreshold(usecMark, usecLastMark);
+        }
+
+    }
+    usecLastMark = usecMark;
+    //qDebug()<<"Mark: "<<usecMark;
+
+    //RL We don't care about checking inter dot/dash spacing?  Should be 1 TCW
+    // ok... do we have a dit or a dah?
+    // a dot is anything shorter than 2 dot times
+    if (usecMark <= usecAdaptiveThreshold) {
+        dotDashBuf[dotDashBufIndex++] = CW_DOT_REPRESENTATION;
+    } else {
+        // a dash is anything longer than 2 dot times
+        dotDashBuf[dotDashBufIndex++] = CW_DASH_REPRESENTATION;
+    }
+
+    // We just added a representation to the receive buffer.
+    // If it's full, then reset everything as it probably noise
+    if (dotDashBufIndex == RECEIVE_CAPACITY - 1) {
+        lastReceiveState = receiveState;
+        receiveState = IDLE;
+        return;
+    } else {
+        // zero terminate representation so we can handle as char* string
+        dotDashBuf[dotDashBufIndex] = 0;
+    }
+}
+
+void Morse::outputChar(const char *outStr) {
+    if (outStr != NULL) {
+        //Output character(s)
+        if (strlen(outStr) == 1) {
+            OutputData(useLowercase ? tolower(*outStr) : *outStr);
+        } else while (*outStr) {
+            OutputData(useLowercase ? tolower(*outStr++) : *outStr++);
+        }
+    }
+}
+
+//Processes post tone space timing
+//Returns true if space was long enough to output something
+//Return char or string as needed
+//Uses dotDashBuf, could use usec silence
+const char* Morse::spaceTiming(bool lookingForChar)
+{
+    const char *outStr;
+
+    if (lookingForChar) {
+        // SHORT time since keyup... nothing to do yet
+        //Could be inter-element space (1 TCW)
+        if (usecSpace < (2 * usecDotCurrent)) {
+            return NULL; //Keep timing silence
+
+        } else if (usecSpace >= (2 * usecDotCurrent) &&
+            usecSpace <= (4 * usecDotCurrent)) {
+            // MEDIUM time since keyup... check for character space
+            // one shot through this code via receive state logic
+            // FARNSWOTH MOD HERE -->
+
+            //Char space is 3 TCW per spec, but accept 2 to 4
+
+            // Look up the representation
+            outStr = NULL;
+            if (*dotDashBuf != 0x00) {
+                outStr = morseCode.rx_lookup(dotDashBuf);
+                //cout <<": " << *c <<flush;
+                if (outStr == NULL) {
+                    // invalid decode... let user see error
+                    outStr = "*";
+                }
+            }
+            return outStr; //Something output
+        } else {
+            //Should never get here looking for char
+            dumpStateMachine("Invalid character timing");
+        }
+    } else {
+        //Word space is 7TCW, accept anything greater than 4 or 5
+        if ((usecSpace > (4 * usecDotCurrent))) {
+            //We only get here if we've already output a char
+            // LONG time since keyup... check for a word space
+            // FARNSWOTH MOD HERE -->
+
+            outStr = " ";
+            //dumpStateMachine("Word Space");
+            return outStr;
+        } else {
+            //Do nothing, char output and not long enough for word space
+            return NULL;
+        }
+    }
+    //If we get here it means that usecSilence wasn't reset properly, should be impossible
+    dumpStateMachine("Impossible space Timing");
+    return NULL;
+}
+
+QString Morse::stateToString(DECODE_STATE state)
+{
+    if (state==IDLE)
+        return "IDLE";
+    else if(state==MARK_TIMING)
+        return "MARK";
+    else if(state==INTER_ELEMENT_TIMING)
+        return "INTER ELEMENT";
+    else if (state == WORD_SPACE_TIMING)
+        return "WORD";
+    else
+        return "UNKNOWN";
+
+}
 
 //Outputs all relevant information to qDebug()
 void Morse::dumpStateMachine(QString why)
 {
-    return;
+    //return;
 
     qDebug()<<"--- "<<why<<" ---";
 
-    if (receiveState==IDLE)
-        qDebug()<<"IDLE";
-    else if(receiveState==IN_TONE)
-        qDebug()<<"IN_TONE";
-    else if(receiveState==AFTER_TONE)
-        qDebug()<<"AFTER_TONE";
-    else
-        qDebug()<<"UNKNOWN";
+    qDebug()<<"From state: "<<stateToString(lastReceiveState)<<" To state: "<<stateToString(receiveState);
 
     qDebug()<<"Clock: "<<modemClock<<" ToneStart: "<<toneStart<<" ToneEnd: "<<toneEnd;
-    qDebug()<<"Timing: Dot: "<<usecDotCurrent<<" Dash: "<<usecDashCurrent<<" Threshold: "<<usecAdaptiveThreshold<<" Element: "<<usecElement;
+    qDebug()<<"Timing: Dot: "<<usecDotCurrent<<" Dash: "<<usecDashCurrent<<" Threshold: "<<usecAdaptiveThreshold<<" Element: "<<usecMark<<" Silence: "<<usecSpace;
+    qDebug()<<"Last Mark: "<<usecLastMark<<" Last Space: "<<usecLastSpace;
     qDebug()<<"WPM: "<<wpmSpeedCurrent;
 }
 

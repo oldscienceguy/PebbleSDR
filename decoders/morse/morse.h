@@ -181,13 +181,12 @@ protected:
     CDownConvert modemDownConvert; //Get to modem rate and mix
 
     CPX mixer(CPX in);
-    void reset_rx_filter();
+    void syncFilterWithWpm();
 
     MorseCode morseCode;
     void decode_stream(double value);
     double agc_peak; // threshold for tone detection
 
-    void rx_init();
     void init();
 
     //Fldigi samplerate is 8x
@@ -253,29 +252,32 @@ protected:
     quint32 toneStart;		// Tone start timestamp
     quint32 toneEnd;		// Tone end timestamp
     quint32 usecNoiseSpike;		// Initially ignore any tone < 10mS
-    quint32 usecLastElement = 0;	// length of last dot/dash
-    quint32 usecElement = 0;		// Time difference in usecs
-    bool spaceWasSent = true;	// for word space logic
-
+    quint32 usecLastMark = 0;	// length of last dot
+    quint32 usecLastSpace = 0;	// length of last dot
+    quint32 usecMark = 0;		// Time difference in usecs
+    quint32 usecSpace = 0;
+    quint32 usecElementThreshold = 0; //Space between dot/dash in char
     void calcDotDashLength(int _speed, quint32 & _usecDot, quint32 & _usecDash);
 
     void syncTiming();
 
-    enum CW_EVENT {RESET_EVENT, KEYDOWN_EVENT, KEYUP_EVENT, QUERY_EVENT};
-    enum DECODE_STATE {IDLE, IN_TONE, AFTER_TONE};
-    bool FldigiProcessEvent(CW_EVENT event, const char **outStr);
+
+    enum CW_EVENT {RESET_EVENT, TONE_EVENT, NO_TONE_EVENT};
+    enum DECODE_STATE {IDLE, MARK_TIMING, INTER_ELEMENT_TIMING, WORD_SPACE_TIMING};
+    bool stateMachine(CW_EVENT event);
     DECODE_STATE		receiveState;	// Indicates receive state
     DECODE_STATE		lastReceiveState;
     CW_EVENT		cw_event;			// functions used by cw process routine
 
     // user configurable data - local copy passed in from gui
-    double	metric;
+    double	squelchMetric;
     double squelchIncrement; //Slider increments
     double squelchValue; //If squelch is on, this is compared to metric
     bool sqlonoff;
 
     //Fixed speed or computed speed based on actual dot/dash timing
     int wpmSpeedCurrent;				// Initially 18 WPM
+    int wpmSpeedFilter;     //Speed filter is initialized for
     quint32 usecDotCurrent;		// Length of a receive Dot, in Usec based on receiveSpeed
     quint32 usecDashCurrent;		// Length of a receive Dash, in Usec based on receiveSpeed
     //Used to restore to base case when something changes or we get lost
@@ -294,6 +296,12 @@ protected:
 
     quint32 usecAdaptiveThreshold;		// 2-dot threshold for adaptive speed
 
+    const char *spaceTiming(bool lookingForChar);
+    void outputChar(const char *outStr);
+    void addMarkToDotDash();
+    bool markHandled;
+
+    QString stateToString(DECODE_STATE state);
     void dumpStateMachine(QString why);
 };
 
