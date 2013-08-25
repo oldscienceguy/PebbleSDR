@@ -681,24 +681,44 @@ void Morse::decode_stream(double value)
     }
 }
 
+
 /*
- *              State                   State                       State
- * Event        Idle                    In-Tone                     After-Tone
- *-----------------------------------------------------------------------------
- * KeyDown      Reset everything        Error                       Error
- *              Start timing ---------> State Change
- *
- * KeyUp        Error                   Complete timing             Error
- *                                      Sync time dependent vars
- *                                      Dot or Dash
- *                                      State Change ---------->    Check for char or word
- *
- * Querry       ????                    Error                       Time silence
- *                                                                  Char or Word
- *                                                                  Lookup and add to output
- *              Wait for next event     <-----------------------    State Change
- *
- * Reset (Doesn't seem to be used anywhere)
+ State          Event       Action                  New State
+ -----------------------------------------------------------------------------
+ IDLE           TONE        ResetClock
+                            ResetDotDash            MARK_TIMING
+
+                NO_TONE     Ignore                  IDLE
+ -----------------------------------------------------------------------------
+
+ MARK_TIMING    TONE        Keep timing             MARK_TIMING
+
+                NO_TONE     Possible end of tone
+                            ToneEnd/usecMark        INTER_ELEMENT
+ -----------------------------------------------------------------------------
+
+ INTER_ELEMENT  TONE        Valid? DotDash          MARK_TIMING
+                            Invalid? Option1        MARK_TIMING
+                            Invalid? Option2        IDLE
+
+                NO_TONE     !ShortDrop & !Handled
+                            Add DotDash
+                            Handled = true
+
+                            < ElementThreshold?
+                            Keep timing space       INTER_ELEMENT
+                            > ElementThreshold?
+                            Output Char             WORD_TIMING
+ -----------------------------------------------------------------------------
+ WORD_TIMING    TONE        Reset                   MARK_TIMING
+
+                NO_TONE     < Word Threshold
+                            Keep timing             WORD_TIMING
+
+                            > Word Threshold
+                            Output Space            IDLE
+ -----------------------------------------------------------------------------
+
 */
 
 //Returns aren't used and are random
