@@ -325,11 +325,11 @@ unsigned long MorseCode::tx_lookup(int c)
 //Original Pebble lookup
 
 //Relative lengths of elements in Tcw terms
-#define DOT_TCW 1
-#define DASH_TCW 3
-#define CHARSPACE_TCW 3
-#define ELEMENTSPACE_TCW 1
-#define WORDSPACE_TCW 7
+#define TCW_DOT 1
+#define TCW_DASH 3
+#define TCW_CHAR 3
+#define TCW_ELEMENT 1
+#define TCW_WORD 7
 
 #define MIN_DOT_COUNT 4
 
@@ -348,6 +348,12 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
     //See if we can decimate to this rate
     int actualModemRate = modemDownConvert.SetDataRate(sampleRate,modemSampleRate);
     modemSampleRate = actualModemRate;
+
+    //Testing fixed limits
+    //Determine shortest and longest mark we can time at this sample rate
+    usecPerSample = (1.0 / modemSampleRate) * 1000000;
+    usecShortestMark =  usecPerSample * 100; //100 samples per TCW
+    usecLongestMark = DOT_MAGIC / 5; //Longest dot at slowest speed we support 5wpm
 
     modemFrequency = global->settings->modeOffset;
     //Sample rate coming in is in sampleRate
@@ -397,10 +403,11 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
     wpmSpeedCurrent = wpmSpeedFilter = wpmSpeedInit;
     calcDotDashLength(wpmSpeedInit, usecDotInit, usecDashInit);
 
+    //2 x usecDot
     usecAdaptiveThreshold = 2 * DOT_MAGIC / wpmSpeedCurrent;
     usecNoiseSpike = usecAdaptiveThreshold / 4;
 
-    speedTrackingCurrent = true;
+    speedTrackingEnabled = true;
     phaseacc = 0.0;
     FFTphase = 0.0;
     FIRphase = 0.0;
@@ -523,10 +530,10 @@ void Morse::SetElementLengths(int d)
     if (countsPerDot < MIN_DOT_COUNT)
         countsPerDot = MIN_DOT_COUNT;
 
-    countsPerDash = countsPerDot * DASH_TCW;
-    countsPerElementSpace = countsPerDot * ELEMENTSPACE_TCW;
-    countsPerCharSpace = countsPerDot * CHARSPACE_TCW;
-    countsPerWordSpace = countsPerDot * WORDSPACE_TCW;
+    countsPerDash = countsPerDot * TCW_DASH;
+    countsPerElementSpace = countsPerDot * TCW_ELEMENT;
+    countsPerCharSpace = countsPerDot * TCW_CHAR;
+    countsPerWordSpace = countsPerDot * TCW_WORD;
 
     //Dash threshold midway between dot and dash len
     countsPerDashThreshold = countsPerDot * 2;
@@ -671,7 +678,7 @@ CPX * Morse::ProcessBlockSuperRatt(CPX *in)
                         element = 1;
                         pendingElement = true;
                         //Update whenever we think we have a dash
-                        SetElementLengths(markCount / DASH_TCW);
+                        SetElementLengths(markCount / TCW_DASH);
 
                     } else {
                         //Dot
@@ -1001,7 +1008,7 @@ void Morse::calcDotDashLength(int _speed, quint32 & _usecDot, quint32 & _usecDas
 }
 
 //=======================================================================
-// cw_update_tracking()
+// updateAdaptiveThreshold()
 // This gets called everytime we have a dot dash sequence or a dash dot
 // sequence. Since we have semi validated tone durations, we can try and
 // track the cw speed by adjusting the cw_adaptive_receive_threshold variable.
@@ -1010,18 +1017,22 @@ void Morse::calcDotDashLength(int _speed, quint32 & _usecDot, quint32 & _usecDas
 void Morse::updateAdaptiveThreshold(quint32 idotUsec, quint32 idashUsec)
 {
     quint32 dotUsec, dashUsec;
-    if (idotUsec > usecLowerLimit && idotUsec < usecUpperLimit)
+    if (idotUsec > usecShortestMark && idotUsec < usecLongestMark)
         dotUsec = idotUsec;
     else
         dotUsec = usecDotInit;
-    if (idashUsec > usecLowerLimit && idashUsec < usecUpperLimit)
+    if (idashUsec > usecShortestMark && idashUsec < usecLongestMark)
         dashUsec = idashUsec;
     else
         dashUsec = usecDashInit;
 
+    //Result is midway between last short and long mark, assumed to be dot and dash
     usecAdaptiveThreshold = (quint32)trackingfilter->run((dashUsec + dotUsec) / 2);
 
-    //syncTiming();
+    //Current speed estimate
+    wpmSpeedCurrent = DOT_MAGIC / (usecAdaptiveThreshold / 2);
+
+
 }
 
 // sync_parameters()
@@ -1030,20 +1041,25 @@ void Morse::updateAdaptiveThreshold(quint32 idotUsec, quint32 idashUsec)
 // Changes
 // usecNoiseSpike
 // useUpperLimit and usecLowerLimit based on wpm
+
+//Called once per buffer to update timings that we don't want to change every mark/space
+//UpdateAdaptiveThreshold called every dot/dash for timings that need to change faster
 void Morse::syncTiming()
 {
-    int lowerwpm, upperwpm;
+    //int lowerwpm, upperwpm;
+
+#if 0
+    //wpm tracking moved to updateAdaptiveFilter to avoid confusion
+    speedTrackingEnabled = true; //Not supporting fixed speeds yet
 
     // check if user changed the tracking
-    if (speedTrackingCurrent != speedTrackingInit) {
+    if (speedTrackingEnabled != speedTrackingInit) {
         trackingfilter->reset();
         usecAdaptiveThreshold = 2 * usecDotInit;
     }
-    speedTrackingCurrent = speedTrackingInit;
-
 
     //Update current speed estimate based on threshold or preset
-    if (speedTrackingCurrent)
+    if (speedTrackingEnabled)
         wpmSpeedCurrent = DOT_MAGIC / (usecAdaptiveThreshold / 2);
     else {
         //If we're not tracking, then everything stays at fixed values based in Init values
@@ -1062,14 +1078,17 @@ void Morse::syncTiming()
         upperwpm = upperWPMLimit;
     //usecLowerLimit = 2 * DOT_MAGIC / upperwpm;
     //usecUpperLimit = 2 * DOT_MAGIC / lowerwpm;
-    usecLowerLimit = DOT_MAGIC / upperwpm;
-    usecUpperLimit = DOT_MAGIC / lowerwpm;
+    usecShortestMark = DOT_MAGIC / upperwpm;
+    usecLongestMark = DOT_MAGIC / lowerwpm;
+#endif
 
     //CalcDotDash handles special case where speed is zero
     calcDotDashLength(wpmSpeedCurrent, usecDotCurrent, usecDashCurrent);
-    //Make this zero to accept any inter mark space as valid
-    usecElementThreshold = 0;//usecDotCurrent / 2;
+    //Adaptive threshold is roughly 2 TCW, so midway between dot and dash
     usecNoiseSpike = usecAdaptiveThreshold / 4;
+    //Make this zero to accept any inter mark space as valid
+    //Adaptive threshold is typically 2TCW so /8 = .25TCW
+    usecElementThreshold = usecAdaptiveThreshold / 8;
 
 }
 
@@ -1266,16 +1285,6 @@ bool Morse::stateMachine(CW_EVENT event)
     switch (receiveState) {
         case IDLE:
             switch (event) {
-                case RESET_EVENT:
-                    //Move to func and call from each state
-                    //dumpStateMachine("RESET_EVENT enter");
-                    lastReceiveState = receiveState; //We don't use lastReceiveState, here for completeness
-                    receiveState = IDLE;
-                    resetDotDashBuf();
-                    resetModemClock(); //Start timer over
-                    syncTiming();
-                    break;
-
                 //Tone filter output is trending up
                 case TONE_EVENT:
                     resetDotDashBuf();
@@ -1292,10 +1301,6 @@ bool Morse::stateMachine(CW_EVENT event)
             break;
         case MARK_TIMING:
             switch (event) {
-                case RESET_EVENT:
-                    //!!Handle
-                    break;
-
                 case TONE_EVENT:
                     //Keep timing
                     //Check for long tuning tone and ignore ??
@@ -1325,10 +1330,6 @@ bool Morse::stateMachine(CW_EVENT event)
 
         case INTER_ELEMENT_TIMING:
             switch (event) {
-                case RESET_EVENT:
-                    //Todo
-                    break;
-
                 case TONE_EVENT:
                     //Looking for inter-element space
                     //If enough time has gone by we've already handled in NO_TONE_EVENT
@@ -1374,9 +1375,6 @@ bool Morse::stateMachine(CW_EVENT event)
             break;
         case WORD_SPACE_TIMING:
             switch (event) {
-                case RESET_EVENT:
-                    //Todo
-                    break;
                 case TONE_EVENT:
                     //Any char has already been output, just start timing tond
 #if 0
@@ -1434,13 +1432,13 @@ void Morse::addMarkToDotDash()
         // check for dot dash sequence (current should be 3 x last)
         if ((usecMark > 2 * usecLastMark) &&
             (usecMark < 4 * usecLastMark)) {
-            //usecLastElement is dot
+            //usecLastMark is dot
             updateAdaptiveThreshold(usecLastMark, usecMark);
         }
         // check for dash dot sequence (last should be 3 x current)
         if ((usecLastMark > 2 * usecMark) &&
             (usecLastMark < 4 * usecMark)) {
-            //usecElement is dot and useLastElement is dash
+            //usecMark is dot and useLastMark is dash
             updateAdaptiveThreshold(usecMark, usecLastMark);
         }
 

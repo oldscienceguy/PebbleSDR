@@ -206,7 +206,7 @@ protected:
     //Received CW speed can be fixed (set by user) or track actual dot/dash lengths being received
     Cmovavg *trackingfilter;
     void updateAdaptiveThreshold(quint32 idotUsec, quint32 idashUsec);
-    bool speedTrackingCurrent;
+    bool speedTrackingEnabled;
     bool speedTrackingInit = true; //Automatic receive speed tracking
 
     const int trackingWPMRange = 10; //Tracking range for CWTRACK (WPM)
@@ -262,7 +262,7 @@ protected:
     void syncTiming();
 
 
-    enum CW_EVENT {RESET_EVENT, TONE_EVENT, NO_TONE_EVENT};
+    enum CW_EVENT {TONE_EVENT, NO_TONE_EVENT};
     enum DECODE_STATE {IDLE, MARK_TIMING, INTER_ELEMENT_TIMING, WORD_SPACE_TIMING};
     bool stateMachine(CW_EVENT event);
     DECODE_STATE		receiveState;	// Indicates receive state
@@ -289,9 +289,10 @@ protected:
     const bool useLowercase = false; //Print Rx in lowercase for CW, RTTY, CONTESTIA and THROB
 
 
-    //Needs description
-    quint32 usecUpperLimit;
-    quint32 usecLowerLimit;
+    //Fastest we can handle at sample rate
+    quint32 usecPerSample;
+    quint32 usecLongestMark;
+    quint32 usecShortestMark;
     // Receiving parameters:
 
     quint32 usecAdaptiveThreshold;		// 2-dot threshold for adaptive speed
