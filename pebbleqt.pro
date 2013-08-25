@@ -409,7 +409,8 @@ HEADERS += \
     dsp/fftbasic.h \
     dsp/fftw.h \
     dsp/fftcute.h \
-    dsp/fft.h
+    dsp/fft.h \
+    decoders/morse/morsecode.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -476,7 +477,8 @@ SOURCES += \
     dsp/fftbasic.cpp \
     dsp/fftw.cpp \
     dsp/fftcute.cpp \
-    dsp/fft.cpp
+    dsp/fft.cpp \
+    decoders/morse/morsecode.cpp
 
 FORMS += \
     spectrumwidget.ui \
