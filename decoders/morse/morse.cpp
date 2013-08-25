@@ -262,8 +262,18 @@ void Morse::SetupDataUi(QWidget *parent)
         dataUi->dataEdit->setWordWrapMode(QTextOption::WordWrap);
 
         connect(dataUi->resetButton,SIGNAL(clicked()),this,SLOT(resetOutput()));
+
         dataUi->onBox->setChecked(true);
         connect(dataUi->onBox,SIGNAL(toggled(bool)), this, SLOT(onBoxChecked(bool)));
+
+        dataUi->outputOptionBox->addItem("Character",CHAR_ONLY);
+        dataUi->outputOptionBox->addItem("DotDash",DOTDASH);
+        dataUi->outputOptionBox->addItem("Both",CHAR_AND_DOTDASH);
+        dataUi->outputOptionBox->setCurrentIndex(0);
+        outputMode = CHAR_ONLY;
+        connect(dataUi->outputOptionBox,SIGNAL(currentIndexChanged(int)),this,SLOT(outputOptionChanged(int)));
+
+
     }
 
 }
@@ -320,6 +330,11 @@ void Morse::onBoxChecked(bool b)
     outputOn = b;
 }
 
+void Morse::outputOptionChanged(int s)
+{
+    outputMode = (OUTPUT_MODE)dataUi->outputOptionBox->itemData(s).toInt();
+}
+
 void Morse::resetOutput()
 {
     dataUi->dataEdit->clear();
@@ -355,15 +370,7 @@ void Morse::OutputData(const char c)
 {
     if (dataUi == NULL)
         return;
-
-    //Display can be accessing at same time, so we need to lock
-    outputBufMutex.lock();
-    if (outputBufIndex < sizeof(outputBuf)) {
-        outputBuf[outputBufIndex] = c;
-        outputBufIndex++;
-    }
-    outputBufMutex.unlock();
-    emit newOutput();
+    //Remove
 
     return;
 }
@@ -484,7 +491,7 @@ CPX * Morse::ProcessBlockSuperRatt(CPX *in)
             if (lastSpaceCount >= countsPerCharSpace) {
                 //Process char
                 if (pendingChar) {
-                    OutputData(morseCode.rx_lookup(dotDashBuf));
+                    OutputData(morseCode.rx_lookup(dotDashBuf)->display);
                     resetDotDashBuf();
                     modemClock = 0; //Start timer over
 
@@ -738,6 +745,8 @@ void Morse::init()
     agc_peak = 0;
     useNormalizingThreshold = true; //Fldigi mode
     usedefaultWPM = false;
+
+    outputMode = CHAR_ONLY;
 }
 
 // Compare two timestamps, and return the difference between them in usecs.
@@ -1125,7 +1134,7 @@ bool Morse::stateMachine(CW_EVENT event)
                     outStr = spaceTiming(true); //Looking for char
                     if (outStr != NULL) {
                         //We will only get a char between 2 and 4 TCW of space
-                        outputChar(outStr);
+                        outputString(outStr);
                         //dumpStateMachine(outStr);
                         usecLastSpace = usecSpace; //Almost always fixed because we start looking for char at 2x usecDot
                         resetDotDashBuf(); //Ready for new char
@@ -1159,7 +1168,7 @@ bool Morse::stateMachine(CW_EVENT event)
                     //Anything waiting for output?
                     outStr = spaceTiming(false);
                     if (outStr != NULL) {
-                        outputChar(outStr);
+                        outputString(outStr);
                         usecLastSpace = usecSpace;
 
                         //dumpStateMachine(*outStr);
@@ -1230,14 +1239,26 @@ void Morse::addMarkToDotDash()
     }
 }
 
-void Morse::outputChar(const char *outStr) {
+void Morse::outputString(const char *outStr) {
     if (outStr != NULL) {
+        char c;
+
+        //Display can be accessing at same time, so we need to lock
+        outputBufMutex.lock();
+
         //Output character(s)
-        if (strlen(outStr) == 1) {
-            OutputData(useLowercase ? tolower(*outStr) : *outStr);
-        } else while (*outStr) {
-            OutputData(useLowercase ? tolower(*outStr++) : *outStr++);
+        int i = 0;
+        while (outputBufIndex < sizeof(outputBuf) &&
+               outStr[i] != 0x00) {
+            c = outStr[i++];
+            outputBuf[outputBufIndex++] = useLowercase ? tolower(c) : c;
         }
+        //Always null terminate
+        outputBuf[outputBufIndex++] = 0x00;
+
+        outputBufMutex.unlock();
+        emit newOutput();
+
     }
 }
 
@@ -1247,6 +1268,7 @@ void Morse::outputChar(const char *outStr) {
 //Uses dotDashBuf, could use usec silence
 const char* Morse::spaceTiming(bool lookingForChar)
 {
+    CW_TABLE *cw;
     const char *outStr;
 
     if (lookingForChar) {
@@ -1266,9 +1288,15 @@ const char* Morse::spaceTiming(bool lookingForChar)
             // Look up the representation
             outStr = NULL;
             if (*dotDashBuf != 0x00) {
-                outStr = morseCode.rx_lookup(dotDashBuf);
-                //cout <<": " << *c <<flush;
-                if (outStr == NULL) {
+                cw = morseCode.rx_lookup(dotDashBuf);
+                if (cw != NULL) {
+                    if (outputMode == CHAR_ONLY)
+                        outStr = cw->display;
+                    else if (outputMode == CHAR_AND_DOTDASH)
+                        outStr = QString().sprintf("%s (%s) ",cw->display,cw->dotDash).toLocal8Bit();
+                    else if (outputMode == DOTDASH)
+                        outStr = QString().sprintf("%s ",cw->dotDash).toLocal8Bit();
+                } else {
                     // invalid decode... let user see error
                     outStr = "*";
                 }

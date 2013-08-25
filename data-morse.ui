@@ -102,6 +102,24 @@
        </widget>
       </item>
       <item>
+       <widget class="QCheckBox" name="lockWPMBox">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>18</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>Lock WPM</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QCheckBox" name="onBox">
         <property name="maximumSize">
          <size>
@@ -115,7 +133,22 @@
          </font>
         </property>
         <property name="text">
-         <string>On/Off</string>
+         <string>Output On/Off</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="outputOptionBox">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>18</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
         </property>
        </widget>
       </item>

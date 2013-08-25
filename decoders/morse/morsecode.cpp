@@ -354,7 +354,8 @@ void MorseCode::init()
     }
 }
 
-const char *MorseCode::rx_lookup(char *r)
+//Return CW_TABLE element so caller can access anything from it, not just display
+CW_TABLE *MorseCode::rx_lookup(char *r)
 {
     int			token;
     CW_TABLE *cw;
@@ -365,7 +366,7 @@ const char *MorseCode::rx_lookup(char *r)
     if ((cw = cw_rx_lookup[token]) == NULL)
         return NULL;
 
-    return cw->display;
+    return cw;
 }
 
 const char *MorseCode::tx_print(int c)

@@ -14,8 +14,6 @@
 
 class Receiver;
 
-#pragma clang diagnostic ignored "-Wc++11-extensions"
-
 //Utility functions from fldigi
 inline double clamp(double x, double min, double max)
 {
@@ -73,6 +71,7 @@ public slots:
     void refreshOutput();
     void resetOutput();
     void onBoxChecked(bool);
+    void outputOptionChanged(int s);
 
 signals:
     void newOutput();
@@ -256,9 +255,12 @@ protected:
     quint32 usecAdaptiveThreshold;		// 2-dot threshold for adaptive speed
 
     const char *spaceTiming(bool lookingForChar);
-    void outputChar(const char *outStr);
+    void outputString(const char *outStr);
     void addMarkToDotDash();
     bool markHandled;
+
+    enum OUTPUT_MODE{CHAR_ONLY,CHAR_AND_DOTDASH,DOTDASH};
+    OUTPUT_MODE outputMode; //What we display in output
 
     QString stateToString(DECODE_STATE state);
     void dumpStateMachine(QString why);

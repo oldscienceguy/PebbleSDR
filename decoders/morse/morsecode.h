@@ -2,6 +2,7 @@
 #define MORSECODE_H
 
 #include "global.h"
+#pragma clang diagnostic ignored "-Wc++11-extensions"
 
 struct CW_TABLE {
     char chr;	/* The character(s) represented */
@@ -27,7 +28,7 @@ public:
     ~MorseCode() {
     }
     void init();
-    const char	*rx_lookup(char *r);
+    CW_TABLE *rx_lookup(char *r);
     unsigned long	tx_lookup(int c);
     const char *tx_print(int c);
 private:
