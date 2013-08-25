@@ -12,6 +12,10 @@
   Standard for measuring WPM is to use the word "PARIS", which is exactly 50Tcw
   So Tcw (ms) = 60 (sec) / (WPM * 50)
   and WPM = 1200/Tcw(ms)
+
+  Use DOT_MAGIC to convert WPM to/from usec is 1,200,000
+  DOT_MAGIC / WPM = usec per TCW
+
   Tcw for 12wpm = 60 / (12 * 50) = 60 / 600 = .100 sec  100ms
   Tcw for 30wpm = 60 / 1500 = .040 40ms
   Tcw for 120wpm = 60 / (120 * 50) = 60 / 6000 = .01 sec  10ms
@@ -77,14 +81,8 @@
 
 */
 
-//Fldigi and earlier code
-/* ---------------------------------------------------------------------- */
-
 // Tone and timing magic numbers.
-#define	DOT_MAGIC	1200000	// Dot length magic number.  The Dot length is 1200000/WPM Usec
-
-
-//Original Pebble lookup
+#define	DOT_MAGIC	1200000	// Dot length magic number - shortcut for full math.  The Dot length is 1200000/WPM Usec
 
 //Relative lengths of elements in Tcw terms
 #define TCW_DOT 1
@@ -93,7 +91,8 @@
 #define TCW_ELEMENT 1
 #define TCW_WORD 7
 
-#define MIN_DOT_COUNT 4
+#define MIN_WPM 5
+#define MIN_SAMPLES_PER_TCW 100
 
 Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
 {
@@ -103,10 +102,8 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
 
     workingBuf = new CPXBuf(numSamples);
 
-    //Setup Goertzel
-    cwGoertzel = new Goertzel(sr, fc);
     //Modem sample rate, device sample rate decimated to this before decoding
-    modemSampleRate = 1000; //8000; //Desired bandwidth, not sample rate
+    modemBandwidth = 1000; //8000; //Desired bandwidth, not sample rate
     //See if we can decimate to this rate
     int actualModemRate = modemDownConvert.SetDataRate(sampleRate,modemSampleRate);
     modemSampleRate = actualModemRate;
@@ -114,53 +111,17 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
     //Testing fixed limits
     //Determine shortest and longest mark we can time at this sample rate
     usecPerSample = (1.0 / modemSampleRate) * 1000000;
-    usecShortestMark =  usecPerSample * 100; //100 samples per TCW
-    usecLongestMark = DOT_MAGIC / 5; //Longest dot at slowest speed we support 5wpm
+    usecShortestMark =  usecPerSample * MIN_SAMPLES_PER_TCW; //100 samples per TCW
+    usecLongestMark = DOT_MAGIC / MIN_WPM; //Longest dot at slowest speed we support 5wpm
 
     modemFrequency = global->settings->modeOffset;
-    //Sample rate coming in is in sampleRate
-    //modemSampleRate is typically 8k
-    modemDecimateFactor = sampleRate / modemSampleRate;
-    qDebug()<<"ModemDecimate = "<<modemDecimateFactor;
-
-    //Start with fixed WPM for now
-    fixedWPM = true;
-    maxWPM = 60;
-    wpm = 30;
-    //binwidth for maxWPM = 60 is 200hz
-    //User should set maxWPM and we should calculate binWidth, sharper = more accurate
-    toneBufSize = cwGoertzel->SetFreqHz(modemFrequency, 200, modemSampleRate);
-
-    //Max length for mark and space
-    maxMarkCount = 2000 / cwGoertzel->timePerBin;
-    maxSpaceCount = 5000 / cwGoertzel->timePerBin;
-
-    //Number of goertzel results we need for a reliable tcw
-    //numResultsPerTcw = WpmToTcw(wpm) / cwGoertzel->timePerBin;
-
-    //Start with min 4 results per dot/tcw
-    SetElementLengths(MIN_DOT_COUNT);
-
-    powerBufSize = numSamples / modemDecimateFactor;
-    powerBuf = new float[powerBufSize];
-    toneBuf = new bool[toneBufSize];
-    toneBufCounter = 0;
-
-    outString = "";
-
-    countingState = NOT_COUNTING;
-    markCount = 0;
-    spaceCount = 0;
-    countsPerDashThreshold = MIN_DOT_COUNT;
 
     dataUi = NULL;
 
     //fldigi constructors
     squelchIncrement = 0.5;
-    squelchValue = 2.0;
-    sqlonoff = true;
-
-    usedefaultWPM = false;
+    squelchValue = 0;
+    squelchEnabled = false;
 
     wpmSpeedCurrent = wpmSpeedFilter = wpmSpeedInit;
     calcDotDashLength(wpmSpeedInit, usecDotInit, usecDashInit);
@@ -215,9 +176,6 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
 Morse::~Morse()
 {
     if (workingBuf != NULL) delete workingBuf;
-    if (cwGoertzel != NULL) delete cwGoertzel;
-    if (powerBuf != NULL) free (powerBuf);
-    if (toneBuf != NULL) free (toneBuf);
 
     if (hilbert) delete hilbert;
     if (cw_FIR_filter) delete cw_FIR_filter;
@@ -248,6 +206,8 @@ void Morse::SetupDataUi(QWidget *parent)
         dataUi->dataBar->setNumTicks(10);
         dataUi->dataBar->start();
 
+        squelchValue = 0;
+        squelchEnabled = false;
         dataUi->squelchSlider->setMinimum(0);
         dataUi->squelchSlider->setMaximum(10 / squelchIncrement);
         dataUi->squelchSlider->setSingleStep(1);
@@ -291,29 +251,18 @@ int Morse::TcwToWpm(int t)
     return wpm;
 }
 
-//d is count of number of goertzel results for shortest element, ie dot
-void Morse::SetElementLengths(int d)
+// Usec = DM / WPM
+// DM = WPM * Usec
+// WPM = DM / Usec
+quint32 Morse::WPMToUsec(int w)
 {
-    if (d < MIN_DOT_COUNT)
-        d = MIN_DOT_COUNT; //Smallest possible dot count
-
-    countsPerDot = countsPerDot * 0.70 + d * 0.30;
-    //Never below minimum
-    if (countsPerDot < MIN_DOT_COUNT)
-        countsPerDot = MIN_DOT_COUNT;
-
-    countsPerDash = countsPerDot * TCW_DASH;
-    countsPerElementSpace = countsPerDot * TCW_ELEMENT;
-    countsPerCharSpace = countsPerDot * TCW_CHAR;
-    countsPerWordSpace = countsPerDot * TCW_WORD;
-
-    //Dash threshold midway between dot and dash len
-    countsPerDashThreshold = countsPerDot * 2;
-
-    //qDebug("CountsPerDashThreshold %d",countsPerDashThreshold);
-    shortestCounter = 0;
-
+    return DOT_MAGIC / w;
 }
+int Morse::UsecToWPM(quint32 u)
+{
+    return DOT_MAGIC / u;
+}
+
 
 void Morse::SetReceiver(Receiver *_rcv)
 {
@@ -384,292 +333,26 @@ void Morse::OutputData(const char c)
 void Morse::squelchChanged(int v)
 {
     if (v == 0) {
-        sqlonoff = false;
+        squelchEnabled = false;
     } else {
         squelchValue = v * squelchIncrement; //Slider is in .5 increments so 2 inc = 1 squelch value
-        sqlonoff = true;
+        squelchEnabled = true;
     }
 }
 
-CPX * Morse::ProcessBlockSuperRatt(CPX *in)
-{
-    bool isMark;
-    int lastSpaceCount;
 
-    cwGoertzel->ProcessBlock(in,toneBuf);
+//Early experiment with Goertzel abandoned in favor of fldigi style filter
+//But we may go back and test Goertzel vs fldigi at some point in the future
+//fldigi has it's own goertzel algorithm, choose one or the other
+//We also experiemented with processing the entire sample buffer and turning it into a tone buffer
+//Then process the tone buffer looking for characters.
+//Advantage is that we an look back and look ahead to make a decision about anomolies
+//Disadvantage is we have to carry tone buffer across sample buffers so we don't loose anything
 
-    //toneBuf now has binary results, decode
-    //If Goretzel is 8k and Receiver is 96k, decimate factor is 12.  Only process every 12th sample
-    for (int i=0; i<toneBufSize; i++) {
-        isMark = toneBuf[i];
-
-        //Update sMeter
-        //db = powerToDb(power);
-        //rcv->GetSignalStrength()->setExtValue(db);
-#if 0
-        if (isMark)
-            //rcv->GetSignalStrength()->setExtValue(-13); //Full scale
-            rcv->receiverWidget->DataBit(true);
-        else
-            //rcv->GetSignalStrength()->setExtValue(-127); //0
-            rcv->receiverWidget->DataBit(false);
-#endif
-        switch (countingState) {
-        case NOT_COUNTING:
-            //Initial state when we're looking for something to start syncing with
-            resetDotDashBuf();
-            resetModemClock(); //Start timer over
-
-            if (isMark) {
-                //Start counting
-                countingState = MARK_COUNTING;
-                markCount = 1;
-                spaceCount = 0;
-            }
-            break;
-        case MARK_COUNTING:
-            if (isMark) {
-                markCount++;
-                //Is it too long?
-                if (markCount > maxMarkCount) {
-                    countingState = NOT_COUNTING;
-                    markCount = 0;
-                    spaceCount = 0;
-                }
-            } else {
-                //We have a transition from mark to space
-                //Dynamic WPM
-                if (markCount < countsPerDot) {
-                    //Update average whenever we dot length is decreasing or we have a dash
-                    //SetWPM(markCount);
-                    //Count is too shart for dot,
-                    markCount = 0;
-                    spaceCount = 0;
-                    countingState = NOT_COUNTING;
-                } else {
-                    //We want to keep countsPerAverageDot midway between current dot and dash length
-                    if (markCount > countsPerDashThreshold) {
-                        //Assume Dash
-                        element = 1;
-                        pendingElement = true;
-                        //Update whenever we think we have a dash
-                        SetElementLengths(markCount / TCW_DASH);
-
-                    } else {
-                        //Dot
-                        element = 0;
-                        pendingElement = true;
-                        //Weight dots * 2 so countsPerAverageDot is midrange between dot and dash
-                        SetElementLengths(markCount);
-
-                    }
-                    countingState = SPACE_COUNTING;
-                    markCount = 0;
-                    spaceCount = 1;
-                }
-            }
-            break;
-        case SPACE_COUNTING:
-            if (!isMark) {
-                spaceCount++;
-                lastSpaceCount = spaceCount;
-            } else {
-                //Transition from space to mark
-                countingState = MARK_COUNTING;
-                markCount = 1;
-                lastSpaceCount = spaceCount;
-                spaceCount = 0;
-            }
-            //Is space long enough to build char or output something?
-            if (lastSpaceCount >= countsPerElementSpace) {
-                //Process any pending elements
-                if (pendingElement) {
-                    if (element == 0)
-                        dotDashBuf[dotDashBufIndex++] = CW_DOT_REPRESENTATION;
-                    else
-                        dotDashBuf[dotDashBufIndex++] = CW_DASH_REPRESENTATION;
-
-                    pendingChar = true;
-                    pendingElement = false;
-                    pendingWord = false;
-                }
-            }
-            if (lastSpaceCount >= countsPerCharSpace) {
-                //Process char
-                if (pendingChar) {
-                    OutputData(morseCode.rx_lookup(dotDashBuf)->display);
-                    resetDotDashBuf();
-                    modemClock = 0; //Start timer over
-
-                    pendingChar = false;
-                    pendingWord = true;
-                }
-            }
-            if (lastSpaceCount >= countsPerWordSpace) {
-                //Process word
-                if (pendingWord) {
-                    OutputData(" ");
-                    pendingWord = false;
-                }
-            }
-            if (lastSpaceCount > maxSpaceCount) {
-                //Output last char?
-                //Reset
-                countingState = NOT_COUNTING;
-                markCount = 0;
-                spaceCount = 0;
-                pendingElement = pendingChar = pendingWord = false;
-            }
-
-            break;
-        }
-    }
-    return in;
-}
-
-CPX * Morse::ProcessBlock(CPX * in)
-{
-    return ProcessBlockFldigi(in);
-
-    return ProcessBlockSuperRatt(in);
-
-    bool res;
-    bool isMark;
-    float db;
-    float power;
-
-    //If Goretzel is 8k and Receiver is 96k, decimate factor is 12.  Only process every 12th sample
-    for (int i=0, j=0; i<numSamples; i=i+modemDecimateFactor, j++) {
-        //res = cwGoertzel->NewSample(in[i], power);
-        if (res) {
-            //Update sMeter
-            db = powerToDb(power);
-            rcv->GetSignalStrength()->setExtValue(db);
-
-            isMark = cwGoertzel->binaryOutput;
-
-            switch (countingState) {
-            case NOT_COUNTING:
-                //Initial state when we're looking for something to start syncing with
-                if (isMark) {
-                    //Start counting
-                    countingState = MARK_COUNTING;
-                    markCount = 1;
-                    spaceCount = 0;
-                }
-                break;
-            case MARK_COUNTING:
-                if (isMark) {
-                    markCount++;
-                    //Is it too long?
-                } else {
-                    //We have a transition from mark to space
-                    //Dynamic WPM
-                    //Look for repeated dot length 3 times then set new countsPer...
-
-                    //Is markCount long enough? if not, do we ignore space and continue with looking for mark?
-                    if (markCount > countsPerDot) {
-                        //Valid, is it long enough for dash?
-                        if (markCount > countsPerDash) {
-                            OutputData("-");
-
-                        } else {
-                            OutputData(".");
-                        }
-                        markCount = 0;
-                        spaceCount = 1;
-                        countingState = SPACE_COUNTING;
-
-                    } else {
-                        //markCount too short
-                        //Reset state and start over
-                        countingState = NOT_COUNTING;
-                        markCount = 0;
-                        spaceCount = 0;
-                    }
-
-                }
-                break;
-            case SPACE_COUNTING:
-                if (!isMark) {
-                    spaceCount++;
-                } else {
-                    //Transition from space to mark
-                    //Is spaceCount long enough
-                    if (spaceCount > countsPerElementSpace) {
-                        if (spaceCount > countsPerWordSpace) {
-
-                        } else if (spaceCount > countsPerCharSpace) {
-
-                        }
-
-                    } else {
-                        //Too short
-                        countingState = NOT_COUNTING;
-                        markCount = 0;
-                        spaceCount = 0;
-                    }
-                }
-                //Is space long
-                break;
-            }
-
-#if 0
-            //We have accumulated enough samples to get output of Goertzel
-            //Store last N tones
-            if (toneBufCounter < toneBufSize) {
-                toneBuf[toneBufCounter] = cwGoertzel->binaryOutput;
-                toneBufCounter++;
-            }
-            qDebug("Tone %d",cwGoertzel->binaryOutput);
-
-            if (toneBufCounter > numResultsPerTcw) {
-                //We need at least numResultsPerTcw results
-                //if (toneBuf[0] && toneBuf[1] && toneBuf[2] && toneBuf[3]) {
-                markCount = spaceCount = 0;
-                for (int i=0; i<numResultsPerTcw; i++) {
-                    if (toneBuf[i])
-                        markCount++;
-                    else
-                        spaceCount++;
-                }
-                if (markCount == numResultsPerTcw) {
-                    //All results are mark
-                    //1 Tcw Is it dash or dot
-                    outString = "M";
-                    outTone = true;
-                    toneBufCounter = 0;
-                    rcv->OutputData(outString);
-                } else if (spaceCount == numResultsPerTcw) {
-                    //All results are space
-                    //1 Tcw, is it letter or word space
-                    outString = "S";
-                    outTone = false;
-                    toneBufCounter = 0;
-                    rcv->OutputData(outString);
-                } else {
-                    //Not all the same, shift and try again
-                    for (int i=0; i<numResultsPerTcw - 1; i++) {
-                        toneBuf[i] = toneBuf[i+1];
-                    }
-                    toneBufCounter --;
-                }
-            }
-#endif
-            //powerBuf[j] = power;
-            //qDebug("G sample / power = %.12f / %.12f",sample,power);
-            //qDebug("G MS / average / power = %c / %.12f / %.12f",cwGoertzel->binaryOutput?'M':'S', cwGoertzel->avgPower, power);
-
-            //Do we have a new element?
-        }
-    }
-
-    return in;
-}
 
 
 /*
-Working on understanding and implementing FLDIGI Algorithms
+Implemented ideas from Fldigi algorithms
 Portions from JSDR
 Copyright (C) 2008, 2009, 2010
 Jan van Katwijk (J.vanKatwijk@gmail.com
@@ -750,7 +433,6 @@ void Morse::init()
 
     agc_peak = 0;
     useNormalizingThreshold = true; //Fldigi mode
-    usedefaultWPM = false;
 
     outputMode = CHAR_ONLY;
 }
@@ -872,7 +554,7 @@ void Morse::resetModemClock()
 */
 
 //My version of FIRprocess + rx_processing for Pebble
-CPX * Morse::ProcessBlockFldigi(CPX *in)
+CPX * Morse::ProcessBlock(CPX *in)
 {
 
     CPX z;
@@ -974,8 +656,8 @@ void Morse::decode_stream(double value)
     }
 
     //Check squelch to avoid noise errors
-    sqlonoff = false;
-    if (!sqlonoff || squelchMetric > squelchValue ) {
+
+    if (!squelchEnabled || squelchMetric > squelchValue ) {
         //State machine handles all transitions and decisions
         //We just determine if value indicated key down or up status
 
@@ -1213,6 +895,9 @@ void Morse::addMarkToDotDash()
 }
 
 void Morse::outputString(const char *outStr) {
+    if (!outputOn)
+        return;
+
     if (outStr != NULL) {
         char c;
 

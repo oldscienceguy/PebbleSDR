@@ -42,29 +42,19 @@ public:
     void SetupDataUi(QWidget *parent);
 
     CPX * ProcessBlock(CPX * in);
-    CPX * ProcessBlockSuperRatt(CPX * in);
-    CPX * ProcessBlockFldigi(CPX *in);
-
     void SetReceiver(Receiver *_rcv);
     void setCWMode(DEMODMODE m);
-
-
-    //Updated by ProcessBlock and holds power levels.
-    //Note this is smaller buffer than frameCount because of decimation
-    float *powerBuf;  //Not sure if we need this
-
-    bool *toneBuf; //true if goertzel returns tone present
 
     //Returns tcw in ms for any given WPM
     int WpmToTcw(int w);
     //Returns wpm for any given tcw
     int TcwToWpm(int t);
 
-    //Sets WPM and related conters
-    void SetElementLengths(int dotCount);
-
     void OutputData(const char *d);
     void OutputData(const char c);
+
+    quint32 WPMToUsec(int w);
+    int UsecToWPM(quint32 u);
 
 public slots:
     void squelchChanged(int v);
@@ -84,47 +74,9 @@ protected:
     DEMODMODE cwMode;
     bool useNormalizingThreshold; //Switch how we compare tone values to determine rising or falling
 
-
-    Goertzel *cwGoertzel;
     int modemFrequency; //CW tone we're looking for.  This is the goertzel freq or the NCO freq for mixer approach
     int modemSampleRate; //Modem (Goretzel or other) only needs 8k sample rate.  Bigger means more bins and slower
-    int modemDecimateFactor; //receiver sample rate decmiate factor to get to modem sample rate
-    int powerBufSize;
-    int toneBufSize;
-
-    int toneBufCounter;
-
-    //Temp for painting
-    const char *outString;
-    bool outTone;
-
-    int maxWPM; //Determines bin resolution
-    bool fixedWPM;
-    int wpm;
-    int numResultsPerTcw;
-
-    //Are we counting to see if we have a dot/dash mark or a element/word space
-    enum {NOT_COUNTING, MARK_COUNTING, SPACE_COUNTING} countingState;
-    enum {LETTER,WORD,SPACE} elementState;
-    int markCount;
-    int spaceCount;
-    int maxMarkCount; //Timeout values
-    int maxSpaceCount;
-
-    //In 'counts' of goertzel results.  N counts = 1 tcw
-    int countsPerDashThreshold; //Temp counts per dot to see if we need to reset wpm
-    int shortestCounter;
-
-    int countsPerDot;
-    int countsPerDash;
-    int countsPerElementSpace; //Between dots and dashes
-    int countsPerCharSpace; //Between char of a word
-    int countsPerWordSpace; //Between words
-
-    bool pendingElement; //True if unprocessed element
-    bool pendingChar;
-    bool pendingWord;
-    int element; //1 if dash, 0 if dot
+    int modemBandwidth; //Desired bw after decimation
 
     //Characters are output from the main receive thread and can't be output directly to textedit
     //due to Qt requirement that only main thread does Gui output
@@ -133,8 +85,6 @@ protected:
     int outputBufIndex; //Position in output buf of next char, zero means buffer is empty
     QMutex outputBufMutex;
     bool outputOn;
-
-    //FLDigi rename vars after working
 
     CDownConvert modemDownConvert; //Get to modem rate and mix
 
@@ -229,7 +179,7 @@ protected:
     double	squelchMetric;
     double squelchIncrement; //Slider increments
     double squelchValue; //If squelch is on, this is compared to metric
-    bool sqlonoff;
+    bool squelchEnabled;
 
     //Fixed speed or computed speed based on actual dot/dash timing
     int wpmSpeedCurrent;				// Initially 18 WPM
@@ -241,7 +191,6 @@ protected:
     quint32 usecDotInit; //Was cw_send_dot_length
     quint32 usecDashInit;
 
-    bool usedefaultWPM;				// use default WPM
     const bool useLowercase = false; //Print Rx in lowercase for CW, RTTY, CONTESTIA and THROB
 
 
