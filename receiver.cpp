@@ -573,8 +573,9 @@ void Receiver::ProcessBlock(CPX *in, CPX *out, int frameCount)
 	//if (frameCount != framesPerBuffer)
 	//	audio->inBufferUnderflowCount++; //Treat like in buffer underflow
 
-    //Inject signal from test bench if desired
+    //Inject signals from test bench if desired
     global->testBench->CreateGeneratorSamples(frameCount, in, sampleRate);
+    global->testBench->MixNoiseSamples(frameCount, in, sampleRate);
 
     if (isRecording)
         recordingFile.WriteSamples(in,frameCount);
