@@ -168,7 +168,7 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
     //Used to update display from main thread.
     connect(this, SIGNAL(newOutput()), this, SLOT(refreshOutput()));
 
-    outputOn = true;
+    outputOn = false;
 
 }
 
@@ -189,6 +189,8 @@ Morse::~Morse()
 void Morse::SetupDataUi(QWidget *parent)
 {
     if (parent == NULL) {
+        outputOn = false;
+
         //We want to delete
         if (dataUi != NULL) {
             delete dataUi;
@@ -234,6 +236,8 @@ void Morse::SetupDataUi(QWidget *parent)
 
         lockWPM = false;
         connect(dataUi->lockWPMBox,SIGNAL(toggled(bool)),this,SLOT(lockWPMChanged(bool)));
+
+        outputOn = true;
     }
 
 }
