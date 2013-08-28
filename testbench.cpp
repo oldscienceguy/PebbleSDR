@@ -38,6 +38,9 @@
 //authors and should not be interpreted as representing official policies, either expressed
 //or implied, of Moe Wheatley.
 //==========================================================================================
+
+//UI and functionality adapted and extended for Pebble by Richard Landsman
+
 #include "testbench.h"
 #include "ui_testbench.h"
 #include <QDebug>
@@ -160,14 +163,14 @@ CTestBench::CTestBench(QWidget *parent) :
     testBenchValue = 0.0;
 
     debugOn = true;
-    ui->debugBox->setChecked(debugOn);
-    connect(ui->debugBox,SIGNAL(toggled(bool)),this,SLOT(OnDebugBox(bool)));
+    ui->debugOutputGroup->setChecked(debugOn);
+    connect(ui->debugOutputGroup,SIGNAL(toggled(bool)),this,SLOT(OnDebugBox(bool)));
 
     connect(ui->debugClearButton,SIGNAL(clicked(bool)),this,SLOT(OnDebugClear(bool)));
 
     noiseOn = false;
-    ui->noiseCheckBox->setChecked(noiseOn);
-    connect(ui->noiseCheckBox,SIGNAL(clicked(bool)),this,SLOT(OnNoiseBox(bool)));
+    ui->noiseGeneratorGroup->setChecked(noiseOn);
+    connect(ui->noiseGeneratorGroup,SIGNAL(toggled(bool)),this,SLOT(OnNoiseBox(bool)));
 
 
 }
@@ -245,14 +248,21 @@ void CTestBench::Init()
 	ui->spinBoxStart->setValue(m_SweepStartFrequency/1000.0);
 	ui->spinBoxStop->setValue(m_SweepStopFrequency/1000.0);
 	ui->spinBoxSweep->setValue(m_SweepRate);
-	ui->checkBoxTime->setChecked(m_TimeDisplay);
+
+
+    ui->timeDomainGroup->setChecked(m_TimeDisplay);
+    connect(ui->timeDomainGroup, SIGNAL(toggled(bool)),this,SLOT(OnTimeDisplay(bool)));
+
+
 	ui->spinBoxHorzSpan->setValue(m_HorzSpan);
 
 	ui->spinBoxThresh->setValue(m_TrigLevel);
 	ui->spinBoxVertRange->setValue(m_VertRange);
 	ui->spinBoxRate->setValue(m_DisplayRate);
 
-	ui->checkBoxGen->setChecked(m_GenOn);
+    ui->signalGeneratorGroup->setChecked(m_GenOn);
+    connect(ui->signalGeneratorGroup, SIGNAL(toggled(bool)),this,SLOT(OnGenOn(bool)));
+
 	ui->checkBoxFm->setChecked(m_UseFmGen);
 	ui->checkBoxPeak->setChecked(m_PeakOn);
 	ui->spinBoxAmp->setValue((int)m_SignalPower);
@@ -409,10 +419,6 @@ void CTestBench::OnEnablePeak(bool enablepeak)
 void CTestBench::CreateGeneratorSamples(int length, TYPECPX* pBuf, double samplerate)
 {
 int i;
-double rad;
-double r;
-double u1;
-double u2;
 	if(!m_Active || !m_GenOn)
 		return;
 	if(m_GenSampleRate != samplerate)
@@ -425,56 +431,6 @@ double u2;
 //		}
 		emit ResetSignal();
 	}
-
-#if USE_FILE	//test file reading kludge
-	char buf[16384];
-	if(m_File.atEnd())
-	{
-		if(USE_SVFILE)
-			m_File.seek(0x7e);		//SV
-		else if(USE_PERSEUSFILE)
-			m_File.seek(0x7A);		//perseus
-		return;
-	}
-#if 1	//24 bit data
-	if(m_File.read(buf,6*length)<=0)
-
-		return;
-	int j=0;
-	for(i=0; i<length; i++)
-	{
-		tBtoL2 tmp;
-		tmp.bytes.b0 = 0;
-		tmp.bytes.b1 = buf[j++];
-		tmp.bytes.b2 = buf[j++];
-		tmp.bytes.b3 = buf[j++];
-		pBuf[i].re = (TYPEREAL)tmp.all/65536;
-		tmp.bytes.b1 = buf[j++];
-		tmp.bytes.b2 = buf[j++];
-		tmp.bytes.b3 = buf[j++];
-		pBuf[i].im = (TYPEREAL)tmp.all/65536;
-	}
-#else	//16 bit data
-	if(m_File.read(buf,4*length)<=0)
-
-		return;
-	int j=0;
-	for(i=0; i<length; i++)
-	{
-		tBtoL2 tmp;
-		tmp.bytes.b0 = 0;
-		tmp.bytes.b1 = 0;
-		tmp.bytes.b2 = buf[j++];
-		tmp.bytes.b3 = buf[j++];
-		pBuf[i].re = (TYPEREAL)tmp.all/65536;
-		tmp.bytes.b1 =0;
-		tmp.bytes.b2 = buf[j++];
-		tmp.bytes.b3 = buf[j++];
-		pBuf[i].im = (TYPEREAL)tmp.all/65536;
-	}
-#endif
-	return;
-#endif
 
 //	if(m_UseFmGen)
 //		m_pWFmMod->GenerateData(length, m_SignalAmplitude, pBuf);
@@ -501,42 +457,62 @@ if( (m_SweepFrequency>-31250) && (m_SweepFrequency<31250) )
 }
 #endif
 
-	if(!m_UseFmGen)
-	{
-		//create complex sin/cos signal
+        if(!m_UseFmGen)
+        {
+            //create complex sin/cos signal
 
-        pBuf[i].re = amp*cos(m_SweepAcc);
-        pBuf[i].im = amp*sin(m_SweepAcc);
-		//inc phase accummulator with normalized freqeuency step
+            if (ui->genMixBox->checkState()) {
+                //Add signal to incoming
+                pBuf[i].re += amp*cos(m_SweepAcc);
+                pBuf[i].im += amp*sin(m_SweepAcc);
+            } else {
+                //Replace incoming signal with generator
+                pBuf[i].re = amp*cos(m_SweepAcc);
+                pBuf[i].im = amp*sin(m_SweepAcc);
+
+            }
+            //inc phase accummulator with normalized freqeuency step
 
 
-		m_SweepAcc += ( m_SweepFrequency*m_SweepFreqNorm );
-		m_SweepFrequency += m_SweepRateInc;	//inc sweep frequency
-		if(m_SweepFrequency >= m_SweepStopFrequency)	//reached end of sweep?
-			m_SweepRateInc = 0.0;						//stop sweep when end is reached
-//			m_SweepFrequency = m_SweepStartFrequency;	//restart sweep when end is reached
-	}
+            m_SweepAcc += ( m_SweepFrequency*m_SweepFreqNorm );
+            m_SweepFrequency += m_SweepRateInc;	//inc sweep frequency
+            if(m_SweepFrequency >= m_SweepStopFrequency)	//reached end of sweep?
+                m_SweepRateInc = 0.0;						//stop sweep when end is reached
+    //			m_SweepFrequency = m_SweepStartFrequency;	//restart sweep when end is reached
+        }
 
-    //!! Add function to insert noise in SDR signal for testing
-    //Different types of noise generators
-		//////////////////  Gaussian Noise generator
-		// Generate two uniform random numbers between -1 and +1
-		// that are inside the unit circle
-        if(noiseOn && m_NoisePower > -160.0)
-		{	//create and add noise samples to signal
-			do {
-				u1 = 1.0 - 2.0 * (double)rand()/(double)RAND_MAX ;
-				u2 = 1.0 - 2.0 * (double)rand()/(double)RAND_MAX ;
-				r = u1*u1 + u2*u2;
-			} while(r >= 1.0 || r == 0.0);
-			rad = sqrt(-2.0*log(r)/r);
-			//add noise samples to generator output
-            pBuf[i].re += (m_NoiseAmplitude*u1*rad) * 32767.0;
-            pBuf[i].im += (m_NoiseAmplitude*u2*rad) * 32767.0;
-		}
 	}
 	m_SweepAcc = (double)fmod((double)m_SweepAcc, K_2PI);	//keep radian counter bounded
 }
+
+void CTestBench::MixNoiseSamples(int length, TYPECPX* pBuf, double samplerate)
+{
+    double u1;
+    double u2;
+    double rad;
+    double r;
+
+    //Different types of noise generators
+    for(int i=0; i<length; i++) {
+
+        //////////////////  Gaussian Noise generator
+        // Generate two uniform random numbers between -1 and +1
+        // that are inside the unit circle
+        if(noiseOn && m_NoisePower > -160.0)
+        {	//create and add noise samples to signal
+            do {
+                u1 = 1.0 - 2.0 * (double)rand()/(double)RAND_MAX ;
+                u2 = 1.0 - 2.0 * (double)rand()/(double)RAND_MAX ;
+                r = u1*u1 + u2*u2;
+            } while(r >= 1.0 || r == 0.0);
+            rad = sqrt(-2.0*log(r)/r);
+            //add noise samples to generator output
+            pBuf[i].re += (m_NoiseAmplitude*u1*rad) * m_Fft.ampMax;
+            pBuf[i].im += (m_NoiseAmplitude*u2*rad) * m_Fft.ampMax;
+        }
+    }
+}
+
 
 //////////////////////////////////////////////////////////////////////
 // Call to Create 'length' real sweep/pulse/noise generator samples

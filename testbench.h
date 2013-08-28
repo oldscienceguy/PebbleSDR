@@ -140,6 +140,8 @@ public:
     bool debugOn;
     bool noiseOn;
 
+    void MixNoiseSamples(int length, CPX *pBuf, double samplerate);
+
 public slots:
 	void Reset();		//called by GUI Reset button
 	void DrawFftPlot();	//called to draw new fft data onto screen plot
