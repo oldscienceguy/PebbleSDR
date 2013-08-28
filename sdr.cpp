@@ -371,7 +371,7 @@ void SDR::ReadSettings()
     global->testBench->m_PulseWidth = qSettings->value(tr("PulseWidth"),0.0).toDouble();
     global->testBench->m_PulsePeriod = qSettings->value(tr("PulsePeriod"),0.0).toDouble();
     global->testBench->m_SignalPower = qSettings->value(tr("SignalPower"),0.0).toDouble();
-    global->testBench->m_NoisePower = qSettings->value(tr("NoisePower"),-100.0).toDouble();
+    global->testBench->m_NoisePower = qSettings->value(tr("NoisePower"),-70.0).toDouble();
     global->testBench->m_UseFmGen = qSettings->value(tr("UseFmGen"),false).toBool();
 
     qSettings->endGroup();
