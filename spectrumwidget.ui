@@ -200,13 +200,13 @@
           <widget class="QLabel" name="zoomLabel">
            <property name="minimumSize">
             <size>
-             <width>50</width>
+             <width>75</width>
              <height>0</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>50</width>
+             <width>75</width>
              <height>18</height>
             </size>
            </property>
@@ -216,7 +216,7 @@
             </font>
            </property>
            <property name="text">
-            <string>Zoom: 1 X</string>
+            <string>Span:</string>
            </property>
           </widget>
          </item>

@@ -31,11 +31,6 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
     ui.maxDbBox->setValue(plotMaxDb);
     connect(ui.maxDbBox,SIGNAL(valueChanged(int)),this,SLOT(maxDbChanged(int)));
 
-    ui.zoomSlider->setRange(10,200);
-    ui.zoomSlider->setValue(10); //Left end of scale
-    connect(ui.zoomSlider,SIGNAL(valueChanged(int)),this,SLOT(zoomChanged(int)));
-    zoom = 1;
-
 	spectrumMode=SignalSpectrum::SPECTRUM;
 
 	//message = NULL;
@@ -124,6 +119,14 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 
     //Set focus policy so we get key strokes
     setFocusPolicy(Qt::StrongFocus); //Focus can be set by click or tab
+
+    //Used as a logrithmic scale 2^0 to 2^4 or 1x to 16x
+    ui.zoomSlider->setRange(0,400);
+    ui.zoomSlider->setSingleStep(1);
+    ui.zoomSlider->setValue(0); //Left end of scale
+    connect(ui.zoomSlider,SIGNAL(valueChanged(int)),this,SLOT(zoomChanged(int)));
+    zoom = 1;
+
 	isRunning = false;
 }
 
@@ -152,6 +155,7 @@ void SpectrumWidget::Run(bool r)
 
 	if (r) {
         ui.displayBox->setCurrentIndex(global->sdr->lastDisplayMode); //Initial display mode
+        zoomChanged(0); //Display initial value
 		isRunning = true;
 	}
 	else {
@@ -615,7 +619,7 @@ void SpectrumWidget::zoomChanged(int item)
 {
     double newZoom;
     //Item goes from 10 to 200 (or anything), so zoom goes from 10/10(1) to 10/100(0.1) to 10/200(0.5)
-    newZoom = 10.0 / item;
+    newZoom = 1.0 / pow(2.0,item/100.0);
     //There are 2 possible behaviors
     //We could just keep LO and zoom around it.  But if zoom puts mixer off screen, we won't see signal
     //So we assume user want's to keep signal in view and set the LO to the mixer, then zoom
@@ -623,7 +627,9 @@ void SpectrumWidget::zoomChanged(int item)
     if (fMixer != 0 && newZoom < zoom)
         emit mixerChanged(fMixer, true); //Change LO to current mixer freq
     zoom = newZoom;
-    ui.zoomLabel->setText(QString().sprintf("Zoom: %.0f X",1.0 / zoom));
+    //ui.zoomLabel->setText(QString().sprintf("Zoom: %.0f X",1.0 / zoom));
+    ui.zoomLabel->setText(QString().sprintf("Span: %.0f kHz",sampleRate/1000 * zoom));
+
     DrawOverlay();
     update();
 }
