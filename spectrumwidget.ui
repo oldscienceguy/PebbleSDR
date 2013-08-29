@@ -197,7 +197,37 @@
           </widget>
          </item>
          <item>
-          <widget class="QComboBox" name="zoomBox">
+          <widget class="QLabel" name="zoomLabel">
+           <property name="minimumSize">
+            <size>
+             <width>50</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>50</width>
+             <height>18</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>10</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>Zoom: 1 X</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSlider" name="zoomSlider">
+           <property name="minimumSize">
+            <size>
+             <width>80</width>
+             <height>0</height>
+            </size>
+           </property>
            <property name="maximumSize">
             <size>
              <width>80</width>
@@ -206,8 +236,23 @@
            </property>
            <property name="font">
             <font>
-             <pointsize>8</pointsize>
+             <pointsize>10</pointsize>
             </font>
+           </property>
+           <property name="minimum">
+            <number>10</number>
+           </property>
+           <property name="maximum">
+            <number>100</number>
+           </property>
+           <property name="pageStep">
+            <number>10</number>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="tickPosition">
+            <enum>QSlider::NoTicks</enum>
            </property>
           </widget>
          </item>

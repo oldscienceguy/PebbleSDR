@@ -31,16 +31,9 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
     ui.maxDbBox->setValue(plotMaxDb);
     connect(ui.maxDbBox,SIGNAL(valueChanged(int)),this,SLOT(maxDbChanged(int)));
 
-    //For 48k sample rate, 100% is +/- 24k
-    ui.zoomBox->addItem("1.00x",1.00);
-    ui.zoomBox->addItem("1.25x",0.80);
-    ui.zoomBox->addItem("1.50x",0.66);
-    ui.zoomBox->addItem("2.00x",0.50);
-    ui.zoomBox->addItem("2.50x",0.40);
-    ui.zoomBox->addItem("5.00x",0.20);
-    ui.zoomBox->addItem("10.00x",0.10);
-    ui.zoomBox->setCurrentIndex(0);
-    connect(ui.zoomBox,SIGNAL(currentIndexChanged(int)),this,SLOT(zoomChanged(int)));
+    ui.zoomSlider->setRange(10,200);
+    ui.zoomSlider->setValue(10); //Left end of scale
+    connect(ui.zoomSlider,SIGNAL(valueChanged(int)),this,SLOT(zoomChanged(int)));
     zoom = 1;
 
 	spectrumMode=SignalSpectrum::SPECTRUM;
@@ -145,7 +138,6 @@ void SpectrumWidget::Run(bool r)
     ui.displayBox->setFont(global->settings->medFont);
     ui.maxDbBox->setFont(global->settings->medFont);
     ui.cursorLabel->setFont(global->settings->medFont);
-    ui.zoomBox->setFont(global->settings->medFont);
 
     QRect plotFr = ui.plotFrame->geometry(); //relative to parent
 
@@ -621,7 +613,17 @@ void SpectrumWidget::maxDbChanged(int s)
 
 void SpectrumWidget::zoomChanged(int item)
 {
-    zoom = ui.zoomBox->itemData(item).toDouble();
+    double newZoom;
+    //Item goes from 10 to 200 (or anything), so zoom goes from 10/10(1) to 10/100(0.1) to 10/200(0.5)
+    newZoom = 10.0 / item;
+    //There are 2 possible behaviors
+    //We could just keep LO and zoom around it.  But if zoom puts mixer off screen, we won't see signal
+    //So we assume user want's to keep signal in view and set the LO to the mixer, then zoom
+    //But when zooming out, we expect LO to not change
+    if (fMixer != 0 && newZoom < zoom)
+        emit mixerChanged(fMixer, true); //Change LO to current mixer freq
+    zoom = newZoom;
+    ui.zoomLabel->setText(QString().sprintf("Zoom: %.0f X",1.0 / zoom));
     DrawOverlay();
     update();
 }
