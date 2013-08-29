@@ -630,6 +630,11 @@ void SpectrumWidget::zoomChanged(int item)
     //ui.zoomLabel->setText(QString().sprintf("Zoom: %.0f X",1.0 / zoom));
     ui.zoomLabel->setText(QString().sprintf("Span: %.0f kHz",sampleRate/1000 * zoom));
 
+    //In zoom mode, hi/low mixer boundaries need to be updated so we always keep frequency on screen
+    int range = sampleRate / 2 * zoom;
+    emit mixerLimitsChanged(range, - range);
+
+    //Update display
     DrawOverlay();
     update();
 }

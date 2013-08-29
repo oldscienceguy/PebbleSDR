@@ -209,6 +209,8 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 
     ui.dataFrame->setVisible(false);
 
+    connect(ui.spectrumWidget,SIGNAL(mixerLimitsChanged(int,int)),this,SLOT(setMixerLimits(int,int)));
+
 }
 
 ReceiverWidget::~ReceiverWidget(void)
@@ -385,6 +387,13 @@ void ReceiverWidget::SetLimits(double highF,double lowF,int highM,int lowM)
 	highMixer = highM;
 	lowMixer = lowM;
 }
+
+void ReceiverWidget::setMixerLimits(int highM, int lowM)
+{
+    highMixer = highM;
+    lowMixer = lowM;
+}
+
 //Set frequency by changing LO or Mixer, depending on radio button chosen
 //Todo: disable digits that are below step value?
 void ReceiverWidget::SetFrequency(double f)

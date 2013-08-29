@@ -39,6 +39,7 @@ signals:
 		//User clicked in spectrum
 		void mixerChanged(int m);
         void mixerChanged(int m, bool changeLO);
+        void mixerLimitsChanged(int high, int low);
 
 		private slots:
             void displayChanged(int item);

@@ -49,12 +49,13 @@ public:
 
     void DisplayBand(double freq);
 
-	public slots:
+public slots:
 		void setLoMode(bool b);
 		void powerToggled(bool b);
         void directEntryAccepted();
         void directEntryCanceled();
         void showDataFrame(bool b);
+        void setMixerLimits(int highM, int lowM);
 
 
 signals:
