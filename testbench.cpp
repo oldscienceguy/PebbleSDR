@@ -198,7 +198,7 @@ void CTestBench::showEvent(QShowEvent *event)
 {
 	Q_UNUSED(event);
 	m_Active = true;
-	m_pTimer->start(500);		//start up timer
+    m_pTimer->start(500);		//start up timer
 }
 
 void CTestBench::OnTestSlider1(int val)
@@ -435,6 +435,8 @@ int i;
 //	if(m_UseFmGen)
 //		m_pWFmMod->GenerateData(length, m_SignalAmplitude, pBuf);
 
+    bool mix = ui->genMixBox->checkState();
+
 	for(i=0; i<length; i++)
 	{
 		double amp = m_SignalAmplitude;
@@ -459,9 +461,9 @@ if( (m_SweepFrequency>-31250) && (m_SweepFrequency<31250) )
 
         if(!m_UseFmGen)
         {
-            //create complex sin/cos signal
 
-            if (ui->genMixBox->checkState()) {
+            //create complex sin/cos signal
+            if (mix) {
                 //Add signal to incoming
                 pBuf[i].re += amp*cos(m_SweepAcc);
                 pBuf[i].im += amp*sin(m_SweepAcc);
@@ -469,16 +471,15 @@ if( (m_SweepFrequency>-31250) && (m_SweepFrequency<31250) )
                 //Replace incoming signal with generator
                 pBuf[i].re = amp*cos(m_SweepAcc);
                 pBuf[i].im = amp*sin(m_SweepAcc);
-
             }
             //inc phase accummulator with normalized freqeuency step
-
-
             m_SweepAcc += ( m_SweepFrequency*m_SweepFreqNorm );
             m_SweepFrequency += m_SweepRateInc;	//inc sweep frequency
-            if(m_SweepFrequency >= m_SweepStopFrequency)	//reached end of sweep?
+            if(m_SweepFrequency >= m_SweepStopFrequency) {	//reached end of sweep?
+                //3 choices: stop, start over, return in opposite direction
                 m_SweepRateInc = 0.0;						//stop sweep when end is reached
-    //			m_SweepFrequency = m_SweepStartFrequency;	//restart sweep when end is reached
+                //m_SweepFrequency = m_SweepStartFrequency;	//restart sweep when end is reached
+            }
         }
 
 	}
