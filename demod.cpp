@@ -596,5 +596,6 @@ void Demod::OutputBandData(char *status, char *callSign, char *callSignData)
         return;
     dataUi->status->setText(status);
     dataUi->callSign->setText(callSign);
-    dataUi->callSignData->setText(callSignData);
+    //dataUi->callSignData->setText(callSignData);
+    dataUi->dataEdit->setText(callSignData);
 }
