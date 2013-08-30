@@ -14,6 +14,7 @@
 /codingstyle.txt -text
 /cpx.cpp -text
 /cpx.h -text
+/data-band.ui -text
 /data-morse.ui -text
 decoders/fldigifilters.cpp -text
 decoders/fldigifilters.h -text
