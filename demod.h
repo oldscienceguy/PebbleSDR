@@ -76,10 +76,10 @@ public:
 
 
 signals:
-    void BandData(char *buf);
+    void BandData(char *status, char *callSign, char *callSignData);
 
 private slots:
-    void OutputBandData(char *buf);
+    void OutputBandData(char *status, char *callSign, char *callSignData);
 
 private:
     DEMODMODE mode;
