@@ -816,7 +816,7 @@ void SpectrumWidget::DrawOverlay()
 #endif
         //We can't draw a cursor in scrolling waterfall unless we get into layers
         //This just displays it in label area
-        DrawCursor(labelPainter,Qt::black);
+        DrawCursor(labelPainter,Qt::white);
 
     }
 
