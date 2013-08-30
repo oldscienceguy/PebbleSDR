@@ -43,7 +43,7 @@ public:
 
     CPX * ProcessBlock(CPX * in);
     void SetReceiver(Receiver *_rcv);
-    void setCWMode(DEMODMODE m);
+    void setDemodMode(DEMODMODE m);
 
     //Returns tcw in ms for any given WPM
     int WpmToTcw(int w);
@@ -71,7 +71,7 @@ protected:
     Receiver *rcv;
     Ui::dataMorse *dataUi;
     CPXBuf *workingBuf;
-    DEMODMODE cwMode;
+    DEMODMODE demodMode;
     bool useNormalizingThreshold; //Switch how we compare tone values to determine rising or falling
 
     int modemFrequency; //CW tone we're looking for.  This is the goertzel freq or the NCO freq for mixer approach

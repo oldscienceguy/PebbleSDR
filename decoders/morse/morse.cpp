@@ -159,7 +159,7 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
 
     syncTiming();
 
-    cwMode = dmCWL;
+    demodMode = dmCWL;
     outputBufIndex = 0;
 
 
@@ -273,9 +273,9 @@ void Morse::SetReceiver(Receiver *_rcv)
     rcv = _rcv;
 }
 
-void Morse::setCWMode(DEMODMODE m)
+void Morse::setDemodMode(DEMODMODE m)
 {
-    cwMode = m;
+    demodMode = m;
 }
 
 void Morse::onBoxChecked(bool b)
@@ -569,13 +569,16 @@ CPX * Morse::ProcessBlock(CPX *in)
     //Downconverter first mixes in place, ie changes in!  So we have to work with a copy
     CPXBuf::copy(workingBuf->Ptr(),in,numSamples);
 
-    //We need to account for modemOffset in ReceiverWidget
+    //We need to account for modemOffset in ReceiverWidget added so we hear tone but freq display is correct
     //Actual freq for CWU will be freq + modemFrequency for CWL will be freq -modemFrequency.
     //And we want actual freq to be at baseband
-    if (cwMode == dmCWL)
+    if (demodMode == dmCWL)
         modemDownConvert.SetFrequency(-modemFrequency);
-    else if (cwMode == dmCWU)
+    else if (demodMode == dmCWU)
         modemDownConvert.SetFrequency(modemFrequency);
+    else
+        //Other modes, like DIGU and DIGL will still work with cursor on signal, but we won't hear tones.  Feature?
+        modemDownConvert.SetFrequency(0);
 
     //!!Bug - SampleRate 44100 (wav file) to 8000 should reduce sample size by 5.5, but is still 2048
     int numModemSamples = modemDownConvert.ProcessData(numSamples, workingBuf->Ptr(), this->out);
