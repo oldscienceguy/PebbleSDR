@@ -11,6 +11,7 @@
 #include "filters/iir.h"
 #include "demod/wfmdemod.h"
 #include "demod/rdsdecode.h"
+#include "ui/ui_data-band.h"
 
 enum DEMODMODE {
     dmAM,
@@ -37,6 +38,8 @@ class Demod : public SignalProcessing
 public:
     Demod(int _inputRate, int _inputWfmRate, int size);
 	~Demod();
+
+    void SetupDataUi(QWidget *parent);
 
     CPX * ProcessBlock(CPX * in, int _numSamples);
     DEMODMODE DemodMode() const;
@@ -73,10 +76,16 @@ public:
 
 
 signals:
+    void BandData(char *buf);
+
+private slots:
+    void OutputBandData(char *buf);
 
 private:
     DEMODMODE mode;
-    
+    Ui::dataBand *dataUi;
+    bool outputOn;
+
     //Testing
     CWFmDemod *wfmDemod;
     CRdsDecode rdsDecode;

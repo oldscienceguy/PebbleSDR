@@ -723,6 +723,14 @@ void ReceiverWidget::dataSelectionChanged(int s)
                 delete obj;
             }
             break;
+        case BAND_DATA:
+            receiver->getDemod()->SetupDataUi(NULL);
+            //Delete all children
+            foreach (QObject *obj, ui.dataFrame->children()) {
+                //Normally we get a grid layout object, uiFrame, dataFrame
+                delete obj;
+            }
+            break;
         default:
             break;
     }
@@ -740,6 +748,10 @@ void ReceiverWidget::dataSelectionChanged(int s)
             //Otherwise all the UI specifics from each decoder will leak into ReceiverWidget
             //and have to be maintained in two places.
             receiver->getMorse()->SetupDataUi(ui.dataFrame);
+            ui.dataFrame->setVisible(true);
+            break;
+        case BAND_DATA:
+            receiver->getDemod()->SetupDataUi(ui.dataFrame);
             ui.dataFrame->setVisible(true);
             break;
         default:

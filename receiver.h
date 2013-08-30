@@ -74,6 +74,7 @@ public:
     ReceiverWidget *receiverWidget;
 
     Morse *getMorse() {return morse;}
+    Demod *getDemod() {return demod;}
 
     public slots:
 		void Restart();

@@ -51,6 +51,29 @@ Demod::~Demod()
 {
 }
 
+void Demod::SetupDataUi(QWidget *parent)
+{
+    if (parent == NULL) {
+        outputOn = false;
+
+        //We want to delete
+        if (dataUi != NULL) {
+            delete dataUi;
+        }
+        dataUi = NULL;
+        return;
+    } else if (dataUi == NULL) {
+        //Create new one
+        dataUi = new Ui::dataBand();
+        dataUi->setupUi(parent);
+
+        //Reciever/demod thread emits and display thread handles
+        connect(this,SIGNAL(BandData(char*)),this,SLOT(OutputBandData(char*)));
+
+        outputOn = true;
+    }
+}
+
 //We can get called with anything up to maxSamples, depending on earlier decimation steps
 CPX * Demod::ProcessBlock(CPX * in, int bufSize)
 {
@@ -446,7 +469,7 @@ void Demod::FMStereo(CPX * in, CPX * out, int bufSize)
     if (rdsUpdate) {
         //Formatted string for output windows
         sprintf(rdsBuf,"%s %s %s",pilotLock ? "Stereo" : "      ", rdsCallString, rdsString);
-        //emit OutputData(rdsBuf);
+        emit BandData(rdsBuf);
 
     }
     return;
@@ -567,4 +590,20 @@ QString Demod::ModeToString(DEMODMODE dm)
 	else if (dm == dmDIGU) return "DIGU";
 	else if (dm == dmNONE) return "NONE";
 	else return "AM"; //default
+}
+
+
+void Demod::OutputBandData(char *buf)
+{
+    if (!outputOn || dataUi == NULL)
+        return;
+    if (false) {
+        //Scrolling text like morse
+        dataUi->dataEdit->insertPlainText(buf); //At cursor
+        dataUi->dataEdit->moveCursor(QTextCursor::End);
+    } else {
+        //Fixed text
+        dataUi->dataEdit->setPlainText(buf);
+
+    }
 }

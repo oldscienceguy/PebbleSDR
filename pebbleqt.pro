@@ -496,7 +496,8 @@ FORMS += \
     directinput.ui \
     data-morse.ui \
     bargraphmeter.ui \
-    testbench.ui
+    testbench.ui \
+    data-band.ui
 
 RESOURCES += \
     resources.qrc
