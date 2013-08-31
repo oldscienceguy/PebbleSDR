@@ -4,7 +4,6 @@ Demod_AM::Demod_AM(int _inputRate, int _numSamples) :
     Demod(_inputRate, _numSamples)
 {
     amDc = amDcLast = 0.0;
-    amSmooth = 0.0;
     SetBandwidth(16000); //For testing
 }
 

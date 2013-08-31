@@ -13,14 +13,16 @@ public:
     void ProcessBlock(  CPX * in, CPX * out, int demodSamples );
 
 private:
-    float samLockCurrent;
-    float samLockPrevious;
-    float samDc;
-    //SAM config
-    float samLoLimit; //PLL range
-    float samHiLimit;
-    float samBandwidth;
+    float pllLowLimit; //PLL range
+    float pllHighLimit;
 
+    //Like AM, but separate re and im for left/right
+    double amDcRe;
+    double amDcReLast;
+    double amDcIm;
+    double amDcImLast;
+
+    CFir bpFilter;
 
 };
 

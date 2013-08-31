@@ -7,6 +7,26 @@
 #include "demod/demod_am.h"
 #include "demod/demod_sam.h"
 
+//Must be in same order as DEMODMODE
+//Verified with CuteSDR values
+
+const Demod::DemodInfo Demod::demodInfo[] = {
+    {dmAM,          -10000,     10000,      48000,  0,  -120,   20},
+    {dmSAM,         -10000,     10000,      48000,  0,  -100,   200},
+    {dmFMN,         -15000,     15000,      48000,  0,  -100,   200}, //Check FM
+    {dmFMMono,      -15000,     15000,      48000,  0,  -100,   200},
+    {dmFMStereo,    -100000,    100000,     100000, 0,  -100,   200},
+    {dmDSB,         -10000,     10000,      48000,  0,  -100,   200},
+    {dmLSB,         -20000,     0,          20000,  0,  -100,   200},
+    {dmUSB,         0,          20000,      20000,  0,  -100,   200},
+    {dmCWL,         -1000,      1000,       1000,   0,  -100,   200}, //Check CW
+    {dmCWU,         -1000,      1000,       1000,   0,  -100,   200},
+    {dmDIGL,        -20000,     0,          20000,  0,  -100,   200},
+    {dmDIGU,        0,          20000,      20000,  0,  -100,   200},
+    {dmNONE,        0,          0,          0,      0,  -100,   200}
+
+};
+
 const float Demod::usDeemphasisTime = 75E-6; //Use for US & Korea FM
 const float Demod::intlDeemphasisTime = 50E-6;  //Use for international FM
 
@@ -214,32 +234,29 @@ void Demod::SimpleFM2(CPX *in, CPX *out, int _numSamples)
 }
 
 //dttsp PLL algorithm
-CPX Demod::PLL(CPX sig, float loLimit, float hiLimit, int _numSamples)
+CPX Demod::PLL(CPX sig, float loLimit, float hiLimit)
 {
 	CPX z;
-	CPX delay;
+    CPX pllSample;
     float difference;
-    int ns = _numSamples;
 
 	//Todo: See if we can use NCO here
 	//This is the generated signal to sync with
     z.re = cos(pllPhase);
     z.im = sin(pllPhase);
 
-	//delay.re = z.re * sig.re + z.im * sig.im;
-	//delay.im = -z.im * sig.re + z.re * sig.im;
-
-	delay = z * sig;
+    //Complex mult of incoming signal and NCO
+    pllSample = z * sig;
 
 	// For SAM we need the magnitude (hypot)
 	// For FM we need the freq difference
 	if (mode == dmSAM)
-		difference = sig.mag() * delay.phase();
+        difference = sig.mag() * pllSample.phase();
 	else
-		difference = delay.phase();
+        difference = pllSample.phase();
 
     
-    pllFrequency += beta * difference;
+    pllFrequency += pllBeta * difference;
 
 	//Keep the PLL within our limits
     if (pllFrequency < loLimit)
@@ -247,7 +264,7 @@ CPX Demod::PLL(CPX sig, float loLimit, float hiLimit, int _numSamples)
     if (pllFrequency > hiLimit)
         pllFrequency = hiLimit;
 
-    pllPhase += pllFrequency + alpha * difference;
+    pllPhase += pllFrequency + pllAlpha * difference;
 
 	//Next reference signal
     while (pllPhase >= TWOPI)
@@ -255,7 +272,7 @@ CPX Demod::PLL(CPX sig, float loLimit, float hiLimit, int _numSamples)
     while (pllPhase < 0)
         pllPhase += TWOPI;
 
-	return delay;
+    return pllSample;
 }
 
 /*
@@ -473,8 +490,8 @@ void Demod::SetDemodMode(DEMODMODE _mode, int _sourceSampleRate, int _audioSampl
         case dmSAM:
             break;
         case dmFMN:
-            alpha = 0.3 * fmBandwidth * TWOPI/sampleRate;
-            beta = alpha * alpha * 0.25;
+            pllAlpha = 0.3 * fmBandwidth * TWOPI/sampleRate;
+            pllBeta = pllAlpha * pllAlpha * 0.25;
             fmDCOffset = 0.0;
             break;
         case dmFMMono:
@@ -497,8 +514,8 @@ void Demod::SetDemodMode(DEMODMODE _mode, int _sourceSampleRate, int _audioSampl
             fmDeemphasisAlpha = (1.0-exp(-1.0/(inputWfmSampleRate * usDeemphasisTime)) );
             break;
         default:
-            alpha = 0.3 * 500.0 * TWOPI / sampleRate;
-            beta = alpha * alpha * 0.25;
+            pllAlpha = 0.3 * 500.0 * TWOPI / sampleRate;
+            pllBeta = pllAlpha * pllAlpha * 0.25;
 	}
 
 }

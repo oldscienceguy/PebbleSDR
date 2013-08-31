@@ -17,10 +17,9 @@ public:
     void SetBandwidth(double bandwidth);
 
 private:
-    //Moving averages for smooth am detector
+    //DC Filtering
     double amDc;
     double amDcLast;
-    double amSmooth;
 
     CFir lpFilter;
 

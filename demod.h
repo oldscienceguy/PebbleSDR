@@ -56,26 +56,11 @@ public:
         qint32 lowCutMin; //Low bandpass
         qint32 highCutMax; //High bandpass
         qint32 maxBandWidth; //for specified mode
-        //CuteSDR has other settings for variable bp filter, agc settings, etc which we don't use yet
+        qint16 agcSlope;
+        qint16 agcKneeDb;
+        qint16 agcDecayMs;
     };
-    //Must be in same order as DEMODMODE
-    //Verified with CuteSDR values
-    const DemodInfo demodInfo[13] = {
-        {dmAM,          -10000,     10000,      48000},
-        {dmSAM,         -10000,     10000,      48000},
-        {dmFMN,         -15000,     15000,      48000}, //Check FM
-        {dmFMMono,      -15000,     15000,      48000},
-        {dmFMStereo,    -100000,    100000,     100000},
-        {dmDSB,         -10000,     10000,      48000},
-        {dmLSB,         -20000,     0,          20000},
-        {dmUSB,         0,          20000,      20000},
-        {dmCWL,         -1000,      1000,       1000}, //Check CW
-        {dmCWU,         -1000,      1000,       1000},
-        {dmDIGL,        -20000,     0,          20000},
-        {dmDIGU,        0,          20000,      20000},
-        {dmNONE,        0,          0,          0}
-
-    };
+    static const DemodInfo demodInfo[];
 
 
     void SetBandwidth(double bandwidth);
@@ -87,8 +72,8 @@ private slots:
 
 protected:
     //PLL for use by and demod subclasses that need it
-    CPX PLL(CPX sig, float loLimit, float hiLimit, int _numSamples);
-    float alpha,beta;
+    CPX PLL(CPX sig, float loLimit, float hiLimit);
+    float pllAlpha,pllBeta;
 
 private:
     Demod_AM *demodAM;
