@@ -1,0 +1,91 @@
+12/11/83
+CW algorithm for IBM Super-Ratt
+
+AVERAGE DOT LENGTH
+	The CW algorithm is based on an average dot length which is calculated
+by keeping the last X dot lengths in a buffer and re-averaging them every time
+and additional entry is made in the buffer.
+
+	The reception of a Dot puts that Dot's length into the buffer.  The
+reception of a Dash puts 1/3 that Dash's length into the buffer.  The fact that
+the buffer is updated on Dots and Dashes means that any speed signal can be
+synced on with no user intervention.  It also helps copy 'bad fists', where the
+dot to dash ratio may not be the standard 1:3.
+
+	The number of Dot lengths to keep in the buffer is stored in Dot_num and
+can be re-defined in real time from 1 to 20.  Larger values will make the
+algorithm more immune to noise spikes, but will make it less adaptive to speed
+changes.  Smaller values result in quick adaptions to speed changes, but will
+also result in noise spikes altering the averages.
+
+	Smaller values may be useful in tuning around a band, where quick sync
+is required.  Once in QSO, a larger value may yield better copy.
+
+EVENT DECISIONS
+	Once an event has occured, keydown or keyup, the algorithm determines
+what type of event it was by comparing the events length to threshold values
+based on the average dot length.  The following table shows the 'standard'
+ratios (above the unit line) for key up and key down events.  The decision
+points for the algorithm are shown below the unit line.
+
+DOWN:  DOT	      DASH
+UP  :BIT SPACE	    CHAR SPACE			   WORD SPACE
+0-------1-------2-------3-------4-------5-------6-------7-------8
+|<-Noise (Key up or Key down)
+    |<- Dot_thr (Key down) [0.3 times Dot_avg]
+	|<- Dot_avg (Key down)
+	   |<- Letter_thr (Key up) [1.5 times Dot_avg]
+	       |<- Dash_thr (Key down) [2.0 times Dot_avg]
+				|<- Word_thr (Key up) [4.0 times Dot_avg]
+
+NOISE:If an event does not last long enough to increment the counter, then we
+can assume that it is not a valid event.  The program continues timing the event
+as if the break did not occur.
+
+DOT_THRESHOLD: When a keydown event occurs which is below a certain point, it
+can either be noise or a speed change.	In any case, we don't want to rotate a
+bit into the received character, but we do want to reflect the event in our
+average.  Anything above this point is considered to be a valid Dot or Dash.
+Anything below this point is put into the dot buffer only.
+
+DOT_AVG: This is a running average which should approximate the 'ideal' dot
+length.  All thresholds are based on this value.
+
+LETTER_THRESHOLD: Any keyup event with a length below this value is considered
+to be a space between bits in the character.  Anything above is considered to be
+either a letter or a word space.
+
+DASH_THRESHOLD: This is the value which determines whether a keydown event is a
+dot or a dash.
+
+WORD_THRESHOLD: This is the value which determines whether a keydown event is a
+letter or a word space.
+
+MODES
+	ADAPTIVE - The algorithm changes the threshold values based on a
+constantly updated Dot_avg.
+	FIXED - The user specifies a speed, the threshold values are calculated,
+and no further updates are made.
+
+SPEED CALCULATIONS
+	1 Baud = 1 Pulse / Second
+	Dots frequency = 1/Dot length in seconds
+	SPEED (WPM) = 2.4 * Dots per second
+
+-->	Speed(WPM) = 2.4 / Dot length(Seconds)
+-->	Dot length(Seconds) = 2.4/Speed(WPM)
+
+	SPEED	   DOT LENGTH
+	5 WPM	= .480 Seconds
+	25 WPM	= .096 Seconds
+	50 WPM	= .048 Seconds
+	75 WPM	= .032 Seconds
+	100 WPM = .024 Seconds
+
+	8253		UNIT
+	DIVISOR 	COUNT LENGTH		MAX LENGTH
+	512		.000429 		28 Seconds
+	256		.000214 		14 Seconds
+	128		.000107 		 7 Seconds
+
+
