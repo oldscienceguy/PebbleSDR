@@ -30,6 +30,7 @@ enum DEMODMODE {
 };
 
 class Demod_AM;
+class Demod_SAM;
 
 class Demod : public SignalProcessing
 {
@@ -84,8 +85,14 @@ signals:
 private slots:
     void OutputBandData(char *status, char *callSign, char *callSignData);
 
+protected:
+    //PLL for use by and demod subclasses that need it
+    CPX PLL(CPX sig, float loLimit, float hiLimit, int _numSamples);
+    float alpha,beta;
+
 private:
     Demod_AM *demodAM;
+    Demod_SAM *demodSAM;
 
     DEMODMODE mode;
     Ui::dataBand *dataUi;
@@ -119,38 +126,25 @@ private:
     int audioSampleRate; //Audio out
 
     float pllPhase;
-    float samLockCurrent;
-    float samLockPrevious;
-    float samDc;
     float fmDCOffset;
+
 	//Previous I/Q values, used in simpleFM
 	float fmIPrev;
 	float fmQPrev;
     
 	//PLL variables
     float pllFrequency;
-	float alpha,beta;
     
-	//SAM config
-	float samLoLimit; //PLL range
-	float samHiLimit;
-	float samBandwidth;
-
 	//FMN config
 	float fmLoLimit;
 	float fmHiLimit;
 	float fmBandwidth;
 
-    CPX PLL(CPX sig, float loLimit, float hiLimit, int _numSamples);
-
-    void PllSAM(CPX * in, CPX * out, int _numSamples);
     void PllFMN(CPX * in, CPX * out, int _numSamples);
     void FMMono(CPX * in, CPX * out, int _numSamples);
     void FMStereo(CPX * in, CPX * out, int _numSamples);
 
 	//Simple time domain demod algorithms for testing and comparison
-    void SimpleAM(CPX *in, CPX *out, int _numSamples);
-    void SimpleAMSmooth(CPX *in, CPX *out, int _numSamples);
     void SimpleUSB(CPX *in, CPX *out, int _numSamples);
     void SimpleLSB(CPX *in, CPX *out, int _numSamples);
     void SimplePhase(CPX *in, CPX *out, int _numSamples);

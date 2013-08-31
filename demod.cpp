@@ -5,6 +5,7 @@
 #include "global.h"
 #include "receiver.h"
 #include "demod/demod_am.h"
+#include "demod/demod_sam.h"
 
 const float Demod::usDeemphasisTime = 75E-6; //Use for US & Korea FM
 const float Demod::intlDeemphasisTime = 50E-6;  //Use for international FM
@@ -25,14 +26,6 @@ Demod::Demod(int _inputRate, int _inputWfmRate, int ns) :
 
     SetDemodMode(dmAM, sampleRate, sampleRate);
 	
-	//SAM config
-	samLoLimit = -2000 * TWOPI/sampleRate; //PLL range
-	samHiLimit = 2000 * TWOPI/sampleRate;
-	samBandwidth = 300;
-	samLockCurrent = 0.5;
-	samLockPrevious = 1.0;
-	samDc = 0.0;
-
 	//FMN config, should these come from filter settings?
 	fmLoLimit = -6000 * TWOPI/sampleRate;
 	fmHiLimit = 6000 * TWOPI/sampleRate;
@@ -52,6 +45,7 @@ Demod::Demod(int _inputRate, int _inputWfmRate, int ns) :
 
     //Moving to subclasses for each demod, transition with instance for each demod, change to vptr later
     demodAM = new Demod_AM(sampleRate, numSamples);
+    demodSAM = new Demod_SAM(sampleRate, numSamples);
 
 }
 
@@ -92,7 +86,7 @@ CPX * Demod::ProcessBlock(CPX * in, int bufSize)
             demodAM->ProcessBlockFiltered(in,out, bufSize); //Sounds slightly better
             break;
         case dmSAM: // SAM
-            PllSAM(in, out, bufSize);
+            demodSAM->ProcessBlock(in, out, bufSize);
             break;
         case dmFMN: // FMN
 			//SimpleFM(in,out);
@@ -262,20 +256,6 @@ CPX Demod::PLL(CPX sig, float loLimit, float hiLimit, int _numSamples)
         pllPhase += TWOPI;
 
 	return delay;
-}
-void Demod::PllSAM(  CPX * in, CPX * out, int bufSize )
-{
-	CPX delay;
-
-    for (int i = 0; i < bufSize; i++) {
-        delay = PLL(in[i],samLoLimit,samHiLimit, bufSize);
-		//Basic am demod
-        samLockCurrent = 0.999f * samLockCurrent + 0.001f * fabs(delay.im);
-        samLockPrevious = samLockCurrent;
-        samDc = (0.9999f * samDc) + (0.0001f * delay.re);
-		out[i].re = out[i].im = (delay.re - samDc) *.50 ;
-        
-    }
 }
 
 /*
@@ -491,11 +471,6 @@ void Demod::SetDemodMode(DEMODMODE _mode, int _sourceSampleRate, int _audioSampl
     pllPhase = 0.0;
     switch (mode) {
         case dmSAM:
-            alpha = 0.3 * samBandwidth * TWOPI/sampleRate;
-            beta = alpha * alpha * 0.25;
-            samLockCurrent = 0.5;
-            samLockPrevious = 1.0;
-            samDc = 0.0;
             break;
         case dmFMN:
             alpha = 0.3 * fmBandwidth * TWOPI/sampleRate;

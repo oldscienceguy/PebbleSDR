@@ -25,6 +25,8 @@ decoders/rtty/rtty.h -text
 /demod.h -text
 demod/demod_am.cpp -text
 demod/demod_am.h -text
+demod/demod_sam.cpp -text
+demod/demod_sam.h -text
 devices/elektorsdr.cpp -text
 devices/elektorsdr.h -text
 devices/funcube.cpp -text

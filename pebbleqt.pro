@@ -413,7 +413,8 @@ HEADERS += \
     decoders/morse/morsecode.h \
     decoders/rtty/baudotcode.h \
     decoders/rtty/rtty.h \
-    demod/demod_am.h
+    demod/demod_am.h \
+    demod/demod_sam.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -484,7 +485,8 @@ SOURCES += \
     decoders/morse/morsecode.cpp \
     decoders/rtty/baudotcode.cpp \
     decoders/rtty/rtty.cpp \
-    demod/demod_am.cpp
+    demod/demod_am.cpp \
+    demod/demod_sam.cpp
 
 FORMS += \
     spectrumwidget.ui \
