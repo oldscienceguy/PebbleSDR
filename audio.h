@@ -25,11 +25,11 @@ public:
 	virtual int Flush()=0;
 	virtual int Pause()=0;
 	virtual int Restart()=0;
-    virtual void SendToOutput(CPX *_cpxBuf,int _numSamples)=0;
+    virtual void SendToOutput(CPX *_cpxBuf,int _numSamples, float gain = 1.0, bool mute = false)=0;
 	virtual void ClearCounts()=0;
 
     //Creates either PortAudio or QTAudio device
-    static Audio *Factory(Receiver *rcv, int framesPerBuffer,Settings *settings);
+    static Audio *Factory(Receiver *rcv, int framesPerBuffer, Settings *settings);
 
     //Returns a list of input devices for settings to chose from
     static QStringList InputDeviceList();

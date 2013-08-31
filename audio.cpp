@@ -16,7 +16,7 @@ Audio::~Audio()
 {
 }
 
-Audio * Audio::Factory(Receiver *rcv, int framesPerBuffer,Settings *settings)
+Audio * Audio::Factory(Receiver *rcv, int framesPerBuffer, Settings *settings)
 {
     if (Audio::useQtAudio) {
         qDebug()<<"Using QTAudio";

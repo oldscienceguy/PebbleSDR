@@ -22,7 +22,7 @@ public:
 	int Flush();
 	int Pause();
 	int Restart();
-    void SendToOutput(CPX *, int outSamples);
+    void SendToOutput(CPX *, int outSamples, float gain = 1.0, bool mute = false);
 	void ClearCounts();
 
     //Return device index for matching device

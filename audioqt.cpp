@@ -150,7 +150,7 @@ int AudioQT::Restart()
 {
 	return 0;
 }
-void AudioQT::SendToOutput(CPX *out, int outSamples)
+void AudioQT::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
 {
     if (!qaAudioOutput)
         return;
@@ -161,6 +161,12 @@ void AudioQT::SendToOutput(CPX *out, int outSamples)
     //qint16 left,right;
     for (int i=0, j=0;i<outSamples;i++, j+=2)
 	{
+        if (mute)
+            out[i].re = out[i].im = 0;
+
+        if (gain != 1)
+            out[i] *= gain;
+
         //If we use Int 16
         //left = Float2Int(out[i].re);
         //right = Float2Int(out[i].im);

@@ -774,20 +774,9 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 
     int numResamp = fractResampler.Resample(demodFrames,resampRate,nextStep,out);
 
-	// apply volume setting
-	//Todo: gain should be a factor of slider, receiver, filter, and mode, and should be normalized
-	//	so changing anything other than slider doesn't impact overall volume.
-	//	or should filter normalize gain
+    // apply volume setting, mute and output
     //global->perform.StartPerformance();
-
-	//CPXBuf::scale(out, nextStep, gain * filterLoss, frameCount);
-
-	if (mute)
-        CPXBuf::clear(out, numResamp);
-	else
-        CPXBuf::scale(out, out, gain, numResamp);
-
-    audioOutput->SendToOutput(out,numResamp);
+    audioOutput->SendToOutput(out,numResamp, gain, mute);
     //global->perform.StopPerformance(100);
 
 }

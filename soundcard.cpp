@@ -309,7 +309,7 @@ int SoundCard::streamCallback(
 	return paContinue;
 }
 //Final call from receiver ProcessBlock to send audio out
-void SoundCard::SendToOutput(CPX *out, int outSamples)
+void SoundCard::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
 {
 	float *outPtr;
 	outPtr = outStreamBuffer;
@@ -319,6 +319,12 @@ void SoundCard::SendToOutput(CPX *out, int outSamples)
 	//opened stream
     for (int i=0;i<outSamples;i++)
 	{
+        if (mute)
+            out[i].re = out[i].im = 0;
+
+        if (gain != 1)
+            out[i] *= gain;
+
         temp = out[i].re;
         //Cap at -1 to +1 to make sure we don't overdrive
         if (temp >.9999)
