@@ -18,6 +18,8 @@
 /data-morse.ui -text
 decoders/fldigifilters.cpp -text
 decoders/fldigifilters.h -text
+decoders/rtty/rtty.cpp -text
+decoders/rtty/rtty.h -text
 /defs.h -text
 /demod.cpp -text
 /demod.h -text
