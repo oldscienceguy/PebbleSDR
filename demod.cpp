@@ -4,9 +4,17 @@
 #include <string.h>
 #include "global.h"
 #include "receiver.h"
+#include "demod/demod_am.h"
 
 const float Demod::usDeemphasisTime = 75E-6; //Use for US & Korea FM
 const float Demod::intlDeemphasisTime = 50E-6;  //Use for international FM
+
+//New constructor as we move demods to sub classes
+Demod::Demod(int _inputRate, int _numSamples) :
+    SignalProcessing(_inputRate,_numSamples)
+{
+
+}
 
 //Two input rates, one normal and one for wfm
 Demod::Demod(int _inputRate, int _inputWfmRate, int ns) :
@@ -37,13 +45,13 @@ Demod::Demod(int _inputRate, int _inputWfmRate, int ns) :
 	fmIPrev = 0.0;
 	fmQPrev = 0.0;
 
-	amDc = 0.0;
-	amSmooth = 0.0;
-
     //We're no longer decimating to audio in wfmdemod, so audio rate is same as input rate
     //This fixed bug where FM filters were not working because rate was wrong
     wfmDemod = new CWFmDemod(inputWfmSampleRate, inputWfmSampleRate);
     ResetDemod();
+
+    //Moving to subclasses for each demod, transition with instance for each demod, change to vptr later
+    demodAM = new Demod_AM(sampleRate, numSamples);
 
 }
 
@@ -81,7 +89,7 @@ CPX * Demod::ProcessBlock(CPX * in, int bufSize)
     switch(mode) {
         case dmAM: // AM
             //SimpleAM(in,out, bufSize);
-            SimpleAMSmooth(in,out, bufSize); //Sounds slightly better
+            demodAM->ProcessBlockFiltered(in,out, bufSize); //Sounds slightly better
             break;
         case dmSAM: // SAM
             PllSAM(in, out, bufSize);
@@ -118,37 +126,6 @@ CPX * Demod::ProcessBlock(CPX * in, int bufSize)
 	return out;
 }
 
-void Demod::SimpleAM(CPX *in, CPX *out, int _numSamples)
-{
-	float tmp;
-    int ns = _numSamples;
-    for (int i=0;i<ns;i++)
-	{
-		//Just return the magnitude of each sample
-		//tmp = sqrt(in[i].re * in[i].re + in[i].im * in[i].im);
-		//10/11/10: putting 50% of mag in re and im yields the same signal power
-		//as USB or LSB.  Without this, we get AM distortion at the same gain
-		tmp = in[i].mag() * 0.5;
-		out[i].re = out[i].im = tmp;
-	}
-}
-//dttsp algorithm with smoothing
-void Demod::SimpleAMSmooth(CPX *in, CPX *out, int _numSamples)
-{
-	double current;
-    int ns = _numSamples;
-
-    for (int i = 0; i < ns; i++)
-	{
-		current = in[i].mag();
-		//Smooth with weighted average
-		amDc = 0.9999f * amDc + 0.0001f * current;
-		amSmooth = 0.5f * amSmooth + 0.5f * (current - amDc);
-		//smooth *= .5 so we keep overall signal magnitude unchanged
-		out[i].re = out[i].im = amSmooth * 0.5;
-	}
-
-}
 void Demod::SimpleUSB(CPX *in, CPX *out, int _numSamples)
 {
 	float tmp;
@@ -489,6 +466,18 @@ void Demod::FMDeemphasisFilter(int _bufSize, CPX *in, CPX *out)
         avgIm = (1.0-fmDeemphasisAlpha)*avgIm + fmDeemphasisAlpha*in[i].im;
         out[i].re = avgRe*2.0;
         out[i].im = avgIm*2.0;
+    }
+}
+
+//Pass filter changes to demodulators in case they need to stay in sync
+void Demod::SetBandwidth(double bandwidth)
+{
+    switch (mode) {
+        case dmAM:
+            demodAM->SetBandwidth(bandwidth);
+            break;
+        default:
+            break;
     }
 }
 

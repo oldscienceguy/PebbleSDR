@@ -465,6 +465,7 @@ void Receiver::SetFilter(int lo, int hi)
 	if (demod == NULL)
 		return;
 	bpFilter->SetBandPass(lo,hi);
+    demod->SetBandwidth(hi - lo);
 }
 void Receiver::SetAnfEnabled(bool b)
 {

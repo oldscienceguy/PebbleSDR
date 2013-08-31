@@ -29,6 +29,7 @@ enum DEMODMODE {
 	dmNONE
 };
 
+class Demod_AM;
 
 class Demod : public SignalProcessing
 {
@@ -36,6 +37,7 @@ class Demod : public SignalProcessing
     Q_OBJECT
 
 public:
+    Demod(int _inputRate, int _numSamples);
     Demod(int _inputRate, int _inputWfmRate, int size);
 	~Demod();
 
@@ -75,6 +77,7 @@ public:
     };
 
 
+    void SetBandwidth(double bandwidth);
 signals:
     void BandData(char *status, char *callSign, char *callSignData);
 
@@ -82,6 +85,8 @@ private slots:
     void OutputBandData(char *status, char *callSign, char *callSignData);
 
 private:
+    Demod_AM *demodAM;
+
     DEMODMODE mode;
     Ui::dataBand *dataUi;
     bool outputOn;
@@ -125,11 +130,6 @@ private:
 	//PLL variables
     float pllFrequency;
 	float alpha,beta;
-
-	//Moving averages for smooth am detector
-	float amDc;
-	float amSmooth;
-
     
 	//SAM config
 	float samLoLimit; //PLL range
