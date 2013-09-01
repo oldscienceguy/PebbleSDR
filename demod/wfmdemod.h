@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////
-// wfmdemod.h: interface for the CWFmDemod class.
+// wfmdemod.h: interface for the Demod_WFM class.
 //
 // History:
 //	2011-07-24  Initial creation MSW
@@ -13,17 +13,22 @@
 #include "filters/iir.h"
 #include "downconvert.h"
 #include "rbdsconstants.h"
+#include "demod.h"
 
 #define PHZBUF_SIZE 16384
 
 #define RDS_Q_SIZE 100
 
-class CWFmDemod
+class Demod_WFM : public Demod
 {
-public:
-    CWFmDemod(TYPEREAL samplerate, TYPEREAL _audioRate);
-	virtual ~CWFmDemod();
+    //Note:  If moc complier is not called, delete Makefile so it can be regenerated
+    Q_OBJECT
 
+public:
+    Demod_WFM(int _inputRate, int _numSamples);
+    virtual ~Demod_WFM();
+
+    void Init(TYPEREAL samplerate, TYPEREAL _audioRate);
     TYPEREAL SetSampleRate(TYPEREAL samplerate, TYPEREAL _outRate, bool USver);
 	//overloaded functions for mono and stereo
     int ProcessDataStereo(int InLength, TYPECPX* pInData, TYPECPX* pOutData);

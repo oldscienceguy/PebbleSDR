@@ -1,4 +1,4 @@
-// wfmdemod.cpp: implementation of the CWFmDemod class.
+// wfmdemod.cpp: implementation of the Demod_WFM class.
 //
 //  This class takes I/Q baseband data and performs
 // Wideband FM demodulation
@@ -100,11 +100,15 @@ const double HILBLP_H[HILB_LENGTH] =
 };
 
 
-/////////////////////////////////////////////////////////////////////////////////
-//	Construct/destruct WFM demod object
-/////////////////////////////////////////////////////////////////////////////////
-CWFmDemod::CWFmDemod(TYPEREAL samplerate, TYPEREAL _audioRate) : m_SampleRate(samplerate)
+Demod_WFM::Demod_WFM(int _inputRate, int _numSamples) :
+    Demod(_inputRate, _numSamples)
 {
+
+}
+
+void Demod_WFM::Init(TYPEREAL samplerate, TYPEREAL _audioRate)
+{
+    m_SampleRate = sampleRate;
     m_PilotPhaseAdjust = 0.0;
     SetSampleRate(samplerate, _audioRate, true);
 	m_InBitStream = 0;
@@ -117,7 +121,7 @@ CWFmDemod::CWFmDemod(TYPEREAL samplerate, TYPEREAL _audioRate) : m_SampleRate(sa
 	m_BlockErrors = 0;
 }
 
-CWFmDemod::~CWFmDemod()
+Demod_WFM::~Demod_WFM()
 {	//destroy resources
 }
 
@@ -127,7 +131,7 @@ CWFmDemod::~CWFmDemod()
 // Input sample rate should be in the range 200 to 400Ksps
 // The output rate will be between 50KHz and 100KHz
 /////////////////////////////////////////////////////////////////////////////////
-TYPEREAL CWFmDemod::SetSampleRate(TYPEREAL samplerate, TYPEREAL _outRate, bool USver)
+TYPEREAL Demod_WFM::SetSampleRate(TYPEREAL samplerate, TYPEREAL _outRate, bool USver)
 {
     m_SampleRate = samplerate;
     m_OutRate = _outRate;
@@ -180,7 +184,7 @@ TYPEREAL CWFmDemod::SetSampleRate(TYPEREAL samplerate, TYPEREAL _outRate, bool U
 //		pOutData == pointer to callers real(mono audio) output array
 //	returns number of samples placed in callers output array
 /////////////////////////////////////////////////////////////////////////////////
-int CWFmDemod::ProcessDataMono(int InLength, TYPECPX* pInData, TYPECPX* pOutData)
+int Demod_WFM::ProcessDataMono(int InLength, TYPECPX* pInData, TYPECPX* pOutData)
 {
     //RL Added
     if (m_SampleRate >= 150000)
@@ -227,7 +231,7 @@ int CWFmDemod::ProcessDataMono(int InLength, TYPECPX* pInData, TYPECPX* pOutData
 //		pOutData == pointer to callers complex(stereo audio) output array
 //	returns number of samples placed in callers output array
 /////////////////////////////////////////////////////////////////////////////////
-int CWFmDemod::ProcessDataStereo(int InLength, TYPECPX* pInData, TYPECPX* pOutData)
+int Demod_WFM::ProcessDataStereo(int InLength, TYPECPX* pInData, TYPECPX* pOutData)
 {
 TYPEREAL LminusR;
 //StartPerformance();
@@ -342,7 +346,7 @@ m_RdsRaw[i].im = Data;
 /////////////////////////////////////////////////////////////////////////////////
 //	Iniitalize variables for FM Pilot PLL
 /////////////////////////////////////////////////////////////////////////////////
-void CWFmDemod::InitPilotPll( TYPEREAL SampleRate )
+void Demod_WFM::InitPilotPll( TYPEREAL SampleRate )
 {
 	m_PilotNcoPhase = 0.0;
 	m_PilotNcoFreq = -PILOTPLL_FREQ;	//freq offset to bring to baseband
@@ -362,7 +366,7 @@ void CWFmDemod::InitPilotPll( TYPEREAL SampleRate )
 //	Process IQ wide FM data to lock Pilot PLL
 //returns TRUE if Locked.  Fills m_PilotPhase[] with locked 19KHz NCO phase data
 /////////////////////////////////////////////////////////////////////////////////
-bool CWFmDemod::ProcessPilotPll( int InLength, TYPECPX* pInData )
+bool Demod_WFM::ProcessPilotPll( int InLength, TYPECPX* pInData )
 {
 double Sin;
 double Cos;
@@ -408,7 +412,7 @@ TYPECPX tmp;
 // Get present Stereo lock status and put in pPilotLock.
 // Returns true if lock status has changed since last call.
 /////////////////////////////////////////////////////////////////////////////////
-int CWFmDemod::GetStereoLock(int* pPilotLock)
+int Demod_WFM::GetStereoLock(int* pPilotLock)
 {
 	if(pPilotLock)
 		*pPilotLock = m_PilotLocked;
@@ -424,7 +428,7 @@ int CWFmDemod::GetStereoLock(int* pPilotLock)
 /////////////////////////////////////////////////////////////////////////////////
 //	Iniitalize IIR variables for De-emphasis IIR filter.
 /////////////////////////////////////////////////////////////////////////////////
-void CWFmDemod::InitDeemphasis( TYPEREAL Time, TYPEREAL SampleRate)	//create De-emphasis LP filter
+void Demod_WFM::InitDeemphasis( TYPEREAL Time, TYPEREAL SampleRate)	//create De-emphasis LP filter
 {
 	m_DeemphasisAlpha = (1.0-exp(-1.0/(SampleRate*Time)) );
 	m_DeemphasisAveRe = 0.0;
@@ -435,7 +439,7 @@ void CWFmDemod::InitDeemphasis( TYPEREAL Time, TYPEREAL SampleRate)	//create De-
 //	Process InLength InBuf[] samples and place in OutBuf[]
 //REAL version
 /////////////////////////////////////////////////////////////////////////////////
-void CWFmDemod::ProcessDeemphasisFilter(int InLength, TYPEREAL* InBuf, TYPEREAL* OutBuf)
+void Demod_WFM::ProcessDeemphasisFilter(int InLength, TYPEREAL* InBuf, TYPEREAL* OutBuf)
 {
 	for(int i=0; i<InLength; i++)
 	{
@@ -448,7 +452,7 @@ void CWFmDemod::ProcessDeemphasisFilter(int InLength, TYPEREAL* InBuf, TYPEREAL*
 //	Process InLength InBuf[] samples and place in OutBuf[]
 //complex (stereo) version
 /////////////////////////////////////////////////////////////////////////////////
-void CWFmDemod::ProcessDeemphasisFilter(int InLength, TYPECPX* InBuf, TYPECPX* OutBuf)
+void Demod_WFM::ProcessDeemphasisFilter(int InLength, TYPECPX* InBuf, TYPECPX* OutBuf)
 {
 	for(int i=0; i<InLength; i++)
 	{
@@ -462,7 +466,7 @@ void CWFmDemod::ProcessDeemphasisFilter(int InLength, TYPECPX* InBuf, TYPECPX* O
 /////////////////////////////////////////////////////////////////////////////////
 //	Initialize variables for RDS PLL and matched filter
 /////////////////////////////////////////////////////////////////////////////////
-void CWFmDemod::InitRds( TYPEREAL SampleRate )
+void Demod_WFM::InitRds( TYPEREAL SampleRate )
 {
 	m_RdsNcoPhase = 0.0;
 	m_RdsNcoFreq = 0.0;	//freq offset to bring to baseband
@@ -514,7 +518,7 @@ void CWFmDemod::InitRds( TYPEREAL SampleRate )
 /////////////////////////////////////////////////////////////////////////////////
 //	Process I/Q RDS baseband stream to lock PLL
 /////////////////////////////////////////////////////////////////////////////////
-void CWFmDemod::ProcessRdsPll( int InLength, TYPECPX* pInData, TYPEREAL* pOutData )
+void Demod_WFM::ProcessRdsPll( int InLength, TYPECPX* pInData, TYPEREAL* pOutData )
 {
 double Sin;
 double Cos;
@@ -555,7 +559,7 @@ TYPECPX tmp;
 // each block, recovers good groups of 4 data blocks and places in data queue
 // for further upper level GUI processing depending on the application
 /////////////////////////////////////////////////////////////////////////////////
-void CWFmDemod::ProcessNewRdsBit(int bit)
+void Demod_WFM::ProcessNewRdsBit(int bit)
 {
 	m_InBitStream =	(m_InBitStream<<1) | bit;	//shift in new bit
 	switch(m_DecodeState)
@@ -680,7 +684,7 @@ void CWFmDemod::ProcessNewRdsBit(int bit)
 // if UseFec is false then no FEC is done else correct up to 5 bits.
 // Returns zero if no remaining errors if FEC is specified.
 /////////////////////////////////////////////////////////////////////////////////
-quint32 CWFmDemod::CheckBlock(quint32 SyndromeOffset, int UseFec)
+quint32 Demod_WFM::CheckBlock(quint32 SyndromeOffset, int UseFec)
 {
 	//First calculate syndrome for current 26 m_InBitStream bits
 	quint32 testblock = (0x3FFFFFF & m_InBitStream);	//isolate bottom 26 bits
@@ -735,7 +739,7 @@ quint32 CWFmDemod::CheckBlock(quint32 SyndromeOffset, int UseFec)
 // Get next group data from RDS data queue.
 // Returns zero if queue is empty or null pointer passed or data has not changed
 /////////////////////////////////////////////////////////////////////////////////
-int CWFmDemod::GetNextRdsGroupData(tRDS_GROUPS* pGroupData)
+int Demod_WFM::GetNextRdsGroupData(tRDS_GROUPS* pGroupData)
 {
 	if( (m_RdsQHead == m_RdsQTail) || (NULL == pGroupData) )
 	{
@@ -764,7 +768,7 @@ int CWFmDemod::GetNextRdsGroupData(tRDS_GROUPS* pGroupData)
 // |error| < 0.005
 // Useful for plls but not for main FM demod if best audio quality desired.
 /////////////////////////////////////////////////////////////////////////////////
-inline TYPEREAL CWFmDemod::arctan2(TYPEREAL y, TYPEREAL x)
+inline TYPEREAL Demod_WFM::arctan2(TYPEREAL y, TYPEREAL x)
 {
 TYPEREAL angle;
 	if( x == 0.0 )

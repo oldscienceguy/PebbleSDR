@@ -6,6 +6,7 @@
 #include "receiver.h"
 #include "demod/demod_am.h"
 #include "demod/demod_sam.h"
+#include "demod/wfmdemod.h"
 
 
 //Set up filter option lists
@@ -24,7 +25,7 @@ const Demod::DemodInfo Demod::demodInfo[] = {
     {dmAM, QStringList() << "20000" << "10000" << "5000", 0, -10000, 10000, 48000, 0, -120, 20},
     {dmSAM,QStringList() << "20000" << "10000" << "5000", 1, -10000, 10000, 48000, 0, -100, 200},
     {dmFMN,QStringList() << "30000" << "10000" << "7000", 0, -15000, 15000, 48000, 0, -100, 200}, //Check FM
-    {dmFMM,QStringList() << "30000" << "10000" << "7000", 0, -15000, 15000, 48000, 0, -100, 200},
+    {dmFMM,QStringList(), 0, -100000, 100000, 100000, 0, -100, 200},
     {dmFMS,QStringList(), 0, -100000, 100000, 100000, 0, -100, 200},
     {dmDSB,QStringList() << "20000" << "10000" << "5000", 0, -10000, 10000, 48000, 0, -100, 200},
     {dmLSB,QStringList() << "10000" << "5000" << "2500" << "1500", 1, -20000, 0, 20000, 0, -100, 200},
@@ -70,12 +71,13 @@ Demod::Demod(int _inputRate, int _inputWfmRate, int ns) :
 
     //We're no longer decimating to audio in wfmdemod, so audio rate is same as input rate
     //This fixed bug where FM filters were not working because rate was wrong
-    wfmDemod = new CWFmDemod(inputWfmSampleRate, inputWfmSampleRate);
-    ResetDemod();
 
     //Moving to subclasses for each demod, transition with instance for each demod, change to vptr later
     demodAM = new Demod_AM(sampleRate, numSamples);
     demodSAM = new Demod_SAM(sampleRate, numSamples);
+    demodWFM = new Demod_WFM(sampleRate,numSamples);
+    demodWFM->Init(inputWfmSampleRate, inputWfmSampleRate);
+    ResetDemod();
 
 }
 
@@ -371,7 +373,7 @@ void Demod::FMMono( CPX * in, CPX * out, int bufSize)
     //in buf has already been decimated to inputWfmSampleRate
     //out buf will be decimated to audio rate in receive chain
 #if 1
-    bufSize = wfmDemod->ProcessDataMono(bufSize,in,out);
+    bufSize = demodWFM->ProcessDataMono(bufSize,in,out);
     return;
 #else
     //Alternate methods works as of 5/18/13, but use wfmDemod
@@ -430,16 +432,16 @@ void Demod::FMMono( CPX * in, CPX * out, int bufSize)
 */
 void Demod::FMStereo(CPX * in, CPX * out, int bufSize)
 {
-    bufSize = wfmDemod->ProcessDataStereo(bufSize,in,out);
+    bufSize = demodWFM->ProcessDataStereo(bufSize,in,out);
 
     //Do we have stereo lock
     int pilotLock =0;
-    if (wfmDemod->GetStereoLock(&pilotLock))
+    if (demodWFM->GetStereoLock(&pilotLock))
         rdsUpdate = true;
 
     //This only updates when something there's new data and its different than last, when do we reset display
     tRDS_GROUPS rdsGroups;
-    if (wfmDemod->GetNextRdsGroupData(&rdsGroups)) {
+    if (demodWFM->GetNextRdsGroupData(&rdsGroups)) {
         //We have new data, is it valid
         if (rdsGroups.BlockA != 0) {
             rdsDecode.DecodeRdsGroup(&rdsGroups);

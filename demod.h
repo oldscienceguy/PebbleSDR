@@ -9,7 +9,6 @@
 #include <QString>
 #include "filters/fir.h"
 #include "filters/iir.h"
-#include "demod/wfmdemod.h"
 #include "demod/rdsdecode.h"
 #include "ui/ui_data-band.h"
 
@@ -31,6 +30,7 @@ enum DEMODMODE {
 
 class Demod_AM;
 class Demod_SAM;
+class Demod_WFM;
 
 class Demod : public SignalProcessing
 {
@@ -80,13 +80,12 @@ protected:
 private:
     Demod_AM *demodAM;
     Demod_SAM *demodSAM;
+    Demod_WFM *demodWFM;
 
     DEMODMODE mode;
     Ui::dataBand *dataUi;
     bool outputOn;
 
-    //Testing
-    CWFmDemod *wfmDemod;
     CRdsDecode rdsDecode;
     char rdsBuf[256]; //Formatted RDS string for output
     char rdsCallString[10];
