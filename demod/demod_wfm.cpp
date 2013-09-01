@@ -36,7 +36,7 @@
 //authors and should not be interpreted as representing official policies, either expressed
 //or implied, of Moe Wheatley.
 //==========================================================================================
-#include "wfmdemod.h"
+#include "demod_wfm.h"
 //#include "gui/testbench.h"
 //#include "dsp/datatypes.h"
 //#include "interface/perform.h"

@@ -364,7 +364,7 @@ HEADERS += \
     filters/fir.h \
     filters/filtercoef.h \
     filters/iir.h \
-    demod/wfmdemod.h \
+	demod/demod_wfm.h \
     demod/rbdsconstants.h \
     demod/downconvert.h \
     demod/rdsdecode.h \
@@ -447,7 +447,7 @@ SOURCES += \
     goertzel.cpp \
     filters/fir.cpp \
     filters/iir.cpp \
-    demod/wfmdemod.cpp \
+	demod/demod_wfm.cpp \
     demod/downconvert.cpp \
     demod/rdsdecode.cpp \
     filters/fractresampler.cpp \
