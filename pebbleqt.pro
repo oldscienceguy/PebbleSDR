@@ -414,7 +414,8 @@ HEADERS += \
     decoders/rtty/baudotcode.h \
     decoders/rtty/rtty.h \
     demod/demod_am.h \
-    demod/demod_sam.h
+    demod/demod_sam.h \
+    demod/demod_nfm.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -486,7 +487,8 @@ SOURCES += \
     decoders/rtty/baudotcode.cpp \
     decoders/rtty/rtty.cpp \
     demod/demod_am.cpp \
-    demod/demod_sam.cpp
+    demod/demod_sam.cpp \
+    demod/demod_nfm.cpp
 
 FORMS += \
     spectrumwidget.ui \

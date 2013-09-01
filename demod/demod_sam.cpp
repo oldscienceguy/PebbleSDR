@@ -15,6 +15,10 @@ Demod_SAM::Demod_SAM(int _inputRate, int _numSamples) :
     pllLowLimit = -pllLimit * TWOPI/sampleRate;
     pllHighLimit = pllLimit * TWOPI/sampleRate;
 
+    pllPhase = 0.0;  //Tracks ref sig in PLL
+    pllFrequency = 0.0;
+
+
     amDcRe = amDcReLast = 0.0;
     amDcIm = amDcImLast = 0.0;
 
@@ -29,6 +33,45 @@ Demod_SAM::Demod_SAM(int _inputRate, int _numSamples) :
 Demod_SAM::~Demod_SAM()
 {
 
+}
+
+//dttsp PLL algorithm
+CPX Demod_SAM::PLL(CPX sig, float loLimit, float hiLimit)
+{
+    CPX z;
+    CPX pllSample;
+    float difference;
+
+    //Todo: See if we can use NCO here
+    //This is the generated signal to sync with
+    z.re = cos(pllPhase);
+    z.im = sin(pllPhase);
+
+    //Complex mult of incoming signal and NCO
+    pllSample = z * sig;
+
+    // For SAM we need the magnitude (hypot)
+    // For FM we need the freq difference
+    difference = sig.mag() * pllSample.phase();
+    //difference = pllSample.phase();
+
+    pllFrequency += pllBeta * difference;
+
+    //Keep the PLL within our limits
+    if (pllFrequency < loLimit)
+        pllFrequency = loLimit;
+    if (pllFrequency > hiLimit)
+        pllFrequency = hiLimit;
+
+    pllPhase += pllFrequency + pllAlpha * difference;
+
+    //Next reference signal
+    while (pllPhase >= TWOPI)
+        pllPhase -= TWOPI;
+    while (pllPhase < 0)
+        pllPhase += TWOPI;
+
+    return pllSample;
 }
 
 //dttsp & cuteSDR algorithm with DC removal
