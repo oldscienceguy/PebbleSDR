@@ -152,7 +152,9 @@ bool Receiver::On()
     demodSampleRate = downConvert1.SetDataRate(sampleRate, Demod::demodInfo[dmAM].maxOutputBandWidth);
 
     //For FMStereo, initial rate should be close to 300k
-    demodWfmSampleRate = downConvertWfm1.SetDataRate(sampleRate, Demod::demodInfo[dmFMS].maxOutputBandWidth);
+    //Different decimation technique than SetDataRate
+    demodWfmSampleRate = downConvertWfm1.SetDataRateSimple(sampleRate, Demod::demodInfo[dmFMS].maxOutputBandWidth);
+
     //Init demod with defaults
     //Demod uses variable frame size, up to framesPerBuffer
     //Demod can also run at different sample rates, high for FMW and lower for rest

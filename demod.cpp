@@ -59,12 +59,13 @@ Demod::Demod(int _inputRate, int _inputWfmRate, int ns) :
     //This fixed bug where FM filters were not working because rate was wrong
 
     //Moving to subclasses for each demod, transition with instance for each demod, change to vptr later
-    demodAM = new Demod_AM(sampleRate, numSamples);
-    demodSAM = new Demod_SAM(sampleRate, numSamples);
+    demodAM = new Demod_AM(inputSampleRate, numSamples);
+    demodSAM = new Demod_SAM(inputSampleRate, numSamples);
+    demodNFM = new Demod_NFM(inputSampleRate,numSamples);
     demodWFM = new Demod_WFM(inputWfmSampleRate,numSamples);
-    demodNFM = new Demod_NFM(inputWfmSampleRate,numSamples);
     ResetDemod();
 
+    dataUi = NULL;
 }
 
 Demod::~Demod()
@@ -191,9 +192,11 @@ void Demod::FMStereo(CPX * in, CPX * out, int bufSize)
 {
     bufSize = demodWFM->ProcessDataStereo(bufSize,in,out);
 
+    rdsUpdate = false; //We don't update unless something new or changed
     //Do we have stereo lock
     int pilotLock =0;
     if (demodWFM->GetStereoLock(&pilotLock))
+        //Stereo lock has changed and pilotLock has status
         rdsUpdate = true;
 
     //This only updates when something there's new data and its different than last, when do we reset display

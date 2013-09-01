@@ -208,8 +208,7 @@ TYPEREAL f = InRate;
 		m_MaxBW = MaxBW;
 		DeleteFilters();
 		//loop until closest output rate is found and list of pointers to decimate by 2 stages is generated
-        //while( (f > 400000.0)  )
-        while( (f > MaxBW)  ) //Try brute force since SetDataRate will never give us a rate below 256k
+        while( (f > 400000.0)  )
         {
 			m_pDecimatorPtrs[n++] = new CDownConvert::CHalfBandDecimateBy2(HB51TAP_LENGTH, HB51TAP_H);
 			f /= 2.0;

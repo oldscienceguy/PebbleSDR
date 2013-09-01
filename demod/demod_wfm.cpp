@@ -113,7 +113,6 @@ void Demod_WFM::Init(TYPEREAL samplerate, TYPEREAL _audioRate)
 {
     m_SampleRate = sampleRate;
     m_PilotPhaseAdjust = 0.0;
-    SetSampleRate(samplerate, _audioRate, true);
 	m_InBitStream = 0;
 	m_CurrentBitPosition = 0;
 	m_CurrentBlock = BLOCK_A;
@@ -122,9 +121,9 @@ void Demod_WFM::Init(TYPEREAL samplerate, TYPEREAL _audioRate)
 	m_PilotLocked = false;
 	m_LastPilotLocked = !m_PilotLocked;
 	m_BlockErrors = 0;
+    SetSampleRate(samplerate, _audioRate, true);
 
-
-    //Review
+    //These used to be done when we changed mode in demod for earlier experiments
     //Moe Wheatley filters
     //IIR filter freq * 2 must be below sampleRate or algorithm won't work
     fmMonoLPFilter.InitLP(75000,1.0,sampleRate);
@@ -135,8 +134,7 @@ void Demod_WFM::Init(TYPEREAL samplerate, TYPEREAL _audioRate)
     //create LP filter to roll off audio
     fmAudioLPFilter.InitLPFilter(0, 1.0, 60.0, 15000.0, 1.4*15000.0, sampleRate);
     //create 19KHz pilot notch filter with Q=5
-    fmPilotNotchFilter.InitBR(19000, 5, sampleRate
-                              );
+    fmPilotNotchFilter.InitBR(19000, 5, sampleRate);
 
     fmDeemphasisAlpha = (1.0-exp(-1.0/(sampleRate * usDeemphasisTime)) );
 
