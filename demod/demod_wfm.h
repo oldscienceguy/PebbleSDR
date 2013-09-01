@@ -35,10 +35,22 @@ public:
     int ProcessDataMono(int InLength, TYPECPX* pInData, TYPECPX* pOutData);
 	TYPEREAL GetDemodRate(){return m_OutRate;}
 
-	int GetNextRdsGroupData(tRDS_GROUPS* pGroupData);
-	int GetStereoLock(int* pPilotLock);
-
+    int GetNextRdsGroupData(tRDS_GROUPS* pGroupData);
+    int GetStereoLock(int* pPilotLock);
+    void FMMono(CPX *in, CPX *out, int bufSize);
 private:
+    void FMDeemphasisFilter(int _bufSize, CPX *in, CPX *out);
+    float fmDeemphasisAlpha;
+    static const float usDeemphasisTime; //Use for US & Korea FM
+    static const float intlDeemphasisTime;  //Use for international FM
+
+    //CFir fmMonoLPFilter;
+    CIir fmMonoLPFilter;
+    CFir fmAudioLPFilter;
+    CIir fmPilotNotchFilter;
+    CIir fmPilotBPFilter;
+    CFir hilbertFilter;
+
 	void InitPll( TYPEREAL SampleRate );
 	void ProcessPll( int InLength, TYPECPX* pInData, TYPEREAL* pOutData );
 	void InitDeemphasis( TYPEREAL Time, TYPEREAL SampleRate);	//create De-emphasis LP filter

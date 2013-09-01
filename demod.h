@@ -89,19 +89,6 @@ private:
     char rdsString[128]; //Max RDS string
     bool rdsUpdate; //true if we need to update display
 
-
-    void FMDeemphasisFilter(int _bufSize, CPX *in, CPX *out);
-    float fmDeemphasisAlpha;
-    static const float usDeemphasisTime; //Use for US & Korea FM
-    static const float intlDeemphasisTime;  //Use for international FM
-
-    //CFir fmMonoLPFilter;
-    CIir fmMonoLPFilter;
-    CFir fmAudioLPFilter;
-    CIir fmPilotNotchFilter;
-    CIir fmPilotBPFilter;
-    CFir hilbertFilter;
-
     //Used for FMW only for now
     int inputSampleRate; //Original signal coming in
     int inputWfmSampleRate; //Original signal coming in for Wfm (wider signal)

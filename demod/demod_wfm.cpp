@@ -99,6 +99,8 @@ const double HILBLP_H[HILB_LENGTH] =
 	-0.000389631665953405
 };
 
+const float Demod_WFM::usDeemphasisTime = 75E-6; //Use for US & Korea FM
+const float Demod_WFM::intlDeemphasisTime = 50E-6;  //Use for international FM
 
 Demod_WFM::Demod_WFM(int _inputRate, int _numSamples) :
     Demod(_inputRate, _numSamples)
@@ -120,6 +122,24 @@ void Demod_WFM::Init(TYPEREAL samplerate, TYPEREAL _audioRate)
 	m_PilotLocked = false;
 	m_LastPilotLocked = !m_PilotLocked;
 	m_BlockErrors = 0;
+
+
+    //Review
+    //Moe Wheatley filters
+    //IIR filter freq * 2 must be below sampleRate or algorithm won't work
+    fmMonoLPFilter.InitLP(75000,1.0,sampleRate);
+    //FIR version
+    //fmMonoLPFilter.InitLPFilter(0, 1.0, 60.0, 75000, 1.4*75000.0, sourceSampleRate); //FIR version
+    //Create narrow BP filter around 19KHz pilot tone with Q=500
+    fmPilotBPFilter.InitBP(19000, 500, sampleRate);
+    //create LP filter to roll off audio
+    fmAudioLPFilter.InitLPFilter(0, 1.0, 60.0, 15000.0, 1.4*15000.0, sampleRate);
+    //create 19KHz pilot notch filter with Q=5
+    fmPilotNotchFilter.InitBR(19000, 5, sampleRate
+                              );
+
+    fmDeemphasisAlpha = (1.0-exp(-1.0/(sampleRate * usDeemphasisTime)) );
+
 }
 
 Demod_WFM::~Demod_WFM()
@@ -796,4 +816,61 @@ TYPEREAL angle;
 			return angle - K_PI;
 	}
 	return angle;
+}
+
+
+//Alternate functions from old demod.cpp
+void Demod_WFM::FMMono( CPX * in, CPX * out, int bufSize)
+{
+    //Alternate methods works as of 5/18/13, but use wfmDemod
+    //LP filter to elimate everything above FM bandwidth
+    //Only if sample width high enough (2x) for 75khz filter to work
+    if (m_SampleRate >= 2*75000)
+        fmMonoLPFilter.ProcessFilter(bufSize, in, in);
+
+#if 1
+    CPX d0;
+    static CPX d1;
+
+    for (int i=0; i<bufSize; i++)
+    {
+        //Condensed version of FM2 algorithm comparing sample with previous sample
+        //Note: Have to divide by 100 to get signal in right range, different than CuteSDR
+        d0 = in[i];
+        out[i].re = out[i].im = atan2( (d1.re*d0.im - d0.re*d1.im), (d1.re*d0.re + d1.im*d0.im))/100;
+        d1 = d0;
+    }
+#else
+    SimpleFM2(in,out, bufSize);
+#endif
+
+
+    //19khz notch filter to get rid of pilot
+    fmPilotNotchFilter.ProcessFilter(bufSize, out, out);	//notch out 19KHz pilot
+
+    //15khz low pass filter to cut off audio >15khz
+    fmAudioLPFilter.ProcessFilter(bufSize, out, out);
+
+    //50 or 75uSec de-emphasis one pole filter
+    FMDeemphasisFilter(bufSize, out,out);
+}
+
+
+/*
+  1 pole filter to delete high freq 'boost' (pre-emphasis) added before transmission
+*/
+void Demod_WFM::FMDeemphasisFilter(int _bufSize, CPX *in, CPX *out)
+{
+    int bufSize = _bufSize;
+
+    static float avgRe = 0.0;
+    static float avgIm = 0.0;
+
+    for(int i=0; i<bufSize; i++)
+    {
+        avgRe = (1.0-fmDeemphasisAlpha)*avgRe + fmDeemphasisAlpha*in[i].re;
+        avgIm = (1.0-fmDeemphasisAlpha)*avgIm + fmDeemphasisAlpha*in[i].im;
+        out[i].re = avgRe*2.0;
+        out[i].im = avgIm*2.0;
+    }
 }
