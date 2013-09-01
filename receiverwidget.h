@@ -92,13 +92,6 @@ private:
 
     DATA_SELECTION dataSelection;
 
-	QStringList amFilterOptions;
-	QStringList lsbFilterOptions;
-	QStringList diglFilterOptions;
-	QStringList cwFilterOptions;
-	QStringList fmFilterOptions;
-	QStringList wfmFilterOptions;
-
     //Band currently selected, used to detect when band changes as a result of freq change
     int currentBandIndex;
 

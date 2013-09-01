@@ -49,23 +49,8 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	ui.settingsButton->setMenu(settingsMenu);
 #endif
 
-	//Set up filter option lists
-	//Broadcast 15Khz 20 hz -15 khz
-	//Speech 3Khz 300hz to 3khz
-	//RTTY 250-1000hz
-	//CW 200-500hz
-	//PSK31 100hz
-
-	//Defaults from IC7000 & PowerSDR
-	//Order these wide->narrow
-	//Note: These are expressed in bandwidth, ie 16k am = -8000 to +8000 filter
-	amFilterOptions << "16000" << "12000" << "6000" << "3000";
-	lsbFilterOptions << "3000" << "2400" << "1800"; //lsb, usb
-	diglFilterOptions << "2400" << "1200" << "500" << "250" ;
-    cwFilterOptions << "1000" << "500" << "250" << "100" << "50";
-	fmFilterOptions << "10000" << "7000" ;
-    //wfmFilterOptions << "80000"<<"40000";
-	ui.filterBox->addItems(amFilterOptions); //Default
+    ui.filterBox->addItems(Demod::demodInfo[dmAM].filters); //Default
+    ui.filterBox->setCurrentIndex(Demod::demodInfo[dmAM].defaultFilter);
 
     ui.dataSelectionBox->addItem("No Data",NO_DATA);
     ui.dataSelectionBox->addItem("Band Data",BAND_DATA);
@@ -691,8 +676,8 @@ void ReceiverWidget::filterSelectionChanged(QString f)
 		lo=-filter;
         hi= 0;
 		break;
-    case dmFMMono:
-    case dmFMStereo:
+    case dmFMM:
+    case dmFMS:
 	case dmFMN:
 		lo=-filter/2;
 		hi= filter/2;
@@ -789,34 +774,8 @@ void ReceiverWidget::modeSelectionChanged(QString m)
 	//Set filter options for this mode
 	ui.filterBox->blockSignals(true); //No signals while we're changing box
 	ui.filterBox->clear();
-	if (mode == dmAM || mode == dmSAM || mode==dmDSB || mode == dmNONE)
-	{
-		ui.filterBox->addItems(amFilterOptions);
-	}
-	else if (mode == dmUSB || mode == dmLSB )
-	{
-		ui.filterBox->addItems(lsbFilterOptions);
-	}
-	else if (mode == dmCWL || mode == dmCWU)
-	{
-		ui.filterBox->addItems(cwFilterOptions);
-	}
-	else if (mode == dmDIGU || mode == dmDIGL)
-	{
-		ui.filterBox->addItems(diglFilterOptions);
-	}
-	else if (mode == dmFMN)
-	{
-		ui.filterBox->addItems(fmFilterOptions);	
-	}
-    else if (mode == dmFMMono)
-	{
-		ui.filterBox->addItems(this->wfmFilterOptions);
-	}
-    else if (mode == dmFMStereo)
-    {
-        ui.filterBox->addItems(this->wfmFilterOptions);
-    }
+    ui.filterBox->addItems(Demod::demodInfo[mode].filters);
+    ui.filterBox->setCurrentIndex(Demod::demodInfo[mode].defaultFilter);
 
 	ui.spectrumWidget->SetMode(mode);
 	receiver->SetMode(mode);

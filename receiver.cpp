@@ -687,7 +687,7 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
     double resampRate;
 
     //global->perform.StartPerformance();
-    if (demod->DemodMode() == dmFMMono || demod->DemodMode() == dmFMStereo) {
+    if (demod->DemodMode() == dmFMM || demod->DemodMode() == dmFMS) {
         //These steps are NOT at demodSampleRate
         //Special handling for wide band fm
         //Set demod sample rate?

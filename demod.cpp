@@ -7,23 +7,33 @@
 #include "demod/demod_am.h"
 #include "demod/demod_sam.h"
 
+
+//Set up filter option lists
+//Broadcast 15Khz 20 hz -15 khz
+//Speech 3Khz 300hz to 3khz
+//RTTY 250-1000hz
+//CW 200-500hz
+//PSK31 100hz
+
 //Must be in same order as DEMODMODE
 //Verified with CuteSDR values
+//AM, SAM, FM are expressed in bandwidth, ie 16k am = -8000 to +8000 filter
+//Rest are 0 relative
 
 const Demod::DemodInfo Demod::demodInfo[] = {
-    {dmAM,          -10000,     10000,      48000,  0,  -120,   20},
-    {dmSAM,         -10000,     10000,      48000,  0,  -100,   200},
-    {dmFMN,         -15000,     15000,      48000,  0,  -100,   200}, //Check FM
-    {dmFMMono,      -15000,     15000,      48000,  0,  -100,   200},
-    {dmFMStereo,    -100000,    100000,     100000, 0,  -100,   200},
-    {dmDSB,         -10000,     10000,      48000,  0,  -100,   200},
-    {dmLSB,         -20000,     0,          20000,  0,  -100,   200},
-    {dmUSB,         0,          20000,      20000,  0,  -100,   200},
-    {dmCWL,         -1000,      1000,       1000,   0,  -100,   200}, //Check CW
-    {dmCWU,         -1000,      1000,       1000,   0,  -100,   200},
-    {dmDIGL,        -20000,     0,          20000,  0,  -100,   200},
-    {dmDIGU,        0,          20000,      20000,  0,  -100,   200},
-    {dmNONE,        0,          0,          0,      0,  -100,   200}
+    {dmAM, QStringList() << "20000" << "10000" << "5000", 0, -10000, 10000, 48000, 0, -120, 20},
+    {dmSAM,QStringList() << "20000" << "10000" << "5000", 1, -10000, 10000, 48000, 0, -100, 200},
+    {dmFMN,QStringList() << "30000" << "10000" << "7000", 0, -15000, 15000, 48000, 0, -100, 200}, //Check FM
+    {dmFMM,QStringList() << "30000" << "10000" << "7000", 0, -15000, 15000, 48000, 0, -100, 200},
+    {dmFMS,QStringList(), 0, -100000, 100000, 100000, 0, -100, 200},
+    {dmDSB,QStringList() << "20000" << "10000" << "5000", 0, -10000, 10000, 48000, 0, -100, 200},
+    {dmLSB,QStringList() << "10000" << "5000" << "2500" << "1500", 1, -20000, 0, 20000, 0, -100, 200},
+    {dmUSB,QStringList() << "10000" << "5000" << "2500" << "1500", 1, 0, 20000, 20000, 0, -100, 200},
+    {dmCWL,QStringList() << "1000" << "500" << "250" << "100" << "50", 1, -1000, 1000, 1000, 0, -100, 200}, //Check CW
+    {dmCWU,QStringList() << "1000" << "500" << "250" << "100" << "50", 1, -1000, 1000, 1000, 0, -100, 200},
+    {dmDIGL,QStringList() << "2000" << "1000" << "500" << "250" << "100",2,-20000, 0, 20000, 0, -100, 200},
+    {dmDIGU,QStringList() << "2000" << "1000" << "500" << "250" << "100",2, 0, 20000, 20000, 0, -100, 200},
+    {dmNONE,QStringList(), 0, 0, 0, 0, 0, -100, 200}
 
 };
 
@@ -113,10 +123,10 @@ CPX * Demod::ProcessBlock(CPX * in, int bufSize)
             SimpleFM2(in,out, bufSize); //5/12 Working well for NFM
             //PllFMN(in,out, bufSize); //6/8/12 Scaled output, now sounds better than SimpleFM2
             break;
-        case dmFMMono: // FMW
+        case dmFMM: // FMW
             FMMono(in,out, bufSize);
             break;
-        case dmFMStereo:
+        case dmFMS:
             //Will only work if sample rate is at least 192k
             FMStereo(in,out,bufSize);
             break;
@@ -494,8 +504,8 @@ void Demod::SetDemodMode(DEMODMODE _mode, int _sourceSampleRate, int _audioSampl
             pllBeta = pllAlpha * pllAlpha * 0.25;
             fmDCOffset = 0.0;
             break;
-        case dmFMMono:
-        case dmFMStereo:
+        case dmFMM:
+        case dmFMS:
             //FM Stereo testing
             rdsDecode.DecodeReset(true);
 
@@ -542,8 +552,8 @@ DEMODMODE Demod::StringToMode(QString m)
 	else if (m == "LSB") return dmLSB;
 	else if (m == "USB") return dmUSB;
 	else if (m == "DSB") return dmDSB;
-    else if (m == "FM-Mono") return dmFMMono;
-    else if (m == "FM-Stereo") return dmFMStereo;
+    else if (m == "FM-Mono") return dmFMM;
+    else if (m == "FM-Stereo") return dmFMS;
     else if (m == "FMN") return dmFMN;
 	else if (m == "CWL") return dmCWL;
 	else if (m == "CWU") return dmCWU;
@@ -559,8 +569,8 @@ QString Demod::ModeToString(DEMODMODE dm)
 	else if (dm == dmLSB) return "LSB";
 	else if (dm == dmUSB) return "USB";
 	else if (dm == dmDSB) return "DSB";
-    else if (dm == dmFMMono) return "FM-Mono";
-    else if (dm == dmFMStereo) return "FM-Stereo";
+    else if (dm == dmFMM) return "FM-Mono";
+    else if (dm == dmFMS) return "FM-Stereo";
     else if (dm == dmFMN) return "FMN";
 	else if (dm == dmCWL) return "CWL";
 	else if (dm == dmCWU) return "CWU";

@@ -17,8 +17,8 @@ enum DEMODMODE {
     dmAM,
     dmSAM,
     dmFMN,
-    dmFMMono,
-    dmFMStereo,
+    dmFMM,
+    dmFMS,
     dmDSB,
     dmLSB,
     dmUSB,
@@ -53,6 +53,8 @@ public:
 
     struct DemodInfo {
         DEMODMODE mode;
+        QStringList filters;
+        qint32 defaultFilter;
         qint32 lowCutMin; //Low bandpass
         qint32 highCutMax; //High bandpass
         qint32 maxBandWidth; //for specified mode
