@@ -66,17 +66,16 @@ for(int i=0; i<length; i++)
 
 #endif
 
-CPX * SignalStrength::ProcessBlock(CPX *in, int squelch)
+CPX * SignalStrength::ProcessBlock(CPX *in, int downConvertLen, int squelch)
 {
     //Squelch values are global->mindB to global->maxdB
 
 	//Same as TotalPower, except here we modify out if below squelch
-    float tmp = 0.0;
     float pwr = 0.0;
     float db = 0.0;
 	//double squelchWatts = dBm_2_Watts(squelch);
 	//sum(re^2 + im^2)
-    for (int i = 0; i < numSamples; i++) {
+    for (int i = 0; i < downConvertLen; i++) {
 		//Total power of this sample pair
         pwr = cpxToWatts(in[i]); //Power in watts
         db = powerToDb(pwr); //Watts to db
@@ -92,7 +91,7 @@ CPX * SignalStrength::ProcessBlock(CPX *in, int squelch)
 			out[i].re = 0;
 			out[i].im = 0;
 		} else {
-			out[i] = in[i];
+            out[i] = in[i]; //Just copy
 		}
     }
 	

@@ -18,7 +18,7 @@ public:
 	char instCValue(); //Char representing db?
 	char avgCValue();
 	void setCorrection(const float value);
-	CPX * ProcessBlock(CPX *in, int squelch);
+    CPX * ProcessBlock(CPX *in, int downConvertLen, int squelch);
 
 
 private:

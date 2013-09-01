@@ -184,7 +184,9 @@ bool Receiver::On()
     audioOutput = Audio::Factory(this,demodFrames, settings);
 
     noiseFilter = new NoiseFilter(demodSampleRate,demodFrames);
-    signalStrength = new SignalStrength(demodSampleRate,demodFrames);
+    //signalStrength is used by normal demod and wfm, so buffer len needs to be max
+    //Calls to ProcessBlock will pass post decimation len
+    signalStrength = new SignalStrength(demodSampleRate,framesPerBuffer);
 	//FIR MAC LP Filter
     lpFilter = new FIRFilter(demodSampleRate,demodFrames, false, 128);
 	lpFilter->SetLowPass(3000);
@@ -690,17 +692,18 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 
     //global->perform.StartPerformance();
     if (demod->DemodMode() == dmFMM || demod->DemodMode() == dmFMS) {
-        //These steps are NOT at demodSampleRate
+        //These steps are at demodWfmSampleRate NOT demodSampleRate
         //Special handling for wide band fm
-        //Set demod sample rate?
 
-        //Replaces Mixer.cpp
+        //Replaces Mixer.cpp and mixes and decimates
         downConvertWfm1.SetFrequency(mixerFrequency);
         // InLength must be a multiple of 2^N where N is the maximum decimation by 2 stages expected.
         //We need a separated input/output buffer for downConvert
         int downConvertLen = downConvertWfm1.ProcessData(framesPerBuffer,nextStep,workingBuf);
-        //Do we need bandPass filter or handle in demod?
-        nextStep = demod->ProcessBlock(workingBuf,downConvertLen);
+
+        nextStep = signalStrength->ProcessBlock(workingBuf, downConvertLen, squelch);
+
+        nextStep = demod->ProcessBlock(nextStep, downConvertLen);
         demodFrames = downConvertLen;
         resampRate = (demodWfmSampleRate*1.0) / (audioOutRate*1.0);
 
@@ -731,7 +734,7 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 
         //If squelch is set, and we're below threshold and should set output to zero
         //Do this in SignalStrength, since that's where we're calculating average signal strength anyway
-        nextStep = signalStrength->ProcessBlock(nextStep, squelch);
+        nextStep = signalStrength->ProcessBlock(nextStep, downConvertLen, squelch);
         //global->perform.StopPerformance(100);
         //global->perform.StartPerformance();
 
