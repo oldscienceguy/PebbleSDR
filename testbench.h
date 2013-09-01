@@ -49,7 +49,7 @@
 
 #include "filters/datatypes.h"
 #include "dsp/fftcute.h"
-#include "demod/wfmdemod.h"
+#include "demod/demod_wfm.h"
 
 
 //////////////////////////////////////////////////////////////////////

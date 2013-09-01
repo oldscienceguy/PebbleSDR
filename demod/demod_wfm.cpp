@@ -103,7 +103,8 @@ const double HILBLP_H[HILB_LENGTH] =
 Demod_WFM::Demod_WFM(int _inputRate, int _numSamples) :
     Demod(_inputRate, _numSamples)
 {
-
+    //SampleRate and audioRate are the same because audio is handled outside demod class
+    Init(_inputRate, _inputRate);
 }
 
 void Demod_WFM::Init(TYPEREAL samplerate, TYPEREAL _audioRate)

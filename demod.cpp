@@ -6,7 +6,7 @@
 #include "receiver.h"
 #include "demod/demod_am.h"
 #include "demod/demod_sam.h"
-#include "demod/wfmdemod.h"
+#include "demod/demod_wfm.h"
 
 
 //Set up filter option lists
@@ -75,8 +75,7 @@ Demod::Demod(int _inputRate, int _inputWfmRate, int ns) :
     //Moving to subclasses for each demod, transition with instance for each demod, change to vptr later
     demodAM = new Demod_AM(sampleRate, numSamples);
     demodSAM = new Demod_SAM(sampleRate, numSamples);
-    demodWFM = new Demod_WFM(sampleRate,numSamples);
-    demodWFM->Init(inputWfmSampleRate, inputWfmSampleRate);
+    demodWFM = new Demod_WFM(inputWfmSampleRate,numSamples);
     ResetDemod();
 
 }
