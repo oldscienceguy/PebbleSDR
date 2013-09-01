@@ -149,10 +149,10 @@ bool Receiver::On()
     audioOutRate = 11025; //This rate supported by QTAudio and PortAudio on Mac
     //SetDataRate MaxBW should be driven by our filter selection, ie width of filter
     //For now just set to widest filter, which is 16k for AM
-    demodSampleRate = downConvert1.SetDataRate(sampleRate, 16000.0);
+    demodSampleRate = downConvert1.SetDataRate(sampleRate, Demod::demodInfo[dmAM].maxOutputBandWidth);
 
     //For FMStereo, initial rate should be close to 300k
-    demodWfmSampleRate = downConvertWfm1.SetDataRateSimple(sampleRate, 300000.0);
+    demodWfmSampleRate = downConvertWfm1.SetDataRate(sampleRate, Demod::demodInfo[dmFMS].maxOutputBandWidth);
     //Init demod with defaults
     //Demod uses variable frame size, up to framesPerBuffer
     //Demod can also run at different sample rates, high for FMW and lower for rest

@@ -23,12 +23,12 @@
 //Rest are 0 relative
 
 const Demod::DemodInfo Demod::demodInfo[] = {
-    {dmAM, QStringList() << "20000" << "10000" << "5000", 0, -10000, 10000, 48000, 0, -120, 20},
-    {dmSAM,QStringList() << "20000" << "10000" << "5000", 1, -10000, 10000, 48000, 0, -100, 200},
-    {dmFMN,QStringList() << "30000" << "10000" << "7000", 0, -15000, 15000, 48000, 0, -100, 200}, //Check FM
+    {dmAM, QStringList() << "20000" << "10000" << "5000", 0, -10000, 10000, 10000, 0, -120, 20},
+    {dmSAM,QStringList() << "20000" << "10000" << "5000", 1, -10000, 10000, 10000, 0, -100, 200},
+    {dmFMN,QStringList() << "30000" << "10000" << "7000", 0, -15000, 15000, 15000, 0, -100, 200},
     {dmFMM,QStringList(), 0, -100000, 100000, 100000, 0, -100, 200},
     {dmFMS,QStringList(), 0, -100000, 100000, 100000, 0, -100, 200},
-    {dmDSB,QStringList() << "20000" << "10000" << "5000", 0, -10000, 10000, 48000, 0, -100, 200},
+    {dmDSB,QStringList() << "20000" << "10000" << "5000", 0, -10000, 10000, 10000, 0, -100, 200},
     {dmLSB,QStringList() << "10000" << "5000" << "2500" << "1500", 1, -20000, 0, 20000, 0, -100, 200},
     {dmUSB,QStringList() << "10000" << "5000" << "2500" << "1500", 1, 0, 20000, 20000, 0, -100, 200},
     {dmCWL,QStringList() << "1000" << "500" << "250" << "100" << "50", 1, -1000, 1000, 1000, 0, -100, 200}, //Check CW
@@ -164,11 +164,8 @@ void Demod::FMMono( CPX * in, CPX * out, int bufSize)
 {
     //in buf has already been decimated to inputWfmSampleRate
     //out buf will be decimated to audio rate in receive chain
-#if 1
     bufSize = demodWFM->ProcessDataMono(bufSize,in,out);
     return;
-#else
-#endif
 }
 
 /*

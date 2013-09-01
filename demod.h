@@ -58,7 +58,7 @@ public:
         qint32 defaultFilter;
         qint32 lowCutMin; //Low bandpass
         qint32 highCutMax; //High bandpass
-        qint32 maxBandWidth; //for specified mode
+        qint32 maxOutputBandWidth; //for specified mode - used to set decimation rate in receiver.cpp
         qint16 agcSlope;
         qint16 agcKneeDb;
         qint16 agcDecayMs;
