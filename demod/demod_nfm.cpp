@@ -3,11 +3,6 @@
 Demod_NFM::Demod_NFM(int _inputRate, int _numSamples) :
     Demod(_inputRate, _numSamples)
 {
-
-}
-
-Demod_NFM::~Demod_NFM()
-{
     fmIPrev = 0.0;
     fmQPrev = 0.0;
 
@@ -16,16 +11,15 @@ Demod_NFM::~Demod_NFM()
     fmHiLimit = 6000 * TWOPI/sampleRate;
     fmBandwidth = 5000;
 
-    //These change with demod mode, move
     pllAlpha = 0.3 * fmBandwidth * TWOPI/sampleRate;
     pllBeta = pllAlpha * pllAlpha * 0.25;
     fmDCOffset = 0.0;
     pllPhase = 0.0;  //Tracks ref sig in PLL
     pllFrequency = 0.0;
+}
 
-
-
-
+Demod_NFM::~Demod_NFM()
+{
 }
 
 void Demod_NFM::ProcessBlock(CPX *in, CPX *out, int demodSamples)
