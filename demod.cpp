@@ -89,7 +89,7 @@ void Demod::SetupDataUi(QWidget *parent)
         dataUi->setupUi(parent);
 
         //Reciever/demod thread emits and display thread handles
-        connect(this,SIGNAL(BandData(char*,char*,char*)),this,SLOT(OutputBandData(char*,char*,char*)));
+        connect(this,SIGNAL(BandData(char*,char*,char*,char*)),this,SLOT(OutputBandData(char*,char*,char*,char*)));
 
         outputOn = true;
     }
@@ -214,8 +214,9 @@ void Demod::FMStereo(CPX * in, CPX * out, int bufSize)
                 rdsUpdate = true;
         }
     }
+    char *shortData = (char*)"";
     if (rdsUpdate) {
-        emit BandData((char*) (pilotLock ? "Stereo" : ""), rdsCallString, rdsString);
+        emit BandData((char*) (pilotLock ? "Stereo" : ""), rdsCallString, shortData, rdsString);
     }
     return;
 
@@ -303,12 +304,12 @@ QString Demod::ModeToString(DEMODMODE dm)
 }
 
 
-void Demod::OutputBandData(char *status, char *callSign, char *callSignData)
+void Demod::OutputBandData(QString status, QString callSign, QString shortData, QString longData)
 {
     if (!outputOn || dataUi == NULL)
         return;
     dataUi->status->setText(status);
     dataUi->callSign->setText(callSign);
-    //dataUi->callSignData->setText(callSignData);
-    dataUi->dataEdit->setText(callSignData);
+    dataUi->callSignData->setText(shortData);
+    dataUi->dataEdit->setText(longData);
 }

@@ -594,13 +594,18 @@ void ReceiverWidget::findStationButtonClicked()
     if (!powerOn)
         return;
 
+    quint16 range = 25;
     //Search all stations in current band looking for match or close (+/- N  khz)
     //Display in station box, message box, or band info area?
-    Station * s = presets->FindStation(frequency,2); // +/- 2khz
+    QList<Station> stationList = presets->FindStation(frequency,range); // +/- khz
     QString str;
-    if (s != NULL) {
-        str = QString("%1 %2 %3").arg(QString::number(s->freq/1000.0,'f',3), s->station, s->remarks);
-        QMessageBox::information(NULL,"Find Station",str);
+    if (!stationList.empty()) {
+        Station s;
+        for (int i=0; i<stationList.count(); i++) {
+            s = stationList[i];
+            str += QString("%1 %2 %3").arg(QString::number(s.freq/1000.0,'f',3), s.station, s.remarks);
+        }
+        receiver->getDemod()->OutputBandData("", "", QString().sprintf("Stations within %d kHz",range), str);
     }
 
 

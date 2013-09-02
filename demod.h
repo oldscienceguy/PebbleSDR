@@ -68,10 +68,10 @@ public:
 
     void SetBandwidth(double bandwidth);
 signals:
-    void BandData(char *status, char *callSign, char *callSignData);
+    void BandData(char *status, char *callSign, char *shortData, char* longData);
 
-private slots:
-    void OutputBandData(char *status, char *callSign, char *callSignData);
+public slots:
+    void OutputBandData(QString status, QString callSign, QString shortData, QString longData);
 
 private:
     Demod_AM *demodAM;
