@@ -603,7 +603,7 @@ void ReceiverWidget::findStationButtonClicked()
         Station s;
         for (int i=0; i<stationList.count(); i++) {
             s = stationList[i];
-            str += QString("%1 %2 %3").arg(QString::number(s.freq/1000.0,'f',3), s.station, s.remarks);
+            str += QString("%1 %2 %3\n").arg(QString::number(s.freq/1000.0,'f',3), s.station, s.remarks);
         }
         receiver->getDemod()->OutputBandData("", "", QString().sprintf("Stations within %d kHz",range), str);
     }
