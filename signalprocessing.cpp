@@ -142,6 +142,10 @@ CPX DelayLine::operator [] (int i)
 }
 //Convolution sum or Multiply And Accumulate (MAC)
 //Key component for filter math
+//In a FIR context, a "MAC" is the operation of multiplying a coefficient by the corresponding delayed data sample
+//  and accumulating the result.
+//DelayLine manages a circular buffer of samples with configurable delay
+//coeff is the array of filter coefficients to apply
 CPX DelayLine::MAC(double *coeff, int numCoeff)
 {
 	mutex.lock();
@@ -154,6 +158,12 @@ CPX DelayLine::MAC(double *coeff, int numCoeff)
 		mac.re += buffer[next].re * coeff[i];
 		mac.im += buffer[next].im * coeff[i];
 	}
+    //This can generate NaN results if coeff aren't initialized properly, easy technique to catch while we debug
+    if (mac.re != mac.re)
+        mac.re = 0;
+    if (mac.im != mac.im)
+        mac.im = 0;
+
 	mutex.unlock();
 	return mac;
 }
@@ -169,7 +179,12 @@ CPX DelayLine::MAC(CPX *coeff, int numCoeff)
 		mac.re += buffer[next].re * coeff[i].re;
 		mac.im += buffer[next].im * coeff[i].im;
 	}
-	mutex.unlock();
+    //This generates NaN results, easy technique to catch while we debug
+    if (mac.re != mac.re)
+        mac.re = 0;
+    if (mac.im != mac.im)
+        mac.im = 0;
+    mutex.unlock();
 	return mac;
 }
 #if (0)
