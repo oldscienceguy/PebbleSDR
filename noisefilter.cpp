@@ -7,11 +7,12 @@ NoiseFilter::NoiseFilter(int sr, int ns):
 {
 
 	anfDelaySize = 512; //dttsp 512, SDRMax 1024
+    anfDelaySamples = 64;
 	anfAdaptiveFilterSize = 45; //dttsp 45, SDRMax 256
 	anfAdaptationRate = 0.01; //dttsp 0.01, SDRMax 0.005
 	anfLeakage = 0.00001; //dttsp 0.00001, SDRMax 0.01
-	anfDelay = new DelayLine(anfDelaySize, 64); //64 sample delay line
-    anfCoeff = new double[anfAdaptiveFilterSize];
+    anfDelay = new DelayLine(anfDelaySize, anfDelaySamples); //64 sample delay line
+    anfCoeff = new CPX[anfAdaptiveFilterSize];
 	anfEnabled = false;
 }
 
@@ -36,17 +37,20 @@ Algorithm references
 CPX * NoiseFilter::ProcessBlock(CPX *in)
 {
 	int size = numSamples;
-	//anfEnabled = false;
-	//Works,  but takes a few seconds to stabilize
 	if (!anfEnabled)
 	{
 		return in;
 	}
-	float sos = 0; //Sum of squares
+
+    CPX sos; //Sum of squares
+    CPX accum;
 	
-	float errorSignal = 0;
-	float scl1 = 0; 
-	//float factor2 = 0;
+    CPX error;
+
+    double scl1 = 0;
+    CPX scl2;
+
+    //double factor2 = 0;
 	CPX nxtDelay;
 	//How rapidly do we adjust for changing signals, bands, etc
 	scl1 = 1.0 - anfAdaptationRate * anfLeakage;
@@ -56,7 +60,8 @@ CPX * NoiseFilter::ProcessBlock(CPX *in)
 		//Add the current sample to the delay line
 		anfDelay->NewSample(in[i]);
 
-		sos = 0.0;
+        accum.clear();
+        sos.clear();
 		//We don't have to run through entire delay line, just enough to calc noise data
 		//For each sample, accumulate 256 (adapt size) samples, delayed by 64 samples
 		//This is the basic filter step and the coefficients tell us how to weigh historical samples
@@ -65,23 +70,31 @@ CPX * NoiseFilter::ProcessBlock(CPX *in)
 		{
 			nxtDelay = anfDelay->NextDelay(j);
 
-			sos += (nxtDelay.re * nxtDelay.re);
-			//sos += nxtDelay.mag();
+            sos.re += (nxtDelay.re * nxtDelay.re);
+            sos.im += (nxtDelay.im * nxtDelay.im);
+            //dttsp doesn't accumulate sums, bug in dttsp?
+            accum.re += anfCoeff[j].re * nxtDelay.re;
+            accum.im += anfCoeff[j].im * nxtDelay.im;
+
 		}
-		//Test
-		CPX cpxMAC = anfDelay->MAC(anfCoeff,anfAdaptiveFilterSize);
-		out[i] = in[i] - cpxMAC;
+        //This does the same as accum above, but requires an extra loop
+        //Maybe we should update MAC to also return sum or squares result?
+        out[i].re = accum.re * 1.25; //Bit of gain to compensate for filter
+        out[i].im = accum.im * 1.25;
 
 		//This is the delta between the actual current sample, and MAC from delay line (reference signal)
 		//or if we're comparing to a desired CW sine wave, the diff from that
 		//It drives the Least Means Square (LMS) algorithm
 		//errorSignal = (in[i] - MAC * adaptionRate) / SOS
-#if (0)
-		float avgMag = sos / anfAdaptiveFilterSize;
-		errorSignal = in[i].mag() - avgMag;
-#else
-		errorSignal = (in[i].re - cpxMAC.re) * (anfAdaptationRate / (sos + 1e-10));
-#endif
+        //CPX error = in[i] - anfDelay->MAC(anfCoeff,anfAdaptiveFilterSize);
+        error = in[i] - accum;
+
+        scl2.re = (anfAdaptationRate / (sos.re + 1e-10)); //avoid divide by zero trick
+        error.re *= scl2.re;
+
+        scl2.im = (anfAdaptationRate / (sos.im + 1e-10));
+        error.im *= scl2.im;
+
 		//And calculate tne new coefficients for next sample
 		/*
 		See Doug Smith, pg 8-2 for Adaptive filters, Least Mean Squared, Leakage, etc
@@ -94,8 +107,9 @@ CPX * NoiseFilter::ProcessBlock(CPX *in)
 			//Weighted average based on anfLeakage
 			//AdaptationRate is between 0 and 1 and determines how fast we stabilize filter
 			//anfCoeff[j] = anfCoeff[j-1] * anfLeakage + (1.0 - anfLeakage) * anfAdaptationRate * nxtDelay.re * errorSignal;
-			anfCoeff[j] = anfCoeff[j] * scl1 + errorSignal * nxtDelay.re;
-		}
+            anfCoeff[j].re = anfCoeff[j].re * scl1 + error.re * nxtDelay.re;
+            anfCoeff[j].im = anfCoeff[j].im * scl1 + error.im * nxtDelay.im;
+        }
 	}
 	return out;
 }

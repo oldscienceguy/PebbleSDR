@@ -9,18 +9,19 @@ class NoiseFilter :
 public:
 	NoiseFilter(int sampleRate, int nSamples);
 	~NoiseFilter(void);
-	CPX * ProcessBlock(CPX *in);
+    CPX * ProcessBlock(CPX *in);
 	void setAnfEnabled(bool b);
 
 private:
 	//ANF Delay line, todo: make DelayLine class
 	bool anfEnabled;
 	int anfAdaptiveFilterSize;
-	float anfAdaptationRate;
-	float anfLeakage;
+    double anfAdaptationRate;
+    double anfLeakage;
 	int anfDelaySize; //Size of delay buffer
 	DelayLine *anfDelay;
+    quint16 anfDelaySamples;
 	//ANF filter coefficients
-    double *anfCoeff;
+    CPX *anfCoeff;
 
 };
