@@ -61,8 +61,8 @@ Demod::Demod(int _inputRate, int _inputWfmRate, int ns) :
     //Moving to subclasses for each demod, transition with instance for each demod, change to vptr later
     demodAM = new Demod_AM(inputSampleRate, numSamples);
     demodSAM = new Demod_SAM(inputSampleRate, numSamples);
-    demodNFM = new Demod_NFM(inputSampleRate,numSamples);
-    demodWFM = new Demod_WFM(inputWfmSampleRate,numSamples);
+    demodNFM = new Demod_NFM(inputSampleRate, numSamples);
+    demodWFM = new Demod_WFM(inputWfmSampleRate, numSamples);
     ResetDemod();
 
     dataUi = NULL;
@@ -108,7 +108,9 @@ CPX * Demod::ProcessBlock(CPX * in, int bufSize)
             demodSAM->ProcessBlock(in, out, bufSize);
             break;
         case dmFMN: // FMN
-            demodNFM->ProcessBlock(in, out, bufSize);
+            //demodNFM->ProcessBlockFM1(in, out, bufSize);
+            //demodNFM->ProcessBlockFM2(in, out, bufSize);
+            demodNFM->ProcessBlockNCO(in, out, bufSize);
             break;
         case dmFMM: // FMW
             FMMono(in,out, bufSize);

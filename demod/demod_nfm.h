@@ -12,28 +12,31 @@ public:
     Demod_NFM(int _inputRate, int _numSamples);
     virtual ~Demod_NFM();
 
-    void ProcessBlock(CPX *in, CPX *out, int demodSamples);
-
-    void SimpleFM(CPX *in, CPX *out, int demodSamples);
-    void SimpleFM2(CPX *in, CPX *out, int demodSamples);
+    void ProcessBlockFM1(CPX *in, CPX *out, int demodSamples);
+    void ProcessBlockFM2(CPX *in, CPX *out, int demodSamples);
+    void ProcessBlockNCO(CPX *in, CPX *out, int demodSamples);
 
     void PllFMN(CPX *in, CPX *out, int demodSamples);
 
-    void SimplePhase(CPX *in, CPX *out, int _numSamples);
+    void SimplePhase(CPX *in, CPX *out, int demodSamples);
+    void Init(double samplerate);
 private:
     //Previous I/Q values, used in simpleFM
     float fmIPrev;
     float fmQPrev;
 
     //FMN PLL config (reference)
-    float fmLoLimit;
-    float fmHiLimit;
     float fmBandwidth;
-    float fmDCOffset;
-    //PLL variables
-    float pllFrequency;
+    float pllFreqErrorDC;
+    float ncoFrequency;
+    float ncoLLimit;
+    float ncoHLimit;
     float pllPhase;
     float pllAlpha,pllBeta;
+    float pllDcAlpha;
+    float pllOutGain;
+
+    CFir lpFilter;
 
 };
 
