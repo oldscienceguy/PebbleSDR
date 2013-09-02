@@ -89,7 +89,7 @@ void Demod::SetupDataUi(QWidget *parent)
         dataUi->setupUi(parent);
 
         //Reciever/demod thread emits and display thread handles
-        connect(this,SIGNAL(BandData(char*,char*,char*,char*)),this,SLOT(OutputBandData(char*,char*,char*,char*)));
+        connect(this,SIGNAL(BandData(QString,QString,QString,QString)),this,SLOT(OutputBandData(QString,QString,QString,QString)));
 
         outputOn = true;
     }

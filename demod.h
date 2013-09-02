@@ -68,7 +68,7 @@ public:
 
     void SetBandwidth(double bandwidth);
 signals:
-    void BandData(char *status, char *callSign, char *shortData, char* longData);
+    void BandData(QString status, QString callSign, QString shortData, QString longData);
 
 public slots:
     void OutputBandData(QString status, QString callSign, QString shortData, QString longData);
