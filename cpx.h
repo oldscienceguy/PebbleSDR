@@ -294,8 +294,13 @@ inline void free16(void *memory)
 
 }
 
-//From fldigi complex.h
-inline 	CPX cmac (const CPX *a, const CPX *b, int ptr, int len) {
+#if 0
+//MAC utility from fldigi
+// MAC = sum += (a*b)
+// This handles MAC with a delay, but relies on caller to track ptr. See DelayLine class for safe implementation
+// a is a linear buffer [0 to len]
+// b is a circular buffer [0 to len] with ptr indicating current position
+inline 	CPX cpxMac (const CPX *a, const CPX *b, int ptr, int len) {
         CPX z;
         ptr %= len;
         for (int i = 0; i < len; i++) {
@@ -304,4 +309,22 @@ inline 	CPX cmac (const CPX *a, const CPX *b, int ptr, int len) {
         }
         return z;
     }
-
+inline double dMac(const double *a, const double *b, unsigned int size) {
+    double sum = 0.0;
+    double sum2 = 0.0;
+    double sum3 = 0.0;
+    double sum4 = 0.0;
+    // Reduces read-after-write dependencies : Each subsum does not wait for the others.
+    // The CPU can therefore schedule each line independently.
+    for (; size > 3; size -= 4, a += 4, b+=4)
+    {
+        sum  += a[0] * b[0];
+        sum2 += a[1] * b[1];
+        sum3 += a[2] * b[2];
+        sum4 += a[3] * b[3];
+    }
+    for (; size; --size)
+        sum += (*a++) * (*b++);
+    return sum + sum2 + sum3 + sum4 ;
+}
+#endif
