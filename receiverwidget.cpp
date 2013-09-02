@@ -96,7 +96,6 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	connect(ui.nbButton,SIGNAL(toggled(bool)),this,SLOT(nbButtonToggled(bool)));
 	connect(ui.nb2Button,SIGNAL(toggled(bool)),this,SLOT(nb2ButtonToggled(bool)));
 	connect(ui.agcBox,SIGNAL(currentIndexChanged(int)),this,SLOT(agcBoxChanged(int)));
-	connect(ui.lpfButton,SIGNAL(toggled(bool)),this,SLOT(lpfButtonToggled(bool)));
 	connect(ui.muteButton,SIGNAL(toggled(bool)),this,SLOT(muteButtonToggled(bool)));
 	connect(ui.modeBox,SIGNAL(currentIndexChanged(QString)),this,SLOT(modeSelectionChanged(QString)));
 	connect(ui.filterBox,SIGNAL(currentIndexChanged(QString)),this,SLOT(filterSelectionChanged(QString)));
@@ -561,12 +560,6 @@ void ReceiverWidget::agcBoxChanged(int item)
     if (!powerOn)
         return;
 	receiver->SetAgcMode((AGC::AGCMODE)item);
-}
-void ReceiverWidget::lpfButtonToggled(bool b)
-{
-    if (!powerOn)
-        return;
-	receiver->SetLpfEnabled(b);
 }
 void ReceiverWidget::muteButtonToggled(bool b)
 {

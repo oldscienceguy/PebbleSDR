@@ -2372,21 +2372,6 @@
        </spacer>
       </item>
       <item>
-       <widget class="QRadioButton" name="lpfButton">
-        <property name="font">
-         <font>
-          <pointsize>8</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>LPF</string>
-        </property>
-        <property name="autoExclusive">
-         <bool>false</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QRadioButton" name="anfButton">
         <property name="font">
          <font>
@@ -2418,7 +2403,7 @@
          </font>
         </property>
         <property name="text">
-         <string>NB1</string>
+         <string>NB-Spike</string>
         </property>
         <property name="iconSize">
          <size>
@@ -2442,7 +2427,7 @@
          </font>
         </property>
         <property name="text">
-         <string>NB2</string>
+         <string>NB-Interference</string>
         </property>
         <property name="autoExclusive">
          <bool>false</bool>

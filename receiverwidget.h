@@ -115,7 +115,6 @@ private:
 		void nbButtonToggled(bool b);
 		void nb2ButtonToggled(bool b);
 		void agcBoxChanged(int item);
-		void lpfButtonToggled(bool b);
 		void muteButtonToggled(bool b);
         void addMemoryButtonClicked();
         void findStationButtonClicked();

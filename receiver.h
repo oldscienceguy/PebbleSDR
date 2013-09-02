@@ -56,7 +56,6 @@ public:
 	void SetNbEnabled(bool b);
 	void SetNb2Enabled(bool b);
 	void SetAgcMode(AGC::AGCMODE m);
-	void SetLpfEnabled(bool b);
 	void SetMute(bool b);
 	void ShowPresets();
     Presets *GetPresets() {return presets;}
@@ -145,7 +144,6 @@ private:
 	int squelch;
 
 	FIRFilter *bpFilter; //Current BandPass filter
-	FIRFilter *lpFilter;
 	FIRFilter *usbFilter;
 	FIRFilter *lsbFilter;
 	FIRFilter *amFilter;

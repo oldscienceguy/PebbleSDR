@@ -68,7 +68,6 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	demod = NULL;
 	audioOutput = NULL;
 	bpFilter = NULL;
-	lpFilter = NULL;
 	noiseBlanker = NULL;
 	noiseFilter = NULL;
 	signalStrength = NULL;
@@ -187,11 +186,6 @@ bool Receiver::On()
     //signalStrength is used by normal demod and wfm, so buffer len needs to be max
     //Calls to ProcessBlock will pass post decimation len
     signalStrength = new SignalStrength(demodSampleRate,framesPerBuffer);
-	//FIR MAC LP Filter
-    lpFilter = new FIRFilter(demodSampleRate,demodFrames, false, 128);
-	lpFilter->SetLowPass(3000);
-	//lpFilter->SetHighPass(3000); //Testing 
-	//lpFilter->SetBandPass(50,3000); //Testing
 
     morse = new Morse(demodSampleRate,demodFrames);
     morse->SetReceiver(this);
@@ -305,10 +299,6 @@ bool Receiver::Off()
 	if (signalSpectrum != NULL) {
 		delete signalSpectrum;
 		signalSpectrum = NULL;
-	}
-	if (lpFilter != NULL) {
-		delete lpFilter;
-		lpFilter = NULL;
 	}
 	if (agc != NULL) {
 		delete agc;
@@ -494,10 +484,6 @@ void Receiver::SetAgcThreshold(int g)
     agc->setAgcThreshold(g);
 }
 
-void Receiver::SetLpfEnabled(bool b)
-{
-	lpFilter->setEnabled(b);
-}
 void Receiver::SetMute(bool b)
 {
 	mute = b;
@@ -760,17 +746,6 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
         nextStep = demod->ProcessBlock(nextStep, downConvertLen);
         global->testBench->DisplayData(demodFrames,nextStep,demodSampleRate,PROFILE_4);
 
-        //global->perform.StopPerformance(100);
-
-        /*
-          Todo: Add post demod FFT to check FM stereo and other composite formats
-        */
-
-
-        //global->perform.StartPerformance();
-
-        //Testing LPF to get rid of some noise after demod
-        nextStep = lpFilter->ProcessBlock(nextStep);
         //global->perform.StopPerformance(100);
 
         demodFrames = downConvertLen;
