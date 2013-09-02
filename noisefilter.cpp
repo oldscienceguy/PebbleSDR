@@ -22,7 +22,7 @@ void NoiseFilter::setAnfEnabled(bool b)
 {
 	if (b)
 		//Clean out any garbage from prior filtering
-		memset(anfCoeff,0.0,sizeof(float) * anfAdaptiveFilterSize);
+        memset(anfCoeff,0.0,sizeof(anfCoeff) * anfAdaptiveFilterSize);
 
 	anfEnabled = b;
 }
