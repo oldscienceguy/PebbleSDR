@@ -143,8 +143,6 @@ macx {
 
 	# Get .dylib files in package for easier user install
 	# See http://qt-project.org/doc/qt-5.0/qtdoc/deployment-mac.html
-	# Check out macdeployqt and see if it automates QT changes below
-	# /Users/rlandsman/QT5.0.0/5.0.0/clang_64/bin/macdeployqt
 
 	#To find all dependent dylib: otool -L ./Pebble.app/contents/macos/pebble >> dylib.txt
 	#1st arg is the path and name of dylib as shown from otool ouput
@@ -157,7 +155,8 @@ macx {
 	#macdeployqt replaces all the install detail below and handles Qt and any non-system dylibs
 	#Turn this off if you are having any problem with libraries or plugins
 	#Starting in QT5.02 the cocoa plugin is always required, so we can't use -no-plugins
-	QMAKE_POST_LINK += macdeployqt $${DESTDIR}/Pebble.app
+	#QMAKE_POST_LINK += macdeployqt $${DESTDIR}/Pebble.app
+	message("Reminder: macdeployqt has bug and must be run from fix_macdeployqt script")
 
 	#We may need to copy ftd2xx.cfg with value ConfigFlags=0x40000000
 	#ftd2xx.files += $${PWD}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
