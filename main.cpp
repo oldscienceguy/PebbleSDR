@@ -2,6 +2,11 @@
 #include "gpl.h"
 #include "pebbleii.h"
 #include <QtGui>
+#include "plugins/digital_modem_interfaces.h"
+#include <QtPlugin>
+
+//Use this if we want to import a static plugin, ie one that is always installed
+//Q_IMPORT_PLUGIN(...)
 
 int main(int argc, char *argv[])
 {

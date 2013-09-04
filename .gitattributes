@@ -92,6 +92,7 @@ pebble[!!-~]icon.sketch/QuickLook/Thumbnail.png -text
 /pebbleii.h -text
 /pebbleii.ui -text
 /pebbleqt.pro -text
+plugins/digital_modem_interfaces.h -text
 /portaudio.h -text
 /portaudio.lib -text
 /presets.cpp -text

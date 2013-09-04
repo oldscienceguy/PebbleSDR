@@ -37,3 +37,35 @@ PebbleII::~PebbleII()
 	 delete receiver; //Trigger shutdown via destructors
  }
 
+ void PebbleII::loadPlugins()
+ {
+     //Load static plugins
+     foreach (QObject *plugin, QPluginLoader::staticInstances())
+         qDebug()<<plugin->objectName();
+         //populateMenus(plugin);
+
+     pluginsDir = QDir(qApp->applicationDirPath());
+
+ #if defined(Q_OS_WIN)
+     if (pluginsDir.dirName().toLower() == "debug" || pluginsDir.dirName().toLower() == "release")
+         pluginsDir.cdUp();
+ #elif defined(Q_OS_MAC)
+     if (pluginsDir.dirName() == "MacOS") {
+         pluginsDir.cdUp();
+         pluginsDir.cdUp();
+         pluginsDir.cdUp();
+     }
+ #endif
+     pluginsDir.cd("plugins");
+
+     //Load dynamic plugins
+     foreach (QString fileName, pluginsDir.entryList(QDir::Files)) {
+         QPluginLoader loader(pluginsDir.absoluteFilePath(fileName));
+         QObject *plugin = loader.instance();
+         if (plugin) {
+             //populateMenus(plugin);
+             qDebug()<<plugin->objectName();
+             pluginFileNames += fileName;
+         }
+     }
+ }

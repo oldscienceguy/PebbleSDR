@@ -21,6 +21,10 @@ private:
 	Receiver *receiver;
 	void closeEvent(QCloseEvent *event);
 
+    void loadPlugins();
+    QDir pluginsDir;
+    QStringList pluginFileNames;
+
 };
 
 #endif // PEBBLEII_H
