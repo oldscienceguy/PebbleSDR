@@ -178,5 +178,3 @@ portaudio/src/hostapi/asio/Callback_adaptation_.pdf -text
 portaudio/src/hostapi/asio/Pa_ASIO.pdf -text
 portaudio/src/hostapi/oss/low_latency_tip.txt svneol=native#unset
 portaudio/src/hostapi/wasapi/mingw-include/ksmedia.h -text
-resources/edit.png -text
-resources/pebble.icns -text
