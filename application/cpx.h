@@ -17,7 +17,7 @@
 //and SIMD platform routines are used wherever possible.
 //Just use normal CPX functions, SIMD will then be automatic
 #ifndef SIMD
-#define SIMD 1
+#define SIMD 0 //Default to off, causing problems on some platforms
 #endif
 
 //Inline simple methods for performance

@@ -287,10 +287,6 @@ preprocess.CONFIG = no_link #This is required to stop make from trying to compil
 #QMAKE_PRE_LINK += copy $(DEPENDPATH)/presets.csv $(DESTDIR)
 #QMAKE_POST_LINK
 
-#Equal operator required for compiler flag,  not allowed for #define
-DEFINES += \
-	"SIMD=0" #SSE crashing, figure it out later
-
 #CONFIG += qt sse
 
 #This is how we can add custom defines and options based on release vs debug builds
