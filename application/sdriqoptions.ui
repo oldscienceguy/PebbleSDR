@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>SDRIQOptions</class>
+ <widget class="QWidget" name="SDRIQOptions">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>496</width>
+    <height>100</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <widget class="QLabel" name="label">
+   <property name="geometry">
+    <rect>
+     <x>237</x>
+     <y>6</y>
+     <width>46</width>
+     <height>13</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>RF Gain</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="rfGainBox">
+   <property name="geometry">
+    <rect>
+     <x>290</x>
+     <y>4</y>
+     <width>94</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>7</pointsize>
+    </font>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_2">
+   <property name="geometry">
+    <rect>
+     <x>238</x>
+     <y>27</y>
+     <width>46</width>
+     <height>13</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>IF Gain</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="ifGainBox">
+   <property name="geometry">
+    <rect>
+     <x>291</x>
+     <y>26</y>
+     <width>94</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>7</pointsize>
+    </font>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_3">
+   <property name="geometry">
+    <rect>
+     <x>220</x>
+     <y>51</y>
+     <width>71</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Bandwidth</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="bandwidthBox">
+   <property name="geometry">
+    <rect>
+     <x>291</x>
+     <y>50</y>
+     <width>93</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>7</pointsize>
+    </font>
+   </property>
+  </widget>
+  <widget class="QLabel" name="nameLabel">
+   <property name="geometry">
+    <rect>
+     <x>4</x>
+     <y>4</y>
+     <width>169</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Name</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="serialNumberLabel">
+   <property name="geometry">
+    <rect>
+     <x>4</x>
+     <y>22</y>
+     <width>172</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Serial Number</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="firmwareLabel">
+   <property name="geometry">
+    <rect>
+     <x>4</x>
+     <y>42</y>
+     <width>182</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Firmware Version</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="bootLabel">
+   <property name="geometry">
+    <rect>
+     <x>6</x>
+     <y>62</y>
+     <width>164</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Boot Code</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="interfaceVersionLabel">
+   <property name="geometry">
+    <rect>
+     <x>6</x>
+     <y>80</y>
+     <width>169</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Interface Version:</string>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
