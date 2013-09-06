@@ -2,7 +2,7 @@
 # Keep up to date as a template for other plugins
 
 #Project common
-include(../../pebbleqt.pri)
+include(../../application/pebbleqt.pri)
 
 
 QT += widgets
@@ -16,7 +16,7 @@ SOURCES += digitalmodemexample.cpp
 HEADERS += digitalmodemexample.h
 
 #Help plugin not worry about include paths
-INCLUDEPATH += ../../
+INCLUDEPATH += ../../application
 INCLUDEPATH += ../../plugins/
 
 #DESTDIR is set in pebbleqt.pri
