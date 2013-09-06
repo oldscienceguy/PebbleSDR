@@ -86,6 +86,9 @@ application/noiseblanker.cpp -text
 application/noiseblanker.h -text
 application/noisefilter.cpp -text
 application/noisefilter.h -text
+application/pebble[!!-~]icon.sketch/Data -text
+application/pebble[!!-~]icon.sketch/QuickLook/Preview.png -text
+application/pebble[!!-~]icon.sketch/QuickLook/Thumbnail.png -text
 application/pebble.qss -text
 application/pebbleii.cpp -text
 application/pebbleii.h -text
