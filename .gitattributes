@@ -1,6 +1,10 @@
 * text=auto !eol
 /agc.cpp -text
 /agc.h -text
+application/decoders/fldigifilters.cpp -text
+application/decoders/fldigifilters.h -text
+application/decoders/rtty/rtty.cpp -text
+application/decoders/rtty/rtty.h -text
 /audio.cpp -text
 /audio.h -text
 /audioqt.cpp -text
