@@ -11,7 +11,6 @@ D2XX/Samples/loopback/loopback -text
 D2XX/Samples/write/write-test -text
 D2XX/bin/10.4/libftd2xx.1.2.2.dylib -text
 D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib -text
-/agc.cpp -text
 /agc.h -text
 application/agc.cpp -text
 application/agc.h -text
