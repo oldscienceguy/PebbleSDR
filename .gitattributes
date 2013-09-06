@@ -141,10 +141,6 @@ application/soundcard.h -text
 application/spectrumwidget.cpp -text
 application/spectrumwidget.h -text
 application/spectrumwidget.ui -text
-decoders/fldigifilters.cpp -text
-decoders/fldigifilters.h -text
-decoders/rtty/rtty.cpp -text
-decoders/rtty/rtty.h -text
 demod/demod_am.cpp -text
 demod/demod_am.h -text
 demod/demod_nfm.cpp -text
