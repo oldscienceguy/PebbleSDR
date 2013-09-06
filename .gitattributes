@@ -68,6 +68,9 @@ application/global.cpp -text
 application/global.h -text
 application/gpl.h -text
 application/help.htm -text
+application/hpsdr/ozy_janus.rbf -text
+application/hpsdr/ozy_janus_v1.7.rbf -text
+application/hpsdr/ozy_janus_v2.5.rbf -text
 application/hpsdrOptions.ui -text
 application/iirfilter.cpp -text
 application/iirfilter.h -text
