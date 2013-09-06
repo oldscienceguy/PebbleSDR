@@ -4,7 +4,7 @@
 #include "global.h"
 #include "testbench.h"
 #include <QtPlugin>
-#include "../plugins/digital_modem_interfaces.h"
+#include "digital_modem_interfaces.h"
 
 //Use this if we want to import a static plugin, ie one that is always installed
 //Q_IMPORT_PLUGIN(...)

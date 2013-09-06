@@ -1,7 +1,7 @@
 #ifndef DIGITALMODEMEXAMPLE_H
 #define DIGITALMODEMEXAMPLE_H
 
-#include "digital_modem_interfaces.h"
+#include "../application/digital_modem_interfaces.h"
 
 class DigitalModemExample  : public QObject, public DigitalModemInterface
 {

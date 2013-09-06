@@ -17,7 +17,6 @@ HEADERS += digitalmodemexample.h
 
 #Help plugin not worry about include paths
 INCLUDEPATH += ../../application
-INCLUDEPATH += ../../plugins/
 
 #DESTDIR is set in pebbleqt.pri
 DESTDIR = $${DESTDIR}/plugins
