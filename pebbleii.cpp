@@ -3,6 +3,14 @@
 #include "pebbleii.h"
 #include "global.h"
 #include "testbench.h"
+#include <QtPlugin>
+#include "plugins/digital_modem_interfaces.h"
+
+//Use this if we want to import a static plugin, ie one that is always installed
+//Q_IMPORT_PLUGIN(...)
+
+
+
 Global *global;
 
 //Qt::FramelessWindowHint is interesting, but requires us to create our own close, resize, etc
@@ -14,6 +22,8 @@ PebbleII::PebbleII(QWidget *parent, Qt::WindowFlags flags)
     global->testBench = new CTestBench();
     global->testBench->Init();
 
+    //Load plugins next because receiver will need them for UI
+    loadPlugins();
 
     ui.setupUi(this);
 	receiver = new Receiver(ui.receiverUI, this);
@@ -53,18 +63,29 @@ PebbleII::~PebbleII()
      if (pluginsDir.dirName() == "MacOS") {
          pluginsDir.cdUp();
          pluginsDir.cdUp();
-         pluginsDir.cdUp();
+         pluginsDir.cdUp(); //Root dir where app is located
      }
  #endif
      pluginsDir.cd("plugins");
+     //QStringList flist = pluginsDir.entryList(QDir::Files);
 
      //Load dynamic plugins
      foreach (QString fileName, pluginsDir.entryList(QDir::Files)) {
+         //qDebug()<<fileName;
+
          QPluginLoader loader(pluginsDir.absoluteFilePath(fileName));
          QObject *plugin = loader.instance();
          if (plugin) {
              //populateMenus(plugin);
-             qDebug()<<plugin->objectName();
+             //qDebug()<<plugin->objectName();
+             //Test interface
+             DigitalModemInterface *iDigitalModem = qobject_cast<DigitalModemInterface *>(plugin);
+             if (iDigitalModem) {
+                 //plugin supports interface
+                 qDebug()<<"Calling plugin"<<iDigitalModem->GetPluginName();
+             }
+
+             //qDebug()<<plugin->Get
              pluginFileNames += fileName;
          }
      }

@@ -1,4 +1,5 @@
-cache()
+#Project common
+include(pebbleqt.pri)
 
 TEMPLATE = app
 TARGET = Pebble
@@ -40,12 +41,6 @@ QT += widgets core gui multimedia
 
 #RTL2832 original source code: git clone git://git.osmocom.org/rtl-sdr.git
 #Copy relevant files to Pebble source tree and make sure attribution comments are not removed
-
-#Set location to UI auto-generated files so we can get headers from known location
-message("PWD = "$${PWD})
-UI_DIR = $${PWD}/UI
-RCC_DIR = $${PWD}/UI
-message("UI_HEADERS = "$${UI_DIR})
 
 #Enable this to look at config to debug conditionals. For example: debug and release both show up sometimes
 #message($$CONFIG)
@@ -91,18 +86,6 @@ macx {
 
 	#This will stop the creation of a Mac package (default) and just create a unix bin if we need to for testing
 	#CONFIG-=app_bundle
-
-	#debug and release may both be defined as .pro file is parsed by make multiple times
-	#This tests for debug as the last item to be defined amoung debug and release
-	CONFIG(debug, debug|release) {
-		DESTDIR = ../MacDebug
-	} else {
-		DESTDIR = ../MacRelease
-	}
-
-	OBJECTS_DIR = $${PWD}/MacO
-	#Locataion for MOC files
-	MOC_DIR = $${PWD}/MacMoc
 
 	#dylib
 	LIBS += -L$${PWD}/../D2XX/bin/10.5-10.7/ -lftd2xx.1.2.2
@@ -156,7 +139,7 @@ macx {
 	#Turn this off if you are having any problem with libraries or plugins
 	#Starting in QT5.02 the cocoa plugin is always required, so we can't use -no-plugins
 	#QMAKE_POST_LINK += macdeployqt $${DESTDIR}/Pebble.app
-	message("Reminder: macdeployqt has bug and must be run from fix_macdeployqt script")
+	message("Reminder - macdeployqt has bug and must be run from fix_macdeployqt script")
 
 	#We may need to copy ftd2xx.cfg with value ConfigFlags=0x40000000
 	#ftd2xx.files += $${PWD}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
@@ -327,7 +310,8 @@ OTHER_FILES += \
     pebble.qss \
     hpsdr/ozyfw-sdr1k.hex \
     hpsdr/ozy_janus.rbf \
-    codingstyle.txt
+    codingstyle.txt \
+    pebbleqt.pri
 
 HEADERS += \
     spectrumwidget.h \
