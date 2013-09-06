@@ -13,6 +13,19 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
+  <widget class="QLabel" name="label">
+   <property name="geometry">
+    <rect>
+     <x>149</x>
+     <y>29</y>
+     <width>244</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Digital Modem Plugin Example</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>

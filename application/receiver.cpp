@@ -75,7 +75,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	agc = NULL;
 	iqBalance = NULL;
 	sdrThread = NULL;
-    morse = NULL;
+    iDigitalModem = NULL;
 
 	//Testing
 	useFreqDomainChain = false;
@@ -189,7 +189,7 @@ bool Receiver::On()
     //Calls to ProcessBlock will pass post decimation len
     signalStrength = new SignalStrength(demodSampleRate,framesPerBuffer);
 
-    morse = new Morse(demodSampleRate,demodFrames);
+    iDigitalModem = NULL;
 
 	//Testing, time intensive for large # taps, ie @512 we lose chunks of signal
 	//Check post-bandpass spectrum and make just large enough to be effective
@@ -263,6 +263,8 @@ bool Receiver::Off()
 	if (audioOutput != NULL)
 		audioOutput->Stop();
 
+    iDigitalModem = NULL;
+
 	//Now clean up rest
 	if (sdr != NULL){
         //Save any run time settings
@@ -309,10 +311,6 @@ bool Receiver::Off()
 		delete iqBalance;
 		iqBalance=NULL;
 	}
-    if (morse != NULL) {
-        delete morse;
-        morse = NULL;
-    }
     //Making this last to work around a shut down order problem with consumer threads
     if (audioOutput != NULL) {
         delete audioOutput;
@@ -451,8 +449,8 @@ void Receiver::SetMode(DEMODMODE m)
         demod->SetDemodMode(m, sampleRate, demodSampleRate);
         sdr->lastMode = m;
 	}
-    if (morse != NULL) {
-        morse->setDemodMode(m);
+    if (iDigitalModem != NULL) {
+        iDigitalModem->SetDemodMode(m);
     }
 }	
 void Receiver::SetFilter(int lo, int hi)
@@ -741,8 +739,8 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
         //global->perform.StartPerformance();
 
         //Data decoders come before demod
-        if (dataSelection == ReceiverWidget::CW_DATA)
-            nextStep = morse->ProcessBlock(nextStep);
+        if (iDigitalModem != NULL)
+            nextStep = iDigitalModem->ProcessBlock(nextStep);
 
         nextStep = demod->ProcessBlock(nextStep, downConvertLen);
         global->testBench->DisplayData(demodFrames,nextStep,demodSampleRate,PROFILE_4);
@@ -802,5 +800,22 @@ void Receiver::ProcessBlockFreqDomain(CPX *in, CPX *out, int frameCount)
         CPXBuf::scale(out, nextStep, gain, demodFrames);
 
     audioOutput->SendToOutput(out,demodFrames);
+
+}
+
+void Receiver::SetDigitalModem(QString _name, QWidget *_parent)
+{
+    if (_name == NULL || _parent == NULL) {
+        if (iDigitalModem != NULL)
+            iDigitalModem->SetupDataUi(NULL);
+
+        iDigitalModem = NULL;
+        return;
+    }
+    iDigitalModem = plugins.GetInterface(_name);
+    if (iDigitalModem != NULL) {
+        iDigitalModem->SetSampleRate(demodSampleRate, demodFrames);
+        iDigitalModem->SetupDataUi(_parent);
+    }
 
 }

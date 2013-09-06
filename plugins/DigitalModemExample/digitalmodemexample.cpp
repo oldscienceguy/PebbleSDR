@@ -1,6 +1,17 @@
 #include "digitalmodemexample.h"
 #include "gpl.h"
 
+DigitalModemExample::DigitalModemExample()
+{
+    dataUi = NULL;
+}
+
+void DigitalModemExample::SetSampleRate(int _sampleRate, int _sampleCount)
+{
+    Q_UNUSED(_sampleRate);
+    Q_UNUSED(_sampleCount);
+}
+
 void DigitalModemExample::SetDemodMode(DEMODMODE m)
 {
     qDebug()<<"Demod mode = "<<m; //Demod::ModeToString(m);

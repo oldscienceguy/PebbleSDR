@@ -699,7 +699,7 @@ void ReceiverWidget::dataSelectionChanged(int s)
         case CW_DATA:
 
             //Reset decoder
-            receiver->getMorse()->SetupDataUi(NULL);
+            receiver->SetDigitalModem(NULL,NULL);
             //Delete all children
             foreach (QObject *obj, ui.dataFrame->children()) {
                 //Normally we get a grid layout object, uiFrame, dataFrame
@@ -730,7 +730,7 @@ void ReceiverWidget::dataSelectionChanged(int s)
             //Send CW decoder the UI element so it can interact directly
             //Otherwise all the UI specifics from each decoder will leak into ReceiverWidget
             //and have to be maintained in two places.
-            receiver->getMorse()->SetupDataUi(ui.dataFrame);
+            receiver->SetDigitalModem("Hello World", ui.dataFrame);
             ui.dataFrame->setVisible(true);
             break;
         case BAND_DATA:

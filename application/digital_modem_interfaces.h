@@ -11,6 +11,8 @@ class DigitalModemInterface
 public:
     //Interface must be all pure virtual functions
 
+    virtual void SetSampleRate(int _sampleRate, int _sampleCount) = 0;
+
     //Setup demod mode etc
     virtual void SetDemodMode(DEMODMODE m) = 0;
 

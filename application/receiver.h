@@ -73,7 +73,9 @@ public:
 
     ReceiverWidget *receiverWidget;
 
-    Morse *getMorse() {return morse;}
+    DigitalModemInterface *getDigitalModem() {return iDigitalModem;}
+    void SetDigitalModem(QString _name, QWidget *_parent);
+
     Demod *getDemod() {return demod;}
 
     public slots:
@@ -106,7 +108,7 @@ private:
 	SignalSpectrum *signalSpectrum;
 	AGC *agc;
 	IQBalance *iqBalance;
-    Morse *morse;
+    DigitalModemInterface *iDigitalModem; //Active digital modem if any
     ReceiverWidget::DATA_SELECTION dataSelection;
     bool isRecording;
     QString recordingFileName;
