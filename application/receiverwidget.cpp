@@ -54,8 +54,9 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 
     ui.dataSelectionBox->addItem("No Data",NO_DATA);
     ui.dataSelectionBox->addItem("Band Data",BAND_DATA);
-    ui.dataSelectionBox->addItem("CW Decoder",CW_DATA);
-    ui.dataSelectionBox->addItem("RTTY Decoder",RTTY_DATA);
+    foreach (QString name,receiver->getPluginNames())
+        ui.dataSelectionBox->addItem(name,PLUGIN_DATA);
+
     connect(ui.dataSelectionBox,SIGNAL(currentIndexChanged(int)),this,SLOT(dataSelectionChanged(int)));
     SetDataMode((NO_DATA));
 
@@ -696,7 +697,7 @@ void ReceiverWidget::dataSelectionChanged(int s)
 
     //Clear any previous data selection
     switch(dataSelection) {
-        case CW_DATA:
+        case PLUGIN_DATA:
 
             //Reset decoder
             receiver->SetDigitalModem(NULL,NULL);
@@ -720,21 +721,17 @@ void ReceiverWidget::dataSelectionChanged(int s)
 
     //enums are stored as user data with each menu item
     dataSelection = (DATA_SELECTION)ui.dataSelectionBox->itemData(s).toInt();
-    receiver->SetDataSelection(dataSelection);
 
     switch (dataSelection) {
         case NO_DATA:
             ui.dataFrame->setVisible(false);
             break;
-        case CW_DATA:
-            //Send CW decoder the UI element so it can interact directly
-            //Otherwise all the UI specifics from each decoder will leak into ReceiverWidget
-            //and have to be maintained in two places.
-            receiver->SetDigitalModem("Morse", ui.dataFrame);
-            ui.dataFrame->setVisible(true);
-            break;
         case BAND_DATA:
             receiver->getDemod()->SetupDataUi(ui.dataFrame);
+            ui.dataFrame->setVisible(true);
+            break;
+        case PLUGIN_DATA:
+            receiver->SetDigitalModem(ui.dataSelectionBox->currentText(), ui.dataFrame);
             ui.dataFrame->setVisible(true);
             break;
         default:

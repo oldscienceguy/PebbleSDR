@@ -62,7 +62,6 @@ public:
     Presets *GetPresets() {return presets;}
     bool GetPowerOn() {return powerOn;}
 
-    void SetDataSelection(ReceiverWidget::DATA_SELECTION d);
 	Settings * GetSettings() {return settings;}
 	void ProcessBlock(CPX *in, CPX *out, int frameCount);
 	void ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount);
@@ -75,6 +74,7 @@ public:
 
     DigitalModemInterface *getDigitalModem() {return iDigitalModem;}
     void SetDigitalModem(QString _name, QWidget *_parent);
+    QStringList getPluginNames() {return plugins.GetPluginNames();}
 
     Demod *getDemod() {return demod;}
 
@@ -109,7 +109,6 @@ private:
 	AGC *agc;
 	IQBalance *iqBalance;
     DigitalModemInterface *iDigitalModem; //Active digital modem if any
-    ReceiverWidget::DATA_SELECTION dataSelection;
     bool isRecording;
     QString recordingFileName;
     QString recordingPath;

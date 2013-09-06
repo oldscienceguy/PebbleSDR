@@ -30,7 +30,8 @@ class ReceiverWidget:public QWidget
 
 public:
 
-    enum DATA_SELECTION {NO_DATA,BAND_DATA,CW_DATA,RTTY_DATA};
+    //PLUGIN_DATA is dynamic depending on plugins installed
+    enum DATA_SELECTION {NO_DATA,BAND_DATA,PLUGIN_DATA};
 
 	ReceiverWidget(QWidget *parent =0);
 	~ReceiverWidget(void);

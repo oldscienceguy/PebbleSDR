@@ -340,20 +340,6 @@ Receiver::~Receiver(void)
     if (sdr != NULL)
         delete sdr;
 }
-void Receiver::SetDataSelection(ReceiverWidget::DATA_SELECTION d)
-{
-    dataSelection = d;
-    switch (d) {
-        case ReceiverWidget::NO_DATA:
-            break;
-        case ReceiverWidget::BAND_DATA:
-            break;
-        case ReceiverWidget::CW_DATA:
-            break;
-        case ReceiverWidget::RTTY_DATA:
-            break;
-    }
-}
 
 //Connected to ReceiverWidget REC button
 /*
