@@ -141,12 +141,6 @@ application/soundcard.h -text
 application/spectrumwidget.cpp -text
 application/spectrumwidget.h -text
 application/spectrumwidget.ui -text
-dsp/fft.cpp -text
-dsp/fft.h -text
-dsp/fftbasic.cpp -text
-dsp/fftbasic.h -text
-dsp/fftw.cpp -text
-dsp/fftw.h -text
 fftw-3.3.3/doc/equation-dft.png -text
 fftw-3.3.3/doc/equation-dht.png -text
 fftw-3.3.3/doc/equation-idft.png -text
