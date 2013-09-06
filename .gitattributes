@@ -93,6 +93,7 @@ application/pebble.qss -text
 application/pebbleii.cpp -text
 application/pebbleii.h -text
 application/pebbleii.ui -text
+application/pebbleqt.pri -text
 application/pebbleqt.pro -text
 application/portaudio.h -text
 application/portaudio.lib -text
