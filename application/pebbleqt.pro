@@ -389,7 +389,6 @@ HEADERS += \
     devices/sdr-ip/protocoldefs.h \
     devices/wavfile.h \
     decoders/oregonscientific/oregonscientificsensordecode.h \
-    decoders/morse/morse.h \
     decoders/fldigifilters.h \
     bargraphmeter.h \
     testbench.h \
@@ -397,7 +396,6 @@ HEADERS += \
     dsp/fftw.h \
     dsp/fftcute.h \
     dsp/fft.h \
-    decoders/morse/morsecode.h \
     decoders/rtty/baudotcode.h \
     decoders/rtty/rtty.h \
     demod/demod_am.h \
@@ -464,7 +462,6 @@ SOURCES += \
     devices/sdr-ip/sdrinterface.cpp \
     devices/wavfile.cpp \
     decoders/oregonscientific/oregonscientificsensordecode.cpp \
-	decoders/morse/morse.cpp \
     decoders/fldigifilters.cpp \
     bargraphmeter.cpp \
     testbench.cpp \
@@ -472,7 +469,6 @@ SOURCES += \
     dsp/fftw.cpp \
     dsp/fftcute.cpp \
     dsp/fft.cpp \
-    decoders/morse/morsecode.cpp \
     decoders/rtty/baudotcode.cpp \
     decoders/rtty/rtty.cpp \
     demod/demod_am.cpp \
@@ -494,7 +490,6 @@ FORMS += \
     sdr-ip.ui \
     sdr.ui \
     directinput.ui \
-    data-morse.ui \
     bargraphmeter.ui \
     testbench.ui \
     data-band.ui

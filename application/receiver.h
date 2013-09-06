@@ -25,12 +25,11 @@
 #include "firfilter.h"
 #include "agc.h"
 #include "iqbalance.h"
-#include "decoders/morse/morse.h"
 #include "filters/fir.h"
 #include "filters/fractresampler.h"
 #include "devices/wavfile.h"
 
-#include "Devices/sdr_iq.h"
+#include "devices/sdr_iq.h"
 #include "plugins.h"
 
 class Receiver:public QObject
