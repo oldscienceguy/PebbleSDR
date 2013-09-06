@@ -27,7 +27,6 @@ application/codingstyle.txt -text
 application/cpx.cpp -text
 application/cpx.h -text
 application/data-band.ui -text
-application/data-morse.ui -text
 application/decoders/fldigifilters.cpp -text
 application/decoders/fldigifilters.h -text
 application/decoders/rtty/rtty.cpp -text
