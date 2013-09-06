@@ -69,6 +69,8 @@ application/dsp/fftbasic.h -text
 application/dsp/fftw.cpp -text
 application/dsp/fftw.h -text
 application/elektoroptions.ui -text
+application/filters/fldigifilters.cpp -text
+application/filters/fldigifilters.h -text
 application/firfilter.cpp -text
 application/firfilter.h -text
 application/firmware.txt -text
