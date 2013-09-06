@@ -188,7 +188,6 @@ bool Receiver::On()
     signalStrength = new SignalStrength(demodSampleRate,framesPerBuffer);
 
     morse = new Morse(demodSampleRate,demodFrames);
-    morse->SetReceiver(this);
 
 	//Testing, time intensive for large # taps, ie @512 we lose chunks of signal
 	//Check post-bandpass spectrum and make just large enough to be effective

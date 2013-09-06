@@ -42,7 +42,6 @@ public:
     void SetupDataUi(QWidget *parent);
 
     CPX * ProcessBlock(CPX * in);
-    void SetReceiver(Receiver *_rcv);
     void setDemodMode(DEMODMODE m);
 
     //Returns tcw in ms for any given WPM
@@ -68,7 +67,6 @@ signals:
     void newOutput();
 
 protected:
-    Receiver *rcv;
     Ui::dataMorse *dataUi;
     CPXBuf *workingBuf;
     DEMODMODE demodMode;

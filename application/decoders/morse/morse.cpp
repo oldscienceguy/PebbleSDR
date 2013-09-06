@@ -267,12 +267,6 @@ int Morse::UsecToWPM(quint32 u)
     return DOT_MAGIC / u;
 }
 
-
-void Morse::SetReceiver(Receiver *_rcv)
-{
-    rcv = _rcv;
-}
-
 void Morse::setDemodMode(DEMODMODE m)
 {
     demodMode = m;
