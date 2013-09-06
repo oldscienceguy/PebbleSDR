@@ -105,6 +105,7 @@ application/receiver.h -text
 application/receiverwidget.cpp -text
 application/receiverwidget.h -text
 application/receiverwidget.ui -text
+application/references/cutesdr102.pdf -text
 application/releasenotes.txt -text
 application/sdr-ip.ui -text
 application/sdr.cpp -text
