@@ -1,6 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file>Resources/Pebble.icns</file>
-        <file>pebble.qss</file>
-    </qresource>
-</RCC>
