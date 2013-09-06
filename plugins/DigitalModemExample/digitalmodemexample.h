@@ -2,6 +2,7 @@
 #define DIGITALMODEMEXAMPLE_H
 
 #include "../application/digital_modem_interfaces.h"
+#include "ui/ui_data-example.h"
 
 class DigitalModemExample  : public QObject, public DigitalModemInterface
 {
@@ -15,7 +16,24 @@ class DigitalModemExample  : public QObject, public DigitalModemInterface
 
 public:
     //No constructor for plugins
+    //Setup demod mode etc
+    void SetDemodMode(DEMODMODE m);
+
+    //Process samples
+    CPX * ProcessBlock(CPX * in);
+
+    //Setup UI in context of parent
+    void SetupDataUi(QWidget *parent);
+
+    //Info - return plugin name for menus
     QString GetPluginName();
+
+    //Additional info
+    QString GetDescription();
+
+private:
+    Ui::dataExample *dataUi;
+
 };
 
 

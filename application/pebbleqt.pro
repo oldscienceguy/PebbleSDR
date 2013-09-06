@@ -48,6 +48,14 @@ QT += widgets core gui multimedia
 
 #Conditional MUST match the Build Configuration name, Debug or Release or SomeCustomName
 macx {
+	#Set location to UI auto-generated files so we can get headers from known location
+	message("PWD = "$${PWD})
+	UI_DIR = $${PWD}/UI
+	RCC_DIR = $${PWD}/UI
+	OBJECTS_DIR = $${PWD}/OMac
+	#Locataion for MOC files
+	MOC_DIR = $${PWD}/MocMac
+	message("UI_HEADERS = "$${UI_DIR})
 
 	#After much agony, finally figured out that this icon only appears in release, NOT debug builds
 	#There doesn't appear to be any need to use setWindowIcon() either, just this in make file
@@ -399,7 +407,8 @@ HEADERS += \
     demod/demod_am.h \
     demod/demod_sam.h \
     demod/demod_nfm.h \
-	digital_modem_interfaces.h
+	digital_modem_interfaces.h \
+    plugins.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -472,7 +481,8 @@ SOURCES += \
     decoders/rtty/rtty.cpp \
     demod/demod_am.cpp \
     demod/demod_sam.cpp \
-    demod/demod_nfm.cpp
+    demod/demod_nfm.cpp \
+    plugins.cpp
 
 FORMS += \
     spectrumwidget.ui \

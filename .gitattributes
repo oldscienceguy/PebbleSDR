@@ -106,6 +106,8 @@ application/pebbleii.h -text
 application/pebbleii.ui -text
 application/pebbleqt.pri -text
 application/pebbleqt.pro -text
+application/plugins.cpp -text
+application/plugins.h -text
 application/portaudio.h -text
 application/portaudio.lib -text
 application/presets.cpp -text
@@ -171,6 +173,7 @@ fftw-3.3.3/doc/rfftwnd-for-html.png -text
 fftw-3.3.3/doc/rfftwnd.pdf -text
 fftw-3.3.3/tests/bench -text
 fftw-3.3.3/tools/fftw-wisdom -text
+plugins/DigitalModemExample/data-example.ui -text
 portaudio/bindings/cpp/include/portaudiocpp/AsioDeviceAdapter.hxx -text
 portaudio/bindings/cpp/source/portaudiocpp/AsioDeviceAdapter.cxx -text
 portaudio/doc/src/images/portaudio-external-architecture-diagram.png -text

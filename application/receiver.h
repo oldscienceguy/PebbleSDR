@@ -31,6 +31,7 @@
 #include "devices/wavfile.h"
 
 #include "Devices/sdr_iq.h"
+#include "plugins.h"
 
 class Receiver:public QObject
 {
@@ -82,6 +83,8 @@ public:
         void CloseSdrOptions();
 
 private:
+    Plugins plugins;
+
     FFTfftw *fft;
 	int fftSize;
 	bool useFreqDomainChain;

@@ -11,16 +11,6 @@ macx {
 	} else {
 		DESTDIR = $${PWD}/../MacRelease
 	}
-	#Set location to UI auto-generated files so we can get headers from known location
-	message("PWD = "$${PWD})
-	UI_DIR = $${PWD}/UI
-	RCC_DIR = $${PWD}/UI
-	OBJECTS_DIR = $${PWD}/OMac
-	#Locataion for MOC files
-	MOC_DIR = $${PWD}/MocMac
-	message("UI_HEADERS = "$${UI_DIR})
-
-
 }
 win32 {
 }
