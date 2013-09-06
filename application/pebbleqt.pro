@@ -399,7 +399,7 @@ HEADERS += \
     demod/demod_am.h \
     demod/demod_sam.h \
     demod/demod_nfm.h \
-    plugins/digital_modem_interfaces.h
+	digital_modem_interfaces.h
 
 SOURCES += \
     spectrumwidget.cpp \

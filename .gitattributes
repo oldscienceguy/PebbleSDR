@@ -61,6 +61,7 @@ application/devices/softrock.h -text
 application/devices/usb.h -text
 application/devices/wavfile.cpp -text
 application/devices/wavfile.h -text
+application/digital_modem_interfaces.h -text
 application/directinput.ui -text
 application/dsp/fft.cpp -text
 application/dsp/fft.h -text
@@ -170,7 +171,6 @@ fftw-3.3.3/doc/rfftwnd-for-html.png -text
 fftw-3.3.3/doc/rfftwnd.pdf -text
 fftw-3.3.3/tests/bench -text
 fftw-3.3.3/tools/fftw-wisdom -text
-plugins/digital_modem_interfaces.h -text
 portaudio/bindings/cpp/include/portaudiocpp/AsioDeviceAdapter.hxx -text
 portaudio/bindings/cpp/source/portaudiocpp/AsioDeviceAdapter.cxx -text
 portaudio/doc/src/images/portaudio-external-architecture-diagram.png -text
