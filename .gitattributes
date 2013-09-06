@@ -1,6 +1,7 @@
 * text=auto !eol
 /agc.cpp -text
 /agc.h -text
+application/agc.cpp -text
 application/agc.h -text
 application/audio.cpp -text
 application/audio.h -text
