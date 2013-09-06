@@ -6,11 +6,12 @@
 #include "qframe"
 #include "QTextEdit"
 #include "ui/ui_data-morse.h"
-#include "../fldigifilters.h"
+#include "decoders/fldigifilters.h"
 #include "morsecode.h"
 #include "demod/downconvert.h"
 #include "demod.h"
 #include <QMutex>
+#include "../application/digital_modem_interfaces.h"
 
 class Receiver;
 
@@ -31,18 +32,26 @@ inline double decayavg(double average, double input, double weight)
 
 //We need to inherit from QObject so we can filter events.
 //Remove if we eventually create a separate 'morse widget' object for UI
-class Morse : public SignalProcessing
+class Morse : public QObject, public DigitalModemInterface
 {
     Q_OBJECT
+    //Exports, FILE is optional
+    //IID must be same that caller is looking for, defined in interfaces file
+    Q_PLUGIN_METADATA(IID DigitalModemInterface_iid)
+    //Let Qt meta-object know about our interface
+    Q_INTERFACES(DigitalModemInterface)
+
 
 public:
-    Morse(int sr, int fc);
+    Morse();
     ~Morse();
-
-    void SetupDataUi(QWidget *parent);
-
+    //DigitalModemInterface
+    void SetSampleRate(int _sampleRate, int _sampleCount);
+    void SetDemodMode(DEMODMODE m);
     CPX * ProcessBlock(CPX * in);
-    void setDemodMode(DEMODMODE m);
+    void SetupDataUi(QWidget *parent);
+    QString GetPluginName();
+    QString GetDescription();
 
     //Returns tcw in ms for any given WPM
     int WpmToTcw(int w);
@@ -67,6 +76,11 @@ signals:
     void newOutput();
 
 protected:
+    //From SignalProcessing
+    int numSamples;
+    int sampleRate;
+    CPX *out;
+
     Ui::dataMorse *dataUi;
     CPXBuf *workingBuf;
     DEMODMODE demodMode;

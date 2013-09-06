@@ -3,7 +3,6 @@
 #include "QDebug"
 #include "QEvent"
 #include "receiver.h"
-#include "testbench.h"
 
 /*
   CW Notes for reference
@@ -94,13 +93,23 @@
 #define MIN_WPM 5
 #define MIN_SAMPLES_PER_TCW 100
 
-Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
+Morse::Morse()
 {
+    dataUi = NULL;
+
+}
+
+void Morse::SetSampleRate(int _sampleRate, int _sampleCount)
+{
+    sampleRate = _sampleRate;
+    numSamples = _sampleCount;
+    out = new CPX[numSamples];
+    workingBuf = new CPXBuf(numSamples);
+
     morseCode.init();
     resetDotDashBuf();
     modemClock = 0; //Start timer over
 
-    workingBuf = new CPXBuf(numSamples);
 
     //Modem sample rate, device sample rate decimated to this before decoding
     modemBandwidth = 1000; //8000; //Desired bandwidth, not sample rate
@@ -114,9 +123,8 @@ Morse::Morse(int sr, int fc) : SignalProcessing(sr,fc)
     usecShortestMark =  usecPerSample * MIN_SAMPLES_PER_TCW; //100 samples per TCW
     usecLongestMark = DOT_MAGIC / MIN_WPM; //Longest dot at slowest speed we support 5wpm
 
-    modemFrequency = global->settings->modeOffset;
+    modemFrequency = 1000; //global->settings->modeOffset;
 
-    dataUi = NULL;
 
     //fldigi constructors
     squelchIncrement = 0.5;
@@ -242,6 +250,16 @@ void Morse::SetupDataUi(QWidget *parent)
 
 }
 
+QString Morse::GetPluginName()
+{
+    return "Morse";
+}
+
+QString Morse::GetDescription()
+{
+    return "Morse code";
+}
+
 //Returns tcw in ms for any given WPM
 int Morse::WpmToTcw(int w)
 {
@@ -267,7 +285,7 @@ int Morse::UsecToWPM(quint32 u)
     return DOT_MAGIC / u;
 }
 
-void Morse::setDemodMode(DEMODMODE m)
+void Morse::SetDemodMode(DEMODMODE m)
 {
     demodMode = m;
 }
@@ -578,7 +596,7 @@ CPX * Morse::ProcessBlock(CPX *in)
     int numModemSamples = modemDownConvert.ProcessData(numSamples, workingBuf->Ptr(), this->out);
     //Now at lower modem rate with bandwidth set by modemDownConvert in constructor
     //Verify that testbench post banpass signal looks the same, just at modemSampleRate
-    global->testBench->DisplayData(numModemSamples,this->out, modemSampleRate, PROFILE_5);
+    //global->testBench->DisplayData(numModemSamples,this->out, modemSampleRate, PROFILE_5);
 
     for (int i = 0; i<numModemSamples; i++) {
         modemClock++; //1 tick per sample

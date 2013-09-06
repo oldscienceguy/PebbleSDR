@@ -730,7 +730,7 @@ void ReceiverWidget::dataSelectionChanged(int s)
             //Send CW decoder the UI element so it can interact directly
             //Otherwise all the UI specifics from each decoder will leak into ReceiverWidget
             //and have to be maintained in two places.
-            receiver->SetDigitalModem("Hello World", ui.dataFrame);
+            receiver->SetDigitalModem("Morse", ui.dataFrame);
             ui.dataFrame->setVisible(true);
             break;
         case BAND_DATA:
