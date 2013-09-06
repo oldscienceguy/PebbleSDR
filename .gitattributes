@@ -1,4 +1,16 @@
 * text=auto !eol
+D2XX/Object/10.4/i386/libftd2xx.1.2.2.dylib -text
+D2XX/Object/10.4/ppc/libftd2xx.1.2.2.dylib -text
+D2XX/Object/10.5-10.7/i386/libftd2xx.1.2.2.dylib -text
+D2XX/Object/10.5-10.7/ppc/libftd2xx.1.2.2.dylib -text
+D2XX/Object/10.5-10.7/x86_64/libftd2xx.1.2.2.dylib -text
+D2XX/Samples/BitMode/bitmode -text
+D2XX/Samples/EEPROM/read/read -text
+D2XX/Samples/EEPROM/user/read/ua_data.bin -text svneol=unset#application/octet-stream
+D2XX/Samples/loopback/loopback -text
+D2XX/Samples/write/write-test -text
+D2XX/bin/10.4/libftd2xx.1.2.2.dylib -text
+D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib -text
 /agc.cpp -text
 /agc.h -text
 application/agc.cpp -text
