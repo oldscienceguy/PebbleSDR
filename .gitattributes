@@ -107,6 +107,8 @@ application/receiverwidget.h -text
 application/receiverwidget.ui -text
 application/references/cutesdr102.pdf -text
 application/releasenotes.txt -text
+application/resources/edit.png -text
+application/resources/pebble.icns -text
 application/sdr-ip.ui -text
 application/sdr.cpp -text
 application/sdr.h -text
