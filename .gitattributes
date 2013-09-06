@@ -52,6 +52,12 @@ application/devices/usb.h -text
 application/devices/wavfile.cpp -text
 application/devices/wavfile.h -text
 application/directinput.ui -text
+application/dsp/fft.cpp -text
+application/dsp/fft.h -text
+application/dsp/fftbasic.cpp -text
+application/dsp/fftbasic.h -text
+application/dsp/fftw.cpp -text
+application/dsp/fftw.h -text
 application/elektoroptions.ui -text
 application/firfilter.cpp -text
 application/firfilter.h -text
