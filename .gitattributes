@@ -267,6 +267,13 @@ pebble[!!-~]icon.sketch/QuickLook/Thumbnail.png -text
 plugins/digital_modem_interfaces.h -text
 /portaudio.h -text
 /portaudio.lib -text
+portaudio/bindings/cpp/include/portaudiocpp/AsioDeviceAdapter.hxx -text
+portaudio/bindings/cpp/source/portaudiocpp/AsioDeviceAdapter.cxx -text
+portaudio/doc/src/images/portaudio-external-architecture-diagram.png -text
+portaudio/src/hostapi/asio/Callback_adaptation_.pdf -text
+portaudio/src/hostapi/asio/Pa_ASIO.pdf -text
+portaudio/src/hostapi/oss/low_latency_tip.txt svneol=native#unset
+portaudio/src/hostapi/wasapi/mingw-include/ksmedia.h -text
 /presets.cpp -text
 /presets.h -text
 /presets.ui -text
