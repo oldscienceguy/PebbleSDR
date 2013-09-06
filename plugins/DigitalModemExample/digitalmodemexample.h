@@ -15,7 +15,7 @@ class DigitalModemExample  : public QObject, public DigitalModemInterface
     Q_INTERFACES(DigitalModemInterface)
 
 public:
-    //No constructor for plugins
+
     DigitalModemExample();
 
     void SetSampleRate(int _sampleRate, int _sampleCount);
