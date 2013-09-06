@@ -25,6 +25,12 @@ application/decoders/rtty/rtty.h -text
 application/defs.h -text
 application/demod.cpp -text
 application/demod.h -text
+application/demod/demod_am.cpp -text
+application/demod/demod_am.h -text
+application/demod/demod_nfm.cpp -text
+application/demod/demod_nfm.h -text
+application/demod/demod_sam.cpp -text
+application/demod/demod_sam.h -text
 application/directinput.ui -text
 application/elektoroptions.ui -text
 application/firfilter.cpp -text
