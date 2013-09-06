@@ -90,14 +90,14 @@ macx {
 	#dylib
 	LIBS += -L$${PWD}/../D2XX/bin/10.5-10.7/ -lftd2xx.1.2.2
 	#static lib
-	LIBS += ../portaudio/lib/.libs/libportaudio.a
+	LIBS += $${PWD}/../portaudio/lib/.libs/libportaudio.a
 	#Portaudio needs mac frameworks, this is how to add them
 	LIBS += -framework CoreAudio
 	LIBS += -framework AudioToolbox
 	LIBS += -framework AudioUnit
 	LIBS += -framework CoreServices
 	##fftw
-	LIBS += -L$${PWD}/../fftw-3.3.1/.libs/ -lfftw3
+	LIBS += -L$${PWD}/../fftw-3.3.3/.libs/ -lfftw3
 
 	LIBS += /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation \
 		/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit
