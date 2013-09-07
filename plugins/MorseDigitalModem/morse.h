@@ -6,7 +6,7 @@
 #include "qframe"
 #include "QTextEdit"
 #include "ui/ui_data-morse.h"
-#include "decoders/fldigifilters.h"
+#include "filters/fldigifilters.h"
 #include "morsecode.h"
 #include "demod/downconvert.h"
 #include "demod.h"

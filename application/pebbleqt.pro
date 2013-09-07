@@ -388,16 +388,13 @@ HEADERS += \
     devices/sdr-ip/threadwrapper.h \
     devices/sdr-ip/protocoldefs.h \
     devices/wavfile.h \
-    decoders/oregonscientific/oregonscientificsensordecode.h \
-    decoders/fldigifilters.h \
+	filters/fldigifilters.h \
     bargraphmeter.h \
     testbench.h \
     dsp/fftbasic.h \
     dsp/fftw.h \
     dsp/fftcute.h \
     dsp/fft.h \
-    decoders/rtty/baudotcode.h \
-    decoders/rtty/rtty.h \
     demod/demod_am.h \
     demod/demod_sam.h \
     demod/demod_nfm.h \
@@ -461,16 +458,13 @@ SOURCES += \
     devices/sdr-ip/netiobase.cpp \
     devices/sdr-ip/sdrinterface.cpp \
     devices/wavfile.cpp \
-    decoders/oregonscientific/oregonscientificsensordecode.cpp \
-    decoders/fldigifilters.cpp \
+	filters/fldigifilters.cpp \
     bargraphmeter.cpp \
     testbench.cpp \
     dsp/fftbasic.cpp \
     dsp/fftw.cpp \
     dsp/fftcute.cpp \
     dsp/fft.cpp \
-    decoders/rtty/baudotcode.cpp \
-    decoders/rtty/rtty.cpp \
     demod/demod_am.cpp \
     demod/demod_sam.cpp \
     demod/demod_nfm.cpp \
