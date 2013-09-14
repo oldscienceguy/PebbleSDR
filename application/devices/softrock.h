@@ -72,16 +72,21 @@ public:
 	bool PTT();
 	bool GetCWLevel();
 
-    void FifiGetSvn();
+    void FiFiGetSvn();
 
 
-	private slots:
+    bool FiFiVersion(quint32 *fifiVersion);
+    bool FiFiReadPreselector(int preselNum, double *freq1, double *freq2, quint32 *pattern);
+    bool FiFiReadPreselectorMode(quint32 *mode);
+    bool FiFiWritePreselctorMode(quint32 mode);
+private slots:
 		void selectAutomatic(bool b);
 		void selectInput0(bool b);
 		void selectInput1(bool b);
 		void selectInput2(bool b);
 		void selectInput3(bool b);
 		void serialNumberChanged(int s);
+        void fifiUseABPFChanged(bool b);
 
 private:
     libusb_device *dev;
@@ -99,6 +104,7 @@ private:
     double FiFi_High;
     int FiFi_StartupMode;
     double FiFi_Gain;
+    bool FiFi_UseABPF;
 
 	double SR_ENSEMBLE_Startup;
 	double SR_ENSEMBLE_Low;

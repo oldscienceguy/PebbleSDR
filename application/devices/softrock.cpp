@@ -155,7 +155,8 @@ void SoftRock::ReadSettings()
             FiFi_Low = qSettings->value("FiFi/Low",200000).toDouble();
             FiFi_High = qSettings->value("FiFi/High",30000000).toDouble();
             FiFi_StartupMode = qSettings->value("FiFi/StartupMode",dmAM).toInt();
-            FiFi_Gain = qSettings->value("FiFi/Gain",1.0).toDouble();
+            //FiFi runs hot, even at lowest device setting, reduce gain
+            FiFi_Gain = qSettings->value("FiFi/Gain",0.25).toDouble();
             break;
         default:
             InitSettings("softrock");
@@ -404,6 +405,7 @@ int SoftRock::usbCtrlMsgOut(int request, int value, int index, unsigned char *by
                          request, value, index, bytes, size, 500);
 #endif
 }
+
 bool SoftRock::Version(short *major, short *minor)
 {
 	qint16 version;
@@ -417,6 +419,7 @@ bool SoftRock::Version(short *major, short *minor)
 	}
 	return result == 2;
 }
+
 bool SoftRock::Restart()
 {
 	return usbCtrlMsgIn(0x0f, 0x0000, 0, NULL, 0);
@@ -708,18 +711,77 @@ bool SoftRock::GetCWLevel()
 }
 
 //FiFi Specific
-//0xAB Fifi Read
-void SoftRock::FifiGetSvn()
+//0xAB Fifi Read Request
+//Value 0, Index 0 = version
+bool SoftRock::FiFiVersion(quint32 *fifiVersion)
 {
-    quint32 svn;
-    int result = usbCtrlMsgIn(0xAB, 0, 0, (unsigned char *) &svn, sizeof(svn));
-    if (result == 0)
-        return;
-    else
-        qDebug()<<svn;
+    quint32 version;
+    int value = 0;
+    int index = 0;
+    int result = usbCtrlMsgIn(0xAB, value, index, (unsigned char*)&version, sizeof(version));
+    if (result != 0 ) {
+        *fifiVersion = version;
+        return true;
+    } else {
+        *fifiVersion = 0;
+        return false;
+    }
 
 }
-//OxAC Fifi Write
+
+//OxAC Fifi Write Request
+
+//index == preselector number to read (0-15)
+bool SoftRock::FiFiReadPreselector(int preselNum, double* freq1, double *freq2, quint32 *pattern)
+{
+    quint8 buf[9];
+    int value = 7;
+    int result = usbCtrlMsgIn(0xAB, preselNum, value  , (unsigned char*)&buf, sizeof(buf));
+    if (result != 0) {
+        *freq1 = *((uint32_t *)&buf[0]) / (4.0 * 32.0 * 256.0 * 256.0);
+        *freq2 = *((uint32_t *)&buf[4]) / (4.0 * 32.0 * 256.0 * 256.0);
+        *pattern = buf[8];
+        return true;
+    }
+    return false;
+}
+
+bool SoftRock::FiFiReadPreselectorMode (quint32 *mode)
+{
+    quint32 preselMode;
+    int result = usbCtrlMsgIn(0xAB, 0, 6  , (unsigned char*)&preselMode, sizeof(preselMode));
+    if (result != 0) {
+        *mode = preselMode;
+        return true;
+    } else {
+        return false;
+    }
+}
+
+//See params.h in Fifi LPC source
+// Mode 0 = Use SoftRock ABPF compatibility 4 outputs
+// Mode 1 = Use FiFi Preselector.  16 bands 8 outputs
+// Mode 2 = 16 bands, 3 outputs, 1 UART serial output frequency
+// Mode 3 =
+bool SoftRock::FiFiWritePreselctorMode (quint32 mode)
+{
+    int result = usbCtrlMsgOut(0xAC,0, 6, (unsigned char*) &mode, sizeof(mode));
+    //if (mode == 0)
+    //    SetAutoBPF(true);
+    return (result != 0);
+}
+
+//See softrock.c in LPCUSB directory of FiFi source for all commands
+/*
+case 3: 3rd harmonic
+case 5: 5th harmnonic
+case 6: Preselector mode (0 - 3)
+case 7: Preselector freq range and pattern
+case 11: Virtual VCO factor
+case 13: Set audio level (volume control)
+case 19: Preamp (ADC 0/-6 dB)
+
+*/
 
 //Dialog stuff
 void SoftRock::selectAutomatic(bool b) {
@@ -757,6 +819,15 @@ void SoftRock::serialNumberChanged(int s)
         return;
     SetSerialNumber(s);
 }
+void SoftRock::fifiUseABPFChanged(bool b)
+{
+    FiFi_UseABPF = b;
+    if (b)
+        FiFiWritePreselctorMode(0);
+    else
+        FiFiWritePreselctorMode(1);
+}
+
 void SoftRock::SetupOptionUi(QWidget *parent)
 {
     if (optionUi != NULL)
@@ -799,10 +870,59 @@ void SoftRock::SetupOptionUi(QWidget *parent)
     connect(optionUi->filter2Button,SIGNAL(clicked(bool)),this,SLOT(selectInput2(bool)));
     connect(optionUi->filter3Button,SIGNAL(clicked(bool)),this,SLOT(selectInput3(bool)));
     connect(optionUi->serialBox,SIGNAL(currentIndexChanged(int)),this,SLOT(serialNumberChanged(int)));
+    connect(optionUi->fifiUseABPF,SIGNAL(toggled(bool)),this,SLOT(fifiUseABPFChanged(bool)));
 
+    //Enable/disable for different softrock-ish devices
+    if (sdrDevice == SDR::FiFi) {
+        optionUi->fifiVersionLabel->setVisible(true);
+        optionUi->fifiHelp->setVisible(true);
+        optionUi->fifiUseABPF->setVisible(true);
+
+        optionUi->serialLabel->setVisible(false);
+        optionUi->automaticButton->setVisible(false);
+        optionUi->filter0Button->setVisible(false);
+        optionUi->filter1Button->setVisible(false);
+        optionUi->filter2Button->setVisible(false);
+        optionUi->filter3Button->setVisible(false);
+    } else {
+        optionUi->fifiVersionLabel->setVisible(false);
+        optionUi->fifiHelp->setVisible(false);
+        optionUi->fifiUseABPF->setVisible(false);
+
+        optionUi->serialLabel->setVisible(true);
+        optionUi->filter0Button->setVisible(true);
+        optionUi->filter1Button->setVisible(true);
+        optionUi->filter2Button->setVisible(true);
+        optionUi->filter3Button->setVisible(true);
+    }
 
     //This can only be displayed when power is on
     if (connected) {
+        if (sdrDevice == SDR::FiFi) {
+            quint32 fifiVersion;
+            if (FiFiVersion(&fifiVersion) )
+                optionUi->fifiVersionLabel->setText(QString().sprintf("FiFi version: %d",fifiVersion));
+            else
+                optionUi->fifiVersionLabel->setText("Error connecting with FiFi");
+
+            quint32 mode;
+            if (FiFiReadPreselectorMode(&mode)) {
+                optionUi->fifiUseABPF->setChecked(mode == 0);
+                //qDebug()<<"FiFi preselector mode "<<mode;
+            }
+
+            double freq1,freq2;
+            quint32 pattern;
+            for (int i = 0; i<16; i++) {
+                FiFiReadPreselector(i,&freq1, &freq2, &pattern);
+                qDebug()<<"Fifi preselector "<<i<<" "<<freq1<<" to "<<freq2<<"pattern "<<pattern;
+            }
+        } else {
+            QString serial = "";
+            serial = serial.sprintf("Serial #: PE0FKO-%d",GetSerialNumber());
+            optionUi->serialLabel->setText(serial);
+
+        }
         //Test: If we can see version then comm to SR is ok
         short vMaj = 0,vMin = 0;
         QString ver = "";
@@ -816,9 +936,6 @@ void SoftRock::SetupOptionUi(QWidget *parent)
         si570 = si570.sprintf("Si570: %.0f Hz",GetLOFrequency());
         optionUi->si570Label->setText(si570);
 
-        QString serial = "";
-        serial = serial.sprintf("Serial #: PE0FKO-%d",GetSerialNumber());
-        optionUi->serialLabel->setText(serial);
 
         //Show current BPF option
         qint16 inp;
