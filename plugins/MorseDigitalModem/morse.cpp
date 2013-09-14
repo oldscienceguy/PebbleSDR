@@ -96,6 +96,10 @@
 Morse::Morse()
 {
     dataUi = NULL;
+    workingBuf = NULL;
+    hilbert = NULL;
+    cw_FIR_filter = NULL;
+    bitfilter = NULL;
 
 }
 
