@@ -40,7 +40,7 @@ void DigitalModemExample::SetupDataUi(QWidget *parent)
 
 QString DigitalModemExample::GetPluginName()
 {
-    return "Hello World";
+    return "Example";
 }
 
 QString DigitalModemExample::GetDescription()
