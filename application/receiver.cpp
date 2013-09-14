@@ -503,10 +503,13 @@ void Receiver::SdrOptionsPressed()
     }
     sdr->ShowSdrOptions(true);
 }
+//Called by receiver widget with device selection changes to make sure any open options ui is closed
 void Receiver::CloseSdrOptions()
 {
-    if (sdr != NULL)
+    if (sdr != NULL) {
         sdr->ShowSdrOptions(false);
+        sdr = NULL;
+    }
 }
 
 //processing flow for audio samples, called from SoundCard PortAudio callback

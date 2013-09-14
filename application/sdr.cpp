@@ -81,14 +81,18 @@ void SDR::InitSettings(QString fname)
 
 }
 
+//If b is false, close and delete options
 void SDR::ShowSdrOptions(bool b)
 {
-    if (!b && sdrOptions == NULL)
-        return; //We want to close options, but there's nothing to close
-    else if (sdrOptions != NULL) {
-        sdrOptions->setVisible(b); //Show
+    if (!b) {
+        if (sdrOptions != NULL) {
+            sdrOptions->setVisible(b); //hide
+            delete sdrOptions;
+            sdrOptions = NULL;
+        }
         return;
     }
+
     if (sdrOptions == NULL) {
         int cur;
 
