@@ -100,6 +100,7 @@ Morse::Morse()
     hilbert = NULL;
     cw_FIR_filter = NULL;
     bitfilter = NULL;
+    trackingfilter = NULL;
 
 }
 
