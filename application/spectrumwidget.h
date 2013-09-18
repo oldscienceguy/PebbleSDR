@@ -57,8 +57,8 @@ private:
     double zoom; //Percentage of total spectrum to display
 
 	Ui::SpectrumWidgetClass ui;
-    void DrawCursor(QPainter &painter,QColor color);
-    void DrawOverlay();
+    void DrawCursor(QPainter *painter, QRect plotFr, bool isZoomed, QColor color);
+    void DrawOverlay(bool isZoomed);
     void DrawSpectrum();
     void DrawWaterfall();
 
@@ -96,6 +96,11 @@ private:
     QPixmap plotArea;
     QPixmap plotOverlay;
     QPixmap plotLabel;
+    QPixmap zoomPlotArea;
+    QPixmap zoomPlotOverlay;
+    QPixmap zoomPlotLabel;
+
+    QPoint LineBuf[2048]; //!!Todo: This should be configured to max #pixels in plot area for full screen
 
     int dbRange;
 
@@ -110,6 +115,8 @@ private:
     int vertDivs;
 
 
+    void resizeFrames();
+    void DrawScale(QPainter *labelPainter, double centerFreq, bool isZoomed);
 };
 
 #endif // SPECTRUMWIDGET_H
