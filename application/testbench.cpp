@@ -693,9 +693,10 @@ void CTestBench::DisplayData(int length, TYPECPX* pBuf, double samplerate, int p
 			m_TimeInPos++;
 			while(intime >= scrntime)
 			{
-				ChkForTrigger( (int)pBuf[i].re );
-                m_TimeBuf1[m_TimeScrnPos] = (int)pBuf[i].re;
-                m_TimeBuf2[m_TimeScrnPos++] = (int)pBuf[i].im;
+                //Pebble -1 to +1 FP - TestBench -32767 to +32767
+                ChkForTrigger(pBuf[i].re * 32767);
+                m_TimeBuf1[m_TimeScrnPos] = pBuf[i].re * 32767;
+                m_TimeBuf2[m_TimeScrnPos++] = pBuf[i].im * 32767;
 				scrntime = (double)m_TimeScrnPos*m_TimeScrnPixel;
 				if( m_TimeScrnPos >= m_Rect.width() )
 				{
