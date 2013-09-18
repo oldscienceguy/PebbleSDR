@@ -231,28 +231,42 @@ void SpectrumWidget::resizeEvent(QResizeEvent *event)
 }
 
 //Returns +/- freq from LO based on where mouse cursor is
-//Called from paint
+//Called from paint & mouse click
 double SpectrumWidget::GetMouseFreq()
 {
-    QPoint mp = QCursor::pos(); //Current mouse position in global coordinates
-    mp = mapFromGlobal(mp); //Convert to widget relative
     QRect pf = this->ui.plotFrame->geometry();
     QRect lf = this->ui.labelFrame->geometry();
-    if (!pf.contains(mp) && !lf.contains(mp))
-        return 0.0;
-    return GetXYFreq(mp.x(),mp.y());
-}
-double SpectrumWidget::GetXYFreq(int x, int y)
-{
-    QRect pf = this->ui.plotFrame->geometry();
+    QRect zpf = this->ui.zoomPlotFrame->geometry();
+    QRect zlf = this->ui.zoomLabelFrame->geometry();
 
-    //Find freq at cursor
-    int hzPerPixel = sampleRate / pf.width();// * zoom;
-    //Convert to +/- relative to center
-    int m = x - pf.center().x();
-    //And conver to freq
-    m *= hzPerPixel;
-    return m;
+    QPoint mp = QCursor::pos(); //Current mouse position in global coordinates
+    mp = mapFromGlobal(mp); //Convert to widget relative
+
+    if (pf.contains(mp) || lf.contains(mp)) {
+        //Find freq at cursor
+        float hzPerPixel = sampleRate / pf.width();
+        //Convert to +/- relative to center
+        int m = mp.x() - pf.center().x();
+        //And conver to freq
+        m *= hzPerPixel;
+        return m;
+
+    } else if (zpf.contains(mp) || zlf.contains(mp)) {
+        //Find freq at cursor
+        float hzPerPixel = sampleRate / zpf.width() * zoom;
+        //Convert to +/- relative to center
+        int m = mp.x() - zpf.center().x();
+        //And conver to freq
+        m *= hzPerPixel;
+        //and factor in mixer
+        m += fMixer;
+        return m;
+
+    } else {
+        //Not in our area
+        return 0.0;
+    }
+
 }
 
 int SpectrumWidget::GetMouseDb()
@@ -369,11 +383,6 @@ void SpectrumWidget::mousePressEvent ( QMouseEvent * event )
 {
 	if (!isRunning || signalSpectrum == NULL)
 		return;
-    QRect pf = this->ui.plotFrame->geometry();
-    QRect lf = this->ui.labelFrame->geometry();
-
-    if (!pf.contains(event->pos()) && !lf.contains(event->pos()))
-            return;
 
     Qt::MouseButton button = event->button();
     // Mac: Qt::ControlModifier == Command Key
@@ -381,7 +390,10 @@ void SpectrumWidget::mousePressEvent ( QMouseEvent * event )
     // Mac: Qt::MetaModifier == Control Key
 
     Qt::KeyboardModifiers modifiers = event->modifiers(); //Keyboard modifiers
+
     double deltaFreq = GetMouseFreq();
+    if (deltaFreq == 0)
+        return; //not in our area or no mixer
 
     if (button == Qt::LeftButton) {
         if( modifiers == Qt::NoModifier)

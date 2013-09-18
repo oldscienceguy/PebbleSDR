@@ -107,7 +107,6 @@ private:
     QColor *spectrumColors;
 
     double GetMouseFreq();
-    double GetXYFreq(int x, int y);
     int GetMouseDb();
 
     //Grid display, will change depending on plotArea size
