@@ -8,6 +8,7 @@
 
 #include "QDebug"
 #include "QFile"
+#include <QSize>
 #include "perform.h"
 
 class Receiver;
@@ -30,6 +31,7 @@ public:
     double maxDb;
     Perform perform;
     CTestBench* testBench;
+    QSize defaultWindowSize;
 
 
 private:

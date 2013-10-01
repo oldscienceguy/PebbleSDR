@@ -21,5 +21,8 @@ int main(int argc, char *argv[])
     // Qt::Tool thin tile, no full screen default, close button hides not quits
     PebbleII w(0, 0);
 	w.show();
+    //Layout should now be done, save default window size for later restore
+    global->defaultWindowSize = w.size();
+
     return app.exec();
 }
