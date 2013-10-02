@@ -12,6 +12,7 @@
 #include "receiverwidget.h"
 #include "receiver.h"
 #include "global.h"
+#include <QWindow>
 
 ReceiverWidget::ReceiverWidget(QWidget *parent):QWidget(parent)
 {
@@ -722,9 +723,19 @@ void ReceiverWidget::dataSelectionChanged(int s)
     //enums are stored as user data with each menu item
     dataSelection = (DATA_SELECTION)ui.dataSelectionBox->itemData(s).toInt();
 
+    QWidget *parent;
+
     switch (dataSelection) {
         case NO_DATA:
+            //Data frame is always open if we get here
             ui.dataFrame->setVisible(false);
+            parent = ui.dataFrame;
+            while (parent) {
+                //Warning, adj size will use all layout hints, including h/v spacer sizing.  So overall size may change
+                parent->adjustSize();
+                parent = parent->parentWidget();
+            }
+            update();
             break;
         case BAND_DATA:
             receiver->getDemod()->SetupDataUi(ui.dataFrame);
