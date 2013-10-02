@@ -15,6 +15,8 @@ PebbleII::PebbleII(QWidget *parent, Qt::WindowFlags flags)
     global->testBench = new CTestBench();
     global->testBench->Init();
 
+    global->mainWindow = this;
+
     ui.setupUi(this);
 	receiver = new Receiver(ui.receiverUI, this);
     global->receiver = receiver; //Many classes need access

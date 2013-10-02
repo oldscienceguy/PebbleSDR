@@ -9,6 +9,7 @@
 #include "QDebug"
 #include "QFile"
 #include <QSize>
+#include <QMainWindow>
 #include "perform.h"
 
 class Receiver;
@@ -32,6 +33,7 @@ public:
     Perform perform;
     CTestBench* testBench;
     QSize defaultWindowSize;
+    QMainWindow *mainWindow;
 
 
 private:
