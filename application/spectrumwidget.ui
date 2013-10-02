@@ -205,7 +205,7 @@
           <number>10</number>
          </property>
          <property name="leftMargin">
-          <number>4</number>
+          <number>2</number>
          </property>
          <property name="topMargin">
           <number>2</number>
@@ -220,7 +220,7 @@
           <widget class="QComboBox" name="displayBox">
            <property name="maximumSize">
             <size>
-             <width>80</width>
+             <width>90</width>
              <height>18</height>
             </size>
            </property>
@@ -334,7 +334,7 @@
            </property>
            <property name="sizeHint" stdset="0">
             <size>
-             <width>40</width>
+             <width>0</width>
              <height>20</height>
             </size>
            </property>

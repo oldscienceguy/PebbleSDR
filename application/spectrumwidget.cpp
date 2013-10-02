@@ -5,6 +5,7 @@
 #include <QPainter>
 #include <QMouseEvent>
 #include <QKeyEvent>
+#include <QWindow>
 
 class Receiver;
 
@@ -16,11 +17,11 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
     ui.zoomLabelFrame->setVisible(false);
     ui.zoomPlotFrame->setVisible(false);
 
-    ui.displayBox->addItem("Spectrum");
-    ui.displayBox->addItem("Waterfall");
-    ui.displayBox->addItem("I/Q");
-    ui.displayBox->addItem("Phase");
-    ui.displayBox->addItem("Off");
+    ui.displayBox->addItem("Spectrum",SignalSpectrum::SPECTRUM);
+    ui.displayBox->addItem("Waterfall",SignalSpectrum::WATERFALL);
+    //ui.displayBox->addItem("I/Q",SignalSpectrum::IQ);
+    //ui.displayBox->addItem("Phase",SignalSpectrum::PHASE);
+    ui.displayBox->addItem("No Display",SignalSpectrum::NODISPLAY);
     ui.displayBox->setCurrentIndex(-1);
 
     connect(ui.displayBox,SIGNAL(currentIndexChanged(int)),this,SLOT(displayChanged(int)));
@@ -436,9 +437,28 @@ void SpectrumWidget::plotSelectionChanged(SignalSpectrum::DISPLAYMODE mode)
         ui.plotFrame->setVisible(false);
         ui.zoomLabelFrame->setVisible(false);
         ui.zoomPlotFrame->setVisible(false);
+        ui.maxDbBox->setVisible(false);
+        ui.zoomSlider->setVisible(false);
+        ui.zoomLabel->setVisible(false);
+        //Turn zoom off
+        zoom = 1;
+        ui.zoomSlider->setValue(0);
+
+        QWidget *parent = ui.controlFrame->parentWidget();
+        while (parent) {
+            //Warning, adj size will use all layout hints, including h/v spacer sizing.  So overall size may change
+            parent->adjustSize();
+            parent = parent->parentWidget();
+        }
+
     } else {
         ui.labelFrame->setVisible(true);
         ui.plotFrame->setVisible(true);
+        //ui.zoomLabelFrame->setVisible(false);
+        //ui.zoomPlotFrame->setVisible(false);
+        ui.maxDbBox->setVisible(true);
+        ui.zoomSlider->setVisible(true);
+        ui.zoomLabel->setVisible(true);
     }
 
 	if (signalSpectrum != NULL) {
@@ -449,12 +469,14 @@ void SpectrumWidget::plotSelectionChanged(SignalSpectrum::DISPLAYMODE mode)
 
 	spectrumMode = mode;
 
-    plotArea.fill(Qt::black);
-    zoomPlotArea.fill(Qt::black);
+    if (spectrumMode != SignalSpectrum::NODISPLAY) {
+        plotArea.fill(Qt::black);
+        zoomPlotArea.fill(Qt::black);
 
-    DrawOverlay(false);
-    if (zoom != 1)
-        DrawOverlay(true);
+        DrawOverlay(false);
+        if (zoom != 1)
+            DrawOverlay(true);
+    }
     update();
 }
 void SpectrumWidget::SetSignalSpectrum(SignalSpectrum *s) 
@@ -651,26 +673,11 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
     signalSpectrum->displayUpdateComplete = true;
 }
 
-void SpectrumWidget::displayChanged(int item)
+void SpectrumWidget::displayChanged(int s)
 {
-    switch (item)
-    {
-    case 0:
-        plotSelectionChanged(SignalSpectrum::SPECTRUM);
-        break;
-    case 1:
-        plotSelectionChanged(SignalSpectrum::WATERFALL);
-        break;
-    case 2:
-        plotSelectionChanged(SignalSpectrum::IQ);
-        break;
-    case 3:
-        plotSelectionChanged(SignalSpectrum::PHASE);
-        break;
-    case 4:
-        plotSelectionChanged(SignalSpectrum::NODISPLAY);
-        break;
-    }
+    //Get mode from itemData
+    SignalSpectrum::DISPLAYMODE displayMode = (SignalSpectrum::DISPLAYMODE)ui.displayBox->itemData(s).toInt();
+    plotSelectionChanged(displayMode);
 }
 
 void SpectrumWidget::maxDbChanged(int s)

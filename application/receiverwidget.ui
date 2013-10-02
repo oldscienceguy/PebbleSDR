@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>571</width>
-    <height>339</height>
+    <height>251</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -1677,9 +1677,12 @@
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Expanding</enum>
+        </property>
         <property name="sizeHint" stdset="0">
          <size>
-          <width>40</width>
+          <width>0</width>
           <height>20</height>
          </size>
         </property>
@@ -1853,7 +1856,7 @@
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
        <horstretch>0</horstretch>
-       <verstretch>28</verstretch>
+       <verstretch>0</verstretch>
       </sizepolicy>
      </property>
      <property name="maximumSize">
@@ -1870,7 +1873,7 @@
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_7">
       <property name="spacing">
-       <number>2</number>
+       <number>6</number>
       </property>
       <property name="leftMargin">
        <number>2</number>
@@ -1886,9 +1889,21 @@
       </property>
       <item>
        <widget class="QComboBox" name="bandType">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>90</width>
+          <height>0</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
-          <width>85</width>
+          <width>90</width>
           <height>18</height>
          </size>
         </property>
@@ -1928,6 +1943,12 @@
       </item>
       <item>
        <widget class="QComboBox" name="stationCombo">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="minimumSize">
          <size>
           <width>175</width>
@@ -1943,7 +1964,7 @@
        </widget>
       </item>
       <item>
-       <spacer name="horizontalSpacer_4">
+       <spacer name="horizontalSpacer_5">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
@@ -1952,8 +1973,8 @@
         </property>
         <property name="sizeHint" stdset="0">
          <size>
-          <width>6</width>
-          <height>10</height>
+          <width>4</width>
+          <height>20</height>
          </size>
         </property>
        </spacer>
@@ -1965,6 +1986,12 @@
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>26</width>
+          <height>0</height>
+         </size>
         </property>
         <property name="maximumSize">
          <size>
@@ -1983,7 +2010,7 @@
        </widget>
       </item>
       <item>
-       <spacer name="horizontalSpacer_7">
+       <spacer name="horizontalSpacer_4">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
@@ -1992,8 +2019,8 @@
         </property>
         <property name="sizeHint" stdset="0">
          <size>
-          <width>15</width>
-          <height>10</height>
+          <width>8</width>
+          <height>20</height>
          </size>
         </property>
        </spacer>
@@ -2006,9 +2033,15 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="minimumSize">
+         <size>
+          <width>26</width>
+          <height>0</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
-          <width>30</width>
+          <width>25</width>
           <height>15</height>
          </size>
         </property>
@@ -2027,9 +2060,12 @@
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Expanding</enum>
+        </property>
         <property name="sizeHint" stdset="0">
          <size>
-          <width>210</width>
+          <width>0</width>
           <height>17</height>
          </size>
         </property>
@@ -2049,7 +2085,7 @@
      <property name="minimumSize">
       <size>
        <width>0</width>
-       <height>100</height>
+       <height>0</height>
       </size>
      </property>
      <property name="frameShape">
@@ -2083,7 +2119,7 @@
    <item>
     <widget class="QFrame" name="dataFrame">
      <property name="sizePolicy">
-      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+      <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
@@ -2137,9 +2173,21 @@
       </property>
       <item>
        <widget class="QComboBox" name="dataSelectionBox">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>90</width>
+          <height>0</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
-          <width>16777215</width>
+          <width>90</width>
           <height>18</height>
          </size>
         </property>
@@ -2150,9 +2198,12 @@
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Expanding</enum>
+        </property>
         <property name="sizeHint" stdset="0">
          <size>
-          <width>40</width>
+          <width>0</width>
           <height>20</height>
          </size>
         </property>
@@ -2363,9 +2414,12 @@
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Expanding</enum>
+        </property>
         <property name="sizeHint" stdset="0">
          <size>
-          <width>40</width>
+          <width>0</width>
           <height>20</height>
          </size>
         </property>
