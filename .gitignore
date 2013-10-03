@@ -7,4 +7,7 @@
 application/MocMac
 application/OMac
 application/UI
+pebblelib/MocMac
+pebblelib/OMac
+pebblelib/lib
 plugins/DigitalModemExample/build-DigitalModemExample-Desktop_Qt_5_1_0_clang_64bit-Debug
