@@ -24,8 +24,6 @@ application/build.tmpl -text
 application/butterworth.cpp -text
 application/butterworth.h -text
 application/codingstyle.txt -text
-application/cpx.cpp -text
-application/cpx.h -text
 application/data-band.ui -text
 application/defs.h -text
 application/demod.cpp -text
