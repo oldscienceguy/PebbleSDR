@@ -5,7 +5,32 @@
 #include <string.h>
 #define _USE_MATH_DEFINES
 #include "math.h"
-#include "defs.h"
+//Moved from defs.h
+//Very small number that is used in place of zero in cases where we want to avoid divide by zero error
+#define ALMOSTZERO 1e-200
+
+//Use where ever possible
+#define PI	3.14159265358979323846264338328
+#define ONEPI	3.14159265358979323846264338328
+#define TWOPI   6.28318530717958647692528676656
+#define FOURPI 12.56637061435917295385057353312
+#define K_2PI TWOPI
+
+
+//Used in several places where we need to decrement by one, modulo something
+//Defined here because the bit mask logic may be confusing to some
+//Equivalent to ((A - 1) % B)
+#define DECMOD(A,B) ((A+B) & B)
+
+#if(0)
+    //min max causes all sorts of grief switching complilers and libraries
+    //Define locally in any file that needs it
+    #ifndef max
+        #define max(a,b) (((a) > (b)) ? (a) : (b))
+        #define min(a,b) (((a) < (b)) ? (a) : (b))
+    #endif
+#endif
+
 
 
 //Ignore warnings about C++ 11 features
@@ -20,8 +45,10 @@
 #define SIMD 0 //Default to off, causing problems on some platforms
 #endif
 
+#include "pebblelib_global.h"
+
 //Inline simple methods for performance
-class CPX
+class PEBBLELIBSHARED_EXPORT CPX
 {
 public:
 
@@ -293,6 +320,11 @@ inline void free16(void *memory)
         free(((void**)memory)[-1]);
 
 }
+
+//Aliases for cuteSDR compatiblity
+#define TYPEREAL double
+#define TYPECPX	CPX
+
 
 #if 0
 //MAC utility from fldigi
