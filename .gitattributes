@@ -170,6 +170,8 @@ fftw-3.3.3/doc/rfftwnd-for-html.png -text
 fftw-3.3.3/doc/rfftwnd.pdf -text
 fftw-3.3.3/tests/bench -text
 fftw-3.3.3/tools/fftw-wisdom -text
+pebblelib/cpx.cpp -text
+pebblelib/cpx.h -text
 plugins/DigitalModemExample/data-example.ui -text
 plugins/MorseDigitalModem/data-morse.ui -text
 plugins/RttyDigitalModem/rtty.cpp -text
