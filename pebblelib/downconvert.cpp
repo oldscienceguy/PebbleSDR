@@ -41,7 +41,7 @@
 //Modified and adapted for Pebble
 
 #include "downconvert.h"
-#include "filters/filtercoef.h"
+#include "filtercoef.h"
 //#include "gui/testbench.h"
 //#include "interface/perform.h"
 #include <QDebug>

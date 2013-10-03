@@ -11,7 +11,9 @@
 #ifndef DOWNCONVERT_H
 #define DOWNCONVERT_H
 
-#include "../filters/datatypes.h"
+
+#include "cpx.h"
+#include "pebblelib_global.h"
 
 #include <QMutex>
 
@@ -21,7 +23,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Main Downconverter Class
 //////////////////////////////////////////////////////////////////////////////////
-class CDownConvert  
+class PEBBLELIBSHARED_EXPORT CDownConvert
 {
 public:
 	CDownConvert();
