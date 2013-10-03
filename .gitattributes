@@ -54,7 +54,6 @@ application/devices/softrock.h -text
 application/devices/usb.h -text
 application/devices/wavfile.cpp -text
 application/devices/wavfile.h -text
-application/digital_modem_interfaces.h -text
 application/directinput.ui -text
 application/dsp/fft.cpp -text
 application/dsp/fft.h -text
