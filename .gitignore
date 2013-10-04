@@ -11,6 +11,9 @@ pebblelib/MocMac
 pebblelib/OMac
 pebblelib/lib
 plugins/DigitalModemExample/build-DigitalModemExample-Desktop_Qt_5_1_0_clang_64bit-Debug
+plugins/MorseDigitalModem/MocMac
+plugins/MorseDigitalModem/OMac
+plugins/MorseDigitalModem/UI
 plugins/RttyDigitalModem/MocMac
 plugins/RttyDigitalModem/OMac
 plugins/RttyDigitalModem/UI
