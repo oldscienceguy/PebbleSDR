@@ -170,6 +170,8 @@ fftw-3.3.3/tools/fftw-wisdom -text
 pebblelib/cpx.cpp -text
 pebblelib/cpx.h -text
 pebblelib/digital_modem_interfaces.h -text
+pebblelib/fldigifilters.cpp -text
+pebblelib/fldigifilters.h -text
 plugins/DigitalModemExample/data-example.ui -text
 plugins/MorseDigitalModem/data-morse.ui -text
 plugins/RttyDigitalModem/rtty.cpp -text
