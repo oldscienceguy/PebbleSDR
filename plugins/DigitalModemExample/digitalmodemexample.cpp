@@ -1,5 +1,6 @@
 #include "digitalmodemexample.h"
 #include "gpl.h"
+#include <QDebug>
 
 DigitalModemExample::DigitalModemExample()
 {
@@ -12,9 +13,8 @@ void DigitalModemExample::SetSampleRate(int _sampleRate, int _sampleCount)
     Q_UNUSED(_sampleCount);
 }
 
-void DigitalModemExample::SetDemodMode(DEMODMODE m)
+void DigitalModemExample::SetDemodMode(DEMODMODE _demodMode)
 {
-    qDebug()<<"Demod mode = "<<m; //Demod::ModeToString(m);
 }
 
 CPX *DigitalModemExample::ProcessBlock(CPX *in)
