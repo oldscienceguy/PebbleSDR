@@ -45,6 +45,9 @@ QT += widgets core gui multimedia
 #Enable this to look at config to debug conditionals. For example: debug and release both show up sometimes
 #message($$CONFIG)
 
+#So we don't have to specify paths everywhere
+INCLUDEPATH += ../pebblelib
+DEPENDPATH += ../pebblelib
 
 #Conditional MUST match the Build Configuration name, Debug or Release or SomeCustomName
 macx {
@@ -107,6 +110,9 @@ macx {
 	##fftw
 	LIBS += -L$${PWD}/../fftw-3.3.3/.libs/ -lfftw3
 
+	LIBS += -L$${PWD}/../pebblelib/lib -lpebblelib
+
+
 	LIBS += /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation \
 		/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit
 
@@ -146,8 +152,14 @@ macx {
 	#macdeployqt replaces all the install detail below and handles Qt and any non-system dylibs
 	#Turn this off if you are having any problem with libraries or plugins
 	#Starting in QT5.02 the cocoa plugin is always required, so we can't use -no-plugins
-	#QMAKE_POST_LINK += macdeployqt $${DESTDIR}/Pebble.app
+	QMAKE_POST_LINK += macdeployqt $${DESTDIR}/Pebble.app
 	message("Reminder - macdeployqt has bug and must be run from fix_macdeployqt script")
+
+	#target.path = /usr/local
+	mylib.files += $${PWD}/../pebblelib/lib/libpebblelib.dylib
+	mylib.files += $${PWD}/../pebblelib/lib/libpebblelib.1.dylib
+	mylib.path = $${DESTDIR}/Pebble.app/Contents/Frameworks
+	INSTALLS += mylib
 
 	#We may need to copy ftd2xx.cfg with value ConfigFlags=0x40000000
 	#ftd2xx.files += $${PWD}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
@@ -339,7 +351,6 @@ HEADERS += \
 	firfilter.h \
 	demod.h \
     defs.h \
-    cpx.h \
 	butterworth.h \
 	#build.h \
 	agc.h \
@@ -349,11 +360,9 @@ HEADERS += \
     global.h \
     goertzel.h \
     filters/fir.h \
-    filters/filtercoef.h \
     filters/iir.h \
 	demod/demod_wfm.h \
     demod/rbdsconstants.h \
-    demod/downconvert.h \
     demod/rdsdecode.h \
     filters/fractresampler.h \
     filters/datatypes.h \
@@ -388,7 +397,6 @@ HEADERS += \
     devices/sdr-ip/threadwrapper.h \
     devices/sdr-ip/protocoldefs.h \
     devices/wavfile.h \
-	filters/fldigifilters.h \
     bargraphmeter.h \
     testbench.h \
     dsp/fftbasic.h \
@@ -398,7 +406,6 @@ HEADERS += \
     demod/demod_am.h \
     demod/demod_sam.h \
     demod/demod_nfm.h \
-	digital_modem_interfaces.h \
     plugins.h
 
 SOURCES += \
@@ -422,7 +429,6 @@ SOURCES += \
 	iirfilter.cpp \
 	firfilter.cpp \
 	demod.cpp \
-    cpx.cpp \
 	butterworth.cpp \
 	agc.cpp \
     audio.cpp \
@@ -433,7 +439,6 @@ SOURCES += \
     filters/fir.cpp \
     filters/iir.cpp \
 	demod/demod_wfm.cpp \
-    demod/downconvert.cpp \
     demod/rdsdecode.cpp \
     filters/fractresampler.cpp \
     dsp/fftooura.cpp \
@@ -458,7 +463,6 @@ SOURCES += \
     devices/sdr-ip/netiobase.cpp \
     devices/sdr-ip/sdrinterface.cpp \
     devices/wavfile.cpp \
-	filters/fldigifilters.cpp \
     bargraphmeter.cpp \
     testbench.cpp \
     dsp/fftbasic.cpp \

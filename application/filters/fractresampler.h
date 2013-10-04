@@ -15,7 +15,7 @@
 
 #include "fir.h"
 #include "iir.h"
-#include "../demod/downconvert.h"
+#include "downconvert.h"
 #include "../demod/rbdsconstants.h"
 
 class CFractResampler  

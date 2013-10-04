@@ -2,7 +2,7 @@
 #include "gpl.h"
 #include "pebbleii.h"
 #include <QtGui>
-#include "digital_modem_interfaces.h"
+#include "../pebblelib/digital_modem_interfaces.h"
 #include <QtPlugin>
 
 //Use this if we want to import a static plugin, ie one that is always installed

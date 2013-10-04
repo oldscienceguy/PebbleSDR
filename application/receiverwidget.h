@@ -4,7 +4,7 @@
 #include "global.h"
 #include "ui/ui_receiverwidget.h"
 #include "ui/ui_directinput.h"
-#include "ui/ui_data-morse.h"
+//#include "ui/ui_data-morse.h"
 #include "spectrumwidget.h"
 #include "smeterwidget.h"
 #include "demod.h"

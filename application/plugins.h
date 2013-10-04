@@ -7,7 +7,7 @@
 #include <QDir>
 #include <QList>
 
-#include "digital_modem_interfaces.h"
+#include "../pebblelib/digital_modem_interfaces.h"
 
 struct PluginInfo
 {
