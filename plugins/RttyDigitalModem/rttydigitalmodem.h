@@ -1,7 +1,7 @@
 #ifndef RTTYDIGITALMODEM_H
 #define RTTYDIGITALMODEM_H
 
-#include "../application/digital_modem_interfaces.h"
+#include "../pebblelib/digital_modem_interfaces.h"
 #include "ui/ui_data-example.h"
 
 class RttyDigitalModem  : public QObject, public DigitalModemInterface
@@ -21,7 +21,7 @@ public:
     void SetSampleRate(int _sampleRate, int _sampleCount);
 
     //Setup demod mode etc
-    void SetDemodMode(DEMODMODE m);
+    void SetDemodMode(DEMODMODE _demodMode);
 
     //Process samples
     CPX * ProcessBlock(CPX * in);

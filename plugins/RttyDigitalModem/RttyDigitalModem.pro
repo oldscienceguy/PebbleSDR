@@ -3,6 +3,8 @@
 
 #Project common
 include(../../application/pebbleqt.pri)
+#DESTDIR is set in pebbleqt.pri
+DESTDIR = $${DESTDIR}/plugins
 
 
 QT += widgets
@@ -10,29 +12,20 @@ TEMPLATE = lib
 CONFIG += plugin
 
 #Set location to UI auto-generated files so we can get headers from known location
-message("PWD = "$${PWD})
 UI_DIR = $${PWD}/UI
 RCC_DIR = $${PWD}/UI
 OBJECTS_DIR = $${PWD}/OMac
-#Locataion for MOC files
 MOC_DIR = $${PWD}/MocMac
-message("UI_HEADERS = "$${UI_DIR})
 
 TARGET = RttyDigitalModem
 
 #Plugins are independent of main application.  If we need code, we have to explicitly reference it
 SOURCES += baudotcode.cpp rtty.cpp \
     ../../application/bargraphmeter.cpp \
-    ../../application/demod/downconvert.cpp \
-    ../../application/cpx.cpp \
-	../../application/filters/fldigifilters.cpp \
     rttydigitalmodem.cpp
 
 HEADERS += baudotcode.h rtty.h \
     ../../application/bargraphmeter.h \
-    ../../application/demod/downconvert.h \
-    ../../application/cpx.h \
-	../../application/filters/fldigifilters.h \
     rttydigitalmodem.h
 
 FORMS += ../../application/bargraphmeter.ui \
@@ -40,6 +33,11 @@ FORMS += ../../application/bargraphmeter.ui \
 #Help plugin not worry about include paths
 INCLUDEPATH += ../../application
 
-#DESTDIR is set in pebbleqt.pri
-DESTDIR = $${DESTDIR}/plugins
+LIBS += -L$${PWD}/../../pebblelib/lib -lpebblelib
+
+#We need to set where pebblelib is expected (app frameworks) to be found so it doesn't have to be installed on mac
+pebblelib.path += $${DESTDIR}
+pebblelib.commands += install_name_tool -change libpebblelib.1.dylib @executable_path/../Frameworks/libpebblelib.1.dylib $${DESTDIR}/lib$${TARGET}.dylib
+INSTALLS += pebblelib
+
 

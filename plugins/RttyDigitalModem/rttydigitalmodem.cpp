@@ -10,9 +10,9 @@ void RttyDigitalModem::SetSampleRate(int _sampleRate, int _sampleCount)
     Q_UNUSED(_sampleCount);
 }
 
-void RttyDigitalModem::SetDemodMode(DEMODMODE m)
+void RttyDigitalModem::SetDemodMode(DEMODMODE _demodMode)
 {
-    qDebug()<<"Demod mode = "<<m; //Demod::ModeToString(m);
+    //qDebug()<<"Demod mode = "<<m; //Demod::ModeToString(m);
 }
 
 CPX *RttyDigitalModem::ProcessBlock(CPX *in)
