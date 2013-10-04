@@ -17,8 +17,10 @@
 */
 
 #include "cpx.h"
+#include "pebblelib_global.h"
 
-class FldigiFilters
+
+class PEBBLELIBSHARED_EXPORT FldigiFilters
 {
 public:
     FldigiFilters();
