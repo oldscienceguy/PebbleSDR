@@ -11,3 +11,6 @@ pebblelib/MocMac
 pebblelib/OMac
 pebblelib/lib
 plugins/DigitalModemExample/build-DigitalModemExample-Desktop_Qt_5_1_0_clang_64bit-Debug
+plugins/WWVDigitalModem/MocMac
+plugins/WWVDigitalModem/OMac
+plugins/WWVDigitalModem/UI
