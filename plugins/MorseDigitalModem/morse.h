@@ -1,17 +1,17 @@
 #ifndef MORSE_H
 #define MORSE_H
 
-#include "signalprocessing.h"
-#include "goertzel.h"
+//#include "signalprocessing.h"
+//#include "goertzel.h"
 #include "qframe"
 #include "QTextEdit"
 #include "ui/ui_data-morse.h"
-#include "filters/fldigifilters.h"
+#include "../../pebblelib/fldigifilters.h"
 #include "morsecode.h"
-#include "demod/downconvert.h"
-#include "demod.h"
+#include "../../pebblelib/downconvert.h"
+//#include "demod.h"
 #include <QMutex>
-#include "../application/digital_modem_interfaces.h"
+#include "../../pebblelib/digital_modem_interfaces.h"
 
 class Receiver;
 
@@ -47,7 +47,7 @@ public:
     ~Morse();
     //DigitalModemInterface
     void SetSampleRate(int _sampleRate, int _sampleCount);
-    void SetDemodMode(DEMODMODE m);
+    void SetDemodMode(DEMODMODE _demodMode);
     CPX * ProcessBlock(CPX * in);
     void SetupDataUi(QWidget *parent);
     QString GetPluginName();
@@ -83,7 +83,7 @@ protected:
 
     Ui::dataMorse *dataUi;
     CPXBuf *workingBuf;
-    DEMODMODE demodMode;
+    int demodMode; //See DEMODMODE for enum, move to lib?
     bool useNormalizingThreshold; //Switch how we compare tone values to determine rising or falling
 
     int modemFrequency; //CW tone we're looking for.  This is the goertzel freq or the NCO freq for mixer approach

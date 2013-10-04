@@ -2,7 +2,7 @@
 #include "QPainter"
 #include "QDebug"
 #include "QEvent"
-#include "receiver.h"
+//#include "receiver.h"
 
 /*
   CW Notes for reference
@@ -290,9 +290,9 @@ int Morse::UsecToWPM(quint32 u)
     return DOT_MAGIC / u;
 }
 
-void Morse::SetDemodMode(DEMODMODE m)
+void Morse::SetDemodMode(DEMODMODE _demodMode)
 {
-    demodMode = m;
+    demodMode = _demodMode;
 }
 
 void Morse::onBoxChecked(bool b)
