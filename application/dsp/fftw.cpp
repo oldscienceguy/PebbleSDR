@@ -69,6 +69,7 @@ void FFTfftw::FFTInverse(CPX * in, CPX * out, int size)
 
 }
 
+//size is the number of samples, not the size of fft
 void FFTfftw::FFTSpectrum(CPX *in, double *out, int size)
 {
     if (!fftParamsSet)
@@ -76,15 +77,16 @@ void FFTfftw::FFTSpectrum(CPX *in, double *out, int size)
 
     FFTForward(in,workingBuf,size); //No need to copy to out, leave in freqDomain
 
-    for( int unfolded = 0, folded = size/2 ; folded < size; unfolded++, folded++) {
+    //Now in freq domain we need to work with fftSize, not sample size
+    for( int unfolded = 0, folded = fftSize/2 ; folded < fftSize; unfolded++, folded++) {
         freqDomain[unfolded] = workingBuf[folded]; //folded = 1024 to 2047 unfolded = 0 to 1023
     }
     // FFT output index 0 to N/2-1 is frequency output 0 to +Fs/2 Hz  (positive frequencies)
-    for( int unfolded = size/2, folded = 0; unfolded < size; unfolded++, folded++) {
+    for( int unfolded = fftSize/2, folded = 0; unfolded < fftSize; unfolded++, folded++) {
         freqDomain[unfolded] = workingBuf[folded]; //folded = 0 to 1023 unfolded = 1024 to 2047
     }
 
-    CalcPowerAverages(freqDomain, out, size);
+    CalcPowerAverages(freqDomain, out, fftSize);
 
 
 }
