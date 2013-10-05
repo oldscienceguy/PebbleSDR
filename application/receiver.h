@@ -130,6 +130,8 @@ private:
     int demodSampleRate;
     int demodWfmSampleRate;
     CPX *workingBuf;
+    CPX *sampleBuf; //Used to accumulate post mixer/downconvert samples to get a full buffer
+    quint16 sampleBufLen;
 
 
 

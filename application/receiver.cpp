@@ -122,7 +122,6 @@ bool Receiver::On()
     framesPerBuffer = demodFrames = settings->framesPerBuffer;
     //These steps work on full sample rates
     noiseBlanker = new NoiseBlanker(sampleRate,framesPerBuffer);
-    signalSpectrum = new SignalSpectrum(sampleRate,framesPerBuffer,settings);
     //Don't need Mixer anymore - TBD
     mixer = new Mixer(sampleRate, framesPerBuffer);
     iqBalance = new IQBalance(sampleRate,framesPerBuffer);
@@ -156,6 +155,9 @@ bool Receiver::On()
     //Different decimation technique than SetDataRate
     demodWfmSampleRate = downConvertWfm1.SetDataRateSimple(sampleRate, Demod::demodInfo[dmFMS].maxOutputBandWidth);
 
+    //We need original sample rate, and post mixer sample rate for zoomed spectrum
+    signalSpectrum = new SignalSpectrum(sampleRate, demodSampleRate, framesPerBuffer, settings);
+
     //Init demod with defaults
     //Demod uses variable frame size, up to framesPerBuffer
     //Demod can also run at different sample rates, high for FMW and lower for rest
@@ -163,11 +165,16 @@ bool Receiver::On()
     //demod = new Demod(downSampleRate,framesPerBuffer);
     demod = new Demod(demodSampleRate, demodWfmSampleRate,framesPerBuffer); //Can't change rate later, fix
 
-    demodFrames = demodSampleRate / (1.0 * sampleRate) * framesPerBuffer; //Temp Hack
+    //demodFrames = demodSampleRate / (1.0 * sampleRate) * framesPerBuffer; //Temp Hack
+    //post mixer/downconvert frames are now the same as pre
+    demodFrames = framesPerBuffer;
+
     //Sets the Mixer NCO frequency
     //downConvert.SetFrequency(-RDS_FREQUENCY);
 
     workingBuf = CPXBuf::malloc(framesPerBuffer);
+    sampleBuf = CPXBuf::malloc(framesPerBuffer);
+    sampleBufLen = 0;
 
     presets = new Presets(receiverWidget);
 
@@ -686,6 +693,26 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
         //Replaces Mixer.cpp
         downConvert1.SetFrequency(mixerFrequency);
         int downConvertLen = downConvert1.ProcessData(framesPerBuffer,nextStep,workingBuf);
+        //This is a significant change from the way we used to process post downconvert
+        //We used to process every downConvertLen samples, 32 for a 2m sdr sample rate
+        //Which didn't work when we added zoomed spectrum, we need full framesPerBuffer to get same fidelity as unprocessed
+        //One that worked, it didn't make any sense to process smaller chunks through the rest of the chain!
+
+        //We are always decimating by a factor of 2
+        //so we know we can accumulate a full fft buffer at this lower sample rate
+        for (int i=0; i<downConvertLen; i++) {
+            sampleBuf[sampleBufLen++] = workingBuf[i];
+        }
+
+        if (sampleBufLen < framesPerBuffer)
+            return; //Nothing to do until we have full buffer
+
+        sampleBufLen = 0;
+        //Create zoomed spectrum
+        signalSpectrum->Zoomed(sampleBuf, framesPerBuffer);
+
+        nextStep = sampleBuf;
+
 
         //Mixer shows no loss in testing
         //nextStep = mixer->ProcessBlock(nextStep);
@@ -708,13 +735,13 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 
         //If squelch is set, and we're below threshold and should set output to zero
         //Do this in SignalStrength, since that's where we're calculating average signal strength anyway
-        nextStep = signalStrength->ProcessBlock(nextStep, downConvertLen, squelch);
+        nextStep = signalStrength->ProcessBlock(nextStep, framesPerBuffer, squelch);
         //global->perform.StopPerformance(100);
         //global->perform.StartPerformance();
 
         //Tune only mode, no demod or output
         if (demod->DemodMode() == dmNONE){
-            CPXBuf::clear(out,downConvertLen);
+            CPXBuf::clear(out,framesPerBuffer);
             return;
         }
         nextStep = noiseFilter->ProcessBlock(nextStep);
@@ -731,12 +758,11 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
         if (iDigitalModem != NULL)
             nextStep = iDigitalModem->ProcessBlock(nextStep);
 
-        nextStep = demod->ProcessBlock(nextStep, downConvertLen);
+        nextStep = demod->ProcessBlock(nextStep, framesPerBuffer);
         global->testBench->DisplayData(demodFrames,nextStep,demodSampleRate,PROFILE_4);
 
         //global->perform.StopPerformance(100);
 
-        demodFrames = downConvertLen;
         resampRate = (demodSampleRate*1.0) / (audioOutRate*1.0);
 
     }
