@@ -130,7 +130,7 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
     //  250,000 / 2048 samples = 122hz/bin, 64x =  3906hz span
     //2,000,000 / 2048 samples = 976hz/bin, 64x = 31250hz span
     //Ideally we'd like a max 2k span to be able to see details of cw, rtty, wwv signals
-    ui.zoomSlider->setRange(0,300);
+    ui.zoomSlider->setRange(0,600);
     ui.zoomSlider->setSingleStep(1);
     ui.zoomSlider->setValue(0); //Left end of scale
     connect(ui.zoomSlider,SIGNAL(valueChanged(int)),this,SLOT(zoomChanged(int)));
@@ -172,7 +172,8 @@ void SpectrumWidget::Run(bool r)
 
 	if (r) {
         ui.displayBox->setCurrentIndex(global->sdr->lastDisplayMode); //Initial display mode
-        zoomChanged(0); //Display initial value
+        ui.zoomSlider->setValue(0); //Left end of scale
+        //zoomChanged(0); //Display initial value
 		isRunning = true;
 	}
 	else {
@@ -260,7 +261,12 @@ double SpectrumWidget::GetMouseFreq()
 
     } else if (zpf.contains(mp) || zlf.contains(mp)) {
         //Find freq at cursor
-        float hzPerPixel = signalSpectrum->getZoomedSampleRate() / zpf.width() * zoom;
+        float hzPerPixel;
+        if (!useZoomSpectrum)
+            hzPerPixel= sampleRate / zpf.width() * zoom;
+        else
+            hzPerPixel= signalSpectrum->getZoomedSampleRate() / zpf.width() * zoom;
+
         //Convert to +/- relative to center
         int m = mp.x() - zpf.center().x();
         //And conver to freq
@@ -508,8 +514,12 @@ void SpectrumWidget::DrawCursor(QPainter *painter, QRect plotFr, bool isZoomed, 
     int plotHeight = plotFr.height();
 
     int hzPerPixel = sampleRate / plotWidth;
-    if (isZoomed)
-        hzPerPixel = signalSpectrum->getZoomedSampleRate() * zoom / plotWidth;
+    if (isZoomed) {
+        if (!useZoomSpectrum)
+            hzPerPixel = sampleRate * zoom / plotWidth;
+        else
+            hzPerPixel = signalSpectrum->getZoomedSampleRate() * zoom / plotWidth;
+    }
 
     //Show mixer cursor, fMixer varies from -f..0..+f relative to LO
     //Map to coordinates
@@ -722,12 +732,27 @@ void SpectrumWidget::zoomChanged(int item)
     //if (fMixer != 0 && newZoom < zoom)
     //    emit mixerChanged(fMixer, true); //Change LO to current mixer freq
 
+
+    //Smooth zoom from main spectrum buffer to high-res zoom buffer, automatically switch
     zoom = newZoom;
+    //If zoomed range less than zoomedSampleRate, use high-res zoom buffer, else normal
+    qint32 range = sampleRate;
+    qint32 zoomRange = signalSpectrum->getZoomedSampleRate();
+    if ((range * zoom) < zoomRange) {
+        useZoomSpectrum = true;
+        //Now we need to adjust zoom to percentage of zoomSpectrum, ie 30k
+        // zoom * range = newZoom * zoomRange
+        // (zoom * range)/zoomRange = newZoom
+        zoom = (zoom * range) / zoomRange;
+        ui.zoomLabel->setText(QString().sprintf("Span: %.0f kHz",zoomRange/1000 * zoom));
+    } else {
+        useZoomSpectrum = false;
+        ui.zoomLabel->setText(QString().sprintf("Span: %.0f kHz",range/1000 * zoom));
+    }
+
     //ui.zoomLabel->setText(QString().sprintf("Zoom: %.0f X",1.0 / zoom));
-    ui.zoomLabel->setText(QString().sprintf("Span: %.0f kHz",signalSpectrum->getZoomedSampleRate()/1000 * zoom));
 
     //In zoom mode, hi/low mixer boundaries need to be updated so we always keep frequency on screen
-    int range = signalSpectrum->getZoomedSampleRate() / 2 * zoom;
     //emit mixerLimitsChanged(range, - range);
 
     //Update display
@@ -822,17 +847,29 @@ void SpectrumWidget::newFftData()
             //Painter has to be created AFTER we copy overlay since plotArea is being replaced each time
             QPainter zoomPlotPainter(&zoomPlotArea);
 
-            //Convert to plot area coordinates
-            //This gets passed straight through to FFT MapFFTToScreen
-            signalSpectrum->MapFFTZoomedToScreen(
-                plotHeight,
-                plotWidth,
-                //These are same as testbench
-                maxDbDisplayed,      //FFT dB level  corresponding to output value == MaxHeight
-                minDbDisplayed,   //FFT dB level corresponding to output value == 0
-                zoom,
-                fftMap );
+            if (!useZoomSpectrum) {
+                signalSpectrum->MapFFTToScreen(
+                    plotHeight,
+                    plotWidth,
+                    //These are same as testbench
+                    maxDbDisplayed,      //FFT dB level  corresponding to output value == MaxHeight
+                    minDbDisplayed,   //FFT dB level corresponding to output value == 0
+                    zoomStartFreq, //-sampleRate/2, //Low frequency
+                    zoomEndFreq, //sampleRate/2, //High frequency
+                    fftMap );
 
+            } else {
+                //Convert to plot area coordinates
+                //This gets passed straight through to FFT MapFFTToScreen
+                signalSpectrum->MapFFTZoomedToScreen(
+                    plotHeight,
+                    plotWidth,
+                    //These are same as testbench
+                    maxDbDisplayed,      //FFT dB level  corresponding to output value == MaxHeight
+                    minDbDisplayed,   //FFT dB level corresponding to output value == 0
+                    zoom,
+                    fftMap );
+            }
             for (int i=0; i< zoomPlotArea.width(); i++)
             {
                 LineBuf[i].setX(i);
@@ -891,17 +928,29 @@ void SpectrumWidget::newFftData()
             //rect.setBottom(rect.bottom() - 10); //Reserve the last 10 pix for labels
             zoomPlotArea.scroll(0,vspace,rect);
 
-            //Instead of plot area coordinates we convert to screen color array
-            //Width is unchanged, but height is # colors we have for each db
-            signalSpectrum->MapFFTZoomedToScreen(
-                255, //Equates to spectrumColor array
-                plotWidth,
-                //These are same as testbench
-                maxDbDisplayed, //FFT dB level  corresponding to output value == MaxHeight
-                minDbDisplayed, //FFT dB level corresponding to output value == 0
-                zoom,
-                fftMap );
+            if (!useZoomSpectrum) {
+                signalSpectrum->MapFFTToScreen(
+                    255, //Equates to spectrumColor array
+                    plotWidth,
+                    //These are same as testbench
+                    maxDbDisplayed, //FFT dB level  corresponding to output value == MaxHeight
+                    minDbDisplayed, //FFT dB level corresponding to output value == 0
+                    zoomStartFreq, //Low frequency
+                    zoomEndFreq, //High frequency
+                    fftMap );
 
+            } else {
+                //Instead of plot area coordinates we convert to screen color array
+                //Width is unchanged, but height is # colors we have for each db
+                signalSpectrum->MapFFTZoomedToScreen(
+                    255, //Equates to spectrumColor array
+                    plotWidth,
+                    //These are same as testbench
+                    maxDbDisplayed, //FFT dB level  corresponding to output value == MaxHeight
+                    minDbDisplayed, //FFT dB level corresponding to output value == 0
+                    zoom,
+                    fftMap );
+            }
             for (int i=0; i<plotArea.width(); i++)
             {
                 plotColor = spectrumColors[255 - fftMap[i]];
@@ -944,8 +993,12 @@ void SpectrumWidget::DrawScale(QPainter *labelPainter, double centerFreq, bool i
     //100,000 sps * 0.10 / 10 = 1000 hz per division
     //Bug with 16bit at 2msps rate
     quint32 hzPerhDiv = sampleRate / horizDivs;
-    if (isZoomed)
-        hzPerhDiv = signalSpectrum->getZoomedSampleRate() * zoom / horizDivs;;
+    if (isZoomed) {
+        if (!useZoomSpectrum)
+            hzPerhDiv = sampleRate * zoom / horizDivs;
+        else
+            hzPerhDiv = signalSpectrum->getZoomedSampleRate() * zoom / horizDivs;
+    }
 
     //horizDivs must be even number so middle is 0
     //So for 10 divs we start out with [0] at low and [9] at high

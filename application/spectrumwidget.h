@@ -89,6 +89,7 @@ private:
 	int sampleRate;
 	DEMODMODE demodMode;
 
+    bool useZoomSpectrum; //True if zoom is within high-res buffer range
 	bool isRunning;
 	//QString *message;
 	QStringList message;

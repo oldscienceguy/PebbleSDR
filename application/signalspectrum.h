@@ -51,6 +51,7 @@ public:
 
     quint32 getZoomedSampleRate() {return zoomedSampleRate;}
 
+    void SetSampleRate(quint32 _sampleRate, quint32 _zoomedSampleRate);
 public slots:
 
 signals:

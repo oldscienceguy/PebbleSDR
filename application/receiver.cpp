@@ -148,8 +148,8 @@ bool Receiver::On()
     //SetDataRate() doesn't downsample below 256k?
     audioOutRate = 11025; //This rate supported by QTAudio and PortAudio on Mac
     //SetDataRate MaxBW should be driven by our filter selection, ie width of filter
-    //For now just set to widest filter, which is 16k for AM
-    demodSampleRate = downConvert1.SetDataRate(sampleRate, Demod::demodInfo[dmAM].maxOutputBandWidth);
+    //For now just set to widest filter, which is 20k for AM, 30k for FMN
+    demodSampleRate = downConvert1.SetDataRate(sampleRate, Demod::demodInfo[dmFMN].maxOutputBandWidth);
 
     //For FMStereo, initial rate should be close to 300k
     //Different decimation technique than SetDataRate
@@ -438,9 +438,15 @@ double Receiver::SetFrequency(double fRequested, double fCurrent)
 void Receiver::SetMode(DEMODMODE m)
 {
 	if(demod != NULL) {
+        if (m == dmFMM || m == dmFMS)
+            signalSpectrum->SetSampleRate(sampleRate, demodWfmSampleRate);
+        else
+            signalSpectrum->SetSampleRate(sampleRate, demodSampleRate);
+
         //Demod will return new demo
         demod->SetDemodMode(m, sampleRate, demodSampleRate);
         sdr->lastMode = m;
+        sampleBufLen = 0;
 	}
     if (iDigitalModem != NULL) {
         iDigitalModem->SetDemodMode(m);
@@ -681,11 +687,24 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
         // InLength must be a multiple of 2^N where N is the maximum decimation by 2 stages expected.
         //We need a separated input/output buffer for downConvert
         int downConvertLen = downConvertWfm1.ProcessData(framesPerBuffer,nextStep,workingBuf);
+        //We are always decimating by a factor of 2
+        //so we know we can accumulate a full fft buffer at this lower sample rate
+        for (int i=0; i<downConvertLen; i++) {
+            sampleBuf[sampleBufLen++] = workingBuf[i];
+        }
 
-        nextStep = signalStrength->ProcessBlock(workingBuf, downConvertLen, squelch);
+        if (sampleBufLen < framesPerBuffer)
+            return; //Nothing to do until we have full buffer
 
-        nextStep = demod->ProcessBlock(nextStep, downConvertLen);
-        demodFrames = downConvertLen;
+        sampleBufLen = 0;
+        //Create zoomed spectrum
+        signalSpectrum->Zoomed(sampleBuf, framesPerBuffer);
+        nextStep = sampleBuf;
+
+        nextStep = signalStrength->ProcessBlock(nextStep, framesPerBuffer, squelch);
+
+        nextStep = demod->ProcessBlock(nextStep, framesPerBuffer);
+
         resampRate = (demodWfmSampleRate*1.0) / (audioOutRate*1.0);
 
     } else {
@@ -712,7 +731,6 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
         signalSpectrum->Zoomed(sampleBuf, framesPerBuffer);
 
         nextStep = sampleBuf;
-
 
         //Mixer shows no loss in testing
         //nextStep = mixer->ProcessBlock(nextStep);

@@ -7,7 +7,6 @@ SignalSpectrum::SignalSpectrum(int sr, quint32 zsr, int ns, Settings *set):
 	SignalProcessing(sr,ns)
 {
 	settings = set;
-    zoomedSampleRate = zsr;
 
 	//FFT bin size can be greater than sample size
 	//But we don't need 2x bins for FFT spectrum processing unless we are going to support
@@ -22,12 +21,9 @@ SignalSpectrum::SignalSpectrum(int sr, quint32 zsr, int ns, Settings *set):
 	rawIQ = CPXBuf::malloc(numSamples);
 
     fftUnprocessed = new FFTfftw();
-    fftUnprocessed->FFTParams(fftSize, +1, global->maxDb, sr);
     unprocessed = new double[fftSize];
 
     fftZoomed = new FFTfftw();
-    //Zoomed spectrum is after mixer/downconverter and needs a db boost to equate with raw spectrum
-    fftZoomed->FFTParams(fftSize, +1, global->maxDb, zoomedSampleRate);
     zoomed = new double[fftSize];
 
     tmp_cpx = CPXBuf::malloc(fftSize);
@@ -50,11 +46,12 @@ SignalSpectrum::SignalSpectrum(int sr, quint32 zsr, int ns, Settings *set):
     skipFfts = 0; //How many samples should we skip to sync with rate
     skipFftsCounter = 0; //Keep count of samples we've skipped
     skipFftsZoomedCounter = 0; //Keep count of samples we've skipped
-    SetUpdatesPerSec(10);
     displayUpdateComplete = true;
     displayUpdateOverrun = 0;
 
     isZoomed = false;
+
+    SetSampleRate(sr, zsr);
 
 }
 
@@ -71,6 +68,17 @@ void SignalSpectrum::SetDisplayMode(DISPLAYMODE _displayMode, bool _isZoomed)
 {
     displayMode = _displayMode;
     isZoomed = _isZoomed;
+}
+
+void SignalSpectrum::SetSampleRate(quint32 _sampleRate, quint32 _zoomedSampleRate)
+{
+    sampleRate = _sampleRate;
+    zoomedSampleRate = _zoomedSampleRate;
+    fftUnprocessed->FFTParams(fftSize, +1, global->maxDb, sampleRate);
+    fftZoomed->FFTParams(fftSize, +1, global->maxDb, zoomedSampleRate);
+    //Based on sample rates
+    SetUpdatesPerSec(10);
+
 }
 
 void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double outUnder, double outOver)
