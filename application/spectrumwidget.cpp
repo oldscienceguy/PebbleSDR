@@ -1050,8 +1050,8 @@ void SpectrumWidget::DrawOverlay(bool isZoomed)
     if (!isRunning)
         return;
 
-    QPainter *painter;
-    QPainter *labelPainter;
+    QPainter *painter = new QPainter();
+    QPainter *labelPainter = new QPainter();
     int overlayWidth;
     int overlayHeight;
     QRect plotFr;
@@ -1062,11 +1062,11 @@ void SpectrumWidget::DrawOverlay(bool isZoomed)
 
         plotOverlay.fill(Qt::black); //Clear every time because we are update cursor and other info here also
         plotLabel.fill(Qt::black);
-        painter = new QPainter(&plotOverlay);
-        labelPainter = new QPainter(&plotLabel);
         overlayWidth = plotOverlay.width();
         overlayHeight = plotOverlay.height();
         plotFr = ui.plotFrame->geometry(); //relative to parent
+        painter->begin(&plotOverlay);  //Because we use pointer, automatic with instance
+        labelPainter->begin(&plotLabel);
 
     } else {
         if (zoomPlotOverlay.isNull())
@@ -1074,15 +1074,13 @@ void SpectrumWidget::DrawOverlay(bool isZoomed)
 
         zoomPlotOverlay.fill(Qt::black); //Clear every time because we are update cursor and other info here also
         zoomPlotLabel.fill(Qt::black);
-        painter = new QPainter(&zoomPlotOverlay);
-        labelPainter = new QPainter(&zoomPlotLabel);
         overlayWidth = zoomPlotOverlay.width();
         overlayHeight = zoomPlotOverlay.height();
         plotFr = ui.zoomPlotFrame->geometry(); //relative to parent
+        painter->begin(&zoomPlotOverlay);  //Because we use pointer, automatic with instance
+        labelPainter->begin(&zoomPlotLabel);
     }
 
-    painter->begin(this);  //Because we use pointer, automatic with instance
-    labelPainter->begin(this);
 
     if (overlayHeight < 60) {
         horizDivs = 10;
@@ -1154,5 +1152,7 @@ void SpectrumWidget::DrawOverlay(bool isZoomed)
 
     painter->end();  //Because we use pointer, automatic with instance
     labelPainter->end();
+    delete painter;
+    delete labelPainter;
 
 }
