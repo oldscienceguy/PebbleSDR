@@ -991,7 +991,7 @@ void SpectrumWidget::DrawScale(QPainter *labelPainter, double centerFreq, bool i
     int plotLabelHeight = plotLabel.height();
 
     //Show actual hi/lo frequency range
-    quint32 horizLabels[horizDivs];
+    QString horizLabels[maxHDivs];
     //zoom is fractional
     //100,000 sps * 1.00 / 10 = 10,000 hz per division
     //100,000 sps * 0.10 / 10 = 1000 hz per division
@@ -1007,10 +1007,19 @@ void SpectrumWidget::DrawScale(QPainter *labelPainter, double centerFreq, bool i
     //horizDivs must be even number so middle is 0
     //So for 10 divs we start out with [0] at low and [9] at high
     int center = horizDivs / 2;
-    horizLabels[center] = centerFreq/1000;
-    for (int i=1; i <horizDivs; i++) {
-        horizLabels[center + i] = (centerFreq + (i * hzPerhDiv ))/1000;
-        horizLabels[center - i] = (centerFreq - (i * hzPerhDiv ))/1000;
+    horizLabels[center] = QString::number(centerFreq/1000,'f',0)+"k";
+    int tick,left,right;
+    for (int i=0; i <= center; i++) {
+        tick = i * hzPerhDiv;
+        left = centerFreq - tick;
+        //Never let left label go negative, possible if center < sampleRate/2
+        if (left < 0)
+            horizLabels[center - i] = "---";
+        else
+            horizLabels[center - i] = QString::number(left/1000,'f',0)+"k";
+
+        right = centerFreq + tick;
+        horizLabels[center + i] = QString::number(right/1000,'f',0)+"k";
     }
 
     QFont overlayFont("Arial");
@@ -1025,19 +1034,19 @@ void SpectrumWidget::DrawScale(QPainter *labelPainter, double centerFreq, bool i
             //Left justify
             x = (int)( (float) i * pixPerHdiv);
             rect.setRect(x ,0, (int)pixPerHdiv, plotLabelHeight);
-            labelPainter->drawText(rect, Qt::AlignLeft|Qt::AlignVCenter, QString::number(horizLabels[i],'f',0)+"k");
+            labelPainter->drawText(rect, Qt::AlignLeft|Qt::AlignVCenter, horizLabels[i]);
 
         } else if (i == horizDivs) {
             //Right justify
             x = (int)( (float)i*pixPerHdiv - pixPerHdiv);
             rect.setRect(x ,0, (int)pixPerHdiv, plotLabelHeight);
-            labelPainter->drawText(rect, Qt::AlignRight|Qt::AlignVCenter, QString::number(horizLabels[i],'f',0)+"k");
+            labelPainter->drawText(rect, Qt::AlignRight|Qt::AlignVCenter, horizLabels[i]);
 
         } else {
             //Center justify
             x = (int)( (float)i*pixPerHdiv - pixPerHdiv/2);
             rect.setRect(x ,0, (int)pixPerHdiv, plotLabelHeight);
-            labelPainter->drawText(rect, Qt::AlignHCenter|Qt::AlignVCenter, QString::number(horizLabels[i],'f',0)+"k");
+            labelPainter->drawText(rect, Qt::AlignHCenter|Qt::AlignVCenter, horizLabels[i]);
 
         }
 
@@ -1082,12 +1091,11 @@ void SpectrumWidget::DrawOverlay(bool isZoomed)
     }
 
 
+    horizDivs = (overlayWidth / 100) * 2; //x2 to make sure always even number
     if (overlayHeight < 60) {
-        horizDivs = 10;
-        vertDivs = 5; //Too crowded with small spectrum
+        vertDivs = overlayHeight / 5; //pix per div
     } else {
-        horizDivs = 10;
-        vertDivs = 10;
+        vertDivs = overlayHeight / 10; //pix per div
     }
 
     int x,y;

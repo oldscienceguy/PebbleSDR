@@ -111,7 +111,8 @@ private:
     int GetMouseDb();
 
     //Grid display, will change depending on plotArea size
-    int horizDivs;
+    static const int maxHDivs = 50;
+    int horizDivs; //Must be even number to split right around center
     int vertDivs;
 
     int modeOffset;
