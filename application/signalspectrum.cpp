@@ -229,12 +229,16 @@ bool SignalSpectrum::MapFFTZoomedToScreen(qint32 maxHeight,
                                 double maxdB,
                                 double mindB,
                                 double zoom,
+                                int modeOffset, //For CWL and CWU
                                 qint32* outBuf )
 {
+    //Zoomed spectrum is created AFTER mixer and downconvert and has modeOffset applied
+    //So if unprocessed spectrum is centered on 10k, zoomed spectrum will be centered on 10k +/- mode offset
+    //We correct for this by adjusting starting,ending frequency by mode offset
     quint16 span = zoomedSampleRate * zoom;
 
     if (fftZoomed!=NULL)
-        return fftZoomed->MapFFTToScreen(maxHeight,maxWidth,maxdB,mindB, -span/2, span/2, outBuf);
+        return fftZoomed->MapFFTToScreen(maxHeight,maxWidth,maxdB,mindB, -span/2 - modeOffset, span/2 - modeOffset, outBuf);
     else
         return false;
 }

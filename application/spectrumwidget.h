@@ -27,7 +27,7 @@ public:
 	void SetMixer(int m, double f);
 	void SetFilter(int lo, int hi);
 	void Run(bool r);
-	void SetMode(DEMODMODE m);
+    void SetMode(DEMODMODE m, int _modeOffset);
 	//Text is displayed when spectrum is 'off' for now
 	void SetMessage(QStringList s);
 	void SetSignalSpectrum(SignalSpectrum *s);
@@ -114,6 +114,7 @@ private:
     int horizDivs;
     int vertDivs;
 
+    int modeOffset;
 
     void resizeFrames();
     void DrawScale(QPainter *labelPainter, double centerFreq, bool isZoomed);

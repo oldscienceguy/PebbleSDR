@@ -30,7 +30,7 @@ public:
                                     qint32 startFreq, qint32 stopFreq,
                                     qint32* outBuf );
 
-    bool MapFFTZoomedToScreen(qint32 maxHeight, qint32 maxWidth, double maxdB, double mindB, double zoom, qint32 *outBuf);
+    bool MapFFTZoomedToScreen(qint32 maxHeight, qint32 maxWidth, double maxdB, double mindB, double zoom, int modeOffset, qint32 *outBuf);
 
     int BinCount() {return fftSize;}
     double *Unprocessed() {return unprocessed;}

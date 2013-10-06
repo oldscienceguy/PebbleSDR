@@ -783,7 +783,7 @@ void ReceiverWidget::modeSelectionChanged(QString m)
     ui.filterBox->addItems(Demod::demodInfo[mode].filters);
     ui.filterBox->setCurrentIndex(Demod::demodInfo[mode].defaultFilter);
 
-	ui.spectrumWidget->SetMode(mode);
+    ui.spectrumWidget->SetMode(mode, modeOffset);
 	receiver->SetMode(mode);
 	ui.filterBox->blockSignals(false);
 	this->filterSelectionChanged(ui.filterBox->currentText());

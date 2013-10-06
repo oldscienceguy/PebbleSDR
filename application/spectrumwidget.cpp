@@ -136,6 +136,8 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
     connect(ui.zoomSlider,SIGNAL(valueChanged(int)),this,SLOT(zoomChanged(int)));
     zoom = 1;
 
+    modeOffset = 0;
+
 	isRunning = false;
 }
 
@@ -420,9 +422,10 @@ void SpectrumWidget::mousePressEvent ( QMouseEvent * event )
     }
     event->accept();
 }
-void SpectrumWidget::SetMode(DEMODMODE m)
+void SpectrumWidget::SetMode(DEMODMODE m, int _modeOffset)
 {
 	demodMode = m;
+    modeOffset = _modeOffset;
 }
 void SpectrumWidget::SetMixer(int m, double f)
 {
@@ -539,7 +542,6 @@ void SpectrumWidget::DrawCursor(QPainter *painter, QRect plotFr, bool isZoomed, 
     //Show filter range
     //This doesn't work for CW because we have to take into account offset
     int xLo, xHi;
-    int modeOffset = global->settings->modeOffset; //Move to constructor
     int filterWidth = hiFilter - loFilter; //Could be pos or neg
     if (demodMode == dmCWU) {
         //loFilter = 500 hiFilter = 1500 modeOffset = 1000
@@ -868,6 +870,7 @@ void SpectrumWidget::newFftData()
                     maxDbDisplayed,      //FFT dB level  corresponding to output value == MaxHeight
                     minDbDisplayed,   //FFT dB level corresponding to output value == 0
                     zoom,
+                    modeOffset,
                     fftMap );
             }
             for (int i=0; i< zoomPlotArea.width(); i++)
@@ -949,6 +952,7 @@ void SpectrumWidget::newFftData()
                     maxDbDisplayed, //FFT dB level  corresponding to output value == MaxHeight
                     minDbDisplayed, //FFT dB level corresponding to output value == 0
                     zoom,
+                    modeOffset,
                     fftMap );
             }
             for (int i=0; i<plotArea.width(); i++)
