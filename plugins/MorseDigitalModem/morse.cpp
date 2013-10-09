@@ -119,7 +119,7 @@ void Morse::SetSampleRate(int _sampleRate, int _sampleCount)
     //Modem sample rate, device sample rate decimated to this before decoding
     modemBandwidth = 1000; //8000; //Desired bandwidth, not sample rate
     //See if we can decimate to this rate
-    int actualModemRate = modemDownConvert.SetDataRate(sampleRate,modemSampleRate);
+    int actualModemRate = modemDownConvert.SetDataRate(sampleRate,modemBandwidth);
     modemSampleRate = actualModemRate;
 
     //Testing fixed limits
