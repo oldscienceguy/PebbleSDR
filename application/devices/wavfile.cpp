@@ -104,6 +104,11 @@ bool WavFile::OpenRead(QString fname)
                     tag[4] = 0x00;
                     i += 4;
                     valueLen = (quint16)chunkBuf[i];
+                    if (valueLen > sizeof(value)) {
+                        qWarning()<<"Wave file value len > size of data buf";
+                        valueLen = sizeof(value);
+                    }
+
                     i += 4;
                     memcpy(value, &chunkBuf[i], valueLen); //Already null terminated
                     i += valueLen;
