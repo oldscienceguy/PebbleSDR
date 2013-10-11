@@ -65,6 +65,10 @@ public:
     double imag() { return im; }
     void imag(double I) {im = I;}
 
+    //For cases where we need consistent I/Q representation using complex
+    double i() {return re;} //In phase is typically in real
+    double q() {return im;} //Quad phase is typically in imag
+
     inline void clear() {re = im = 0.0;}
 
     //Every operator should have ref (&) and normal version
