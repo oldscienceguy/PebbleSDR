@@ -261,7 +261,7 @@ TYPEREAL Beta;
 		Beta = .5842 * pow( (Astop-20.96), 0.4) + .07886 * (Astop - 20.96);
 
 	//Now Estimate number of filter taps required based on filter specs
-	m_NumTaps = (Astop - 8.0) / (2.285*K_2PI*(normFstop - normFpass) ) + 1;
+    m_NumTaps = (Astop - 8.0) / (2.285*TWOPI*(normFstop - normFpass) ) + 1;
 
 	//clamp range of filter taps
 	if(m_NumTaps > MAX_NUMCOEF )
@@ -282,7 +282,7 @@ TYPEREAL Beta;
 		if( (TYPEREAL)n == fCenter )	//deal with odd size filter singularity where sin(0)/0==1
 			c = 2.0 * normFcut;
 		else
-			c = (TYPEREAL)sin(K_2PI*x*normFcut)/(K_PI*x);
+            c = (TYPEREAL)sin(TWOPI*x*normFcut)/(PI*x);
 		//calculate Kaiser window and multiply to get coefficient
 		x = ((TYPEREAL)n - ((TYPEREAL)m_NumTaps-1.0)/2.0 ) / (((TYPEREAL)m_NumTaps-1.0)/2.0);
 		m_Coef[n] = Scale * c * Izero( Beta * sqrt(1 - (x*x) ) )  / izb;
@@ -370,7 +370,7 @@ TYPEREAL Beta;
 		Beta = .5842 * pow( (Astop-20.96), 0.4) + .07886 * (Astop - 20.96);
 
 	//Now Estimate number of filter taps required based on filter specs
-	m_NumTaps = (Astop - 8.0) / (2.285*K_2PI*(normFpass - normFstop ) ) + 1;
+    m_NumTaps = (Astop - 8.0) / (2.285*TWOPI*(normFpass - normFstop ) ) + 1;
 
 	//clamp range of filter taps
 	if(m_NumTaps>(MAX_NUMCOEF-1) )
@@ -393,7 +393,7 @@ TYPEREAL Beta;
 		if( (TYPEREAL)n == fCenter )	//deal with odd size filter singularity where sin(0)/0==1
 			c = 1.0 - 2.0 * normFcut;
 		else
-			c = (TYPEREAL) (sin(K_PI*x)/(K_PI*x) - sin(K_2PI*x*normFcut)/(K_PI*x) );
+            c = (TYPEREAL) (sin(PI*x)/(PI*x) - sin(TWOPI*x*normFcut)/(PI*x) );
 
 		//calculate Kaiser window and multiply to get coefficient
 		x = ((TYPEREAL)n - ((TYPEREAL)m_NumTaps-1.0)/2.0 ) / (((TYPEREAL)m_NumTaps-1.0)/2.0);
@@ -455,8 +455,8 @@ int n;
 	for(n=0; n<m_NumTaps; n++)
 	{
 		// apply complex frequency shift transform to low pass filter coefficients
-		m_ICoef[n] = 2.0 * m_Coef[n] * cos( (K_2PI*FreqOffset/m_SampleRate)*((TYPEREAL)n - ( (TYPEREAL)(m_NumTaps-1)/2.0 ) ) );
-		m_QCoef[n] = 2.0 * m_Coef[n] * sin( (K_2PI*FreqOffset/m_SampleRate)*((TYPEREAL)n - ( (TYPEREAL)(m_NumTaps-1)/2.0 ) ) );
+        m_ICoef[n] = 2.0 * m_Coef[n] * cos( (TWOPI*FreqOffset/m_SampleRate)*((TYPEREAL)n - ( (TYPEREAL)(m_NumTaps-1)/2.0 ) ) );
+        m_QCoef[n] = 2.0 * m_Coef[n] * sin( (TWOPI*FreqOffset/m_SampleRate)*((TYPEREAL)n - ( (TYPEREAL)(m_NumTaps-1)/2.0 ) ) );
 	}
 	//make a 2x length array for FIR flat calculation efficiency
 	for (n = 0; n < m_NumTaps; n++)

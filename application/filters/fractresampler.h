@@ -11,8 +11,6 @@
 #ifndef FRACTRESAMPLER_H
 #define FRACTRESAMPLER_H
 
-#include "datatypes.h"
-
 #include "fir.h"
 #include "iir.h"
 #include "downconvert.h"

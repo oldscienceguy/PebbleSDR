@@ -38,7 +38,6 @@
 //==========================================================================================
 #include "demod_wfm.h"
 //#include "gui/testbench.h"
-//#include "dsp/datatypes.h"
 //#include "interface/perform.h"
 #include <QDebug>
 
@@ -370,7 +369,7 @@ void Demod_WFM::InitPilotPll( TYPEREAL SampleRate )
 	m_PilotNcoPhase = 0.0;
 	m_PilotNcoFreq = -PILOTPLL_FREQ;	//freq offset to bring to baseband
 
-	TYPEREAL norm = K_2PI/SampleRate;	//to normalize Hz to radians
+    TYPEREAL norm = TWOPI/SampleRate;	//to normalize Hz to radians
 
 	//initialize the PLL
 	m_PilotNcoLLimit = (m_PilotNcoFreq-PILOTPLL_RANGE) * norm;		//clamp FM PLL NCO
@@ -419,7 +418,7 @@ TYPECPX tmp;
 		//create long average of error magnitude for lock detection
 		m_PhaseErrorMagAve = (1.0-m_PhaseErrorMagAlpha)*m_PhaseErrorMagAve + m_PhaseErrorMagAlpha*phzerror*phzerror;
 	}
-	m_PilotNcoPhase = fmod(m_PilotNcoPhase, K_2PI);	//keep radian counter bounded
+    m_PilotNcoPhase = fmod(m_PilotNcoPhase, TWOPI);	//keep radian counter bounded
 //StopPerformance(InLength);
 	if(m_PhaseErrorMagAve < LOCK_MAG_THRESHOLD)
 		return TRUE;
@@ -493,7 +492,7 @@ void Demod_WFM::InitRds( TYPEREAL SampleRate )
 	//Create complex LP filter of RDS signal with 2400Hz passband
 	m_RdsBPFilter.InitLPFilter(0, 1.0,40.0, 2400.0,1.3*2400.0, m_RdsOutputRate);
 
-	TYPEREAL norm = K_2PI/SampleRate;	//to normalize Hz to radians
+    TYPEREAL norm = TWOPI/SampleRate;	//to normalize Hz to radians
 	//initialize the PLL that is used to de-rotate the rds DSB signal
 	m_RdsNcoLLimit = (m_RdsNcoFreq-RDSPLL_RANGE) * norm;		//clamp RDS PLL NCO
 	m_RdsNcoHLimit = (m_RdsNcoFreq+RDSPLL_RANGE) * norm;
@@ -508,9 +507,9 @@ void Demod_WFM::InitRds( TYPEREAL SampleRate )
 		TYPEREAL t = (TYPEREAL)i/(SampleRate);
 		TYPEREAL x = t*RDS_BITRATE;
 		TYPEREAL x64 = 64.0*x;
-		m_RdsMatchCoef[i+m_MatchCoefLength] = .75*cos(2.0*K_2PI*x)*( (1.0/(1.0/x-x64)) -
+        m_RdsMatchCoef[i+m_MatchCoefLength] = .75*cos(2.0*TWOPI*x)*( (1.0/(1.0/x-x64)) -
 								(1.0/(9.0/x-x64)) );
-		m_RdsMatchCoef[m_MatchCoefLength-i] = -.75*cos(2.0*K_2PI*x)*( (1.0/(1.0/x-x64)) -
+        m_RdsMatchCoef[m_MatchCoefLength-i] = -.75*cos(2.0*TWOPI*x)*( (1.0/(1.0/x-x64)) -
 								(1.0/(9.0/x-x64)) );
 	}
 	m_MatchCoefLength *= 2;
@@ -566,7 +565,7 @@ TYPECPX tmp;
 		m_RdsNcoPhase += (m_RdsNcoFreq + m_RdsPllAlpha * phzerror);
 		pOutData[i] = tmp.im;
 	}
-	m_RdsNcoPhase = fmod(m_RdsNcoPhase, K_2PI);	//keep radian counter bounded
+    m_RdsNcoPhase = fmod(m_RdsNcoPhase, TWOPI);	//keep radian counter bounded
 //g_pTestBench->DisplayData(InLength, m_RdsData, m_RdsOutputRate, PROFILE_6);
 }
 
@@ -792,9 +791,9 @@ inline TYPEREAL Demod_WFM::arctan2(TYPEREAL y, TYPEREAL x)
 TYPEREAL angle;
 	if( x == 0.0 )
 	{	//avoid divide by zero and just return angle
-		if( y > 0.0 ) return K_PI2;
+        if( y > 0.0 ) return TWOPI;
 		if( y == 0.0 ) return 0.0;
-		return -K_PI2;
+        return -TWOPI;
 	}
 	TYPEREAL z = y/x;
 	if( fabs( z ) < 1.0 )
@@ -803,15 +802,15 @@ TYPEREAL angle;
 		if( x < 0.0 )
 		{
 			if( y < 0.0 )
-				return angle - K_PI;
-			return angle + K_PI;
+                return angle - PI;
+            return angle + PI;
 		}
 	}
 	else
 	{
-		angle = K_PI2 - z/(z*z + 0.2854);
+        angle = TWOPI - z/(z*z + 0.2854);
 		if( y < 0.0 )
-			return angle - K_PI;
+            return angle - PI;
 	}
 	return angle;
 }

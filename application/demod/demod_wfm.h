@@ -7,7 +7,6 @@
 /////////////////////////////////////////////////////////////////////
 #ifndef WFMDEMOD_H
 #define WFMDEMOD_H
-#include "../filters/datatypes.h"
 
 #include "filters/fir.h"
 #include "filters/iir.h"

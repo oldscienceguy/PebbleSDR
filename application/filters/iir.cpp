@@ -85,7 +85,7 @@ CIir::CIir()
 /////////////////////////////////////////////////////////////////////////////////
 void CIir::InitLP( TYPEREAL F0Freq, TYPEREAL FilterQ, TYPEREAL SampleRate)
 {
-	TYPEREAL w0 = K_2PI * F0Freq/SampleRate;	//normalized corner frequency
+    TYPEREAL w0 = TWOPI * F0Freq/SampleRate;	//normalized corner frequency
 	TYPEREAL alpha = sin(w0)/(2.0*FilterQ);
 	TYPEREAL A = 1.0/(1.0 + alpha);	//scale everything by 1/A0 for direct form 2
 	m_B0 = A*( (1.0 - cos(w0))/2.0);
@@ -107,7 +107,7 @@ void CIir::InitLP( TYPEREAL F0Freq, TYPEREAL FilterQ, TYPEREAL SampleRate)
 /////////////////////////////////////////////////////////////////////////////////
 void CIir::InitHP( TYPEREAL F0Freq, TYPEREAL FilterQ, TYPEREAL SampleRate)
 {
-	TYPEREAL w0 = K_2PI * F0Freq/SampleRate;	//normalized corner frequency
+    TYPEREAL w0 = TWOPI * F0Freq/SampleRate;	//normalized corner frequency
 	TYPEREAL alpha = sin(w0)/(2.0*FilterQ);
 	TYPEREAL A = 1.0/(1.0 + alpha);	//scale everything by 1/A0 for direct form 2
 	m_B0 = A*( (1.0 + cos(w0))/2.0);
@@ -128,7 +128,7 @@ void CIir::InitHP( TYPEREAL F0Freq, TYPEREAL FilterQ, TYPEREAL SampleRate)
 /////////////////////////////////////////////////////////////////////////////////
 void CIir::InitBP( TYPEREAL F0Freq, TYPEREAL FilterQ, TYPEREAL SampleRate)
 {
-	TYPEREAL w0 = K_2PI * F0Freq/SampleRate;	//normalized corner frequency
+    TYPEREAL w0 = TWOPI * F0Freq/SampleRate;	//normalized corner frequency
 	TYPEREAL alpha = sin(w0)/(2.0*FilterQ);
 	TYPEREAL A = 1.0/(1.0 + alpha);	//scale everything by 1/A0 for direct form 2
 	m_B0 = A * alpha;
@@ -149,7 +149,7 @@ void CIir::InitBP( TYPEREAL F0Freq, TYPEREAL FilterQ, TYPEREAL SampleRate)
 /////////////////////////////////////////////////////////////////////////////////
 void CIir::InitBR( TYPEREAL F0Freq, TYPEREAL FilterQ, TYPEREAL SampleRate)
 {
-	TYPEREAL w0 = K_2PI * F0Freq/SampleRate;	//normalized corner frequency
+    TYPEREAL w0 = TWOPI * F0Freq/SampleRate;	//normalized corner frequency
 	TYPEREAL alpha = sin(w0)/(2.0*FilterQ);
 	TYPEREAL A = 1.0/(1.0 + alpha);	//scale everything by 1/A0 for direct form 2
 	m_B0 = A*1.0;

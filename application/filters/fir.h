@@ -15,14 +15,8 @@
 #ifndef FIR_H
 #define FIR_H
 
-//#include "datatypes.h"
 //Adapt to Pebble types
 #include "cpx.h"
-#define TYPEREAL double
-#define TYPECPX	CPX
-#define K_2PI TWOPI
-#define K_PI PI
-
 
 #include "filtercoef.h"
 

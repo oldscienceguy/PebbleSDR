@@ -83,7 +83,7 @@ double WindowGain;
 #if 1
 		WindowGain = 2.0;
         for(i=0; i<fftSize; i++)	//Hann
-            m_pWindowTbl[i] = WindowGain*(.5  - .5 *cos( (K_2PI*i)/(fftSize-1) ));
+            m_pWindowTbl[i] = WindowGain*(.5  - .5 *cos( (TWOPI*i)/(fftSize-1) ));
 #endif
 #if 0
 		WindowGain = 1.852;

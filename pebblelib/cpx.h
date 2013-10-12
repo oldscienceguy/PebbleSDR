@@ -14,7 +14,10 @@
 #define ONEPI	3.14159265358979323846264338328
 #define TWOPI   6.28318530717958647692528676656
 #define FOURPI 12.56637061435917295385057353312
-#define K_2PI TWOPI
+#define TYPEREAL double
+#define TYPECPX	CPX
+#define TYPESTEREO16 CPXINT
+#define TYPEMONO16 qint16
 
 
 //Used in several places where we need to decrement by one, modulo something
@@ -46,6 +49,14 @@
 #endif
 
 #include "pebblelib_global.h"
+
+//Integer version, used for compatibility
+class PEBBLELIBSHARED_EXPORT CPXINT
+{
+public:
+    qint16 re;
+    qint16 im;
+};
 
 //Inline simple methods for performance
 class PEBBLELIBSHARED_EXPORT CPX

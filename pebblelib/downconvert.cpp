@@ -102,7 +102,7 @@ void CDownConvert::SetFrequency(TYPEREAL NcoFreq)
 TYPEREAL tmpf = NcoFreq + m_CW_Offset;
 
 	m_NcoFreq = tmpf;
-	m_NcoInc = K_2PI*m_NcoFreq/m_InRate;
+    m_NcoInc = TWOPI*m_NcoFreq/m_InRate;
 	m_OscCos = cos(m_NcoInc);
 	m_OscSin = sin(m_NcoInc);
 //qDebug()<<"NCO "<<m_NcoFreq;

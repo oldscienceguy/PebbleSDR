@@ -16,7 +16,6 @@
 #define FFT_CUTE
 
 #include "fft.h"
-#include "filters/datatypes.h"
 #include <QMutex>
 
 class CFft : public FFT

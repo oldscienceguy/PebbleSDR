@@ -483,7 +483,7 @@ if( (m_SweepFrequency>-31250) && (m_SweepFrequency<31250) )
         }
 
 	}
-	m_SweepAcc = (double)fmod((double)m_SweepAcc, K_2PI);	//keep radian counter bounded
+    m_SweepAcc = (double)fmod((double)m_SweepAcc, TWOPI);	//keep radian counter bounded
 }
 
 void CTestBench::MixNoiseSamples(int length, TYPECPX* pBuf, double samplerate)
@@ -582,7 +582,7 @@ if( (m_SweepFrequency>-31250) && (m_SweepFrequency<31250) )
 			pBuf[i] += (m_NoiseAmplitude*u1*rad);
 		}
 	}
-	m_SweepAcc = (double)fmod((double)m_SweepAcc, K_2PI);	//keep radian counter bounded
+    m_SweepAcc = (double)fmod((double)m_SweepAcc, TWOPI);	//keep radian counter bounded
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -594,7 +594,7 @@ void CTestBench::Reset()
 int i;
 	//initialize sweep generator values
 	m_SweepFrequency = m_SweepStartFrequency;
-	m_SweepFreqNorm = K_2PI/m_GenSampleRate;
+    m_SweepFreqNorm = TWOPI/m_GenSampleRate;
 	m_SweepAcc = 0.0;
 	m_SweepRateInc = m_SweepRate/m_GenSampleRate;
 //	if(m_UseFmGen)

@@ -101,11 +101,11 @@ TYPEREAL window;
 	for(i=0; i<SINC_LENGTH; i++)
 	{	//calc Blackman-Harris window points
 		window = (0.35875
-				- 0.48829*cos( (K_2PI*i)/(SINC_LENGTH-1) )
-				+ 0.14128*cos( (2.0*K_2PI*i)/(SINC_LENGTH-1) )
-				- 0.01168*cos( (3.0*K_2PI*i)/(SINC_LENGTH-1) ) );
+                - 0.48829*cos( (TWOPI*i)/(SINC_LENGTH-1) )
+                + 0.14128*cos( (2.0*TWOPI*i)/(SINC_LENGTH-1) )
+                - 0.01168*cos( (3.0*TWOPI*i)/(SINC_LENGTH-1) ) );
 		//calculate sin(x)/x    sinc point * window
-		fi = K_PI*(double)(i - SINC_LENGTH/2)/(double)SINC_PERIOD_PTS ;
+        fi = PI*(double)(i - SINC_LENGTH/2)/(double)SINC_PERIOD_PTS ;
 		if(i != SINC_LENGTH/2)
 			m_pSinc[i] = window * (TYPEREAL)sin( (double)fi )/(double)fi;
 		else

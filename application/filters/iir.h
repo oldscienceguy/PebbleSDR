@@ -10,14 +10,8 @@
 #ifndef IIR_H
 #define IIR_H
 
-//#include "dsp/datatypes.h"
 //Adapt to Pebble types
 #include "cpx.h"
-#define TYPEREAL double
-#define TYPECPX	CPX
-#define K_2PI TWOPI
-#define K_PI PI
-
 
 class CIir
 {
