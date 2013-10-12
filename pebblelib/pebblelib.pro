@@ -28,7 +28,8 @@ DEFINES += PEBBLELIB_LIBRARY
 SOURCES += pebblelib.cpp \
     cpx.cpp \
     fldigifilters.cpp \
-    downconvert.cpp
+    downconvert.cpp \
+    db.cpp
 
 HEADERS += pebblelib.h\
         pebblelib_global.h \
@@ -37,5 +38,6 @@ HEADERS += pebblelib.h\
     digital_modem_interfaces.h \
     fldigifilters.h \
     downconvert.h \
-    filtercoef.h
+    filtercoef.h \
+    db.h
 

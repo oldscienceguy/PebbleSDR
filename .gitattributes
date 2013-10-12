@@ -182,6 +182,8 @@ nixie[!!-~]tube[!!-~]jpg/zm1082_l1_09bdm_42x100_8b.png -text
 nixie[!!-~]tube[!!-~]jpg/zm1082_l1_09bdm_62x150_8b.png -text
 pebblelib/cpx.cpp -text
 pebblelib/cpx.h -text
+pebblelib/db.cpp -text
+pebblelib/db.h -text
 pebblelib/digital_modem_interfaces.h -text
 pebblelib/fldigifilters.cpp -text
 pebblelib/fldigifilters.h -text
