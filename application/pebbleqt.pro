@@ -365,7 +365,6 @@ HEADERS += \
     demod/rbdsconstants.h \
     demod/rdsdecode.h \
     filters/fractresampler.h \
-    filters/datatypes.h \
     dsp/fftooura.h \
     perform.h \
     devices/sdrfile.h \
