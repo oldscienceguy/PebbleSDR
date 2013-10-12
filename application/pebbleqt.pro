@@ -365,7 +365,6 @@ HEADERS += \
     demod/rbdsconstants.h \
     demod/rdsdecode.h \
     filters/fractresampler.h \
-    dsp/fftooura.h \
     perform.h \
     devices/sdrfile.h \
     devices/rtl2832.h \
@@ -398,10 +397,6 @@ HEADERS += \
     devices/wavfile.h \
     bargraphmeter.h \
     testbench.h \
-    dsp/fftbasic.h \
-    dsp/fftw.h \
-    dsp/fftcute.h \
-    dsp/fft.h \
     demod/demod_am.h \
     demod/demod_sam.h \
     demod/demod_nfm.h \
@@ -440,7 +435,6 @@ SOURCES += \
 	demod/demod_wfm.cpp \
     demod/rdsdecode.cpp \
     filters/fractresampler.cpp \
-    dsp/fftooura.cpp \
     perform.cpp \
     devices/sdrfile.cpp \
     devices/rtl2832.cpp \
@@ -464,10 +458,6 @@ SOURCES += \
     devices/wavfile.cpp \
     bargraphmeter.cpp \
     testbench.cpp \
-    dsp/fftbasic.cpp \
-    dsp/fftw.cpp \
-    dsp/fftcute.cpp \
-    dsp/fft.cpp \
     demod/demod_am.cpp \
     demod/demod_sam.cpp \
     demod/demod_nfm.cpp \
