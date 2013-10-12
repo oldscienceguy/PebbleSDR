@@ -1,8 +1,6 @@
 #ifndef FFT_H
 #define FFT_H
-#include "global.h"
 #include "cpx.h"
-#include "signalprocessing.h"
 #include "QMutex"
 
 

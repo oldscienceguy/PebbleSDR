@@ -1,4 +1,5 @@
 #include "fft.h"
+#include "db.h"
 
 FFT::FFT() :
     useIntegerFFT(false)
@@ -6,9 +7,9 @@ FFT::FFT() :
     maxFFTSize = 65536;
     minFFTSize = 512;
     //maxDb = 0.0;			//specifies total range of FFT
-    maxDb = global->maxDb;
+    maxDb = DB::maxDb;
     //minDb = -220.0;
-    minDb = global->minDb;
+    minDb = DB::minDb;
     if (useIntegerFFT) {
         ampMax = 32767.0;	//maximum sin wave Pk for 16 bit input data
         overLimit = 32000.0;	//limit for detecting over ranging inputs
@@ -164,13 +165,13 @@ void FFT::FreqDomainToMagnitude(CPX * freqBuf, int size, double baseline, double
     // FFT output index 0 to N/2-1 - frequency output 0 to +Fs/2 Hz  ( 0 Hz DC term )
     //This puts 0 to size/2 into size/2 to size-1 position
     for (int i=0, j=size/2; i<size/2; i++,j++) {
-        fbr[j] = SignalProcessing::amplitudeToDb(freqBuf[i].mag() + baseline) + correction;
+        fbr[j] = DB::amplitudeToDb(freqBuf[i].mag() + baseline) + correction;
     }
     // FFT output index N/2 to N-1 - frequency output -Fs/2 to 0
     // This puts size/2 to size-1 into 0 to size/2
     //Works correctly with Ooura FFT
     for (int i=size/2, j=0; i<size; i++,j++) {
-        fbr[j] = SignalProcessing::amplitudeToDb(freqBuf[i].mag() + baseline) + correction;
+        fbr[j] = DB::amplitudeToDb(freqBuf[i].mag() + baseline) + correction;
     }
 }
 
