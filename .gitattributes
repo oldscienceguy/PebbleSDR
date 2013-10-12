@@ -185,6 +185,10 @@ pebblelib/cpx.h -text
 pebblelib/db.cpp -text
 pebblelib/db.h -text
 pebblelib/digital_modem_interfaces.h -text
+pebblelib/fft.cpp -text
+pebblelib/fft.h -text
+pebblelib/fftw.cpp -text
+pebblelib/fftw.h -text
 pebblelib/fldigifilters.cpp -text
 pebblelib/fldigifilters.h -text
 plugins/DigitalModemExample/data-example.ui -text
