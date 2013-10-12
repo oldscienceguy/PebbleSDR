@@ -6,7 +6,7 @@
 #include <QMutex>
 #include "settings.h"
 #include "goertzel.h"
-#include "dsp/fftw.h"
+#include "fftw.h"
 
 class SignalSpectrum :
 	public SignalProcessing

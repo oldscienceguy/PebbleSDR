@@ -107,8 +107,6 @@ macx {
 	LIBS += -framework AudioToolbox
 	LIBS += -framework AudioUnit
 	LIBS += -framework CoreServices
-	##fftw
-	LIBS += -L$${PWD}/../fftw-3.3.3/.libs/ -lfftw3
 
 	LIBS += -L$${PWD}/../pebblelib/lib -lpebblelib
 

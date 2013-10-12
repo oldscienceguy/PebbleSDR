@@ -47,7 +47,7 @@
 #include <QFrame>
 #include <QImage>
 
-#include "dsp/fftcute.h"
+#include "fftcute.h"
 #include "demod/demod_wfm.h"
 
 
