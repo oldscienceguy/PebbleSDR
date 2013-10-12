@@ -25,11 +25,17 @@ TEMPLATE = lib
 
 DEFINES += PEBBLELIB_LIBRARY
 
+LIBS += -L$${PWD}/../fftw-3.3.3/.libs/ -lfftw3
+
 SOURCES += pebblelib.cpp \
     cpx.cpp \
     fldigifilters.cpp \
     downconvert.cpp \
-    db.cpp
+    db.cpp \
+    fftw.cpp \
+    fftooura.cpp \
+    fftcute.cpp \
+    fft.cpp
 
 HEADERS += pebblelib.h\
         pebblelib_global.h \
@@ -39,5 +45,9 @@ HEADERS += pebblelib.h\
     fldigifilters.h \
     downconvert.h \
     filtercoef.h \
-    db.h
+    db.h \
+    fftw.h \
+    fftooura.h \
+    fftcute.h \
+    fft.h
 

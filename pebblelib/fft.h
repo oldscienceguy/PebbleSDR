@@ -8,7 +8,7 @@
 //New base class for multiple FFT variations
 //This will eventually let us switch usage or at least document the various options
 //Code will eventually go back to using FFT everywhere, including imported code from other projects
-class FFT
+class PEBBLELIBSHARED_EXPORT FFT
 {
 public:
     FFT();

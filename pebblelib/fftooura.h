@@ -3,7 +3,7 @@
 
 #include "fft.h"
 
-class FFTOoura : public FFT
+class PEBBLELIBSHARED_EXPORT FFTOoura : public FFT
 {
 public:
     FFTOoura();

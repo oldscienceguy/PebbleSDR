@@ -18,7 +18,7 @@
 #include "fft.h"
 #include <QMutex>
 
-class CFft : public FFT
+class PEBBLELIBSHARED_EXPORT CFft : public FFT
 {
 public:
 	CFft();

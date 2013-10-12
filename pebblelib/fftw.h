@@ -1,12 +1,11 @@
 #ifndef FFTW_H
 #define FFTW_H
 
-#include "global.h"
 #include "fft.h"
 #include "cpx.h"
 #include "../../fftw-3.3.1/api/fftw3.h"
 
-class FFTfftw : public FFT
+class PEBBLELIBSHARED_EXPORT FFTfftw : public FFT
 {
 public:
     FFTfftw();
