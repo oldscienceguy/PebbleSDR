@@ -77,8 +77,8 @@ CPX * SignalStrength::ProcessBlock(CPX *in, int downConvertLen, int squelch)
 	//sum(re^2 + im^2)
     for (int i = 0; i < downConvertLen; i++) {
 		//Total power of this sample pair
-        pwr = cpxToWatts(in[i]); //Power in watts
-        db = powerToDb(pwr); //Watts to db
+        pwr = DB::cpxToWatts(in[i]); //Power in watts
+        db = DB::powerToDb(pwr); //Watts to db
         //Verified 8/13 comparing testbench gen output at all db levels
         instValue = db;
         //Weighted average 90/10

@@ -491,7 +491,7 @@ void Receiver::SetGain(int g)
 {
 	//Convert dbGain to amplitude so we can use it to scale
 	//No magic DSP math, just found something that sounds right to convert slider 0-100 reasonable vol
-	gain=SignalProcessing::dbToAmplitude(25 + g * 0.35);
+    gain=DB::dbToAmplitude(25 + g * 0.35);
 }
 void Receiver::SetSquelch(int s)
 {

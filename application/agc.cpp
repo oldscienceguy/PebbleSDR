@@ -320,7 +320,7 @@ void AGC::SetParameters(bool UseHang, int Threshold, int ManualGain, int SlopeFa
     //convert m_ThreshGain to linear manual gain value
     //m_ManualAgcGain = MAX_MANUAL_AMPLITUDE*pow(10.0, -(100-(double)m_ManualGain)/20.0);
     //RL: We're converting a db gain figure to amplitude so we can scale with it
-    m_ManualAgcGain = dbToAmplitude(m_ManualGain);
+    m_ManualAgcGain = DB::dbToAmplitude(m_ManualGain);
 
     //calculate parameters for AGC gain as a function of input magnitude
     m_Knee = (double)m_Threshold/20.0;
