@@ -603,6 +603,20 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 	return;
 	}
 
+#if 0
+    //Here for testing.  See SignalSpectrum for rest
+    signalSpectrum->emitFftCounter--;
+    if (signalSpectrum->emitFftCounter < 0) {
+        qDebug()<<"More paints than FFTs"<<":"<<signalSpectrum->emitFftCounter;
+        signalSpectrum->emitFftCounter = 0;
+        //We may have garbage in spectrum, but if we skip we get flash of blank screen
+    } else if (signalSpectrum->emitFftCounter > 0) {
+        qDebug()<<"More FFTs than patings"<<":"<<signalSpectrum->emitFftCounter;
+        signalSpectrum->emitFftCounter = 0;
+        //We know we have valid spectrum, we just lost a previous one, so go ahead and plot
+    }
+#endif
+
     if (spectrumMode == SignalSpectrum::NODISPLAY || signalSpectrum == NULL)
         return;
 
@@ -638,51 +652,6 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
             painter.drawPixmap(zoomPlotLabelFr,zoomPlotLabel);
         }
     }
-	else if (spectrumMode == SignalSpectrum::IQ || spectrumMode == SignalSpectrum::PHASE)
-	{
-		CPX *rawIQ = signalSpectrum->RawIQ();
-		if (rawIQ == NULL)
-			return;
-		//Experiments in raw I/Q
-		QPen IPen,QPen;
-		IPen.setColor(Qt::red);
-		QPen.setColor(Qt::blue);
-		//apply gain 0-50
-        int gain = 1; //(spectrumGain * 1000);
-
-		//int offset = -25; //hack
-        int offset = plotHeight * -0.5;
-
-		int zoom = 1;
-		//rawIQ[0].re = rawIQ[0].re * gain - offset;
-		//rawIQ[0].im = rawIQ[0].im * gain - offset;
-		CPX last = rawIQ[0];
-		int nxtSample = 1;
-		float ISamp,QSamp;
-        for (int i=zoom; i<plotFr.width()-1; i += zoom)
-		{
-			ISamp = rawIQ[nxtSample].re * gain - offset;
-			QSamp = rawIQ[nxtSample].im * gain - offset;
-			//painter.drawPoint(rawIQ[i].re*mult,rawIQ[i].im*mult);
-			//painter.drawPoint(i,rawIQ[i].re*mult);
-			if (spectrumMode==SignalSpectrum::IQ)
-			{
-				painter.setPen(IPen);
-				painter.drawLine(i-zoom,last.re,i,ISamp);
-				painter.setPen(QPen);
-				painter.drawLine(i-zoom,last.im,i,QSamp);
-			} 
-			else if (spectrumMode == SignalSpectrum::PHASE)
-			{
-				//Phase plot
-				painter.setPen(IPen);
-				//Move plot more to center, ie x+50
-				painter.drawPoint(ISamp+50,QSamp);
-			}
-			last = CPX(ISamp,QSamp);
-			nxtSample++;
-		}
-	} 
 	else
 	{
         painter.eraseRect(plotFr);

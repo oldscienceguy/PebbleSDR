@@ -78,6 +78,7 @@ void SignalSpectrum::SetSampleRate(quint32 _sampleRate, quint32 _zoomedSampleRat
     fftZoomed->FFTParams(fftSize, +1, global->maxDb, zoomedSampleRate);
     //Based on sample rates
     SetUpdatesPerSec(10);
+    emitFftCounter = 0;
 
 }
 
@@ -99,10 +100,9 @@ void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double 
 	outBufferUnderflowCount = outUnder;
 	outBufferOverflowCount = outOver;
 
-	if (displayMode == IQ || displayMode == PHASE)
-		//Keep a copy raw I/Q to local buffer for display
-		CPXBuf::copy(rawIQ, in, numSamples);
-	else if (displayMode == SPECTRUM || displayMode == WATERFALL)
+    //Keep a copy raw I/Q to local buffer for display
+    //CPXBuf::copy(rawIQ, in, numSamples);
+    if (displayMode == SPECTRUM || displayMode == WATERFALL)
         MakeSpectrum(fftUnprocessed, in, unprocessed, numSamples);
 }
 
@@ -125,6 +125,7 @@ void SignalSpectrum::Zoomed(CPX *in, int size)
     }
     //This will also display any zoomed data
     displayUpdateComplete = false;
+    //emitFftCounter++; //Testing for matching paint()
     emit newFftData();
 }
 

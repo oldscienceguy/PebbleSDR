@@ -15,7 +15,7 @@ class SignalSpectrum :
 
 public:
 	//Moved from spectrumWidget to avoid .h circular ref.  We need to know mode so we can skip non-visible displays
-    enum DISPLAYMODE {SPECTRUM = 0,WATERFALL,IQ,PHASE,NODISPLAY};
+    enum DISPLAYMODE {SPECTRUM = 0,WATERFALL,NODISPLAY};
 
     SignalSpectrum(int sr, quint32 zsr, int ns, Settings *set);
 	~SignalSpectrum(void);
@@ -52,6 +52,9 @@ public:
     quint32 getZoomedSampleRate() {return zoomedSampleRate;}
 
     void SetSampleRate(quint32 _sampleRate, quint32 _zoomedSampleRate);
+
+    qint32 emitFftCounter; //Testing to see if we're getting more paints than signals
+
 public slots:
 
 signals:
