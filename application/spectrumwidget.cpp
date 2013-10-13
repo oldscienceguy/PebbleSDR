@@ -775,8 +775,6 @@ void SpectrumWidget::newFftData()
     if (!isRunning)
         return;
 
-    qint32 fftMap[2048]; //!!Fix to dynamic max screen width
-
     double startFreq =  - (sampleRate/2); //Relative to 0
     double endFreq = sampleRate/2;
     //Zoom is always centered on fMixer

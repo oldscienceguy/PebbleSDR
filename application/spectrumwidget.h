@@ -50,6 +50,8 @@ private:
 	SignalSpectrum *signalSpectrum; //Source of spectrum data
     double *averageSpectrum;
     double *lastSpectrum;
+    //Holds values mapped to screen using utility in fft
+    qint32 fftMap[2048]; //!!Fix to dynamic max screen width?
 
 	int upDownIncrement;
 	int leftRightIncrement;
