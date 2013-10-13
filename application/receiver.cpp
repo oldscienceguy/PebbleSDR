@@ -573,27 +573,28 @@ void Receiver::ProcessBlock(CPX *in, CPX *out, int frameCount)
         recordingFile.WriteSamples(in,frameCount);
 
 	float tmp;
-	//Configure IQ order
-	for (int i=0;i<framesPerBuffer;i++)
-	{
-        switch(sdr->iqOrder)
-		{
-        case SDR::IQ:
-				//No change, this is the default order
-				break;
-        case SDR::QI:
-				tmp = in[i].im;
-				in[i].im = in[i].re;
-				in[i].re = tmp;
-				break;
-        case SDR::IONLY:
-				in[i].im = in[i].re;
-				break;
-        case SDR::QONLY:
-				in[i].re = in[i].im;
-				break;
-		}
-	}
+    //Configure IQ order if not default
+    if (sdr->iqOrder != SDR::IQ)
+        for (int i=0;i<framesPerBuffer;i++)
+        {
+            switch(sdr->iqOrder)
+            {
+            case SDR::IQ:
+                    //No change, this is the default order
+                    break;
+            case SDR::QI:
+                    tmp = in[i].im;
+                    in[i].im = in[i].re;
+                    in[i].re = tmp;
+                    break;
+            case SDR::IONLY:
+                    in[i].im = in[i].re;
+                    break;
+            case SDR::QONLY:
+                    in[i].re = in[i].im;
+                    break;
+            }
+        }
 
 	//Spectrum wide processing
 
@@ -629,7 +630,6 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 {
 	CPX *nextStep = in;
 
-    //Incoming almost raw data
     global->testBench->DisplayData(frameCount,nextStep,sampleRate,PROFILE_1);
 
     //global->perform.StartPerformance();
