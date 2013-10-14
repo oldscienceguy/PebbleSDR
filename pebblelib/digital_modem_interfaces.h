@@ -26,6 +26,14 @@ public:
 
     //Additional info
     virtual QString GetDescription() = 0;
+
+    //Any plugins that need to output to Testbench should declare this signal
+    //void Testbench(quint16 _length, CPX* _buf, double _sampleRate, quint16 _profile);
+    //To connect to this signal, we will need a QObject pointer where connection is established
+    //We can't just have interface inherit from QObject (lots of ambiguous reference errors)
+    //so we ask the plugin itself to return it's QObject pointer
+    virtual QObject* asQObject() = 0;
+
 };
 
 //How best to encode version number in interface

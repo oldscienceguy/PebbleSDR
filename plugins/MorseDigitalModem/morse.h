@@ -52,6 +52,8 @@ public:
     void SetupDataUi(QWidget *parent);
     QString GetPluginName();
     QString GetDescription();
+    QObject *asQObject() {return (QObject *)this;}
+
 
     //Returns tcw in ms for any given WPM
     int WpmToTcw(int w);

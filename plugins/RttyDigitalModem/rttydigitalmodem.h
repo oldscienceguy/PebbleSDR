@@ -35,6 +35,9 @@ public:
     //Additional info
     QString GetDescription();
 
+    QObject *asQObject() {return (QObject *)this;}
+
+
 private:
     //Ui::dataExample *dataUi;
 
