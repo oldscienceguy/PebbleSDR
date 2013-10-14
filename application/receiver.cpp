@@ -847,6 +847,9 @@ void Receiver::SetDigitalModem(QString _name, QWidget *_parent)
     }
     iDigitalModem = plugins.GetInterface(_name);
     if (iDigitalModem != NULL) {
+
+        connect(iDigitalModem->asQObject(), SIGNAL(Testbench(int, CPX*, double, int)),global->testBench,SLOT(DisplayData(int, CPX*, double, int)));
+
         iDigitalModem->SetSampleRate(demodSampleRate, demodFrames);
         iDigitalModem->SetupDataUi(_parent);
     }
