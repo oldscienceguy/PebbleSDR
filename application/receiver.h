@@ -86,6 +86,15 @@ public:
 private:
     Plugins plugins;
 
+    //Test bench profiles we can output data to test bench
+    enum TestBenchProfiles {
+        testBenchRawIQ = 1,
+        testBenchPostMixer,
+        testBenchPostBandpass,
+        testBenchPostDemod
+    };
+
+
     FFTfftw *fft;
 	int fftSize;
 	bool useFreqDomainChain;

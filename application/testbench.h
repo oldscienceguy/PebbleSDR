@@ -55,20 +55,6 @@
 //  global defines
 //////////////////////////////////////////////////////////////////////
 
-// Profile Defines.  Used to select various test points
-//within the program
-#define PROFILE_OFF 0
-#define PROFILE_1 1
-#define PROFILE_2 2
-#define PROFILE_3 3
-#define PROFILE_4 4
-#define PROFILE_5 5
-#define PROFILE_6 6
-#define PROFILE_7 7
-
-#define NUM_PROFILES 8
-
-
 #define TEST_FFTSIZE 2048
 
 #define TB_HORZ_DIVS 10
@@ -138,9 +124,14 @@ public:
     bool debugOn;
     bool noiseOn;
 
+    void ResetProfiles(); //Delete all profiles
+
     void MixNoiseSamples(int length, CPX *pBuf, double samplerate);
 
 public slots:
+    bool AddProfile(QString profileName, int profileNumber); //false if profilenumber already exists
+    void RemoveProfile(quint16 profileNumber);
+
     void DisplayData(int n, TYPECPX* pBuf, double samplerate, int profile);
 
 	void Reset();		//called by GUI Reset button

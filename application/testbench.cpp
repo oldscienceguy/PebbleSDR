@@ -70,20 +70,6 @@
 #define TRIGSTATE_DISPLAY 2
 #define TRIGSTATE_WAITDISPLAY 3
 
-
-//list of defined profiles that matches with #defines in header
-const char* PROF_STR[NUM_PROFILES] =
-{
-    "Off",          //0
-    "Incoming I/Q", //1
-    "Post Mixer",   //2
-    "Post BandPass",//3
-    "Post Demod",   //4
-    "Profile 5", //5
-    "Profile 6", //6
-    "Profile 7"  //7
-};
-
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -172,7 +158,6 @@ CTestBench::CTestBench(QWidget *parent) :
     ui->noiseGeneratorGroup->setChecked(noiseOn);
     connect(ui->noiseGeneratorGroup,SIGNAL(toggled(bool)),this,SLOT(OnNoiseBox(bool)));
 
-
 }
 
 CTestBench::~CTestBench()
@@ -237,13 +222,12 @@ void CTestBench::Init()
 	m_TrigIndex = tmp;
 	ui->comboBoxTrig->setCurrentIndex(m_TrigIndex);
 
-
     ui->comboBoxProfile->blockSignals(true);
     ui->comboBoxProfile->clear();
-    for(int i=0; i<NUM_PROFILES; i++)
-		ui->comboBoxProfile->addItem(PROF_STR[i],i);
+    ui->comboBoxProfile->addItem("Off",0);
     ui->comboBoxProfile->blockSignals(false);
-	ui->comboBoxProfile->setCurrentIndex(m_Profile);
+    ui->comboBoxProfile->setCurrentIndex(0);
+    m_Profile = 0;
 
 	ui->spinBoxStart->setValue(m_SweepStartFrequency/1000.0);
 	ui->spinBoxStop->setValue(m_SweepStopFrequency/1000.0);
@@ -271,6 +255,37 @@ void CTestBench::Init()
 	ui->spinBoxPulsePeriod->setValue((int)(1000.0*m_PulsePeriod));
 
 	Reset();
+}
+
+//Profile # starts with 1, 0 means no profiles
+bool CTestBench::AddProfile(QString profileName, int profileNumber)
+{
+    //See if profileNumber already exists in menu and remove
+    RemoveProfile(profileNumber);
+
+    ui->comboBoxProfile->blockSignals(true);
+    ui->comboBoxProfile->addItem(profileName,profileNumber);
+    ui->comboBoxProfile->blockSignals(false);
+    return true;
+}
+
+void CTestBench::RemoveProfile(quint16 profileNumber)
+{
+    int item = ui->comboBoxProfile->findData(profileNumber);
+    if (item > 0) {
+        ui->comboBoxProfile->blockSignals(true);
+        ui->comboBoxProfile->removeItem(item);
+        ui->comboBoxProfile->blockSignals(false);
+    }
+}
+
+void CTestBench::ResetProfiles()
+{
+    int profileNumber;
+    for (int i=1; i<=ui->comboBoxProfile->count(); i++) {
+        profileNumber = ui->comboBoxProfile->itemData(i).toInt();
+        RemoveProfile(profileNumber);
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -361,7 +376,9 @@ void CTestBench::OnTrigLevel(int level)
 
 void CTestBench::OnProfile(int profindex)
 {
-	m_Profile = profindex;
+    //Get the item data
+    int profile = ui->comboBoxProfile->itemData(profindex).toInt();
+    m_Profile = profile;
 
 }
 

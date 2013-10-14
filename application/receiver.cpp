@@ -100,13 +100,20 @@ bool Receiver::On()
 	}
 
     if (sdr->isTestBenchChecked) {
-        //Position test bench relative to window
-        //Todo
-        global->testBench->Init(); //Sets up last device settings used
-        //Anchor in upper left
-        global->testBench->setGeometry(0,0,-1,-1);
+        CTestBench *testBench = global->testBench;
 
-        global->testBench->setVisible(true);
+        testBench->Init(); //Sets up last device settings used
+        //Anchor in upper left
+        testBench->setGeometry(0,0,-1,-1);
+
+        testBench->ResetProfiles();
+        testBench->AddProfile("Incoming",testBenchRawIQ);
+        testBench->AddProfile("Post Mixer",testBenchPostMixer);
+        testBench->AddProfile("Post Bandpass",testBenchPostBandpass);
+        testBench->AddProfile("Post Demod",testBenchPostDemod);
+
+        testBench->setVisible(true);
+
         //Keep focus on us
         mainWindow->activateWindow(); //Makes main active
         mainWindow->raise(); //Brings it to the top
@@ -630,7 +637,7 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 {
 	CPX *nextStep = in;
 
-    global->testBench->DisplayData(frameCount,nextStep,sampleRate,PROFILE_1);
+    global->testBench->DisplayData(frameCount,nextStep,sampleRate,testBenchRawIQ);
 
     //global->perform.StartPerformance();
     /*
@@ -735,7 +742,7 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
         //Mixer shows no loss in testing
         //nextStep = mixer->ProcessBlock(nextStep);
         //float post = SignalProcessing::TotalPower(nextStep,frameCount);
-        global->testBench->DisplayData(demodFrames,nextStep,demodSampleRate,PROFILE_2);
+        global->testBench->DisplayData(demodFrames,nextStep,demodSampleRate,testBenchPostMixer);
 
         //global->perform.StopPerformance(100);
 
@@ -745,7 +752,7 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
         nextStep = bpFilter->ProcessBlock(nextStep);
         //Crude AGC, too much fluctuation
         //CPXBuf::scale(nextStep,nextStep,pre/post,frameCount);
-        global->testBench->DisplayData(demodFrames,nextStep,demodSampleRate,PROFILE_3);
+        global->testBench->DisplayData(demodFrames,nextStep,demodSampleRate,testBenchPostBandpass);
 
         //global->perform.StopPerformance(100);
 
@@ -777,7 +784,7 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
             nextStep = iDigitalModem->ProcessBlock(nextStep);
 
         nextStep = demod->ProcessBlock(nextStep, framesPerBuffer);
-        global->testBench->DisplayData(demodFrames,nextStep,demodSampleRate,PROFILE_4);
+        global->testBench->DisplayData(demodFrames,nextStep,demodSampleRate,testBenchPostDemod);
 
         //global->perform.StopPerformance(100);
 
@@ -849,6 +856,10 @@ void Receiver::SetDigitalModem(QString _name, QWidget *_parent)
     if (iDigitalModem != NULL) {
 
         connect(iDigitalModem->asQObject(), SIGNAL(Testbench(int, CPX*, double, int)),global->testBench,SLOT(DisplayData(int, CPX*, double, int)));
+
+        connect(iDigitalModem->asQObject(), SIGNAL(AddProfile(QString,int)), global->testBench,SLOT(AddProfile(QString,int)));
+
+        connect(iDigitalModem->asQObject(), SIGNAL(RemoveProfile(int)), global->testBench,SLOT(RemoveProfile(int)));
 
         iDigitalModem->SetSampleRate(demodSampleRate, demodFrames);
         iDigitalModem->SetupDataUi(_parent);
