@@ -9,7 +9,7 @@
 #define WFMDEMOD_H
 
 #include "filters/fir.h"
-#include "filters/iir.h"
+#include "iir.h"
 #include "downconvert.h"
 #include "rbdsconstants.h"
 #include "demod.h"
