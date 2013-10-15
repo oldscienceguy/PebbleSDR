@@ -35,7 +35,8 @@ SOURCES += pebblelib.cpp \
     fftw.cpp \
     fftooura.cpp \
     fftcute.cpp \
-    fft.cpp
+    fft.cpp \
+    iir.cpp
 
 HEADERS += pebblelib.h\
         pebblelib_global.h \
@@ -49,5 +50,6 @@ HEADERS += pebblelib.h\
     fftw.h \
     fftooura.h \
     fftcute.h \
-    fft.h
+    fft.h \
+    iir.h
 
