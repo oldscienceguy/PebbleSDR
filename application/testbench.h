@@ -89,10 +89,6 @@ public:
 
 	void CreateGeneratorSamples(int length, TYPECPX* pBuf, double samplerate);
 	void CreateGeneratorSamples(int length, TYPEREAL* pBuf, double samplerate);
-	// overloaded data display routines
-	void DisplayData(int n, TYPEREAL* pBuf, double samplerate, int profile);
-    void DisplayData(int n, TYPEMONO16* pBuf, double samplerate, int profile);
-	void DisplayData(int n, TYPESTEREO16* pBuf, double samplerate, int profile);
 
 	void SendDebugTxt(QString Str){ if(m_Active) emit SendTxt(Str);}
 
@@ -132,7 +128,11 @@ public slots:
     bool AddProfile(QString profileName, int profileNumber); //false if profilenumber already exists
     void RemoveProfile(quint16 profileNumber);
 
+    // overloaded data display routines
     void DisplayData(int n, TYPECPX* pBuf, double samplerate, int profile);
+    void DisplayData(int n, TYPEREAL* pBuf, double samplerate, int profile);
+    void DisplayData(int n, TYPEMONO16* pBuf, double samplerate, int profile);
+    void DisplayData(int n, TYPESTEREO16* pBuf, double samplerate, int profile);
 
 	void Reset();		//called by GUI Reset button
 	void DrawFftPlot();	//called to draw new fft data onto screen plot

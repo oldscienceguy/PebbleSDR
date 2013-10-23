@@ -855,7 +855,11 @@ void Receiver::SetDigitalModem(QString _name, QWidget *_parent)
     iDigitalModem = plugins.GetInterface(_name);
     if (iDigitalModem != NULL) {
 
+        //Display array of CPX data in TestBench
         connect(iDigitalModem->asQObject(), SIGNAL(Testbench(int, CPX*, double, int)),global->testBench,SLOT(DisplayData(int, CPX*, double, int)));
+
+        //Display array of double data in TestBench
+        connect(iDigitalModem->asQObject(), SIGNAL(Testbench(int, double*, double, int)),global->testBench,SLOT(DisplayData(int, double*, double, int)));
 
         connect(iDigitalModem->asQObject(), SIGNAL(AddProfile(QString,int)), global->testBench,SLOT(AddProfile(QString,int)));
 
