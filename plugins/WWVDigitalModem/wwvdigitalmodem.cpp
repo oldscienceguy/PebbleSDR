@@ -11,9 +11,23 @@ The WWV signal format consists of three elements
 1. 5-ms, 1000-Hz pulse, which occurs at the beginning of each second
 2. 800-ms, 1000-Hz pulse, which occurs at the beginning of each minute
 3. Pulse-width modulated 100-Hz subcarrier for the data bits, one bit per second
+    0-5ms  Reserved for 1khz second tick
+    5ms - 30ms  No tone, guard band for second tick
+    0ms -  800ms Reserved for 1000Hz minute pulse once per minute
+    30 -  800ms Reserved for 100hz pulse width modulated bit on seconds 1 to 59
+          -15db below carrier, then reduced another -15db at end of pulse
+            30 - 200ms is data bit zero
+            30 - 500ms is data bit one
+            30 - 800ms is marker
+    800 - 990ms    Reserved?
+    990ms - 0ms No tone, pre-second guard band
+
+    Between seconds one and sixteen inclusive past the minute, the current difference between UTC and UT1 is transmitted by doubling some of the once-per-second ticks, transmitting a second tick 100 ms after the first
 
 Each minute encodes nine BCD digits for the time of century plus seven bits for the daylight savings time (DST) indicator, leap warning indicator and DUT1 correction
 
+Collect 60bits a minute for N minutes, separate buffer for each minute
+Analyze buffers to interpolate missing data if necessary
 
 WWV BCD time code
 Bit     Weight	Meaning
@@ -96,57 +110,167 @@ Bit     Weight	Meaning
 
 */
 
+/*
+ A matched filter is one where the frequency response is an exact match to the expected frequency spectrum. (Bores)
+ A matched filter is in fact the same as correlating a signal with a copy of itself.
+
+ Another definition
+ A matched filter does a cross correlation using a time reversed template (does this mean NCO runs backwards?)
+
+ The input (filter coefficients) to a matched filter is the reversed signal of interest
+ For simple pulses, this consists of an NCO generated sine wave of the detected signal length
+ The detected signal length therfore determines the filter length
+ The output of the filter peaks when the desired signal and the detected signal are in sync
+ This peak is detected as a slope change and indicates a detected 'bit'
+
+ */
 //This needs to work with any sampleRate, detectedSignal length and detectedSignal frequency
 MatchedFilter::MatchedFilter(quint16 _sampleRate, quint16 _detectedSignalMs, quint32 _detectedSignalFrequency)
 {
     sampleRate = _sampleRate;
-    msDetectedSignal = _detectedSignalMs; //Length of matched signal
+    detectedSignalMs = _detectedSignalMs; //Length of matched signal
     detectedSignalFrequency = _detectedSignalFrequency;
     msPerSample = sampleRate / 1000;
-    phaseShiftSamples = 90 / (360/NUM_SINES); //20 samples for 80 sine table
 
     //8k sample rate, 170ms filter = 1360 sample
-    lenFilter = msPerSample * msDetectedSignal; //#samples needed to get length
+    lenFilter = msPerSample * detectedSignalMs; //#samples needed to get length
     delay = new CPX[lenFilter];
+    outBuf = new double[lenFilter];
     delayPtr = 0;
     ncoPtr = 0;
     out.clear();
     phase = 0;
 
     ncoPhase = 0;
-    //Init sintab, compare with sintab in refclock_wwv
-    double radInc = TWOPI / NUM_SINES; //radian delta, there are TWOPI radians in a circle
-    //We actually need NUM_SINES +1 values in table so we wrap correctly
-    for (int i=0; i<NUM_SINES; i++) {
-        sintab[i] = sin(i * radInc); //sin() takes radians, not degrees
+
+    //Generate a fixed filter coefficient table that's in sync with detected frequency, sample rate, and symbol len
+    ncoTable = new CPX[lenFilter+1]; //1 to 1 match with sample buffer with 1 extra zero element
+    ncoIncrement = TWOPI * (double)detectedSignalFrequency / (double)sampleRate;
+    for (int i=0; i<lenFilter; i++) {
+        ncoTable[i].re = cos(ncoPhase);
+        ncoTable[i].im = sin(ncoPhase);
+        ncoPhase += ncoIncrement;
+        //sin (0) to sin(PI) is positive, zero at 0 and PI
+        //sin (PI) to sin(TWOPI) is neg, zero at PI and TWOPI
+        //When ncoPhase gets to PI we've generated 1/2 cycle at freq
+        //When ncoPhase gets to TWOPI or greater we've completed a full cycle
+        if (ncoPhase >= TWOPI)
+            ncoPhase -= TWOPI;
+        else if (ncoPhase < 0)
+            ncoPhase += TWOPI;
+
     }
-    sintab[NUM_SINES] = 0;
+
+    slopesToAverage = 3; //Number of consistent slope up/down required to detect peak
+    slopeDownCounter = 0;
+    slopeUpCounter = 0;
+    lastSlope = 0;
+    lastMag = 0;
+}
+
+void MatchedFilter::ProcessSamples(quint16 len, CPX *in, double *output)
+{
+    for (int i=0; i<len; i++) {
+        //Filter coefficient table (pulse waveform) is in sync with delay table, so we can use delayPtr for both
+#if 1
+        in[i].re *= ncoTable[delayPtr].re / (msPerSample / 2 * detectedSignalMs);
+        in[i].im *= ncoTable[delayPtr].im / (msPerSample / 2 * detectedSignalMs);
+#else
+        in[i] *= ncoTable[delayPtr];
+#endif
+
+        //out has the accumulated sum of all samples in the ring buffer * NCO
+        //Throw out oldest value
+        out -= delay[delayPtr];
+        //And add newest
+        out += in[i]; //Mixed value
+
+        output[i] = out.mag();
+
+        //Replace the oldest mixed sample in ring buffer with current and increment circular ptr for next call
+        delay[delayPtr] = in[i];
+        delayPtr = (delayPtr + 1) % lenFilter;
+
+    }
 }
 
 //See wwv_rf in refclock_wwv.c
-void MatchedFilter::ProcessSample(CPX in)
+//Returns true if peak detected
+bool MatchedFilter::ProcessSample(CPX in)
 {
+    //Filter coefficient table (pulse waveform) is in sync with delay table, so we can use delayPtr for both
+    in.re *= ncoTable[delayPtr].re;// / (msPerSample / 2 * detectedSignalMs);
+    in.im *= ncoTable[delayPtr].im;// / (msPerSample / 2 * detectedSignalMs);
 
+#if 0
     //Next NCO value
-    //Not a complex mix, ....  simple multiplcation
-    in.re *= cos(ncoPhase);
-    in.im *= sin(ncoPhase);
+    //Not convolution (mixing) so don't use CPX * operator
+    in.re *= cos(ncoPhase); // / (msPerSample / 2 * detectedSignalMs);
+    in.im *= sin(ncoPhase); // / (msPerSample / 2 * detectedSignalMs);
 
     ncoPhase += TWOPI * (double)detectedSignalFrequency / (double)sampleRate;
+    //sin (0) to sin(PI) is positive, zero at 0 and PI
+    //sin (PI) to sin(TWOPI) is neg, zero at PI and TWOPI
+    //When ncoPhase gets to PI we've generated 1/2 cycle at freq
+    //When ncoPhase gets to TWOPI or greater we've completed a full cycle
+    if (ncoPhase >= TWOPI)
+        ncoPhase -= TWOPI;
+    else if (ncoPhase < 0)
+        ncoPhase += TWOPI;
+#endif
+#if 0
     if (ncoPhase > M_PI)
         ncoPhase -= TWOPI;
     else if (ncoPhase < M_PI)
         ncoPhase += TWOPI;
+#endif
 
-    //out has the accumulated mxed values for all samples in the ring buffer
+
+
+
+    //out has the accumulated sum of all samples in the ring buffer * NCO
     //Throw out oldest value
     out -= delay[delayPtr];
     //And add newest
     out += in; //Mixed value
 
-    //Add current mixed sample to ring buffer and increment circular ptr for next call
+    //outBuf[delayPtr] = out;
+
+    //Replace the oldest mixed sample in ring buffer with current and increment circular ptr for next call
     delay[delayPtr] = in;
     delayPtr = (delayPtr + 1) % lenFilter;
+
+    //Slope detection
+    double mag = out.mag();
+    if (mag > lastMag) {
+        //Slope up
+        slopeUpCounter++;
+        lastMag = mag;
+        slopeDownCounter = 0;
+        return false;
+    } else if (mag < lastMag) {
+        //Slope down
+        slopeDownCounter++;
+        if (slopeUpCounter >= slopesToAverage) {
+            //Possible peak
+            if (slopeDownCounter >= slopesToAverage) {
+                //Consistent slope up and down, this is peak
+                slopeUpCounter = slopeDownCounter = 0; //Start looking for next peak
+                return true; //Peak is slopesToAverage samples prior
+            } else {
+                //Keep looking for more down slopes
+                return false;
+            }
+        } else {
+            //Not enough up slopes
+            slopeUpCounter = slopeDownCounter = 0; //Start looking for next peak
+            return false;
+        }
+    } else {
+        //Flat, reset?
+        slopeUpCounter = slopeDownCounter = 0; //Start looking for next peak
+        return false;
+    }
 
 #if 0
     double dtemp;
@@ -192,11 +316,12 @@ void MatchedFilter::ProcessSample(CPX in)
 
 }
 
-WWVDigitalModem::WWVDigitalModem()
+WWVDigitalModem::WWVDigitalModem() : QObject()
 {
     dataUi = NULL;
     out = NULL;
     workingBuf = NULL;
+    modemClock = 0;
 }
 
 void WWVDigitalModem::SetSampleRate(int _sampleRate, int _sampleCount)
@@ -207,14 +332,25 @@ void WWVDigitalModem::SetSampleRate(int _sampleRate, int _sampleCount)
     modemSampleRate = actualModemRate;
 
     //Inital filter to get 1k or 1.2k carrier
-    bandPass.init_bandpass(bandPassLen,1,800,1400); //600hz wide
+    //Filter freq has to be normalized against sample rate
+    double fHi, fLo;
+    fHi = 1400.0/modemSampleRate;
+    fLo = 800.0/modemSampleRate;
+    bandPass.init_bandpass(bandPassLen,1,fLo,fHi); //600hz wide
     //100hz sub carrier
-    lowPass.init_lowpass(lowPassLen,1,150);
+    fLo = 150.0/modemSampleRate;
+    //lowPass.init_lowpass(lowPassLen,1,fLo); //FLDigi version doesn't work as well
+
+    //How does Q affect filter
+    lowPass.InitLP(150,1.0,modemSampleRate);
 
     out = new CPX[numSamples];
     workingBuf = new CPX[numSamples];
+    ms170Buf = new double[numSamples];
 
     ms170 = new MatchedFilter(modemSampleRate, 170, 100);
+    ms5 = new MatchedFilter(modemSampleRate, 5, 1000);
+    ms800 = new MatchedFilter(modemSampleRate, 800, 1000);
 }
 
 WWVDigitalModem::~WWVDigitalModem()
@@ -227,8 +363,9 @@ void WWVDigitalModem::SetDemodMode(DEMODMODE _demodMode)
 
 CPX *WWVDigitalModem::ProcessBlock(CPX *in)
 {
-    CPX bandPassOut;
-    CPX lowPassOut;
+    if (workingBuf == NULL)
+        return in; //Not initialized yet
+
     //Downconverter first mixes in place, ie changes in!  So we have to work with a copy
     CPXBuf::copy(workingBuf,in,numSamples);
 
@@ -236,7 +373,21 @@ CPX *WWVDigitalModem::ProcessBlock(CPX *in)
     modemDownConvert.SetFrequency(0); //No additional mixing
     int numModemSamples = modemDownConvert.ProcessData(numSamples, workingBuf, out);
 
+    //emit Testbench(numModemSamples, out, modemSampleRate, WWVModem);
+
+    lowPass.ProcessFilter(numModemSamples,out,workingBuf);
+    //emit Testbench(numModemSamples, workingBuf, modemSampleRate, WWVModem);
+
+    ms170->ProcessSamples(numModemSamples,workingBuf, ms170Buf);
+    emit Testbench(numModemSamples, ms170Buf, modemSampleRate, WWVModem);
+
+#if 0
+
     for (int i = 0; i < numModemSamples; i++) {
+
+        modemClock++;
+        Process100Hz(workingBuf[i]);
+
         //Add gain here if needed
 
         //The 1000/1200-Hz pulses and 100-Hz subcarrier are first separated using
@@ -246,20 +397,23 @@ CPX *WWVDigitalModem::ProcessBlock(CPX *in)
 
         //The subcarrier is transmitted 10 dB down from the carrier. The DGAIN parameter can be adjusted for this
         //and to compensate for the radio audio response at 100 Hz.
-        if (lowPass.run(bandPassOut,lowPassOut)) {
+        if (lowPass.run(out[i],lowPassOut)) {
             //LowPass is valid
+            emit Testbench(1, &lowPassOut, modemSampleRate, WWVModem);
+
             Process100Hz(lowPassOut);
         }
+
         if (bandPass.run(out[i],bandPassOut)) {
             //BandPass is stable and we have result
                 Process1000Hz(bandPassOut);
         }
-
         //The minute synch pulse is extracted using an 800-ms synchronous matched filter and pulse grooming
         //logic which discriminates between WWV and WWVH signals and noise
 
         //The second synch pulse is extracted using a 5-ms FIR matched filter and 8000-stage comb filter.
     }
+#endif
     return in;
 }
 
@@ -277,8 +431,10 @@ void WWVDigitalModem::Process100Hz(CPX in)
      * to produce unit energy at the maximum value.
      */
 
-    ms170->ProcessSample(in);
-    qDebug()<<ms170->mag();
+    //100Hz is transmitted 10db below carrier, adjust gain. 10db is a factor of 10 gain (see db conversion)
+    if (ms170->ProcessSample(in * 10)) {
+        qDebug()<<modemClock; //Peak
+    }
 
 }
 
@@ -301,6 +457,7 @@ void WWVDigitalModem::SetupDataUi(QWidget *parent)
     if (parent == NULL) {
         //We want to delete
         if (dataUi != NULL) {
+            emit RemoveProfile(WWVModem);
             delete dataUi;
         }
         dataUi = NULL;
@@ -309,6 +466,9 @@ void WWVDigitalModem::SetupDataUi(QWidget *parent)
         //Create new one
         dataUi = new Ui::dataWWV();
         dataUi->setupUi(parent);
+        //Register testbench
+        emit AddProfile("WWV Modem", WWVModem);
+
     }
 }
 
@@ -330,3 +490,77 @@ QString WWVDigitalModem::GetDescription()
  - When 3 sets of 9 digits have been collected and match, time is sync'd (can take 15-40 min in noisy conditions)
 
 */
+
+#if 0
+Formatted output
+/*
+ * timecode - assemble timecode string and length
+ *
+ * Prettytime format - similar to Spectracom
+ *
+ * sq yy ddd hh:mm:ss ld dut lset agc iden sig errs freq avgt
+ *
+ * s	sync indicator ('?' or ' ')
+ * q	error bits (hex 0-F)
+ * yyyy	year of century
+ * ddd	day of year
+ * hh	hour of day
+ * mm	minute of hour
+ * ss	second of minute)
+ * l	leap second warning (' ' or 'L')
+ * d	DST state ('S', 'D', 'I', or 'O')
+ * dut	DUT sign and magnitude (0.1 s)
+ * lset	minutes since last clock update
+ * agc	audio gain (0-255)
+ * iden	reference identifier (station and frequency)
+ * sig	signal quality (0-100)
+ * errs	bit errors in last minute
+ * freq	frequency offset (PPM)
+ * avgt	averaging time (s)
+ */
+static int
+timecode(
+    struct wwvunit *up,	/* driver structure pointer */
+    char *ptr		/* target string */
+    )
+{
+    struct sync *sp;
+    int year, day, hour, minute, second, dut;
+    char synchar, leapchar, dst;
+    char cptr[50];
+
+
+    /*
+     * Common fixed-format fields
+     */
+    synchar = (up->status & INSYNC) ? ' ' : '?';
+    year = up->decvec[YR].digit + up->decvec[YR + 1].digit * 10 +
+        2000;
+    day = up->decvec[DA].digit + up->decvec[DA + 1].digit * 10 +
+        up->decvec[DA + 2].digit * 100;
+    hour = up->decvec[HR].digit + up->decvec[HR + 1].digit * 10;
+    minute = up->decvec[MN].digit + up->decvec[MN + 1].digit * 10;
+    second = 0;
+    leapchar = (up->misc & SECWAR) ? 'L' : ' ';
+    dst = dstcod[(up->misc >> 4) & 0x3];
+    dut = up->misc & 0x7;
+    if (!(up->misc & DUTS))
+        dut = -dut;
+    sprintf(ptr, "%c%1X", synchar, up->alarm);
+    sprintf(cptr, " %4d %03d %02d:%02d:%02d %c%c %+d",
+        year, day, hour, minute, second, leapchar, dst, dut);
+    strcat(ptr, cptr);
+
+    /*
+     * Specific variable-format fields
+     */
+    sp = up->sptr;
+    sprintf(cptr, " %d %d %s %.0f %d %.1f %d", up->watch,
+        up->mitig[up->dchan].gain, sp->refid, sp->metric,
+        up->errcnt, up->freq / SECOND * 1e6, up->avgint);
+    strcat(ptr, cptr);
+    return (strlen(ptr));
+}
+
+
+#endif
