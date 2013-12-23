@@ -20,8 +20,14 @@ QT += widgets core gui multimedia
 #V 1.1.0 4/25/11
 #V 1.2.2 10/30/12
 
-#Download PortAudio from portaudio.com , open terminal, ./configure && make
+#Download PortAudio from portaudio.com , open terminal
+#Get latest SVN and make sure configure.in has 10.8 and 10.9 switch statment
+# autoreconf -if
+# ./configure
+# make
 #portaudio directory is at same level as PebbleII
+
+#if autoreconf not found, sudo port install automake autoconf libtool #macports
 
 #Download FFTW from fftw.org, open terminal, build floating point
 #Current version 3.3.1 as of 2/2013
@@ -67,23 +73,26 @@ macx {
 	#Use http://iconverticons.com/online/ to convert to icns file
 	ICON = Resources/Pebble.icns
 
+
 	#WARNING: Switching computers caused this .pro file to not load due to a bad certificate for asembla subversion
 	#Ran Qmake in terminal to see error, accepted cert, and file loads ok
 	#Get most recent checkin version number.  Assumes svn installed as in comments above
 	#See http://www.qtcentre.org/wiki/index.php?title=Version_numbering_using_QMake
 	#Note: This only gets re-generated when QMake is run and global.cpp compiled, not on every build
-	VERSION = $$system(/opt/subversion/bin/svn info -r HEAD . | grep 'Changed\\ Rev' | cut -b 19-)
-	!isEmpty(VERSION){
-	  VERSION = 0.$${VERSION}
-	}
-	VERSION = '\\"$${VERSION}\\"' #puts escaped strings so VERSION is \"0.123\"
+	#VERSION = $$system(/opt/subversion/bin/svn info -r HEAD . | grep 'Changed\\ Rev' | cut -b 19-)
+	#!isEmpty(VERSION){
+	#  VERSION = 0.$${VERSION}
+	#}
+	#VERSION = '\\"$${VERSION}\\"' #puts escaped strings so VERSION is \"0.123\"
+	VERSION = '\\"123\\"'
 	message($${VERSION})
 	#make it available to code
 	# NO SPACES !!!
 	DEFINES += PEBBLE_VERSION=\"$${VERSION}\"
 
-	DATE = $$system(/opt/subversion/bin/svn info -r HEAD . | grep 'Changed\\ Date' | cut -b 19-)
-	DATE = '\\"$${DATE}\\"' #puts escaped strings so VERSION is \"0.123\"
+	#DATE = $$system(/opt/subversion/bin/svn info -r HEAD . | grep 'Changed\\ Date' | cut -b 19-)
+	#DATE = '\\"$${DATE}\\"' #puts escaped strings so VERSION is \"0.123\"
+	DATE = '\\"$$system(date)\\"'
 	message($${DATE})
 	#make it available to code
 	# NO SPACES !!!
