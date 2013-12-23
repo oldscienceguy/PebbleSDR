@@ -6,7 +6,7 @@ TARGET = Pebble
 #QT5 requires explicit add of Widgets to add QtWidgets which was in QtGui in earlier releases
 QT += widgets core gui multimedia
 
-#Download & install QT 5.0 from http://qt-project.org
+#Download & install QT 5.2 from http://qt-project.org
 #Edit Projects and make sure Kits use Clang
 #Edit Projects and add 'make install' as additional build step
 #QML Debugging can be turned off, not using QML
@@ -84,11 +84,15 @@ macx {
 	#  VERSION = 0.$${VERSION}
 	#}
 	#VERSION = '\\"$${VERSION}\\"' #puts escaped strings so VERSION is \"0.123\"
-	VERSION = '\\"123\\"'
+	VERSION = '\\"$$system(git rev-list --count HEAD)\\"'
 	message($${VERSION})
 	#make it available to code
 	# NO SPACES !!!
 	DEFINES += PEBBLE_VERSION=\"$${VERSION}\"
+	#force build to pick up date and version
+	touch.name = application/global.cpp
+	touch.commands = touch $${PWD}/application/global.cpp
+	QMAKE_EXTRA_COMPILERS += touch
 
 	#DATE = $$system(/opt/subversion/bin/svn info -r HEAD . | grep 'Changed\\ Date' | cut -b 19-)
 	#DATE = '\\"$${DATE}\\"' #puts escaped strings so VERSION is \"0.123\"
