@@ -863,7 +863,7 @@ void Receiver::SetDigitalModem(QString _name, QWidget *_parent)
 
         connect(iDigitalModem->asQObject(), SIGNAL(AddProfile(QString,int)), global->testBench,SLOT(AddProfile(QString,int)));
 
-        connect(iDigitalModem->asQObject(), SIGNAL(RemoveProfile(int)), global->testBench,SLOT(RemoveProfile(int)));
+        connect(iDigitalModem->asQObject(), SIGNAL(RemoveProfile(quint16)), global->testBench,SLOT(RemoveProfile(quint16)));
 
         iDigitalModem->SetSampleRate(demodSampleRate, demodFrames);
         iDigitalModem->SetupDataUi(_parent);

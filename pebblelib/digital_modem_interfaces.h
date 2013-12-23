@@ -34,6 +34,13 @@ public:
     //so we ask the plugin itself to return it's QObject pointer
     virtual QObject* asQObject() = 0;
 
+signals:
+    void Testbench(int _length, CPX* _buf, double _sampleRate, int _profile);
+    void Testbench(int _length, double* _buf, double _sampleRate, int _profile);
+    bool AddProfile(QString profileName, int profileNumber); //false if profilenumber already exists
+    void RemoveProfile(quint16 profileNumber);
+
+
 };
 
 //How best to encode version number in interface

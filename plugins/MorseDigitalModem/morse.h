@@ -76,6 +76,11 @@ public slots:
 
 signals:
     void newOutput();
+    void Testbench(int _length, CPX* _buf, double _sampleRate, int _profile);
+    void Testbench(int _length, double* _buf, double _sampleRate, int _profile);
+    bool AddProfile(QString profileName, int profileNumber); //false if profilenumber already exists
+    void RemoveProfile(quint16 profileNumber);
+
 
 protected:
     //From SignalProcessing
