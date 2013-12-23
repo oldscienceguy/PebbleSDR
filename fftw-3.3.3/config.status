@@ -437,10 +437,10 @@ Copyright (C) 2012 Free Software Foundation, Inc.
 This config.status script is free software; the Free Software Foundation
 gives unlimited permission to copy, distribute and modify it."
 
-ac_pwd='/Users/rlandsman/Documents/SDR/Pebble/PebbleII/fftw-3.3.3'
+ac_pwd='/Users/rlandsman/Documents/SDR/PebbleSDR/fftw-3.3.3'
 srcdir='.'
-INSTALL='/opt/local/bin/ginstall -c'
-MKDIR_P='/opt/local/bin/gmkdir -p'
+INSTALL='/usr/bin/install -c'
+MKDIR_P='./install-sh -c -d'
 AWK='awk'
 test -n "$AWK" || AWK=awk
 # The default lists apply if the user does not specify any file.
@@ -562,18 +562,18 @@ SHELL='/bin/sh'
 ECHO='printf %s\n'
 PATH_SEPARATOR=':'
 host_alias=''
-host='x86_64-apple-darwin12.2.0'
-host_os='darwin12.2.0'
+host='x86_64-apple-darwin13.0.0'
+host_os='darwin13.0.0'
 build_alias=''
-build='x86_64-apple-darwin12.2.0'
-build_os='darwin12.2.0'
+build='x86_64-apple-darwin13.0.0'
+build_os='darwin13.0.0'
 SED='/usr/bin/sed'
 Xsed='/usr/bin/sed -e 1s/^X//'
 GREP='/usr/bin/grep'
 EGREP='/usr/bin/grep -E'
 FGREP='/usr/bin/grep -F'
-LD='/usr/llvm-gcc-4.2/libexec/gcc/i686-apple-darwin11/4.2.1/ld'
-NM='/opt/local/bin/nm'
+LD='/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld'
+NM='/usr/bin/nm'
 LN_S='ln -s'
 max_cmd_len='196608'
 ac_objext='o'
@@ -599,9 +599,9 @@ old_postinstall_cmds='chmod 644 $oldlib~$RANLIB $tool_oldlib'
 old_postuninstall_cmds=''
 old_archive_cmds='$AR $AR_FLAGS $oldlib$oldobjs~$RANLIB $tool_oldlib'
 lock_old_archive_extraction='yes'
-CC='gcc -std=gnu99'
-CFLAGS='-O3 -fomit-frame-pointer -mtune=native -fstrict-aliasing -fno-schedule-insns -ffast-math'
-compiler='gcc -std=gnu99'
+CC='gcc'
+CFLAGS='-O3 -fomit-frame-pointer -mtune=native -malign-double -fstrict-aliasing -fno-schedule-insns -ffast-math'
+compiler='gcc'
 GCC='yes'
 lt_cv_sys_global_symbol_pipe='sed -n -e '\''s/^.*[	 ]\([BCDEGRST][BCDEGRST]*\)[	 ][	 ]*_\([_A-Za-z][_A-Za-z0-9]*\)$/\1 _\2 \2/p'\'' | sed '\''/ __gnu_lto/d'\'''
 lt_cv_sys_global_symbol_to_cdecl='sed -n -e '\''s/^T .* \(.*\)$/extern int \1();/p'\'' -e '\''s/^[BCDEGRST]* .* \(.*\)$/extern char \1;/p'\'''
@@ -611,7 +611,7 @@ nm_file_list_spec=''
 lt_sysroot=''
 objdir='.libs'
 MAGIC_CMD='file'
-lt_prog_compiler_no_builtin_flag=' -fno-builtin'
+lt_prog_compiler_no_builtin_flag=' -fno-builtin -fno-rtti -fno-exceptions'
 lt_prog_compiler_pic=' -fno-common -DPIC'
 lt_prog_compiler_wl='-Wl,'
 lt_prog_compiler_static=''
@@ -672,7 +672,7 @@ postuninstall_cmds=''
 finish_cmds=''
 finish_eval=''
 hardcode_into_libs='no'
-sys_lib_search_path_spec='/usr/llvm-gcc-4.2/lib/gcc/i686-apple-darwin11/4.2.1/x86_64 /Applications/Xcode.app/Contents/Developer/usr/llvm-gcc-4.2/lib/gcc/i686-apple-darwin11/4.2.1/x86_64 /usr/lib /usr/llvm-gcc-4.2/lib/gcc /usr/llvm-gcc-4.2/lib /Applications/Xcode.app/Contents/Developer/usr/llvm-gcc-4.2/lib  /usr/local/lib'
+sys_lib_search_path_spec='/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/5.0  /usr/local/lib'
 sys_lib_dlsearch_path_spec='/usr/local/lib /lib /usr/lib'
 hardcode_action='immediate'
 enable_dlopen='unknown'
@@ -723,9 +723,9 @@ postlink_cmds_F77=''
 file_list_spec_F77=''
 hardcode_action_F77=''
 
-LTCC='gcc -std=gnu99'
+LTCC='gcc'
 LTCFLAGS='-g -O2'
-compiler='gcc -std=gnu99'
+compiler='gcc'
 
 # A function that is used when there is no print builtin or printf.
 func_fallback_echo ()
@@ -930,7 +930,7 @@ S["MPIRUN"]=""
 S["MPILIBS"]=""
 S["MPICC"]=""
 S["OCAMLBUILD"]=""
-S["CPP"]="gcc -std=gnu99 -E"
+S["CPP"]="gcc -E"
 S["OTOOL64"]=":"
 S["OTOOL"]="otool"
 S["LIPO"]="lipo"
@@ -940,10 +940,10 @@ S["MANIFEST_TOOL"]=":"
 S["RANLIB"]="ranlib"
 S["ac_ct_AR"]="ar"
 S["AR"]="ar"
-S["NM"]="/opt/local/bin/nm"
+S["NM"]="/usr/bin/nm"
 S["ac_ct_DUMPBIN"]=""
 S["DUMPBIN"]=""
-S["LD"]="/usr/llvm-gcc-4.2/libexec/gcc/i686-apple-darwin11/4.2.1/ld"
+S["LD"]="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld"
 S["FGREP"]="/usr/bin/grep -F"
 S["EGREP"]="/usr/bin/grep -E"
 S["GREP"]="/usr/bin/grep"
@@ -968,8 +968,8 @@ S["EXEEXT"]=""
 S["ac_ct_CC"]="gcc"
 S["CPPFLAGS"]=""
 S["LDFLAGS"]=""
-S["CFLAGS"]="-O3 -fomit-frame-pointer -mtune=native -fstrict-aliasing -fno-schedule-insns -ffast-math"
-S["CC"]="gcc -std=gnu99"
+S["CFLAGS"]="-O3 -fomit-frame-pointer -mtune=native -malign-double -fstrict-aliasing -fno-schedule-insns -ffast-math"
+S["CC"]="gcc"
 S["PREC_SUFFIX"]=""
 S["HAVE_NEON_FALSE"]=""
 S["HAVE_NEON_TRUE"]="#"
@@ -987,14 +987,14 @@ S["LDOUBLE_FALSE"]=""
 S["LDOUBLE_TRUE"]="#"
 S["SINGLE_FALSE"]=""
 S["SINGLE_TRUE"]="#"
-S["host_os"]="darwin12.2.0"
+S["host_os"]="darwin13.0.0"
 S["host_vendor"]="apple"
 S["host_cpu"]="x86_64"
-S["host"]="x86_64-apple-darwin12.2.0"
-S["build_os"]="darwin12.2.0"
+S["host"]="x86_64-apple-darwin13.0.0"
+S["build_os"]="darwin13.0.0"
 S["build_vendor"]="apple"
 S["build_cpu"]="x86_64"
-S["build"]="x86_64-apple-darwin12.2.0"
+S["build"]="x86_64-apple-darwin13.0.0"
 S["SHARED_VERSION_INFO"]="6:2:3"
 S["MAINT"]="#"
 S["MAINTAINER_MODE_FALSE"]=""
@@ -1005,16 +1005,16 @@ S["AMTAR"]="$${TAR-tar}"
 S["am__leading_dot"]="."
 S["SET_MAKE"]=""
 S["AWK"]="awk"
-S["mkdir_p"]="/opt/local/bin/gmkdir -p"
-S["MKDIR_P"]="/opt/local/bin/gmkdir -p"
+S["mkdir_p"]="$(top_builddir)/./install-sh -c -d"
+S["MKDIR_P"]="./install-sh -c -d"
 S["INSTALL_STRIP_PROGRAM"]="$(install_sh) -c -s"
 S["STRIP"]="strip"
-S["install_sh"]="${SHELL} /Users/rlandsman/Documents/SDR/Pebble/PebbleII/fftw-3.3.3/install-sh"
-S["MAKEINFO"]="${SHELL} /Users/rlandsman/Documents/SDR/Pebble/PebbleII/fftw-3.3.3/missing --run makeinfo"
-S["AUTOHEADER"]="${SHELL} /Users/rlandsman/Documents/SDR/Pebble/PebbleII/fftw-3.3.3/missing --run autoheader"
-S["AUTOMAKE"]="${SHELL} /Users/rlandsman/Documents/SDR/Pebble/PebbleII/fftw-3.3.3/missing --run automake-1.11"
-S["AUTOCONF"]="${SHELL} /Users/rlandsman/Documents/SDR/Pebble/PebbleII/fftw-3.3.3/missing --run autoconf"
-S["ACLOCAL"]="${SHELL} /Users/rlandsman/Documents/SDR/Pebble/PebbleII/fftw-3.3.3/missing --run aclocal-1.11"
+S["install_sh"]="${SHELL} /Users/rlandsman/Documents/SDR/PebbleSDR/fftw-3.3.3/install-sh"
+S["MAKEINFO"]="${SHELL} /Users/rlandsman/Documents/SDR/PebbleSDR/fftw-3.3.3/missing --run makeinfo"
+S["AUTOHEADER"]="${SHELL} /Users/rlandsman/Documents/SDR/PebbleSDR/fftw-3.3.3/missing --run autoheader"
+S["AUTOMAKE"]="${SHELL} /Users/rlandsman/Documents/SDR/PebbleSDR/fftw-3.3.3/missing --run automake-1.11"
+S["AUTOCONF"]="${SHELL} /Users/rlandsman/Documents/SDR/PebbleSDR/fftw-3.3.3/missing --run autoconf"
+S["ACLOCAL"]="${SHELL} /Users/rlandsman/Documents/SDR/PebbleSDR/fftw-3.3.3/missing --run aclocal-1.11"
 S["VERSION"]="3.3.3"
 S["PACKAGE"]="fftw"
 S["CYGPATH_W"]="echo"
@@ -1166,12 +1166,12 @@ D["HAVE_DECL_DRAND48"]=" 1"
 D["HAVE_DECL_SRAND48"]=" 1"
 D["HAVE_DECL_MEMALIGN"]=" 0"
 D["HAVE_DECL_POSIX_MEMALIGN"]=" 1"
-D["HAVE_DECL_SINL"]=" 0"
-D["HAVE_DECL_COSL"]=" 0"
+D["HAVE_DECL_SINL"]=" 1"
+D["HAVE_DECL_COSL"]=" 1"
 D["HAVE_DECL_SINQ"]=" 0"
 D["HAVE_DECL_COSQ"]=" 0"
 D["HAVE_ISNAN"]=" 1"
-D["FFTW_CC"]=" \"gcc -std=gnu99 -O3 -fomit-frame-pointer -mtune=native -fstrict-aliasing -fno-schedule-insns -ffast-math\""
+D["FFTW_CC"]=" \"gcc -O3 -fomit-frame-pointer -mtune=native -malign-double -fstrict-aliasing -fno-schedule-insns -ffast-math\""
   for (key in D) D_is_set[key] = 1
   FS = ""
 }

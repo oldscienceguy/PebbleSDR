@@ -39,7 +39,7 @@
 /* #undef FC_DUMMY_MAIN_EQ_F77 */
 
 /* C compiler name and flags */
-#define FFTW_CC "gcc -std=gnu99 -O3 -fomit-frame-pointer -mtune=native -fstrict-aliasing -fno-schedule-insns -ffast-math"
+#define FFTW_CC "gcc -O3 -fomit-frame-pointer -mtune=native -malign-double -fstrict-aliasing -fno-schedule-insns -ffast-math"
 
 /* Define to enable extra FFTW debugging code. */
 /* #undef FFTW_DEBUG */
@@ -98,7 +98,7 @@
 
 /* Define to 1 if you have the declaration of `cosl', and to 0 if you don't.
    */
-#define HAVE_DECL_COSL 0
+#define HAVE_DECL_COSL 1
 
 /* Define to 1 if you have the declaration of `cosq', and to 0 if you don't.
    */
@@ -118,7 +118,7 @@
 
 /* Define to 1 if you have the declaration of `sinl', and to 0 if you don't.
    */
-#define HAVE_DECL_SINL 0
+#define HAVE_DECL_SINL 1
 
 /* Define to 1 if you have the declaration of `sinq', and to 0 if you don't.
    */
