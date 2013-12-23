@@ -2,7 +2,7 @@
 #define RTTYDIGITALMODEM_H
 
 #include "../pebblelib/digital_modem_interfaces.h"
-#include "ui/ui_data-example.h"
+//#include "ui/ui_data-example.h"
 
 class RttyDigitalModem  : public QObject, public DigitalModemInterface
 {
