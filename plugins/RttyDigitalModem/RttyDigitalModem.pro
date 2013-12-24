@@ -20,6 +20,7 @@ OBJECTS_DIR = $${PWD}/OMac
 MOC_DIR = $${PWD}/MocMac
 
 TARGET = RttyDigitalModem
+VERSION = 1.0.0
 
 #Plugins are independent of main application.  If we need code, we have to explicitly reference it
 SOURCES += baudotcode.cpp rtty.cpp \

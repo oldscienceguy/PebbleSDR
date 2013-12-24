@@ -21,6 +21,7 @@ OBJECTS_DIR = $${PWD}/OMac
 MOC_DIR = $${PWD}/MocMac
 
 TARGET = wwvdigitalmodem
+VERSION = 1.0.0
 
 SOURCES += wwvdigitalmodem.cpp
 

@@ -21,6 +21,8 @@ macx {
 QT       -= gui
 
 TARGET = pebblelib
+VERSION = 1.0.0
+
 TEMPLATE = lib
 
 DEFINES += PEBBLELIB_LIBRARY

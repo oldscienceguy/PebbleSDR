@@ -89,10 +89,6 @@ macx {
 	#make it available to code
 	# NO SPACES !!!
 	DEFINES += PEBBLE_VERSION=\"$${VERSION}\"
-	#force build to pick up date and version
-	touch.name = application/global.cpp
-	touch.commands = touch $${PWD}/application/global.cpp
-	QMAKE_EXTRA_COMPILERS += touch
 
 	#DATE = $$system(/opt/subversion/bin/svn info -r HEAD . | grep 'Changed\\ Date' | cut -b 19-)
 	#DATE = '\\"$${DATE}\\"' #puts escaped strings so VERSION is \"0.123\"
@@ -120,12 +116,9 @@ macx {
 	LIBS += -framework AudioToolbox
 	LIBS += -framework AudioUnit
 	LIBS += -framework CoreServices
+	LIBS += -framework IOKit
 
-	LIBS += -L$${PWD}/../pebblelib/lib -lpebblelib
-
-
-	LIBS += /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation \
-		/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit
+	LIBS += -L$${PWD}/../pebblelib/lib -lpebblelib.1
 
 	#Don't know if we need these
 	#INCLUDEPATH += ../portaudio/include
@@ -164,10 +157,9 @@ macx {
 	#Turn this off if you are having any problem with libraries or plugins
 	#Starting in QT5.02 the cocoa plugin is always required, so we can't use -no-plugins
 	QMAKE_POST_LINK += macdeployqt $${DESTDIR}/Pebble.app
-	message("Reminder - macdeployqt has bug and must be run from fix_macdeployqt script")
+	#message("Reminder - macdeployqt 5.1 has bug and must be run from fix_macdeployqt script")
 
 	# macdeployqt fixes references, but does not copy non QT dylib.  We have to do this manually
-	mylib.files += $${PWD}/../pebblelib/lib/libpebblelib.dylib
 	mylib.files += $${PWD}/../pebblelib/lib/libpebblelib.1.dylib
 	mylib.path = $${DESTDIR}/Pebble.app/Contents/Frameworks
 	INSTALLS += mylib
