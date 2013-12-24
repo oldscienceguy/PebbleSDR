@@ -20,6 +20,8 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	settings = new Settings();
     global->settings = settings;
 
+    plugins = new Plugins();
+
     mainWindow = main;
     receiverWidget = rw;
 
@@ -80,7 +82,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	//Testing
 	useFreqDomainChain = false;
 
-    qDebug()<<plugins.GetPluginNames();
+    qDebug()<<plugins->GetPluginNames();
 
 }
 bool Receiver::On()
@@ -852,7 +854,7 @@ void Receiver::SetDigitalModem(QString _name, QWidget *_parent)
         iDigitalModem = NULL;
         return;
     }
-    iDigitalModem = plugins.GetInterface(_name);
+    iDigitalModem = plugins->GetInterface(_name);
     if (iDigitalModem != NULL) {
 
         //Display array of CPX data in TestBench

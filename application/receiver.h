@@ -73,7 +73,7 @@ public:
 
     DigitalModemInterface *getDigitalModem() {return iDigitalModem;}
     void SetDigitalModem(QString _name, QWidget *_parent);
-    QStringList getPluginNames() {return plugins.GetPluginNames();}
+    QStringList getPluginNames() {return plugins->GetPluginNames();}
 
     Demod *getDemod() {return demod;}
 
@@ -84,7 +84,7 @@ public:
         void CloseSdrOptions();
 
 private:
-    Plugins plugins;
+    Plugins *plugins;
 
     //Test bench profiles we can output data to test bench
     enum TestBenchProfiles {
