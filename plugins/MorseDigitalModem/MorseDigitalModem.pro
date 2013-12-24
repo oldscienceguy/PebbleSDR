@@ -6,6 +6,8 @@ include(../../application/pebbleqt.pri)
 #DESTDIR is set in pebbleqt.pri
 DESTDIR = $${DESTDIR}/plugins
 
+#Common library dependency code for all Pebble plugins
+include (../DigitalModemExample/fix_plugin_libraries.pri)
 
 QT += widgets
 TEMPLATE = lib
@@ -33,8 +35,3 @@ FORMS += data-morse.ui \
 INCLUDEPATH += ../../application
 
 LIBS += -L$${PWD}/../../pebblelib/lib -lpebblelib
-
-#We need to set where pebblelib is expected (app frameworks) to be found so it doesn't have to be installed on mac
-pebblelib.path += $${DESTDIR}
-pebblelib.commands += install_name_tool -change libpebblelib.1.dylib @executable_path/../Frameworks/libpebblelib.1.dylib $${DESTDIR}/lib$${TARGET}.dylib
-INSTALLS += pebblelib

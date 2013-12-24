@@ -166,7 +166,7 @@ macx {
 	QMAKE_POST_LINK += macdeployqt $${DESTDIR}/Pebble.app
 	message("Reminder - macdeployqt has bug and must be run from fix_macdeployqt script")
 
-	#target.path = /usr/local
+	# macdeployqt fixes references, but does not copy non QT dylib.  We have to do this manually
 	mylib.files += $${PWD}/../pebblelib/lib/libpebblelib.dylib
 	mylib.files += $${PWD}/../pebblelib/lib/libpebblelib.1.dylib
 	mylib.path = $${DESTDIR}/Pebble.app/Contents/Frameworks
