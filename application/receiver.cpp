@@ -82,7 +82,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	//Testing
 	useFreqDomainChain = false;
 
-    qDebug()<<plugins->GetPluginNames();
+    //qDebug()<<plugins->GetPluginNames();
 
 }
 bool Receiver::On()
