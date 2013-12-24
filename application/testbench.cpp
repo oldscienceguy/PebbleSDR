@@ -40,6 +40,8 @@
 //==========================================================================================
 
 //UI and functionality adapted and extended for Pebble by Richard Landsman
+//GPL license and attributions are in gpl.h and terms are included in this file by reference
+#include "gpl.h"
 
 #include "testbench.h"
 #include "ui_testbench.h"

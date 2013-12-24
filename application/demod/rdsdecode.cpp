@@ -36,6 +36,8 @@
 //authors and should not be interpreted as representing official policies, either expressed
 //or implied, of Moe Wheatley.
 //==========================================================================================
+//GPL license and attributions are in gpl.h and terms are included in this file by reference
+#include "gpl.h"
 #include "rdsdecode.h"
 #include <QDebug>
 

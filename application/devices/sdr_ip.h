@@ -1,5 +1,7 @@
 #ifndef SDR_IP_H
 #define SDR_IP_H
+//GPL license and attributions are in gpl.h and terms are included in this file by reference
+#include "gpl.h"
 
 //Ignore warnings about OS X version unsupported (QT 5.1 bug)
 #pragma clang diagnostic ignored "-W#warnings"

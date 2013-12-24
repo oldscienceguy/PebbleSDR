@@ -2,7 +2,7 @@
 /*
 	This file is part of a program that implements a Software-Defined Radio.
 
-    Copyright (C) 2010  Richard A. Landsman
+    Copyright (C) 2010,2011,2012,2013,2014  Richard A. Landsman
 	Author may be contacted by email at PebbleSDR@gmail.com
 
     This program is free software: you can redistribute it and/or modify
@@ -35,7 +35,7 @@ List of Sources, Algorithms and References, and thank-you's:
 	PortAudio - See portaudio.h for details
 		Ross Bencina, Phil Burk
 		Latest version available at: http://www.portaudio.com/
-	QT Framework (4.63) - dll's distributed under GPL and LPGL license from Nokia
+    QT Framework (4.63, 5.2, ...) - dll's distributed under GPL and LPGL license from Nokia
 		Source code and license details available at http://qt.nokia.com/downloads
     HIDAPI - Cross platform HIDAPI source code
         HIDAPI cross platform source files from http://www.signal11.us/oss/hidapi/
@@ -44,6 +44,25 @@ List of Sources, Algorithms and References, and thank-you's:
     NUE-PSK
         www.nue-psk.com
         Source code examples for Goertzel and CW decoding David M.Collins, AD7JT George Heron, N2APB
+    RTL-SDR
+        http://sdr.osmocom.org
+        rtl-sdr is developed by Steve Markgraf, Dimitri Stolnikov, and Hoernchen, with contributions by Kyle Keen, Christian Vogel and Harald Welte.
+        Latest rtl-sdr source: git clone git://git.osmocom.org/rtl-sdr.git
+        http://sdr.osmocom.org/trac/wiki/rtl-sdr
+    CuteSDR
+        Many of the new and updated algorithms in Pebble 2.0 are taken or derived from this code.
+        I can not say enough good things about how much I learned and how much it helped!
+        Thank you Moe.
+        http://http://cutesdr.sourceforge.net/
+    FLDigi
+        http://www.w1hkj.com/Fldigi.html
+    CocoaModem
+        http://www.w7ay.net/site/Applications/cocoaModem/
+    AG1LE Blog
+        http://ag1le.blogspot.com/
+
+
+
 
 	Books and Articles
 	"Digital Signal Processing Technology", Doug Smith KF6DX, ARRL 

@@ -1,5 +1,7 @@
 #ifndef __USB_H__
 #define __USB_H__
+//GPL license and attributions are in gpl.h and terms are included in this file by reference
+#include "gpl.h"
 
 /*
 Modified usb.h to support explicit DLL loading

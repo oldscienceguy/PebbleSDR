@@ -6,6 +6,8 @@
 //////////////////////////////////////////////////////////////////////
 #ifndef FILTERCOEF_H
 #define FILTERCOEF_H
+//GPL license and attributions are in gpl.h and terms are included in this file by reference
+#include "gpl.h"
 
 //////////////////////////////////////////////////////////////////////
 // Filter -140dB Alias free normalized bandwidth constants for each type of filter

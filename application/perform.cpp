@@ -1,6 +1,8 @@
 /*
  * Modified by RAL to class so multiple timers can be used in same program
  */
+//GPL license and attributions are in gpl.h and terms are included in this file by reference
+#include "gpl.h"
 
 
 ///////////////////////////////////////////////////////

@@ -1,5 +1,7 @@
 #ifndef BARGRAPHMETER_H
 #define BARGRAPHMETER_H
+//GPL license and attributions are in gpl.h and terms are included in this file by reference
+#include "gpl.h"
 
 //Will eventually be used for smeter, cw tuning, etc
 //See Qt LevelMeter example

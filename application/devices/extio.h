@@ -2,6 +2,8 @@
 #define EXTIO_H
 //From HDSDR.DE
 //---------------------------------------------------------------------------
+//GPL license and attributions are in gpl.h and terms are included in this file by reference
+#include "gpl.h"
 
 #ifndef LC_ExtIO_TypesH
 #define LC_ExtIO_TypesH

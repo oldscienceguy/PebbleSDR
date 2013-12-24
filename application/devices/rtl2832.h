@@ -1,5 +1,7 @@
 #ifndef RTL2832_H
 #define RTL2832_H
+//GPL license and attributions are in gpl.h and terms are included in this file by reference
+#include "gpl.h"
 
 #include "sdr.h"
 #include "rtl-sdr/rtl-sdr.h"

@@ -1,6 +1,8 @@
 #ifndef DEMOD_SAM_H
 #define DEMOD_SAM_H
 #include "demod.h"
+//GPL license and attributions are in gpl.h and terms are included in this file by reference
+#include "gpl.h"
 
 class Demod_SAM: public Demod
 {

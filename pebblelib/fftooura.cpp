@@ -3,6 +3,7 @@
  * We use Radix 4 version (fft4g.c) which is supposed to run well on Intel processors
  */
 /*
+
 Fast Fourier/Cosine/Sine Transform
     dimension   :one
     data length :power of 2
@@ -28,6 +29,8 @@ Appendix :
     The cos/sin table is recalculated when the larger table required.
     w[] and ip[] are compatible with all routines.
 */
+//GPL license and attributions are in gpl.h and terms are included in this file by reference
+#include "gpl.h"
 
 #include "fftooura.h"
 #include <math.h>

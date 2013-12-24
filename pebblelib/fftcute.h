@@ -14,6 +14,8 @@
 //////////////////////////////////////////////////////////////////////
 #ifndef FFT_CUTE
 #define FFT_CUTE
+//GPL license and attributions are in gpl.h and terms are included in this file by reference
+#include "gpl.h"
 
 #include "fft.h"
 #include <QMutex>

@@ -1,3 +1,5 @@
+//GPL license and attributions are in gpl.h and terms are included in this file by reference
+#include "gpl.h"
 #include "demod_am.h"
 
 Demod_AM::Demod_AM(int _inputRate, int _numSamples) :

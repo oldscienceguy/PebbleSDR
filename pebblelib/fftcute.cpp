@@ -8,6 +8,9 @@
 //	2010-09-15  Initial creation MSW
 //	2011-03-27  Initial release
 //////////////////////////////////////////////////////////////////////
+//GPL license and attributions are in gpl.h and terms are included in this file by reference
+#include "gpl.h"
+
 #include <math.h>
 #include "fftcute.h"
 #include <QDebug>

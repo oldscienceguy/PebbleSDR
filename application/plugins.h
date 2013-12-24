@@ -8,6 +8,8 @@
 #include <QList>
 
 #include "../pebblelib/digital_modem_interfaces.h"
+//GPL license and attributions are in gpl.h and terms are included in this file by reference
+#include "gpl.h"
 
 struct PluginInfo
 {
