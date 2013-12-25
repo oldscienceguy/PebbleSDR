@@ -1,1 +1,7 @@
-Pebble II WIP
+#Pebble II SDR (Mac)
+
+##Introduction
+
+##Getting Started
+
+##Details
