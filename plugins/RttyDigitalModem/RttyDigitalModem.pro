@@ -34,7 +34,11 @@ HEADERS += baudotcode.h rtty.h \
 FORMS += ../../application/bargraphmeter.ui \
 
 #Help plugin not worry about include paths
+#Help plugin not worry about include paths
 INCLUDEPATH += ../../application
+DEPENDPATH += ../../application
+INCLUDEPATH += ../../pebblelib
+DEPENDPATH += ../../pebblelib
 
 LIBS += -L$${PWD}/../../pebblelib/lib -lpebblelib
 

@@ -352,7 +352,6 @@ HEADERS += \
 	nco.h \
 	mixer.h \
 	iirfilter.h \
-	gpl.h \
 	firfilter.h \
 	demod.h \
     defs.h \

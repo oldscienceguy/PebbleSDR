@@ -29,6 +29,9 @@ HEADERS += digitalmodemexample.h
 
 #Help plugin not worry about include paths
 INCLUDEPATH += ../../application
+DEPENDPATH += ../../application
+INCLUDEPATH += ../../pebblelib
+DEPENDPATH += ../../pebblelib
 
 LIBS += -L$${PWD}/../../pebblelib/lib -lpebblelib
 

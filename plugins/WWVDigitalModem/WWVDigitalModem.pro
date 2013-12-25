@@ -28,6 +28,9 @@ SOURCES += wwvdigitalmodem.cpp
 HEADERS += wwvdigitalmodem.h
 
 #Help plugin not worry about include paths
+#Help plugin not worry about include paths
+INCLUDEPATH += ../../application
+DEPENDPATH += ../../application
 INCLUDEPATH += ../../pebblelib
 DEPENDPATH += ../../pebblelib
 
