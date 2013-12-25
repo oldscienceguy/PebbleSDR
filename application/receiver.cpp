@@ -123,7 +123,7 @@ bool Receiver::On()
     }
 
     //Don't set title until we connect.  Some drivers handle multiple devices (RTL2832) and we need connection data
-    //QApplication::activeWindow()->setWindowTitle("Pebble: " + sdr->GetDeviceName());
+    QApplication::activeWindow()->setWindowTitle("Pebble II: " + sdr->GetDeviceName());
 
     connect(sdr,SIGNAL(Restart()),this,SLOT(Restart()));
 
@@ -262,6 +262,8 @@ bool Receiver::On()
 bool Receiver::Off()
 {
 	powerOn = false;
+
+    QApplication::activeWindow()->setWindowTitle("Pebble II");
 
     if (global->testBench->isVisible())
         global->testBench->setVisible(false);

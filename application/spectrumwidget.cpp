@@ -597,7 +597,7 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
             painter.setFont(global->settings->medFont);
 			for (int i=0; i<message.count(); i++)
 			{
-				painter.drawText(20, i*15 + 15 , message[i]);
+                painter.drawText(20, 15 + (i*12) , message[i]);
 			}
 		}
 	return;

@@ -21,8 +21,8 @@ PebbleII::PebbleII(QWidget *parent, Qt::WindowFlags flags)
 	receiver = new Receiver(ui.receiverUI, this);
     global->receiver = receiver; //Many classes need access
 
-	QCoreApplication::setApplicationVersion("0.001");
-	QCoreApplication::setApplicationName("Pebble");
+    QCoreApplication::setApplicationVersion("2.0.0");
+    QCoreApplication::setApplicationName("Pebble II");
 	QCoreApplication::setOrganizationName("N1DDY");
 
 	//Test
