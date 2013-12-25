@@ -51,6 +51,8 @@ QT += widgets core gui multimedia
 #Enable this to look at config to debug conditionals. For example: debug and release both show up sometimes
 #message($$CONFIG)
 
+# !!! add make install as additional build step in QT Projects for both Debug and Release to copy all the necessary files
+
 #So we don't have to specify paths everywhere
 INCLUDEPATH += ../pebblelib
 DEPENDPATH += ../pebblelib
