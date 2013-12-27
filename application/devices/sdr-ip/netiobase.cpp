@@ -204,10 +204,10 @@ bool CNetio::ConnectToServer(QHostAddress IPAdr, quint16 Port, bool wait=false)
 	m_RxMsgLength = 0;
 	m_ServerIPAdr = IPAdr;
 	m_ServerPort = Port;
-	m_pTcpClient->abort();
-	m_pTcpClient->close();
-	emit NewStatus(CONNECTING);
-	m_pTcpClient->connectToHost(m_ServerIPAdr, m_ServerPort);
+    m_pTcpClient->abort();
+    m_pTcpClient->close();
+    emit NewStatus(CONNECTING);
+    m_pTcpClient->connectToHost(m_ServerIPAdr, m_ServerPort, QIODevice::ReadWrite);
     qDebug()<<"Connecting to "<<m_ServerIPAdr <<m_ServerPort;
     if (wait && !m_pTcpClient->waitForConnected(5000))
         return false;

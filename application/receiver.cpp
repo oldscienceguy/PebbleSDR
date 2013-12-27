@@ -96,7 +96,7 @@ bool Receiver::On()
     global->sdr = sdr;
 
 	if (!sdr->Connect()){
-		QMessageBox::information(NULL,"Pebble","No Receiver connected to USB");
+        QMessageBox::information(NULL,"Pebble","SDR device is not connected");
 		Off();
 		return false;
 	}

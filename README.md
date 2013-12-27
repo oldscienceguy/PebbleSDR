@@ -1,10 +1,10 @@
-#Pebble II SDR (Mac)
+#Pebble II SDR (Mac) 
 December 26, 2013  
-Copyright 2010, 2011, 2012, 2013, 2014
-Richard Landsman N1DDY <PebbleSDR@gmail.com>
-Licensed under GPL, see gpl.h for details, attribution, and references
+Copyright 2010, 2011, 2012, 2013, 2014  
+Richard Landsman N1DDY <PebbleSDR@gmail.com>  
+Licensed under GPL, see gpl.h for details, attribution, and references  
 <https://github.com/oldscienceguy/PebbleSDR>  
-Dedicated to SuperRatt, my first program (c 1980) for the Apple II with support for RTTY, CW, and special modes.
+Dedicated to SuperRatt, my first program (c 1980) for the Apple II with support for RTTY, CW, and special modes.  
 
 ---
 ##Introduction
@@ -21,6 +21,9 @@ In order to keep the UI compact, more advanced and optional functionality had to
 
 ####Extensible
 In addition to being extensible by virtue of being open source, I wanted to be able to keep the core functionality intact, while exploring new data modes and options.  This led to the modem plug-in architecture and eventuall will include cross platform extio-like device support.
+
+####Disclaimer
+The source code for this project represents three years of incremental, "drive-by" coding, with numerous experiments, re-writes, re-factoring, re-everything.  No attempt has been made to pretty up the code or clean up comments.  In fact, in many places I have deliberately left alternative implementations and detailed comments in the code for future reference.
 
 ####Credits
 I knew nothing about DSP algorithms when I started writing Pebble.  Although I've collected quite a library of DSP books and articles, I learned by looking at the work of others who were kind enough to make their projects open source.  I've included all of the key projects I referenced and in some cases, drived code from, in the gpl.h file you can find in the source tree.  But I especially wanted to thank Moe Wheatley for his outstanding work in making CuteSDR <http://sourceforge.net/projects/cutesdr/> available with source.  While I had working code, Moe's code demonstrated what a professionally written DSP program should look like.
@@ -205,19 +208,44 @@ Try it.
 
 ##Device Specifics
 ###SoftRock Ensemble & 2M, 4M, 6M
-###SoftRock V9-ABPF
-###SoftRock Lite II
-###FiFi
-###Elektor SDR
-###RFSpace SDR-IQ
-###RFSpace SDR-IP
-###HPSDR-USB
-###HPSDR-Network (Not supported yet)
-###FunCube Pro
-###FunCube Pro Plus
-###File
-###RTL2832 Family
+(TBW)
 
+###SoftRock V9-ABPF
+(TBW)
+
+###SoftRock Lite II
+(TBW)
+
+###FiFi
+(TBW)
+
+###Elektor SDR
+(TBW)
+
+###RFSpace SDR-IQ
+(TBW)
+
+###RFSpace SDR-IP & AFEDRI
+I use a direct network cable, not wifi, when connecting to this device at the full 2mhz bandwidth.  I set my Mac to a fixed IP of 10.0.1.101 and the AFEDRI to 10.0.1.100.
+
+You will get a "Allow network connections?" box the first time you run any new version.  This is standard Mac protection.
+
+###HPSDR-USB
+(TBW)
+
+###HPSDR-Network (Not supported yet)
+
+###FunCube Pro
+(TBW)
+
+###FunCube Pro Plus
+(TBW)
+
+###File
+(TBW)
+
+###RTL2832 Family
+(TBW)
 
 ##Advanced
 ###PebbleData directory
@@ -230,3 +258,5 @@ Try it.
 
 ###Plugins directory
 
+##Source Code notes
+(TBW)
