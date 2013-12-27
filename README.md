@@ -7,6 +7,8 @@ Licensed under GPL, see gpl.h for details, attribution, and references
 Dedicated to SuperRatt, my first program (c 1980) for the Apple II with support for RTTY, CW, and special modes.  
 
 ---
+<img src=https://raw.github.com/oldscienceguy/PebbleSDR/master/screen_shots/AFEDRI%20150Hz%20to%202150kHz.png width=500> 
+---
 ##Introduction
 
 I 'discovered' Software Defined Radio at the beginning of 2010 when I found myself between jobs and some extra time.  The experience of building my first SoftRock V9 and actually hearing something was like the first crackle from a crystal radio.  I wasn't quite sure everything was working, but it made noise!  I was hooked and soon wanted to learn about the magical DSP that made everything work.  Rocky was the first SDR program I used, and I thought Pebble - a small rock, was an appropriate name for my new program.
