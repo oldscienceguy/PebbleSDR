@@ -14,7 +14,7 @@
 #include "sdr.h"
 #include "cpx.h"
 #include "sdr-ip/sdrinterface.h"
-#include "ui/ui_sdr-ip.h"
+#include "ui_sdr-ip.h"
 
 
 class SDR_IP : public SDR

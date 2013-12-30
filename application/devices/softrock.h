@@ -3,7 +3,7 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include "sdr.h"
-#include "ui/ui_softrockoptions.h"
+#include "ui_softrockoptions.h"
 #include <QSettings>
 
 //LibUSB id for SR driver

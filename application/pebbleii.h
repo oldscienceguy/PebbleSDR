@@ -3,7 +3,7 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include "global.h"
-#include "ui/ui_pebbleii.h"
+#include "ui_pebbleii.h"
 #include "receiver.h"
 #include "settings.h"
 

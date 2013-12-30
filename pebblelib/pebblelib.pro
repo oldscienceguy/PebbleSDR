@@ -8,14 +8,9 @@
 include(../application/pebbleqt.pri)
 
 macx {
-	#Set location to UI auto-generated files so we can get headers from known location
-	UI_DIR = $${PWD}/UI
-	RCC_DIR = $${PWD}/UI
-	OBJECTS_DIR = $${PWD}/OMac
-	#Locataion for MOC files
-	MOC_DIR = $${PWD}/MocMac
-
-	DESTDIR = $${PWD}/lib
+	#LIB_DIR defined in pebbleqt.pri
+	#Override DESTDIR from pebbleqt.pri
+	DESTDIR = $${PWD}/$${LIB_DIR}
 }
 
 QT       -= gui

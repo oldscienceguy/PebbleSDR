@@ -10,7 +10,7 @@
 #include "filters/fir.h"
 #include "iir.h"
 #include "demod/rdsdecode.h"
-#include "ui/ui_data-band.h"
+#include "ui_data-band.h"
 #include "../pebblelib/pebblelib_global.h" //Pick up common enums like DEMODMODE
 
 class Demod_AM;

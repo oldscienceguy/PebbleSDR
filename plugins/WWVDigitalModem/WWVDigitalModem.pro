@@ -14,12 +14,6 @@ QT += widgets
 TEMPLATE = lib
 CONFIG += plugin
 
-#Set location to UI auto-generated files so we can get headers from known location
-UI_DIR = $${PWD}/UI
-RCC_DIR = $${PWD}/UI
-OBJECTS_DIR = $${PWD}/OMac
-MOC_DIR = $${PWD}/MocMac
-
 TARGET = wwvdigitalmodem
 VERSION = 1.0.0
 
@@ -34,7 +28,7 @@ DEPENDPATH += ../../application
 INCLUDEPATH += ../../pebblelib
 DEPENDPATH += ../../pebblelib
 
-LIBS += -L$${PWD}/../../pebblelib/lib -lpebblelib
+LIBS += -L$${PWD}/../../pebblelib/$${LIB_DIR} -lpebblelib
 
 FORMS += \
 	data-wwv.ui

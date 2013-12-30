@@ -59,14 +59,6 @@ DEPENDPATH += ../pebblelib
 
 #Conditional MUST match the Build Configuration name, Debug or Release or SomeCustomName
 macx {
-	#Set location to UI auto-generated files so we can get headers from known location
-	message("PWD = "$${PWD})
-	UI_DIR = $${PWD}/UI
-	RCC_DIR = $${PWD}/UI
-	OBJECTS_DIR = $${PWD}/OMac
-	#Locataion for MOC files
-	MOC_DIR = $${PWD}/MocMac
-	message("UI_HEADERS = "$${UI_DIR})
 
 	#After much agony, finally figured out that this icon only appears in release, NOT debug builds
 	#There doesn't appear to be any need to use setWindowIcon() either, just this in make file
@@ -120,7 +112,7 @@ macx {
 	LIBS += -framework CoreServices
 	LIBS += -framework IOKit
 
-	LIBS += -L$${PWD}/../pebblelib/lib -lpebblelib.1
+	LIBS += -L$${PWD}/../pebblelib/$${LIB_DIR} -lpebblelib.1
 
 	#Don't know if we need these
 	#INCLUDEPATH += ../portaudio/include
@@ -134,7 +126,7 @@ macx {
 	SOURCES += devices/hid-mac.c
 
 	#INSTALLS is called when we manually make -install or add it to the Qt project build steps
-	pebbleData.files = eibireadme.txt eibi.csv bands.csv memory.csv help.htm gpl.h releasenotes.txt hpsdr/ozyfw-sdr1k.hex hpsdr/ozy_janus.rbf
+	pebbleData.files = eibireadme.txt eibi.csv bands.csv memory.csv	gpl.h ../readme.md hpsdr/ozyfw-sdr1k.hex hpsdr/ozy_janus.rbf
 
 	#We want this to be whatever the release or debug directory is or added to bundle
 	#This will copy the files into the app bundle, same place ini files go
@@ -271,7 +263,7 @@ win32 {
 		INSTALLS += target installfiles
 
 		#INSTALLS is called when we manually make -install or add it to the Qt project build steps
-		pebbleData.files = eibireadme.txt eibi.csv bands.csv memory.csv Help.htm gpl.h ReleaseNotes.txt
+		pebbleData.files = eibireadme.txt eibi.csv bands.csv memory.csv gpl.h readme.md
 
 		#We want this to be whatever the release or debug directory is or added to bundle
 		pebbleData.path = $$DESTDIR
@@ -319,10 +311,8 @@ preprocess.CONFIG = no_link #This is required to stop make from trying to compil
 #QMAKE_LFLAGS += -static-libgcc
 
 OTHER_FILES += \
-    help.htm \
     firmware.txt \
     build.tmpl \
-    releasenotes.txt \
     bands.csv \
     eibi.csv \
     eibireadme.txt \

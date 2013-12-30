@@ -7,6 +7,7 @@ Licensed under GPL, see gpl.h for details, attribution, and references
 Dedicated to SuperRatt, my first program (c 1980) for the Apple II with support for RTTY, CW, and special modes.  
 
 ---
+AFEDRI showing full 2mHz bandwidth from 150kHz to 2150kHz and zoom at 1150 kHz  
 <img src=https://raw.github.com/oldscienceguy/PebbleSDR/master/screen_shots/AFEDRI%20150Hz%20to%202150kHz.png width=500> 
 ---
 ##Introduction
@@ -22,14 +23,23 @@ There are a few design principles I tried to follow throughtout the evolution of
 In order to keep the UI compact, more advanced and optional functionality had to be exposed incrementally.  There when you need it, not there when you don't.  This led to features like being able to collapse the spectrum and data windows.
 
 ####Extensible
-In addition to being extensible by virtue of being open source, I wanted to be able to keep the core functionality intact, while exploring new data modes and options.  This led to the modem plug-in architecture and eventuall will include cross platform extio-like device support.
+In addition to being extensible by virtue of being open source, I wanted to be able to keep the core functionality intact, while exploring new data modes and options.  This led to the modem plug-in architecture and eventually will include cross platform extio-like device support.
 
 ####Disclaimer
 The source code for this project represents three years of incremental, "drive-by" coding, with numerous experiments, re-writes, re-factoring, re-everything.  No attempt has been made to pretty up the code or clean up comments.  In fact, in many places I have deliberately left alternative implementations and detailed comments in the code for future reference.
 
 ####Credits
-I knew nothing about DSP algorithms when I started writing Pebble.  Although I've collected quite a library of DSP books and articles, I learned by looking at the work of others who were kind enough to make their projects open source.  I've included all of the key projects I referenced and in some cases, drived code from, in the gpl.h file you can find in the source tree.  But I especially wanted to thank Moe Wheatley for his outstanding work in making CuteSDR <http://sourceforge.net/projects/cutesdr/> available with source.  While I had working code, Moe's code demonstrated what a professionally written DSP program should look like.
+I knew nothing about DSP algorithms when I started writing Pebble.  Although I've collected quite a library of DSP books and articles, I learned by looking at the work of others who were kind enough to make their projects open source.  I've included all of the key projects I referenced and in some cases, derived code from, in the gpl.h file you can find in the source tree.  But I especially wanted to thank Moe Wheatley for his outstanding work in making CuteSDR <http://sourceforge.net/projects/cutesdr/> available with source.  While I had working code, Moe's code demonstrated what a professionally written DSP program should look like.
 
+##Installation
+Installation is easy, just unzip the files into a Pebble directory.  Pebble does not install and does not depend on any other libraries being previously installed, everything is in the directory.
+
+Files in the directory are:
+
+1. Pebble: This is the application you click
+2. PebbleData: This subdirectory contains all of the configuration files.  Pebble will create a new .ini file in this directory for each SDR device you configure.
+3. PebbleRecordings:  This subdirectory is where any I/Q recordings you make (see below) will be stored.
+4. Plugins: this subdirectory contains the plugins that Pebble loads on startup.
 
 ##Getting Started
 1. Find the Device pull-down located below the LO and Mixer buttons.  Pull down the menu and select the SDR device you want to use.

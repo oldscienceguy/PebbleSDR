@@ -6,7 +6,7 @@
 #include <QSettings>
 #include <QSemaphore>
 #include "sdr.h"
-#include "ui/ui_hpsdroptions.h"
+#include "ui_hpsdroptions.h"
 
 
 class HPSDR:public SDR

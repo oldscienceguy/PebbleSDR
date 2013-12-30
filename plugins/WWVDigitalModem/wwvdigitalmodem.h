@@ -7,7 +7,7 @@
 #include "fldigifilters.h"
 #include "downconvert.h"
 #include "iir.h"
-#include "ui/ui_data-wwv.h"
+#include "ui_data-wwv.h"
 
 //Experiment extracting from ntp
 class MatchedFilter

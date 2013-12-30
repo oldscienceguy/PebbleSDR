@@ -4,7 +4,7 @@
 #include "gpl.h"
 
 #include "../pebblelib/digital_modem_interfaces.h"
-#include "ui/ui_data-example.h"
+#include "ui_data-example.h"
 
 class DigitalModemExample  : public QObject, public DigitalModemInterface
 {

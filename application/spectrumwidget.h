@@ -10,7 +10,7 @@
 #include <QHoverEvent>
 
 #include "cpx.h"
-#include "ui/ui_spectrumwidget.h"
+#include "ui_spectrumwidget.h"
 #include "demod.h"
 #include "signalspectrum.h"
 

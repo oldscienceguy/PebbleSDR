@@ -7,7 +7,7 @@
 //#include "goertzel.h"
 #include "qframe"
 #include "QTextEdit"
-#include "ui/ui_data-morse.h"
+#include "ui_data-morse.h"
 #include "../../pebblelib/fldigifilters.h"
 #include "morsecode.h"
 #include "../../pebblelib/downconvert.h"

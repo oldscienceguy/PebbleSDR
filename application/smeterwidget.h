@@ -7,7 +7,7 @@
 #include <QWidget>
 #include <QThread>
 
-#include "ui/ui_smeterwidget.h"
+#include "ui_smeterwidget.h"
 #include "signalstrength.h"
 #include "signalspectrum.h"
 #include "bargraphmeter.h"

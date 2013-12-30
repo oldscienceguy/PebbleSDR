@@ -3,7 +3,7 @@
 #include "gpl.h"
 #include "sdr.h"
 #include <QSettings>
-#include "ui/ui_elektoroptions.h"
+#include "ui_elektoroptions.h"
 
 class ElektorSDR:public SDR
 {
