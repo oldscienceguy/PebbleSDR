@@ -29,7 +29,7 @@ to calling routine.
 
 //ch = char to be translated
 //*shift = last shift used (new value is returned)
-char BaudotCode::baudotToAscii(char ch, int* shift,TRANSLATION_CODES code)  /* Baudot Translate */
+quint8 BaudotCode::baudotToAscii(quint8 ch, int* shift, TRANSLATION_CODES code)  /* Baudot Translate */
 {
     quint8 lookup = ch;
 
@@ -90,7 +90,7 @@ char BaudotCode::baudotToAscii(char ch, int* shift,TRANSLATION_CODES code)  /* B
 } /* End of chtran */
 
 /*Returns baudot char or shift if new shift is req*/
-char BaudotCode::asciiToBaudot(char ch, int* shift)
+quint8 BaudotCode::asciiToBaudot(quint8 ch, int* shift)
 {
     ch = aStandardBaudot[toupper(ch)];	/*Convert to baudot */
     if (ch&0x20)
@@ -109,7 +109,7 @@ char BaudotCode::asciiToBaudot(char ch, int* shift)
 ** Translate Ascii to 5 Bit Codes
 ** Baudot codes in ascii order,bit 5=fig shift req
 */
-const char BaudotCode::aStandardBaudot[] = {
+const quint8 BaudotCode::aStandardBaudot[] = {
     0x00,0x04,0x04,0x04,0x04,0x04,0x04,0x25,0x04,0x04,0x02,0x02,0x02,0x08,0x04,0x04,    //00-0F
     0x04,0x04,0x04,0x04,0x04,0x04,0x04,0x04,0x04,0x04,0x04,0x1B,0x04,0x04,0x04,0x1F,    //10-1F
     0x04,0x2D,0x31,0x34,0x29,0x04,0x3A,0x2B,0x2F,0x32,0x04,0x04,0x2C,0x23,0x3C,0x3D,    //20-2F
@@ -128,7 +128,7 @@ Ref: List of special RTTY & CW alphabets and codes
 
 /* If x is a Baudot character, then b_******[x] is the Ascii equivalent */
 //Standard Letter Shift
-const char BaudotCode::bStandardLetter[] = {
+const quint8 BaudotCode::bStandardLetter[] = {
     '\0',   'E',    '\n',   'A',    ' ',    'S',    'I',    'U',
     '\r',   'D',	'R',	'J',	'N',	'F',	'C',	'K',
     'T',	'Z',	'L',	'W',	'H',	'Y',	'P',	'Q',
@@ -136,7 +136,7 @@ const char BaudotCode::bStandardLetter[] = {
 };
 
 //Standard Figure Shift
-const char BaudotCode::bStandardFigure[] = {
+const quint8 BaudotCode::bStandardFigure[] = {
     '\0',	'3',	'\n',	'-',	' ',	'\a',	'8',	'7',
     '\r',	'$',	'4',	'\'',	',',	'!',	':',	'(',
     '5',	'"',	')',	'2',	'#',	'6',	'0',	'1',
@@ -144,7 +144,7 @@ const char BaudotCode::bStandardFigure[] = {
 };
 
 //International Figure Shift
-const char BaudotCode::bInternationalFigure[] = {
+const quint8 BaudotCode::bInternationalFigure[] = {
     0x00,   0x33,   0x0a,   0x2d,   0x20,   0x27,   0x38,   0x37,
     0x0d,   0x84,   0x34,   0x83,   0x2c,   0x86,   0x3a,   0x28,
     0x35,   0x2b,   0x29,   0x32,   0x86,   0x36,   0x30,   0x31,
@@ -152,7 +152,7 @@ const char BaudotCode::bInternationalFigure[] = {
 };
 
 //Military Figure Shift
-const char BaudotCode::bMilitaryFigure[] = {
+const quint8 BaudotCode::bMilitaryFigure[] = {
     0x00,   0x33,   0x0a,   0x2d,   0x20,   0x83,   0x38,   0x37,
     0x0d,   0x24,   0x34,   0x27,   0x2c,   0x21,   0x3a,   0x28,
     0x35,   0x22,   0x29,   0x32,   0x85,   0x36,   0x30,   0x31,
@@ -160,7 +160,7 @@ const char BaudotCode::bMilitaryFigure[] = {
 };
 
 //Weather Figure Shift
-const char BaudotCode::bWeatherFigure[] = {
+const quint8 BaudotCode::bWeatherFigure[] = {
     0x00,   0x33,   0x0a,   0x8a,   0x20,   0x83,   0x38,   0x37,
     0x0d,   0x8b,   0x34,   0x8f,   0x94,   0x8c,   0x94,   0x90,
     0x35,   0x2b,   0x91,   0x32,   0x8e,   0x36,   0x30,   0x31,
@@ -168,7 +168,7 @@ const char BaudotCode::bWeatherFigure[] = {
 };
 
 //Arabic Letter Shift
-const char BaudotCode::bArabicLetter[] = {
+const quint8 BaudotCode::bArabicLetter[] = {
     0x00,   0x74,   0x9e,   0x73,   0x20,   0x9f,   0x62,   0x74,
     0x6b,   0x71,   0x64,   0x68,   0x6e,   0x66,   0x79,   0x68,
     0x75,   0x73,   0x6a,   0xa0,   0xa1,   0x72,   0x67,   0x69,
@@ -176,7 +176,7 @@ const char BaudotCode::bArabicLetter[] = {
 };
 
 //Arabic Figure Shift
-const char BaudotCode::bArabicFigure[] = {
+const quint8 BaudotCode::bArabicFigure[] = {
     0x00,   0x37,   0x84,   0x73,   0x20,   0x79,   0x32,   0x33,
     0x6b,   0x71,   0x36,   0x68,   0x6e,   0x61,   0x79,   0x68,
     0x35,   0x73,   0x6a,   0x38,   0x2f,   0x34,   0x30,   0x39,
@@ -184,7 +184,7 @@ const char BaudotCode::bArabicFigure[] = {
 };
 
 //Cyrillic Letter Shift
-const char BaudotCode::bCyrillicLetter[] = {
+const quint8 BaudotCode::bCyrillicLetter[] = {
     0x00,   0xa8,   0x0a,   0x66,   0x20,   0x79,   0x68,   0x7a,
     0x0d,   0x77,   0x6e,   0x6f,   0x62,   0x61,   0x6d,   0x6c,
     0x67,   0xa9,   0x64,   0x6b,   0x72,   0xaa,   0x63,   0x75,
@@ -192,7 +192,7 @@ const char BaudotCode::bCyrillicLetter[] = {
 };
 
 //Cyrillic Figure Shift
-const char BaudotCode::bCyrillicFigure[] = {
+const quint8 BaudotCode::bCyrillicFigure[] = {
     0x00,   0x33,   0x0a,   0x65,   0x20,   0xaf,   0x38,   0x37,
     0x0d,   0x6a,   0x34,   0x86,   0x2e,   0xaa,   0x86,   0x25,
     0x35,   0x2f,   0x27,   0x32,   0x86,   0x36,   0x30,   0x31,
@@ -200,7 +200,7 @@ const char BaudotCode::bCyrillicFigure[] = {
 };
 
 //Greek Letter shift
-const char BaudotCode::bGreekLetter[] = {
+const quint8 BaudotCode::bGreekLetter[] = {
     0x00,   0x45,   0x0a,   0x41,   0x20,   0x53,   0x49,   0x55,
     0x0d,   0x44,   0x52,   0x4a,   0x4e,   0x46,   0x43,   0x4b,
     0x54,   0x5a,   0x4c,   0x57,   0x48,   0x59,   0x50,   0x51,
@@ -208,7 +208,7 @@ const char BaudotCode::bGreekLetter[] = {
 };
 
 //Greek Figure Shift
-const char BaudotCode::bGreekFigure[] = {
+const quint8 BaudotCode::bGreekFigure[] = {
     0x00,   0x33,   0x0a,   0x2d,   0x20,   0x07,   0x38,   0x37,
     0x0d,   0x80,   0x34,   0x27,   0x2c,   0x21,   0x3a,   0x28,
     0x35,   0x22,   0x29,   0x32,   0x23,   0x36,   0x30,   0x31,
@@ -216,7 +216,7 @@ const char BaudotCode::bGreekFigure[] = {
 };
 
 //Greek National Figure Shift
-const char BaudotCode::bGreekNationalFigure[] = {
+const quint8 BaudotCode::bGreekNationalFigure[] = {
     0x00,   0x33,   0x0a,   0x2d,   0x20,   0x07,   0x38,   0x37,
     0x0d,   0x80,   0x34,   0x27,   0x2c,   0x21,   0x3a,   0x28,
     0x35,   0x22,   0x29,   0x32,   0x23,   0x36,   0x30,   0x31,

@@ -619,7 +619,9 @@ unsigned SDR_IQ::CaptureBlocks(unsigned numBlocks)
 		return -1;
 
 	FT_STATUS ftStatus;
-	BYTE writeBuf[8] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x02, 0x02, numBlocks};
+    //C++11 doesn't allow variable in constant initializer, so we set writeBuf[7] separately
+    BYTE writeBuf[8] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x02, 0x02, 0x00};
+    writeBuf[7] = numBlocks;
 	DWORD bytesWritten;
 	ftStatus = FT_Write(ftHandle,(LPVOID)writeBuf,sizeof(writeBuf),&bytesWritten);
 	if (ftStatus != FT_OK)

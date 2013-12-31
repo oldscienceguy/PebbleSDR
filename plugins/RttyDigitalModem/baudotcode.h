@@ -2,6 +2,7 @@
 #define BAUDOTCODE_H
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
+#include "global.h"
 
 class BaudotCode
 {
@@ -13,24 +14,24 @@ public:
     enum SHIFT_FLAGS {LTR,FIG,NAT};
 
     BaudotCode();
-    char asciiToBaudot(char ch, int *shift);
-    char baudotToAscii(char ch, int *shift, TRANSLATION_CODES code);
+    quint8 asciiToBaudot(quint8 ch, int *shift);
+    quint8 baudotToAscii(quint8 ch, int *shift, TRANSLATION_CODES code);
 
 
 private:
-    static const char aStandardBaudot[];
-    static const char bStandardLetter[];
-    static const char bStandardFigure[];
-    static const char bInternationalFigure[];
-    static const char bMilitaryFigure[];
-    static const char bWeatherFigure[];
-    static const char bArabicLetter[];
-    static const char bArabicFigure[];
-    static const char bCyrillicLetter[];
-    static const char bCyrillicFigure[];
-    static const char bGreekLetter[];
-    static const char bGreekFigure[];
-    static const char bGreekNationalFigure[];
+    static const quint8 aStandardBaudot[];
+    static const quint8 bStandardLetter[];
+    static const quint8 bStandardFigure[];
+    static const quint8 bInternationalFigure[];
+    static const quint8 bMilitaryFigure[];
+    static const quint8 bWeatherFigure[];
+    static const quint8 bArabicLetter[];
+    static const quint8 bArabicFigure[];
+    static const quint8 bCyrillicLetter[];
+    static const quint8 bCyrillicFigure[];
+    static const quint8 bGreekLetter[];
+    static const quint8 bGreekFigure[];
+    static const quint8 bGreekNationalFigure[];
 
 };
 
