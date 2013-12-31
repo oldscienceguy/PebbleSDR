@@ -229,7 +229,10 @@ Try it.
 (TBW)
 
 ###FiFi
-(TBW)
+In order to run the FiFi rockprog configuration utility I had to first install MacPorts popt using "sudo port install popt"
+
+I've also found that updating the firmware with a Mac doesn't work.  It looks like it updated, but the LED doesn't flash and there's no activity.  Always update firmware with Windows, even Parallels works.
+
 
 ###Elektor SDR
 (TBW)

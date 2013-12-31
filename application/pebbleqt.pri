@@ -1,6 +1,9 @@
 #Common to all Pebble projects
 cache()
 
+#Compile with C++11 so we can use <funtional>
+CONFIG += c++11
+#QMAKE_CXXFLAGS += -stdlib=libc++
 
 
 macx {

@@ -1,5 +1,7 @@
 #ifndef PLUGINS_H
 #define PLUGINS_H
+//GPL license and attributions are in gpl.h and terms are included in this file by reference
+#include "gpl.h"
 
 #include "gpl.h"
 #include "global.h"
@@ -8,8 +10,7 @@
 #include <QList>
 
 #include "../pebblelib/digital_modem_interfaces.h"
-//GPL license and attributions are in gpl.h and terms are included in this file by reference
-#include "gpl.h"
+#include "../pebblelib/device_interfaces.h"
 
 struct PluginInfo
 {

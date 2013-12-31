@@ -64,5 +64,6 @@ HEADERS += pebblelib.h\
     fftooura.h \
     fftcute.h \
     fft.h \
-    iir.h
+    iir.h \
+    device_interfaces.h
 
