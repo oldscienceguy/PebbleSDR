@@ -17,8 +17,8 @@
 #include <functional>
 
 //using std::placeholders;
-//ProcessBlock callback: Call with CPX buffer and number of samples
-typedef std::function<void(CPX *, quint16)> NewDataCallback;
+//ProcessIQData callback: Call with CPX buffer and number of samples
+typedef std::function<void(CPX *, quint16)> cbProcessIQData;
 
 //In caller, instantiate NewDataCallback as follows
 //NewDataCallback foo = std::bind1st(&Receiver::ProcessBlock, receiver);
@@ -27,7 +27,7 @@ class PEBBLELIBSHARED_EXPORT DeviceInterface
 {
 public:
     //Interface must be all pure virtual functions
-    virtual bool Initialize(NewDataCallback _callback) = 0;
+    virtual bool Initialize(cbProcessIQData _callback) = 0;
     virtual bool Connect() = 0;
     virtual bool Disconnect() = 0;
     virtual void StartData() = 0;
@@ -53,7 +53,7 @@ protected:
     virtual void StopConsumerThread() = 0;
     virtual void RunConsumerThread() = 0;
 
-    NewDataCallback ProcessBlock(CPX* buf, quint16 numSamples);
+    cbProcessIQData ProcessIQData(CPX* buf, quint16 numSamples);
 
 };
 

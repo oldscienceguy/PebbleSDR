@@ -17,6 +17,8 @@ Base class for SDR Receivers
 #include "audio.h"
 #include "ui_iqbalanceoptions.h"
 #include "ui_sdr.h"
+#include "device_interfaces.h"
+
 
 class Settings; //Can't include settings.h due to circular dependencies
 class Receiver;
@@ -112,6 +114,8 @@ signals:
     void Restart();
 
 protected:
+    cbProcessIQData ProcessIQData;
+
     //Needed to determine when it's safe to fetch options for display
     bool connected;
 

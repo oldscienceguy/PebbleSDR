@@ -3,6 +3,8 @@ cache()
 
 #Compile with C++11 so we can use <funtional>
 CONFIG += c++11
+#QMAKE_CXXFLAGS += -mmacosx-version-min=10.8
+#QMAKE_CXXFLAGS += -std=c++11
 #QMAKE_CXXFLAGS += -stdlib=libc++
 
 

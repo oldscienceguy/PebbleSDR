@@ -62,7 +62,8 @@ public:
     bool GetPowerOn() {return powerOn;}
 
 	Settings * GetSettings() {return settings;}
-	void ProcessBlock(CPX *in, CPX *out, int frameCount);
+    void ProcessIQData(CPX *_in, quint16 _numSamples);
+    void ProcessBlock(CPX *in, CPX *out, int frameCount);
 	void ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount);
 	void ProcessBlockFreqDomain(CPX *in, CPX *out, int frameCount);
 	SignalStrength *GetSignalStrength() {return signalStrength;}
@@ -140,6 +141,7 @@ private:
     int demodWfmSampleRate;
     CPX *workingBuf;
     CPX *sampleBuf; //Used to accumulate post mixer/downconvert samples to get a full buffer
+    CPX *audioBuf; //Used for final audio output processing
     quint16 sampleBufLen;
 
 

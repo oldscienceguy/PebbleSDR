@@ -20,7 +20,6 @@
 #include "QMessageBox"
 #include "testbench.h"
 
-
 SDR::SDR(Receiver *_receiver, SDRDEVICE dev,Settings *_settings)
 {
     settings = _settings;
@@ -43,6 +42,13 @@ SDR::SDR(Receiver *_receiver, SDRDEVICE dev,Settings *_settings)
     sdrOptions = NULL;
     sd = NULL;
     connected = false;
+
+    //Setup callback for device plugins to use when they have new IQ data
+    using namespace std::placeholders;
+    //function template must match exactly the method that is used in bind()
+    //std::function<void(CPX *, quint16)> cb = std::bind(&Receiver::ProcessIQData, _receiver, std::placeholders::_1, std::placeholders::_2);
+    //bind(Method ptr, object, arg1, ... argn)
+    ProcessIQData = std::bind(&Receiver::ProcessIQData, _receiver, _1, _2);
 }
 
 SDR::~SDR(void)

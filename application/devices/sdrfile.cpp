@@ -252,7 +252,7 @@ void SDRFile::RunConsumerThread()
     CPX *buf = ((CPX **)producerBuffer)[nextConsumerDataBuf];
     if (copyTest)
         wavFileWrite.WriteSamples(buf, framesPerBuffer);
-    receiver->ProcessBlock(buf, outBuffer,framesPerBuffer);
+    ProcessIQData(buf,framesPerBuffer);
     IncrementConsumerBuffer();
     ReleaseFreeBuffer();
 }

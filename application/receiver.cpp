@@ -183,6 +183,7 @@ bool Receiver::On()
 
     workingBuf = CPXBuf::malloc(framesPerBuffer);
     sampleBuf = CPXBuf::malloc(framesPerBuffer);
+    audioBuf = CPXBuf::malloc(framesPerBuffer);
     sampleBufLen = 0;
 
     presets = new Presets(receiverWidget);
@@ -344,7 +345,20 @@ bool Receiver::Off()
 		iqBalanceOptions = NULL;
 	}
 #endif
-	return true;
+
+    if (workingBuf != NULL) {
+        delete workingBuf;
+        workingBuf = NULL;
+    }
+    if (sampleBuf != NULL) {
+        delete sampleBuf;
+        sampleBuf = NULL;
+    }
+    if (audioBuf != NULL) {
+        delete audioBuf;
+        audioBuf = NULL;
+    }
+    return true;
 }
 void Receiver::Close()
 {
@@ -536,9 +550,16 @@ void Receiver::CloseSdrOptions()
     }
 }
 
+//New ProcessBlock for device plugins
+void Receiver::ProcessIQData(CPX *_in, quint16 _numSamples)
+{
+    //qDebug()<<"In ProcessIQData";
+    //Just forward for now
+    ProcessBlock(_in,audioBuf,_numSamples);
+}
+
 //processing flow for audio samples, called from SoundCard PortAudio callback
 //Note: frameCount is actual # samples from audio, may be less than framesPerBuffer
-//in = samples, out = soundcard
 /*
 Each step in the receiver chain is of the form inBufferToNextStep = thisStep(outBufferFromLastStep)
 Since each step mainaintains it's own out buffer and the in buffer is NEVER modified by a step, every
@@ -548,6 +569,8 @@ keeping track of buffers.
 Since we NEVER modify an IN buffer, we can also just return the IN buffer as the OUT buffer in a step
 that is disabled and not do a useless copy from IN to OUT.
 */
+
+//out is deprecated
 void Receiver::ProcessBlock(CPX *in, CPX *out, int frameCount)
 {
     /*
@@ -770,7 +793,7 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 
         //Tune only mode, no demod or output
         if (demod->DemodMode() == dmNONE){
-            CPXBuf::clear(out,framesPerBuffer);
+            CPXBuf::clear(audioBuf,framesPerBuffer);
             return;
         }
         nextStep = noiseFilter->ProcessBlock(nextStep);
@@ -796,11 +819,11 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 
     }
 
-    int numResamp = fractResampler.Resample(demodFrames,resampRate,nextStep,out);
+    int numResamp = fractResampler.Resample(demodFrames,resampRate,nextStep,audioBuf);
 
     // apply volume setting, mute and output
     //global->perform.StartPerformance();
-    audioOutput->SendToOutput(out,numResamp, gain, mute);
+    audioOutput->SendToOutput(audioBuf,numResamp, gain, mute);
     //global->perform.StopPerformance(100);
 
 }
@@ -808,8 +831,12 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 /*
  Alternate receive chain that does most of the processing in frequency domain
  */
+
+//!!!! Out of date and never worked properly, here for reference
 void Receiver::ProcessBlockFreqDomain(CPX *in, CPX *out, int frameCount)
 {
+    return;
+
 	CPX *nextStep = in;
 
 	//Convert to freq domain
