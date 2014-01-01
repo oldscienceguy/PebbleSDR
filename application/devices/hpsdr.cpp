@@ -469,7 +469,7 @@ void HPSDR::RunConsumerThread()
 
 	//Got data, process
 	if (receiver != NULL)
-		receiver->ProcessBlock(dataBuf[lastDataBuf],outBuffer,2048);
+        ProcessIQData(dataBuf[lastDataBuf],2048);
 
 	//We're done with databuf, so we can release before we call ProcessBlock
 	//Update lastDataBuf & release dataBuf

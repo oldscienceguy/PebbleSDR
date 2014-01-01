@@ -407,7 +407,7 @@ void RTL2832::RunConsumerThread()
     ReleaseFreeBuffer();
 
     if (receiver != NULL)
-        receiver->ProcessBlock(inBuffer->Ptr(),outBuffer->Ptr(),framesPerBuffer);
+        ProcessIQData(inBuffer->Ptr(),framesPerBuffer);
 
 
 }

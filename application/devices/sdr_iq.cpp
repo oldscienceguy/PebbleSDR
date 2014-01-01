@@ -876,7 +876,7 @@ void SDR_IQ::ProcessDataBlocks()
     ReleaseFreeBuffer();
 
 	if (receiver != NULL)
-        receiver->ProcessBlock(inBuffer,outBuffer,inBufferSize);
+        ProcessIQData(inBuffer,inBufferSize);
 }
 
 void SDR_IQ::FlushDataBlocks()

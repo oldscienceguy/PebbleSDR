@@ -62,10 +62,7 @@ public:
     bool GetPowerOn() {return powerOn;}
 
 	Settings * GetSettings() {return settings;}
-    void ProcessIQData(CPX *_in, quint16 _numSamples);
-    void ProcessBlock(CPX *in, CPX *out, int frameCount);
-	void ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount);
-	void ProcessBlockFreqDomain(CPX *in, CPX *out, int frameCount);
+    void ProcessIQData(CPX *in, quint16 numSamples);
 	SignalStrength *GetSignalStrength() {return signalStrength;}
 	SignalSpectrum *GetSignalSpectrum() {return signalSpectrum;}
 	IQBalance *GetIQBalance(){return iqBalance;}

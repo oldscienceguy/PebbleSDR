@@ -550,14 +550,6 @@ void Receiver::CloseSdrOptions()
     }
 }
 
-//New ProcessBlock for device plugins
-void Receiver::ProcessIQData(CPX *_in, quint16 _numSamples)
-{
-    //qDebug()<<"In ProcessIQData";
-    //Just forward for now
-    ProcessBlock(_in,audioBuf,_numSamples);
-}
-
 //processing flow for audio samples, called from SoundCard PortAudio callback
 //Note: frameCount is actual # samples from audio, may be less than framesPerBuffer
 /*
@@ -570,8 +562,8 @@ Since we NEVER modify an IN buffer, we can also just return the IN buffer as the
 that is disabled and not do a useless copy from IN to OUT.
 */
 
-//out is deprecated
-void Receiver::ProcessBlock(CPX *in, CPX *out, int frameCount)
+//New ProcessBlock for device plugins
+void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 {
     /*
      * Critical timing!!
@@ -600,11 +592,11 @@ void Receiver::ProcessBlock(CPX *in, CPX *out, int frameCount)
 	//	audio->inBufferUnderflowCount++; //Treat like in buffer underflow
 
     //Inject signals from test bench if desired
-    global->testBench->CreateGeneratorSamples(frameCount, in, sampleRate);
-    global->testBench->MixNoiseSamples(frameCount, in, sampleRate);
+    global->testBench->CreateGeneratorSamples(numSamples, in, sampleRate);
+    global->testBench->MixNoiseSamples(numSamples, in, sampleRate);
 
     if (isRecording)
-        recordingFile.WriteSamples(in,frameCount);
+        recordingFile.WriteSamples(in,numSamples);
 
 	float tmp;
     //Configure IQ order if not default
@@ -650,21 +642,9 @@ void Receiver::ProcessBlock(CPX *in, CPX *out, int frameCount)
     if (sdrGain != 1)
         CPXBuf::scale(in,in,sdrGain * sdr->iqGain,framesPerBuffer);
 
-	//End of common processing for both receive chains, pick one
-	//Time domain or Frequency domain receive chains
-	if (!useFreqDomainChain)
-		ProcessBlockTimeDomain(in,out,frameCount);
-	else
-		ProcessBlockFreqDomain(in,out,frameCount);
-
-    //global->perform.StopPerformance(100);
-}
-
-void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
-{
 	CPX *nextStep = in;
 
-    global->testBench->DisplayData(frameCount,nextStep,sampleRate,testBenchRawIQ);
+    global->testBench->DisplayData(numSamples,nextStep,sampleRate,testBenchRawIQ);
 
     //global->perform.StartPerformance();
     /*
@@ -828,6 +808,7 @@ void Receiver::ProcessBlockTimeDomain(CPX *in, CPX *out, int frameCount)
 
 }
 
+#if 0
 /*
  Alternate receive chain that does most of the processing in frequency domain
  */
@@ -873,6 +854,7 @@ void Receiver::ProcessBlockFreqDomain(CPX *in, CPX *out, int frameCount)
     audioOutput->SendToOutput(out,demodFrames);
 
 }
+#endif
 
 void Receiver::SetDigitalModem(QString _name, QWidget *_parent)
 {
@@ -901,3 +883,4 @@ void Receiver::SetDigitalModem(QString _name, QWidget *_parent)
     }
 
 }
+

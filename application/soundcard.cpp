@@ -303,12 +303,12 @@ int SoundCard::streamCallback(
 		//maxQ = Q>maxQ ? Q : maxQ;
 		sc->inBuffer[i]=CPX(I,Q);
 	}
-	//ProcessBlock handles all receive chain and ouput
-    sc->receiver->ProcessBlock(sc->inBuffer,sc->outBuffer,frameCount);
+    //ProcessIQData handles all receive chain and ouput
+    sc->receiver->ProcessIQData(sc->inBuffer,frameCount);
 
 	return paContinue;
 }
-//Final call from receiver ProcessBlock to send audio out
+//Final call from receiver ProcessIQData to send audio out
 void SoundCard::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
 {
 	float *outPtr;

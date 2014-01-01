@@ -362,7 +362,7 @@ void SDR_IP::RunConsumerThread()
     AcquireFilledBuffer();
 
     if (receiver != NULL)
-        receiver->ProcessBlock(((CPX **)producerBuffer)[nextConsumerDataBuf],outBuffer,framesPerBuffer);
+        ProcessIQData(((CPX **)producerBuffer)[nextConsumerDataBuf],framesPerBuffer);
 
     IncrementConsumerBuffer();
     ReleaseFreeBuffer();

@@ -92,7 +92,7 @@ void AudioQT::ProcessInputData()
         cpxInBuffer[i]=CPX(I,Q);
     }
     //ProcessBlock handles all receive chain and ouput
-    receiver->ProcessBlock(cpxInBuffer,cpxOutBuffer,frameCount);
+    receiver->ProcessIQData(cpxInBuffer,frameCount);
 }
 
 int AudioQT::StartOutput(QString outputDeviceName, int _outputSampleRate)
