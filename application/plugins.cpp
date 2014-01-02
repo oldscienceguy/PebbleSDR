@@ -29,17 +29,16 @@ QList<PluginInfo> Plugins::GetModemPluginInfo()
     //Add transition non-plugin modems
     PluginInfo p;
     p.name = "No Data";
+    p.fileName = "No_Data";
     p.type = PluginInfo::MODEM_PSEUDO_PLUGIN;
-    p.oldEnum = 0;
     info.append(p);
 
     p.name = "Band Data";
-    p.oldEnum = 1;
+    p.fileName = "Band_Data";
     info.append(p);
 
     foreach(PluginInfo p, pluginInfoList)
         if (p.type == PluginInfo::MODEM_PLUGIN) {
-            p.oldEnum = 2;
             info.append(p);
         }
     return info;
@@ -53,101 +52,100 @@ QList<PluginInfo> Plugins::GetDevicePluginInfo()
     PluginInfo p;
     p.type = PluginInfo::DEVICE_PSEUDO_PLUGIN;
     p.name = "SR Ensemble";
-    p.oldEnum = SDR::SR_ENSEMBLE;
+    p.fileName = "SR_ENSEMBLE";
     p.deviceInterface = new SoftRock(receiver, SDR::SR_ENSEMBLE,settings);
     info.append(p);
 
     p.name = "SR Ensemble 2M";
-    p.oldEnum = SDR::SR_ENSEMBLE_2M;
+    p.fileName = "SR_ENSEMBLE_2M";
     p.deviceInterface = new SoftRock(receiver, SDR::SR_ENSEMBLE_2M,settings);
     info.append(p);
 
     p.name = "SR Ensemble 4M";
-    p.oldEnum = SDR::SR_ENSEMBLE_4M;
+    p.fileName = "SR_ENSEMBLE_4M";
     p.deviceInterface = new SoftRock(receiver, SDR::SR_ENSEMBLE_4M,settings);
     info.append(p);
 
     p.name = "SR Ensemble 6M";
-    p.oldEnum = SDR::SR_ENSEMBLE_6M;
+    p.fileName = "SR_ENSEMBLE_6M";
     p.deviceInterface = new SoftRock(receiver, SDR::SR_ENSEMBLE_6M,settings);
     info.append(p);
 
     p.name = "SR V9-ABPF";
-    p.oldEnum = SDR::SR_V9;
+    p.fileName = "SR_V9";
     p.deviceInterface = new SoftRock(receiver, SDR::SR_V9,settings);
     info.append(p);
 
     p.name = "SR LITE II";
-    p.oldEnum = SDR::SR_LITE;
+    p.fileName = "SR_LITE";
     p.deviceInterface = new SoftRock(receiver, SDR::SR_LITE,settings);
     info.append(p);
 
  #if 0
     p.name = "SR Ensemble LF";
-    p.oldEnum = SDR::SR_ENSEMBLE_LF;
+    p.fileName = "SR_ENSEMBLE_LF";
     p.deviceInterface = new SoftRock(receiver, SDR::SR_ENSEMBLE_LF,settings);
     info.append(p);
 #endif
 
     p.name = "FiFi";
-    p.oldEnum = SDR::FiFi;
+    p.fileName = "FiFi";
     p.deviceInterface = new SoftRock(receiver, SDR::FiFi,settings);
     info.append(p);
 
     p.name = "Elektor SDR";
-    p.oldEnum = SDR::ELEKTOR;
+    p.fileName = "ELEKTOR";
     p.deviceInterface = new ElektorSDR(receiver, SDR::ELEKTOR,settings);
     info.append(p);
 
 #if 0
     p.name = "Elektor SDR + Preamp";
-    p.oldEnum = SDR::ELEKTOR_PA;
+    p.fileName = "ELEKTOR_PA";
     p.deviceInterface = new ElektorSDR(receiver, SDR::ELEKTOR_PA,settings);
     info.append(p);
 #endif
 
     p.name = "RFSpace SDR-IQ";
-    p.oldEnum = SDR::SDR_IQ_USB;
+    p.fileName = "SDR_IQ_USB";
     p.deviceInterface = new SDR_IQ(receiver, SDR::SDR_IQ_USB,settings);
     info.append(p);
 
     p.name = "RFSpace SDR-IP";
-    p.oldEnum = SDR::SDR_IP_TCP;
+    p.fileName = "SDR_IP_TCP";
     p.deviceInterface = new SDR_IP(receiver, SDR::SDR_IP_TCP,settings);
     info.append(p);
 
     p.name = "HPSDR USB";
-    p.oldEnum = SDR::HPSDR_USB;
+    p.fileName = "HPSDR_USB";
     p.deviceInterface = new HPSDR(receiver, SDR::HPSDR_USB,settings);
     info.append(p);
 
     //p.name = "HPSDR TCP";
-    //p.oldEnum = SDR::HPSDR_TCP;
+    //p.fileName = "HPSDR_TCP";
     //info.append(p);
 
     p.name = "FUNcube Pro";
-    p.oldEnum = SDR::FUNCUBE;
+    p.fileName = "FUNCUBE";
     p.deviceInterface = new FunCube(receiver, SDR::FUNCUBE,settings);
     info.append(p);
 
     p.name = "FUNcube Pro+";
-    p.oldEnum = SDR::FUNCUBE_PLUS;
+    p.fileName = "FUNCUBE_PLUS";
     p.deviceInterface = new FunCube(receiver, SDR::FUNCUBE_PLUS,settings);
     info.append(p);
 
     p.name = "File";
-    p.oldEnum = SDR::FILE;
+    p.fileName = "FILE";
     p.deviceInterface = new SDRFile(receiver,SDR::FILE, settings);
     info.append(p);
 
     p.name = "RTL2832 Family";
-    p.oldEnum = SDR::DVB_T;
+    p.fileName = "DVB_T";
     p.deviceInterface = new RTL2832(receiver,SDR::DVB_T, settings);
     info.append(p);
 
     foreach(PluginInfo p, pluginInfoList)
         if (p.type == PluginInfo::DEVICE_PLUGIN) {
-            p.oldEnum = 0;
             info.append(p);
         }
     return info;

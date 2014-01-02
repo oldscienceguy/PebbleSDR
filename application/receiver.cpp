@@ -270,8 +270,9 @@ bool Receiver::Off()
         isRecording = false;
     }
 	//Carefull with order of shutting down
-    if (settings->sdrDevice == SDR::SDR_IQ_USB) {
-	}
+    //if (settings->sdrDevice == SDR::SDR_IQ_USB) {
+    //}
+
 	//Stop incoming samples first
 	if (sdr != NULL)
 		sdr->Stop();

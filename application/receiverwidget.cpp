@@ -167,7 +167,13 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     foreach (PluginInfo p,receiver->getDevicePluginInfo()) {
         v.setValue(p);
         sdrSelector->addItem(p.name,v);
+#if 0
         if (p.oldEnum == global->settings->sdrDevice) {
+            cur = sdrSelector->count()-1;
+            global->sdr = p.deviceInterface;
+        }
+#endif
+        if (p.fileName == global->settings->sdrDeviceFilename) {
             cur = sdrSelector->count()-1;
             global->sdr = p.deviceInterface;
         }
@@ -691,27 +697,22 @@ void ReceiverWidget::dataSelectionChanged(int s)
         return;
 
     //Clear any previous data selection
-    switch(dataSelection.oldEnum) {
-        case 2:
-
-            //Reset decoder
-            receiver->SetDigitalModem(NULL,NULL);
-            //Delete all children
-            foreach (QObject *obj, ui.dataFrame->children()) {
-                //Normally we get a grid layout object, uiFrame, dataFrame
-                delete obj;
-            }
-            break;
-        case 1:
+    if (dataSelection.fileName == "Band_Data") {
             receiver->getDemod()->SetupDataUi(NULL);
             //Delete all children
             foreach (QObject *obj, ui.dataFrame->children()) {
                 //Normally we get a grid layout object, uiFrame, dataFrame
                 delete obj;
             }
-            break;
-        default:
-            break;
+    } else if (dataSelection.fileName == "No_Data") {
+    } else {
+           //Reset decoder
+            receiver->SetDigitalModem(NULL,NULL);
+            //Delete all children
+            foreach (QObject *obj, ui.dataFrame->children()) {
+                //Normally we get a grid layout object, uiFrame, dataFrame
+                delete obj;
+            }
     }
 
     //enums are stored as user data with each menu item
@@ -719,8 +720,7 @@ void ReceiverWidget::dataSelectionChanged(int s)
 
     QWidget *parent;
 
-    switch (dataSelection.oldEnum) {
-        case 0:
+    if (dataSelection.fileName == "No_Data") {
             //Data frame is always open if we get here
             ui.dataFrame->setVisible(false);
             parent = ui.dataFrame;
@@ -730,19 +730,12 @@ void ReceiverWidget::dataSelectionChanged(int s)
                 parent = parent->parentWidget();
             }
             update();
-            break;
-        case 1:
+    } else if (dataSelection.fileName == "Band_Data") {
             receiver->getDemod()->SetupDataUi(ui.dataFrame);
             ui.dataFrame->setVisible(true);
-            break;
-        case 2:
+    } else {
             receiver->SetDigitalModem(ui.dataSelectionBox->currentText(), ui.dataFrame);
             ui.dataFrame->setVisible(true);
-            break;
-        default:
-            //Todo, delete any previous active dataUI
-            ui.dataFrame->setVisible(false);
-            break;
     }
 }
 
@@ -898,7 +891,7 @@ void ReceiverWidget::ReceiverChanged(int i)
     int cur = ui.sdrSelector->currentIndex();
     PluginInfo p = ui.sdrSelector->itemData(cur).value<PluginInfo>();
     //Replace
-    global->settings->sdrDevice = (SDR::SDRDEVICE)p.oldEnum;
+    global->settings->sdrDeviceFilename = p.fileName;
     global->sdr = p.deviceInterface;
     //Close the sdr option window if open
     receiver->CloseSdrOptions();

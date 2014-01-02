@@ -21,8 +21,6 @@ struct PluginInfo
     QString fileName;
     DigitalModemInterface *modemInterface;
     DeviceInterface *deviceInterface;
-    //Transition from non-plugins, both interfaces will be NULL for transition info
-    quint16 oldEnum;
 };
 //Add to QT metatype so we can use QVariants with this in UI lists
 //QVariant v; v.setValue(p);

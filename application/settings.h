@@ -18,8 +18,6 @@ public:
 	void WriteSettings();
 
 	//Hack, these should eventually be access methods
-    SDR::SDRDEVICE sdrDevice;
-    //Replacement for sdrDevice
     QString sdrDeviceFilename;
 
 	//If Output Sample Rate is above this, then we try to reduce it by skipping samples when we output
