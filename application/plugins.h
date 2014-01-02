@@ -14,10 +14,13 @@
 
 struct PluginInfo
 {
+    enum PluginType {MODEM_PLUGIN, DEVICE_PLUGIN};
+    PluginType type;
     QString name;
     QString description;
     QString fileName;
-    DigitalModemInterface *interface;
+    DigitalModemInterface *modemInterface;
+    DeviceInterface *deviceInterface;
 };
 
 class Plugins
@@ -25,9 +28,11 @@ class Plugins
 public:
     Plugins();
     //For menus
-    QStringList GetPluginNames();
+    QStringList GetModemPluginNames();
+    QStringList GetDevicePluginNames();
 
-    DigitalModemInterface *GetInterface(QString name);
+    DigitalModemInterface *GetModemInterface(QString name);
+    DeviceInterface *GetDeviceInterface(QString name);
 
 private:
     void findPlugins();

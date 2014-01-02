@@ -16,7 +16,8 @@ SUBDIRS =	pebblelib \
 			plugins/DigitalModemExample \
 			plugins/MorseDigitalModem \
 			plugins/RttyDigitalModem \
-			plugins/WWVDigitalModem
+			plugins/WWVDigitalModem \
+			plugins/FileSDRDevice
 
 # build must be last:
 #build in the order listed

@@ -12,20 +12,41 @@ Plugins::Plugins()
     findPlugins();
 }
 
-QStringList Plugins::GetPluginNames()
+QStringList Plugins::GetModemPluginNames()
 {
     QStringList names;
 
     foreach(PluginInfo p, pluginInfoList)
-        names.append(p.name);
+        if (p.type == PluginInfo::MODEM_PLUGIN)
+            names.append(p.name);
     return names;
 }
 
-DigitalModemInterface *Plugins::GetInterface(QString name)
+QStringList Plugins::GetDevicePluginNames()
+{
+    QStringList names;
+
+    foreach(PluginInfo p, pluginInfoList)
+        if (p.type == PluginInfo::DEVICE_PLUGIN)
+            names.append(p.name);
+    return names;
+
+}
+
+DigitalModemInterface *Plugins::GetModemInterface(QString name)
 {
     foreach(PluginInfo p, pluginInfoList) {
-        if (p.name == name)
-            return p.interface;
+        if (p.name == name && p.type == PluginInfo::MODEM_PLUGIN)
+            return p.modemInterface;
+    }
+    return NULL;
+}
+
+DeviceInterface *Plugins::GetDeviceInterface(QString name)
+{
+    foreach(PluginInfo p, pluginInfoList) {
+        if (p.name == name && p.type == PluginInfo::DEVICE_PLUGIN)
+            return p.deviceInterface;
     }
     return NULL;
 }
@@ -63,12 +84,25 @@ void Plugins::findPlugins()
         //qDebug()<<loader.errorString();
         if (plugin) {
             DigitalModemInterface *iDigitalModem = qobject_cast<DigitalModemInterface *>(plugin);
+            DeviceInterface *iDeviceInterface = qobject_cast<DeviceInterface *>(plugin);
             if (iDigitalModem) {
                 //plugin supports interface
+                pluginInfo.type = PluginInfo::MODEM_PLUGIN;
                 pluginInfo.name = iDigitalModem->GetPluginName();
                 pluginInfo.description = iDigitalModem->GetDescription();
                 pluginInfo.fileName = fileName;
-                pluginInfo.interface = iDigitalModem;
+                pluginInfo.modemInterface = iDigitalModem;
+                pluginInfo.deviceInterface = NULL;
+                pluginInfoList.append(pluginInfo);
+            }
+            if (iDigitalModem) {
+                //plugin supports interface
+                pluginInfo.type = PluginInfo::DEVICE_PLUGIN;
+                pluginInfo.name = iDigitalModem->GetPluginName();
+                pluginInfo.description = iDigitalModem->GetDescription();
+                pluginInfo.fileName = fileName;
+                pluginInfo.deviceInterface = iDeviceInterface;
+                pluginInfo.modemInterface = NULL;
                 pluginInfoList.append(pluginInfo);
             }
             //qDebug()<<plugin->Get

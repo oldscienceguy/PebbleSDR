@@ -13,15 +13,13 @@
  *
  */
 #include "pebblelib_global.h"
-#include "cpx.h"
 #include <functional>
+
+class CPX;
 
 //using std::placeholders;
 //ProcessIQData callback: Call with CPX buffer and number of samples
 typedef std::function<void(CPX *, quint16)> cbProcessIQData;
-
-//In caller, instantiate NewDataCallback as follows
-//NewDataCallback foo = std::bind1st(&Receiver::ProcessBlock, receiver);
 
 class PEBBLELIBSHARED_EXPORT DeviceInterface
 {
@@ -53,9 +51,15 @@ protected:
     virtual void StopConsumerThread() = 0;
     virtual void RunConsumerThread() = 0;
 
-    cbProcessIQData ProcessIQData(CPX* buf, quint16 numSamples);
+    cbProcessIQData ProcessIQData;
 
 };
+
+//How best to encode version number in interface
+#define DeviceInterface_iid "N1DDY.Pebble.DeviceInterface.V1"
+
+//Creates cast macro for interface ie qobject_cast<DigitalModemInterface *>(plugin);
+Q_DECLARE_INTERFACE(DeviceInterface, DeviceInterface_iid)
 
 
 #endif // DEVICE_INTERFACES_H

@@ -865,7 +865,7 @@ void Receiver::SetDigitalModem(QString _name, QWidget *_parent)
         iDigitalModem = NULL;
         return;
     }
-    iDigitalModem = plugins->GetInterface(_name);
+    iDigitalModem = plugins->GetModemInterface(_name);
     if (iDigitalModem != NULL) {
 
         //Display array of CPX data in TestBench

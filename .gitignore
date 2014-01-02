@@ -25,3 +25,6 @@ plugins/RttyDigitalModem/*MacRelease/
 
 plugins/WWVDigitalModem/*MacDebug/
 plugins/WWVDigitalModem/*MacRelease/
+
+plugins/FileSDRDevice/*MacDebug/
+plugins/FileSDRDevice/*MacRelease/
