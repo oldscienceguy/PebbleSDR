@@ -337,7 +337,8 @@ void SDR::ResetAllSettings(bool b)
         //Delete ini files and restart
         if (sdrOptions != NULL)
             sdrOptions->close();
-        emit Restart();
+        //Disabled
+        //emit Restart();
 
         QString fName = qSettings->fileName();
         QFile f(fName);
@@ -431,9 +432,9 @@ void SDR::WriteSettings()
 }
 
 //Static
-SDR *SDR::Factory(Receiver *receiver, SDR::SDRDEVICE dev, Settings *settings)
+DeviceInterface *SDR::Factory(Receiver *receiver, SDR::SDRDEVICE dev, Settings *settings)
 {
-	SDR *sdr=NULL;
+    DeviceInterface *sdr=NULL;
 
     switch (dev)
 	{
@@ -517,15 +518,6 @@ int *SDR::GetSampleRates(int &len)
     sampleRates[1] = 96000;
     sampleRates[2] = 192000;
     return sampleRates;
-}
-
-SDR::SDRDEVICE SDR::GetDevice()
-{
-	return sdrDevice;
-}
-void SDR::SetDevice(SDRDEVICE m)
-{
-    sdrDevice = m;
 }
 
 void SDR::SetupOptionUi(QWidget *parent)
@@ -621,7 +613,7 @@ void SDR::StopConsumerThread(){}
 void SDR::RunConsumerThread(){}
 
 //SDRThreads
-SDRProducerThread::SDRProducerThread(SDR *_sdr)
+SDRProducerThread::SDRProducerThread(DeviceInterface *_sdr)
 {
 	sdr = _sdr;
 	msSleep=5;
@@ -645,7 +637,7 @@ void SDRProducerThread::run()
 		msleep(msSleep);
 	}
 }
-SDRConsumerThread::SDRConsumerThread(SDR *_sdr)
+SDRConsumerThread::SDRConsumerThread(DeviceInterface *_sdr)
 {
 	sdr = _sdr;
 	msSleep=5;

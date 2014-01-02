@@ -173,7 +173,7 @@ void SpectrumWidget::Run(bool r)
     zoomPlotLabel.fill(Qt::black);
 
 	if (r) {
-        ui.displayBox->setCurrentIndex(global->sdr->lastDisplayMode); //Initial display mode
+        ui.displayBox->setCurrentIndex(global->sdr->GetLastDisplayMode()); //Initial display mode
         ui.zoomSlider->setValue(0); //Left end of scale
         //zoomChanged(0); //Display initial value
 		isRunning = true;
@@ -477,7 +477,7 @@ void SpectrumWidget::plotSelectionChanged(SignalSpectrum::DISPLAYMODE mode)
     }
 
     if (global->sdr != NULL)
-        global->sdr->lastDisplayMode = mode;
+        global->sdr->SetLastDisplayMode(mode);
 
     spectrumMode = mode;
     if (signalSpectrum != NULL) {

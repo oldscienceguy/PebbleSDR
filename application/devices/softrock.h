@@ -41,7 +41,7 @@ public:
 	QString GetDeviceName();
 
 	bool Version(short *major, short *minor);
-	bool Restart();
+    bool RestartSoftRock();
 	bool SetInputMux(qint16 inpNum);
 	bool GetInputMux(qint16 &inpNum);
 	bool FilterCrossOver();

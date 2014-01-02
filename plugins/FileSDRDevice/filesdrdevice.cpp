@@ -1,8 +1,15 @@
+//GPL license and attributions are in gpl.h and terms are included in this file by reference
+#include "gpl.h"
 #include "filesdrdevice.h"
 
 
 FileSDRDevice::FileSDRDevice()
 {
+}
+
+FileSDRDevice::~FileSDRDevice()
+{
+
 }
 
 QString FileSDRDevice::GetPluginName()
@@ -31,12 +38,12 @@ bool FileSDRDevice::Disconnect()
     return false;
 }
 
-void FileSDRDevice::StartData()
+void FileSDRDevice::Start()
 {
 
 }
 
-void FileSDRDevice::StopData()
+void FileSDRDevice::Stop()
 {
 
 }

@@ -16,6 +16,7 @@ class Receiver;
 class Settings;
 class SDR;
 class CTestBench;
+class DeviceInterface;
 
 class Global
 {
@@ -25,7 +26,7 @@ public:
 
 	QDebug *pLogfile;
     Receiver *receiver;
-    SDR *sdr;
+    DeviceInterface *sdr;
     char *revision;
     Settings *settings;
     double minDb; //Smallest db we'll return from FFT

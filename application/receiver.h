@@ -105,7 +105,7 @@ private:
 	Presets *presets;
 	//SoftRock *softRock;
 	QMainWindow *mainWindow;
-	SDR *sdr;
+    DeviceInterface *sdr;
 	Audio *audioOutput;
 	Demod *demod;
 	Mixer *mixer;

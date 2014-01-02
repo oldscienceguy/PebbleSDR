@@ -229,7 +229,7 @@ Try it.
 (TBW)
 
 ###FiFi
-Fifi has an onboard sound device that must be selected as the Pebble I/Q input.  In the device preferences, chose "Core Audio:UDA1361"
+Fifi has an onboard sound device that must be selected as the Pebble I/Q input.  In the device preferences, chose "Core Audio:UDA1361".  Make sure you set the Input level in the Mac Audio settings as well.  
 
 In order to run the FiFi rockprog configuration utility I had to first install MacPorts popt using "sudo port install popt"
 

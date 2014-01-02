@@ -478,7 +478,7 @@ void ReceiverWidget::powerToggled(bool on)
         ui.sMeterWidget->SetSignalSpectrum(receiver->GetSignalSpectrum());
         ui.spectrumWidget->SetSignalSpectrum(receiver->GetSignalSpectrum());
 
-        ui.spectrumWidget->plotSelectionChanged((SignalSpectrum::DISPLAYMODE)global->sdr->lastDisplayMode);
+        ui.spectrumWidget->plotSelectionChanged((SignalSpectrum::DISPLAYMODE)global->sdr->GetLastDisplayMode());
         ui.bandType->setCurrentIndex(Band::HAM);
 
 		ui.spectrumWidget->Run(true);

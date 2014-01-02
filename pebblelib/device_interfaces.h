@@ -12,6 +12,7 @@
  * We want to support the producer/consumer thread model to support high sample rate devices
  *
  */
+#include <QtCore>
 #include "pebblelib_global.h"
 #include <functional>
 
@@ -23,7 +24,18 @@ typedef std::function<void(CPX *, quint16)> cbProcessIQData;
 
 class PEBBLELIBSHARED_EXPORT DeviceInterface
 {
+
 public:
+    typedef enum IQORDER {IQ,QI,IONLY,QONLY} IQORDER;
+    typedef enum STARTUP {SETFREQ = 0, LASTFREQ, DEFAULTFREQ} STARTUP;
+    enum SDRDEVICE {SR_LITE=1, SR_V9, SR_ENSEMBLE, SR_ENSEMBLE_2M,
+        SR_ENSEMBLE_4M, SR_ENSEMBLE_6M, SR_ENSEMBLE_LF,
+        ELEKTOR, ELEKTOR_PA, SDR_IQ_USB,
+        HPSDR_USB, HPSDR_TCP, SPARE1, FUNCUBE,
+        NOSDR, FILE, DVB_T, FUNCUBE_PLUS, SDR_IP_TCP, FiFi};
+
+    DeviceInterface() {};
+    virtual ~DeviceInterface() {};
     //Interface must be all pure virtual functions
     //Info - return plugin name for menus
     virtual QString GetPluginName() = 0;
@@ -32,11 +44,11 @@ public:
     virtual bool Initialize(cbProcessIQData _callback) = 0;
     virtual bool Connect() = 0;
     virtual bool Disconnect() = 0;
-    virtual void StartData() = 0;
-    virtual void StopData() = 0;
+    virtual void Start() = 0;
+    virtual void Stop() = 0;
 
     virtual double SetFrequency(double fRequested,double fCurrent) = 0;
-    virtual void ShowOptions() = 0;
+    virtual void ShowSdrOptions(bool b) {};
     virtual void ReadSettings() = 0;
     virtual void WriteSettings() = 0;
 
@@ -49,13 +61,62 @@ public:
     virtual int GetSampleRate() = 0;
     virtual bool UsesAudioInput() = 0;
 
-protected:
+
     virtual void StopProducerThread() = 0;
     virtual void RunProducerThread() = 0;
     virtual void StopConsumerThread() = 0;
     virtual void RunConsumerThread() = 0;
 
     cbProcessIQData ProcessIQData;
+
+    int GetLastDisplayMode() {return lastDisplayMode;}
+    void SetLastDisplayMode(int mode) {lastDisplayMode = mode;}
+
+    IQORDER GetIQOrder() {return iqOrder;}
+    void SetIQOrder(IQORDER o) {iqOrder = o;}
+    bool GetTestBenchChecked() {return isTestBenchChecked;}
+    bool GetIQBalanceEnabled() {return iqBalanceEnable;}
+    bool GetIQBalanceGain() {return iqBalanceGain;}
+    bool GetIQBalancePhase() {return iqBalancePhase;}
+
+    double GetLastFreq() {return lastFreq;}
+    void SetLastFreq(double f) {lastFreq = f;}
+
+    int GetLastMode() {return lastMode;}
+    void SetLastMode(int mode) {lastMode = mode;}
+
+    STARTUP GetStartup() {return startup;}
+    double GetStartupFreq() {return startupFreq;}
+    QString GetInputDeviceName() {return inputDeviceName;}
+    QString GetOutputDeviceName() {return outputDeviceName;}
+
+    double GetIQGain() {return iqGain;}
+    void SetIQGain(double g) {iqGain = g;}
+
+    SDRDEVICE GetSDRDevice() {return sdrDevice;}
+    void SetSDRDevice(SDRDEVICE dev) {sdrDevice = dev;}
+
+protected:
+    int lastDisplayMode; //Spectrum, waterfall, etc
+    STARTUP startup;
+    double startupFreq;
+    QString inputDeviceName;
+    QString outputDeviceName;
+    int sampleRate;
+
+    double iqGain; //Normalize device so incoming IQ levels are consistent
+    IQORDER iqOrder;
+    //Image rejection (iqbalance) factors for this device
+    double iqBalanceGain;
+    double iqBalancePhase;
+    bool iqBalanceEnable;
+
+    double lastFreq;
+    int lastMode;
+
+    bool isTestBenchChecked;
+
+    SDRDEVICE sdrDevice;
 
 };
 

@@ -25,40 +25,39 @@ class Receiver;
 class SDRProducerThread;
 class SDRConsumerThread;
 
-class SDR:public QObject
+class SDR:public QObject, public DeviceInterface
 {
-	Q_OBJECT
+    Q_OBJECT
+    //Let Qt meta-object know about our interface
+    Q_INTERFACES(DeviceInterface)
+
 	friend class SDRProducerThread; //Thread has access to private data
 	friend class SDRConsumerThread;
 
 public:
-	enum SDRDEVICE {SR_LITE=1, SR_V9, SR_ENSEMBLE, SR_ENSEMBLE_2M,
-		SR_ENSEMBLE_4M, SR_ENSEMBLE_6M, SR_ENSEMBLE_LF,
-        ELEKTOR, ELEKTOR_PA, SDR_IQ_USB,
-        HPSDR_USB, HPSDR_TCP, SPARE1, FUNCUBE,
-        NOSDR, FILE, DVB_T, FUNCUBE_PLUS, SDR_IP_TCP, FiFi};
-
-	typedef enum IQORDER {IQ,QI,IONLY,QONLY} IQORDER;
-    typedef enum STARTUP {SETFREQ = 0, LASTFREQ, DEFAULTFREQ} STARTUP;
 
     SDR(Receiver *receiver, SDRDEVICE dev, Settings *_settings);
-	~SDR(void);
+    virtual ~SDR(void);
 
-    static SDR *Factory(Receiver *receiver, SDR::SDRDEVICE dev, Settings *settings);
+    static DeviceInterface *Factory(Receiver *receiver, SDR::SDRDEVICE dev, Settings *settings);
+    virtual QString GetPluginName() {return "Not Set";}
+    virtual QString GetPluginDescription() {return "";}
 
-	virtual bool Connect()=0;
-	virtual bool Disconnect()=0;
-	virtual double SetFrequency(double fRequested,double fCurrent)=0;
+    virtual bool Initialize(cbProcessIQData _callback) {return false;}
+
+    virtual bool Connect(){return false;}
+    virtual bool Disconnect(){return false;}
+    virtual double SetFrequency(double fRequested,double fCurrent){return fCurrent;}
 	//If SDR device is not using sound card, start/stop thread that returns data
 	//Ignored unless overridden
-	virtual void Start()=0;
-	virtual void Stop()=0;
-	virtual double GetStartupFrequency()=0;
-	virtual int GetStartupMode()=0;
-	virtual double GetHighLimit()=0;
-	virtual double GetLowLimit()=0;
-	virtual double GetGain()=0;
-	virtual QString GetDeviceName()=0;
+    virtual void Start(){}
+    virtual void Stop(){}
+    virtual double GetStartupFrequency(){return 0;}
+    virtual int GetStartupMode(){return 0;}
+    virtual double GetHighLimit(){return 0;}
+    virtual double GetLowLimit(){return 0;}
+    virtual double GetGain(){return 1;}
+    virtual QString GetDeviceName(){return "";}
 	//Sample rate for some devices, like SDR-IQ, is dependent on bandwidth
 	virtual int GetSampleRate();
     virtual int* GetSampleRates(int &len); //Returns array of allowable rates and length of array as ref
@@ -69,6 +68,13 @@ public:
     virtual void WriteOptionUi() {}
     //Assume each device uses audio input.  Devices that don't should over-ride and return false to hide options
     virtual bool UsesAudioInput() {return true;}
+
+    void StopProducerThread();
+    void RunProducerThread();
+    void StopConsumerThread();
+    void RunConsumerThread();
+
+
 
 	SDRDEVICE GetDevice();
 	void SetDevice(SDRDEVICE m);
@@ -88,31 +94,6 @@ public:
     void ShowSdrOptions(bool b);
     void InitSettings(QString fname);
 
-    //Hack, these should eventually be access methods
-    STARTUP startup;
-    double startupFreq;
-    QString inputDeviceName;
-    QString outputDeviceName;
-    int sampleRate;
-
-    double iqGain; //Normalize device so incoming IQ levels are consistent
-    IQORDER iqOrder;
-    //Image rejection (iqbalance) factors for this device
-    double iqBalanceGain;
-    double iqBalancePhase;
-    bool iqBalanceEnable;
-
-    double lastFreq;
-    int lastMode;
-    int lastDisplayMode; //Spectrum, waterfall, etc
-
-    bool isTestBenchChecked;
-
-
-signals:
-    //Settings changed, turn off and restart with new settings
-    void Restart();
-
 protected:
     cbProcessIQData ProcessIQData;
 
@@ -129,7 +110,6 @@ protected:
     QStringList inputDevices;
     QStringList outputDevices;
 
-    SDRDEVICE sdrDevice;
 	Audio *audioInput;
 	Receiver *receiver;
 	double startupFrequency; //0 means auto-set
@@ -159,12 +139,6 @@ protected:
 	bool isThreadRunning;
 	SDRProducerThread *producerThread;
 	SDRConsumerThread *consumerThread;
-	//Derived classes implement device specific functions for producer/consumer thread
-	//We could pass method pointers to stop() and run(), but this is simpler for now
-	virtual void StopProducerThread();
-	virtual void RunProducerThread();
-	virtual void StopConsumerThread();
-	virtual void RunConsumerThread();
 
 private slots:
     void InputChanged(int i);
@@ -188,13 +162,13 @@ class SDRProducerThread:public QThread
 {
 	Q_OBJECT
 public:
-	SDRProducerThread(SDR * s);
+    SDRProducerThread(DeviceInterface * s);
 	void run();
 	void stop();
 	void setRefresh(int ms);
 
 private:
-	SDR *sdr;
+    DeviceInterface *sdr;
 	bool doRun;
 	int msSleep;
 };
@@ -202,13 +176,13 @@ class SDRConsumerThread:public QThread
 {
 	Q_OBJECT
 public:
-	SDRConsumerThread(SDR * s);
+    SDRConsumerThread(DeviceInterface * s);
 	void run();
 	void stop();
 	void setRefresh(int ms);
 
 private:
-	SDR *sdr;
+    DeviceInterface *sdr;
 	bool doRun;
 	int msSleep;
 };

@@ -101,7 +101,7 @@ bool Receiver::On()
 		return false;
 	}
 
-    if (sdr->isTestBenchChecked) {
+    if (sdr->GetTestBenchChecked()) {
         CTestBench *testBench = global->testBench;
 
         testBench->Init(); //Sets up last device settings used
@@ -125,8 +125,6 @@ bool Receiver::On()
     //Don't set title until we connect.  Some drivers handle multiple devices (RTL2832) and we need connection data
     QApplication::activeWindow()->setWindowTitle("Pebble II: " + sdr->GetDeviceName());
 
-    connect(sdr,SIGNAL(Restart()),this,SLOT(Restart()));
-
     sampleRate = demodSampleRate = sdr->GetSampleRate();
     framesPerBuffer = demodFrames = settings->framesPerBuffer;
     //These steps work on full sample rates
@@ -134,9 +132,9 @@ bool Receiver::On()
     //Don't need Mixer anymore - TBD
     mixer = new Mixer(sampleRate, framesPerBuffer);
     iqBalance = new IQBalance(sampleRate,framesPerBuffer);
-    iqBalance->setEnabled(sdr->iqBalanceEnable);
-    iqBalance->setGainFactor(sdr->iqBalanceGain);
-    iqBalance->setPhaseFactor(sdr->iqBalancePhase);
+    iqBalance->setEnabled(sdr->GetIQBalanceEnabled());
+    iqBalance->setGainFactor(sdr->GetIQBalanceGain());
+    iqBalance->setPhaseFactor(sdr->GetIQBalancePhase());
 
     /*
      * Decimation strategy
@@ -227,23 +225,23 @@ bool Receiver::On()
     receiverWidget->SetDisplayedGain(30,1,100);  //20%
     receiverWidget->SetDisplayedSquelch(global->minDb);
 	
-    if (sdr->GetDevice() == SDR::FILE || sdr->startup == SDR::DEFAULTFREQ) {
+    if (sdr->GetSDRDevice() == SDR::FILE || sdr->GetStartup() == SDR::DEFAULTFREQ) {
         frequency=sdr->GetStartupFrequency();
         receiverWidget->SetFrequency(frequency);
         //This triggers indirect frequency set, so make sure we set widget first
         receiverWidget->SetMode((DEMODMODE)sdr->GetStartupMode());
     }
-    else if (sdr->startup == SDR::SETFREQ) {
-        frequency = sdr->startupFreq;
+    else if (sdr->GetStartup() == SDR::SETFREQ) {
+        frequency = sdr->GetStartupFreq();
         receiverWidget->SetFrequency(frequency);
 
         receiverWidget->SetMode((DEMODMODE)sdr->GetStartupMode());
     }
-    else if (sdr->startup == SDR::LASTFREQ) {
-        frequency = sdr->lastFreq;
+    else if (sdr->GetStartup() == SDR::LASTFREQ) {
+        frequency = sdr->GetLastFreq();
         receiverWidget->SetFrequency(frequency);
 
-        receiverWidget->SetMode((DEMODMODE)sdr->lastMode);
+        receiverWidget->SetMode((DEMODMODE)sdr->GetLastMode());
 	}
 	else {
 		frequency = 10000000;
@@ -253,7 +251,7 @@ bool Receiver::On()
 	}
 
 	//This should always be last because it starts samples flowing through the processBlocks
-    audioOutput->StartOutput(sdr->outputDeviceName, audioOutRate);
+    audioOutput->StartOutput(sdr->GetOutputDeviceName(), audioOutRate);
 	sdr->Start();
 
 	return true;
@@ -287,7 +285,7 @@ bool Receiver::Off()
 	//Now clean up rest
 	if (sdr != NULL){
         //Save any run time settings
-        sdr->lastFreq = frequency;
+        sdr->SetLastFreq(frequency);
 
 		sdr->Disconnect();
         delete sdr;
@@ -470,7 +468,7 @@ void Receiver::SetMode(DEMODMODE m)
 
         //Demod will return new demo
         demod->SetDemodMode(m, sampleRate, demodSampleRate);
-        sdr->lastMode = m;
+        sdr->SetLastMode(m);
         sampleBufLen = 0;
 	}
     if (iDigitalModem != NULL) {
@@ -600,10 +598,10 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 
 	float tmp;
     //Configure IQ order if not default
-    if (sdr->iqOrder != SDR::IQ)
+    if (sdr->GetIQOrder() != SDR::IQ)
         for (int i=0;i<framesPerBuffer;i++)
         {
-            switch(sdr->iqOrder)
+            switch(sdr->GetIQOrder())
             {
             case SDR::IQ:
                     //No change, this is the default order
@@ -640,7 +638,7 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 	//Note that we DO modify IN buffer in this step
 	sdrGain = sdr->GetGain(); //Allow sdr to change gain while running
     if (sdrGain != 1)
-        CPXBuf::scale(in,in,sdrGain * sdr->iqGain,framesPerBuffer);
+        CPXBuf::scale(in,in,sdrGain * sdr->GetIQGain(),framesPerBuffer);
 
 	CPX *nextStep = in;
 

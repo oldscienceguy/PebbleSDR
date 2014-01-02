@@ -18,14 +18,15 @@ class FileSDRDevice : public QObject, public DeviceInterface
 
 public:
     FileSDRDevice();
+    ~FileSDRDevice();
     QString GetPluginName();
     QString GetPluginDescription();
 
     bool Initialize(cbProcessIQData _callback);
     bool Connect();
     bool Disconnect();
-    void StartData();
-    void StopData();
+    void Start();
+    void Stop();
 
     double SetFrequency(double fRequested,double fCurrent);
     void ShowOptions();

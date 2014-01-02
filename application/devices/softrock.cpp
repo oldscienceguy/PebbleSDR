@@ -420,7 +420,7 @@ bool SoftRock::Version(short *major, short *minor)
 	return result == 2;
 }
 
-bool SoftRock::Restart()
+bool SoftRock::RestartSoftRock()
 {
 	return usbCtrlMsgIn(0x0f, 0x0000, 0, NULL, 0);
 }
