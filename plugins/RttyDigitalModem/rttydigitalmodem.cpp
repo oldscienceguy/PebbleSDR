@@ -46,7 +46,7 @@ QString RttyDigitalModem::GetPluginName()
     return "RTTY";
 }
 
-QString RttyDigitalModem::GetDescription()
+QString RttyDigitalModem::GetPluginDescription()
 {
     return "Rtty digital modem";
 }

@@ -14,22 +14,28 @@
 
 struct PluginInfo
 {
-    enum PluginType {MODEM_PLUGIN, DEVICE_PLUGIN};
+    enum PluginType {MODEM_PLUGIN, DEVICE_PLUGIN, MODEM_PSEUDO_PLUGIN, DEVICE_PSEUDO_PLUGIN};
     PluginType type;
     QString name;
     QString description;
     QString fileName;
     DigitalModemInterface *modemInterface;
     DeviceInterface *deviceInterface;
+    //Transition from non-plugins, both interfaces will be NULL for transition info
+    quint16 oldEnum;
 };
+//Add to QT metatype so we can use QVariants with this in UI lists
+//QVariant v; v.setValue(p);
+//QVariant v; p = v.value<PluginInfo>()
+Q_DECLARE_METATYPE(PluginInfo)
 
 class Plugins
 {
 public:
     Plugins();
     //For menus
-    QStringList GetModemPluginNames();
-    QStringList GetDevicePluginNames();
+    QList<PluginInfo> GetModemPluginInfo();
+    QList<PluginInfo> GetDevicePluginInfo();
 
     DigitalModemInterface *GetModemInterface(QString name);
     DeviceInterface *GetDeviceInterface(QString name);

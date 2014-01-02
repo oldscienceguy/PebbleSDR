@@ -45,7 +45,7 @@ QString DigitalModemExample::GetPluginName()
     return "Example";
 }
 
-QString DigitalModemExample::GetDescription()
+QString DigitalModemExample::GetPluginDescription()
 {
     return "Example of digial modem plugin for Pebble SDR";
 }

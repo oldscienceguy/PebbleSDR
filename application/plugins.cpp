@@ -12,24 +12,91 @@ Plugins::Plugins()
     findPlugins();
 }
 
-QStringList Plugins::GetModemPluginNames()
+QList<PluginInfo> Plugins::GetModemPluginInfo()
 {
-    QStringList names;
+    QList<PluginInfo> info;
+    //Add transition non-plugin modems
+    PluginInfo p;
+    p.name = "No Data";
+    p.type = PluginInfo::MODEM_PSEUDO_PLUGIN;
+    p.oldEnum = 0;
+    info.append(p);
+
+    p.name = "Band Data";
+    p.oldEnum = 1;
+    info.append(p);
 
     foreach(PluginInfo p, pluginInfoList)
-        if (p.type == PluginInfo::MODEM_PLUGIN)
-            names.append(p.name);
-    return names;
+        if (p.type == PluginInfo::MODEM_PLUGIN) {
+            p.oldEnum = 2;
+            info.append(p);
+        }
+    return info;
+
 }
 
-QStringList Plugins::GetDevicePluginNames()
+QList<PluginInfo> Plugins::GetDevicePluginInfo()
 {
-    QStringList names;
+    QList<PluginInfo> info;
+    //Add transition non-plugin devices
+    PluginInfo p;
+    p.type = PluginInfo::DEVICE_PSEUDO_PLUGIN;
+    p.name = "SR Ensemble";
+    p.oldEnum = SDR::SR_ENSEMBLE;
+    info.append(p);
+    p.name = "SR Ensemble 2M";
+    p.oldEnum = SDR::SR_ENSEMBLE_2M;
+    info.append(p);
+    p.name = "SR Ensemble 4M";
+    p.oldEnum = SDR::SR_ENSEMBLE_4M;
+    info.append(p);
+    p.name = "SR Ensemble 6M";
+    p.oldEnum = SDR::SR_ENSEMBLE_6M;
+    info.append(p);
+    p.name = "SR V9-ABPF";
+    p.oldEnum = SDR::SR_V9;
+    info.append(p);
+    p.name = "SR LITE II";
+    p.oldEnum = SDR::SR_LITE;
+    info.append(p);
+    p.name = "FiFi";
+    p.oldEnum = SDR::FiFi;
+    info.append(p);
+    p.name = "Elektor SDR";
+    p.oldEnum = SDR::ELEKTOR;
+    info.append(p);
+    p.name = "RFSpace SDR-IQ";
+    p.oldEnum = SDR::SDR_IQ_USB;
+    info.append(p);
+    p.name = "RFSpace SDR-IP";
+    p.oldEnum = SDR::SDR_IP_TCP;
+    info.append(p);
+    p.name = "HPSDR USB";
+    p.oldEnum = SDR::HPSDR_USB;
+    info.append(p);
+    //p.name = "HPSDR TCP";
+    //p.oldEnum = SDR::HPSDR_TCP;
+    //info.append(p);
+    p.name = "FUNcube Pro";
+    p.oldEnum = SDR::FUNCUBE;
+    info.append(p);
+    p.name = "FUNcube Pro+";
+    p.oldEnum = SDR::FUNCUBE_PLUS;
+    info.append(p);
+    p.name = "File";
+    p.oldEnum = SDR::FILE;
+    info.append(p);
+    p.name = "RTL2832 Family";
+    p.oldEnum = SDR::DVB_T;
+    info.append(p);
 
     foreach(PluginInfo p, pluginInfoList)
-        if (p.type == PluginInfo::DEVICE_PLUGIN)
-            names.append(p.name);
-    return names;
+        if (p.type == PluginInfo::DEVICE_PLUGIN) {
+            p.oldEnum = 0;
+            info.append(p);
+        }
+    return info;
+
 
 }
 
@@ -89,17 +156,17 @@ void Plugins::findPlugins()
                 //plugin supports interface
                 pluginInfo.type = PluginInfo::MODEM_PLUGIN;
                 pluginInfo.name = iDigitalModem->GetPluginName();
-                pluginInfo.description = iDigitalModem->GetDescription();
+                pluginInfo.description = iDigitalModem->GetPluginDescription();
                 pluginInfo.fileName = fileName;
                 pluginInfo.modemInterface = iDigitalModem;
                 pluginInfo.deviceInterface = NULL;
                 pluginInfoList.append(pluginInfo);
             }
-            if (iDigitalModem) {
+            if (iDeviceInterface) {
                 //plugin supports interface
                 pluginInfo.type = PluginInfo::DEVICE_PLUGIN;
-                pluginInfo.name = iDigitalModem->GetPluginName();
-                pluginInfo.description = iDigitalModem->GetDescription();
+                pluginInfo.name = iDeviceInterface->GetPluginName();
+                pluginInfo.description = iDeviceInterface->GetPluginDescription();
                 pluginInfo.fileName = fileName;
                 pluginInfo.deviceInterface = iDeviceInterface;
                 pluginInfo.modemInterface = NULL;

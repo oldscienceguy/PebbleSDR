@@ -25,6 +25,10 @@ class PEBBLELIBSHARED_EXPORT DeviceInterface
 {
 public:
     //Interface must be all pure virtual functions
+    //Info - return plugin name for menus
+    virtual QString GetPluginName() = 0;
+    virtual QString GetPluginDescription() = 0;
+
     virtual bool Initialize(cbProcessIQData _callback) = 0;
     virtual bool Connect() = 0;
     virtual bool Disconnect() = 0;

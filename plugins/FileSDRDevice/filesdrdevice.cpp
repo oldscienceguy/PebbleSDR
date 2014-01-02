@@ -5,6 +5,16 @@ FileSDRDevice::FileSDRDevice()
 {
 }
 
+QString FileSDRDevice::GetPluginName()
+{
+    return "WAV File";
+}
+
+QString FileSDRDevice::GetPluginDescription()
+{
+    return "Plays back I/Q WAV file";
+}
+
 bool FileSDRDevice::Initialize(cbProcessIQData _callback)
 {
     ProcessIQData = _callback;

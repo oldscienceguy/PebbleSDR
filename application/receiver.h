@@ -71,7 +71,8 @@ public:
 
     DigitalModemInterface *getDigitalModem() {return iDigitalModem;}
     void SetDigitalModem(QString _name, QWidget *_parent);
-    QStringList getPluginNames() {return plugins->GetModemPluginNames();}
+    QList<PluginInfo> getModemPluginInfo() {return plugins->GetModemPluginInfo();}
+    QList<PluginInfo> getDevicePluginInfo() {return plugins->GetDevicePluginInfo();}
 
     Demod *getDemod() {return demod;}
 

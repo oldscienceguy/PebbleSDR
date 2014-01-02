@@ -35,7 +35,7 @@ public:
     QString GetPluginName();
 
     //Additional info
-    QString GetDescription();
+    QString GetPluginDescription();
 
     QObject *asQObject() {return (QObject *)this;}
 

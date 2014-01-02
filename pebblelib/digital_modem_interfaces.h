@@ -26,7 +26,7 @@ public:
     virtual QString GetPluginName() = 0;
 
     //Additional info
-    virtual QString GetDescription() = 0;
+    virtual QString GetPluginDescription() = 0;
 
     //Any plugins that need to output to Testbench should declare this signal
     //void Testbench(quint16 _length, CPX* _buf, double _sampleRate, quint16 _profile);

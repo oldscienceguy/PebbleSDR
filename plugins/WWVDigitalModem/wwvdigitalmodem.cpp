@@ -479,7 +479,7 @@ QString WWVDigitalModem::GetPluginName()
     return "WWV";
 }
 
-QString WWVDigitalModem::GetDescription()
+QString WWVDigitalModem::GetPluginDescription()
 {
     return "WWV Digital Modem";
 }

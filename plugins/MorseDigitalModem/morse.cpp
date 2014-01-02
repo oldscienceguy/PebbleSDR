@@ -262,7 +262,7 @@ QString Morse::GetPluginName()
     return "Morse";
 }
 
-QString Morse::GetDescription()
+QString Morse::GetPluginDescription()
 {
     return "Morse code";
 }

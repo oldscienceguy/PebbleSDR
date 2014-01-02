@@ -53,13 +53,14 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     ui.filterBox->addItems(Demod::demodInfo[dmAM].filters); //Default
     ui.filterBox->setCurrentIndex(Demod::demodInfo[dmAM].defaultFilter);
 
-    ui.dataSelectionBox->addItem("No Data",NO_DATA);
-    ui.dataSelectionBox->addItem("Band Data",BAND_DATA);
-    foreach (QString name,receiver->getPluginNames())
-        ui.dataSelectionBox->addItem(name,PLUGIN_DATA);
+    QVariant v;
+    foreach (PluginInfo p, receiver->getModemPluginInfo()) {
+        v.setValue(p);
+        ui.dataSelectionBox->addItem(p.name, v);
+    }
 
     connect(ui.dataSelectionBox,SIGNAL(currentIndexChanged(int)),this,SLOT(dataSelectionChanged(int)));
-    SetDataMode((NO_DATA));
+    SetDataMode(0);
 
 	loMode = true;
 	//Set intial gain slider position
@@ -161,24 +162,15 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     showTime();
 
     QComboBox *sdrSelector = ui.sdrSelector;
-    sdrSelector->addItem("SR Ensemble",SDR::SR_ENSEMBLE);
-    sdrSelector->addItem("SR Ensemble 2M",SDR::SR_ENSEMBLE_2M);
-    sdrSelector->addItem("SR Ensemble 4M",SDR::SR_ENSEMBLE_4M);
-    sdrSelector->addItem("SR Ensemble 6M",SDR::SR_ENSEMBLE_6M);
-    sdrSelector->addItem("SR V9-ABPF",SDR::SR_V9);
-    sdrSelector->addItem("SR LITE II",SDR::SR_LITE);
-    sdrSelector->addItem("FiFi",SDR::FiFi);
-    sdrSelector->addItem("Elektor SDR",SDR::ELEKTOR);
-    sdrSelector->addItem("RFSpace SDR-IQ",SDR::SDR_IQ_USB);
-    sdrSelector->addItem("RFSpace SDR-IP",SDR::SDR_IP_TCP);
-    sdrSelector->addItem("HPSDR USB",SDR::HPSDR_USB);
-    //sdrSelector->addItem("HPSDR TCP",SDR::HPSDR_TCP);
-    sdrSelector->addItem("FUNcube Pro",SDR::FUNCUBE);
-    sdrSelector->addItem("FUNcube Pro+",SDR::FUNCUBE_PLUS);
-    sdrSelector->addItem("File",SDR::FILE);
-    sdrSelector->addItem("RTL2832 Family",SDR::DVB_T);
+    //Add device plugins
+    int cur;
+    foreach (PluginInfo p,receiver->getDevicePluginInfo()) {
+        v.setValue(p);
+        sdrSelector->addItem(p.name,v);
+        if (p.oldEnum == global->settings->sdrDevice)
+            cur = sdrSelector->count()-1;
+    }
 
-    int cur = sdrSelector->findData(global->settings->sdrDevice);
     sdrSelector->setCurrentIndex(cur);
     connect(sdrSelector,SIGNAL(currentIndexChanged(int)),this,SLOT(ReceiverChanged(int)));
 
@@ -497,7 +489,7 @@ void ReceiverWidget::powerToggled(bool on)
 		//Turning power off, shut down receiver widget display BEFORE telling receiver to clean up
 		//Objects
         //Make sure we reset data frame
-        SetDataMode(NO_DATA);
+        SetDataMode(0);
         powerOn = false;
 
         //Don't allow SDR changes when receiver is on
@@ -697,8 +689,8 @@ void ReceiverWidget::dataSelectionChanged(int s)
         return;
 
     //Clear any previous data selection
-    switch(dataSelection) {
-        case PLUGIN_DATA:
+    switch(dataSelection.oldEnum) {
+        case 2:
 
             //Reset decoder
             receiver->SetDigitalModem(NULL,NULL);
@@ -708,7 +700,7 @@ void ReceiverWidget::dataSelectionChanged(int s)
                 delete obj;
             }
             break;
-        case BAND_DATA:
+        case 1:
             receiver->getDemod()->SetupDataUi(NULL);
             //Delete all children
             foreach (QObject *obj, ui.dataFrame->children()) {
@@ -721,12 +713,12 @@ void ReceiverWidget::dataSelectionChanged(int s)
     }
 
     //enums are stored as user data with each menu item
-    dataSelection = (DATA_SELECTION)ui.dataSelectionBox->itemData(s).toInt();
+    dataSelection = ui.dataSelectionBox->itemData(s).value<PluginInfo>();
 
     QWidget *parent;
 
-    switch (dataSelection) {
-        case NO_DATA:
+    switch (dataSelection.oldEnum) {
+        case 0:
             //Data frame is always open if we get here
             ui.dataFrame->setVisible(false);
             parent = ui.dataFrame;
@@ -737,11 +729,11 @@ void ReceiverWidget::dataSelectionChanged(int s)
             }
             update();
             break;
-        case BAND_DATA:
+        case 1:
             receiver->getDemod()->SetupDataUi(ui.dataFrame);
             ui.dataFrame->setVisible(true);
             break;
-        case PLUGIN_DATA:
+        case 2:
             receiver->SetDigitalModem(ui.dataSelectionBox->currentText(), ui.dataFrame);
             ui.dataFrame->setVisible(true);
             break;
@@ -902,7 +894,8 @@ void ReceiverWidget::ReceiverChanged(int i)
 {
     //Power is off when this is called
     int cur = ui.sdrSelector->currentIndex();
-    global->settings->sdrDevice = (SDR::SDRDEVICE)ui.sdrSelector->itemData(cur).toInt();
+    PluginInfo p = ui.sdrSelector->itemData(cur).value<PluginInfo>();
+    global->settings->sdrDevice = (SDR::SDRDEVICE)p.oldEnum;
     //Close the sdr option window if open
     receiver->CloseSdrOptions();
 }

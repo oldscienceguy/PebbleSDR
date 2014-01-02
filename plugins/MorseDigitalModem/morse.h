@@ -53,7 +53,7 @@ public:
     CPX * ProcessBlock(CPX * in);
     void SetupDataUi(QWidget *parent);
     QString GetPluginName();
-    QString GetDescription();
+    QString GetPluginDescription();
     QObject *asQObject() {return (QObject *)this;}
 
 

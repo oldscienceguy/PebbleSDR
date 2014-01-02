@@ -8,6 +8,7 @@
 #include "spectrumwidget.h"
 #include "smeterwidget.h"
 #include "demod.h"
+#include "plugins.h"
 //#include "receiver.h" //Compiler error, maybe gets confused with ui_ReceiverWidget
 class Receiver; //include receiver.h in cpp file
 class Presets;
@@ -29,9 +30,6 @@ class ReceiverWidget:public QWidget
 	Q_OBJECT
 
 public:
-
-    //PLUGIN_DATA is dynamic depending on plugins installed
-    enum DATA_SELECTION {NO_DATA,BAND_DATA,PLUGIN_DATA};
 
 	ReceiverWidget(QWidget *parent =0);
 	~ReceiverWidget(void);
@@ -91,7 +89,7 @@ private:
     int modeOffset; //make CW +- tone instead of actual freq
     Presets *presets;
 
-    DATA_SELECTION dataSelection;
+    PluginInfo dataSelection;
 
     //Band currently selected, used to detect when band changes as a result of freq change
     int currentBandIndex;
