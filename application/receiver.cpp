@@ -20,7 +20,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	settings = new Settings();
     global->settings = settings;
 
-    plugins = new Plugins();
+    plugins = new Plugins(this,settings);
 
     mainWindow = main;
     receiverWidget = rw;
@@ -89,11 +89,9 @@ bool Receiver::On()
 {
 	powerOn = true;
 
-    if (sdr != NULL)
-        delete sdr; //Handle case where we created a temp sdr for settings
-
-    sdr = SDR::Factory(this, settings->sdrDevice, settings);
-    global->sdr = sdr;
+    sdr = global->sdr;
+    if (sdr == NULL)
+        return false; //Means something is wrong with plugins,
 
 	if (!sdr->Connect()){
         QMessageBox::information(NULL,"Pebble","SDR device is not connected");
@@ -288,9 +286,7 @@ bool Receiver::Off()
         sdr->SetLastFreq(frequency);
 
 		sdr->Disconnect();
-        delete sdr;
         sdr = NULL;
-        global->sdr = NULL;
 	}
 	if (demod != NULL) {
 		delete demod;
@@ -535,7 +531,7 @@ void Receiver::SdrOptionsPressed()
     //If power on, use active sdr to make changes
     if (sdr == NULL) {
         //Power is off, create temporary one so we can set settings
-        sdr = SDR::Factory(this, settings->sdrDevice, settings);
+        sdr = global->sdr;
     }
     sdr->ShowSdrOptions(true);
 }

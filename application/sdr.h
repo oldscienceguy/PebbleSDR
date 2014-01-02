@@ -39,7 +39,6 @@ public:
     SDR(Receiver *receiver, SDRDEVICE dev, Settings *_settings);
     virtual ~SDR(void);
 
-    static DeviceInterface *Factory(Receiver *receiver, SDR::SDRDEVICE dev, Settings *settings);
     virtual QString GetPluginName() {return "Not Set";}
     virtual QString GetPluginDescription() {return "";}
 

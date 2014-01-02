@@ -32,7 +32,7 @@ Q_DECLARE_METATYPE(PluginInfo)
 class Plugins
 {
 public:
-    Plugins();
+    Plugins(Receiver *_receiver, Settings *_settings);
     //For menus
     QList<PluginInfo> GetModemPluginInfo();
     QList<PluginInfo> GetDevicePluginInfo();
@@ -44,6 +44,9 @@ private:
     void findPlugins();
     QDir pluginsDir;
     QList<PluginInfo> pluginInfoList;
+    //Temp for internal devices
+    Receiver *receiver;
+    Settings *settings;
 };
 
 #endif // PLUGINS_H

@@ -167,8 +167,10 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     foreach (PluginInfo p,receiver->getDevicePluginInfo()) {
         v.setValue(p);
         sdrSelector->addItem(p.name,v);
-        if (p.oldEnum == global->settings->sdrDevice)
+        if (p.oldEnum == global->settings->sdrDevice) {
             cur = sdrSelector->count()-1;
+            global->sdr = p.deviceInterface;
+        }
     }
 
     sdrSelector->setCurrentIndex(cur);
@@ -895,7 +897,9 @@ void ReceiverWidget::ReceiverChanged(int i)
     //Power is off when this is called
     int cur = ui.sdrSelector->currentIndex();
     PluginInfo p = ui.sdrSelector->itemData(cur).value<PluginInfo>();
+    //Replace
     global->settings->sdrDevice = (SDR::SDRDEVICE)p.oldEnum;
+    global->sdr = p.deviceInterface;
     //Close the sdr option window if open
     receiver->CloseSdrOptions();
 }

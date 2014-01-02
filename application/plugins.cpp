@@ -3,12 +3,23 @@
 #include "plugins.h"
 #include <QtPlugin>
 #include <QPluginLoader>
+//Temp for internal devices, will be deleted when everything is a plugin
+#include "devices/softrock.h"
+#include "devices/elektorsdr.h"
+#include "devices/sdr_iq.h"
+#include "devices/hpsdr.h"
+#include "devices/funcube.h"
+#include "devices/sdrfile.h"
+#include "devices/rtl2832.h"
+#include "devices/sdr_ip.h"
 
 //Use this if we want to import a static plugin, ie one that is always installed
 //Q_IMPORT_PLUGIN(...)
 
-Plugins::Plugins()
+Plugins::Plugins(Receiver *_receiver, Settings *_settings)
 {
+    receiver = _receiver;
+    settings = _settings;
     findPlugins();
 }
 
@@ -43,51 +54,95 @@ QList<PluginInfo> Plugins::GetDevicePluginInfo()
     p.type = PluginInfo::DEVICE_PSEUDO_PLUGIN;
     p.name = "SR Ensemble";
     p.oldEnum = SDR::SR_ENSEMBLE;
+    p.deviceInterface = new SoftRock(receiver, SDR::SR_ENSEMBLE,settings);
     info.append(p);
+
     p.name = "SR Ensemble 2M";
     p.oldEnum = SDR::SR_ENSEMBLE_2M;
+    p.deviceInterface = new SoftRock(receiver, SDR::SR_ENSEMBLE_2M,settings);
     info.append(p);
+
     p.name = "SR Ensemble 4M";
     p.oldEnum = SDR::SR_ENSEMBLE_4M;
+    p.deviceInterface = new SoftRock(receiver, SDR::SR_ENSEMBLE_4M,settings);
     info.append(p);
+
     p.name = "SR Ensemble 6M";
     p.oldEnum = SDR::SR_ENSEMBLE_6M;
+    p.deviceInterface = new SoftRock(receiver, SDR::SR_ENSEMBLE_6M,settings);
     info.append(p);
+
     p.name = "SR V9-ABPF";
     p.oldEnum = SDR::SR_V9;
+    p.deviceInterface = new SoftRock(receiver, SDR::SR_V9,settings);
     info.append(p);
+
     p.name = "SR LITE II";
     p.oldEnum = SDR::SR_LITE;
+    p.deviceInterface = new SoftRock(receiver, SDR::SR_LITE,settings);
     info.append(p);
+
+ #if 0
+    p.name = "SR Ensemble LF";
+    p.oldEnum = SDR::SR_ENSEMBLE_LF;
+    p.deviceInterface = new SoftRock(receiver, SDR::SR_ENSEMBLE_LF,settings);
+    info.append(p);
+#endif
+
     p.name = "FiFi";
     p.oldEnum = SDR::FiFi;
+    p.deviceInterface = new SoftRock(receiver, SDR::FiFi,settings);
     info.append(p);
+
     p.name = "Elektor SDR";
     p.oldEnum = SDR::ELEKTOR;
+    p.deviceInterface = new ElektorSDR(receiver, SDR::ELEKTOR,settings);
     info.append(p);
+
+#if 0
+    p.name = "Elektor SDR + Preamp";
+    p.oldEnum = SDR::ELEKTOR_PA;
+    p.deviceInterface = new ElektorSDR(receiver, SDR::ELEKTOR_PA,settings);
+    info.append(p);
+#endif
+
     p.name = "RFSpace SDR-IQ";
     p.oldEnum = SDR::SDR_IQ_USB;
+    p.deviceInterface = new SDR_IQ(receiver, SDR::SDR_IQ_USB,settings);
     info.append(p);
+
     p.name = "RFSpace SDR-IP";
     p.oldEnum = SDR::SDR_IP_TCP;
+    p.deviceInterface = new SDR_IP(receiver, SDR::SDR_IP_TCP,settings);
     info.append(p);
+
     p.name = "HPSDR USB";
     p.oldEnum = SDR::HPSDR_USB;
+    p.deviceInterface = new HPSDR(receiver, SDR::HPSDR_USB,settings);
     info.append(p);
+
     //p.name = "HPSDR TCP";
     //p.oldEnum = SDR::HPSDR_TCP;
     //info.append(p);
+
     p.name = "FUNcube Pro";
     p.oldEnum = SDR::FUNCUBE;
+    p.deviceInterface = new FunCube(receiver, SDR::FUNCUBE,settings);
     info.append(p);
+
     p.name = "FUNcube Pro+";
     p.oldEnum = SDR::FUNCUBE_PLUS;
+    p.deviceInterface = new FunCube(receiver, SDR::FUNCUBE_PLUS,settings);
     info.append(p);
+
     p.name = "File";
     p.oldEnum = SDR::FILE;
+    p.deviceInterface = new SDRFile(receiver,SDR::FILE, settings);
     info.append(p);
+
     p.name = "RTL2832 Family";
     p.oldEnum = SDR::DVB_T;
+    p.deviceInterface = new RTL2832(receiver,SDR::DVB_T, settings);
     info.append(p);
 
     foreach(PluginInfo p, pluginInfoList)
