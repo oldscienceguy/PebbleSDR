@@ -154,7 +154,7 @@ macx {
 	#message("Reminder - macdeployqt 5.1 has bug and must be run from fix_macdeployqt script")
 
 	# macdeployqt fixes references, but does not copy non QT dylib.  We have to do this manually
-	mylib.files += $${PWD}/../pebblelib/lib/libpebblelib.1.dylib
+	mylib.files += $${PWD}/../pebblelib/$${LIB_DIR}/libpebblelib.1.dylib
 	mylib.path = $${DESTDIR}/Pebble.app/Contents/Frameworks
 	INSTALLS += mylib
 
