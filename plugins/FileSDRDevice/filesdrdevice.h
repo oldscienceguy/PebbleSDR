@@ -7,10 +7,6 @@
 #include "../pebblelib/device_interfaces.h"
 #include "producerconsumer.h"
 #include "wavfile.h"
-#include <QThread>
-
-class SDRProducerThread;
-class SDRConsumerThread;
 
 class FileSDRDevice : public QObject, public DeviceInterface
 {
@@ -67,6 +63,7 @@ private:
     int framesPerBuffer;
 
     QString fileName;
+    QString recordingPath;
 
     WavFile wavFileRead;
     WavFile wavFileWrite;

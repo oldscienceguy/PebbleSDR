@@ -11,6 +11,8 @@ FileSDRDevice::FileSDRDevice()
     framesPerBuffer = 2048; //Temp till we pass
 
     copyTest = false; //Write what we read
+    fileName = "";
+    recordingPath = "";
 }
 
 FileSDRDevice::~FileSDRDevice()
@@ -40,26 +42,29 @@ bool FileSDRDevice::Initialize(cbProcessIQData _callback)
 bool FileSDRDevice::Connect()
 {
 
-    //TODO: Get directly from receiver or settings so set in one place
-    QString recordingPath = QCoreApplication::applicationDirPath();
+    //Use last recording path and filename for convenience
+    if (recordingPath.isEmpty()) {
+        recordingPath = QCoreApplication::applicationDirPath();
 #ifdef Q_OS_MAC
         //Pebble.app/contents/macos = 25
         recordingPath.chop(25);
 #endif
-        recordingPath += "PebbleRecordings/";
+        //QT QTBUG-35779 Trailing '*' is required to workaround QT 5.2 bug where directory arg was ignored
+        recordingPath += "PebbleRecordings/*";
+    }
 
 #if 1
     //Passing NULL for dir shows current/last directory, which may be inside the mac application bundle
+    //Mavericks native file open dialog doesn't respect passed directory arg, QT (Non-native) version works, but is ugly
     fileName = QFileDialog::getOpenFileName(NULL,tr("Open Wave File"), recordingPath, tr("Wave Files (*.wav)"));
-    //If we try to debug write after getOpenFileName the dialog is still open and obscures QT!
-    //Hack to let event loop purge which lets close message get handled - ughh!
-    QEventLoop loop; while (loop.processEvents()) /* nothing */;
+    //fileName = QFileDialog::getOpenFileName(NULL,tr("Open Wave File"), recordingPath, tr("Wave Files (*.wav)"),0,QFileDialog::DontUseNativeDialog);
 
 #else
     //Use this instead of static if we need more options
     QFileDialog fDialog;
-    //fDialog.setLabelText(tr("Open Wave File"));
-    //fDialog.setFilter(tr("Wave Files (*.wav)"));
+    fDialog.setLabelText(tr("Open Wave File"));
+    fDialog.setFilter(tr("Wave Files (*.wav)"));
+    fDialog.setDirectory(recordingPath);
     QStringList files;
     if (fDialog.exec())
         files = fDialog.selectedFiles();
@@ -68,6 +73,13 @@ bool FileSDRDevice::Connect()
 
     fileName = files[0];
 #endif
+
+    if (fileName == NULL)
+        return false; //User canceled out of dialog
+
+    //Save recordingPath for later use
+    QFileInfo fi(fileName);
+    recordingPath = fi.path()+"/*";
 
     bool res = wavFileRead.OpenRead(fileName);
     if (!res)
@@ -112,12 +124,14 @@ void FileSDRDevice::ShowOptions()
 
 void FileSDRDevice::ReadSettings()
 {
-    //No device specific settings
+    fileName = qSettings->value("FileName", "").toString();
+    recordingPath = qSettings->value("RecordingPath", "").toString();
 }
 
 void FileSDRDevice::WriteSettings()
 {
-
+    qSettings->setValue("FileName", fileName);
+    qSettings->setValue("RecordingPath", recordingPath);
 }
 
 double FileSDRDevice::GetStartupFrequency()

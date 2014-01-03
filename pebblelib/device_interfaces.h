@@ -51,8 +51,8 @@ public:
     //Display device option widget in settings dialog
     virtual void SetupOptionUi(QWidget *parent) = 0;
 
-    //Device doesn't implement this
-    virtual void ShowSdrOptions(bool b) {};
+    //Device doesn't have to implement this.  Called by receiver to bring up SDR options dialog
+    virtual void ShowSdrOptions(bool b) {b=true;}
 
     virtual void ReadSettings() = 0;
     virtual void WriteSettings() = 0;
