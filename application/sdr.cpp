@@ -12,7 +12,6 @@
 #include "devices/sdr_iq.h"
 #include "devices/hpsdr.h"
 #include "devices/funcube.h"
-#include "devices/sdrfile.h"
 #include "devices/rtl2832.h"
 #include "devices/sdr_ip.h"
 #include "soundcard.h"

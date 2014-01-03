@@ -14,17 +14,5 @@ application/*MacRelease/
 pebblelib/*MacDebug/
 pebblelib/*MacRelease/
 
-plugins/DigitalModemExample/*MacDebug/
-plugins/DigitalModemExample/*MacRelease/
-
-plugins/MorseDigitalModem/*MacDebug/
-plugins/MorseDigitalModem/*MacRelease/
-
-plugins/RttyDigitalModem/*MacDebug/
-plugins/RttyDigitalModem/*MacRelease/
-
-plugins/WWVDigitalModem/*MacDebug/
-plugins/WWVDigitalModem/*MacRelease/
-
-plugins/FileSDRDevice/*MacDebug/
-plugins/FileSDRDevice/*MacRelease/
+plugins/*/*MacDebug/
+plugins/*/*MacRelease/
