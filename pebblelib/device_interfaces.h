@@ -48,7 +48,12 @@ public:
     virtual void Stop() = 0;
 
     virtual double SetFrequency(double fRequested,double fCurrent) = 0;
+    //Display device option widget in settings dialog
+    virtual void SetupOptionUi(QWidget *parent) = 0;
+
+    //Device doesn't implement this
     virtual void ShowSdrOptions(bool b) {};
+
     virtual void ReadSettings() = 0;
     virtual void WriteSettings() = 0;
 
@@ -59,6 +64,7 @@ public:
     virtual double GetGain() = 0;
     virtual QString GetDeviceName() = 0;
     virtual int GetSampleRate() = 0;
+    virtual int* GetSampleRates(int &len) = 0; //Returns array of allowable rates and length of array as ref
     virtual bool UsesAudioInput() = 0;
 
 
@@ -79,6 +85,7 @@ public:
     bool GetIQBalanceGain() {return iqBalanceGain;}
     bool GetIQBalancePhase() {return iqBalancePhase;}
 
+    double GetFreqToSet() {return freqToSet;}
     double GetLastFreq() {return lastFreq;}
     void SetLastFreq(double f) {lastFreq = f;}
 
@@ -86,7 +93,6 @@ public:
     void SetLastMode(int mode) {lastMode = mode;}
 
     STARTUP GetStartup() {return startup;}
-    double GetStartupFreq() {return startupFreq;}
     QString GetInputDeviceName() {return inputDeviceName;}
     QString GetOutputDeviceName() {return outputDeviceName;}
 
@@ -96,10 +102,12 @@ public:
     SDRDEVICE GetSDRDevice() {return sdrDevice;}
     void SetSDRDevice(SDRDEVICE dev) {sdrDevice = dev;}
 
+    QSettings *GetQSettings() {return qSettings;}
+
 protected:
     int lastDisplayMode; //Spectrum, waterfall, etc
     STARTUP startup;
-    double startupFreq;
+    double freqToSet;
     QString inputDeviceName;
     QString outputDeviceName;
     int sampleRate;
@@ -113,6 +121,9 @@ protected:
 
     double lastFreq;
     int lastMode;
+
+    //Device needs to manage QSettings since it knows its own settings file name
+    QSettings *qSettings;
 
     bool isTestBenchChecked;
 

@@ -166,9 +166,9 @@ bool ElektorSDR::Disconnect()
 double ElektorSDR::GetStartupFrequency()
 {
 	if (sdrDevice==ELEKTOR)
-        return startupFreq;
+        return 10000000;
 	else if(sdrDevice == ELEKTOR_PA)
-        return startupFreq;
+        return 10000000;
 	else
 		return 0;
 }

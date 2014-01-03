@@ -93,6 +93,13 @@ bool Receiver::On()
     if (sdr == NULL)
         return false; //Means something is wrong with plugins,
 
+    //Setup callback for device plugins to use when they have new IQ data
+    using namespace std::placeholders;
+    //function template must match exactly the method that is used in bind()
+    //std::function<void(CPX *, quint16)> cb = std::bind(&Receiver::ProcessIQData, _receiver, std::placeholders::_1, std::placeholders::_2);
+    //bind(Method ptr, object, arg1, ... argn)
+    sdr->Initialize(std::bind(&Receiver::ProcessIQData, this, _1, _2));
+
 	if (!sdr->Connect()){
         QMessageBox::information(NULL,"Pebble","SDR device is not connected");
 		Off();
@@ -230,7 +237,7 @@ bool Receiver::On()
         receiverWidget->SetMode((DEMODMODE)sdr->GetStartupMode());
     }
     else if (sdr->GetStartup() == SDR::SETFREQ) {
-        frequency = sdr->GetStartupFreq();
+        frequency = sdr->GetFreqToSet();
         receiverWidget->SetFrequency(frequency);
 
         receiverWidget->SetMode((DEMODMODE)sdr->GetStartupMode());

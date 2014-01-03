@@ -221,7 +221,7 @@ void Plugins::findPlugins()
                 pluginInfo.name = iDeviceInterface->GetPluginName();
                 pluginInfo.description = iDeviceInterface->GetPluginDescription();
                 pluginInfo.fileName = fileName;
-                pluginInfo.deviceInterface = iDeviceInterface;
+                pluginInfo.deviceInterface = new SDR(iDeviceInterface);
                 pluginInfo.modemInterface = NULL;
                 pluginInfoList.append(pluginInfo);
             }

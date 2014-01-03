@@ -20,12 +20,21 @@
 #include "QMessageBox"
 #include "testbench.h"
 
+SDR::SDR(DeviceInterface *_plugin)
+{
+    plugin = _plugin;
+    sdrOptions = NULL;
+    sd = NULL;
+    ReadSettings(); //For plugins, we have to start this.  Internal devices start it in device constructor
+}
+
 SDR::SDR(Receiver *_receiver, SDRDEVICE dev,Settings *_settings)
 {
     settings = _settings;
     if (!settings)
         return; //Init only
 
+    plugin = NULL;
 	sdrDevice = dev;
 	receiver = _receiver;
 	startupFrequency = 0;
@@ -56,6 +65,9 @@ SDR::~SDR(void)
     if (!settings)
         return;
 
+    if (plugin!=NULL)
+        WriteSettings();
+
     if (sdrOptions != NULL)
         sdrOptions->hide();
 
@@ -69,6 +81,114 @@ SDR::~SDR(void)
         free (producerBuffer);
     }
 
+}
+
+QString SDR::GetPluginName()
+{
+    if (plugin != NULL)
+        return plugin->GetPluginName();
+    else
+        return "Not Set";
+}
+
+QString SDR::GetPluginDescription()
+{
+    if (plugin != NULL)
+        return plugin->GetPluginDescription();
+    else
+        return "";
+}
+
+bool SDR::Initialize(cbProcessIQData _callback)
+{
+    if (plugin != NULL)
+        return plugin->Initialize(_callback);
+    else
+        return false;
+}
+
+bool SDR::Connect()
+{
+    if (plugin != NULL)
+        return plugin->Connect();
+    else
+        return false;
+}
+
+bool SDR::Disconnect()
+{
+    if (plugin != NULL)
+        return plugin->Disconnect();
+    else
+        return false;
+}
+
+double SDR::SetFrequency(double fRequested, double fCurrent)
+{
+    if (plugin != NULL)
+        return plugin->SetFrequency(fRequested,fCurrent);
+    else
+        return fCurrent;
+}
+
+void SDR::Start()
+{
+    if (plugin != NULL)
+        return plugin->Start();
+}
+
+void SDR::Stop()
+{
+    if (plugin != NULL)
+        return plugin->Stop();
+}
+
+double SDR::GetStartupFrequency()
+{
+    if (plugin != NULL)
+        return plugin->GetStartupFrequency();
+    else
+        return 0;
+}
+
+int SDR::GetStartupMode()
+{
+    if (plugin != NULL)
+        return plugin->GetStartupMode();
+    else
+        return 0;
+}
+
+double SDR::GetHighLimit()
+{
+    if (plugin != NULL)
+        return plugin->GetHighLimit();
+    else
+        return 0;
+}
+
+double SDR::GetLowLimit()
+{
+    if (plugin != NULL)
+        return plugin->GetLowLimit();
+    else
+        return 0;
+}
+
+double SDR::GetGain()
+{
+    if (plugin != NULL)
+        return plugin->GetGain();
+    else
+        return 1;
+}
+
+QString SDR::GetDeviceName()
+{
+    if (plugin != NULL)
+        return plugin->GetDeviceName();
+    else
+        return "";
 }
 
 //Must be called from derived class constructor to work correctly
@@ -154,7 +274,7 @@ void SDR::ShowSdrOptions(bool b)
         sd->startupBox->setCurrentIndex(cur);
         connect(sd->startupBox,SIGNAL(currentIndexChanged(int)),this,SLOT(StartupChanged(int)));
 
-        sd->startupEdit->setText(QString::number(this->startupFreq,'f',0));
+        sd->startupEdit->setText(QString::number(this->freqToSet,'f',0));
         connect(sd->startupEdit,SIGNAL(editingFinished()),this,SLOT(StartupFrequencyChanged()));
 
         sd->iqGain->setValue(iqGain);
@@ -255,7 +375,7 @@ void SDR::StartupChanged(int i)
 {
 
     startup = (STARTUP)sd->startupBox->itemData(i).toInt();
-    sd->startupEdit->setText(QString::number(startupFreq,'f',0));
+    sd->startupEdit->setText(QString::number(freqToSet,'f',0));
     if (startup == SETFREQ) {
         sd->startupEdit->setEnabled(true);
     }
@@ -267,7 +387,7 @@ void SDR::StartupChanged(int i)
 
 void SDR::StartupFrequencyChanged()
 {
-    startupFreq = sd->startupEdit->text().toDouble();
+    freqToSet = sd->startupEdit->text().toDouble();
     WriteSettings();
 }
 
@@ -350,8 +470,14 @@ void SDR::ResetAllSettings(bool b)
 //Make sure to call SDR::ReadSettings() in any derived class
 void SDR::ReadSettings()
 {
+    if (plugin != NULL) {
+        qSettings = plugin->GetQSettings();
+        plugin->ReadSettings();
+    }
+    //else qSettings is created in derived internal sub-classes
+
     startup = (STARTUP)qSettings->value("Startup", DEFAULTFREQ).toInt();
-    startupFreq = qSettings->value("StartupFreq", 10000000).toDouble();
+    freqToSet = qSettings->value("StartupFreq", 10000000).toDouble();
     inputDeviceName = qSettings->value("InputDeviceName", "").toString();
     outputDeviceName = qSettings->value("OutputDeviceName", "").toString();
     sampleRate = qSettings->value("SampleRate", 48000).toInt();
@@ -392,8 +518,14 @@ void SDR::ReadSettings()
 //Make sure to call SDR::WriteSettings() in any derived class
 void SDR::WriteSettings()
 {
+    if (plugin != NULL) {
+        qSettings = plugin->GetQSettings();
+        plugin->WriteSettings();
+    }
+    //else qSettings is created in derived internal sub-classes
+
     qSettings->setValue("Startup",startup);
-    qSettings->setValue("StartupFreq",startupFreq);
+    qSettings->setValue("StartupFreq",freqToSet);
     qSettings->setValue("InputDeviceName", inputDeviceName);
     qSettings->setValue("OutputDeviceName", outputDeviceName);
     qSettings->setValue("SampleRate",sampleRate);
@@ -434,24 +566,42 @@ void SDR::WriteSettings()
 //Devices may override this and return a rate based on other settings
 int SDR::GetSampleRate()
 {
-    return sampleRate;
+    if (plugin != NULL)
+        return plugin->GetSampleRate();
+    else
+        return sampleRate;
 }
 
 int *SDR::GetSampleRates(int &len)
 {
-    len = 3;
-    //Ugly, but couldn't find easy way to init with {1,2,3} array initializer
-    sampleRates[0] = 48000;
-    sampleRates[1] = 96000;
-    sampleRates[2] = 192000;
-    return sampleRates;
+    if (plugin != NULL)
+        return plugin->GetSampleRates(len);
+    else {
+        len = 3;
+        //Ugly, but couldn't find easy way to init with {1,2,3} array initializer
+        sampleRates[0] = 48000;
+        sampleRates[1] = 96000;
+        sampleRates[2] = 192000;
+        return sampleRates;
+    }
 }
 
 void SDR::SetupOptionUi(QWidget *parent)
 {
     //Do nothing by default to leave empty frame in dialog
     //parent->setVisible(false);
-    return;
+    if (plugin != NULL)
+        return plugin->SetupOptionUi(parent);
+    else
+        return;
+}
+
+bool SDR::UsesAudioInput()
+{
+    if (plugin != NULL)
+        return plugin->UsesAudioInput();
+    else
+        return true;
 }
 
 void SDR::InitProducerConsumer(int _numDataBufs, int _producerBufferSize)

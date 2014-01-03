@@ -35,28 +35,28 @@ class SDR:public QObject, public DeviceInterface
 	friend class SDRConsumerThread;
 
 public:
-
+    SDR(DeviceInterface *_plugin);
     SDR(Receiver *receiver, SDRDEVICE dev, Settings *_settings);
     virtual ~SDR(void);
 
-    virtual QString GetPluginName() {return "Not Set";}
-    virtual QString GetPluginDescription() {return "";}
+    virtual QString GetPluginName();
+    virtual QString GetPluginDescription();
 
-    virtual bool Initialize(cbProcessIQData _callback) {return false;}
+    virtual bool Initialize(cbProcessIQData _callback);
 
-    virtual bool Connect(){return false;}
-    virtual bool Disconnect(){return false;}
-    virtual double SetFrequency(double fRequested,double fCurrent){return fCurrent;}
+    virtual bool Connect();
+    virtual bool Disconnect();
+    virtual double SetFrequency(double fRequested,double fCurrent);
 	//If SDR device is not using sound card, start/stop thread that returns data
 	//Ignored unless overridden
-    virtual void Start(){}
-    virtual void Stop(){}
-    virtual double GetStartupFrequency(){return 0;}
-    virtual int GetStartupMode(){return 0;}
-    virtual double GetHighLimit(){return 0;}
-    virtual double GetLowLimit(){return 0;}
-    virtual double GetGain(){return 1;}
-    virtual QString GetDeviceName(){return "";}
+    virtual void Start();
+    virtual void Stop();
+    virtual double GetStartupFrequency();
+    virtual int GetStartupMode();
+    virtual double GetHighLimit();
+    virtual double GetLowLimit();
+    virtual double GetGain();
+    virtual QString GetDeviceName();
 	//Sample rate for some devices, like SDR-IQ, is dependent on bandwidth
 	virtual int GetSampleRate();
     virtual int* GetSampleRates(int &len); //Returns array of allowable rates and length of array as ref
@@ -66,7 +66,7 @@ public:
     //Called by settings to write device options to ini file
     virtual void WriteOptionUi() {}
     //Assume each device uses audio input.  Devices that don't should over-ride and return false to hide options
-    virtual bool UsesAudioInput() {return true;}
+    virtual bool UsesAudioInput();
 
     void StopProducerThread();
     void RunProducerThread();
@@ -104,7 +104,6 @@ protected:
 
     void ReadSettings();
     void WriteSettings();
-    QSettings *qSettings;
 
     QStringList inputDevices;
     QStringList outputDevices;
@@ -154,6 +153,9 @@ private slots:
     void ResetAllSettings(bool b);
     void CloseOptions(bool b);
     void TestBenchChanged(bool b);
+
+private:
+    DeviceInterface *plugin; //Delegation to plugins
 };
 
 //Generic thread that can be used in producer/consumer models for devices that don't use soundcard
