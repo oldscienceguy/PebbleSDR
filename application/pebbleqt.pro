@@ -359,7 +359,6 @@ HEADERS += \
     demod/rdsdecode.h \
     filters/fractresampler.h \
     perform.h \
-    devices/sdrfile.h \
     devices/rtl2832.h \
     devices/sdr_iq.h \
     devices/softrock.h \
@@ -428,7 +427,6 @@ SOURCES += \
     demod/rdsdecode.cpp \
     filters/fractresampler.cpp \
     perform.cpp \
-    devices/sdrfile.cpp \
     devices/rtl2832.cpp \
     devices/sdr_iq.cpp \
     devices/softrock.cpp \
