@@ -217,6 +217,7 @@ void SDR::ShowSdrOptions(bool b)
         }
         return;
     }
+    DeviceInterface *di = (plugin == NULL) ? this:plugin;
 
     if (sdrOptions == NULL) {
         int cur;
@@ -228,7 +229,7 @@ void SDR::ShowSdrOptions(bool b)
 
         int id;
         QString dn;
-        if (this->UsesAudioInput()) {
+        if (di->UsesAudioInput()) {
             //Audio devices may have been plugged or unplugged, refresh list on each show
             //This will use PortAudio or QTAudio depending on configuration
             inputDevices = Audio::InputDeviceList();
@@ -243,7 +244,7 @@ void SDR::ShowSdrOptions(bool b)
                 id = inputDevices[i].left(2).toInt();
                 dn = inputDevices[i].mid(3);
                 sd->sourceBox->addItem(dn, id);
-                if (dn == inputDeviceName)
+                if (dn == di->inputDeviceName)
                     sd->sourceBox->setCurrentIndex(i);
             }
             sd->sourceBox->blockSignals(false);
@@ -260,7 +261,7 @@ void SDR::ShowSdrOptions(bool b)
             id = outputDevices[i].left(2).toInt();
             dn = outputDevices[i].mid(3);
             sd->outputBox->addItem(dn, id);
-            if (dn == outputDeviceName)
+            if (dn == di->outputDeviceName)
                 sd->outputBox->setCurrentIndex(i);
         }
         sd->outputBox->blockSignals(false);
@@ -269,33 +270,33 @@ void SDR::ShowSdrOptions(bool b)
         sd->startupBox->addItem("Last Frequency",SDR::LASTFREQ);
         sd->startupBox->addItem("Set Frequency", SDR::SETFREQ);
         sd->startupBox->addItem("Device Default", SDR::DEFAULTFREQ);
-        cur = sd->startupBox->findData(startup);
+        cur = sd->startupBox->findData(di->startup);
         sd->startupBox->setCurrentIndex(cur);
         connect(sd->startupBox,SIGNAL(currentIndexChanged(int)),this,SLOT(StartupChanged(int)));
 
-        sd->startupEdit->setText(QString::number(this->freqToSet,'f',0));
+        sd->startupEdit->setText(QString::number(di->freqToSet,'f',0));
         connect(sd->startupEdit,SIGNAL(editingFinished()),this,SLOT(StartupFrequencyChanged()));
 
-        sd->iqGain->setValue(iqGain);
+        sd->iqGain->setValue(di->iqGain);
         connect(sd->iqGain,SIGNAL(valueChanged(double)),this,SLOT(IQGainChanged(double)));
 
         sd->IQSettings->addItem("I/Q (normal)",IQ);
         sd->IQSettings->addItem("Q/I (swap)",QI);
         sd->IQSettings->addItem("I Only",IONLY);
         sd->IQSettings->addItem("Q Only",QONLY);
-        sd->IQSettings->setCurrentIndex(iqOrder);
+        sd->IQSettings->setCurrentIndex(di->iqOrder);
         connect(sd->IQSettings,SIGNAL(currentIndexChanged(int)),this,SLOT(IQOrderChanged(int)));
 
-        sd->iqEnableBalance->setChecked(iqBalanceEnable);
+        sd->iqEnableBalance->setChecked(di->iqBalanceEnable);
 
         sd->iqBalancePhase->setMaximum(500);
         sd->iqBalancePhase->setMinimum(-500);
-        sd->iqBalancePhase->setValue(iqBalancePhase * 1000);
+        sd->iqBalancePhase->setValue(di->iqBalancePhase * 1000);
         connect(sd->iqBalancePhase,SIGNAL(valueChanged(int)),this,SLOT(BalancePhaseChanged(int)));
 
         sd->iqBalanceGain->setMaximum(1250);
         sd->iqBalanceGain->setMinimum(750);
-        sd->iqBalanceGain->setValue(iqBalanceGain * 1000);
+        sd->iqBalanceGain->setValue(di->iqBalanceGain * 1000);
         connect(sd->iqBalanceGain,SIGNAL(valueChanged(int)),this,SLOT(BalanceGainChanged(int)));
 
         connect(sd->iqEnableBalance,SIGNAL(toggled(bool)),this,SLOT(BalanceEnabledChanged(bool)));
@@ -305,12 +306,12 @@ void SDR::ShowSdrOptions(bool b)
         //Set up options and get allowable sampleRates from device
 
         int numSr;
-        int *sr = this->GetSampleRates(numSr);
+        int *sr = di->GetSampleRates(numSr);
         sd->sampleRateBox->blockSignals(true);
         sd->sampleRateBox->clear();
         for (int i=0; i<numSr; i++) {
             sd->sampleRateBox->addItem(QString::number(sr[i]),sr[i]);
-            if (sampleRate == sr[i])
+            if (di->sampleRate == sr[i])
                 sd->sampleRateBox->setCurrentIndex(i);
         }
         sd->sampleRateBox->blockSignals(false);
@@ -319,14 +320,14 @@ void SDR::ShowSdrOptions(bool b)
         connect(sd->closeButton,SIGNAL(clicked(bool)),this,SLOT(CloseOptions(bool)));
         connect(sd->resetAllButton,SIGNAL(clicked(bool)),this,SLOT(ResetAllSettings(bool)));
 
-        sd->testBenchBox->setChecked(isTestBenchChecked);
+        sd->testBenchBox->setChecked(di->isTestBenchChecked);
         connect(sd->testBenchBox, SIGNAL(toggled(bool)), this, SLOT(TestBenchChanged(bool)));
 
         //Careful here: Fragile coding practice
         //We're calling a virtual function in a base class method and expect it to call the over-ridden method in derived class
         //This only works because ShowSdrOptions() is being called via a pointer to the derived class
         //Some other method that's called from the base class could not do this
-        this->SetupOptionUi(sd->sdrSpecific);
+        di->SetupOptionUi(sd->sdrSpecific);
 
     }
 
@@ -345,35 +346,40 @@ void SDR::CloseOptions(bool b)
 
 void SDR::TestBenchChanged(bool b)
 {
-    isTestBenchChecked = b;
+    DeviceInterface *di = (plugin == NULL) ? this:plugin;
+    di->isTestBenchChecked = b;
     WriteSettings();
 }
 
 void SDR::SampleRateChanged(int i)
 {
+    DeviceInterface *di = (plugin == NULL) ? this:plugin;
     int cur = sd->sampleRateBox->currentIndex();
-    sampleRate = sd->sampleRateBox->itemText(cur).toInt();
+    di->sampleRate = sd->sampleRateBox->itemText(cur).toInt();
     WriteSettings();
 }
 
 void SDR::InputChanged(int i)
 {
+    DeviceInterface *di = (plugin == NULL) ? this:plugin;
     int cur = sd->sourceBox->currentIndex();
-    inputDeviceName = sd->sourceBox->itemText(cur);
+    di->inputDeviceName = sd->sourceBox->itemText(cur);
     WriteSettings();
 }
 
 void SDR::OutputChanged(int i)
 {
+    DeviceInterface *di = (plugin == NULL) ? this:plugin;
     int cur = sd->outputBox->currentIndex();
-    outputDeviceName = sd->outputBox->itemText(cur);
+    di->outputDeviceName = sd->outputBox->itemText(cur);
     WriteSettings();
 }
 
 void SDR::StartupChanged(int i)
 {
+    DeviceInterface *di = (plugin == NULL) ? this:plugin;
 
-    startup = (STARTUP)sd->startupBox->itemData(i).toInt();
+    di->startup = (STARTUP)sd->startupBox->itemData(i).toInt();
     sd->startupEdit->setText(QString::number(freqToSet,'f',0));
     if (startup == SETFREQ) {
         sd->startupEdit->setEnabled(true);
@@ -386,30 +392,34 @@ void SDR::StartupChanged(int i)
 
 void SDR::StartupFrequencyChanged()
 {
-    freqToSet = sd->startupEdit->text().toDouble();
+    DeviceInterface *di = (plugin == NULL) ? this:plugin;
+    di->freqToSet = sd->startupEdit->text().toDouble();
     WriteSettings();
 }
 
 //IQ gain can be changed in real time, without saving
 void SDR::IQGainChanged(double i)
 {
-    iqGain = i;
+    DeviceInterface *di = (plugin == NULL) ? this:plugin;
+    di->iqGain = i;
     WriteSettings();
 }
 
 //IQ order can be changed in real time, without saving
 void SDR::IQOrderChanged(int i)
 {
-    iqOrder = (IQORDER)sd->IQSettings->itemData(i).toInt();
+    DeviceInterface *di = (plugin == NULL) ? this:plugin;
+    di->iqOrder = (IQORDER)sd->IQSettings->itemData(i).toInt();
     WriteSettings();
 }
 
 void SDR::BalancePhaseChanged(int v)
 {
+    DeviceInterface *di = (plugin == NULL) ? this:plugin;
     //v is an integer, convert to fraction -.500 to +.500
     double newValue = v/1000.0;
     sd->iqBalancePhaseLabel->setText("Phase: " + QString::number(newValue));
-    iqBalancePhase = newValue;
+    di->iqBalancePhase = newValue;
 
     if (!global->receiver->GetPowerOn())
         return;
@@ -419,10 +429,11 @@ void SDR::BalancePhaseChanged(int v)
 
 void SDR::BalanceGainChanged(int v)
 {
+    DeviceInterface *di = (plugin == NULL) ? this:plugin;
     //v is an integer, convert to fraction -.750 to +1.250
     double newValue = v/1000.0;
     sd->iqBalanceGainLabel->setText("Gain: " + QString::number(newValue));
-    iqBalanceGain = newValue;
+    di->iqBalanceGain = newValue;
     WriteSettings();
     //Update in realtime
     if (!global->receiver->GetPowerOn())
@@ -432,7 +443,8 @@ void SDR::BalanceGainChanged(int v)
 
 void SDR::BalanceEnabledChanged(bool b)
 {
-    iqBalanceEnable = b;
+    DeviceInterface *di = (plugin == NULL) ? this:plugin;
+    di->iqBalanceEnable = b;
     WriteSettings();
     if (!global->receiver->GetPowerOn())
         return;
@@ -473,22 +485,21 @@ void SDR::ReadSettings()
         qSettings = plugin->GetQSettings();
         plugin->ReadSettings();
     }
-    //else qSettings is created in derived internal sub-classes
-
-    startup = (STARTUP)qSettings->value("Startup", DEFAULTFREQ).toInt();
-    freqToSet = qSettings->value("StartupFreq", 10000000).toDouble();
-    inputDeviceName = qSettings->value("InputDeviceName", "").toString();
-    outputDeviceName = qSettings->value("OutputDeviceName", "").toString();
-    sampleRate = qSettings->value("SampleRate", 48000).toInt();
-    iqGain = qSettings->value("iqGain",1).toDouble();
-    iqOrder = (IQORDER)qSettings->value("IQOrder", SDR::IQ).toInt();
-    iqBalanceGain = qSettings->value("iqBalanceGain",1).toDouble();
-    iqBalancePhase = qSettings->value("iqBalancePhase",0).toDouble();
-    iqBalanceEnable = qSettings->value("iqBalanceEnable",false).toBool();
-    lastFreq = qSettings->value("LastFreq", 10000000).toDouble();
-    lastMode = qSettings->value("LastMode",0).toInt();
-    lastDisplayMode = qSettings->value("LastDisplayMode",0).toInt();
-    isTestBenchChecked = qSettings->value("TestBench",false).toBool();
+    DeviceInterface *di = (plugin == NULL) ? this:plugin;
+    di->startup = (STARTUP)qSettings->value("Startup", DEFAULTFREQ).toInt();
+    di->freqToSet = qSettings->value("StartupFreq", 10000000).toDouble();
+    di->inputDeviceName = qSettings->value("InputDeviceName", "").toString();
+    di->outputDeviceName = qSettings->value("OutputDeviceName", "").toString();
+    di->sampleRate = qSettings->value("SampleRate", 48000).toInt();
+    di->iqGain = qSettings->value("iqGain",1).toDouble();
+    di->iqOrder = (IQORDER)qSettings->value("IQOrder", SDR::IQ).toInt();
+    di->iqBalanceGain = qSettings->value("iqBalanceGain",1).toDouble();
+    di->iqBalancePhase = qSettings->value("iqBalancePhase",0).toDouble();
+    di->iqBalanceEnable = qSettings->value("iqBalanceEnable",false).toBool();
+    di->lastFreq = qSettings->value("LastFreq", 10000000).toDouble();
+    di->lastMode = qSettings->value("LastMode",0).toInt();
+    di->lastDisplayMode = qSettings->value("LastDisplayMode",0).toInt();
+    di->isTestBenchChecked = qSettings->value("TestBench",false).toBool();
 
     qSettings->beginGroup(tr("Testbench"));
 
@@ -521,22 +532,22 @@ void SDR::WriteSettings()
         qSettings = plugin->GetQSettings();
         plugin->WriteSettings();
     }
-    //else qSettings is created in derived internal sub-classes
+    DeviceInterface *di = (plugin == NULL) ? this:plugin;
 
-    qSettings->setValue("Startup",startup);
-    qSettings->setValue("StartupFreq",freqToSet);
-    qSettings->setValue("InputDeviceName", inputDeviceName);
-    qSettings->setValue("OutputDeviceName", outputDeviceName);
-    qSettings->setValue("SampleRate",sampleRate);
-    qSettings->setValue("iqGain",iqGain);
-    qSettings->setValue("IQOrder", iqOrder);
-    qSettings->setValue("iqBalanceGain", iqBalanceGain);
-    qSettings->setValue("iqBalancePhase", iqBalancePhase);
-    qSettings->setValue("iqBalanceEnable", iqBalanceEnable);
-    qSettings->setValue("LastFreq",lastFreq);
-    qSettings->setValue("LastMode",lastMode);
-    qSettings->setValue("LastDisplayMode",lastDisplayMode);
-    qSettings->setValue("TestBench",isTestBenchChecked);
+    qSettings->setValue("Startup",di->startup);
+    qSettings->setValue("StartupFreq",di->freqToSet);
+    qSettings->setValue("InputDeviceName", di->inputDeviceName);
+    qSettings->setValue("OutputDeviceName", di->outputDeviceName);
+    qSettings->setValue("SampleRate",di->sampleRate);
+    qSettings->setValue("iqGain",di->iqGain);
+    qSettings->setValue("IQOrder", di->iqOrder);
+    qSettings->setValue("iqBalanceGain", di->iqBalanceGain);
+    qSettings->setValue("iqBalancePhase", di->iqBalancePhase);
+    qSettings->setValue("iqBalanceEnable", di->iqBalanceEnable);
+    qSettings->setValue("LastFreq",di->lastFreq);
+    qSettings->setValue("LastMode",di->lastMode);
+    qSettings->setValue("LastDisplayMode",di->lastDisplayMode);
+    qSettings->setValue("TestBench",di->isTestBenchChecked);
 
     qSettings->beginGroup(tr("Testbench"));
 
@@ -565,6 +576,7 @@ void SDR::WriteSettings()
 //Devices may override this and return a rate based on other settings
 int SDR::GetSampleRate()
 {
+
     if (plugin != NULL)
         return plugin->GetSampleRate();
     else

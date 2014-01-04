@@ -24,6 +24,7 @@ typedef std::function<void(CPX *, quint16)> cbProcessIQData;
 
 class PEBBLELIBSHARED_EXPORT DeviceInterface
 {
+friend class SDR; //Temp while we're transitioning from internal to plugins to sdr has access to protected
 
 public:
     typedef enum IQORDER {IQ,QI,IONLY,QONLY} IQORDER;
