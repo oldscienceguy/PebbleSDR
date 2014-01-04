@@ -16,3 +16,5 @@ pebblelib/*MacRelease/
 
 plugins/*/*MacDebug/
 plugins/*/*MacRelease/
+
+/DevicePluginTemplate/
