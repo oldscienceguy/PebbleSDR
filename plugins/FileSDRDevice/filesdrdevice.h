@@ -24,7 +24,7 @@ public:
     QString GetPluginName();
     QString GetPluginDescription();
 
-    bool Initialize(cbProcessIQData _callback);
+    bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer);
     bool Connect();
     bool Disconnect();
     void Start();
@@ -48,8 +48,6 @@ public:
     //Display device option widget in settings dialog
     void SetupOptionUi(QWidget *parent);
 
-    ProducerConsumer producerConsumer;
-
     void InitSettings(QString fname);
 
 protected:
@@ -59,9 +57,7 @@ protected:
     void RunConsumerThread();
 
 private:
-    //Things every device needs, move to interface
-    int framesPerBuffer;
-
+    ProducerConsumer producerConsumer;
     QString fileName;
     QString recordingPath;
 

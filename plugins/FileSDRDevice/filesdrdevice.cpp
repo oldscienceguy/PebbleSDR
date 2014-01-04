@@ -7,9 +7,6 @@
 FileSDRDevice::FileSDRDevice()
 {
     InitSettings("WavFileSDR");
-
-    framesPerBuffer = 2048; //Temp till we pass
-
     copyTest = false; //Write what we read
     fileName = "";
     recordingPath = "";
@@ -31,9 +28,10 @@ QString FileSDRDevice::GetPluginDescription()
     return "Plays back I/Q WAV file";
 }
 
-bool FileSDRDevice::Initialize(cbProcessIQData _callback)
+bool FileSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
 {
     ProcessIQData = _callback;
+    framesPerBuffer = _framesPerBuffer;
     producerConsumer.Initialize(this,1,framesPerBuffer * sizeof(CPX),0);
 
     return true;
@@ -206,7 +204,7 @@ void FileSDRDevice::StopProducerThread(){}
 void FileSDRDevice::RunProducerThread()
 {
     producerConsumer.AcquireFreeBuffer();
-    int samplesRead = wavFileRead.ReadSamples(producerConsumer.GetNextProducerBuffer(),framesPerBuffer);
+    int samplesRead = wavFileRead.ReadSamples(producerConsumer.GetProducerBuffer_CPX(),framesPerBuffer);
     producerConsumer.SupplyProducerBuffer();
     producerConsumer.ReleaseFilledBuffer();
 
@@ -215,7 +213,7 @@ void FileSDRDevice::StopConsumerThread(){}
 void FileSDRDevice::RunConsumerThread()
 {
     producerConsumer.AcquireFilledBuffer();
-    CPX *buf = producerConsumer.GetNextConsumerBuffer();
+    CPX *buf = producerConsumer.GetConsumerBuffer_CPX();
     if (copyTest)
         wavFileWrite.WriteSamples(buf, framesPerBuffer);
     ProcessIQData(buf,framesPerBuffer);

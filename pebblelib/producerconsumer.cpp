@@ -53,11 +53,13 @@ void ProducerConsumer::Initialize(DeviceInterface *_device, int _numDataBufs, in
 
 bool ProducerConsumer::Start()
 {
+    if (consumerThread == NULL || producerThread == NULL)
+        return false;
     //We want the consumer thread to start first, it will block waiting for data from the SDR thread
     consumerThread->start();
     producerThread->start();
     isThreadRunning = true;
-    return false;
+    return true;
 }
 
 bool ProducerConsumer::Stop()

@@ -98,10 +98,10 @@ QString SDR::GetPluginDescription()
         return "";
 }
 
-bool SDR::Initialize(cbProcessIQData _callback)
+bool SDR::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
 {
     if (plugin != NULL)
-        return plugin->Initialize(_callback);
+        return plugin->Initialize(_callback, _framesPerBuffer);
     else
         return false;
 }

@@ -41,7 +41,7 @@ public:
     virtual QString GetPluginName() = 0;
     virtual QString GetPluginDescription() = 0;
 
-    virtual bool Initialize(cbProcessIQData _callback) = 0;
+    virtual bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer) = 0;
     virtual bool Connect() = 0;
     virtual bool Disconnect() = 0;
     virtual void Start() = 0;
@@ -105,6 +105,9 @@ public:
     QSettings *GetQSettings() {return qSettings;}
 
 protected:
+    //Todo: Flag which of these is just a convenience for Pebble, vs required for the interface
+    quint16 framesPerBuffer;
+
     int lastDisplayMode; //Spectrum, waterfall, etc
     STARTUP startup;
     double freqToSet;
