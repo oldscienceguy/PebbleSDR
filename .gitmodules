@@ -1,3 +1,6 @@
 [submodule "rtl-sdr"]
 	path = rtl-sdr
 	url = git://git.osmocom.org/rtl-sdr.git
+[submodule "gr-osmosdr"]
+	path = gr-osmosdr
+	url = git://git.osmocom.org/gr-osmosdr

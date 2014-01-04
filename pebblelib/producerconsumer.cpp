@@ -4,10 +4,19 @@
 
 ProducerConsumer::ProducerConsumer()
 {
+    producerThread = NULL;
+    consumerThread = NULL;
+    semNumFreeBuffers = NULL;
+    semNumFilledBuffers = NULL;
+    producerBuffer = NULL;
 }
 
 void ProducerConsumer::Initialize(DeviceInterface *_device, int _numDataBufs, int _producerBufferSize, int _refresh)
 {
+    //Defensive
+    if (_producerBufferSize == 0)
+        return; //Can't create empty buffer
+
     device = _device;
     threadRefresh = _refresh;
     numDataBufs = _numDataBufs;
@@ -66,14 +75,34 @@ bool ProducerConsumer::IsRunning()
     return isThreadRunning;
 }
 
-CPX *ProducerConsumer::GetNextProducerBuffer()
+CPX *ProducerConsumer::GetProducerBuffer_CPX()
 {
     return ((CPX **)producerBuffer)[nextProducerDataBuf];
 }
 
-CPX *ProducerConsumer::GetNextConsumerBuffer()
+CPX *ProducerConsumer::GetConsumerBuffer_CPX()
 {
     return ((CPX **)producerBuffer)[nextConsumerDataBuf];
+}
+
+double *ProducerConsumer::GetProducerBuffer_double()
+{
+    return ((double **)producerBuffer)[nextProducerDataBuf];
+}
+
+double *ProducerConsumer::GetConsumerBuffer_double()
+{
+    return ((double **)producerBuffer)[nextConsumerDataBuf];
+}
+
+unsigned char *ProducerConsumer::GetProducerBuffer_char()
+{
+    return (producerBuffer)[nextProducerDataBuf];
+}
+
+unsigned char *ProducerConsumer::GetConsumerBuffer_char()
+{
+    return (producerBuffer)[nextConsumerDataBuf];
 }
 
 bool ProducerConsumer::IsFreeBufferAvailable()
