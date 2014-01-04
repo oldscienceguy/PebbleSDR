@@ -13,11 +13,10 @@ include (../DigitalModemExample/fix_plugin_libraries.pri)
 
 QT += widgets
 
-TARGET = RTL2832SDRDevice
 TEMPLATE = lib
 CONFIG += plugin
 
-TARGET = RTL2832SDRDevice
+TARGET = rtl2832sdrDevice
 VERSION = 1.0.0
 
 SOURCES += rtl2832sdrdevice.cpp
@@ -29,8 +28,12 @@ INCLUDEPATH += ../../application
 DEPENDPATH += ../../application
 INCLUDEPATH += ../../pebblelib
 DEPENDPATH += ../../pebblelib
+#Just for rtl-sdr
+INCLUDEPATH += ../../rtl-sdr/include
+DEPENDPATH += ../../rtl-sdr/include
 
 LIBS += -L$${PWD}/../../pebblelib/$${LIB_DIR} -lpebblelib
+LIBS += -L$${PWD}/../../rtl-sdr/src/.libs -lrtlsdr
 
 OTHER_FILES += \
 	fix_plugin_libraries.pri

@@ -3,6 +3,24 @@
 
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
+#include "rtl-sdr.h"
+
+/*
+  http://sdr.osmocom.org/trac/wiki/rtl-sdr for latest library
+  cd rtl-sdr/
+  autoreconf -i
+  ./configure
+  make
+  sudo make install
+  sudo ldconfig
+  ./src/rtl_test to verify working
+  Libraries are in rtl-sdr/src/.libs
+
+  http://sdr.osmocom.org/trac/wiki/GrOsmoSDR for TCP client examples and utilities
+  sudo port install boost  //Macports - Boost is required to build grOsmoSDR
+
+*/
+
 #include <QObject>
 #include "../pebblelib/device_interfaces.h"
 #include "producerconsumer.h"
@@ -26,7 +44,7 @@ public:
     QString GetPluginName();
     QString GetPluginDescription();
 
-    bool Initialize(cbProcessIQData _callback);
+    bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer);
     bool Connect();
     bool Disconnect();
     void Start();
@@ -58,9 +76,22 @@ protected:
 
 private:
     void InitSettings(QString fname);
-    //Things every device needs, move to interface
-    int framesPerBuffer;
     ProducerConsumer producerConsumer;
+
+    rtlsdr_dev_t *dev;
+    //Needed to determine when it's safe to fetch options for display
+    bool connected;
+
+    double sampleGain; //Factor to normalize output
+
+    CPXBuf *inBuffer;
+
+    qint16 rtlGain; //in 10ths of a db
+    quint32 rtlFrequency;
+    quint32 rtlSampleRate;
+    quint16 rtlDecimate;
+
+    int sampleRates[10]; //Max 10 for testing
 
 
 };

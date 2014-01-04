@@ -2,13 +2,9 @@
 #include "gpl.h"
 #include "rtl2832sdrdevice.h"
 
-
 RTL2832SDRDevice::RTL2832SDRDevice()
 {
-    InitSettings("RTL2832SDR");
-
-    //framesPerBuffer = 2048; //Temp till we pass
-
+    InitSettings("rtl2832sdr");
 }
 
 RTL2832SDRDevice::~RTL2832SDRDevice()
@@ -27,27 +23,153 @@ QString RTL2832SDRDevice::GetPluginDescription()
     return "RTL2832 Devices";
 }
 
-bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback)
+bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
 {
     ProcessIQData = _callback;
+    framesPerBuffer = _framesPerBuffer;
     producerConsumer.Initialize(this,1,framesPerBuffer * sizeof(CPX),0);
+
+    framesPerBuffer = 2048; //Temp till we pass
+    //crystalFreqHz = DEFAULT_CRYSTAL_FREQUENCY;
+    //RTL2832 samples from 900001 to 3200000 sps (900ksps to 3.2msps)
+    //1 msps seems to be optimal according to boards
+    //We have to decimate from rtl rate to our rate for everything to work
+
+    //Make rtlSample rate close to 1msps but with even decimate
+    //Test with higher sps, seems to work better
+    /*
+      RTL2832 sample rate likes to be 2.048, 1.024 or an even quotient of 28.8mhz
+      Other rates may cause intermittent sync problems
+      2048000 is the default rate for DAB and FM
+      3.20 (28.8 / 9)
+      2.88 (28.8 / 10)
+      2.40 (28.8 / 12)
+      1.80 (28.8 / 16)
+      1.44 (28.8 / 20) even dec at 48 and 96k
+      1.20 (28.8 / 24)
+      1.152 (28.8 / 25) 192k * 6 - This is our best rate convert to 192k effective rate
+       .96 (28.8 / 30)
+    */
+    /*
+    range += osmosdr::range_t( 250000 ); // known to work
+      range += osmosdr::range_t( 1000000 ); // known to work
+      range += osmosdr::range_t( 1024000 ); // known to work
+      range += osmosdr::range_t( 1800000 ); // known to work
+      range += osmosdr::range_t( 1920000 ); // known to work
+      range += osmosdr::range_t( 2000000 ); // known to work
+      range += osmosdr::range_t( 2048000 ); // known to work
+      range += osmosdr::range_t( 2400000 ); // known to work
+    //  range += osmosdr::range_t( 2600000 ); // may work
+    //  range += osmosdr::range_t( 2800000 ); // may work
+    //  range += osmosdr::range_t( 3000000 ); // may work
+    //  range += osmosdr::range_t( 3200000 ); // max rate
+    */
+    //Different sampleRates for different RTL rates
+    rtlSampleRate = 2.048e6; //We can keep up with Spectrum
+
+    //rtlSampleRate = 1.024e6;
+
+    rtlDecimate = rtlSampleRate / sampleRate; //Must be even number, convert to lookup table
+    /*
+    //Find whole number decimate rate less than 2048000
+    rtlDecimate = 1;
+    rtlSampleRate = 0;
+    quint32 tempRtlSampleRate = 0;
+    while (tempRtlSampleRate <= 1800000) {
+        rtlSampleRate = tempRtlSampleRate;
+        tempRtlSampleRate = sampleRate * ++rtlDecimate;
+    }
+*/
+    rtlFrequency = 162400000;
+
+    sampleGain = .005; //Matched with rtlGain
 
     return true;
 }
 
 bool RTL2832SDRDevice::Connect()
 {
-    return false;
+    int device_count;
+    int dev_index = 0; //Assume we only have 1 RTL2832 device for now
+    //dev = NULL;
+    device_count = rtlsdr_get_device_count();
+    if (device_count == 0) {
+        qDebug("No supported devices found.");
+        return false;
+    }
+
+    //for (int i = 0; i < device_count; i++)
+    //    qDebug("%s",rtlsdr_get_device_name(i));
+
+    //rtlsdr_get_device_name(dev_index));
+
+    if (rtlsdr_open(&dev, dev_index) < 0) {
+        qDebug("Failed to open rtlsdr device #%d", dev_index);
+        return false;
+    }
+    connected = true;
+    return true;
 }
 
 bool RTL2832SDRDevice::Disconnect()
 {
-    return false;
+    rtlsdr_close(dev);
+    connected = false;
+    dev = NULL;
+    return true;
 }
 
 void RTL2832SDRDevice::Start()
 {
+    int r;
+
+    /* Set the sample rate */
+    if (rtlsdr_set_sample_rate(dev, rtlSampleRate) < 0) {
+        qDebug("WARNING: Failed to set sample rate.");
+        return;
+    }
+
+    //Center freq is set in SetFrequency()
+
+    /* Set the tuner gain */
+    //Added support for automatic gain from rtl-sdr.c
+    if (rtlGain == 0) {
+         /* Enable automatic gain */
+        r = rtlsdr_set_tuner_gain_mode(dev, 0);
+        if (r < 0) {
+            qDebug("WARNING: Failed to enable automatic gain.");
+            return;
+        } else {
+            qDebug("Automatic gain set");
+        }
+    } else {
+        /* Enable manual gain */
+        r = rtlsdr_set_tuner_gain_mode(dev, 1);
+        if (r < 0) {
+            qDebug("WARNING: Failed to enable manual gain.");
+            return;
+        }
+
+        /* Set the tuner gain */
+        r = rtlsdr_set_tuner_gain(dev, rtlGain);
+        if (r < 0) {
+            qDebug("WARNING: Failed to set tuner gain.");
+            return;
+        }else {
+            qDebug("Tuner gain set to %f dB.", rtlGain/10.0);
+        }
+    }
+
+    /* Reset endpoint before we start reading from it (mandatory) */
+    if (rtlsdr_reset_buffer(dev) < 0) {
+        qDebug("WARNING: Failed to reset buffers.");
+        return;
+    }
+
+    producerConsumer.Initialize(this, 50, framesPerBuffer * rtlDecimate * 2, 0);
     producerConsumer.Start();
+
+    return;
 }
 
 void RTL2832SDRDevice::Stop()
@@ -57,7 +179,15 @@ void RTL2832SDRDevice::Stop()
 
 double RTL2832SDRDevice::SetFrequency(double fRequested,double fCurrent)
 {
-    return fCurrent;
+    /* Set the frequency */
+    if (rtlsdr_set_center_freq(dev, fRequested) < 0) {
+        qDebug("WARNING: Failed to set center freq.");
+        rtlFrequency = fCurrent;
+    } else {
+        rtlFrequency = fRequested;
+    }
+
+    return rtlFrequency;
 }
 
 void RTL2832SDRDevice::ShowOptions()
@@ -67,30 +197,78 @@ void RTL2832SDRDevice::ShowOptions()
 
 void RTL2832SDRDevice::ReadSettings()
 {
+    //Valid gain values (in tenths of a dB) for the E4000 tuner:
+    //-10, 15, 40, 65, 90, 115, 140, 165, 190,
+    //215, 240, 290, 340, 420, 430, 450, 470, 490
+    //0 for automatic gain
+    rtlGain = qSettings->value("RtlGain",0).toInt(); //0=automatic
+
 }
 
 void RTL2832SDRDevice::WriteSettings()
 {
+    qSettings->setValue("RtlGain",rtlGain);
+    qSettings->sync();
+
 }
 
 double RTL2832SDRDevice::GetStartupFrequency()
 {
-    return 0;
+    return 162450000;
 }
 
 int RTL2832SDRDevice::GetStartupMode()
 {
-    return lastMode;
+    return dmFMN;
 }
 
+/*
+Elonics E4000	 52 - 2200 MHz with a gap from 1100 MHz to 1250 MHz (varies)
+Rafael Micro R820T	24 - 1766 MHz
+Fitipower FC0013	22 - 1100 MHz (FC0013B/C, FC0013G has a separate L-band input, which is unconnected on most sticks)
+Fitipower FC0012	22 - 948.6 MHz
+FCI FC2580	146 - 308 MHz and 438 - 924 MHz (gap in between)
+*/
 double RTL2832SDRDevice::GetHighLimit()
 {
-    return 0;
+    if (dev==NULL)
+        return 1700000000;
+
+    switch (rtlsdr_get_tuner_type(dev)) {
+        case RTLSDR_TUNER_E4000:
+            return 2200000000;
+        case RTLSDR_TUNER_FC0012:
+            return 948600000;
+        case RTLSDR_TUNER_FC0013:
+            return 1100000000;
+        case RTLSDR_TUNER_FC2580:
+            return 146000000;
+        case RTLSDR_TUNER_R820T:
+            return 1766000000;
+        default:
+            return 1700000000;
+    }
 }
 
 double RTL2832SDRDevice::GetLowLimit()
 {
-    return 0;
+    if (dev==NULL)
+        return 64000000;
+
+    switch (rtlsdr_get_tuner_type(dev)) {
+        case RTLSDR_TUNER_E4000:
+            return 52000000;
+        case RTLSDR_TUNER_FC0012:
+            return 22000000;
+        case RTLSDR_TUNER_FC0013:
+            return 22000000;
+        case RTLSDR_TUNER_FC2580:
+            return 146000000;
+        case RTLSDR_TUNER_R820T:
+            return 24000000;
+        default:
+            return 64000000;
+    }
 }
 
 double RTL2832SDRDevice::GetGain()
@@ -100,17 +278,42 @@ double RTL2832SDRDevice::GetGain()
 
 QString RTL2832SDRDevice::GetDeviceName()
 {
-    return "RTL2832"; //Add device specifics
+    if (dev==NULL)
+        return "No Device Found";
+
+    switch (rtlsdr_get_tuner_type(dev)) {
+        case RTLSDR_TUNER_E4000:
+            return "RTL2832-E4000";
+        case RTLSDR_TUNER_FC0012:
+            return "RTL2832-FC0012";
+        case RTLSDR_TUNER_FC0013:
+            return "RTL2832-FC0013";
+        case RTLSDR_TUNER_FC2580:
+            return "RTL2832-FC2580";
+        case RTLSDR_TUNER_R820T:
+            return "RTL2832-R820T";
+        default:
+            return "RTL2832-Unknown";
+    }
 }
 
 int RTL2832SDRDevice::GetSampleRate()
 {
-    return 0;
+    return sampleRate;
 }
 
 int *RTL2832SDRDevice::GetSampleRates(int &len)
 {
-    return NULL;
+    len = 6;
+    //Ugly, but couldn't find easy way to init with {1,2,3} array initializer
+    sampleRates[0] = 64000;
+    sampleRates[1] = 128000;
+    sampleRates[2] = 256000;
+    sampleRates[3] = 512000;
+    sampleRates[4] = 1024000;
+    sampleRates[5] = 2048000;
+    return sampleRates;
+
 }
 
 bool RTL2832SDRDevice::UsesAudioInput()
@@ -126,21 +329,92 @@ void RTL2832SDRDevice::SetupOptionUi(QWidget *parent)
 void RTL2832SDRDevice::StopProducerThread(){}
 void RTL2832SDRDevice::RunProducerThread()
 {
+    int bytesRead;
     producerConsumer.AcquireFreeBuffer();
     //Insert code to put data from device in buffer
-    producerConsumer.SupplyProducerBuffer();
-    producerConsumer.ReleaseFilledBuffer();
+    if (rtlsdr_read_sync(dev, producerConsumer.GetProducerBuffer_double(), producerConsumer.GetBufferSize(), &bytesRead) < 0) {
+        qDebug("Sync transfer error");
+        producerConsumer.ReleaseFreeBuffer(); //Put back buffer for next try
+        return;
+    }
 
+    if (bytesRead < producerConsumer.GetBufferSize()) {
+        qDebug("Under read");
+        producerConsumer.ReleaseFreeBuffer(); //Put back buffer for next try
+        return;
+    }
+    producerConsumer.SupplyProducerBuffer();
+    producerConsumer.ReleaseFilledBuffer();    
 }
-void RTL2832SDRDevice::StopConsumerThread(){}
+
+void RTL2832SDRDevice::StopConsumerThread()
+{
+    //Problem - RunConsumerThread may be in process when we're asked to stopp
+    //We have to wait for it to complete, then return.  Bad dependency - should not have tight connection like this
+}
+
 void RTL2832SDRDevice::RunConsumerThread()
 {
+    double fpSampleRe;
+    double fpSampleIm;
+
+    //Wait for data to be available from producer
     producerConsumer.AcquireFilledBuffer();
-    CPX *buf = producerConsumer.GetNextConsumerBuffer();
-    //Insert code to retrieve data from buffer and pass to receiver for processing
-    ProcessIQData(buf,framesPerBuffer);
+
+    //RTL I/Q samples are 8bit unsigned 0-256
+    int bufInc = rtlDecimate * 2;
+    int decMult = 1; //1=8bit, 2=9bit, 3=10bit for rtlDecimate = 6 and sampleRate = 192k
+    int decNorm = 128 * decMult;
+    double decAvg = rtlDecimate / decMult; //Double the range = 1 bit of sample size
+    for (int i=0,j=0; i<framesPerBuffer; i++, j+=bufInc) {
+#if 1
+        //We are significantly oversampling, so we can use decimation to increase dynamic range
+        //See http://www.actel.com/documents/Improve_ADC_WP.pdf as one example
+        //We take N (rtlDecimate) samples and create one result
+        fpSampleRe = fpSampleIm = 0.0;
+        for (int k = 0; k < bufInc; k+=2) {
+            //I/Q reversed from normal devices, correct here
+            fpSampleIm += producerConsumer.GetConsumerBuffer_double()[j + k];
+            fpSampleRe += producerConsumer.GetConsumerBuffer_double()[j + k + 1];
+        }
+        //If we average, we get a better sample
+        //But if we average with a smaller number, we increase range of samples
+        //Instead of 8bit 0-255, we get 9bit 0-511
+        //Testing assuming rtlDecmiate = 6
+        fpSampleRe = fpSampleRe / decAvg; //Effectively increasing dynamic range
+        fpSampleRe -= decNorm;
+        fpSampleRe /= decNorm;
+        fpSampleRe *= sampleGain;
+        fpSampleIm = fpSampleIm / decAvg;
+        fpSampleIm -= decNorm;
+        fpSampleIm /= decNorm;
+        fpSampleIm *= sampleGain;
+#else
+        //Oringal simple decimation - no increase in dynamic range
+        //Every nth sample from producer buffer
+        fpSampleRe = (double)producerBuffer[nextConsumerDataBuf][j];
+        fpSampleRe -= 127.0;
+        fpSampleRe /= 127.0;
+        fpSampleRe *= sampleGain;
+
+        fpSampleIm = (double)producerBuffer[nextConsumerDataBuf][j+1];
+        fpSampleIm -= 127.0;
+        fpSampleIm /= 127.0;
+        fpSampleIm *= sampleGain;
+#endif
+        inBuffer->Re(i) = fpSampleRe;
+        inBuffer->Im(i) = fpSampleIm;
+    }
+
+    //We're done with databuf, so we can release before we call ProcessBlock
+    //Update lastDataBuf & release dataBuf
     producerConsumer.SupplyConsumerBuffer();
     producerConsumer.ReleaseFreeBuffer();
+
+    ProcessIQData(inBuffer->Ptr(),framesPerBuffer);
+
+
+
 }
 
 //These need to be moved to a DeviceInterface implementation class, equivalent to SDR
