@@ -5,12 +5,15 @@
 RTL2832SDRDevice::RTL2832SDRDevice()
 {
     InitSettings("rtl2832sdr");
+    inBuffer = NULL;
 }
 
 RTL2832SDRDevice::~RTL2832SDRDevice()
 {
     Stop();
     Disconnect();
+    if (inBuffer != NULL)
+        delete (inBuffer);
 }
 
 QString RTL2832SDRDevice::GetPluginName()
@@ -27,9 +30,8 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerB
 {
     ProcessIQData = _callback;
     framesPerBuffer = _framesPerBuffer;
-    producerConsumer.Initialize(this,1,framesPerBuffer * sizeof(CPX),0);
+    inBuffer = new CPXBuf(framesPerBuffer);
 
-    framesPerBuffer = 2048; //Temp till we pass
     //crystalFreqHz = DEFAULT_CRYSTAL_FREQUENCY;
     //RTL2832 samples from 900001 to 3200000 sps (900ksps to 3.2msps)
     //1 msps seems to be optimal according to boards
@@ -166,6 +168,7 @@ void RTL2832SDRDevice::Start()
         return;
     }
 
+    //1 byte per I + 1 byte per Q
     producerConsumer.Initialize(this, 50, framesPerBuffer * rtlDecimate * 2, 0);
     producerConsumer.Start();
 
@@ -321,6 +324,11 @@ bool RTL2832SDRDevice::UsesAudioInput()
     return false;
 }
 
+bool RTL2832SDRDevice::GetTestBenchChecked()
+{
+    return isTestBenchChecked;
+}
+
 void RTL2832SDRDevice::SetupOptionUi(QWidget *parent)
 {
     //Nothing to do
@@ -332,7 +340,7 @@ void RTL2832SDRDevice::RunProducerThread()
     int bytesRead;
     producerConsumer.AcquireFreeBuffer();
     //Insert code to put data from device in buffer
-    if (rtlsdr_read_sync(dev, producerConsumer.GetProducerBuffer_double(), producerConsumer.GetBufferSize(), &bytesRead) < 0) {
+    if (rtlsdr_read_sync(dev, producerConsumer.GetProducerBuffer(), producerConsumer.GetBufferSize(), &bytesRead) < 0) {
         qDebug("Sync transfer error");
         producerConsumer.ReleaseFreeBuffer(); //Put back buffer for next try
         return;
@@ -374,8 +382,8 @@ void RTL2832SDRDevice::RunConsumerThread()
         fpSampleRe = fpSampleIm = 0.0;
         for (int k = 0; k < bufInc; k+=2) {
             //I/Q reversed from normal devices, correct here
-            fpSampleIm += producerConsumer.GetConsumerBuffer_double()[j + k];
-            fpSampleRe += producerConsumer.GetConsumerBuffer_double()[j + k + 1];
+            fpSampleIm += producerConsumer.GetConsumerBufferDataAsDouble(j + k);
+            fpSampleRe += producerConsumer.GetConsumerBufferDataAsDouble(j + k + 1);
         }
         //If we average, we get a better sample
         //But if we average with a smaller number, we increase range of samples

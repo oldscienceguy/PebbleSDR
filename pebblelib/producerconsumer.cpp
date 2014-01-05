@@ -77,32 +77,27 @@ bool ProducerConsumer::IsRunning()
     return isThreadRunning;
 }
 
-CPX *ProducerConsumer::GetProducerBuffer_CPX()
+CPX *ProducerConsumer::GetProducerBufferAsCPX()
 {
     return ((CPX **)producerBuffer)[nextProducerDataBuf];
 }
 
-CPX *ProducerConsumer::GetConsumerBuffer_CPX()
+CPX *ProducerConsumer::GetConsumerBufferAsCPX()
 {
     return ((CPX **)producerBuffer)[nextConsumerDataBuf];
 }
 
-double *ProducerConsumer::GetProducerBuffer_double()
+double ProducerConsumer::GetConsumerBufferDataAsDouble(quint16 index)
 {
-    return ((double **)producerBuffer)[nextProducerDataBuf];
+    return (double)producerBuffer[nextConsumerDataBuf][index];
 }
 
-double *ProducerConsumer::GetConsumerBuffer_double()
-{
-    return ((double **)producerBuffer)[nextConsumerDataBuf];
-}
-
-unsigned char *ProducerConsumer::GetProducerBuffer_char()
+unsigned char *ProducerConsumer::GetProducerBuffer()
 {
     return (producerBuffer)[nextProducerDataBuf];
 }
 
-unsigned char *ProducerConsumer::GetConsumerBuffer_char()
+unsigned char *ProducerConsumer::GetConsumerBuffer()
 {
     return (producerBuffer)[nextConsumerDataBuf];
 }

@@ -67,6 +67,7 @@ public:
     virtual int GetSampleRate() = 0;
     virtual int* GetSampleRates(int &len) = 0; //Returns array of allowable rates and length of array as ref
     virtual bool UsesAudioInput() = 0;
+    virtual bool GetTestBenchChecked() {return isTestBenchChecked;}
 
 
     virtual void StopProducerThread() = 0;
@@ -76,34 +77,34 @@ public:
 
     cbProcessIQData ProcessIQData;
 
-    int GetLastDisplayMode() {return lastDisplayMode;}
-    void SetLastDisplayMode(int mode) {lastDisplayMode = mode;}
+    virtual int GetLastDisplayMode() {return lastDisplayMode;}
+    virtual void SetLastDisplayMode(int mode) {lastDisplayMode = mode;}
 
-    IQORDER GetIQOrder() {return iqOrder;}
-    void SetIQOrder(IQORDER o) {iqOrder = o;}
-    bool GetTestBenchChecked() {return isTestBenchChecked;}
-    bool GetIQBalanceEnabled() {return iqBalanceEnable;}
-    bool GetIQBalanceGain() {return iqBalanceGain;}
-    bool GetIQBalancePhase() {return iqBalancePhase;}
+    virtual IQORDER GetIQOrder() {return iqOrder;}
+    virtual void SetIQOrder(IQORDER o) {iqOrder = o;}
+    virtual bool GetIQBalanceEnabled() {return iqBalanceEnable;}
+    virtual bool GetIQBalanceGain() {return iqBalanceGain;}
+    virtual bool GetIQBalancePhase() {return iqBalancePhase;}
 
-    double GetFreqToSet() {return freqToSet;}
-    double GetLastFreq() {return lastFreq;}
-    void SetLastFreq(double f) {lastFreq = f;}
+    virtual double GetFreqToSet() {return freqToSet;}
+    virtual double GetLastFreq() {return lastFreq;}
+    virtual void SetLastFreq(double f) {lastFreq = f;}
 
-    int GetLastMode() {return lastMode;}
-    void SetLastMode(int mode) {lastMode = mode;}
+    virtual int GetLastMode() {return lastMode;}
+    virtual void SetLastMode(int mode) {lastMode = mode;}
 
-    STARTUP GetStartup() {return startup;}
-    QString GetInputDeviceName() {return inputDeviceName;}
-    QString GetOutputDeviceName() {return outputDeviceName;}
+    virtual STARTUP GetStartup() {return startup;}
+    virtual QString GetInputDeviceName() {return inputDeviceName;}
+    virtual QString GetOutputDeviceName() {return outputDeviceName;}
 
-    double GetIQGain() {return iqGain;}
-    void SetIQGain(double g) {iqGain = g;}
+    virtual double GetIQGain() {return iqGain;}
+    virtual void SetIQGain(double g) {iqGain = g;}
 
+    //These only apply to old internal
     SDRDEVICE GetSDRDevice() {return sdrDevice;}
     void SetSDRDevice(SDRDEVICE dev) {sdrDevice = dev;}
 
-    QSettings *GetQSettings() {return qSettings;}
+    virtual QSettings *GetQSettings() {return qSettings;}
 
 protected:
     //Todo: Flag which of these is just a convenience for Pebble, vs required for the interface

@@ -21,14 +21,13 @@ public:
 
     bool IsRunning();
 
-    quint16 GetBufferSize() {return numDataBufs;}
+    quint16 GetBufferSize() {return producerBufferSize;}
 
-    unsigned char* GetProducerBuffer_char();
-    unsigned char* GetConsumerBuffer_char();
-    CPX* GetProducerBuffer_CPX();
-    CPX* GetConsumerBuffer_CPX();
-    double* GetProducerBuffer_double();
-    double* GetConsumerBuffer_double();
+    unsigned char* GetProducerBuffer();
+    unsigned char* GetConsumerBuffer();
+    CPX* GetProducerBufferAsCPX();
+    CPX* GetConsumerBufferAsCPX();
+    double GetConsumerBufferDataAsDouble(quint16 index);
 
     bool IsFreeBufferAvailable();
     void AcquireFreeBuffer();

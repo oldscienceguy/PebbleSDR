@@ -615,6 +615,159 @@ bool SDR::UsesAudioInput()
         return true;
 }
 
+bool SDR::GetTestBenchChecked()
+{
+    if (plugin != NULL)
+        return plugin->isTestBenchChecked;
+    else
+        return isTestBenchChecked;
+
+}
+
+DeviceInterface::STARTUP SDR::GetStartup()
+{
+  if (plugin != NULL)
+    return plugin->startup;
+  else
+    return startup;
+}
+
+int SDR::GetLastDisplayMode()
+{
+    if (plugin != NULL)
+      return plugin->lastDisplayMode;
+    else
+        return lastDisplayMode;
+}
+
+void SDR::SetLastDisplayMode(int mode)
+{
+    if (plugin != NULL)
+        plugin->lastDisplayMode = mode;
+    else
+        lastDisplayMode = mode;
+}
+
+DeviceInterface::IQORDER SDR::GetIQOrder()
+{
+    if (plugin != NULL)
+        return plugin->iqOrder;
+    else
+        return iqOrder;
+}
+
+void SDR::SetIQOrder(DeviceInterface::IQORDER o)
+{
+    if (plugin != NULL)
+        plugin->iqOrder = o;
+    else
+        iqOrder = o;
+}
+
+bool SDR::GetIQBalanceEnabled()
+{
+    if (plugin != NULL)
+        return plugin->iqBalanceEnable;
+    else
+        return iqBalanceEnable;
+}
+
+bool SDR::GetIQBalanceGain()
+{
+    if (plugin != NULL)
+        return plugin->iqBalanceGain;
+    else
+        return iqBalanceGain;
+}
+
+bool SDR::GetIQBalancePhase()
+{
+    if (plugin != NULL)
+        return plugin->iqBalancePhase;
+    else
+        return iqBalancePhase;
+}
+
+double SDR::GetFreqToSet()
+{
+    if (plugin != NULL)
+        return plugin->freqToSet;
+    else
+        return freqToSet;
+}
+
+double SDR::GetLastFreq()
+{
+    if (plugin != NULL)
+        return plugin->lastFreq;
+    else
+        return lastFreq;
+}
+
+void SDR::SetLastFreq(double f)
+{
+    if (plugin != NULL)
+        plugin->lastFreq = f;
+    else
+        lastFreq = f;
+}
+
+int SDR::GetLastMode()
+{
+    if (plugin != NULL)
+        return plugin->lastMode;
+    else
+        return lastMode;
+}
+
+void SDR::SetLastMode(int mode)
+{
+    if (plugin != NULL)
+        plugin->lastMode = mode;
+    else
+        lastMode = mode;
+}
+
+QString SDR::GetInputDeviceName()
+{
+    if (plugin != NULL)
+        return plugin->inputDeviceName;
+    else
+        return inputDeviceName;
+}
+
+QString SDR::GetOutputDeviceName()
+{
+    if (plugin != NULL)
+        return plugin->outputDeviceName;
+    else
+        return outputDeviceName;
+}
+
+double SDR::GetIQGain()
+{
+    if (plugin != NULL)
+        return plugin->iqGain;
+    else
+        return iqGain;
+}
+
+void SDR::SetIQGain(double g)
+{
+    if (plugin != NULL)
+        plugin->iqGain = g;
+    else
+        iqGain = g;
+}
+
+QSettings *SDR::GetQSettings()
+{
+    if (plugin != NULL)
+        return plugin->qSettings;
+    else
+        return qSettings;
+}
+
 void SDR::InitProducerConsumer(int _numDataBufs, int _producerBufferSize)
 {
     numDataBufs = _numDataBufs;

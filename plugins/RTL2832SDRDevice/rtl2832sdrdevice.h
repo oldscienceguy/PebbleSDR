@@ -64,6 +64,7 @@ public:
     int GetSampleRate();
     int* GetSampleRates(int &len); //Returns array of allowable rates and length of array as ref
     bool UsesAudioInput();
+    bool GetTestBenchChecked();
 
     //Display device option widget in settings dialog
     void SetupOptionUi(QWidget *parent);

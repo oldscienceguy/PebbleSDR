@@ -195,6 +195,11 @@ bool FileSDRDevice::UsesAudioInput()
     return false;
 }
 
+bool FileSDRDevice::GetTestBenchChecked()
+{
+    return isTestBenchChecked;
+}
+
 void FileSDRDevice::SetupOptionUi(QWidget *parent)
 {
     //Nothing to do
@@ -204,7 +209,7 @@ void FileSDRDevice::StopProducerThread(){}
 void FileSDRDevice::RunProducerThread()
 {
     producerConsumer.AcquireFreeBuffer();
-    int samplesRead = wavFileRead.ReadSamples(producerConsumer.GetProducerBuffer_CPX(),framesPerBuffer);
+    int samplesRead = wavFileRead.ReadSamples(producerConsumer.GetProducerBufferAsCPX(),framesPerBuffer);
     producerConsumer.SupplyProducerBuffer();
     producerConsumer.ReleaseFilledBuffer();
 
@@ -213,7 +218,7 @@ void FileSDRDevice::StopConsumerThread(){}
 void FileSDRDevice::RunConsumerThread()
 {
     producerConsumer.AcquireFilledBuffer();
-    CPX *buf = producerConsumer.GetConsumerBuffer_CPX();
+    CPX *buf = producerConsumer.GetConsumerBufferAsCPX();
     if (copyTest)
         wavFileWrite.WriteSamples(buf, framesPerBuffer);
     ProcessIQData(buf,framesPerBuffer);
