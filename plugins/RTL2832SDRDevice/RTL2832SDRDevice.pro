@@ -11,6 +11,16 @@ DESTDIR = $${DESTDIR}/plugins
 #Common library dependency code for all Pebble plugins
 include (../DigitalModemExample/fix_plugin_libraries.pri)
 
+#Custom rtl libraries that have to be relocated
+rtl1.path += $${DESTDIR}
+rtl1.commands += install_name_tool -change /usr/local/lib/librtlsdr.0.dylib  @executable_path/../Frameworks/librtlsdr.0.dylib $${DESTDIR}/lib$${TARGET}.dylib
+INSTALLS += rtl1
+
+#Copy rtlsdr dylib to Pebble Frameworks dir
+rtl2.files += /usr/local/lib/librtlsdr.0.dylib
+rtl2.path = $${DESTDIR}/../Pebble.app/Contents/Frameworks
+INSTALLS += rtl2
+
 QT += widgets
 
 TEMPLATE = lib
