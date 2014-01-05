@@ -262,7 +262,7 @@ You will get a "Allow network connections?" box the first time you run any new v
 Device Plugin that reads .wav files which have IQ data recorded.  These files are produced by most SDR applications using the 'record' feature and numerous examples can be found on the internet.  Pebble recordings also store LO and mode information in the .wav file.  When you open a Pebble recording, Pebble will show act as if the original SDR device was active.  The last directory is stored in the .ini file for convenience in reopening files.  The default directory is PebbleRecordings.
 
 ###RTL2832 Family
-(TBW)
+Device Plugin that uses rtl-sdr library and wrapper code to work with all rtl-sdr supported devices.  Supports full 2mhz sample rate.
 
 ##Advanced
 ###PebbleData directory

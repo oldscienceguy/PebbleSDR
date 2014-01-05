@@ -9,7 +9,6 @@
 #include "devices/sdr_iq.h"
 #include "devices/hpsdr.h"
 #include "devices/funcube.h"
-#include "devices/rtl2832.h"
 #include "devices/sdr_ip.h"
 
 //Use this if we want to import a static plugin, ie one that is always installed
@@ -205,14 +204,20 @@ void Plugins::findPlugins()
                 pluginInfoList.append(pluginInfo);
             }
             if (iDeviceInterface) {
-                //plugin supports interface
-                pluginInfo.type = PluginInfo::DEVICE_PLUGIN;
-                pluginInfo.name = iDeviceInterface->GetPluginName();
-                pluginInfo.description = iDeviceInterface->GetPluginDescription();
-                pluginInfo.fileName = fileName;
-                pluginInfo.deviceInterface = new SDR(iDeviceInterface);
-                pluginInfo.modemInterface = NULL;
-                pluginInfoList.append(pluginInfo);
+                //plugin supports device interface
+                //plugin can support multiple similar devices, ie softrock family
+                //Get # devices plugin supports
+                //For each device, create plugin info and SDR with device interface and device #
+                int numDevices = iDeviceInterface->GetNumDevices();
+                for (int i = 0; i<numDevices; i++) {
+                    pluginInfo.type = PluginInfo::DEVICE_PLUGIN;
+                    pluginInfo.name = iDeviceInterface->GetPluginName(i);
+                    pluginInfo.description = iDeviceInterface->GetPluginDescription(i);
+                    pluginInfo.fileName = fileName;
+                    pluginInfo.deviceInterface = new SDR(iDeviceInterface, i);
+                    pluginInfo.modemInterface = NULL;
+                    pluginInfoList.append(pluginInfo);
+                }
             }
             //qDebug()<<plugin->Get
         }

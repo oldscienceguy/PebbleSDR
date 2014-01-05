@@ -12,16 +12,17 @@
 #include "devices/sdr_iq.h"
 #include "devices/hpsdr.h"
 #include "devices/funcube.h"
-#include "devices/rtl2832.h"
 #include "devices/sdr_ip.h"
 #include "soundcard.h"
 #include "receiver.h"
 #include "QMessageBox"
 #include "testbench.h"
 
-SDR::SDR(DeviceInterface *_plugin)
+SDR::SDR(DeviceInterface *_plugin, int _devNum)
 {
     plugin = _plugin;
+    plugin->deviceNumber = _devNum;
+
     sdrOptions = NULL;
     sd = NULL;
     ReadSettings(); //For plugins, we have to start this.  Internal devices start it in device constructor
@@ -82,7 +83,7 @@ SDR::~SDR(void)
 
 }
 
-QString SDR::GetPluginName()
+QString SDR::GetPluginName(int _devNum)
 {
     if (plugin != NULL)
         return plugin->GetPluginName();
@@ -90,7 +91,7 @@ QString SDR::GetPluginName()
         return "Not Set";
 }
 
-QString SDR::GetPluginDescription()
+QString SDR::GetPluginDescription(int _devNum)
 {
     if (plugin != NULL)
         return plugin->GetPluginDescription();

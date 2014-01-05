@@ -41,8 +41,8 @@ public:
     ~RTL2832SDRDevice();
 
     //DeviceInterface abstract methods that must be implemented
-    QString GetPluginName();
-    QString GetPluginDescription();
+    QString GetPluginName(int _devNum = 1);
+    QString GetPluginDescription(int _devNum = 1);
 
     bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer);
     bool Connect();
@@ -65,6 +65,7 @@ public:
     int* GetSampleRates(int &len); //Returns array of allowable rates and length of array as ref
     bool UsesAudioInput();
     bool GetTestBenchChecked();
+    quint16 GetNumDevices() {return 2;}
 
     //Display device option widget in settings dialog
     void SetupOptionUi(QWidget *parent);

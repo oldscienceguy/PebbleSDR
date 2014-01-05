@@ -39,8 +39,8 @@ public:
     virtual ~DeviceInterface() {};
     //Interface must be all pure virtual functions
     //Info - return plugin name for menus
-    virtual QString GetPluginName() = 0;
-    virtual QString GetPluginDescription() = 0;
+    virtual QString GetPluginName(int _devNum = 1) = 0;
+    virtual QString GetPluginDescription(int _devNum = 1) = 0;
 
     virtual bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer) = 0;
     virtual bool Connect() = 0;
@@ -106,6 +106,9 @@ public:
 
     virtual QSettings *GetQSettings() {return qSettings;}
 
+    //Support for multiple devices in one plugin
+    virtual quint16 GetNumDevices() {return 1;}
+
 protected:
     //Todo: Flag which of these is just a convenience for Pebble, vs required for the interface
     quint16 framesPerBuffer;
@@ -133,6 +136,8 @@ protected:
     bool isTestBenchChecked;
 
     SDRDEVICE sdrDevice;
+
+    int deviceNumber; //For plugins that support multiple devices
 
 };
 

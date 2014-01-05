@@ -9,6 +9,7 @@ ProducerConsumer::ProducerConsumer()
     semNumFreeBuffers = NULL;
     semNumFilledBuffers = NULL;
     producerBuffer = NULL;
+    isThreadRunning = false;
 }
 
 void ProducerConsumer::Initialize(DeviceInterface *_device, int _numDataBufs, int _producerBufferSize, int _refresh)
@@ -64,6 +65,8 @@ bool ProducerConsumer::Start()
 
 bool ProducerConsumer::Stop()
 {
+    if (consumerThread == NULL || producerThread == NULL)
+        return false;
     if (isThreadRunning) {
         producerThread->stop();
         consumerThread->stop();
@@ -162,6 +165,8 @@ SDRProducerThread::SDRProducerThread(DeviceInterface *_sdr)
 }
 void SDRProducerThread::stop()
 {
+    if (sdr == NULL)
+        return;
     sdr->StopProducerThread();
     doRun=false;
 }
@@ -172,6 +177,8 @@ void SDRProducerThread::setRefresh(int ms)
 }
 void SDRProducerThread::run()
 {
+    if (sdr == NULL)
+        return;
     doRun = true;
     while(doRun) {
         sdr->RunProducerThread();
@@ -186,6 +193,8 @@ SDRConsumerThread::SDRConsumerThread(DeviceInterface *_sdr)
 }
 void SDRConsumerThread::stop()
 {
+    if (sdr == NULL)
+        return;
     sdr->StopConsumerThread();
     doRun=false;
 }
@@ -196,6 +205,8 @@ void SDRConsumerThread::setRefresh(int ms)
 }
 void SDRConsumerThread::run()
 {
+    if (sdr == NULL)
+        return;
     doRun = true;
     while(doRun) {
         sdr->RunConsumerThread();

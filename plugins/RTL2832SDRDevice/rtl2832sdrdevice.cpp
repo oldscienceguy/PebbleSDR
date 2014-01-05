@@ -6,6 +6,7 @@ RTL2832SDRDevice::RTL2832SDRDevice()
 {
     InitSettings("rtl2832sdr");
     inBuffer = NULL;
+    connected = false;
 }
 
 RTL2832SDRDevice::~RTL2832SDRDevice()
@@ -16,14 +17,20 @@ RTL2832SDRDevice::~RTL2832SDRDevice()
         delete (inBuffer);
 }
 
-QString RTL2832SDRDevice::GetPluginName()
+QString RTL2832SDRDevice::GetPluginName(int _devNum)
 {
-    return "RTL2832";
+    if (_devNum == 0)
+        return "RTL2832";
+    else
+        return "RTL2832 TCP";
 }
 
-QString RTL2832SDRDevice::GetPluginDescription()
+QString RTL2832SDRDevice::GetPluginDescription(int _devNum)
 {
-    return "RTL2832 Devices";
+    if (_devNum == 0)
+        return "RTL2832 Devices";
+    else
+        return "RTL2832 TCP Servers";
 }
 
 bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
@@ -115,6 +122,9 @@ bool RTL2832SDRDevice::Connect()
 
 bool RTL2832SDRDevice::Disconnect()
 {
+    if (!connected)
+        return false;
+
     rtlsdr_close(dev);
     connected = false;
     dev = NULL;

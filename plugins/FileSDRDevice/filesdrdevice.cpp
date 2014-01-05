@@ -18,12 +18,12 @@ FileSDRDevice::~FileSDRDevice()
     Disconnect();
 }
 
-QString FileSDRDevice::GetPluginName()
+QString FileSDRDevice::GetPluginName(int _devNum)
 {
     return "WAV File SDR";
 }
 
-QString FileSDRDevice::GetPluginDescription()
+QString FileSDRDevice::GetPluginDescription(int _devNum)
 {
     return "Plays back I/Q WAV file";
 }

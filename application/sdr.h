@@ -35,12 +35,12 @@ class SDR:public QObject, public DeviceInterface
 	friend class SDRConsumerThread;
 
 public:
-    SDR(DeviceInterface *_plugin);
+    SDR(DeviceInterface *_plugin, int _devNum = 1);
     SDR(Receiver *receiver, SDRDEVICE dev, Settings *_settings);
     virtual ~SDR(void);
 
-    virtual QString GetPluginName();
-    virtual QString GetPluginDescription();
+    virtual QString GetPluginName(int _devNum = 1);
+    virtual QString GetPluginDescription(int _devNum = 1);
 
     virtual bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer);
 
