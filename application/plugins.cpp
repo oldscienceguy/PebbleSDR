@@ -133,11 +133,6 @@ QList<PluginInfo> Plugins::GetDevicePluginInfo()
     p.deviceInterface = new FunCube(receiver, SDR::FUNCUBE_PLUS,settings);
     info.append(p);
 
-    p.name = "RTL2832 Family";
-    p.fileName = "DVB_T";
-    p.deviceInterface = new RTL2832(receiver,SDR::DVB_T, settings);
-    info.append(p);
-
     foreach(PluginInfo p, pluginInfoList)
         if (p.type == PluginInfo::DEVICE_PLUGIN) {
             info.append(p);

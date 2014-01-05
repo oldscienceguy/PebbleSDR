@@ -359,7 +359,6 @@ HEADERS += \
     demod/rdsdecode.h \
     filters/fractresampler.h \
     perform.h \
-    devices/rtl2832.h \
     devices/sdr_iq.h \
     devices/softrock.h \
     devices/hpsdr.h \
@@ -369,15 +368,6 @@ HEADERS += \
     devices/usb.h \
     devices/extio.h \
     devices/hidapi.h \
-    devices/rtl-sdr/rtl-sdr.h \
-    devices/rtl-sdr/rtl-sdr_export.h \
-    devices/rtl-sdr/rtlsdr_i2c.h \
-    devices/rtl-sdr/tuner_e4k.h \
-    devices/rtl-sdr/tuner_fc0012.h \
-    devices/rtl-sdr/tuner_fc0013.h \
-    devices/rtl-sdr/tuner_fc2580.h \
-    devices/rtl-sdr/tuner_r820t.h \
-    devices/rtl-sdr/reg_field.h \
     devices/sdr_ip.h \
     devices/sdr-ip/dataprocess.h \
     devices/sdr-ip/ad6620.h \
@@ -427,19 +417,12 @@ SOURCES += \
     demod/rdsdecode.cpp \
     filters/fractresampler.cpp \
     perform.cpp \
-    devices/rtl2832.cpp \
     devices/sdr_iq.cpp \
     devices/softrock.cpp \
     devices/hpsdr.cpp \
     devices/funcube.cpp \
     devices/elektorsdr.cpp \
 	devices/usbutil.cpp \
-    devices/rtl-sdr/librtlsdr.c \
-    devices/rtl-sdr/tuner_e4k.c \
-    devices/rtl-sdr/tuner_fc0012.c \
-    devices/rtl-sdr/tuner_fc0013.c \
-    devices/rtl-sdr/tuner_fc2580.c \
-    devices/rtl-sdr/tuner_r820t.c \
     devices/sdr_ip.cpp \
     devices/sdr-ip/dataprocess.cpp \
     devices/sdr-ip/ad6620.cpp \
