@@ -1,6 +1,10 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include "rtl2832sdrdevice.h"
+#include "arpa/inet.h" //For ntohl()
+/*
+  rtl_tcp info
+*/
 
 RTL2832SDRDevice::RTL2832SDRDevice()
 {
@@ -19,18 +23,36 @@ RTL2832SDRDevice::~RTL2832SDRDevice()
 
 QString RTL2832SDRDevice::GetPluginName(int _devNum)
 {
-    if (_devNum == 0)
-        return "RTL2832";
-    else
-        return "RTL2832 TCP";
+    switch (_devNum) {
+        case RTL_USB:
+            return "RTL2832 USB";
+            break;
+        case RTL_TCP:
+            return "RTL2832 TCP";
+            break;
+        default:
+            qDebug()<<"Error: Unknown RTL device";
+            return "Error";
+            break;
+
+    }
 }
 
 QString RTL2832SDRDevice::GetPluginDescription(int _devNum)
 {
-    if (_devNum == 0)
-        return "RTL2832 Devices";
-    else
-        return "RTL2832 TCP Servers";
+    switch (_devNum) {
+        case RTL_USB:
+            return "RTL2832 USB Devices";
+            break;
+        case RTL_TCP:
+            return "RTL2832 TCP Servers";
+            break;
+        default:
+            qDebug()<<"Error: Unknown RTL device";
+            return "Error";
+            break;
+
+    }
 }
 
 bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
@@ -98,26 +120,56 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerB
 
 bool RTL2832SDRDevice::Connect()
 {
-    int device_count;
-    int dev_index = 0; //Assume we only have 1 RTL2832 device for now
-    //dev = NULL;
-    device_count = rtlsdr_get_device_count();
-    if (device_count == 0) {
-        qDebug("No supported devices found.");
-        return false;
+    if (deviceNumber == RTL_USB) {
+        int device_count;
+        int dev_index = 0; //Assume we only have 1 RTL2832 device for now
+        //dev = NULL;
+        device_count = rtlsdr_get_device_count();
+        if (device_count == 0) {
+            qDebug("No supported devices found.");
+            return false;
+        }
+
+        //for (int i = 0; i < device_count; i++)
+        //    qDebug("%s",rtlsdr_get_device_name(i));
+
+        //rtlsdr_get_device_name(dev_index));
+
+        if (rtlsdr_open(&dev, dev_index) < 0) {
+            qDebug("Failed to open rtlsdr device #%d", dev_index);
+            return false;
+        }
+        connected = true;
+        return true;
+    } else if (deviceNumber == RTL_TCP) {
+        rtlTcpSocket = new QTcpSocket();
+
+        //rtlServerIP.setAddress("192.168.0.300:1234");
+        rtlTcpSocket->connectToHost("192.168.0.121",1234,QTcpSocket::ReadWrite);
+        if (!rtlTcpSocket->waitForConnected(3000)) {
+            //Socket was closed or error
+            qDebug()<<"RTL Server error "<<rtlTcpSocket->errorString();
+            return false;
+        }
+        qDebug()<<"RTL Server connected";
+        //Handle signals from socket or use blocking???
+
+        //rtlServerSocket->writeData("",0);
+
+        connected = true;
+        return true;
     }
+    return false;
+}
 
-    //for (int i = 0; i < device_count; i++)
-    //    qDebug("%s",rtlsdr_get_device_name(i));
+void RTL2832SDRDevice::TCPSocketError()
+{
 
-    //rtlsdr_get_device_name(dev_index));
+}
 
-    if (rtlsdr_open(&dev, dev_index) < 0) {
-        qDebug("Failed to open rtlsdr device #%d", dev_index);
-        return false;
-    }
-    connected = true;
-    return true;
+void RTL2832SDRDevice::TCPSocketConnected()
+{
+
 }
 
 bool RTL2832SDRDevice::Disconnect()
@@ -125,7 +177,12 @@ bool RTL2832SDRDevice::Disconnect()
     if (!connected)
         return false;
 
-    rtlsdr_close(dev);
+    if (deviceNumber == RTL_USB) {
+        rtlsdr_close(dev);
+    } else if (deviceNumber == RTL_TCP) {
+        rtlTcpSocket->disconnectFromHost();
+        //Wait for disconnect?
+    }
     connected = false;
     dev = NULL;
     return true;
@@ -135,49 +192,59 @@ void RTL2832SDRDevice::Start()
 {
     int r;
 
-    /* Set the sample rate */
-    if (rtlsdr_set_sample_rate(dev, rtlSampleRate) < 0) {
-        qDebug("WARNING: Failed to set sample rate.");
-        return;
-    }
-
-    //Center freq is set in SetFrequency()
-
-    /* Set the tuner gain */
-    //Added support for automatic gain from rtl-sdr.c
-    if (rtlGain == 0) {
-         /* Enable automatic gain */
-        r = rtlsdr_set_tuner_gain_mode(dev, 0);
-        if (r < 0) {
-            qDebug("WARNING: Failed to enable automatic gain.");
-            return;
-        } else {
-            qDebug("Automatic gain set");
-        }
-    } else {
-        /* Enable manual gain */
-        r = rtlsdr_set_tuner_gain_mode(dev, 1);
-        if (r < 0) {
-            qDebug("WARNING: Failed to enable manual gain.");
+    if (deviceNumber == RTL_USB) {
+        /* Set the sample rate */
+        if (rtlsdr_set_sample_rate(dev, rtlSampleRate) < 0) {
+            qDebug("WARNING: Failed to set sample rate.");
             return;
         }
+
+        //Center freq is set in SetFrequency()
 
         /* Set the tuner gain */
-        r = rtlsdr_set_tuner_gain(dev, rtlGain);
-        if (r < 0) {
-            qDebug("WARNING: Failed to set tuner gain.");
+        //Added support for automatic gain from rtl-sdr.c
+        if (rtlGain == 0) {
+             /* Enable automatic gain */
+            r = rtlsdr_set_tuner_gain_mode(dev, GAIN_MODE_AUTO);
+            if (r < 0) {
+                qDebug("WARNING: Failed to enable automatic gain.");
+                return;
+            } else {
+                qDebug("Automatic gain set");
+            }
+        } else {
+            /* Enable manual gain */
+            r = rtlsdr_set_tuner_gain_mode(dev, GAIN_MODE_MANUAL);
+            if (r < 0) {
+                qDebug("WARNING: Failed to enable manual gain.");
+                return;
+            }
+
+            /* Set the tuner gain */
+            r = rtlsdr_set_tuner_gain(dev, rtlGain);
+            if (r < 0) {
+                qDebug("WARNING: Failed to set tuner gain.");
+                return;
+            }else {
+                qDebug("Tuner gain set to %f dB.", rtlGain/10.0);
+            }
+        }
+
+        /* Reset endpoint before we start reading from it (mandatory) */
+        if (rtlsdr_reset_buffer(dev) < 0) {
+            qDebug("WARNING: Failed to reset buffers.");
             return;
-        }else {
-            qDebug("Tuner gain set to %f dB.", rtlGain/10.0);
+        }        
+    } else if (deviceNumber == RTL_TCP) {
+        SendTcpCmd(TCP_SET_SAMPLERATE,rtlSampleRate);
+        if (rtlGain == 0) {
+             /* Enable automatic gain */
+            SendTcpCmd(TCP_SET_GAIN_MODE, GAIN_MODE_AUTO);
+        } else {
+            SendTcpCmd(TCP_SET_GAIN_MODE, GAIN_MODE_MANUAL); //Manual
+            SendTcpCmd(TCP_SET_IF_GAIN,rtlGain);
         }
     }
-
-    /* Reset endpoint before we start reading from it (mandatory) */
-    if (rtlsdr_reset_buffer(dev) < 0) {
-        qDebug("WARNING: Failed to reset buffers.");
-        return;
-    }
-
     //1 byte per I + 1 byte per Q
     producerConsumer.Initialize(this, 50, framesPerBuffer * rtlDecimate * 2, 0);
     producerConsumer.Start();
@@ -187,20 +254,32 @@ void RTL2832SDRDevice::Start()
 
 void RTL2832SDRDevice::Stop()
 {
+    if (deviceNumber == RTL_USB) {
+
+    } else if (deviceNumber == RTL_TCP) {
+
+    }
     producerConsumer.Stop();
 }
 
 double RTL2832SDRDevice::SetFrequency(double fRequested,double fCurrent)
 {
-    /* Set the frequency */
-    if (rtlsdr_set_center_freq(dev, fRequested) < 0) {
-        qDebug("WARNING: Failed to set center freq.");
-        rtlFrequency = fCurrent;
-    } else {
-        rtlFrequency = fRequested;
-    }
+    if (deviceNumber == RTL_USB) {
+        /* Set the frequency */
+        if (rtlsdr_set_center_freq(dev, fRequested) < 0) {
+            qDebug("WARNING: Failed to set center freq.");
+            rtlFrequency = fCurrent;
+        } else {
+            rtlFrequency = fRequested;
+        }
 
-    return rtlFrequency;
+        return rtlFrequency;
+    } else if (deviceNumber == RTL_TCP) {
+        if (SendTcpCmd(TCP_SET_FREQ,fRequested))
+            return fRequested;
+        else
+            return fCurrent;
+    }
 }
 
 void RTL2832SDRDevice::ShowOptions()
@@ -247,6 +326,9 @@ double RTL2832SDRDevice::GetHighLimit()
     if (dev==NULL)
         return 1700000000;
 
+    if (deviceNumber == RTL_TCP) {
+        return 1700000000;
+    }
     switch (rtlsdr_get_tuner_type(dev)) {
         case RTLSDR_TUNER_E4000:
             return 2200000000;
@@ -267,7 +349,9 @@ double RTL2832SDRDevice::GetLowLimit()
 {
     if (dev==NULL)
         return 64000000;
-
+    if (deviceNumber == RTL_TCP) {
+        return 64000000;
+    }
     switch (rtlsdr_get_tuner_type(dev)) {
         case RTLSDR_TUNER_E4000:
             return 52000000;
@@ -294,19 +378,23 @@ QString RTL2832SDRDevice::GetDeviceName()
     if (dev==NULL)
         return "No Device Found";
 
-    switch (rtlsdr_get_tuner_type(dev)) {
-        case RTLSDR_TUNER_E4000:
-            return "RTL2832-E4000";
-        case RTLSDR_TUNER_FC0012:
-            return "RTL2832-FC0012";
-        case RTLSDR_TUNER_FC0013:
-            return "RTL2832-FC0013";
-        case RTLSDR_TUNER_FC2580:
-            return "RTL2832-FC2580";
-        case RTLSDR_TUNER_R820T:
-            return "RTL2832-R820T";
-        default:
-            return "RTL2832-Unknown";
+    if (deviceNumber == RTL_USB) {
+        switch (rtlsdr_get_tuner_type(dev)) {
+            case RTLSDR_TUNER_E4000:
+                return "RTL2832-E4000";
+            case RTLSDR_TUNER_FC0012:
+                return "RTL2832-FC0012";
+            case RTLSDR_TUNER_FC0013:
+                return "RTL2832-FC0013";
+            case RTLSDR_TUNER_FC2580:
+                return "RTL2832-FC2580";
+            case RTLSDR_TUNER_R820T:
+                return "RTL2832-R820T";
+            default:
+                return "RTL2832-Unknown";
+        }
+    } else if (deviceNumber == RTL_TCP) {
+        return "TCP";
     }
 }
 
@@ -344,22 +432,56 @@ void RTL2832SDRDevice::SetupOptionUi(QWidget *parent)
     //Nothing to do
 }
 
+bool RTL2832SDRDevice::SendTcpCmd(quint8 _cmd, quint32 _data)
+{
+    RTL_CMD cmd;
+    cmd.cmd = _cmd;
+    //ntohl() is what rtl-tcp uses to convert to network byte order
+    //So we use inverse htonl (hardware to network long)
+    cmd.data = htonl(_data);
+    quint16 bytesWritten = rtlTcpSocket->write((const char *)&cmd, sizeof(cmd));
+    //QTcpSocket is always buffered, no choice.
+    //So we need to either call an explicit flush() or waitForBytesWritten() to make sure data gets sent
+    //Not sure which one is better or if it makes a difference
+    //rtlTcpSocket->flush();
+    rtlTcpSocket->waitForBytesWritten(1000);
+    if (bytesWritten != sizeof(cmd)) {
+        //qDebug()<<"Error in TcpSocket write";
+        return false;
+    } else {
+        //qDebug()<<"TcpSocket write ok";
+        return true;
+    }
+}
+
 void RTL2832SDRDevice::StopProducerThread(){}
 void RTL2832SDRDevice::RunProducerThread()
 {
     int bytesRead;
     producerConsumer.AcquireFreeBuffer();
-    //Insert code to put data from device in buffer
-    if (rtlsdr_read_sync(dev, producerConsumer.GetProducerBuffer(), producerConsumer.GetBufferSize(), &bytesRead) < 0) {
-        qDebug("Sync transfer error");
-        producerConsumer.ReleaseFreeBuffer(); //Put back buffer for next try
-        return;
-    }
 
-    if (bytesRead < producerConsumer.GetBufferSize()) {
-        qDebug("Under read");
-        producerConsumer.ReleaseFreeBuffer(); //Put back buffer for next try
-        return;
+    if (deviceNumber == RTL_TCP) {
+        //This assumes we get a full buffer every time
+        //Todo: Build up buffer like we do for AFEDRI
+        bytesRead = rtlTcpSocket->read(producerConsumer.GetProducerBufferAsChar(),producerConsumer.GetBufferSize());
+        if (bytesRead != producerConsumer.GetBufferSize()) {
+            //No data, or not enough data
+            producerConsumer.ReleaseFreeBuffer(); //Put back buffer for next try
+            return;
+        }
+    } else if (deviceNumber == RTL_USB) {
+        //Insert code to put data from device in buffer
+        if (rtlsdr_read_sync(dev, producerConsumer.GetProducerBuffer(), producerConsumer.GetBufferSize(), &bytesRead) < 0) {
+            qDebug("Sync transfer error");
+            producerConsumer.ReleaseFreeBuffer(); //Put back buffer for next try
+            return;
+        }
+
+        if (bytesRead < producerConsumer.GetBufferSize()) {
+            qDebug("Under read");
+            producerConsumer.ReleaseFreeBuffer(); //Put back buffer for next try
+            return;
+        }
     }
     producerConsumer.SupplyProducerBuffer();
     producerConsumer.ReleaseFilledBuffer();    
@@ -373,11 +495,11 @@ void RTL2832SDRDevice::StopConsumerThread()
 
 void RTL2832SDRDevice::RunConsumerThread()
 {
+    //Wait for data to be available from producer
+    producerConsumer.AcquireFilledBuffer();
     double fpSampleRe;
     double fpSampleIm;
 
-    //Wait for data to be available from producer
-    producerConsumer.AcquireFilledBuffer();
 
     //RTL I/Q samples are 8bit unsigned 0-256
     int bufInc = rtlDecimate * 2;

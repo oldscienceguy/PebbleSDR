@@ -22,6 +22,8 @@ rtl2.path = $${DESTDIR}/../Pebble.app/Contents/Frameworks
 INSTALLS += rtl2
 
 QT += widgets
+#For TCP
+QT += network
 
 TEMPLATE = lib
 CONFIG += plugin

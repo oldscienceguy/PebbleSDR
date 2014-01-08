@@ -4,12 +4,18 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include "rtl-sdr.h"
+#include <QTcpSocket>
+#include <QUdpSocket>
+#include <QHostAddress>
 
 /*
   http://sdr.osmocom.org/trac/wiki/rtl-sdr for latest library
   cd rtl-sdr/
   autoreconf -i
   ./configure
+     To enable auto-disconnect of running instances of librtlsdr (used to default to on)
+    ./configure --enable-driver-detach
+
   make
   sudo make install
   sudo ldconfig
@@ -76,7 +82,45 @@ protected:
     void StopConsumerThread();
     void RunConsumerThread();
 
+private slots:
+    void TCPSocketError();
+    void TCPSocketConnected();
+
 private:
+    enum PEBBLE_DEVICES {RTL_USB,RTL_TCP};
+    const quint8 TCP_SET_FREQ = 0x01;
+    const quint8 TCP_SET_SAMPLERATE = 0x02;
+    const quint8 TCP_SET_GAIN_MODE = 0x03;
+    const quint8 TCP_SET_TUNER_GAIN = 0x04;
+    const quint8 TCP_SET_FREQ_CORRECTION = 0x05;
+    const quint8 TCP_SET_IF_GAIN = 0x06;
+    const quint8 TCP_SET_TEST_MODE = 0x07;
+    const quint8 TCP_SET_AGC_MODE = 0x08;
+    const quint8 TCP_SET_DIRECTS_AMPLING = 0x09;
+    const quint8 TCP_SET_OFFSET_TUNING = 0x0a;
+    const quint8 TCP_ET_RTL_XTAL = 0x0b;
+    const quint8 TCP_SET_TUNER_XTAL = 0x0c;
+    const quint8 TCP_SET_TUNER_GAIN_BY_INDEX = 0x0d;
+
+    const quint8 GAIN_MODE_AUTO = 0;
+    const quint8 GAIN_MODE_MANUAL = 1;
+
+//Technique rtl-tcp uses to make sure struct is packed on windows and mac
+#ifdef _WIN32
+#define __attribute__(x)
+#pragma pack(push, 1)
+#endif
+    struct RTL_CMD {
+        quint8 cmd;
+        quint32 data;
+    }__attribute__((packed));
+#ifdef _WIN32
+#pragma pack(pop)
+#endif
+
+    bool SendTcpCmd(quint8 _cmd, quint32 _data);
+
+
     void InitSettings(QString fname);
     ProducerConsumer producerConsumer;
 
@@ -95,7 +139,9 @@ private:
 
     int sampleRates[10]; //Max 10 for testing
 
-
+    QHostAddress rtlServerIP;
+    QTcpSocket *rtlTcpSocket;
+    QUdpSocket rtlUdpSocket;
 };
 
 #endif // RTL2832SDRDEVICE_H
