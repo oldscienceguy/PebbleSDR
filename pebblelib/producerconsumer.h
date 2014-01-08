@@ -25,6 +25,7 @@ public:
 
     unsigned char* GetProducerBuffer();
     unsigned char* GetConsumerBuffer();
+    char *GetProducerBufferAsChar();
     CPX* GetProducerBufferAsCPX();
     CPX* GetConsumerBufferAsCPX();
     double GetConsumerBufferDataAsDouble(quint16 index);

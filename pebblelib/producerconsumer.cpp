@@ -85,6 +85,11 @@ CPX *ProducerConsumer::GetProducerBufferAsCPX()
     return ((CPX **)producerBuffer)[nextProducerDataBuf];
 }
 
+char *ProducerConsumer::GetProducerBufferAsChar()
+{
+    return (char*)producerBuffer[nextProducerDataBuf];
+}
+
 CPX *ProducerConsumer::GetConsumerBufferAsCPX()
 {
     return ((CPX **)producerBuffer)[nextConsumerDataBuf];
