@@ -19,6 +19,7 @@ public:
 
 	//Hack, these should eventually be access methods
     QString sdrDeviceFilename;
+    quint16 sdrDeviceNumber; //For plugins that support mulitple devices
 
 	//If Output Sample Rate is above this, then we try to reduce it by skipping samples when we output
 	int decimateLimit;

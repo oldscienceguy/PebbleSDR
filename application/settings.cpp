@@ -44,6 +44,7 @@ void Settings::ReadSettings()
 	//Todo: Make strings constants
 	//If we don' specify a group, "General" is assumed
     sdrDeviceFilename = qSettings->value("sdrDeviceFilename", "SR_V9").toString();
+    sdrDeviceNumber = qSettings->value("sdrDeviceNumber",0).toUInt();
 
     decimateLimit = qSettings->value("DecimateLimit", 24000).toInt();
     postMixerDecimate = qSettings->value("PostMixerDecimate",true).toBool();
@@ -61,6 +62,7 @@ void Settings::WriteSettings()
 {
     //No UI Settings, only in file
     qSettings->setValue("sdrDeviceFilename",sdrDeviceFilename);
+    qSettings->setValue("sdrDeviceNumber",sdrDeviceNumber);
 
     qSettings->setValue("dbOffset",dbOffset);
 	qSettings->setValue("DecimateLimit",decimateLimit);
