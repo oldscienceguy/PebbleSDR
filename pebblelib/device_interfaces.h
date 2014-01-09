@@ -51,6 +51,8 @@ public:
     virtual double SetFrequency(double fRequested,double fCurrent) = 0;
     //Display device option widget in settings dialog
     virtual void SetupOptionUi(QWidget *parent) = 0;
+    //Called by settings to write device options to ini file
+    virtual void WriteOptionUi() {}
 
     //Device doesn't have to implement this.  Called by receiver to bring up SDR options dialog
     virtual void ShowSdrOptions(bool b) {b=true;}
