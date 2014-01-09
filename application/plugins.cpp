@@ -199,6 +199,7 @@ void Plugins::findPlugins()
                 pluginInfo.name = iDigitalModem->GetPluginName();
                 pluginInfo.description = iDigitalModem->GetPluginDescription();
                 pluginInfo.fileName = fileName;
+                pluginInfo.deviceNumber  = 0;
                 pluginInfo.modemInterface = iDigitalModem;
                 pluginInfo.deviceInterface = NULL;
                 pluginInfoList.append(pluginInfo);
@@ -214,6 +215,7 @@ void Plugins::findPlugins()
                     pluginInfo.name = iDeviceInterface->GetPluginName(i);
                     pluginInfo.description = iDeviceInterface->GetPluginDescription(i);
                     pluginInfo.fileName = fileName;
+                    pluginInfo.deviceNumber  = i;
                     pluginInfo.deviceInterface = new SDR(iDeviceInterface, i);
                     pluginInfo.modemInterface = NULL;
                     pluginInfoList.append(pluginInfo);

@@ -19,6 +19,7 @@ struct PluginInfo
     QString name;
     QString description;
     QString fileName;
+    quint16 deviceNumber; //Combined with filename to reference multiple devices in one plugin
     DigitalModemInterface *modemInterface;
     DeviceInterface *deviceInterface;
 };
