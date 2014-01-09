@@ -139,8 +139,13 @@ void SDR::Start()
 
 void SDR::Stop()
 {
-    if (plugin != NULL)
+    if (plugin != NULL) {
+        //Things we used to do in ~SDR which is not destructed when we have plugins
+        if (sdrOptions != NULL)
+            sdrOptions->hide();
+
         return plugin->Stop();
+    }
 }
 
 double SDR::GetStartupFrequency()
@@ -604,6 +609,14 @@ void SDR::SetupOptionUi(QWidget *parent)
     //parent->setVisible(false);
     if (plugin != NULL)
         return plugin->SetupOptionUi(parent);
+    else
+        return;
+}
+
+void SDR::WriteOptionUi()
+{
+    if (plugin != NULL)
+        return plugin->WriteOptionUi();
     else
         return;
 }
