@@ -99,7 +99,7 @@ bool Receiver::On()
     //std::function<void(CPX *, quint16)> cb = std::bind(&Receiver::ProcessIQData, _receiver, std::placeholders::_1, std::placeholders::_2);
     //bind(Method ptr, object, arg1, ... argn)
     sdr->ReadSettings(); //Always start with most current
-    sdr->Initialize(std::bind(&Receiver::ProcessIQData, this, _1, _2),settings->framesPerBuffer);
+    sdr->Initialize(std::bind(&Receiver::ProcessIQData, this, _1, _2),settings->framesPerBuffer, 0);
 
 	if (!sdr->Connect()){
         QMessageBox::information(NULL,"Pebble","SDR device is not connected");
@@ -269,7 +269,10 @@ bool Receiver::Off()
 
 	powerOn = false;
 
-    QApplication::activeWindow()->setWindowTitle("Pebble II");
+    //If we're closing app, don't bother to set title, crashes sometime
+    QWidget *app = QApplication::activeWindow();
+    if (app != NULL)
+        app->setWindowTitle("Pebble II");
 
     if (global->testBench->isVisible())
         global->testBench->setVisible(false);

@@ -7,6 +7,7 @@
 #include <QTcpSocket>
 #include <QUdpSocket>
 #include <QHostAddress>
+#include "ui_rtl2832sdrdevice.h"
 
 /*
   http://sdr.osmocom.org/trac/wiki/rtl-sdr for latest library
@@ -47,14 +48,16 @@ public:
     ~RTL2832SDRDevice();
 
     //DeviceInterface abstract methods that must be implemented
-    QString GetPluginName(int _devNum = 1);
-    QString GetPluginDescription(int _devNum = 1);
+    QString GetPluginName(int _devNum = 0);
+    QString GetPluginDescription(int _devNum = 0);
 
-    bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer);
+    bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer, quint16 _deviceNumber);
     bool Connect();
     bool Disconnect();
     void Start();
     void Stop();
+
+    QSettings *GetQSettings();
 
     double SetFrequency(double fRequested,double fCurrent);
     void ShowOptions();
@@ -75,6 +78,8 @@ public:
 
     //Display device option widget in settings dialog
     void SetupOptionUi(QWidget *parent);
+    //Called by settings to write device options to ini file
+    void WriteOptionUi();
 
 protected:
     void StopProducerThread();
@@ -85,9 +90,11 @@ protected:
 private slots:
     void TCPSocketError();
     void TCPSocketConnected();
+    void IPAddressChanged();
+    void IPPortChanged();
 
 private:
-    enum PEBBLE_DEVICES {RTL_USB,RTL_TCP};
+    enum PEBBLE_DEVICES {RTL_USB = 0,RTL_TCP=1};
     const quint8 TCP_SET_FREQ = 0x01;
     const quint8 TCP_SET_SAMPLERATE = 0x02;
     const quint8 TCP_SET_GAIN_MODE = 0x03;
@@ -139,9 +146,15 @@ private:
 
     int sampleRates[10]; //Max 10 for testing
 
-    QHostAddress rtlServerIP;
     QTcpSocket *rtlTcpSocket;
-    QUdpSocket rtlUdpSocket;
+
+    Ui::RTL2832UI *optionUi;
+    QHostAddress rtlServerIP;
+    quint32 rtlServerPort;
+
+    //Settings for each device
+    QSettings *usbSettings;
+    QSettings *tcpSettings;
 };
 
 #endif // RTL2832SDRDEVICE_H

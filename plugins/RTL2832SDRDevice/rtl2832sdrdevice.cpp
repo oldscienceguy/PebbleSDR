@@ -11,6 +11,7 @@ RTL2832SDRDevice::RTL2832SDRDevice()
     InitSettings("rtl2832sdr");
     inBuffer = NULL;
     connected = false;
+    optionUi = NULL;
 }
 
 RTL2832SDRDevice::~RTL2832SDRDevice()
@@ -55,10 +56,11 @@ QString RTL2832SDRDevice::GetPluginDescription(int _devNum)
     }
 }
 
-bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
+bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer, quint16 _deviceNumber)
 {
     ProcessIQData = _callback;
     framesPerBuffer = _framesPerBuffer;
+    deviceNumber = _deviceNumber;
     inBuffer = new CPXBuf(framesPerBuffer);
 
     //crystalFreqHz = DEFAULT_CRYSTAL_FREQUENCY;
@@ -144,8 +146,7 @@ bool RTL2832SDRDevice::Connect()
     } else if (deviceNumber == RTL_TCP) {
         rtlTcpSocket = new QTcpSocket();
 
-        //rtlServerIP.setAddress("192.168.0.300:1234");
-        rtlTcpSocket->connectToHost("192.168.0.121",1234,QTcpSocket::ReadWrite);
+        rtlTcpSocket->connectToHost(rtlServerIP,rtlServerPort,QTcpSocket::ReadWrite);
         if (!rtlTcpSocket->waitForConnected(3000)) {
             //Socket was closed or error
             qDebug()<<"RTL Server error "<<rtlTcpSocket->errorString();
@@ -289,18 +290,25 @@ void RTL2832SDRDevice::ShowOptions()
 
 void RTL2832SDRDevice::ReadSettings()
 {
+    QSettings * qs = GetQSettings();
     //Valid gain values (in tenths of a dB) for the E4000 tuner:
     //-10, 15, 40, 65, 90, 115, 140, 165, 190,
     //215, 240, 290, 340, 420, 430, 450, 470, 490
     //0 for automatic gain
-    rtlGain = qSettings->value("RtlGain",0).toInt(); //0=automatic
+    rtlGain = qs->value("RtlGain",0).toInt(); //0=automatic
+    rtlServerIP = QHostAddress(qs->value("IPAddr","127.0.0.1").toString());
+    rtlServerPort = qs->value("Port","1234").toInt();
 
 }
 
 void RTL2832SDRDevice::WriteSettings()
 {
-    qSettings->setValue("RtlGain",rtlGain);
-    qSettings->sync();
+    QSettings *qs = GetQSettings();
+    qs->setValue("RtlGain",rtlGain);
+    qs->setValue("IPAddr",rtlServerIP.toString());
+    qs->setValue("Port",rtlServerPort);
+
+    qs->sync();
 
 }
 
@@ -429,7 +437,57 @@ bool RTL2832SDRDevice::GetTestBenchChecked()
 
 void RTL2832SDRDevice::SetupOptionUi(QWidget *parent)
 {
-    //Nothing to do
+    //This sets up the sdr specific widget
+    if (optionUi != NULL)
+        delete optionUi;
+    optionUi = new Ui::RTL2832UI();
+    optionUi->setupUi(parent);
+    parent->setVisible(true);
+
+    if (deviceNumber == RTL_TCP) {
+        optionUi->tcpFrame->setVisible(true);
+        //Read options file and display
+        optionUi->ipAddress->setText(rtlServerIP.toString());
+        //Set mask after we set text, otherwise won't parse correctly
+        //optionUi->ipAddress->setInputMask("000.000.000.000;0");
+        optionUi->port->setText(QString::number(rtlServerPort));
+        //optionUi->port->setInputMask("00000;_");
+
+        //connect(o->pushButton,SIGNAL(clicked(bool)),this,SLOT(Test2(bool)));
+        //Debugging tip using qApp as known slot, this works
+        //connect(o->pushButton,SIGNAL(clicked(bool)),qApp,SLOT(aboutQt()));
+        //New QT5 syntax using pointer to member functions
+        //connect(o->pushButton,&QPushButton::clicked, this, &SDR_IP::Test2);
+        //Lambda function example: needs compiler flag -std=c++0x
+        //connect(o->pushButton,&QPushButton::clicked,[=](bool b){qDebug()<<"test";});
+        connect(optionUi->ipAddress,&QLineEdit::editingFinished,this,&RTL2832SDRDevice::IPAddressChanged);
+        connect(optionUi->port,&QLineEdit::editingFinished,this,&RTL2832SDRDevice::IPPortChanged);
+    } else {
+        optionUi->tcpFrame->setVisible(false);
+    }
+
+}
+
+void RTL2832SDRDevice::IPAddressChanged()
+{
+    qDebug()<<optionUi->ipAddress->text();
+    rtlServerIP = QHostAddress(optionUi->ipAddress->text());
+    WriteSettings();
+}
+
+void RTL2832SDRDevice::IPPortChanged()
+{
+    rtlServerPort = optionUi->port->text().toInt();
+    WriteSettings();
+}
+
+
+//!!!Not currently called, but should be called when option dialog closes
+void RTL2832SDRDevice::WriteOptionUi()
+{
+    rtlServerIP = QHostAddress(optionUi->ipAddress->text());
+    rtlServerPort = optionUi->port->text().toInt();
+    WriteSettings();
 }
 
 bool RTL2832SDRDevice::SendTcpCmd(quint8 _cmd, quint32 _data)
@@ -553,8 +611,17 @@ void RTL2832SDRDevice::RunConsumerThread()
 
     ProcessIQData(inBuffer->Ptr(),framesPerBuffer);
 
+}
 
-
+QSettings *RTL2832SDRDevice::GetQSettings()
+{
+    //REturn settings file for each deviceNumber
+    if (deviceNumber == RTL_USB)
+        return usbSettings;
+    else if (deviceNumber == RTL_TCP)
+        return tcpSettings;
+    else
+        return NULL;
 }
 
 //These need to be moved to a DeviceInterface implementation class, equivalent to SDR
@@ -570,6 +637,9 @@ void RTL2832SDRDevice::InitSettings(QString fname)
         //Pebble.app/contents/macos = 25
         path.chop(25);
 #endif
-    qSettings = new QSettings(path + "/PebbleData/" + fname +".ini",QSettings::IniFormat);
+    qSettings = NULL; //Not useing, trap access
+    //qSettings = new QSettings(path + "/PebbleData/" + fname +".ini",QSettings::IniFormat);
+    usbSettings = new QSettings(path + "/PebbleData/" + fname +"_usb.ini",QSettings::IniFormat);
+    tcpSettings = new QSettings(path + "/PebbleData/" + fname +"_tcp.ini",QSettings::IniFormat);
 
 }

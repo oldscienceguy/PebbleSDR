@@ -167,15 +167,16 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     foreach (PluginInfo p,receiver->getDevicePluginInfo()) {
         v.setValue(p);
         sdrSelector->addItem(p.name,v);
-#if 0
-        if (p.oldEnum == global->settings->sdrDevice) {
-            cur = sdrSelector->count()-1;
-            global->sdr = p.deviceInterface;
-        }
-#endif
         if (p.fileName == global->settings->sdrDeviceFilename) {
-            cur = sdrSelector->count()-1;
-            global->sdr = p.deviceInterface;
+            //If it's internal, all we need is filename match
+            if (p.type == PluginInfo::DEVICE_PSEUDO_PLUGIN) {
+                global->sdr = p.deviceInterface;
+                cur = sdrSelector->count()-1;
+            } else if (p.type == PluginInfo::DEVICE_PLUGIN &&
+                p.deviceNumber == global->settings->sdrDeviceNumber) {
+                cur = sdrSelector->count()-1;
+                global->sdr = p.deviceInterface;
+            }
         }
     }
 
@@ -892,6 +893,8 @@ void ReceiverWidget::ReceiverChanged(int i)
     PluginInfo p = ui.sdrSelector->itemData(cur).value<PluginInfo>();
     //Replace
     global->settings->sdrDeviceFilename = p.fileName;
+    global->settings->sdrDeviceNumber = p.deviceNumber;
+
     global->sdr = p.deviceInterface;
     //Close the sdr option window if open
     receiver->CloseSdrOptions();
