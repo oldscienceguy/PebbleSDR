@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>RTL2832UI</class>
+ <widget class="QWidget" name="RTL2832UI">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>496</width>
+    <height>150</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <widget class="QFrame" name="tcpFrame">
+   <property name="geometry">
+    <rect>
+     <x>3</x>
+     <y>2</y>
+     <width>488</width>
+     <height>47</height>
+    </rect>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::StyledPanel</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Raised</enum>
+   </property>
+   <widget class="QLineEdit" name="port">
+    <property name="geometry">
+     <rect>
+      <x>282</x>
+      <y>14</y>
+      <width>53</width>
+      <height>21</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
+     <rect>
+      <x>238</x>
+      <y>16</y>
+      <width>38</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Port:</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="ipAddress">
+    <property name="geometry">
+     <rect>
+      <x>89</x>
+      <y>13</y>
+      <width>125</width>
+      <height>21</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>6</x>
+      <y>14</y>
+      <width>78</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>IP Address:</string>
+    </property>
+   </widget>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

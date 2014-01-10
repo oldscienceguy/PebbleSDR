@@ -49,3 +49,6 @@ LIBS += -L$${PWD}/../../rtl-sdr/src/.libs -lrtlsdr
 
 OTHER_FILES += \
 	fix_plugin_libraries.pri
+
+FORMS += \
+    rtl2832sdrdevice.ui
