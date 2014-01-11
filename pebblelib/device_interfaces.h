@@ -122,7 +122,7 @@ protected:
     double freqToSet;
     QString inputDeviceName;
     QString outputDeviceName;
-    int sampleRate;
+    quint32 sampleRate;
 
     double iqGain; //Normalize device so incoming IQ levels are consistent
     IQORDER iqOrder;
