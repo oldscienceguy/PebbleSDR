@@ -171,11 +171,13 @@ void ReceiverWidget::SetReceiver(Receiver *r)
             //If it's internal, all we need is filename match
             if (p.type == PluginInfo::DEVICE_PSEUDO_PLUGIN) {
                 global->sdr = p.deviceInterface;
+                global->sdr->ReadSettings();
                 cur = sdrSelector->count()-1;
             } else if (p.type == PluginInfo::DEVICE_PLUGIN &&
                 p.deviceNumber == global->settings->sdrDeviceNumber) {
                 cur = sdrSelector->count()-1;
                 global->sdr = p.deviceInterface;
+                global->sdr->ReadSettings();
             }
         }
     }

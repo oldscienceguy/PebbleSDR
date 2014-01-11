@@ -24,7 +24,7 @@ public:
     QString GetPluginName(int _devNum = 0);
     QString GetPluginDescription(int _devNum = 0);
 
-    bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer, quint16 _deviceNumber);
+    bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer);
     bool Connect();
     bool Disconnect();
     void Start();

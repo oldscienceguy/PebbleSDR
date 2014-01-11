@@ -98,8 +98,9 @@ bool Receiver::On()
     //function template must match exactly the method that is used in bind()
     //std::function<void(CPX *, quint16)> cb = std::bind(&Receiver::ProcessIQData, _receiver, std::placeholders::_1, std::placeholders::_2);
     //bind(Method ptr, object, arg1, ... argn)
+
     sdr->ReadSettings(); //Always start with most current
-    sdr->Initialize(std::bind(&Receiver::ProcessIQData, this, _1, _2),settings->framesPerBuffer, 0);
+    sdr->Initialize(std::bind(&Receiver::ProcessIQData, this, _1, _2),settings->framesPerBuffer);
 
 	if (!sdr->Connect()){
         QMessageBox::information(NULL,"Pebble","SDR device is not connected");

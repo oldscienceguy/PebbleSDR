@@ -42,7 +42,7 @@ public:
     virtual QString GetPluginName(int _devNum = 1);
     virtual QString GetPluginDescription(int _devNum = 1);
 
-    virtual bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer, quint16 _deviceNumber);
+    virtual bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer);
 
     virtual bool Connect();
     virtual bool Disconnect();
@@ -88,7 +88,6 @@ public:
     virtual void SetIQGain(double g);
     virtual QSettings *GetQSettings();
 
-
     void StopProducerThread();
     void RunProducerThread();
     void StopConsumerThread();
@@ -115,6 +114,9 @@ public:
     void InitSettings(QString fname);
 
 protected:
+    //Sync's deviceInterface with sdr object deviceNumber, sdr deviceNumber is always reliable
+    bool DelegateToPlugin();
+
     cbProcessIQData ProcessIQData;
 
     //Needed to determine when it's safe to fetch options for display
@@ -177,6 +179,7 @@ private slots:
 
 private:
     DeviceInterface *plugin; //Delegation to plugins
+    quint16 pluginDeviceNumber; //Which device in plugin (if > 1) are we delgating to
 };
 
 //Generic thread that can be used in producer/consumer models for devices that don't use soundcard

@@ -28,11 +28,10 @@ QString FileSDRDevice::GetPluginDescription(int _devNum)
     return "Plays back I/Q WAV file";
 }
 
-bool FileSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer, quint16 _deviceNumber)
+bool FileSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
 {
     ProcessIQData = _callback;
     framesPerBuffer = _framesPerBuffer;
-    deviceNumber = _deviceNumber;
     producerConsumer.Initialize(this,1,framesPerBuffer * sizeof(CPX),0);
 
     return true;

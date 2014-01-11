@@ -42,7 +42,7 @@ public:
     virtual QString GetPluginName(int _devNum = 0) = 0;
     virtual QString GetPluginDescription(int _devNum = 0) = 0;
 
-    virtual bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer, quint16 _deviceNumber = 0) = 0;
+    virtual bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer) = 0;
     virtual bool Connect() = 0;
     virtual bool Disconnect() = 0;
     virtual void Start() = 0;

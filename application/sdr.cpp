@@ -18,15 +18,19 @@
 #include "QMessageBox"
 #include "testbench.h"
 
+//Called from plugins.cpp to create an SDR object that delegates to a device plugin
+//Necessary while we are in transition from internal to plugins
 SDR::SDR(DeviceInterface *_plugin, int _devNum)
 {
     plugin = _plugin;
-    deviceNumber = _devNum; //Don't need it, but to be consistent
-    plugin->deviceNumber = _devNum;
+    pluginDeviceNumber = _devNum; //Critical - this is used everywhere to disambiguate multi device plugins
 
     sdrOptions = NULL;
     sd = NULL;
-    ReadSettings(); //For plugins, we have to start this.  Internal devices start it in device constructor
+    //Note: Plugins with multiple device support will all have the same deviceInterface _plugin
+    //So each call to this constructor with the same interface ptr will replace all settings
+    //This is here just to make sure we get initial values, don't count on data
+    ReadSettings();
 }
 
 SDR::SDR(Receiver *_receiver, SDRDEVICE dev,Settings *_settings)
@@ -66,7 +70,7 @@ SDR::~SDR(void)
     if (!settings)
         return;
 
-    if (plugin!=NULL)
+    if (DelegateToPlugin())
         WriteSettings();
 
     if (sdrOptions != NULL)
@@ -86,7 +90,7 @@ SDR::~SDR(void)
 
 QString SDR::GetPluginName(int _devNum)
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->GetPluginName();
     else
         return "Not Set";
@@ -94,23 +98,23 @@ QString SDR::GetPluginName(int _devNum)
 
 QString SDR::GetPluginDescription(int _devNum)
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->GetPluginDescription();
     else
         return "";
 }
 
-bool SDR::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer, quint16 _ignore)
+bool SDR::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
 {
-    if (plugin != NULL)
-        return plugin->Initialize(_callback, _framesPerBuffer, deviceNumber);
+    if (DelegateToPlugin())
+        return plugin->Initialize(_callback, _framesPerBuffer);
     else
         return false;
 }
 
 bool SDR::Connect()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->Connect();
     else
         return false;
@@ -118,7 +122,7 @@ bool SDR::Connect()
 
 bool SDR::Disconnect()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->Disconnect();
     else
         return false;
@@ -126,7 +130,7 @@ bool SDR::Disconnect()
 
 double SDR::SetFrequency(double fRequested, double fCurrent)
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->SetFrequency(fRequested,fCurrent);
     else
         return fCurrent;
@@ -134,13 +138,13 @@ double SDR::SetFrequency(double fRequested, double fCurrent)
 
 void SDR::Start()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->Start();
 }
 
 void SDR::Stop()
 {
-    if (plugin != NULL) {
+    if (DelegateToPlugin()) {
         //Things we used to do in ~SDR which is not destructed when we have plugins
         if (sdrOptions != NULL)
             sdrOptions->hide();
@@ -151,7 +155,7 @@ void SDR::Stop()
 
 double SDR::GetStartupFrequency()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->GetStartupFrequency();
     else
         return 0;
@@ -159,7 +163,7 @@ double SDR::GetStartupFrequency()
 
 int SDR::GetStartupMode()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->GetStartupMode();
     else
         return 0;
@@ -167,7 +171,7 @@ int SDR::GetStartupMode()
 
 double SDR::GetHighLimit()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->GetHighLimit();
     else
         return 0;
@@ -175,7 +179,7 @@ double SDR::GetHighLimit()
 
 double SDR::GetLowLimit()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->GetLowLimit();
     else
         return 0;
@@ -183,7 +187,7 @@ double SDR::GetLowLimit()
 
 double SDR::GetGain()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->GetGain();
     else
         return 1;
@@ -191,7 +195,7 @@ double SDR::GetGain()
 
 QString SDR::GetDeviceName()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->GetDeviceName();
     else
         return "";
@@ -224,10 +228,11 @@ void SDR::ShowSdrOptions(bool b)
         }
         return;
     }
+
+    if (DelegateToPlugin()) {
+        //Do nothing, just call to sync
+    }
     DeviceInterface *di = (plugin == NULL) ? this:plugin;
-    //One DeviceInterface can support different physical devices
-    //Make sure plugin has the right device number for the options we're showing
-    di->SetDeviceNumber(deviceNumber);
 
     if (sdrOptions == NULL) {
         int cur;
@@ -492,10 +497,12 @@ void SDR::ResetAllSettings(bool b)
 void SDR::ReadSettings()
 {
     QSettings *qs = GetQSettings();
-    if (plugin != NULL) {
+    if (DelegateToPlugin()) {
         plugin->ReadSettings();
     }
     DeviceInterface *di = (plugin == NULL) ? this:plugin;
+    qDebug()<<"Reading settings for "<<di->GetPluginName();
+
     di->startup = (STARTUP)qs->value("Startup", DEFAULTFREQ).toInt();
     di->freqToSet = qs->value("StartupFreq", 10000000).toDouble();
     di->inputDeviceName = qs->value("InputDeviceName", "").toString();
@@ -539,10 +546,11 @@ void SDR::ReadSettings()
 void SDR::WriteSettings()
 {
     QSettings *qs = GetQSettings();
-    if (plugin != NULL) {
+    if (DelegateToPlugin()) {
         plugin->WriteSettings();
     }
     DeviceInterface *di = (plugin == NULL) ? this:plugin;
+    qDebug()<<"Writing settings for "<<di->GetPluginName();
 
     qs->setValue("Startup",di->startup);
     qs->setValue("StartupFreq",di->freqToSet);
@@ -581,13 +589,15 @@ void SDR::WriteSettings()
 
     qs->endGroup();
 
+    qs->sync();
+
 }
 
 //Devices may override this and return a rate based on other settings
 int SDR::GetSampleRate()
 {
 
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->GetSampleRate();
     else
         return sampleRate;
@@ -595,7 +605,7 @@ int SDR::GetSampleRate()
 
 int *SDR::GetSampleRates(int &len)
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->GetSampleRates(len);
     else {
         len = 3;
@@ -611,7 +621,7 @@ void SDR::SetupOptionUi(QWidget *parent)
 {
     //Do nothing by default to leave empty frame in dialog
     //parent->setVisible(false);
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->SetupOptionUi(parent);
     else
         return;
@@ -619,7 +629,7 @@ void SDR::SetupOptionUi(QWidget *parent)
 
 void SDR::WriteOptionUi()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->WriteOptionUi();
     else
         return;
@@ -627,7 +637,7 @@ void SDR::WriteOptionUi()
 
 bool SDR::UsesAudioInput()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->UsesAudioInput();
     else
         return true;
@@ -635,7 +645,7 @@ bool SDR::UsesAudioInput()
 
 bool SDR::GetTestBenchChecked()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->isTestBenchChecked;
     else
         return isTestBenchChecked;
@@ -644,7 +654,7 @@ bool SDR::GetTestBenchChecked()
 
 DeviceInterface::STARTUP SDR::GetStartup()
 {
-  if (plugin != NULL)
+  if (DelegateToPlugin())
     return plugin->startup;
   else
     return startup;
@@ -652,7 +662,7 @@ DeviceInterface::STARTUP SDR::GetStartup()
 
 int SDR::GetLastDisplayMode()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
       return plugin->lastDisplayMode;
     else
         return lastDisplayMode;
@@ -660,7 +670,7 @@ int SDR::GetLastDisplayMode()
 
 void SDR::SetLastDisplayMode(int mode)
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         plugin->lastDisplayMode = mode;
     else
         lastDisplayMode = mode;
@@ -668,7 +678,7 @@ void SDR::SetLastDisplayMode(int mode)
 
 DeviceInterface::IQORDER SDR::GetIQOrder()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->iqOrder;
     else
         return iqOrder;
@@ -676,7 +686,7 @@ DeviceInterface::IQORDER SDR::GetIQOrder()
 
 void SDR::SetIQOrder(DeviceInterface::IQORDER o)
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         plugin->iqOrder = o;
     else
         iqOrder = o;
@@ -684,7 +694,7 @@ void SDR::SetIQOrder(DeviceInterface::IQORDER o)
 
 bool SDR::GetIQBalanceEnabled()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->iqBalanceEnable;
     else
         return iqBalanceEnable;
@@ -692,7 +702,7 @@ bool SDR::GetIQBalanceEnabled()
 
 bool SDR::GetIQBalanceGain()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->iqBalanceGain;
     else
         return iqBalanceGain;
@@ -700,7 +710,7 @@ bool SDR::GetIQBalanceGain()
 
 bool SDR::GetIQBalancePhase()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->iqBalancePhase;
     else
         return iqBalancePhase;
@@ -708,7 +718,7 @@ bool SDR::GetIQBalancePhase()
 
 double SDR::GetFreqToSet()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->freqToSet;
     else
         return freqToSet;
@@ -716,7 +726,7 @@ double SDR::GetFreqToSet()
 
 double SDR::GetLastFreq()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->lastFreq;
     else
         return lastFreq;
@@ -724,7 +734,7 @@ double SDR::GetLastFreq()
 
 void SDR::SetLastFreq(double f)
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         plugin->lastFreq = f;
     else
         lastFreq = f;
@@ -732,7 +742,7 @@ void SDR::SetLastFreq(double f)
 
 int SDR::GetLastMode()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->lastMode;
     else
         return lastMode;
@@ -740,7 +750,7 @@ int SDR::GetLastMode()
 
 void SDR::SetLastMode(int mode)
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         plugin->lastMode = mode;
     else
         lastMode = mode;
@@ -748,7 +758,7 @@ void SDR::SetLastMode(int mode)
 
 QString SDR::GetInputDeviceName()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->inputDeviceName;
     else
         return inputDeviceName;
@@ -756,7 +766,7 @@ QString SDR::GetInputDeviceName()
 
 QString SDR::GetOutputDeviceName()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->outputDeviceName;
     else
         return outputDeviceName;
@@ -764,7 +774,7 @@ QString SDR::GetOutputDeviceName()
 
 double SDR::GetIQGain()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->iqGain;
     else
         return iqGain;
@@ -772,7 +782,7 @@ double SDR::GetIQGain()
 
 void SDR::SetIQGain(double g)
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         plugin->iqGain = g;
     else
         iqGain = g;
@@ -780,10 +790,20 @@ void SDR::SetIQGain(double g)
 
 QSettings *SDR::GetQSettings()
 {
-    if (plugin != NULL)
+    if (DelegateToPlugin())
         return plugin->GetQSettings();
     else
         return qSettings;
+}
+
+//Call this in every deviceInterface method to see if we should delegate, and if so make sure deviceNumber is in sync
+bool SDR::DelegateToPlugin()
+{
+    if (plugin == NULL)
+        return false;
+
+    plugin->SetDeviceNumber(pluginDeviceNumber);
+    return true;
 }
 
 void SDR::InitProducerConsumer(int _numDataBufs, int _producerBufferSize)
