@@ -51,7 +51,7 @@ public:
     QString GetPluginName(int _devNum = 0);
     QString GetPluginDescription(int _devNum = 0);
 
-    bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer, quint16 _deviceNumber);
+    bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer);
     bool Connect();
     bool Disconnect();
     void Start();
@@ -92,6 +92,10 @@ private slots:
     void TCPSocketConnected();
     void IPAddressChanged();
     void IPPortChanged();
+    void SampleRateChanged(int _index);
+    void GainModeChanged(bool _clicked);
+    void GainChanged(int _selection);
+    void FreqCorrectionChanged(int _correction);
 
 private:
     enum PEBBLE_DEVICES {RTL_USB = 0,RTL_TCP=1};
@@ -126,6 +130,8 @@ private:
 #endif
 
     bool SendTcpCmd(quint8 _cmd, quint32 _data);
+    bool SetRtlGain(quint16 _mode, quint16 _gain);
+    bool SetRtlFrequencyCorrection(qint16 _correction);
 
 
     void InitSettings(QString fname);
@@ -151,6 +157,8 @@ private:
     Ui::RTL2832UI *optionUi;
     QHostAddress rtlServerIP;
     quint32 rtlServerPort;
+    quint16 rtlGainMode;
+    qint16 rtlFreqencyCorrection; //+ or -
 
     //Settings for each device
     QSettings *usbSettings;

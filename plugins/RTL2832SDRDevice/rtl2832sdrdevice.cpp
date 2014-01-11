@@ -56,11 +56,10 @@ QString RTL2832SDRDevice::GetPluginDescription(int _devNum)
     }
 }
 
-bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer, quint16 _deviceNumber)
+bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
 {
     ProcessIQData = _callback;
     framesPerBuffer = _framesPerBuffer;
-    deviceNumber = _deviceNumber;
     inBuffer = new CPXBuf(framesPerBuffer);
 
     //crystalFreqHz = DEFAULT_CRYSTAL_FREQUENCY;
@@ -77,10 +76,14 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerB
       3.20 (28.8 / 9)
       2.88 (28.8 / 10)
       2.40 (28.8 / 12)
+      2.048 (works)
+      1.92 (28.8 / 15)
       1.80 (28.8 / 16)
+      1.60 (28.8 / 18)
       1.44 (28.8 / 20) even dec at 48 and 96k
       1.20 (28.8 / 24)
       1.152 (28.8 / 25) 192k * 6 - This is our best rate convert to 192k effective rate
+      1.024 (works)
        .96 (28.8 / 30)
     */
     /*
@@ -98,9 +101,11 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerB
     //  range += osmosdr::range_t( 3200000 ); // max rate
     */
     //Different sampleRates for different RTL rates
-    rtlSampleRate = 2.048e6; //We can keep up with Spectrum
-
+    //rtlSampleRate = 2.048e6; //We can keep up with Spectrum
     //rtlSampleRate = 1.024e6;
+
+    //sampleRate must <= to rtlSampleRate, find closest /2 match
+    sampleRate = (sampleRate <= rtlSampleRate) ? sampleRate : sampleRate/2;
 
     rtlDecimate = rtlSampleRate / sampleRate; //Must be even number, convert to lookup table
     /*
@@ -193,6 +198,10 @@ void RTL2832SDRDevice::Start()
 {
     int r;
 
+    //Handles both USB and TCP
+    SetRtlGain(rtlGainMode, rtlGain);
+    SetRtlFrequencyCorrection(rtlFreqencyCorrection);
+
     if (deviceNumber == RTL_USB) {
         /* Set the sample rate */
         if (rtlsdr_set_sample_rate(dev, rtlSampleRate) < 0) {
@@ -202,35 +211,6 @@ void RTL2832SDRDevice::Start()
 
         //Center freq is set in SetFrequency()
 
-        /* Set the tuner gain */
-        //Added support for automatic gain from rtl-sdr.c
-        if (rtlGain == 0) {
-             /* Enable automatic gain */
-            r = rtlsdr_set_tuner_gain_mode(dev, GAIN_MODE_AUTO);
-            if (r < 0) {
-                qDebug("WARNING: Failed to enable automatic gain.");
-                return;
-            } else {
-                qDebug("Automatic gain set");
-            }
-        } else {
-            /* Enable manual gain */
-            r = rtlsdr_set_tuner_gain_mode(dev, GAIN_MODE_MANUAL);
-            if (r < 0) {
-                qDebug("WARNING: Failed to enable manual gain.");
-                return;
-            }
-
-            /* Set the tuner gain */
-            r = rtlsdr_set_tuner_gain(dev, rtlGain);
-            if (r < 0) {
-                qDebug("WARNING: Failed to set tuner gain.");
-                return;
-            }else {
-                qDebug("Tuner gain set to %f dB.", rtlGain/10.0);
-            }
-        }
-
         /* Reset endpoint before we start reading from it (mandatory) */
         if (rtlsdr_reset_buffer(dev) < 0) {
             qDebug("WARNING: Failed to reset buffers.");
@@ -238,13 +218,6 @@ void RTL2832SDRDevice::Start()
         }        
     } else if (deviceNumber == RTL_TCP) {
         SendTcpCmd(TCP_SET_SAMPLERATE,rtlSampleRate);
-        if (rtlGain == 0) {
-             /* Enable automatic gain */
-            SendTcpCmd(TCP_SET_GAIN_MODE, GAIN_MODE_AUTO);
-        } else {
-            SendTcpCmd(TCP_SET_GAIN_MODE, GAIN_MODE_MANUAL); //Manual
-            SendTcpCmd(TCP_SET_IF_GAIN,rtlGain);
-        }
     }
     //1 byte per I + 1 byte per Q
     producerConsumer.Initialize(this, 50, framesPerBuffer * rtlDecimate * 2, 0);
@@ -263,6 +236,51 @@ void RTL2832SDRDevice::Stop()
     producerConsumer.Stop();
 }
 
+bool RTL2832SDRDevice::SetRtlFrequencyCorrection(qint16 _correction)
+{
+    if (deviceNumber == RTL_USB) {
+        int r = rtlsdr_set_freq_correction(dev,_correction);
+        if (r<0) {
+            qDebug()<<"Frequency correction failed";
+            return false;
+        }
+
+    } else if (deviceNumber == RTL_TCP) {
+        SendTcpCmd(TCP_SET_FREQ_CORRECTION,_correction);
+    }
+    return false;
+}
+
+bool RTL2832SDRDevice::SetRtlGain(quint16 _mode, quint16 _gain)
+{
+    if (deviceNumber == RTL_USB) {
+        int r = rtlsdr_set_tuner_gain_mode(dev, _mode);
+        if (r < 0) {
+            qDebug("WARNING: Failed to enable gain mode.");
+            return false;
+        }
+        if (rtlGainMode == GAIN_MODE_MANUAL){
+            /* Set the tuner gain */
+            r = rtlsdr_set_tuner_gain(dev, _gain);
+            if (r < 0) {
+                qDebug("WARNING: Failed to set tuner gain.");
+                return false;
+            }
+            //int actual = rtlsdr_get_tuner_gain(dev);
+            //qDebug()<<"Actual RTL gain set to "<<actual;
+        }
+        return true;
+    } else if (deviceNumber == RTL_TCP) {
+        SendTcpCmd(TCP_SET_GAIN_MODE, _mode);
+        if (rtlGainMode == GAIN_MODE_MANUAL) {
+            SendTcpCmd(TCP_SET_TUNER_GAIN, _gain);
+            //When do we need to set IF Gain?
+            //SendTcpCmd(TCP_SET_IF_GAIN, _gain);
+        }
+    }
+    return false;
+}
+
 double RTL2832SDRDevice::SetFrequency(double fRequested,double fCurrent)
 {
     if (deviceNumber == RTL_USB) {
@@ -273,14 +291,17 @@ double RTL2832SDRDevice::SetFrequency(double fRequested,double fCurrent)
         } else {
             rtlFrequency = fRequested;
         }
-
+        lastFreq = rtlFrequency;
         return rtlFrequency;
+
     } else if (deviceNumber == RTL_TCP) {
+        lastFreq = fRequested;
         if (SendTcpCmd(TCP_SET_FREQ,fRequested))
             return fRequested;
         else
             return fCurrent;
     }
+    return fCurrent;
 }
 
 void RTL2832SDRDevice::ShowOptions()
@@ -295,9 +316,12 @@ void RTL2832SDRDevice::ReadSettings()
     //-10, 15, 40, 65, 90, 115, 140, 165, 190,
     //215, 240, 290, 340, 420, 430, 450, 470, 490
     //0 for automatic gain
-    rtlGain = qs->value("RtlGain",0).toInt(); //0=automatic
+    rtlGain = qs->value("RtlGain",15).toInt();
     rtlServerIP = QHostAddress(qs->value("IPAddr","127.0.0.1").toString());
     rtlServerPort = qs->value("Port","1234").toInt();
+    rtlSampleRate = qs->value("RtlSampleRate",2048000).toUInt();
+    rtlGainMode = qs->value("RtlGainMode",GAIN_MODE_AUTO).toUInt();
+    rtlFreqencyCorrection = qs->value("RtlFrequencyCorrection",0).toInt();
 
 }
 
@@ -307,7 +331,9 @@ void RTL2832SDRDevice::WriteSettings()
     qs->setValue("RtlGain",rtlGain);
     qs->setValue("IPAddr",rtlServerIP.toString());
     qs->setValue("Port",rtlServerPort);
-
+    qs->setValue("RtlSampleRate",rtlSampleRate);
+    qs->setValue("RtlGainMode",rtlGainMode);
+    qs->setValue("RtlFrequencyCorrection",rtlFreqencyCorrection);
     qs->sync();
 
 }
@@ -415,6 +441,7 @@ int *RTL2832SDRDevice::GetSampleRates(int &len)
 {
     len = 6;
     //Ugly, but couldn't find easy way to init with {1,2,3} array initializer
+    //These are all multiples of 2 to support easy decimation
     sampleRates[0] = 64000;
     sampleRates[1] = 128000;
     sampleRates[2] = 256000;
@@ -465,12 +492,41 @@ void RTL2832SDRDevice::SetupOptionUi(QWidget *parent)
     } else {
         optionUi->tcpFrame->setVisible(false);
     }
+    //Common UI
+    //Even though we can support additional rates, need to keep in sync with Pebble sampleRate options
+    //So we keep decimate by 2 logic intact
+    //optionUi->sampleRateSelector->addItem("250 ksps",(quint32)250000);
+    optionUi->sampleRateSelector->addItem("1024 msps",(quint32)1024000);
+    //optionUi->sampleRateSelector->addItem("1920 msps",(quint32)1920000);
+    optionUi->sampleRateSelector->addItem("2048 msps",(quint32)2048000);
+    //optionUi->sampleRateSelector->addItem("2400 msps",(quint32)2400000);
+    int cur = optionUi->sampleRateSelector->findData(rtlSampleRate);
+    optionUi->sampleRateSelector->setCurrentIndex(cur);
+    connect(optionUi->sampleRateSelector,SIGNAL(currentIndexChanged(int)),this,SLOT(SampleRateChanged(int)));
+
+    if (rtlGainMode == GAIN_MODE_AUTO)
+        optionUi->autoGainButton->setChecked(true);
+    else
+        optionUi->manualGainButton->setChecked(true);
+
+    //RTL IF Gain valid values for E4000, may not be valid for other devices, but we don't know acutal device in TCP mode
+    QStringList ifGainItems = { "-10", "15", "40", "65", "90", "115", "140", "165", "190", "215", "240", "290", "340", "420", "430", "450", "470", "490"};
+    optionUi->manualGainSelector->addItems(ifGainItems);
+    cur = optionUi->manualGainSelector->findText(QString::number(rtlGain));
+    optionUi->manualGainSelector->setCurrentIndex(cur);
+    connect(optionUi->manualGainSelector,SIGNAL(currentIndexChanged(int)),this,SLOT(GainChanged(int)));
+
+    connect(optionUi->autoGainButton,&QRadioButton::toggled,this,&RTL2832SDRDevice::GainModeChanged);
+    connect(optionUi->autoGainButton,&QRadioButton::toggled,this,&RTL2832SDRDevice::GainModeChanged);
+
+    optionUi->frequencyCorrectionEdit->setValue(rtlFreqencyCorrection);
+    connect(optionUi->frequencyCorrectionEdit,SIGNAL(valueChanged(int)),this,SLOT(FreqCorrectionChanged(int)));
 
 }
 
 void RTL2832SDRDevice::IPAddressChanged()
 {
-    qDebug()<<optionUi->ipAddress->text();
+    //qDebug()<<optionUi->ipAddress->text();
     rtlServerIP = QHostAddress(optionUi->ipAddress->text());
     WriteSettings();
 }
@@ -481,6 +537,43 @@ void RTL2832SDRDevice::IPPortChanged()
     WriteSettings();
 }
 
+void RTL2832SDRDevice::SampleRateChanged(int _index)
+{
+    int cur = optionUi->sampleRateSelector->currentIndex();
+    rtlSampleRate = optionUi->sampleRateSelector->itemData(cur).toUInt();
+    WriteSettings();
+}
+
+void RTL2832SDRDevice::GainModeChanged(bool _clicked)
+{
+    if (optionUi->autoGainButton->isChecked()) {
+        rtlGainMode = GAIN_MODE_AUTO;
+        optionUi->manualGainSelector->setEnabled(false);
+
+    } else if (optionUi->manualGainButton->isChecked()) {
+        rtlGainMode = GAIN_MODE_MANUAL;
+        optionUi->manualGainSelector->setEnabled(true);
+
+    }
+    //Make real time changes
+    SetRtlGain(rtlGainMode,rtlGain);
+    WriteSettings();
+}
+
+void RTL2832SDRDevice::GainChanged(int _selection)
+{
+    rtlGain = optionUi->manualGainSelector->currentText().toUShort();
+    //Make real time changes
+    SetRtlGain(rtlGainMode,rtlGain);
+    WriteSettings();
+}
+
+void RTL2832SDRDevice::FreqCorrectionChanged(int _correction)
+{
+    rtlFreqencyCorrection = _correction;
+    SetRtlFrequencyCorrection(rtlFreqencyCorrection);
+    WriteSettings();
+}
 
 //!!!Not currently called, but should be called when option dialog closes
 void RTL2832SDRDevice::WriteOptionUi()
@@ -511,6 +604,7 @@ bool RTL2832SDRDevice::SendTcpCmd(quint8 _cmd, quint32 _data)
         return true;
     }
 }
+
 
 void RTL2832SDRDevice::StopProducerThread(){}
 void RTL2832SDRDevice::RunProducerThread()
@@ -567,6 +661,17 @@ void RTL2832SDRDevice::RunConsumerThread()
     for (int i=0,j=0; i<framesPerBuffer; i++, j+=bufInc) {
 #if 1
         //We are significantly oversampling, so we can use decimation to increase dynamic range
+        //http://www.atmel.com/Images/doc8003.pdf Each bit of resolution requires 4 bits of oversampling
+        //With atmel method, we add the oversampled data, and right shift by N
+        //THis is NOT the same as just averaging the samples, which is a LP filter function
+        //                      OverSampled     Right Shift (sames as /2)
+        // 8 bit resolution     N/A             N/A
+        // 9 bit resolution     4x              1   /2
+        //10 bit resolution     16x             2   /4
+        //
+        //Then scale by 2^n where n is # extra bits of resolution to get back to original signal level
+
+
         //See http://www.actel.com/documents/Improve_ADC_WP.pdf as one example
         //We take N (rtlDecimate) samples and create one result
         fpSampleRe = fpSampleIm = 0.0;
