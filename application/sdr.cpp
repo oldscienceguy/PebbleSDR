@@ -727,7 +727,7 @@ double SDR::GetFreqToSet()
 double SDR::GetLastFreq()
 {
     if (DelegateToPlugin())
-        return plugin->lastFreq;
+        return plugin->GetLastFreq();
     else
         return lastFreq;
 }
@@ -735,7 +735,7 @@ double SDR::GetLastFreq()
 void SDR::SetLastFreq(double f)
 {
     if (DelegateToPlugin())
-        plugin->lastFreq = f;
+        plugin->SetLastFreq(f);
     else
         lastFreq = f;
 }
@@ -743,7 +743,7 @@ void SDR::SetLastFreq(double f)
 int SDR::GetLastMode()
 {
     if (DelegateToPlugin())
-        return plugin->lastMode;
+        return plugin->GetLastMode();
     else
         return lastMode;
 }
@@ -751,7 +751,7 @@ int SDR::GetLastMode()
 void SDR::SetLastMode(int mode)
 {
     if (DelegateToPlugin())
-        plugin->lastMode = mode;
+        plugin->SetLastMode(mode);
     else
         lastMode = mode;
 }
