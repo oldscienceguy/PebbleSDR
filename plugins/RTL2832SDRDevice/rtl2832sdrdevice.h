@@ -99,6 +99,17 @@ private slots:
 
 private:
     enum PEBBLE_DEVICES {RTL_USB = 0,RTL_TCP=1};
+    //This comes from rtl-sdr.h in library, update if new devices are supported
+    enum RTLSDR_TUNERS {
+        RTLSDR_TUNER_UNKNOWN = 0,
+        RTLSDR_TUNER_E4000,
+        RTLSDR_TUNER_FC0012,
+        RTLSDR_TUNER_FC0013,
+        RTLSDR_TUNER_FC2580,
+        RTLSDR_TUNER_R820T,
+        RTLSDR_TUNER_R828D
+    };
+
     const quint8 TCP_SET_FREQ = 0x01;
     const quint8 TCP_SET_SAMPLERATE = 0x02;
     const quint8 TCP_SET_GAIN_MODE = 0x03;
@@ -109,7 +120,7 @@ private:
     const quint8 TCP_SET_AGC_MODE = 0x08;
     const quint8 TCP_SET_DIRECTS_AMPLING = 0x09;
     const quint8 TCP_SET_OFFSET_TUNING = 0x0a;
-    const quint8 TCP_ET_RTL_XTAL = 0x0b;
+    const quint8 TCP_SET_RTL_XTAL = 0x0b;
     const quint8 TCP_SET_TUNER_XTAL = 0x0c;
     const quint8 TCP_SET_TUNER_GAIN_BY_INDEX = 0x0d;
 
@@ -129,6 +140,13 @@ private:
 #pragma pack(pop)
 #endif
 
+    //First bytes from rtl_tcp contain dongle information
+    typedef struct { /* structure size must be multiple of 2 bytes */
+        char magic[4];
+        quint32 tunerType;
+        quint32 tunerGainCount;
+    } DongleInfo;
+
     bool SendTcpCmd(quint8 _cmd, quint32 _data);
     bool SetRtlGain(quint16 _mode, quint16 _gain);
     bool SetRtlFrequencyCorrection(qint16 _correction);
@@ -138,8 +156,10 @@ private:
     ProducerConsumer producerConsumer;
 
     rtlsdr_dev_t *dev;
+
     //Needed to determine when it's safe to fetch options for display
-    bool connected;
+    bool connected; //Set after Connect
+    bool running; //Set after Start
 
     double sampleGain; //Factor to normalize output
 
@@ -163,6 +183,13 @@ private:
     //Settings for each device
     QSettings *usbSettings;
     QSettings *tcpSettings;
+
+    //Flag to determine if we're received dongle information from rtl_tcp
+    bool haveDongleInfo;
+    DongleInfo tcpDongleInfo;
+
+    RTLSDR_TUNERS rtlTunerType;
+    quint32 rtlTunerGainCount;
 };
 
 #endif // RTL2832SDRDEVICE_H

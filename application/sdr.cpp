@@ -93,7 +93,7 @@ QString SDR::GetPluginName(int _devNum)
     if (DelegateToPlugin())
         return plugin->GetPluginName();
     else
-        return "Not Set";
+        return GetDeviceName(); //Use device name as pseudo plugin name
 }
 
 QString SDR::GetPluginDescription(int _devNum)
@@ -501,7 +501,7 @@ void SDR::ReadSettings()
         plugin->ReadSettings();
     }
     DeviceInterface *di = (plugin == NULL) ? this:plugin;
-    qDebug()<<"Reading settings for "<<di->GetPluginName();
+    qDebug()<<"Reading settings for "<<di->GetPluginName(pluginDeviceNumber);
 
     di->startup = (STARTUP)qs->value("Startup", DEFAULTFREQ).toInt();
     di->freqToSet = qs->value("StartupFreq", 10000000).toDouble();

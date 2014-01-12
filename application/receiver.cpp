@@ -129,9 +129,6 @@ bool Receiver::On()
         mainWindow->setFocus(); //Makes sure it has keyboard focus
     }
 
-    //Don't set title until we connect.  Some drivers handle multiple devices (RTL2832) and we need connection data
-    QApplication::activeWindow()->setWindowTitle("Pebble II: " + sdr->GetDeviceName());
-
     sampleRate = demodSampleRate = sdr->GetSampleRate();
     framesPerBuffer = demodFrames = settings->framesPerBuffer;
     //These steps work on full sample rates
@@ -260,6 +257,10 @@ bool Receiver::On()
 	//This should always be last because it starts samples flowing through the processBlocks
     audioOutput->StartOutput(sdr->GetOutputDeviceName(), audioOutRate);
 	sdr->Start();
+
+    //Don't set title until we connect and start.
+    //Some drivers handle multiple devices (RTL2832) and we need connection data
+    QApplication::activeWindow()->setWindowTitle("Pebble II: " + sdr->GetDeviceName());
 
 	return true;
 }
