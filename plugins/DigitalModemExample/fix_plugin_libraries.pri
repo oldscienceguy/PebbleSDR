@@ -21,3 +21,7 @@ INSTALLS += qtlib2
 qtlib3.path += $${DESTDIR}
 qtlib3.commands += install_name_tool -change /Users/rlandsman/Qt/5.2.0/clang_64/lib/QtCore.framework/Versions/5/QtCore  @executable_path/../Frameworks/QtCore.framework/Versions/5/QtCore $${DESTDIR}/lib$${TARGET}.dylib
 INSTALLS += qtlib3
+
+qtlib4.path += $${DESTDIR}
+qtlib4.commands += install_name_tool -change /Users/rlandsman/Qt/5.2.0/clang_64/lib/QtNetwork.framework/Versions/5/QtNetwork @executable_path/../Frameworks/QtNetwork.framework/Versions/5/QtNetwork $${DESTDIR}/lib$${TARGET}.dylib
+INSTALLS += qtlib4
