@@ -703,6 +703,9 @@ void RTL2832SDRDevice::RunConsumerThread()
     if (!connected)
         return;
 
+    if (!running)
+        return;
+
     //Wait for data to be available from producer
     producerConsumer.AcquireFilledBuffer();
     double fpSampleRe;

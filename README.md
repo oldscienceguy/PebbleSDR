@@ -264,6 +264,18 @@ Device Plugin that reads .wav files which have IQ data recorded.  These files ar
 ###RTL2832 Family
 Device Plugin that uses rtl-sdr library and wrapper code to work with all rtl-sdr supported devices.  Supports full 2mhz sample rate.
 
+USB and TCP Options
+
+* RTL2832 Sample Rate.  The RTL sample rate should be set to a rate where there is no data loss.  It must be >= to the Pebble sample rate.
+* Auto Gain.  RTL2832 gain is set automatically
+* Manual Gain with preset options. Chose a preset gain option
+* Frequency Correction: Tune to a frequency with a known station, like 162.450 mhz NOAA, and use up/down spinners until station is centered.
+
+TCP Only Options
+
+* IP Address
+* IP Port
+
 ##Advanced
 ###PebbleData directory
 
