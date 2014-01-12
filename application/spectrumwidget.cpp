@@ -176,11 +176,13 @@ void SpectrumWidget::Run(bool r)
         ui.displayBox->setCurrentIndex(global->sdr->GetLastDisplayMode()); //Initial display mode
         ui.zoomSlider->setValue(0); //Left end of scale
         //zoomChanged(0); //Display initial value
+        ui.zoomLabel->setText(QString().sprintf("Span: %.0f kHz",sampleRate/1000.0));
 		isRunning = true;
 	}
 	else {
         ui.displayBox->setCurrentIndex(-1);
-		isRunning =false;
+        ui.zoomLabel->setText(QString().sprintf("Span:"));
+        isRunning =false;
 		signalSpectrum = NULL;
         plotArea.fill(Qt::black); //Start with a  clean plot every time
         plotOverlay.fill(Qt::black); //Start with a  clean plot every time
@@ -1025,6 +1027,8 @@ void SpectrumWidget::DrawOverlay(bool isZoomed)
 {
     if (!isRunning)
         return;
+
+    //!!! 1/11/14 This never seems to get called with isRunning == true
 
     QPainter *painter = new QPainter();
     QPainter *labelPainter = new QPainter();
