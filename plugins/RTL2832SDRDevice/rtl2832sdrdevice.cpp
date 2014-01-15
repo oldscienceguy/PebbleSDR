@@ -128,7 +128,8 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerB
     running = false;
 
     //1 byte per I + 1 byte per Q
-    producerConsumer.Initialize(this, 50, framesPerBuffer * rtlDecimate * 2, 0);
+    readBufferSize = framesPerBuffer * rtlDecimate * 2;
+    producerConsumer.Initialize(this, 50, readBufferSize , 0);
     //Start this immediately, before connect, so we don't miss any data
     producerConsumer.Start();
 
@@ -159,7 +160,10 @@ bool RTL2832SDRDevice::Connect()
         connected = true;
         return true;
     } else if (deviceNumber == RTL_TCP) {
-        rtlTcpSocket = new QTcpSocket();
+        if (rtlTcpSocket == NULL)
+            rtlTcpSocket = new QTcpSocket();
+
+        rtlTcpSocket->setReadBufferSize(readBufferSize);
 
         //rtl_tcp server starts to dump data as soon as there is a connection, there is no start/stop command
         rtlTcpSocket->connectToHost(rtlServerIP,rtlServerPort,QTcpSocket::ReadWrite);
@@ -599,6 +603,7 @@ void RTL2832SDRDevice::WriteOptionUi()
 
 bool RTL2832SDRDevice::SendTcpCmd(quint8 _cmd, quint32 _data)
 {
+    rtlTcpSocketMutex.lock();
     RTL_CMD cmd;
     cmd.cmd = _cmd;
     //ntohl() is what rtl-tcp uses to convert to network byte order
@@ -610,13 +615,9 @@ bool RTL2832SDRDevice::SendTcpCmd(quint8 _cmd, quint32 _data)
     //Not sure which one is better or if it makes a difference
     //rtlTcpSocket->flush();
     rtlTcpSocket->waitForBytesWritten(1000);
-    if (bytesWritten != sizeof(cmd)) {
-        //qDebug()<<"Error in TcpSocket write";
-        return false;
-    } else {
-        //qDebug()<<"TcpSocket write ok";
-        return true;
-    }
+    bool res = (bytesWritten == sizeof(cmd));
+    rtlTcpSocketMutex.unlock();
+    return res;
 }
 
 
@@ -630,16 +631,21 @@ void RTL2832SDRDevice::RunProducerThread()
 
     if (deviceNumber == RTL_TCP) {
 
+        rtlTcpSocketMutex.lock();
+
         //The first bytes we get from rtl_tcp are dongle information
         //This comes immediately after connect, before we start running
         if (!haveDongleInfo) {
             rtlTunerType = RTLSDR_TUNER_UNKNOWN; //Default if we don't get valid data
             bytesRead = rtlTcpSocket->read((char *)&tcpDongleInfo,sizeof(DongleInfo));
-            if (bytesRead <= 0)
+            if (bytesRead <= 0) {
+                rtlTcpSocketMutex.unlock();
                 return; //No data yet
+            }
             haveDongleInfo = true; //We only try once for this after we read some bytes
 
             if (bytesRead != sizeof(DongleInfo)) {
+                rtlTcpSocketMutex.unlock();
                 return;
             }
             //If we got valid data, then use internally
@@ -652,37 +658,49 @@ void RTL2832SDRDevice::RunProducerThread()
                 rtlTunerGainCount = ntohl(tcpDongleInfo.tunerGainCount);
                 qDebug()<<"Dongle type "<<rtlTunerType;
                 qDebug()<<"Dongle gain count "<< rtlTunerGainCount;
+                rtlTcpSocketMutex.unlock();
+                return;
             }
 
         }
 
-        if (!running)
+        if (!running) {
+            rtlTcpSocketMutex.unlock();
             return;
+        }
 
-        producerConsumer.AcquireFreeBuffer();
+        if (!producerConsumer.AcquireFreeBuffer()) {
+            rtlTcpSocketMutex.unlock();
+            return;
+        }
 
         //This assumes we get a full buffer every time
         //Todo: Build up buffer like we do for AFEDRI
-        bytesRead = rtlTcpSocket->read(producerConsumer.GetProducerBufferAsChar(),producerConsumer.GetBufferSize());
-        if (bytesRead != producerConsumer.GetBufferSize()) {
+
+        bytesRead = rtlTcpSocket->read(producerConsumer.GetProducerBufferAsChar(),readBufferSize);
+        if (bytesRead != readBufferSize) {
             //No data, or not enough data
             producerConsumer.ReleaseFreeBuffer(); //Put back buffer for next try
+            rtlTcpSocketMutex.unlock();
             return;
         }
+        rtlTcpSocketMutex.unlock();
+
     } else if (deviceNumber == RTL_USB) {
         if (!running)
             return;
 
-        producerConsumer.AcquireFreeBuffer();
+        if (!producerConsumer.AcquireFreeBuffer())
+            return;
 
         //Insert code to put data from device in buffer
-        if (rtlsdr_read_sync(dev, producerConsumer.GetProducerBuffer(), producerConsumer.GetBufferSize(), &bytesRead) < 0) {
+        if (rtlsdr_read_sync(dev, producerConsumer.GetProducerBuffer(), readBufferSize, &bytesRead) < 0) {
             qDebug("Sync transfer error");
             producerConsumer.ReleaseFreeBuffer(); //Put back buffer for next try
             return;
         }
 
-        if (bytesRead < producerConsumer.GetBufferSize()) {
+        if (bytesRead < readBufferSize) {
             qDebug("Under read");
             producerConsumer.ReleaseFreeBuffer(); //Put back buffer for next try
             return;
@@ -707,7 +725,9 @@ void RTL2832SDRDevice::RunConsumerThread()
         return;
 
     //Wait for data to be available from producer
-    producerConsumer.AcquireFilledBuffer();
+    if (!producerConsumer.AcquireFilledBuffer())
+        return;
+
     double fpSampleRe;
     double fpSampleIm;
 

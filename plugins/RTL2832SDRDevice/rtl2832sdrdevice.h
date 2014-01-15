@@ -173,6 +173,7 @@ private:
     int sampleRates[10]; //Max 10 for testing
 
     QTcpSocket *rtlTcpSocket;
+    QMutex rtlTcpSocketMutex; //Control access to rtltcpSocket across thread
 
     Ui::RTL2832UI *optionUi;
     QHostAddress rtlServerIP;
@@ -190,6 +191,9 @@ private:
 
     RTLSDR_TUNERS rtlTunerType;
     quint32 rtlTunerGainCount;
+
+    int readBufferSize;
+
 };
 
 #endif // RTL2832SDRDEVICE_H
