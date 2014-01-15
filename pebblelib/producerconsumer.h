@@ -6,11 +6,12 @@
 #include <QThread>
 #include "../pebblelib/device_interfaces.h"
 
-class SDRProducerThread;
-class SDRConsumerThread;
+class SDRProducerWorker;
+class SDRConsumerWorker;
 
-class ProducerConsumer
+class ProducerConsumer : public QObject
 {
+    Q_OBJECT
 public:
     ProducerConsumer();
 
@@ -31,9 +32,9 @@ public:
     double GetConsumerBufferDataAsDouble(quint16 index);
 
     bool IsFreeBufferAvailable();
-    void AcquireFreeBuffer();
+    bool AcquireFreeBuffer();
     void ReleaseFreeBuffer() {semNumFreeBuffers->release();}
-    void AcquireFilledBuffer();
+    bool AcquireFilledBuffer();
     void ReleaseFilledBuffer() {semNumFilledBuffers->release();}
 
     void SupplyProducerBuffer() {nextProducerDataBuf = (nextProducerDataBuf +1 ) % numDataBufs;}
@@ -64,38 +65,41 @@ private:
     int threadRefresh;
 
     bool isThreadRunning;
-    SDRProducerThread *producerThread;
-    SDRConsumerThread *consumerThread;
+    QThread *producerWorkerThread;
+    QThread *consumerWorkerThread;
+    SDRProducerWorker *producerWorker;
+    SDRConsumerWorker *consumerWorker;
 
 };
-//Generic thread that can be used in producer/consumer models for devices that don't use soundcard
-class SDRProducerThread:public QThread
+
+//Alternative thread model using Worker objects and no QThread subclass
+class SDRProducerWorker: public QObject
 {
     Q_OBJECT
 public:
-    SDRProducerThread(DeviceInterface * s);
-    void run();
-    void stop();
-    void setRefresh(int ms);
-
+    SDRProducerWorker(DeviceInterface * s);
+    public slots:
+    void Start();
+    void Stopped();
+    bool IsRunning() {return isRunning;}
+signals:
+    void finished();
 private:
     DeviceInterface *sdr;
-    bool doRun;
-    int msSleep;
+    bool isRunning;
 };
-class SDRConsumerThread:public QThread
+class SDRConsumerWorker: public QObject
 {
     Q_OBJECT
 public:
-    SDRConsumerThread(DeviceInterface * s);
-    void run();
-    void stop();
-    void setRefresh(int ms);
-
-private:
+    SDRConsumerWorker(DeviceInterface * s);
+public slots:
+    void Start();
+    void Stopped();
+signals:
+    void finished();
+  private:
     DeviceInterface *sdr;
-    bool doRun;
-    int msSleep;
 };
 
 //Replacement for windows Sleep() function

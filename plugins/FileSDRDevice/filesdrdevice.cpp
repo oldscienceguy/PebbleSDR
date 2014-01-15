@@ -208,7 +208,9 @@ void FileSDRDevice::SetupOptionUi(QWidget *parent)
 void FileSDRDevice::StopProducerThread(){}
 void FileSDRDevice::RunProducerThread()
 {
-    producerConsumer.AcquireFreeBuffer();
+    if (!producerConsumer.AcquireFreeBuffer())
+        return;
+
     int samplesRead = wavFileRead.ReadSamples(producerConsumer.GetProducerBufferAsCPX(),framesPerBuffer);
     producerConsumer.SupplyProducerBuffer();
     producerConsumer.ReleaseFilledBuffer();
@@ -217,7 +219,9 @@ void FileSDRDevice::RunProducerThread()
 void FileSDRDevice::StopConsumerThread(){}
 void FileSDRDevice::RunConsumerThread()
 {
-    producerConsumer.AcquireFilledBuffer();
+    if (!producerConsumer.AcquireFilledBuffer())
+        return;
+
     CPX *buf = producerConsumer.GetConsumerBufferAsCPX();
     if (copyTest)
         wavFileWrite.WriteSamples(buf, framesPerBuffer);
