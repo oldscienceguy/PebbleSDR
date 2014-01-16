@@ -18,8 +18,14 @@ INSTALLS += rtl1
 
 #Copy rtlsdr dylib to Pebble Frameworks dir
 rtl2.files += /usr/local/lib/librtlsdr.0.dylib
+rtl2.files += /opt/local/lib/libusb-1.0.0.dylib
 rtl2.path = $${DESTDIR}/../Pebble.app/Contents/Frameworks
 INSTALLS += rtl2
+
+#We have to fixup librtlsdr dependencies
+rtl3.path += $${DESTDIR}
+rtl3.commands += install_name_tool -change /opt/local/lib/libusb-1.0.0.dylib  @executable_path/../Frameworks/libusb-1.0.0.dylib $${DESTDIR}/../Pebble.app/Contents/Frameworks/librtlsdr.0.dylib
+INSTALLS += rtl3
 
 QT += widgets
 #For TCP
