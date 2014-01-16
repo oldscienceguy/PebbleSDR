@@ -76,11 +76,13 @@ public:
 
     Demod *getDemod() {return demod;}
 
+
     public slots:
 		void Restart();
         void RecToggled(bool on);
         void SdrOptionsPressed();
         void CloseSdrOptions();
+        void SetWindowTitle();
 
 private:
     Plugins *plugins;

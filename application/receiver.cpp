@@ -260,10 +260,16 @@ bool Receiver::On()
 
     //Don't set title until we connect and start.
     //Some drivers handle multiple devices (RTL2832) and we need connection data
-    QApplication::activeWindow()->setWindowTitle("Pebble II: " + sdr->GetDeviceName());
-
+    QTimer::singleShot(200,this,SLOT(SetWindowTitle()));
 	return true;
 }
+
+void Receiver::SetWindowTitle()
+{
+    QApplication::activeWindow()->setWindowTitle("Pebble II: " + sdr->GetDeviceName());
+
+}
+
 //Delete everything that's based on settings, so we can change receivers, sound cards, etc
 //ReceiverWidget initiates the power off and call us
 bool Receiver::Off()
