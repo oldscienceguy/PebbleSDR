@@ -32,7 +32,7 @@ bool FileSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuff
 {
     ProcessIQData = _callback;
     framesPerBuffer = _framesPerBuffer;
-    producerConsumer.Initialize(this,1,framesPerBuffer * sizeof(CPX),0);
+    producerConsumer.Initialize(this,1,framesPerBuffer * sizeof(CPX));
 
     return true;
 }
@@ -212,7 +212,7 @@ void FileSDRDevice::RunProducerThread()
         return;
 
     int samplesRead = wavFileRead.ReadSamples(producerConsumer.GetProducerBufferAsCPX(),framesPerBuffer);
-    producerConsumer.SupplyProducerBuffer();
+    producerConsumer.NextProducerBuffer();
     producerConsumer.ReleaseFilledBuffer();
 
 }
@@ -226,7 +226,7 @@ void FileSDRDevice::RunConsumerThread()
     if (copyTest)
         wavFileWrite.WriteSamples(buf, framesPerBuffer);
     ProcessIQData(buf,framesPerBuffer);
-    producerConsumer.SupplyConsumerBuffer();
+    producerConsumer.NextConsumerBuffer();
     producerConsumer.ReleaseFreeBuffer();
 }
 
