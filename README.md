@@ -219,6 +219,9 @@ Try it
 Try it.
 
 ##Device Specifics
+
+If you have any problems with a device or modem plugin, or just don't want to see it in the list because you don't have the device, just move the file from the plugins directory to any other directory.  Pebble will load whatever is in the plugins directory, so the next time you start Pebble, you'll see the change.
+
 ###SoftRock Ensemble & 2M, 4M, 6M
 (TBW)
 
@@ -275,6 +278,9 @@ TCP Only Options
 
 * IP Address
 * IP Port
+
+If your computer is losing samples (you'll hear choppy audio), try a lower RTL sample rate and/or a lower Pebble sample rate.
+
 
 ##Advanced
 ###PebbleData directory
