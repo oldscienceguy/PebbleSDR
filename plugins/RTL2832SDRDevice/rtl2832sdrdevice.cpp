@@ -173,6 +173,7 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerB
 //Should be part of DeviceInterface?
 void RTL2832SDRDevice::Reset()
 {
+    qDebug()<<"RTL reset signal received";
     Stop();
     Disconnect();
     Initialize(ProcessIQData,framesPerBuffer);
@@ -246,7 +247,7 @@ void RTL2832SDRDevice::TCPSocketDisconnected()
     // -When device is disconnected due to network or other failure
     //If device is running, try to reset
     if (running) {
-        emit Reset();
+        emit reset();
     }
     qDebug()<<"TCP disconnected signal received";
 }
@@ -300,7 +301,7 @@ void RTL2832SDRDevice::TCPSocketNewData()
         if (readBufferIndex == 0) {
             //Starting a new buffer
             //We wait for a free buffer for 100ms before giving up.  May need to adjust this
-            if (!producerConsumer.AcquireFreeBuffer(100)) {
+            if (!producerConsumer.AcquireFreeBuffer(1000)) {
                 rtlTcpSocketMutex.unlock();
                 //We're sol in this situation because we won't get another readReady() signal
                 emit reset(); //Start over
