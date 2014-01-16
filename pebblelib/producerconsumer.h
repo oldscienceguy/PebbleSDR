@@ -15,9 +15,9 @@ class ProducerConsumer : public QObject
 public:
     ProducerConsumer();
 
-    void Initialize(DeviceInterface *_device, int _numDataBufs, int _producerBufferSize, int _refresh);
+    void Initialize(DeviceInterface *_device, int _numDataBufs, int _producerBufferSize);
 
-    bool Start();
+    bool Start(bool _producer = true, bool _consumer = true);
     bool Stop();
 
     bool IsRunning();
@@ -32,14 +32,17 @@ public:
     double GetConsumerBufferDataAsDouble(quint16 index);
 
     bool IsFreeBufferAvailable();
-    bool AcquireFreeBuffer();
+    bool AcquireFreeBuffer(quint16 _timeout = 0);
     void ReleaseFreeBuffer() {semNumFreeBuffers->release();}
-    bool AcquireFilledBuffer();
+    bool AcquireFilledBuffer(quint16 _timeout = 0);
     void ReleaseFilledBuffer() {semNumFilledBuffers->release();}
 
-    void SupplyProducerBuffer() {nextProducerDataBuf = (nextProducerDataBuf +1 ) % numDataBufs;}
+    void NextProducerBuffer() {nextProducerDataBuf = (nextProducerDataBuf +1 ) % numDataBufs;}
 
-    void SupplyConsumerBuffer() {nextConsumerDataBuf = (nextConsumerDataBuf +1 ) % numDataBufs;}
+    void NextConsumerBuffer() {nextConsumerDataBuf = (nextConsumerDataBuf +1 ) % numDataBufs;}
+
+    bool IsFreeBufferOverflow() {return freeBufferOverflow;}
+    bool IsFilledBufferOverflow() {return filledBufferOverflow;}
 
 private:
     DeviceInterface *device;
@@ -55,20 +58,18 @@ private:
       NumFreeBuffers starts at NUMDATABUFS and is decremented (acquire()) everytime the producer thread has new data.
       If it ever gets to zero, it will block forever and program will hang until consumer thread catches up.
       NumFreeBuffers is incremented (release()) in consumer thread when a buffer has been processed and can be reused.
-
-
     */
     QSemaphore *semNumFreeBuffers; //Init to NUMDATABUFS
     QSemaphore *semNumFilledBuffers;
-
-
-    int threadRefresh;
 
     bool isThreadRunning;
     QThread *producerWorkerThread;
     QThread *consumerWorkerThread;
     SDRProducerWorker *producerWorker;
     SDRConsumerWorker *consumerWorker;
+
+    bool producerThreadIsRunning;
+    bool consumerThreadIsRunning;
 
 };
 
@@ -96,10 +97,12 @@ public:
 public slots:
     void Start();
     void Stopped();
+    bool IsRunning() {return isRunning;}
 signals:
     void finished();
   private:
     DeviceInterface *sdr;
+    bool isRunning;
 };
 
 //Replacement for windows Sleep() function
