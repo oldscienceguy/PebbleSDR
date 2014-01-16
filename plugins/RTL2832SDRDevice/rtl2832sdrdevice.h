@@ -86,10 +86,17 @@ protected:
     void RunProducerThread();
     void StopConsumerThread();
     void RunConsumerThread();
+signals:
+    void reset(); //When no recourse, signal this to restart
 
 private slots:
-    void TCPSocketError();
+    void Reset();
+
+    void TCPSocketError(QAbstractSocket::SocketError socketError);
     void TCPSocketConnected();
+    void TCPSocketDisconnected();
+    void TCPSocketNewData();
+
     void IPAddressChanged();
     void IPPortChanged();
     void SampleRateChanged(int _index);
@@ -193,6 +200,8 @@ private:
     quint32 rtlTunerGainCount;
 
     int readBufferSize;
+    quint16 numProducerBuffers; //For faster sample rates, may need more producer buffers to handle
+    quint16 readBufferIndex; //Used to track whether we have full buffer or not, 0 to readBufferSize-1
 
 };
 
