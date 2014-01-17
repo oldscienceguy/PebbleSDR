@@ -266,7 +266,11 @@ bool Receiver::On()
 
 void Receiver::SetWindowTitle()
 {
-    QApplication::activeWindow()->setWindowTitle("Pebble II: " + sdr->GetDeviceName());
+    QString devName = sdr->GetDeviceName();
+    //In some cases, unknown, activeWindow() can return NULL
+    QWidget *win = QApplication::activeWindow();
+    if (win != NULL)
+        win->setWindowTitle("Pebble II: " + devName);
 
 }
 
