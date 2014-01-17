@@ -63,7 +63,7 @@ void ProducerConsumer::Initialize(DeviceInterface *_device, int _numDataBufs, in
 
     //New worker pattern that replaces subclassed QThread.  Recommended new QT 5 pattern
     if (producerWorkerThread == NULL)
-        producerWorkerThread = new QThread();
+        producerWorkerThread = new QThread(this);
     if (producerWorker == NULL) {
         producerWorker = new SDRProducerWorker(device);
         producerWorker->moveToThread(producerWorkerThread);
@@ -73,7 +73,7 @@ void ProducerConsumer::Initialize(DeviceInterface *_device, int _numDataBufs, in
         connect(producerWorker,&SDRProducerWorker::finished,producerWorkerThread,&QThread::quit);
     }
     if (consumerWorkerThread == NULL)
-        consumerWorkerThread = new QThread();
+        consumerWorkerThread = new QThread(this);
     if (consumerWorker == NULL) {
         consumerWorker = new SDRConsumerWorker(device);
         consumerWorker->moveToThread(consumerWorkerThread);
@@ -93,6 +93,7 @@ bool ProducerConsumer::Start(bool _producer, bool _consumer)
     isThreadRunning = true;
     producerThreadIsRunning = false;
     consumerThreadIsRunning = false;
+    //Note: QT only allows us to set thread priority on a running thread or in start()
     if (_consumer) {
         consumerWorkerThread->start();
         //Process event loop so thread signals and slots can all execute
@@ -102,6 +103,7 @@ bool ProducerConsumer::Start(bool _producer, bool _consumer)
     }
     if (_producer) {
         producerWorkerThread->start();
+
         QCoreApplication::processEvents();
         producerThreadIsRunning = true;
     }
@@ -192,6 +194,7 @@ bool ProducerConsumer::AcquireFreeBuffer(quint16 _timeout)
     //Debugging to watch producer/consumer overflow
     //Todo:  Add back-pressure to reduce sample rate if not keeping up
     int available = semNumFreeBuffers->available();
+    //qDebug()<<"Available free buffers "<<available;
     if ( available < 5) { //Ouput when we get within 5 of overflow
         //qDebug("Limited Free buffers available %d",available);
         freeBufferOverflow = true;
@@ -204,13 +207,16 @@ bool ProducerConsumer::AcquireFreeBuffer(quint16 _timeout)
     return semNumFreeBuffers->tryAcquire(1, _timeout);
 }
 
-void ProducerConsumer::ReleaseFreeBuffer(bool incConsumer)
+void ProducerConsumer::ReleaseFreeBuffer()
 {
-    if (incConsumer)
-        nextConsumerDataBuf = (nextConsumerDataBuf +1 ) % numDataBufs;
+    nextConsumerDataBuf = (nextConsumerDataBuf +1 ) % numDataBufs;
     semNumFreeBuffers->release();
 }
 
+void ProducerConsumer::PutbackFreeBuffer()
+{
+    semNumFreeBuffers->release();
+}
 
 bool ProducerConsumer::AcquireFilledBuffer(quint16 _timeout)
 {
@@ -233,13 +239,19 @@ bool ProducerConsumer::AcquireFilledBuffer(quint16 _timeout)
 
 }
 
-void ProducerConsumer::ReleaseFilledBuffer(bool incProducer)
+//We have to consider the case where the producer is being called more frequently than the consumer
+//This can be the case if we are running without a producer thread and filling the producer buffers
+//directly.  For example in a QTcpSocket readyRead() signal handler.
+void ProducerConsumer::ReleaseFilledBuffer()
 {
-    if (incProducer)
-        nextProducerDataBuf = (nextProducerDataBuf +1 ) % numDataBufs; //Increment producer pointer
+    nextProducerDataBuf = (nextProducerDataBuf +1 ) % numDataBufs; //Increment producer pointer
     semNumFilledBuffers->release();
 }
 
+void ProducerConsumer::PutbackFilledBuffer()
+{
+    semNumFilledBuffers->release();
+}
 
 //SDRThreads
 SDRProducerWorker::SDRProducerWorker(DeviceInterface * s)
@@ -256,8 +268,11 @@ void SDRProducerWorker::Start()
     isRunning = true;
     while (!QThread::currentThread()->isInterruptionRequested()) {
         sdr->RunProducerThread();  //This calls the actual worker function in each SDR device
-        //Give requestInteruption signals and slots a chance to trigger in event loop
+        //Give requestInteruption signals and slots a chance to trigger in this thread's event loop
+        //Note: This does NOT allow other threads to process events, just our worker thread
         QCoreApplication::processEvents();
+        //Test yield to give consumer chance to keep up.  Maybe only if new data is actually available
+        //QThread::yieldCurrentThread();
     }
     //Now that we have an interupt request, we signal that we are finished
     //This is connected to the QThread::quit slot
@@ -285,7 +300,6 @@ void SDRConsumerWorker::Start()
     qDebug()<<"Starting Consumer Worker";
     isRunning = true;
     while (!QThread::currentThread()->isInterruptionRequested()) {
-        sdr->RunConsumerThread();  //This calls the actual worker function in each SDR device
         sdr->RunConsumerThread();  //This calls the actual worker function in each SDR device
         //Give requestInteruption signals and slots a chance to trigger in event loop
         QCoreApplication::processEvents();

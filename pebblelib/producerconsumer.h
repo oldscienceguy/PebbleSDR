@@ -33,12 +33,18 @@ public:
 
     bool IsFreeBufferAvailable();
     bool AcquireFreeBuffer(quint16 _timeout = 0);
-    void ReleaseFreeBuffer(bool incConsumer = true);
-    bool AcquireFilledBuffer(quint16 _timeout = 0);
-    void ReleaseFilledBuffer(bool incProducer = true);
+    void ReleaseFreeBuffer();
+    void PutbackFreeBuffer(); //Release a buffer without incrementing semaphors, used in error conditions
 
+    bool AcquireFilledBuffer(quint16 _timeout = 0);
+    void ReleaseFilledBuffer();
+    void PutbackFilledBuffer();
+
+    //Informational
     bool IsFreeBufferOverflow() {return freeBufferOverflow;}
     bool IsFilledBufferOverflow() {return filledBufferOverflow;}
+    quint16 GetNumFreeBufs() {return semNumFreeBuffers->available();}
+    quint16 GetNumFilledBufs() {return semNumFilledBuffers->available();}
 
 private:
     DeviceInterface *device;
