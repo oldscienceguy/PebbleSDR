@@ -145,7 +145,7 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerB
 
     if (deviceNumber == RTL_TCP) {
         //Start this immediately, before connect, so we don't miss any data
-        producerConsumer.Start(false,true); //We don't need producer
+        producerConsumer.Start(false,true);
         if (rtlTcpSocket == NULL) {
             rtlTcpSocket = new QTcpSocket();
 
@@ -162,7 +162,7 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerB
         }
     } else if (deviceNumber == RTL_USB) {
         //Start this immediately, before connect, so we don't miss any data
-        producerConsumer.Start(true,true); //We don't need producer
+        producerConsumer.Start();
 
     }
 
@@ -297,7 +297,8 @@ void RTL2832SDRDevice::TCPSocketNewData()
 
     char *bufPtr;
     quint16 bytesToFillBuffer;
-    while (bytesAvailable) {
+    //while ((bytesAvailable = rtlTcpSocket->bytesAvailable())!=0){
+    while (bytesAvailable > 0) {
         if (readBufferIndex == 0) {
             //Starting a new buffer
             //We wait for a free buffer for 100ms before giving up.  May need to adjust this
@@ -308,6 +309,7 @@ void RTL2832SDRDevice::TCPSocketNewData()
                 return;
             }
             //qDebug()<<"Acquired free buffer";
+            //qDebug()<<producerConsumer.IsFreeBufferOverflow();
         }
         bufPtr = producerConsumer.GetProducerBufferAsChar();
         bytesToFillBuffer = readBufferSize - readBufferIndex;
@@ -317,9 +319,7 @@ void RTL2832SDRDevice::TCPSocketNewData()
         readBufferIndex += bytesRead;
         readBufferIndex %= readBufferSize;
         if (readBufferIndex == 0) {
-            producerConsumer.NextProducerBuffer();
             producerConsumer.ReleaseFilledBuffer();
-            //qDebug()<<"Released filled buffer";
         }
 
     }
@@ -774,7 +774,6 @@ void RTL2832SDRDevice::RunProducerThread()
 
     int bytesRead;
 
-    //TCP doesn't use producerThread
     if (deviceNumber == RTL_USB) {
         if (!running)
             return;
@@ -785,17 +784,19 @@ void RTL2832SDRDevice::RunProducerThread()
         //Insert code to put data from device in buffer
         if (rtlsdr_read_sync(dev, producerConsumer.GetProducerBuffer(), readBufferSize, &bytesRead) < 0) {
             qDebug("Sync transfer error");
-            producerConsumer.ReleaseFreeBuffer(); //Put back buffer for next try
+            producerConsumer.PutbackFreeBuffer(); //Put back buffer for next try
             return;
         }
 
         if (bytesRead < readBufferSize) {
             qDebug("Under read");
-            producerConsumer.ReleaseFreeBuffer(); //Put back buffer for next try
+            producerConsumer.PutbackFreeBuffer(); //Put back buffer for next try
             return;
         }
-        producerConsumer.NextProducerBuffer();
         producerConsumer.ReleaseFilledBuffer();
+    } else if (deviceNumber == RTL_TCP) {
+        //Not using producer thread, should never get here
+        qDebug()<<"Producer thread is running for rtl-tcp server, it shouldn't!";
     }
 }
 
@@ -813,9 +814,12 @@ void RTL2832SDRDevice::RunConsumerThread()
     if (!running)
         return;
 
+    //qDebug()<<producerConsumer.GetNumFreeBufs();
+
     //Wait for data to be available from producer
     if (!producerConsumer.AcquireFilledBuffer())
         return;
+
 
     double fpSampleRe;
     double fpSampleIm;
@@ -824,7 +828,7 @@ void RTL2832SDRDevice::RunConsumerThread()
     //RTL I/Q samples are 8bit unsigned 0-256
     int bufInc = rtlDecimate * 2;
     int decMult = 1; //1=8bit, 2=9bit, 3=10bit for rtlDecimate = 6 and sampleRate = 192k
-    int decNorm = 128 * decMult;
+    int decNorm = 127 * decMult;
     double decAvg = rtlDecimate / decMult; //Double the range = 1 bit of sample size
     for (int i=0,j=0; i<framesPerBuffer; i++, j+=bufInc) {
 #if 1
@@ -877,12 +881,9 @@ void RTL2832SDRDevice::RunConsumerThread()
         inBuffer->Im(i) = fpSampleIm;
     }
 
-    //We're done with databuf, so we can release before we call ProcessBlock
-    //Update lastDataBuf & release dataBuf
-    producerConsumer.NextConsumerBuffer();
-    producerConsumer.ReleaseFreeBuffer();
-
     ProcessIQData(inBuffer->Ptr(),framesPerBuffer);
+    //We don't release a free buffer until ProcessIQData returns because that would also allow inBuffer to be reused
+    producerConsumer.ReleaseFreeBuffer();
 
 }
 
