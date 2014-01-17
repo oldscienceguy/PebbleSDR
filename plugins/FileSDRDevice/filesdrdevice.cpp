@@ -212,7 +212,6 @@ void FileSDRDevice::RunProducerThread()
         return;
 
     int samplesRead = wavFileRead.ReadSamples(producerConsumer.GetProducerBufferAsCPX(),framesPerBuffer);
-    producerConsumer.NextProducerBuffer();
     producerConsumer.ReleaseFilledBuffer();
 
 }
@@ -226,7 +225,6 @@ void FileSDRDevice::RunConsumerThread()
     if (copyTest)
         wavFileWrite.WriteSamples(buf, framesPerBuffer);
     ProcessIQData(buf,framesPerBuffer);
-    producerConsumer.NextConsumerBuffer();
     producerConsumer.ReleaseFreeBuffer();
 }
 
