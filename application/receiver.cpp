@@ -266,6 +266,8 @@ bool Receiver::On()
 
 void Receiver::SetWindowTitle()
 {
+    if (sdr == NULL)
+        return;
     QString devName = sdr->GetDeviceName();
     //In some cases, unknown, activeWindow() can return NULL
     QWidget *win = QApplication::activeWindow();
