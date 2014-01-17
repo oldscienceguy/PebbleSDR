@@ -204,6 +204,14 @@ bool ProducerConsumer::AcquireFreeBuffer(quint16 _timeout)
     return semNumFreeBuffers->tryAcquire(1, _timeout);
 }
 
+void ProducerConsumer::ReleaseFreeBuffer(bool incConsumer)
+{
+    if (incConsumer)
+        nextConsumerDataBuf = (nextConsumerDataBuf +1 ) % numDataBufs;
+    semNumFreeBuffers->release();
+}
+
+
 bool ProducerConsumer::AcquireFilledBuffer(quint16 _timeout)
 {
     if (semNumFilledBuffers == NULL)
@@ -224,6 +232,14 @@ bool ProducerConsumer::AcquireFilledBuffer(quint16 _timeout)
     return semNumFilledBuffers->tryAcquire(1, _timeout);
 
 }
+
+void ProducerConsumer::ReleaseFilledBuffer(bool incProducer)
+{
+    if (incProducer)
+        nextProducerDataBuf = (nextProducerDataBuf +1 ) % numDataBufs; //Increment producer pointer
+    semNumFilledBuffers->release();
+}
+
 
 //SDRThreads
 SDRProducerWorker::SDRProducerWorker(DeviceInterface * s)

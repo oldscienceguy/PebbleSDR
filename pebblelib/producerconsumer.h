@@ -33,13 +33,9 @@ public:
 
     bool IsFreeBufferAvailable();
     bool AcquireFreeBuffer(quint16 _timeout = 0);
-    void ReleaseFreeBuffer() {semNumFreeBuffers->release();}
+    void ReleaseFreeBuffer(bool incConsumer = true);
     bool AcquireFilledBuffer(quint16 _timeout = 0);
-    void ReleaseFilledBuffer() {semNumFilledBuffers->release();}
-
-    void NextProducerBuffer() {nextProducerDataBuf = (nextProducerDataBuf +1 ) % numDataBufs;}
-
-    void NextConsumerBuffer() {nextConsumerDataBuf = (nextConsumerDataBuf +1 ) % numDataBufs;}
+    void ReleaseFilledBuffer(bool incProducer = true);
 
     bool IsFreeBufferOverflow() {return freeBufferOverflow;}
     bool IsFilledBufferOverflow() {return filledBufferOverflow;}
