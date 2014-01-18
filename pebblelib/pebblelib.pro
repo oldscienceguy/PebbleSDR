@@ -50,7 +50,8 @@ SOURCES += pebblelib.cpp \
     fftcute.cpp \
     fft.cpp \
     iir.cpp \
-    producerconsumer.cpp
+    producerconsumer.cpp \
+    perform.cpp
 
 HEADERS += pebblelib.h\
         pebblelib_global.h \
@@ -67,5 +68,6 @@ HEADERS += pebblelib.h\
     fft.h \
     iir.h \
     device_interfaces.h \
-    producerconsumer.h
+    producerconsumer.h \
+    perform.h
 
