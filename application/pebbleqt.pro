@@ -358,7 +358,6 @@ HEADERS += \
     demod/rbdsconstants.h \
     demod/rdsdecode.h \
     filters/fractresampler.h \
-    perform.h \
     devices/sdr_iq.h \
     devices/softrock.h \
     devices/hpsdr.h \
@@ -416,7 +415,6 @@ SOURCES += \
 	demod/demod_wfm.cpp \
     demod/rdsdecode.cpp \
     filters/fractresampler.cpp \
-    perform.cpp \
     devices/sdr_iq.cpp \
     devices/softrock.cpp \
     devices/hpsdr.cpp \
