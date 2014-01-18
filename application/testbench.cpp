@@ -507,6 +507,9 @@ if( (m_SweepFrequency>-31250) && (m_SweepFrequency<31250) )
 
 void CTestBench::MixNoiseSamples(int length, TYPECPX* pBuf, double samplerate)
 {
+    if(!m_Active || !noiseOn)
+        return;
+
     double u1;
     double u2;
     double rad;
