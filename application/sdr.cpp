@@ -47,7 +47,7 @@ SDR::SDR(Receiver *_receiver, SDRDEVICE dev,Settings *_settings)
 	isLibUsbLoaded = false;
 	isFtdiLoaded = false;
 	isThreadRunning = false;
-    audioInput = Audio::Factory(receiver,settings->framesPerBuffer,settings);
+    audioInput = NULL;
 	producerThread = NULL;
 	consumerThread = NULL;
     semNumFreeBuffers = NULL;
@@ -108,8 +108,8 @@ bool SDR::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
 {
     if (DelegateToPlugin())
         return plugin->Initialize(_callback, _framesPerBuffer);
-    else
-        return false;
+    audioInput = Audio::Factory(receiver,settings->framesPerBuffer,settings);
+    return true;
 }
 
 bool SDR::Connect()
