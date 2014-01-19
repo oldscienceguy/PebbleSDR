@@ -2,6 +2,7 @@
 #define PRODUCERCONSUMER_H
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
+#include "perform.h"
 #include <QtCore>
 #include <QThread>
 #include "../pebblelib/device_interfaces.h"
@@ -24,19 +25,12 @@ public:
 
     quint16 GetBufferSize() {return producerBufferSize;}
 
-    unsigned char* GetProducerBuffer();
-    unsigned char* GetConsumerBuffer();
-    char *GetProducerBufferAsChar();
-    CPX* GetProducerBufferAsCPX();
-    CPX* GetConsumerBufferAsCPX();
-    double GetConsumerBufferDataAsDouble(quint16 index);
-
     bool IsFreeBufferAvailable();
-    bool AcquireFreeBuffer(quint16 _timeout = 0);
+    unsigned char *AcquireFreeBuffer(quint16 _timeout = 0);
     void ReleaseFreeBuffer();
     void PutbackFreeBuffer(); //Release a buffer without incrementing semaphors, used in error conditions
 
-    bool AcquireFilledBuffer(quint16 _timeout = 0);
+    unsigned char *AcquireFilledBuffer(quint16 _timeout = 0);
     void ReleaseFilledBuffer();
     void PutbackFilledBuffer();
 
@@ -90,6 +84,7 @@ signals:
 private:
     DeviceInterface *sdr;
     bool isRunning;
+    Perform perform;
 };
 class SDRConsumerWorker: public QObject
 {
@@ -105,6 +100,7 @@ signals:
   private:
     DeviceInterface *sdr;
     bool isRunning;
+    Perform perform;
 };
 
 //Replacement for windows Sleep() function

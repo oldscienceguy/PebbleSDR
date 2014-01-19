@@ -2,6 +2,13 @@
 #include "gpl.h"
 #include "producerconsumer.h"
 
+/*
+ * This uses the QT producer/consumer model to avoid more complex and deadlock prone mutex's
+ * QSemaphores protects the producer thread's buffer pointer  and the consumer threads' buffer pointer in a circular buffer
+ *
+ *
+ */
+
 ProducerConsumer::ProducerConsumer()
 {
     semNumFreeBuffers = NULL;
@@ -142,36 +149,6 @@ bool ProducerConsumer::IsRunning()
     return isThreadRunning;
 }
 
-CPX *ProducerConsumer::GetProducerBufferAsCPX()
-{
-    return ((CPX **)producerBuffer)[nextProducerDataBuf];
-}
-
-char *ProducerConsumer::GetProducerBufferAsChar()
-{
-    return (char*)producerBuffer[nextProducerDataBuf];
-}
-
-CPX *ProducerConsumer::GetConsumerBufferAsCPX()
-{
-    return ((CPX **)producerBuffer)[nextConsumerDataBuf];
-}
-
-double ProducerConsumer::GetConsumerBufferDataAsDouble(quint16 index)
-{
-    return (double)producerBuffer[nextConsumerDataBuf][index];
-}
-
-unsigned char *ProducerConsumer::GetProducerBuffer()
-{
-    return (producerBuffer)[nextProducerDataBuf];
-}
-
-unsigned char *ProducerConsumer::GetConsumerBuffer()
-{
-    return (producerBuffer)[nextConsumerDataBuf];
-}
-
 bool ProducerConsumer::IsFreeBufferAvailable()
 {
     if (semNumFreeBuffers == NULL)
@@ -186,25 +163,23 @@ bool ProducerConsumer::IsFreeBufferAvailable()
     return true;
 }
 
-bool ProducerConsumer::AcquireFreeBuffer(quint16 _timeout)
+//This call is the only way we can get a producer buffer ptr
+//We can use the ptr until ReleaeFreeBuffer is called
+//Returns NULL if no free buffer can be acquired
+unsigned char* ProducerConsumer::AcquireFreeBuffer(quint16 _timeout)
 {
     if (semNumFreeBuffers == NULL)
-        return false; //Not initialized yet
-
-    //Debugging to watch producer/consumer overflow
-    //Todo:  Add back-pressure to reduce sample rate if not keeping up
-    int available = semNumFreeBuffers->available();
-    //qDebug()<<"Available free buffers "<<available;
-    if ( available < 5) { //Ouput when we get within 5 of overflow
-        //qDebug("Limited Free buffers available %d",available);
-        freeBufferOverflow = true;
-    } else {
-        freeBufferOverflow = false;
-    }
+        return NULL; //Not initialized yet
 
     //We can't block with just acquire() because thread will never finish
-    //If we can't get a buffer in N ms, return false and caller will exit
-    return semNumFreeBuffers->tryAcquire(1, _timeout);
+    //If we can't get a buffer in N ms, return NULL and caller will exit
+    if (semNumFreeBuffers->tryAcquire(1, _timeout)) {
+        freeBufferOverflow = false;
+        return producerBuffer[nextProducerDataBuf];
+    } else {
+        freeBufferOverflow = true;
+        return NULL;
+    }
 }
 
 void ProducerConsumer::ReleaseFreeBuffer()
@@ -218,24 +193,20 @@ void ProducerConsumer::PutbackFreeBuffer()
     semNumFreeBuffers->release();
 }
 
-bool ProducerConsumer::AcquireFilledBuffer(quint16 _timeout)
+unsigned char *ProducerConsumer::AcquireFilledBuffer(quint16 _timeout)
 {
     if (semNumFilledBuffers == NULL)
-        return false; //Not initialized yet
-
-    //Debugging to watch producer/consumer overflow
-    //Todo:  Add back-pressure to reduce sample rate if not keeping up
-    int available = semNumFilledBuffers->available();
-    if ( available > (numDataBufs - 5)) { //Ouput when we get within 5 of overflow
-        //qDebug("Filled buffers available %d",available);
-        filledBufferOverflow = true;
-    } else {
-        filledBufferOverflow = false;
-    }
+        return NULL; //Not initialized yet
 
     //We can't block with just acquire() because thread will never finish
-    //If we can't get a buffer in N ms, return false and caller will exit
-    return semNumFilledBuffers->tryAcquire(1, _timeout);
+    //If we can't get a buffer in N ms, return NULL and caller will exit
+    if (semNumFilledBuffers->tryAcquire(1, _timeout)) {
+        filledBufferOverflow = false;
+        return producerBuffer[nextConsumerDataBuf];
+    } else {
+        filledBufferOverflow = true;
+        return NULL;
+    }
 
 }
 
@@ -267,7 +238,12 @@ void SDRProducerWorker::Start()
     qDebug()<<"Starting Producer Worker";
     isRunning = true;
     while (!QThread::currentThread()->isInterruptionRequested()) {
+        //perform.StartPerformance("Producer Thread");
+
         sdr->RunProducerThread();  //This calls the actual worker function in each SDR device
+
+        //perform.StopPerformance(1000);
+
         //Give requestInteruption signals and slots a chance to trigger in this thread's event loop
         //Note: This does NOT allow other threads to process events, just our worker thread
         QCoreApplication::processEvents();
@@ -300,7 +276,12 @@ void SDRConsumerWorker::Start()
     qDebug()<<"Starting Consumer Worker";
     isRunning = true;
     while (!QThread::currentThread()->isInterruptionRequested()) {
+        //perform.StartPerformance("Consumer Thread");
+
         sdr->RunConsumerThread();  //This calls the actual worker function in each SDR device
+
+        //perform.StopPerformance(1000);
+
         //Give requestInteruption signals and slots a chance to trigger in event loop
         QCoreApplication::processEvents();
     }
