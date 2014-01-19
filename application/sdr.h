@@ -212,11 +212,3 @@ private:
 	int msSleep;
 };
 
-//Replacement for windows Sleep() function
-class Sleeper : public QThread
-{
-public:
-    static void usleep(unsigned long usecs);
-    static void msleep(unsigned long msecs);
-    static void sleep(unsigned long secs);
-};

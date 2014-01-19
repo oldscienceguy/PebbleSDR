@@ -255,7 +255,7 @@ bool HPSDR::Connect()
 			return false;
 
 		//Give Ozy a chance to process firmware
-        Sleeper::sleep(5);
+        QThread::sleep(5);
 
 		if (!Open())
 			return false;
