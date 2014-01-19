@@ -25,7 +25,7 @@ public:
     quint64 QueryPerformanceCounter();
     void InitPerformance();
     void StartPerformance(QString desc="");
-    void StopPerformance(int n);
+    void StopPerformance(quint64 n);
     void ReadPerformance();
     void SamplePerformance();
     int GetDeltaPerformance();
@@ -34,7 +34,8 @@ private:
     quint64 StartTime;
     quint64 StopTime;
     quint64 DeltaTime;
-    quint64 CountFreq;
+    //quint64 CountFreq; //Original from Moe, but doesn't work with fractional CPU rates
+    double CountFreq;
     quint64 DeltaTimeMax;
     quint64 DeltaTimeMin;
     quint64 DeltaTimeAve;

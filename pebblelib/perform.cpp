@@ -54,7 +54,8 @@
 #include <QDebug>
 
 //#define CPUCLOCKRATEGHZ 3		//manually set to CPU core clock speed
-#define CPUCLOCKRATEGHZ 1.7		//Macbook Air
+//#define CPUCLOCKRATEGHZ 1.7   //Macbook Air mid 2011
+#define CPUCLOCKRATEGHZ 2.5		//MacbookPro 13" Retina early 2013
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -64,6 +65,7 @@ Perform::Perform()
 }
 
 ////////////////  Time measuring routine using Pentium timer
+/// This return number of CPU ticks, not time.  So we convert to uSec using CountFreq
 quint64 Perform::QueryPerformanceCounter()
 {
 quint64 val=0;
@@ -85,6 +87,7 @@ void Perform::InitPerformance()
 	DeltaTimeAve = 0;
 	DeltaSamples = 0;
     DeltaTimeMin = 0x7FFFFFF;
+    //Time is reported in uSec, so we want CPU clock as a quint64 so we can normalize clock ticks to time
 	CountFreq = CPUCLOCKRATEGHZ;
 }
 
@@ -100,7 +103,7 @@ void Perform::StartPerformance(QString _desc)
 
 // Stop performance timer and calculate timing values
 //Report and clear if DeltaSamples >=n
-void Perform::StopPerformance(int n)
+void Perform::StopPerformance(quint64 n)
 {
 	StopTime = QueryPerformanceCounter();
 	DeltaTime = (StopTime-StartTime);
