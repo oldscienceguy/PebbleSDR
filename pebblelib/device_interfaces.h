@@ -14,7 +14,9 @@
  */
 #include <QtCore>
 #include "pebblelib_global.h"
-#include <functional>
+//Don't use tr1, part of older pre c++ 11 standard
+//Use of std::function requires CONFIG += c++11 in .pro file
+#include <functional> //xcode header on mac, may be other include on Win
 
 class CPX;
 
