@@ -17,4 +17,7 @@ pebblelib/*MacRelease/
 plugins/*/*MacDebug/
 plugins/*/*MacRelease/
 
+SdrGarage/*MacDebug/
+SdrGarage/*MacRelease/
+
 /DevicePluginTemplate/

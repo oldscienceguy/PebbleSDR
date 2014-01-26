@@ -18,7 +18,8 @@ SUBDIRS =	pebblelib \
 			plugins/RttyDigitalModem \
 			plugins/WWVDigitalModem \
 			plugins/FileSDRDevice \
-			plugins/rtl2832sdrdevice
+			plugins/rtl2832sdrdevice \
+			SdrGarage
 
 # build must be last:
 #build in the order listed
