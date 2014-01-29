@@ -1,5 +1,4 @@
-#include <QCoreApplication>
-#include <QtCore>
+#include "sdrserver.h"
 
 /*
     Startup args
@@ -8,10 +7,8 @@
 */
 int main(int argc, char *argv[])
 {
-    QCoreApplication a(argc, argv);
-    QStringList argList = a.arguments();
+    //Our QCoreApplication
+    SdrServer server(argc, argv);
 
-    //Load device plugins
-
-    return a.exec();
+    return server.exec(); //Start the event loop and continue until quit()
 }

@@ -4,6 +4,7 @@
 
 DevicePlugins::DevicePlugins()
 {
+    findPlugins();
 }
 
 void DevicePlugins::findPlugins()
@@ -26,6 +27,7 @@ void DevicePlugins::findPlugins()
     }
 #endif
     pluginsDir.cd("plugins");
+    //qDebug()<<pluginsDir;
 
     PluginInfo pluginInfo;
 
@@ -35,8 +37,6 @@ void DevicePlugins::findPlugins()
 
         QPluginLoader loader(pluginsDir.absoluteFilePath(fileName));
         QObject *plugin = loader.instance();
-        //Dump error string if having problems loading, for example can't find pebblelib
-        //qDebug()<<loader.errorString();
         if (plugin) {
             DeviceInterface *iDeviceInterface = qobject_cast<DeviceInterface *>(plugin);
             if (iDeviceInterface) {
@@ -51,11 +51,14 @@ void DevicePlugins::findPlugins()
                     pluginInfo.description = iDeviceInterface->GetPluginDescription(i);
                     pluginInfo.fileName = fileName;
                     pluginInfo.deviceNumber  = i;
-                    //pluginInfo.deviceInterface = new SDR(iDeviceInterface, i);
+                    pluginInfo.deviceInterface = iDeviceInterface;
                     pluginInfoList.append(pluginInfo);
+                    qDebug()<<"Found plugin "<<pluginInfo.name;
                 }
             }
-            //qDebug()<<plugin->Get
+        } else {
+            //Dump error string if having problems loading, for example can't find pebblelib
+            qDebug()<<loader.errorString();
         }
     }
 }
