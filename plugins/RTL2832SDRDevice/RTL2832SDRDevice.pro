@@ -10,21 +10,28 @@ DESTDIR = $${DESTDIR}/plugins
 
 #Common library dependency code for all Pebble plugins
 include (../DigitalModemExample/fix_plugin_libraries.pri)
+#This anchors @rpath references in plugins to our lib directory, always at the same level os plugin directory
+QMAKE_LFLAGS += -rpath $${DESTDIR}/../lib
 
 #Custom rtl libraries that have to be relocated
 rtl1.path += $${DESTDIR}
-rtl1.commands += install_name_tool -change /usr/local/lib/librtlsdr.0.dylib  @executable_path/../Frameworks/librtlsdr.0.dylib $${DESTDIR}/lib$${TARGET}.dylib
+rtl1.commands += install_name_tool -change /usr/local/lib/librtlsdr.0.dylib  @rpath/librtlsdr.0.dylib $${DESTDIR}/lib$${TARGET}.dylib
 INSTALLS += rtl1
 
 #Copy rtlsdr dylib to Pebble Frameworks dir
-rtl2.files += /usr/local/lib/librtlsdr.0.dylib
-rtl2.files += /opt/local/lib/libusb-1.0.0.dylib
-rtl2.path = $${DESTDIR}/../Pebble.app/Contents/Frameworks
-INSTALLS += rtl2
+#We don't want to overwrite and exists() seems to always return true
+#Try removing directory first
+
+macx {
+	rtl2.files += /usr/local/lib/librtlsdr.0.dylib
+	rtl2.files += /opt/local/lib/libusb-1.0.0.dylib
+	rtl2.path = $${DESTDIR}/../lib
+	INSTALLS += rtl2
+}
 
 #We have to fixup librtlsdr dependencies
 rtl3.path += $${DESTDIR}
-rtl3.commands += install_name_tool -change /opt/local/lib/libusb-1.0.0.dylib  @executable_path/../Frameworks/libusb-1.0.0.dylib $${DESTDIR}/../Pebble.app/Contents/Frameworks/librtlsdr.0.dylib
+rtl3.commands += install_name_tool -change /opt/local/lib/libusb-1.0.0.dylib  @rpath/libusb-1.0.0.dylib $${DESTDIR}/lib$${TARGET}.dylib
 INSTALLS += rtl3
 
 QT += widgets

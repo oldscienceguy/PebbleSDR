@@ -8,6 +8,8 @@ DESTDIR = $${DESTDIR}/plugins
 
 #Common library dependency code for all Pebble plugins
 include (fix_plugin_libraries.pri)
+#This anchors @rpath references in plugins to our lib directory, always at the same level os plugin directory
+QMAKE_LFLAGS += -rpath $${DESTDIR}/../lib
 
 
 QT += widgets
