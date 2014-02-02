@@ -220,13 +220,17 @@ void SDR::InitSettings(QString fname)
 //If b is false, close and delete options
 void SDR::ShowSdrOptions(bool b)
 {
-    if (!b) {
-        if (sdrOptions != NULL) {
+    if (sdrOptions != NULL) {
+        //If we're visible, and asking to be shown again, toggle off
+        if (b && sdrOptions->isVisible())
+            b = false;
+        //Close and return
+        if (!b) {
             sdrOptions->setVisible(b); //hide
             delete sdrOptions;
             sdrOptions = NULL;
+            return;
         }
-        return;
     }
 
     if (DelegateToPlugin()) {
