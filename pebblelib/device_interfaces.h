@@ -90,8 +90,21 @@ public:
     virtual bool GetIQBalanceGain() {return iqBalanceGain;}
     virtual bool GetIQBalancePhase() {return iqBalancePhase;}
 
-    virtual double GetFreqToSet() {return freqToSet;}
-    virtual double GetLastFreq() {return lastFreq;}
+    virtual double GetFreqToSet() {
+        //If freq is outside of mode we are in return default
+        if (freqToSet > GetHighLimit() || freqToSet < GetLowLimit())
+            return GetStartupFrequency();
+        else
+            return freqToSet;
+    }
+
+    virtual double GetLastFreq() {
+        //If freq is outside of mode we are in return default
+        if (lastFreq > GetHighLimit() || lastFreq < GetLowLimit())
+            return GetStartupFrequency();
+        else
+            return lastFreq;
+    }
     virtual void SetLastFreq(double f) {lastFreq = f;}
 
     virtual int GetLastMode() {return lastMode;}
