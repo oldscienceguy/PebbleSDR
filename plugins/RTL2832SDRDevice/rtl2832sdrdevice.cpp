@@ -610,11 +610,6 @@ double RTL2832SDRDevice::GetLowLimit()
     }
 }
 
-double RTL2832SDRDevice::GetGain()
-{
-    return 1;
-}
-
 QString RTL2832SDRDevice::GetDeviceName()
 {
     switch (rtlTunerType) {

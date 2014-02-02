@@ -66,7 +66,7 @@ public:
     virtual int GetStartupMode() = 0;
     virtual double GetHighLimit() = 0;
     virtual double GetLowLimit() = 0;
-    virtual double GetGain() = 0;
+    virtual double GetGain() {return iqGain;}
     virtual QString GetDeviceName() = 0;
     virtual int GetSampleRate() = 0;
     virtual int* GetSampleRates(int &len) = 0; //Returns array of allowable rates and length of array as ref
