@@ -719,7 +719,7 @@ bool SDR::GetIQBalancePhase()
 double SDR::GetFreqToSet()
 {
     if (DelegateToPlugin())
-        return plugin->freqToSet;
+        return plugin->GetFreqToSet();
     else
         return freqToSet;
 }
