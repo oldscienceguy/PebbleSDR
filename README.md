@@ -265,16 +265,30 @@ You will get a "Allow network connections?" box the first time you run any new v
 Device Plugin that reads .wav files which have IQ data recorded.  These files are produced by most SDR applications using the 'record' feature and numerous examples can be found on the internet.  Pebble recordings also store LO and mode information in the .wav file.  When you open a Pebble recording, Pebble will show act as if the original SDR device was active.  The last directory is stored in the .ini file for convenience in reopening files.  The default directory is PebbleRecordings.
 
 ###RTL2832 Family
-Device Plugin that uses rtl-sdr library and wrapper code to work with all rtl-sdr supported devices.  Supports full 2mhz sample rate.
+Device Plugin that uses rtl-sdr library and wrapper code to work with all rtl-sdr supported devices.  Supports full 2mhz sample rate.  Each USB device has an RTL2832 USB controller and a tuner chip.  Each tuner chip has its own frequency limits and performance. See www.rtl-sdr.com for information and measurements on each tuner.
+
+The two most popular tuner chips are:
+
+* E4000: Direct conversion and may show center spike.  Higher sensitivity at lower frequencies.
+* R820: Fewer birdies and higher sensitivity and higer frequencies
 
 USB and TCP Options
 
-* RTL2832 Sample Rate.  The RTL sample rate should be set to a rate where there is no data loss.  It must be >= to the Pebble sample rate.
-* Auto Gain.  RTL2832 gain is set automatically
-* Manual Gain with preset options. Chose a preset gain option
+* RTL2832 Sample Rate.  The RTL sample rate should be set to a rate where there is no data loss.  It must be >= to the Pebble sample rate.  
+* Tuner Gain with preset options. 
+	The Tuner gain is set automatically if 'Tuner AGC' is selected.  
+	Chose a preset gain option
 * Frequency Correction: Tune to a frequency with a known station, like 162.450 mhz NOAA, and use up/down spinners until station is centered.
-
-TCP Only Options
+* Sampling Mode
+	* Normal (Frequency range depends on tuner chip)
+	* Direct I (Antenna or preamp connected to I pin of ADC)  
+	This is for devices like the HF Direct Sampling mod from KNOCK (http://www.easy-kits.com/).  Tuning range is 0 - 28.8.
+	* Direct Q (Antenna or preamp connected to Q pin of ADC)
+* RTL AGC  
+	Check to enable RTL2832 AGC mode (Different than tuner AGC)
+* Offset Tuning: Reduces center spike with certain tuners.  Ignored in Direct mode and with R820 tuners
+	
+TCP Only Options  
 
 * IP Address
 * IP Port

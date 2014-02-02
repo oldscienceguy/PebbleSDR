@@ -20,6 +20,7 @@ RTL2832SDRDevice::RTL2832SDRDevice()
     tcpThreadDoInit = true;
     tcpThreadBufPtr = NULL;
     readBufferIndex = 0;
+    rtlTunerGainCount = 0;
 }
 
 RTL2832SDRDevice::~RTL2832SDRDevice()
@@ -289,21 +290,8 @@ bool RTL2832SDRDevice::Disconnect()
 
 void RTL2832SDRDevice::Start()
 {
-    //Handles both USB and TCP
-    SetRtlGain(rtlGainMode, rtlGain);
-    SetRtlFrequencyCorrection(rtlFreqencyCorrection);
-
     if (deviceNumber == RTL_USB) {
-        rtlTunerType = RTLSDR_TUNER_UNKNOWN; //Default if we don't get valid data
         rtlTunerType = (RTLSDR_TUNERS) rtlsdr_get_tuner_type(dev);
-
-        /* Set the sample rate */
-        if (rtlsdr_set_sample_rate(dev, rtlSampleRate) < 0) {
-            qDebug("WARNING: Failed to set sample rate.");
-            return;
-        }
-
-        //Center freq is set in SetFrequency()
 
         /* Reset endpoint before we start reading from it (mandatory) */
         if (rtlsdr_reset_buffer(dev) < 0) {
@@ -313,8 +301,19 @@ void RTL2832SDRDevice::Start()
         running = true; //Must be after reset
     } else if (deviceNumber == RTL_TCP) {
         running = true;
-        SendTcpCmd(TCP_SET_SAMPLERATE,rtlSampleRate);
     }
+
+    //These have to be executed after we've done USB or TCP specific setup
+    //Handles both USB and TCP
+    SetRtlSampleMode(rtlSampleMode);
+    SetRtlSampleRate(rtlSampleRate);
+    SetRtlAgcMode(rtlAgcMode);
+    GetRtlValidTunerGains();
+    SetRtlTunerGain(rtlTunerGainMode, rtlTunerGain);
+    //SetRtlIfGain(1,rtlIfGain);
+    SetRtlFrequencyCorrection(rtlFreqencyCorrection);
+
+
 
     return;
 }
@@ -351,35 +350,124 @@ bool RTL2832SDRDevice::SetRtlFrequencyCorrection(qint16 _correction)
     return false;
 }
 
-bool RTL2832SDRDevice::SetRtlGain(quint16 _mode, quint16 _gain)
+bool RTL2832SDRDevice::SetRtlSampleMode(RTL2832SDRDevice::SAMPLING_MODES _sampleMode)
+{
+    if (deviceNumber == RTL_USB) {
+        int r = rtlsdr_set_direct_sampling(dev,_sampleMode);
+        if (r<0) {
+            qDebug()<<"SampleMode failed";
+            return false;
+        }
+
+    } else {
+        return SendTcpCmd(TCP_SET_DIRECT_SAMPLING,_sampleMode);
+    }
+    return false;
+}
+
+bool RTL2832SDRDevice::SetRtlAgcMode(bool _on)
+{
+    if (deviceNumber == RTL_USB) {
+        int r = rtlsdr_set_agc_mode(dev, _on);
+        if (r<0) {
+            qDebug()<<"AGC mode failed";
+            return false;
+        }
+
+    } else {
+        return SendTcpCmd(TCP_SET_AGC_MODE, _on);
+    }
+    return false;
+}
+
+bool RTL2832SDRDevice::SetRtlOffsetMode(bool _on)
+{
+    if (deviceNumber == RTL_USB) {
+        int r = rtlsdr_set_offset_tuning(dev, _on);
+        if (r<0) {
+            qDebug()<<"Offset mode not supported for this device";
+            return false;
+        }
+
+    } else {
+        return SendTcpCmd(TCP_SET_OFFSET_TUNING, _on);
+    }
+    return false;
+
+}
+
+bool RTL2832SDRDevice::SetRtlTunerGain(quint16 _mode, quint16 _gain)
 {
     if (!connected)
         return false;
 
+    if (rtlSampleMode != NORMAL) {
+        //Tuner AGC mode is disabled in Direct, have to set manually
+        _mode = GAIN_MODE_MANUAL;
+    }
+    qint16 gain = _gain;
+    if (_mode == GAIN_MODE_MANUAL) {
+        //Find closed supported gain
+        qint16 delta;
+        qint16 lastDelta = 10000;
+        qint16 lastGain = 0;
+        //Gains in UI are generic, we have to find closest gain that device actually supports
+        //Loop through valid gains until we get the smallest delta
+        for (int i=0; i<rtlTunerGainCount; i++) {
+            gain = rtlTunerGains[i];
+            delta = abs(gain - _gain); //Abs delta from requested gain
+            //qDebug()<<"Requested gain "<<_gain<<" Checking tunerGains[i] "<<gain<<" Delta "<<delta;
+            if ( delta >= lastDelta) {
+                //Done
+                gain = lastGain;
+                break;
+            }
+            lastGain = rtlTunerGains[i];
+            lastDelta = delta;
+        }
+    }
     if (deviceNumber == RTL_USB) {
         int r = rtlsdr_set_tuner_gain_mode(dev, _mode);
         if (r < 0) {
-            qDebug("WARNING: Failed to enable gain mode.");
+            qDebug("WARNING: Failed to set gain mode.");
             return false;
         }
-        if (rtlGainMode == GAIN_MODE_MANUAL){
+
+        if (_mode == GAIN_MODE_MANUAL){
             /* Set the tuner gain */
-            r = rtlsdr_set_tuner_gain(dev, _gain);
+            r = rtlsdr_set_tuner_gain(dev, gain);
             if (r < 0) {
                 qDebug("WARNING: Failed to set tuner gain.");
                 return false;
             }
-            //int actual = rtlsdr_get_tuner_gain(dev);
-            //qDebug()<<"Actual RTL gain set to "<<actual;
+            int actual = rtlsdr_get_tuner_gain(dev);
+            qDebug()<<"Requested tuner gain "<<_gain<<" Actual tuner gain "<<actual;
         }
         return true;
     } else if (deviceNumber == RTL_TCP) {
         SendTcpCmd(TCP_SET_GAIN_MODE, _mode);
-        if (rtlGainMode == GAIN_MODE_MANUAL) {
-            SendTcpCmd(TCP_SET_TUNER_GAIN, _gain);
+        if (_mode == GAIN_MODE_MANUAL) {
+            SendTcpCmd(TCP_SET_TUNER_GAIN, gain);
             //When do we need to set IF Gain?
-            //SendTcpCmd(TCP_SET_IF_GAIN, _gain);
+            //SendTcpCmd(TCP_SET_IF_GAIN, gain);
         }
+    }
+    return false;
+}
+
+bool RTL2832SDRDevice::SetRtlIfGain(quint16 _stage, quint16 _gain)
+{
+    if (deviceNumber == RTL_USB) {
+        int r = rtlsdr_set_tuner_if_gain(dev, _stage, _gain);
+        if (r < 0) {
+            qDebug("WARNING: Failed to set IF gain.");
+            return false;
+        }
+
+    } else {
+        //Check command args
+        //return SendTcpCmd(TCP_SET_IF_GAIN, _gain);
+
     }
     return false;
 }
@@ -422,36 +510,47 @@ void RTL2832SDRDevice::ReadSettings()
     //-10, 15, 40, 65, 90, 115, 140, 165, 190,
     //215, 240, 290, 340, 420, 430, 450, 470, 490
     //0 for automatic gain
-    rtlGain = qs->value("RtlGain",15).toInt();
+    rtlTunerGain = qs->value("RtlGain",15).toInt();
     rtlServerIP = QHostAddress(qs->value("IPAddr","127.0.0.1").toString());
     rtlServerPort = qs->value("Port","1234").toInt();
     rtlSampleRate = qs->value("RtlSampleRate",2048000).toUInt();
-    rtlGainMode = qs->value("RtlGainMode",GAIN_MODE_AUTO).toUInt();
+    rtlTunerGainMode = qs->value("RtlGainMode",GAIN_MODE_AUTO).toUInt();
     rtlFreqencyCorrection = qs->value("RtlFrequencyCorrection",0).toInt();
-
+    rtlSampleMode = (SAMPLING_MODES)qs->value("RtlSampleMode",NORMAL).toInt();
+    rtlAgcMode = qs->value("RtlAgcMode",false).toBool();
+    rtlOffsetMode = qs->value("RtlOffsetMode",false).toBool();
 }
 
 void RTL2832SDRDevice::WriteSettings()
 {
     QSettings *qs = GetQSettings();
-    qs->setValue("RtlGain",rtlGain);
+    qs->setValue("RtlGain",rtlTunerGain);
     qs->setValue("IPAddr",rtlServerIP.toString());
     qs->setValue("Port",rtlServerPort);
     qs->setValue("RtlSampleRate",rtlSampleRate);
-    qs->setValue("RtlGainMode",rtlGainMode);
+    qs->setValue("RtlGainMode",rtlTunerGainMode);
     qs->setValue("RtlFrequencyCorrection",rtlFreqencyCorrection);
+    qs->setValue("RtlSampleMode",rtlSampleMode);
+    qs->setValue("RtlAgcMode",rtlAgcMode);
+    qs->setValue("RtlOffsetMode",rtlOffsetMode);
     qs->sync();
 
 }
 
 double RTL2832SDRDevice::GetStartupFrequency()
 {
-    return 162450000;
+    if (rtlSampleMode == NORMAL)
+        return 162450000;
+    else
+        return 10000000; //Direct mode, WWV
 }
 
 int RTL2832SDRDevice::GetStartupMode()
 {
-    return dmFMN;
+    if (rtlSampleMode == NORMAL)
+        return dmFMN;
+    else
+        return dmAM; //Direct mode
 }
 
 /*
@@ -463,6 +562,10 @@ FCI FC2580	146 - 308 MHz and 438 - 924 MHz (gap in between)
 */
 double RTL2832SDRDevice::GetHighLimit()
 {
+    //Special case with direct sampling from I or Q ADC pin on 2832 is enabled
+    if (rtlSampleMode == DIRECT_I || rtlSampleMode == DIRECT_Q)
+        return 28800000;
+
     switch (rtlTunerType) {
         case RTLSDR_TUNER_E4000:
             return 2200000000;
@@ -484,6 +587,10 @@ double RTL2832SDRDevice::GetHighLimit()
 
 double RTL2832SDRDevice::GetLowLimit()
 {
+    //Special case with direct sampling from I or Q ADC pin on 2832 is enabled
+    if (rtlSampleMode == DIRECT_I || rtlSampleMode == DIRECT_Q)
+        return 1; //Technically possible, but maybe practical limit is better
+
     switch (rtlTunerType) {
         case RTLSDR_TUNER_E4000:
             return 52000000;
@@ -603,24 +710,43 @@ void RTL2832SDRDevice::SetupOptionUi(QWidget *parent)
     optionUi->sampleRateSelector->setCurrentIndex(cur);
     connect(optionUi->sampleRateSelector,SIGNAL(currentIndexChanged(int)),this,SLOT(SampleRateChanged(int)));
 
-    if (rtlGainMode == GAIN_MODE_AUTO)
-        optionUi->autoGainButton->setChecked(true);
-    else
-        optionUi->manualGainButton->setChecked(true);
+    //Tuner gain is typically 0 to +50db (500)
+    //These are generic gains, actual gains are set by finding closest to what device actually supports
+    optionUi->tunerGainSelector->addItem("Tuner AGC",-1000); //A value we'll never set so findData works
+    optionUi->tunerGainSelector->addItem("0db",0);
+    optionUi->tunerGainSelector->addItem("5db",50);
+    optionUi->tunerGainSelector->addItem("10db",100);
+    optionUi->tunerGainSelector->addItem("15db",150);
+    optionUi->tunerGainSelector->addItem("20db",200);
+    optionUi->tunerGainSelector->addItem("25db",250);
+    optionUi->tunerGainSelector->addItem("30db",300);
+    optionUi->tunerGainSelector->addItem("35db",350);
+    optionUi->tunerGainSelector->addItem("40db",400);
+    optionUi->tunerGainSelector->addItem("45db",450);
+    optionUi->tunerGainSelector->addItem("50db",500);
 
-    //RTL IF Gain valid values for E4000, may not be valid for other devices, but we don't know acutal device in TCP mode
-    QStringList ifGainItems = { "-10", "15", "40", "65", "90", "115", "140", "165", "190", "215", "240", "290", "340", "420", "430", "450", "470", "490"};
-    optionUi->manualGainSelector->addItems(ifGainItems);
-    cur = optionUi->manualGainSelector->findText(QString::number(rtlGain));
-    optionUi->manualGainSelector->setCurrentIndex(cur);
-    connect(optionUi->manualGainSelector,SIGNAL(currentIndexChanged(int)),this,SLOT(GainChanged(int)));
-
-    connect(optionUi->autoGainButton,&QRadioButton::toggled,this,&RTL2832SDRDevice::GainModeChanged);
-    connect(optionUi->autoGainButton,&QRadioButton::toggled,this,&RTL2832SDRDevice::GainModeChanged);
+    if (rtlTunerGainMode == GAIN_MODE_AUTO) {
+        optionUi->tunerGainSelector->setCurrentIndex(0);
+    } else {
+        cur = optionUi->tunerGainSelector->findData(rtlTunerGain);
+        optionUi->tunerGainSelector->setCurrentIndex(cur);
+    }
+    connect(optionUi->tunerGainSelector,SIGNAL(currentIndexChanged(int)),this,SLOT(TunerGainChanged(int)));
 
     optionUi->frequencyCorrectionEdit->setValue(rtlFreqencyCorrection);
     connect(optionUi->frequencyCorrectionEdit,SIGNAL(valueChanged(int)),this,SLOT(FreqCorrectionChanged(int)));
 
+    optionUi->samplingModeSelector->addItem("Normal", NORMAL);
+    optionUi->samplingModeSelector->addItem("Direct I", DIRECT_I);
+    optionUi->samplingModeSelector->addItem("Direct Q", DIRECT_Q);
+    optionUi->samplingModeSelector->setCurrentIndex(rtlSampleMode);
+    connect(optionUi->samplingModeSelector,SIGNAL(currentIndexChanged(int)),this,SLOT(SamplingModeChanged(int)));
+
+    optionUi->agcModeBox->setChecked(rtlAgcMode);
+    connect(optionUi->agcModeBox,SIGNAL(clicked(bool)),this,SLOT(AgcModeChanged(bool)));
+
+    optionUi->offsetModeBox->setChecked(rtlOffsetMode);
+    connect(optionUi->offsetModeBox,SIGNAL(clicked(bool)),this,SLOT(OffsetModeChanged(bool)));
 }
 
 void RTL2832SDRDevice::IPAddressChanged()
@@ -638,32 +764,24 @@ void RTL2832SDRDevice::IPPortChanged()
 
 void RTL2832SDRDevice::SampleRateChanged(int _index)
 {
+    Q_UNUSED(_index);
     int cur = optionUi->sampleRateSelector->currentIndex();
     rtlSampleRate = optionUi->sampleRateSelector->itemData(cur).toUInt();
     WriteSettings();
 }
 
-void RTL2832SDRDevice::GainModeChanged(bool _clicked)
+void RTL2832SDRDevice::TunerGainChanged(int _selection)
 {
-    if (optionUi->autoGainButton->isChecked()) {
-        rtlGainMode = GAIN_MODE_AUTO;
-        optionUi->manualGainSelector->setEnabled(false);
-
-    } else if (optionUi->manualGainButton->isChecked()) {
-        rtlGainMode = GAIN_MODE_MANUAL;
-        optionUi->manualGainSelector->setEnabled(true);
-
+    if (_selection == 0) {
+        //Auto mode selected
+        rtlTunerGainMode = GAIN_MODE_AUTO;
+        rtlTunerGain = 0;
+    } else {
+        rtlTunerGainMode = GAIN_MODE_MANUAL;
+        rtlTunerGain = optionUi->tunerGainSelector->currentData().toInt();
     }
     //Make real time changes
-    SetRtlGain(rtlGainMode,rtlGain);
-    WriteSettings();
-}
-
-void RTL2832SDRDevice::GainChanged(int _selection)
-{
-    rtlGain = optionUi->manualGainSelector->currentText().toUShort();
-    //Make real time changes
-    SetRtlGain(rtlGainMode,rtlGain);
+    SetRtlTunerGain(rtlTunerGainMode,rtlTunerGain);
     WriteSettings();
 }
 
@@ -671,6 +789,31 @@ void RTL2832SDRDevice::FreqCorrectionChanged(int _correction)
 {
     rtlFreqencyCorrection = _correction;
     SetRtlFrequencyCorrection(rtlFreqencyCorrection);
+    WriteSettings();
+}
+
+void RTL2832SDRDevice::SamplingModeChanged(int _samplingMode)
+{
+    Q_UNUSED(_samplingMode);
+    int cur = optionUi->samplingModeSelector->currentIndex();
+    rtlSampleMode = (SAMPLING_MODES)optionUi->samplingModeSelector->itemData(cur).toUInt();
+    WriteSettings();
+}
+
+void RTL2832SDRDevice::AgcModeChanged(bool _selected)
+{
+    Q_UNUSED(_selected);
+    rtlAgcMode = optionUi->agcModeBox->isChecked();
+    SetRtlAgcMode(rtlAgcMode);
+    WriteSettings();
+}
+
+void RTL2832SDRDevice::OffsetModeChanged(bool _selected)
+{
+    Q_UNUSED(_selected);
+    rtlOffsetMode = optionUi->offsetModeBox->isChecked();
+    if (!SetRtlOffsetMode(rtlOffsetMode))
+        rtlOffsetMode = false;
     WriteSettings();
 }
 
@@ -703,6 +846,40 @@ bool RTL2832SDRDevice::SendTcpCmd(quint8 _cmd, quint32 _data)
     bool res = (bytesWritten == sizeof(cmd));
     rtlTcpSocketMutex.unlock();
     return res;
+}
+
+bool RTL2832SDRDevice::SetRtlSampleRate(quint64 _sampleRate)
+{
+    if (deviceNumber == RTL_USB) {
+        rtlTunerType = RTLSDR_TUNER_UNKNOWN; //Default if we don't get valid data
+        rtlTunerType = (RTLSDR_TUNERS) rtlsdr_get_tuner_type(dev);
+
+        /* Set the sample rate */
+        if (rtlsdr_set_sample_rate(dev, _sampleRate) < 0) {
+            qDebug("WARNING: Failed to set sample rate.");
+            return true;
+        }
+    } else {
+        return SendTcpCmd(TCP_SET_SAMPLERATE,_sampleRate);
+    }
+    return false;
+
+}
+
+bool RTL2832SDRDevice::GetRtlValidTunerGains()
+{
+    if (deviceNumber == RTL_USB) {
+        rtlTunerGainCount = rtlsdr_get_tuner_gains(dev,rtlTunerGains);
+        if (rtlTunerGainCount < 0) {
+            rtlTunerGainCount = 0;
+            qDebug()<<"No valid tuner gains were returned";
+            return false;
+        }
+    } else {
+        //This is set in the TCP inbound processing
+        return false;
+    }
+    return false;
 }
 
 

@@ -100,12 +100,17 @@ private slots:
     void IPAddressChanged();
     void IPPortChanged();
     void SampleRateChanged(int _index);
-    void GainModeChanged(bool _clicked);
-    void GainChanged(int _selection);
+    void TunerGainChanged(int _selection);
+    //void IFGainChanged(int _selection);
     void FreqCorrectionChanged(int _correction);
+    void SamplingModeChanged(int _samplingMode);
+    void AgcModeChanged(bool _selected);
+    void OffsetModeChanged(bool _selected);
 
 private:
     enum PEBBLE_DEVICES {RTL_USB = 0,RTL_TCP=1};
+    enum SAMPLING_MODES {NORMAL=0, DIRECT_I=1, DIRECT_Q=2};
+
     //This comes from rtl-sdr.h in library, update if new devices are supported
     enum RTLSDR_TUNERS {
         RTLSDR_TUNER_UNKNOWN = 0,
@@ -125,7 +130,7 @@ private:
     const quint8 TCP_SET_IF_GAIN = 0x06;
     const quint8 TCP_SET_TEST_MODE = 0x07;
     const quint8 TCP_SET_AGC_MODE = 0x08;
-    const quint8 TCP_SET_DIRECTS_AMPLING = 0x09;
+    const quint8 TCP_SET_DIRECT_SAMPLING = 0x09;
     const quint8 TCP_SET_OFFSET_TUNING = 0x0a;
     const quint8 TCP_SET_RTL_XTAL = 0x0b;
     const quint8 TCP_SET_TUNER_XTAL = 0x0c;
@@ -155,9 +160,14 @@ private:
     } DongleInfo;
 
     bool SendTcpCmd(quint8 _cmd, quint32 _data);
-    bool SetRtlGain(quint16 _mode, quint16 _gain);
+    bool SetRtlSampleRate(quint64 _sampleRate);
+    bool GetRtlValidTunerGains(); //Tuner type must be known before this is called
+    bool SetRtlTunerGain(quint16 _mode, quint16 _gain);
+    bool SetRtlIfGain(quint16 _stage, quint16 _gain); //Not used
     bool SetRtlFrequencyCorrection(qint16 _correction);
-
+    bool SetRtlSampleMode(SAMPLING_MODES _sampleMode);
+    bool SetRtlAgcMode(bool _on);
+    bool SetRtlOffsetMode(bool _on);
 
     void InitSettings(QString fname);
     ProducerConsumer producerConsumer;
@@ -170,9 +180,16 @@ private:
 
     double sampleGain; //Factor to normalize output
 
+    SAMPLING_MODES rtlSampleMode;
+
     CPXBuf *inBuffer;
 
-    qint16 rtlGain; //in 10ths of a db
+    RTLSDR_TUNERS rtlTunerType;
+    int rtlTunerGainCount;
+    int rtlTunerGains[50];
+    quint16 rtlTunerGainMode;
+    qint16 rtlTunerGain; //in 10ths of a db
+    //qint16 rtlIfGain; //Not used
     quint32 rtlFrequency;
     quint32 rtlSampleRate;
     quint16 rtlDecimate;
@@ -185,8 +202,9 @@ private:
     Ui::RTL2832UI *optionUi;
     QHostAddress rtlServerIP;
     quint32 rtlServerPort;
-    quint16 rtlGainMode;
     qint16 rtlFreqencyCorrection; //+ or -
+    bool rtlAgcMode;
+    bool rtlOffsetMode;
 
     //Settings for each device
     QSettings *usbSettings;
@@ -196,8 +214,6 @@ private:
     bool haveDongleInfo;
     DongleInfo tcpDongleInfo;
 
-    RTLSDR_TUNERS rtlTunerType;
-    quint32 rtlTunerGainCount;
 
     int readBufferSize;
     quint16 numProducerBuffers; //For faster sample rates, may need more producer buffers to handle

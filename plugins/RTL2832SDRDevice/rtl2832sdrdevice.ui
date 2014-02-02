@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>610</width>
-    <height>95</height>
+    <height>116</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -64,6 +64,19 @@
       <item>
        <widget class="QLineEdit" name="port"/>
       </item>
+      <item>
+       <spacer name="horizontalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
      </layout>
     </widget>
    </item>
@@ -75,7 +88,7 @@
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <layout class="QGridLayout" name="gridLayout">
+     <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0,0,0,0">
       <property name="leftMargin">
        <number>2</number>
       </property>
@@ -86,12 +99,15 @@
        <number>2</number>
       </property>
       <property name="bottomMargin">
-       <number>2</number>
+       <number>10</number>
       </property>
-      <property name="spacing">
-       <number>4</number>
+      <property name="horizontalSpacing">
+       <number>10</number>
       </property>
-      <item row="0" column="0">
+      <property name="verticalSpacing">
+       <number>8</number>
+      </property>
+      <item row="0" column="1">
        <widget class="QLabel" name="label_3">
         <property name="maximumSize">
          <size>
@@ -104,7 +120,7 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="1">
+      <item row="0" column="2">
        <widget class="QComboBox" name="sampleRateSelector">
         <property name="maximumSize">
          <size>
@@ -114,7 +130,7 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="2">
+      <item row="0" column="3">
        <widget class="QLabel" name="label_4">
         <property name="maximumSize">
          <size>
@@ -127,7 +143,7 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="3">
+      <item row="0" column="4">
        <widget class="QSpinBox" name="frequencyCorrectionEdit">
         <property name="maximumSize">
          <size>
@@ -146,22 +162,52 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
-       <widget class="QRadioButton" name="autoGainButton">
+      <item row="2" column="1">
+       <widget class="QLabel" name="label_5">
         <property name="text">
-         <string>Auto Gain</string>
+         <string>Sampling mode</string>
         </property>
        </widget>
       </item>
       <item row="1" column="1">
-       <widget class="QRadioButton" name="manualGainButton">
+       <widget class="QLabel" name="label_6">
         <property name="text">
-         <string>Manual Gain</string>
+         <string>Tuner Gain</string>
         </property>
        </widget>
       </item>
+      <item row="2" column="2">
+       <widget class="QComboBox" name="samplingModeSelector"/>
+      </item>
       <item row="1" column="2">
-       <widget class="QComboBox" name="manualGainSelector"/>
+       <widget class="QComboBox" name="tunerGainSelector"/>
+      </item>
+      <item row="0" column="5">
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="1" column="3">
+       <widget class="QCheckBox" name="agcModeBox">
+        <property name="text">
+         <string>RTL AGC</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="3">
+       <widget class="QCheckBox" name="offsetModeBox">
+        <property name="text">
+         <string>Offset Mode</string>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>
@@ -174,7 +220,7 @@
      <property name="sizeHint" stdset="0">
       <size>
        <width>20</width>
-       <height>40</height>
+       <height>0</height>
       </size>
      </property>
     </spacer>

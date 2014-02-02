@@ -3,6 +3,12 @@
 # Project created by QtCreator 2014-01-03T13:01:57
 #
 #-------------------------------------------------
+#RTL2832 original source code: git clone git://git.osmocom.org/rtl-sdr.git
+# autoreconf -i
+# ./configure
+# make
+# sudo make install
+
 #Project common
 include(../../application/pebbleqt.pri)
 #DESTDIR is set in pebbleqt.pri
