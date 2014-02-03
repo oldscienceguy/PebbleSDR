@@ -68,7 +68,6 @@ public:
     int GetStartupMode();
     double GetHighLimit();
     double GetLowLimit();
-    double GetGain();
     QString GetDeviceName();
     int GetSampleRate();
     int* GetSampleRates(int &len); //Returns array of allowable rates and length of array as ref
