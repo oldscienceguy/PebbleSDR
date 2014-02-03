@@ -75,6 +75,9 @@ public:
     bool GetTestBenchChecked();
     quint16 GetNumDevices() {return 2;}
 
+    QVariant GetKeyValue(QString _key);
+    bool SetKeyValue(QString _key, QVariant _value);
+
     //Display device option widget in settings dialog
     void SetupOptionUi(QWidget *parent);
     //Called by settings to write device options to ini file
@@ -161,7 +164,8 @@ private:
     bool SendTcpCmd(quint8 _cmd, quint32 _data);
     bool SetRtlSampleRate(quint64 _sampleRate);
     bool GetRtlValidTunerGains(); //Tuner type must be known before this is called
-    bool SetRtlTunerGain(quint16 _mode, quint16 _gain);
+    bool SetRtlTunerGain(quint16 _gain);
+    bool SetRtlTunerMode(quint16 _mode);
     bool SetRtlIfGain(quint16 _stage, quint16 _gain); //Not used
     bool SetRtlFrequencyCorrection(qint16 _correction);
     bool SetRtlSampleMode(SAMPLING_MODES _sampleMode);

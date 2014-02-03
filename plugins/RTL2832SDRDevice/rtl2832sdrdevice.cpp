@@ -309,7 +309,8 @@ void RTL2832SDRDevice::Start()
     SetRtlSampleRate(rtlSampleRate);
     SetRtlAgcMode(rtlAgcMode);
     GetRtlValidTunerGains();
-    SetRtlTunerGain(rtlTunerGainMode, rtlTunerGain);
+    SetRtlTunerMode(rtlTunerGainMode);
+    SetRtlTunerGain(rtlTunerGain);
     //SetRtlIfGain(1,rtlIfGain);
     SetRtlFrequencyCorrection(rtlFreqencyCorrection);
 
@@ -396,17 +397,13 @@ bool RTL2832SDRDevice::SetRtlOffsetMode(bool _on)
 
 }
 
-bool RTL2832SDRDevice::SetRtlTunerGain(quint16 _mode, quint16 _gain)
+bool RTL2832SDRDevice::SetRtlTunerGain(quint16 _gain)
 {
     if (!connected)
         return false;
 
-    if (rtlSampleMode != NORMAL) {
-        //Tuner AGC mode is disabled in Direct, have to set manually
-        _mode = GAIN_MODE_MANUAL;
-    }
     qint16 gain = _gain;
-    if (_mode == GAIN_MODE_MANUAL) {
+    if (rtlTunerGainMode == GAIN_MODE_MANUAL) {
         //Find closed supported gain
         qint16 delta;
         qint16 lastDelta = 10000;
@@ -427,15 +424,10 @@ bool RTL2832SDRDevice::SetRtlTunerGain(quint16 _mode, quint16 _gain)
         }
     }
     if (deviceNumber == RTL_USB) {
-        int r = rtlsdr_set_tuner_gain_mode(dev, _mode);
-        if (r < 0) {
-            qDebug("WARNING: Failed to set gain mode.");
-            return false;
-        }
 
-        if (_mode == GAIN_MODE_MANUAL){
+        if (rtlTunerGainMode == GAIN_MODE_MANUAL){
             /* Set the tuner gain */
-            r = rtlsdr_set_tuner_gain(dev, gain);
+            int r = rtlsdr_set_tuner_gain(dev, gain);
             if (r < 0) {
                 qDebug("WARNING: Failed to set tuner gain.");
                 return false;
@@ -445,14 +437,34 @@ bool RTL2832SDRDevice::SetRtlTunerGain(quint16 _mode, quint16 _gain)
         }
         return true;
     } else if (deviceNumber == RTL_TCP) {
-        SendTcpCmd(TCP_SET_GAIN_MODE, _mode);
-        if (_mode == GAIN_MODE_MANUAL) {
+        if (rtlTunerGainMode == GAIN_MODE_MANUAL) {
             SendTcpCmd(TCP_SET_TUNER_GAIN, gain);
             //When do we need to set IF Gain?
             //SendTcpCmd(TCP_SET_IF_GAIN, gain);
         }
     }
     return false;
+}
+
+bool RTL2832SDRDevice::SetRtlTunerMode(quint16 _mode)
+{
+    if (!connected)
+        return false;
+    if (rtlSampleMode != NORMAL) {
+        //Tuner AGC mode is disabled in Direct, have to set manually
+        _mode = GAIN_MODE_MANUAL;
+    }
+    if (deviceNumber == RTL_USB) {
+
+        int r = rtlsdr_set_tuner_gain_mode(dev, _mode);
+        if (r < 0) {
+            qDebug("WARNING: Failed to set gain mode.");
+            return false;
+        }
+    } else {
+        SendTcpCmd(TCP_SET_GAIN_MODE, _mode);
+    }
+
 }
 
 bool RTL2832SDRDevice::SetRtlIfGain(quint16 _stage, quint16 _gain)
@@ -661,6 +673,42 @@ bool RTL2832SDRDevice::GetTestBenchChecked()
     return isTestBenchChecked;
 }
 
+QVariant RTL2832SDRDevice::GetKeyValue(QString _key)
+{
+    if (_key == "KeyDeviceSampleRate")
+        return rtlSampleRate;
+    else if ( _key == "KeyTunerGainMode")
+        return rtlTunerGainMode;
+    else if ( _key == "KeyTunerGain")
+        return rtlTunerGain;
+    else if ( _key == "KeyAgcMode")
+        return rtlAgcMode;
+    else if ( _key == "KeySampleMode")
+        return rtlSampleMode;
+    else if ( _key == "KeyOffsetMode")
+        return rtlOffsetMode;
+    else
+        return 0;
+}
+
+bool RTL2832SDRDevice::SetKeyValue(QString _key, QVariant _value)
+{
+    if (_key == "KeyDeviceSampleRate")
+        return SetRtlSampleRate(_value.toULongLong());
+    else if ( _key == "KeyTunerGainMode")
+        return SetRtlTunerMode(_value.toInt());
+    else if ( _key == "KeyTunerGain")
+        return SetRtlTunerGain(_value.toInt());
+    else if ( _key == "KeyAgcMode")
+        return SetRtlAgcMode(_value.toBool());
+    else if ( _key == "KeySampleMode")
+        return SetRtlSampleMode((SAMPLING_MODES)_value.toInt());
+    else if ( _key == "KeyOffsetMode")
+        return SetRtlOffsetMode(_value.toInt());
+    else
+        return false;
+}
+
 void RTL2832SDRDevice::SetupOptionUi(QWidget *parent)
 {
     ReadSettings();
@@ -776,7 +824,8 @@ void RTL2832SDRDevice::TunerGainChanged(int _selection)
         rtlTunerGain = optionUi->tunerGainSelector->currentData().toInt();
     }
     //Make real time changes
-    SetRtlTunerGain(rtlTunerGainMode,rtlTunerGain);
+    SetRtlTunerMode(rtlTunerGainMode);
+    SetRtlTunerGain(rtlTunerGain);
     WriteSettings();
 }
 
@@ -822,6 +871,9 @@ void RTL2832SDRDevice::WriteOptionUi()
 
 bool RTL2832SDRDevice::SendTcpCmd(quint8 _cmd, quint32 _data)
 {
+    if (!connected)
+        return false;
+
     rtlTcpSocketMutex.lock();
     RTL_CMD cmd;
     cmd.cmd = _cmd;

@@ -128,6 +128,14 @@ public:
     virtual void SetDeviceNumber(quint16 _deviceNumber) {deviceNumber = _deviceNumber;}
     virtual quint16 GetDeviceNumber() {return deviceNumber;}
 
+    //Allows us to get/set any device specific data
+    //Standard keys will be defined, but any key can be passed
+    virtual QVariant GetKeyValue(QString _key) {return 0;}
+    virtual bool SetKeyValue(QString _key, QVariant _value) {return false;}
+
+    virtual quint16 GetFrequencyCorrection() {return 0;}
+    virtual bool SetFrequencyCorrection(quint16 _correction) {return false;}
+
 protected:
     //Todo: Flag which of these is just a convenience for Pebble, vs required for the interface
     quint16 framesPerBuffer;
