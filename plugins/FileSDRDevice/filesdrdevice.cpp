@@ -240,8 +240,10 @@ void FileSDRDevice::InitSettings(QString fname)
 
     QString path = QCoreApplication::applicationDirPath();
 #ifdef Q_OS_MAC
-        //Pebble.app/contents/macos = 25
-        path.chop(25);
+    // RegExp for /Pebble.app/contents/macos
+    int pos = path.lastIndexOf(QRegExp("/.+\\.app/contents/macos$",Qt::CaseInsensitive));
+    if (pos > 0)
+        path.truncate(pos);
 #endif
     qSettings = new QSettings(path + "/PebbleData/" + fname +".ini",QSettings::IniFormat);
 

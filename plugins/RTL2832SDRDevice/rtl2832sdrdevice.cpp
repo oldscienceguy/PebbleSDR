@@ -1168,10 +1168,15 @@ void RTL2832SDRDevice::InitSettings(QString fname)
     //Scope::UserScope puts file C:\Users\...\AppData\Roaming\N1DDY
     //Scope::SystemScope puts file c:\ProgramData\n1ddy
 
+    //This returns the path to the application directory
+    //If a Mac application, we have to get back to the bundle directory
+    //If a Mac console app, we don't have a bundle and need to stay where we are
     QString path = QCoreApplication::applicationDirPath();
 #ifdef Q_OS_MAC
-        //Pebble.app/contents/macos = 25
-        path.chop(25);
+    // RegExp for /Pebble.app/contents/macos
+    int pos = path.lastIndexOf(QRegExp("/.+\\.app/contents/macos$",Qt::CaseInsensitive));
+    if (pos > 0)
+        path.truncate(pos);
 #endif
     qSettings = NULL; //Not useing, trap access
     //qSettings = new QSettings(path + "/PebbleData/" + fname +".ini",QSettings::IniFormat);
