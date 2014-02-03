@@ -13,72 +13,76 @@ SdrServer::SdrServer(int &argc, char **argv) : QCoreApplication(argc,argv)
     setApplicationName("SDRGarage");
     setApplicationVersion("0.0.1");
 
-    //Command line parsing
-    getCommandLineArguments();
-
-
     //Here or in init?
     //Load plugins
     plugins = new DevicePlugins();
+    sdr = plugins->GetDeviceInterface("RTL2832 USB");
+
+    protocol = new RtlTcpProtocol(sdr);
+
+    //Command line parsing
+    getCommandLineArguments();
+
+    dataBufLen = 256;
+    dataBuf = new char(dataBufLen);
+
 
     server = new QTcpServer(this);
     connect(server,SIGNAL(newConnection()), this, SLOT(newConnection()));
-    connect(server,SIGNAL(serverError()),this,SLOT(serverError()));
+    connect(server,SIGNAL(acceptError(QAbstractSocket::SocketError)),this,SLOT(serverError(QAbstractSocket::SocketError)));
     //One connection at a time for now, eventually we'll handle multiple connections
     server->setMaxPendingConnections(1);
-    server->listen(hostAddress, hostPort);
-    qDebug()<<"Listening on "<<hostAddress.toString()<<" port "<<hostPort;
+    server->listen(protocol->getHostAddress(), protocol->getPort());
+    qDebug()<<"Listening on "<<protocol->getHostAddress().toString()<<" port "<<protocol->getPort();
 }
 
-void SdrServer::getCommandLineArguments
-()
+SdrServer::~SdrServer()
+{
+    if (sdr != NULL) {
+        sdr->Stop();
+        sdr->Disconnect();
+    }
+}
+
+void SdrServer::getCommandLineArguments()
 {
     QCommandLineParser parser;
-    parser.setApplicationDescription("SDR Garage");
     parser.addHelpOption();
     parser.addVersionOption();
 
-    //parser.addPositionalArgument("source", QCoreApplication::translate("main", "Source file to copy."));
-    //parser.addPositionalArgument("destination", QCoreApplication::translate("main", "Destination directory."));
+    //Eventually display protocol options first, then options for each protocol
 
-    QCommandLineOption serverIPArg(
-        QStringList() << "a" << "address",                                  //Option names: -a or -address
-        QCoreApplication::translate("main", "Specify server IP address"),   //Option description
-        QCoreApplication::translate("main", "serverIPAddress"),             //Value name
-        QCoreApplication::translate("main", "0.0.0.0"));                    //Default
-    parser.addOption(serverIPArg);
+    protocol->getCommandLineArguments(&parser);
 
-    QCommandLineOption serverPortArg(QStringList() << "p" << "port",
-        QCoreApplication::translate("main", "Specify server port"),
-        QCoreApplication::translate("main", "serverPort"),
-        QCoreApplication::translate("main", "1234"));
-    parser.addOption(serverPortArg);
-
-    // A boolean option with multiple names (-f, --force)
-    //QCommandLineOption forceOption(QStringList() << "f" << "force", "Overwrite existing files.");
-    //parser.addOption(forceOption);
-
-    // Process the actual command line arguments given by the user
-    parser.process(*this);
-
-    const QStringList args = parser.positionalArguments();
-    // source is args.at(0), destination is args.at(1)
-
-    //bool showProgress = parser.isSet(showProgressOption);
-    //bool force = parser.isSet(forceOption);
-    hostAddress.setAddress(parser.value(serverIPArg));
-    hostPort = parser.value(serverPortArg).toUInt();
 }
 
 void SdrServer::newConnection()
 {
-    QTcpSocket *socket = server->nextPendingConnection();
+    socket = server->nextPendingConnection();
     qDebug()<<"New connection from "<<socket->peerAddress().toString();
+    connect(socket,SIGNAL(readyRead()),this,SLOT(newData()));
+
+    sdr->Connect();
+    sdr->Start();
 
 }
 
-void SdrServer::serverError()
+void SdrServer::serverError(QAbstractSocket::SocketError error)
 {
+    Q_UNUSED(error);
+
     qDebug()<<"Server error"<<server->errorString();
     server->close();
+}
+
+//Connected to TcpSocket readyRead
+void SdrServer::newData()
+{
+    //qint64 bytesAvailable = socket->bytesAvailable();
+    qint64 bytesRead = socket->read(dataBuf,dataBufLen);
+    //qDebug()<<bytesRead;
+    if (bytesRead > 0) {
+        protocol->commandWorker(dataBuf, bytesRead);
+    }
+
 }

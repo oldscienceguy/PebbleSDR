@@ -22,6 +22,7 @@ public:
     DevicePlugins();
     void findPlugins();
 
+    DeviceInterface *GetDeviceInterface(QString name);
 private:
     QDir pluginsDir;
     QList<PluginInfo> pluginInfoList;

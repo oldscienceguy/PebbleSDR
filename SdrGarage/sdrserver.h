@@ -6,6 +6,7 @@
 #include <QTcpServer>
 #include <QTcpSocket>
 #include "deviceplugins.h"
+#include "rtltcpprotocol.h"
 
 class SdrServer : public QCoreApplication
 
@@ -13,18 +14,24 @@ class SdrServer : public QCoreApplication
     Q_OBJECT
 public:
     SdrServer(int & argc, char ** argv);
+    ~SdrServer();
 
 public slots:
     void newConnection();
-    void serverError();
+    void serverError(QAbstractSocket::SocketError error);
+    void newData();
 
 private:
     QTcpServer *server;
     DevicePlugins *plugins;
     void getCommandLineArguments();
 
-    QHostAddress hostAddress;
-    quint16 hostPort;
+    QTcpSocket *socket;
+    quint16 dataBufLen;
+    char *dataBuf; //For incoming data
+
+    DeviceInterface *sdr;
+    RtlTcpProtocol *protocol;
 };
 
 #endif // SDRSERVER_H

@@ -7,6 +7,15 @@ DevicePlugins::DevicePlugins()
     findPlugins();
 }
 
+DeviceInterface *DevicePlugins::GetDeviceInterface(QString name)
+{
+    foreach(PluginInfo p, pluginInfoList) {
+        if (p.name == name && p.type == PluginInfo::DEVICE_PLUGIN)
+            return p.deviceInterface;
+    }
+    return NULL;
+}
+
 void DevicePlugins::findPlugins()
 {
     //Load static plugins
