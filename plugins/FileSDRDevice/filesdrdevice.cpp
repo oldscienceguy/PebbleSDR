@@ -122,14 +122,49 @@ void FileSDRDevice::ShowOptions()
 
 void FileSDRDevice::ReadSettings()
 {
-    fileName = qSettings->value("FileName", "").toString();
-    recordingPath = qSettings->value("RecordingPath", "").toString();
+    QSettings *qs = GetQSettings();
+
+    //These are common settings for every device, variables are defined in DeviceInterface
+    startup = (STARTUP)qs->value("Startup", DEFAULTFREQ).toInt();
+    freqToSet = qs->value("StartupFreq", 10000000).toDouble();
+    inputDeviceName = qs->value("InputDeviceName", "").toString();
+    outputDeviceName = qs->value("OutputDeviceName", "").toString();
+    sampleRate = qs->value("SampleRate", 48000).toInt();
+    iqGain = qs->value("iqGain",1).toDouble();
+    iqOrder = (IQORDER)qs->value("IQOrder", IQ).toInt();
+    iqBalanceGain = qs->value("iqBalanceGain",1).toDouble();
+    iqBalancePhase = qs->value("iqBalancePhase",0).toDouble();
+    iqBalanceEnable = qs->value("iqBalanceEnable",false).toBool();
+    lastFreq = qs->value("LastFreq", 10000000).toDouble();
+    lastMode = qs->value("LastMode",0).toInt();
+    lastDisplayMode = qs->value("LastDisplayMode",0).toInt();
+    isTestBenchChecked = qs->value("TestBench",false).toBool();
+
+    fileName = qs->value("FileName", "").toString();
+    recordingPath = qs->value("RecordingPath", "").toString();
 }
 
 void FileSDRDevice::WriteSettings()
 {
-    qSettings->setValue("FileName", fileName);
-    qSettings->setValue("RecordingPath", recordingPath);
+    QSettings *qs = GetQSettings();
+
+    qs->setValue("Startup",startup);
+    qs->setValue("StartupFreq",freqToSet);
+    qs->setValue("InputDeviceName", inputDeviceName);
+    qs->setValue("OutputDeviceName", outputDeviceName);
+    qs->setValue("SampleRate",sampleRate);
+    qs->setValue("iqGain",iqGain);
+    qs->setValue("IQOrder", iqOrder);
+    qs->setValue("iqBalanceGain", iqBalanceGain);
+    qs->setValue("iqBalancePhase", iqBalancePhase);
+    qs->setValue("iqBalanceEnable", iqBalanceEnable);
+    qs->setValue("LastFreq",lastFreq);
+    qs->setValue("LastMode",lastMode);
+    qs->setValue("LastDisplayMode",lastDisplayMode);
+    qs->setValue("TestBench",isTestBenchChecked);
+
+    qs->setValue("FileName", fileName);
+    qs->setValue("RecordingPath", recordingPath);
 }
 
 double FileSDRDevice::GetStartupFrequency()

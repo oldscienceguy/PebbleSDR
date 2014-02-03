@@ -501,26 +501,27 @@ void SDR::ResetAllSettings(bool b)
 void SDR::ReadSettings()
 {
     QSettings *qs = GetQSettings();
-    if (DelegateToPlugin()) {
-        plugin->ReadSettings();
-    }
     DeviceInterface *di = (plugin == NULL) ? this:plugin;
     qDebug()<<"Reading settings for "<<di->GetPluginName(pluginDeviceNumber);
 
-    di->startup = (STARTUP)qs->value("Startup", DEFAULTFREQ).toInt();
-    di->freqToSet = qs->value("StartupFreq", 10000000).toDouble();
-    di->inputDeviceName = qs->value("InputDeviceName", "").toString();
-    di->outputDeviceName = qs->value("OutputDeviceName", "").toString();
-    di->sampleRate = qs->value("SampleRate", 48000).toInt();
-    di->iqGain = qs->value("iqGain",1).toDouble();
-    di->iqOrder = (IQORDER)qs->value("IQOrder", SDR::IQ).toInt();
-    di->iqBalanceGain = qs->value("iqBalanceGain",1).toDouble();
-    di->iqBalancePhase = qs->value("iqBalancePhase",0).toDouble();
-    di->iqBalanceEnable = qs->value("iqBalanceEnable",false).toBool();
-    di->lastFreq = qs->value("LastFreq", 10000000).toDouble();
-    di->lastMode = qs->value("LastMode",0).toInt();
-    di->lastDisplayMode = qs->value("LastDisplayMode",0).toInt();
-    di->isTestBenchChecked = qs->value("TestBench",false).toBool();
+    if (DelegateToPlugin()) {
+        plugin->ReadSettings();
+    } else {
+        di->startup = (STARTUP)qs->value("Startup", DEFAULTFREQ).toInt();
+        di->freqToSet = qs->value("StartupFreq", 10000000).toDouble();
+        di->inputDeviceName = qs->value("InputDeviceName", "").toString();
+        di->outputDeviceName = qs->value("OutputDeviceName", "").toString();
+        di->sampleRate = qs->value("SampleRate", 48000).toInt();
+        di->iqGain = qs->value("iqGain",1).toDouble();
+        di->iqOrder = (IQORDER)qs->value("IQOrder", SDR::IQ).toInt();
+        di->iqBalanceGain = qs->value("iqBalanceGain",1).toDouble();
+        di->iqBalancePhase = qs->value("iqBalancePhase",0).toDouble();
+        di->iqBalanceEnable = qs->value("iqBalanceEnable",false).toBool();
+        di->lastFreq = qs->value("LastFreq", 10000000).toDouble();
+        di->lastMode = qs->value("LastMode",0).toInt();
+        di->lastDisplayMode = qs->value("LastDisplayMode",0).toInt();
+        di->isTestBenchChecked = qs->value("TestBench",false).toBool();
+    }
 
     qs->beginGroup(tr("Testbench"));
 
@@ -550,26 +551,28 @@ void SDR::ReadSettings()
 void SDR::WriteSettings()
 {
     QSettings *qs = GetQSettings();
-    if (DelegateToPlugin()) {
-        plugin->WriteSettings();
-    }
     DeviceInterface *di = (plugin == NULL) ? this:plugin;
     qDebug()<<"Writing settings for "<<di->GetPluginName();
 
-    qs->setValue("Startup",di->startup);
-    qs->setValue("StartupFreq",di->freqToSet);
-    qs->setValue("InputDeviceName", di->inputDeviceName);
-    qs->setValue("OutputDeviceName", di->outputDeviceName);
-    qs->setValue("SampleRate",di->sampleRate);
-    qs->setValue("iqGain",di->iqGain);
-    qs->setValue("IQOrder", di->iqOrder);
-    qs->setValue("iqBalanceGain", di->iqBalanceGain);
-    qs->setValue("iqBalancePhase", di->iqBalancePhase);
-    qs->setValue("iqBalanceEnable", di->iqBalanceEnable);
-    qs->setValue("LastFreq",di->lastFreq);
-    qs->setValue("LastMode",di->lastMode);
-    qs->setValue("LastDisplayMode",di->lastDisplayMode);
-    qs->setValue("TestBench",di->isTestBenchChecked);
+    if (DelegateToPlugin()) {
+        plugin->WriteSettings();
+    } else {
+        //Plugins are responsible for these, but if no plugin, write them here
+        qs->setValue("Startup",di->startup);
+        qs->setValue("StartupFreq",di->freqToSet);
+        qs->setValue("InputDeviceName", di->inputDeviceName);
+        qs->setValue("OutputDeviceName", di->outputDeviceName);
+        qs->setValue("SampleRate",di->sampleRate);
+        qs->setValue("iqGain",di->iqGain);
+        qs->setValue("IQOrder", di->iqOrder);
+        qs->setValue("iqBalanceGain", di->iqBalanceGain);
+        qs->setValue("iqBalancePhase", di->iqBalancePhase);
+        qs->setValue("iqBalanceEnable", di->iqBalanceEnable);
+        qs->setValue("LastFreq",di->lastFreq);
+        qs->setValue("LastMode",di->lastMode);
+        qs->setValue("LastDisplayMode",di->lastDisplayMode);
+        qs->setValue("TestBench",di->isTestBenchChecked);
+    }
 
     qs->beginGroup(tr("Testbench"));
 
