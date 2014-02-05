@@ -16,12 +16,17 @@ public:
     SdrServer(int & argc, char ** argv);
     ~SdrServer();
 
+
+    qintptr GetSocketDescriptor() {return socket->socketDescriptor();}
+
 public slots:
     void newConnection();
+    void closeConnection();
     void serverError(QAbstractSocket::SocketError error);
     void newData();
 
 private:
+
     QTcpServer *server;
     DevicePlugins *plugins;
     void getCommandLineArguments();

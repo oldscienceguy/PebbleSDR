@@ -3,12 +3,26 @@
 */
 
 #include "rtltcpprotocol.h"
+#include "sdrserver.h"
 
 #include <QCoreApplication>
 
-RtlTcpProtocol::RtlTcpProtocol(DeviceInterface *_sdr)
+RtlTcpProtocol::RtlTcpProtocol(SdrServer *_server, DeviceInterface *_sdr)
 {
+    sdrServer = _server;
     sdr = _sdr;
+    cmdIndex = 0;
+    threadSocket = NULL;
+}
+
+//Called when connection is lost or terminated
+void RtlTcpProtocol::Reset()
+{
+    if (threadSocket != NULL) {
+        threadSocket->close();
+        delete threadSocket;
+        threadSocket = NULL;
+    }
     cmdIndex = 0;
 }
 
@@ -107,7 +121,6 @@ void RtlTcpProtocol::commandWorker(char *data, qint64 numBytes)
             cmdIndex = 0;
         }
     }
-    //If we don't have a valid command byte, then keep sliding data until we get one
 }
 
 void RtlTcpProtocol::tcpCommands(RTL_CMD cmd)
@@ -116,67 +129,88 @@ void RtlTcpProtocol::tcpCommands(RTL_CMD cmd)
     switch(cmd.cmd) {
     case CMD_FREQ:
         frequency = ntohl(cmd.param);
-        printf("set freq %d\n", frequency);
+        qDebug()<<"set freq"<< frequency;
         sdr->SetFrequency(frequency,frequency);
         break;
 
     case CMD_SAMPLERATE:
         sampleRate = ntohl(cmd.param);
-        printf("set sample rate %d\n", sampleRate);
+        qDebug()<<"set sample rate"<<sampleRate;
         sdr->SetKeyValue("KeyDeviceSampleRate",sampleRate);
         break;
     case CMD_GAIN_MODE:
         tunerGainMode = ntohl(cmd.param);
-        printf("set gain mode %d\n", tunerGainMode);
+        qDebug()<<"set gain mode"<<tunerGainMode;
         sdr->SetKeyValue("KeyTunerGainMode",tunerGainMode);
         break;
     case CMD_TUNER_GAIN:
         tunerGain = ntohl(cmd.param);
-        printf("set gain %d\n", tunerGain);
+        qDebug()<<"set gain"<<tunerGain;
         sdr->SetKeyValue("KeyTunerGain", tunerGain);
         break;
     case CMD_FREQ_CORRECTION:
         frequencyCorrection = ntohl(cmd.param);
-        printf("set freq correction %d\n", frequencyCorrection);
+        qDebug()<<"set freq correction"<<frequencyCorrection;
         sdr->SetFrequencyCorrection(frequencyCorrection);
         break;
     case CMD_IF_GAIN:
         tmp = ntohl(cmd.param);
-        printf("set if stage %d gain %d\n", tmp >> 16, (short)(tmp & 0xffff));
+        qDebug()<<"set if stage "<< (tmp >> 16) <<"gain "<< (short)(tmp & 0xffff);
         //rtlsdr_set_tuner_if_gain(dev, tmp >> 16, (short)(tmp & 0xffff));
         break;
     case CMD_TEST_MODE:
-        printf("set test mode %d\n", ntohl(cmd.param));
+        qDebug()<<"set test mode " <<ntohl(cmd.param);
         //rtlsdr_set_testmode(dev, ntohl(cmd.param));
         break;
     case CMD_AGC_MODE:
         agcMode = ntohl(cmd.param);
-        printf("set agc mode %d\n",agcMode );
+        qDebug()<<"set agc mode "<<agcMode;
         sdr->SetKeyValue("KeyAgcMode",agcMode);
         break;
     case CMD_DIRECT_SAMPLING:
         directSampling = ntohl(cmd.param);
-        printf("set direct sampling %d\n", directSampling);
+        qDebug()<<"set direct sampling "<<directSampling;
         sdr->SetKeyValue("KeySampleMode",directSampling);
         break;
     case CMD_OFFSET_TUNING:
         offsetTuning = ntohl(cmd.param);
-        printf("set offset tuning %d\n", offsetTuning);
+        qDebug()<<"set offset tuning "<<offsetTuning;
         sdr->SetKeyValue("KeyOffsetMode",offsetTuning);
         break;
     case CMD_XTAL_FREQ:
-        printf("set rtl xtal %d\n", ntohl(cmd.param));
+        qDebug()<<"set rtl xtal "<<ntohl(cmd.param);
         //rtlsdr_set_xtal_freq(dev, ntohl(cmd.param), 0);
         break;
     case CMD_TUNER_XTAL:
-        printf("set tuner xtal %d\n", ntohl(cmd.param));
+        qDebug()<<"set tuner xtal "<<ntohl(cmd.param);
         //rtlsdr_set_xtal_freq(dev, 0, ntohl(cmd.param));
         break;
     case CMD_TUNER_GAIN_BY_INDEX:
-        printf("set tuner gain by index %d\n", ntohl(cmd.param));
+        qDebug()<<"set tuner gain by index "<<ntohl(cmd.param);
         //set_gain_by_index(dev, ntohl(cmd.param));
         break;
     default:
         break;
     }
+}
+
+//This is protocol specific, but we don't want server knowledge in protocol
+void RtlTcpProtocol::ProcessIQData(CPX *in, quint16 numSamples)
+{
+    //This is being called by DeviceInterface consumer thread and has problems with cross thread socket usage
+    if (threadSocket == NULL) {
+        //First time and we need to create local thread
+        threadSocket = new QTcpSocket();
+        threadSocket->setSocketDescriptor(sdrServer->GetSocketDescriptor());
+    }
+    //Testing - reversing exactly what we do in consumer for device
+    double sampleGain = 1/128.0;
+    //Stupid, but we need to convert to 0 to 255 1 byte samples rtl_tcp generates
+    for (int i=0, j=0; i<numSamples; i++, j+=2) {
+        out[j] = (in[i].re / sampleGain) * 128.0 + 127.0;
+        out[j+1] = (in[i].im /sampleGain) * 128.0 + 127.0;
+    }
+
+    qint64 bytesWritten = threadSocket->write(out, numSamples*2);
+
 }

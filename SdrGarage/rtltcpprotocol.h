@@ -4,6 +4,10 @@
 #include <QCommandLineParser>
 #include <QHostAddress>
 #include "device_interfaces.h"
+#include "cpx.h"
+#include <QTcpSocket>
+
+class SdrServer;
 
 class RtlTcpProtocol
 {
@@ -35,7 +39,7 @@ public:
         char buf[5]; //Must be same size as packed structure
     };
 
-    RtlTcpProtocol(DeviceInterface *_sdr);
+    RtlTcpProtocol(SdrServer *_server, DeviceInterface *_sdr);
     void getCommandLineArguments(QCommandLineParser *parser);
 
     QHostAddress getHostAddress() {return hostAddress;}
@@ -43,12 +47,19 @@ public:
 
     void tcpCommands(RTL_CMD cmd);
     void commandWorker(char *data, qint64 numBytes);
+    void ProcessIQData(CPX *in, quint16 numSamples); //Must be public so we can bind to it
+    void Reset();
 private:
+
     QHostAddress hostAddress;
     quint16 hostPort;
     RTL_CMD cmd; //Incoming command
     quint16 cmdIndex; //Used if we dont get all the command bytes at once
     DeviceInterface *sdr;
+    SdrServer *sdrServer;
+    QTcpSocket *threadSocket;
+
+    char out[4096]; //Make dynamic
 
     //Last command param values
     quint32 frequency;

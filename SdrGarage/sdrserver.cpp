@@ -8,6 +8,8 @@
 
 */
 
+using namespace std::placeholders; //For _1, _2 arguments
+
 SdrServer::SdrServer(int &argc, char **argv) : QCoreApplication(argc,argv)
 {
     setApplicationName("SDRGarage");
@@ -18,7 +20,7 @@ SdrServer::SdrServer(int &argc, char **argv) : QCoreApplication(argc,argv)
     plugins = new DevicePlugins();
     sdr = plugins->GetDeviceInterface("RTL2832 USB");
 
-    protocol = new RtlTcpProtocol(sdr);
+    protocol = new RtlTcpProtocol(this, sdr);
 
     //Command line parsing
     getCommandLineArguments();
@@ -61,9 +63,26 @@ void SdrServer::newConnection()
     socket = server->nextPendingConnection();
     qDebug()<<"New connection from "<<socket->peerAddress().toString();
     connect(socket,SIGNAL(readyRead()),this,SLOT(newData()));
+    connect(socket,SIGNAL(disconnected()),this,SLOT(closeConnection()));
 
-    sdr->Connect();
+    sdr->ReadSettings(); //Gets current settings or defaults if first use
+
+    sdr->Initialize(std::bind(&RtlTcpProtocol::ProcessIQData, protocol, _1, _2),2048);
+
+    if (!sdr->Connect()) {
+        qDebug()<<"Could not connect to device";
+        return;
+    }
     sdr->Start();
+
+}
+
+void SdrServer::closeConnection()
+{
+    qDebug()<<"Connection closed";
+    sdr->Stop();
+    sdr->Disconnect();
+    protocol->Reset();
 
 }
 
