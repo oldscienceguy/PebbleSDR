@@ -297,10 +297,9 @@ void RTL2832SDRDevice::Start()
         if (rtlsdr_reset_buffer(dev) < 0) {
             qDebug("WARNING: Failed to reset buffers.");
             return;
-        }        
-        running = true; //Must be after reset
+        }
     } else if (deviceNumber == RTL_TCP) {
-        running = true;
+        //Nothing to do here
     }
 
     //These have to be executed after we've done USB or TCP specific setup
@@ -314,7 +313,8 @@ void RTL2832SDRDevice::Start()
     //SetRtlIfGain(1,rtlIfGain);
     SetRtlFrequencyCorrection(rtlFreqencyCorrection);
 
-
+    //Setting running=true is what tells the producer thread to start collecting data
+    running = true; //Must be after reset
 
     return;
 }
@@ -337,6 +337,10 @@ bool RTL2832SDRDevice::SetRtlFrequencyCorrection(qint16 _correction)
 {
     if (!connected)
         return false;
+
+    //Trying to set a correction of zero fails, so ignore
+    if (_correction == 0)
+        return true;
 
     if (deviceNumber == RTL_USB) {
         int r = rtlsdr_set_freq_correction(dev,_correction);
@@ -486,8 +490,11 @@ bool RTL2832SDRDevice::SetRtlIfGain(quint16 _stage, quint16 _gain)
 
 double RTL2832SDRDevice::SetFrequency(double fRequested,double fCurrent)
 {
-    if (!connected)
-        return false;
+    if (!connected || fRequested == 0)
+        return fCurrent;
+
+    if (fRequested > GetHighLimit() || fRequested < GetLowLimit())
+        return fCurrent;
 
     if (deviceNumber == RTL_USB) {
         /* Set the frequency */
@@ -593,8 +600,9 @@ double RTL2832SDRDevice::GetStartupFrequency()
 int RTL2832SDRDevice::GetStartupMode()
 {
     if (rtlSampleMode == NORMAL)
-        return dmFMN;
+        return lastMode;
     else
+        //No place to store two lastModes for normal and direct, so always start direct in AM for now
         return dmAM; //Direct mode
 }
 
@@ -931,9 +939,6 @@ bool RTL2832SDRDevice::SendTcpCmd(quint8 _cmd, quint32 _data)
 bool RTL2832SDRDevice::SetRtlSampleRate(quint64 _sampleRate)
 {
     if (deviceNumber == RTL_USB) {
-        rtlTunerType = RTLSDR_TUNER_UNKNOWN; //Default if we don't get valid data
-        rtlTunerType = (RTLSDR_TUNERS) rtlsdr_get_tuner_type(dev);
-
         /* Set the sample rate */
         if (rtlsdr_set_sample_rate(dev, _sampleRate) < 0) {
             qDebug("WARNING: Failed to set sample rate.");
