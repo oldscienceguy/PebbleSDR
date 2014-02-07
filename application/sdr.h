@@ -88,10 +88,10 @@ public:
     virtual void SetIQGain(double g);
     virtual QSettings *GetQSettings();
 
-    void StopProducerThread();
-    void RunProducerThread();
-    void StopConsumerThread();
-    void RunConsumerThread();
+    virtual void StopProducerThread();
+    virtual void RunProducerThread();
+    virtual void StopConsumerThread();
+    virtual void RunConsumerThread();
 
 
 
@@ -187,13 +187,13 @@ class SDRProducerThread:public QThread
 {
 	Q_OBJECT
 public:
-    SDRProducerThread(DeviceInterface * s);
+    SDRProducerThread(SDR *s);
 	void run();
 	void stop();
 	void setRefresh(int ms);
 
 private:
-    DeviceInterface *sdr;
+    SDR *sdr;
 	bool doRun;
 	int msSleep;
 };
@@ -201,13 +201,13 @@ class SDRConsumerThread:public QThread
 {
 	Q_OBJECT
 public:
-    SDRConsumerThread(DeviceInterface * s);
+    SDRConsumerThread(SDR *s);
 	void run();
 	void stop();
 	void setRefresh(int ms);
 
 private:
-    DeviceInterface *sdr;
+    SDR *sdr;
 	bool doRun;
 	int msSleep;
 };

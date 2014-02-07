@@ -893,13 +893,14 @@ void SDR::AcquireFilledBuffer()
 
 }
 
+//This will be removed when we switch over to producerConsumer class
 void SDR::StopProducerThread(){}
 void SDR::RunProducerThread(){}
 void SDR::StopConsumerThread(){}
 void SDR::RunConsumerThread(){}
 
 //SDRThreads
-SDRProducerThread::SDRProducerThread(DeviceInterface *_sdr)
+SDRProducerThread::SDRProducerThread(SDR *_sdr)
 {
 	sdr = _sdr;
 	msSleep=5;
@@ -923,7 +924,7 @@ void SDRProducerThread::run()
 		msleep(msSleep);
 	}
 }
-SDRConsumerThread::SDRConsumerThread(DeviceInterface *_sdr)
+SDRConsumerThread::SDRConsumerThread(SDR *_sdr)
 {
 	sdr = _sdr;
 	msSleep=5;

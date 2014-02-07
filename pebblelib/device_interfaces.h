@@ -73,12 +73,6 @@ public:
     virtual bool UsesAudioInput() = 0;
     virtual bool GetTestBenchChecked() {return isTestBenchChecked;}
 
-
-    virtual void StopProducerThread() = 0;
-    virtual void RunProducerThread() = 0;
-    virtual void StopConsumerThread() = 0;
-    virtual void RunConsumerThread() = 0;
-
     cbProcessIQData ProcessIQData;
 
     virtual int GetLastDisplayMode() {return lastDisplayMode;}
