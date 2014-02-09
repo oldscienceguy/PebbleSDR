@@ -4,6 +4,9 @@
 #
 #-------------------------------------------------
 #RTL2832 original source code: git clone git://git.osmocom.org/rtl-sdr.git
+#Make sure you do this on any new system or plugin won't build
+# install macports (easiest way to get libusb) www.macports.org
+# sudo port install libusb
 # autoreconf -i
 # ./configure
 # make
