@@ -188,9 +188,10 @@ void Plugins::findPlugins()
 
         QPluginLoader loader(pluginsDir.absoluteFilePath(fileName));
         QObject *plugin = loader.instance();
-        //Dump error string if having problems loading, for example can't find pebblelib
-        //qDebug()<<loader.errorString();
-        if (plugin) {
+        if (plugin == NULL) {
+            //Dump error string if having problems loading, for example can't find pebblelib
+            qDebug()<<loader.errorString();
+        } else {
             DigitalModemInterface *iDigitalModem = qobject_cast<DigitalModemInterface *>(plugin);
             DeviceInterface *iDeviceInterface = qobject_cast<DeviceInterface *>(plugin);
             if (iDigitalModem) {
@@ -221,7 +222,6 @@ void Plugins::findPlugins()
                     pluginInfoList.append(pluginInfo);
                 }
             }
-            //qDebug()<<plugin->Get
         }
     }
 }

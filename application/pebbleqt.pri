@@ -6,6 +6,10 @@ CONFIG += c++11
 #QMAKE_CXXFLAGS += -mmacosx-version-min=10.8
 #QMAKE_CXXFLAGS += -std=c++11
 #QMAKE_CXXFLAGS += -stdlib=libc++
+#This fixes a nasty symbols not resolved problem that happened when I did a clean install of
+#   Mavericks, XCode 5, & QT5.2.1
+#Qt was using the 10.8 sdk installed by XCode, but that sdk is missing symbols
+QMAKE_MAC_SDK = macosx10.9
 
 
 macx {

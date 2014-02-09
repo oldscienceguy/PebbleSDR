@@ -45,8 +45,8 @@ QT += widgets core gui multimedia
 #Make sure to update project version if Qt version is updated in QtCreator
 #Exit code 0x0c0000315 if "Release DLLs" not copied to Debug and Release dirs
 
-#RTL2832 original source code: git clone git://git.osmocom.org/rtl-sdr.git
-#Copy relevant files to Pebble source tree and make sure attribution comments are not removed
+#Specific device plugins, like rtl2832, have their own pre-build installation requirements
+#See the .pro file for each device
 
 #Enable this to look at config to debug conditionals. For example: debug and release both show up sometimes
 #message($$CONFIG)
