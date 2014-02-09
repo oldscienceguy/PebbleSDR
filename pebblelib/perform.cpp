@@ -167,21 +167,26 @@ void Perform::ReadPerformance()
         float fAve= (float)DeltaTimeAve/( (float)DeltaSamples);
         qDebug()<<desc;
 
+        //Force to usec for easier comparison
+#if 0
 		if(fAve>1e6)
 		{
             qDebug()<<"Max mSec = "<<DeltaTimeMax/1000000  <<"Min mSec = "<<DeltaTimeMin/1000000;
 			qDebug()<<"Ave mSec= "<<fAve/1000000.0<<" #Samples = "<< DeltaSamples;
 		}
 		else if(fAve>1e3)
+#endif
 		{
             qDebug()<<"Max uSec = "<<DeltaTimeMax/1000  <<"Min uSec = "<<DeltaTimeMin/1000;
 			qDebug()<<"Ave uSec= "<<fAve/1000.0<<" #Samples = "<< DeltaSamples;
 		}
+#if 0
 		else
 		{
             qDebug()<<"Max nSec = "<<DeltaTimeMax  <<"Min nSec = "<<DeltaTimeMin;
 			qDebug()<<"Ave nSec= "<<fAve<<" #Samples = "<< DeltaSamples;
 		}
+#endif
 	}
 }
 
