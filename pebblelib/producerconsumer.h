@@ -5,10 +5,54 @@
 #include "perform.h"
 #include <QtCore>
 #include <QThread>
-#include "../pebblelib/device_interfaces.h"
 
-class SDRProducerWorker;
-class SDRConsumerWorker;
+
+//Callback to class that instantiated us
+enum cbProducerConsumerEvents{Start, Run, Stop};
+typedef std::function<void(cbProducerConsumerEvents _event)> cbProducerConsumer;
+
+//Alternative implemenation using QThread and pcWorker.moveToThread(...)
+class PCWorker;
+
+class PCThread : public QThread
+{
+public:
+    PCThread(QObject * parent = 0):QThread(parent) {
+        msSleep = 0;
+    }
+
+    void SetWorker(cbProducerConsumer _worker) {
+        worker = _worker;
+    }
+    void SetMsSleep(quint16 _msSleep) {
+        msSleep = _msSleep;
+    }
+
+    //QThread override
+    //This is the ONLY method that actually runs in thread
+    //All thread local construction should be done here (Start)
+    //All thread local descruction should be done here (Stop)
+    void run() {
+        worker(cbProducerConsumerEvents::Start);
+        doRun = true;
+        while (doRun) {
+            worker(cbProducerConsumerEvents::Run);
+            msleep(msSleep);
+        }
+        worker(cbProducerConsumerEvents::Stop);
+    }
+
+    //QThread override
+    void quit() {
+        doRun = false;
+        QThread::quit();
+    }
+
+private:
+    cbProducerConsumer worker;
+    volatile bool doRun;
+    quint16 msSleep;
+};
 
 class ProducerConsumer : public QObject
 {
@@ -16,7 +60,7 @@ class ProducerConsumer : public QObject
 public:
     ProducerConsumer();
 
-    void Initialize(DeviceInterface *_device, int _numDataBufs, int _producerBufferSize);
+    void Initialize(cbProducerConsumer _producerWorker, cbProducerConsumer _consumerWorker, int _numDataBufs, int _producerBufferSize);
 
     bool Start(bool _producer = true, bool _consumer = true);
     bool Stop();
@@ -41,7 +85,11 @@ public:
     quint16 GetNumFilledBufs() {return semNumFilledBuffers->available();}
 
 private:
-    DeviceInterface *device;
+    //Experiment using worker thread vs QThread and moveToThread
+    bool useWorkerThread;
+    //Experiment using blocking acquire() vs checking for available first
+    bool useBlockingAcquire;
+
     //Producer/Consumer buffer management
     int numDataBufs; //Producer/Consumer buffers
     unsigned char **producerBuffer; //Array of buffers
@@ -61,46 +109,34 @@ private:
     bool isThreadRunning;
     QThread *producerWorkerThread;
     QThread *consumerWorkerThread;
-    SDRProducerWorker *producerWorker;
-    SDRConsumerWorker *consumerWorker;
+    PCWorker *producerWorker;
+    PCWorker *consumerWorker;
 
     bool producerThreadIsRunning;
     bool consumerThreadIsRunning;
 
+    cbProducerConsumer cbProducerWorker;
+    cbProducerConsumer cbConsumerWorker;
+
 };
 
 //Alternative thread model using Worker objects and no QThread subclass
-class SDRProducerWorker: public QObject
+class PCWorker: public QObject
 {
     Q_OBJECT
 public:
-    SDRProducerWorker(DeviceInterface * s);
+    PCWorker(cbProducerConsumer _producerWorker);
     public slots:
-    void Start();
-    void Stopped();
-    bool IsRunning() {return isRunning;}
+    void start();
+    void stop();
 signals:
     void finished();
 private:
-    DeviceInterface *sdr;
-    bool isRunning;
+    cbProducerConsumer worker;
     Perform perform;
-};
-class SDRConsumerWorker: public QObject
-{
-    Q_OBJECT
-public:
-    SDRConsumerWorker(DeviceInterface * s);
-public slots:
-    void Start();
-    void Stopped();
-    bool IsRunning() {return isRunning;}
-signals:
-    void finished();
-  private:
-    DeviceInterface *sdr;
-    bool isRunning;
-    Perform perform;
+    volatile bool doRun; //volatile bool is thread safe, but not other volatile data types
+    quint16 msSleep;
+
 };
 
 //Replacement for windows Sleep() function

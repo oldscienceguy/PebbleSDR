@@ -11,6 +11,11 @@
 
 ProducerConsumer::ProducerConsumer()
 {
+    //No difference in performance noted, use worker object as per recommendation
+    useWorkerThread = false;
+    //useBlockingAcquire = false; //Higher CPU because we run loop faster?
+    useBlockingAcquire = true;
+
     semNumFreeBuffers = NULL;
     semNumFilledBuffers = NULL;
     producerBuffer = NULL;
@@ -24,13 +29,15 @@ ProducerConsumer::ProducerConsumer()
 
 //This can get called on an existing ProducerConsumer object
 //Make sure we reset everything
-void ProducerConsumer::Initialize(DeviceInterface *_device, int _numDataBufs, int _producerBufferSize)
+void ProducerConsumer::Initialize(cbProducerConsumer _producerWorker, cbProducerConsumer _consumerWorker, int _numDataBufs, int _producerBufferSize)
 {
     //Defensive
     if (_producerBufferSize == 0)
         return; //Can't create empty buffer
 
-    device = _device;
+    cbProducerWorker = _producerWorker;
+    cbConsumerWorker = _consumerWorker;
+
     numDataBufs = _numDataBufs;
 
     isThreadRunning = false;
@@ -61,7 +68,9 @@ void ProducerConsumer::Initialize(DeviceInterface *_device, int _numDataBufs, in
         Thread                      Worker
         producerWorkerThread->start();
         Signal started() ---------->Slot Start()        Thread tells works to start
-        producerWorkerThread->requestInterruption();
+
+                                    Stop()              Sets bool stop=true to exit forever loop
+
         Slot quit() <-------------- Signal finished()   Worker tells thread it's finished after detecting interupt request
         Slot finished() ----------->Slot Stop()         Thread tells worker everything is done
 
@@ -69,24 +78,41 @@ void ProducerConsumer::Initialize(DeviceInterface *_device, int _numDataBufs, in
 
 
     //New worker pattern that replaces subclassed QThread.  Recommended new QT 5 pattern
-    if (producerWorkerThread == NULL)
-        producerWorkerThread = new QThread(this);
-    if (producerWorker == NULL) {
-        producerWorker = new SDRProducerWorker(device);
-        producerWorker->moveToThread(producerWorkerThread);
-        connect(producerWorkerThread,&QThread::started,producerWorker,&SDRProducerWorker::Start);
-        //connect(producerWorkerThread,&QThread::finished, this,&ProducerConsumer::ProducerWorkerThreadStopped);
-        connect(producerWorkerThread,&QThread::finished, producerWorker,&SDRProducerWorker::Stopped);
-        connect(producerWorker,&SDRProducerWorker::finished,producerWorkerThread,&QThread::quit);
+    if (producerWorkerThread == NULL) {
+        if (useWorkerThread)
+            producerWorkerThread = new PCThread(this);
+        else
+            producerWorkerThread = new QThread(this);
+        producerWorkerThread->setObjectName("PebbleProducer");
     }
-    if (consumerWorkerThread == NULL)
-        consumerWorkerThread = new QThread(this);
+    if (producerWorker == NULL) {
+        if (useWorkerThread) {
+            dynamic_cast<PCThread *>(producerWorkerThread)->SetWorker(cbProducerWorker);
+        } else {
+            producerWorker = new PCWorker(cbProducerWorker);
+            producerWorker->moveToThread(producerWorkerThread);
+            connect(producerWorkerThread,&PCThread::started,producerWorker,&PCWorker::start);
+            //connect(producerWorkerThread,&PCThread::finished, producerWorker,&PCWorker::stop);
+            //connect(producerWorker,&PCWorker::finished,producerWorkerThread,&QThread::quit);
+        }
+    }
+    if (consumerWorkerThread == NULL) {
+        if (useWorkerThread)
+            consumerWorkerThread = new PCThread(this);
+        else
+            consumerWorkerThread = new QThread(this);
+        consumerWorkerThread->setObjectName("PebbleConsumer");
+    }
     if (consumerWorker == NULL) {
-        consumerWorker = new SDRConsumerWorker(device);
-        consumerWorker->moveToThread(consumerWorkerThread);
-        connect(consumerWorkerThread,&QThread::started,consumerWorker,&SDRConsumerWorker::Start);
-        connect(consumerWorkerThread,&QThread::finished, consumerWorker,&SDRConsumerWorker::Stopped);
-        connect(consumerWorker,&SDRConsumerWorker::finished,consumerWorkerThread,&QThread::quit);
+        if (useWorkerThread) {
+            dynamic_cast<PCThread *>(consumerWorkerThread)->SetWorker(cbConsumerWorker);
+        } else {
+            consumerWorker = new PCWorker(cbConsumerWorker);
+            consumerWorker->moveToThread(consumerWorkerThread);
+            connect(consumerWorkerThread,&PCThread::started,consumerWorker,&PCWorker::start);
+            //connect(consumerWorkerThread,&PCThread::finished, consumerWorker,&PCWorker::stop);
+            //connect(consumerWorker,&PCWorker::finished,consumerWorkerThread,&QThread::quit);
+        }
     }
 
 }
@@ -123,21 +149,22 @@ bool ProducerConsumer::Stop()
         return false; //Init has not been called
 
     if (producerThreadIsRunning) {
-        producerWorkerThread->requestInterruption();
-        //Give requestInteruption signals and slots a chance to trigger in event loop
-        QCoreApplication::processEvents();
-        if (!producerWorkerThread->wait(500))
+        if (!useWorkerThread)
+            producerWorker->stop(); //Stop the loop then stop the thread
+        else
+            dynamic_cast<PCThread*>(producerWorkerThread)->quit();
+        if (!producerWorkerThread->wait(5000))
             qDebug()<<"ProducerWorkerThread didn't respond to interupt request";
         producerThreadIsRunning = false;
     }
 
     if (consumerThreadIsRunning) {
-        consumerWorkerThread->requestInterruption();
-        //Give requestInteruption signals and slots a chance to trigger in event loop
-        QCoreApplication::processEvents();
-
-        if (!consumerWorkerThread->wait(500))
-            qDebug()<<"ProducerWorkerThread didn't respond to interupt request";
+        if (!useWorkerThread)
+            consumerWorker->stop();
+        else
+            dynamic_cast<PCThread*>(consumerWorkerThread)->quit();
+        if (!consumerWorkerThread->wait(5000))
+            qDebug()<<"ConsumerWorkerThread didn't respond to interupt request";
         consumerThreadIsRunning = false;
     }
     isThreadRunning = false;
@@ -170,15 +197,20 @@ unsigned char* ProducerConsumer::AcquireFreeBuffer(quint16 _timeout)
 {
     if (semNumFreeBuffers == NULL)
         return NULL; //Not initialized yet
-
-    //We can't block with just acquire() because thread will never finish
-    //If we can't get a buffer in N ms, return NULL and caller will exit
-    if (semNumFreeBuffers->tryAcquire(1, _timeout)) {
-        freeBufferOverflow = false;
-        return producerBuffer[nextProducerDataBuf];
+    if (!useBlockingAcquire) {
+        //We can't block with just acquire() because thread will never finish
+        //If we can't get a buffer in N ms, return NULL and caller will exit
+        if (semNumFreeBuffers->tryAcquire(1, _timeout)) {
+            freeBufferOverflow = false;
+            return producerBuffer[nextProducerDataBuf];
+        } else {
+            freeBufferOverflow = true;
+            return NULL;
+        }
     } else {
-        freeBufferOverflow = true;
-        return NULL;
+        //Blocks, but yields
+        semNumFreeBuffers->acquire();
+        return producerBuffer[nextProducerDataBuf];
     }
 }
 
@@ -198,16 +230,20 @@ unsigned char *ProducerConsumer::AcquireFilledBuffer(quint16 _timeout)
     if (semNumFilledBuffers == NULL)
         return NULL; //Not initialized yet
 
-    //We can't block with just acquire() because thread will never finish
-    //If we can't get a buffer in N ms, return NULL and caller will exit
-    if (semNumFilledBuffers->tryAcquire(1, _timeout)) {
-        filledBufferOverflow = false;
-        return producerBuffer[nextConsumerDataBuf];
+    if (!useBlockingAcquire) {
+        //We can't block with just acquire() because thread will never finish
+        //If we can't get a buffer in N ms, return NULL and caller will exit
+        if (semNumFilledBuffers->tryAcquire(1, _timeout)) {
+            filledBufferOverflow = false;
+            return producerBuffer[nextConsumerDataBuf];
+        } else {
+            filledBufferOverflow = true;
+            return NULL;
+        }
     } else {
-        filledBufferOverflow = true;
-        return NULL;
+        semNumFilledBuffers->acquire();
+        return producerBuffer[nextConsumerDataBuf];
     }
-
 }
 
 //We have to consider the case where the producer is being called more frequently than the consumer
@@ -225,75 +261,35 @@ void ProducerConsumer::PutbackFilledBuffer()
 }
 
 //SDRThreads
-SDRProducerWorker::SDRProducerWorker(DeviceInterface * s)
+PCWorker::PCWorker(cbProducerConsumer _producerWorker)
 {
-    sdr = s;
+    worker = _producerWorker;
+    msSleep = 0;
 }
 
 //This gets called by producerThread because we connected the started() signal to this method
-void SDRProducerWorker::Start()
+void PCWorker::start()
 {
     //Do any worker construction here so it's in the thread
-    //We loop continuously until we get an interupt request, this allows us to complete all processing before we exit
-    qDebug()<<"Starting Producer Worker";
-    isRunning = true;
-    while (!QThread::currentThread()->isInterruptionRequested()) {
+    worker(cbProducerConsumerEvents::Start);
+    doRun = true;
+    while (doRun) {
         //perform.StartPerformance("Producer Thread");
-
-        sdr->RunProducerThread();  //This calls the actual worker function in each SDR device
-
+        //This calls the actual worker function in each SDR device
+        worker(cbProducerConsumerEvents::Run);
+        //Without this we consume +100% CPU, why doesn't yield prevent this?
+        QThread::currentThread()->msleep(msSleep);
         //perform.StopPerformance(1000);
-
-        //Give requestInteruption signals and slots a chance to trigger in this thread's event loop
-        //Note: This does NOT allow other threads to process events, just our worker thread
-        QCoreApplication::processEvents();
-        //Test yield to give consumer chance to keep up.  Maybe only if new data is actually available
         //QThread::yieldCurrentThread();
     }
-    //Now that we have an interupt request, we signal that we are finished
-    //This is connected to the QThread::quit slot
-    isRunning = false;
     //Do any worker destruction here
-    emit finished();
+    worker(cbProducerConsumerEvents::Stop);
+    //Quit the thread as if we were returnning from QThread::run() directly
+    QThread::currentThread()->quit();
 }
-//This gets called with the thread signals finished() via connect we made
-//We only get called when thread has actually completed
-void SDRProducerWorker::Stopped()
+void PCWorker::stop()
 {
-    qDebug()<<"Producer thread finished";
-    //Any work to do here?
-}
-
-SDRConsumerWorker::SDRConsumerWorker(DeviceInterface * s)
-{
-    sdr = s;
-}
-
-//This gets called by producerThread because we connected the started() signal to this method
-void SDRConsumerWorker::Start()
-{
-    //We loop continuously until we get an interupt request, this allows us to complete all processing before we exit
-    qDebug()<<"Starting Consumer Worker";
-    isRunning = true;
-    while (!QThread::currentThread()->isInterruptionRequested()) {
-        //perform.StartPerformance("Consumer Thread");
-
-        sdr->RunConsumerThread();  //This calls the actual worker function in each SDR device
-
-        //perform.StopPerformance(1000);
-
-        //Give requestInteruption signals and slots a chance to trigger in event loop
-        QCoreApplication::processEvents();
-    }
-    //Now that we have an interupt request, we signal that we are finished
-    //This is connected to the QThread::quit slot
-    //qDebug()<<"Handling thread internupt";
-    isRunning = false;
-    emit finished();
-}
-void SDRConsumerWorker::Stopped()
-{
-    qDebug()<<"Consumer thread finished";
+    doRun = false;
 }
 
 void Sleeper::usleep(unsigned long usecs)
