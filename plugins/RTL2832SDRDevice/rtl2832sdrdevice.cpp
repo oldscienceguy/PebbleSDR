@@ -1,12 +1,10 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include "rtl2832sdrdevice.h"
-#include "perform.h"
 #include "arpa/inet.h" //For ntohl()
 /*
   rtl_tcp info
 */
-Perform perform;
 
 RTL2832SDRDevice::RTL2832SDRDevice()
 {
@@ -17,8 +15,7 @@ RTL2832SDRDevice::RTL2832SDRDevice()
     optionUi = NULL;
     rtlTcpSocket = NULL;
     tcpThreadSocket = NULL;
-    tcpThreadDoInit = true;
-    tcpThreadBufPtr = NULL;
+    producerFreeBufPtr = NULL;
     readBufferIndex = 0;
     rtlTunerGainCount = 0;
 }
@@ -148,10 +145,14 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerB
     //This is set so we always get framesPerBuffer samples after decimating to lower sampleRate
     readBufferSize = framesPerBuffer * rtlDecimate * 2;
     numProducerBuffers = 50;
-    producerConsumer.Initialize(this, numProducerBuffers, readBufferSize);
+    producerConsumer.Initialize(std::bind(&RTL2832SDRDevice::producerWorker, this, std::placeholders::_1),
+        std::bind(&RTL2832SDRDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, readBufferSize);
+
     readBufferIndex = 0;
 
     if (deviceNumber == RTL_TCP) {
+        //Start consumer thread so it's ready to get data which starts as soon as we are connected
+        producerConsumer.Start(false,true);
         if (rtlTcpSocket == NULL) {
             rtlTcpSocket = new QTcpSocket();
 
@@ -162,18 +163,22 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerB
             connect(rtlTcpSocket,&QTcpSocket::connected, this, &RTL2832SDRDevice::TCPSocketConnected);
             connect(rtlTcpSocket,&QTcpSocket::disconnected, this, &RTL2832SDRDevice::TCPSocketDisconnected);
             connect(rtlTcpSocket,SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(TCPSocketError(QAbstractSocket::SocketError)));
-            //Not using signals, all producer work in ProducerConsumer thread
-            //connect(rtlTcpSocket,&QTcpSocket::readyRead, this, &RTL2832SDRDevice::TCPSocketNewData);
+            //QT TCP classes are implemented as non blocking using signals/slots
+            //Recommended usage is to use these instead of separate threads whereever possible because QTcpSockets have
+            //to be managed carefully across threads
+            //We'll support both modes so we have an example of socket use across threads, but default to signal/slot
+
+            connect(rtlTcpSocket,&QTcpSocket::readyRead, this, &RTL2832SDRDevice::TCPSocketNewData);
             //test
             connect(this,&RTL2832SDRDevice::reset,this,&RTL2832SDRDevice::Reset);
         }
     } else if (deviceNumber == RTL_USB) {
         //Start this immediately, before connect, so we don't miss any data
-        producerConsumer.Start();
+        producerConsumer.Start(true,true);
 
     }
 
-    tcpThreadBufPtr = NULL;
+    producerFreeBufPtr = NULL;
 
     return true;
 }
@@ -231,9 +236,6 @@ bool RTL2832SDRDevice::Connect()
             return false;
         }
         qDebug()<<"RTL Server connected";
-        //Start this immediately, so we don't miss any data.  Symptom will be missing device name in title
-        producerConsumer.Start(true,true);
-
         connected = true;
 
         return true;
@@ -264,9 +266,84 @@ void RTL2832SDRDevice::TCPSocketDisconnected()
     qDebug()<<"TCP disconnected signal received";
 }
 
+//This can be called by connecting to readyRead signal, or from Producer thread
+//When this is called, we know we have data
 void RTL2832SDRDevice::TCPSocketNewData()
 {
-    //Not using TCP events, all tcp done in producer thread
+    //Do we really need to protect the socket?
+    rtlTcpSocketMutex.lock();
+
+    qint64 bytesRead;
+    //We have to process all the data we have because we limit buffer size
+    //We only get one readRead() signal for each block of data that's ready
+
+    qint64 bytesAvailable = rtlTcpSocket->bytesAvailable();
+    if (bytesAvailable == 0) {
+        rtlTcpSocketMutex.unlock();
+        return;
+    }
+
+    //qDebug()<<"Bytes available "<<bytesAvailable;
+
+    //  Even though we keep up with incoming at 2msps in USB mode, and rtl-tcp server says we're keeping up in TCP mode
+    //  FreeBufs goes right to zero and mostly stays there.
+    //  Could be a problem with QT network threads interfering with ProducerConsumer consumer thread?
+    //  Tried all sorts of yeilds, etc, but no joy as of 1/19/14
+    //qDebug()<<producerConsumer.GetNumFreeBufs();
+
+
+    //The first bytes we get from rtl_tcp are dongle information
+    //This comes immediately after connect, before we start running
+    if (!haveDongleInfo && bytesAvailable >= (qint64)sizeof(DongleInfo)) {
+        rtlTunerType = RTLSDR_TUNER_UNKNOWN; //Default if we don't get valid data
+        bytesRead = rtlTcpSocket->peek((char *)&tcpDongleInfo,sizeof(DongleInfo));
+        haveDongleInfo = true; //We only try once for this after we read some bytes
+
+        if (bytesRead == sizeof(DongleInfo)) {
+            //If we got valid data, then use internally
+            if (tcpDongleInfo.magic[0] == 'R' &&
+                    tcpDongleInfo.magic[1] == 'T' &&
+                    tcpDongleInfo.magic[2] == 'L' &&
+                    tcpDongleInfo.magic[3] == '0') {
+                //We have valid data
+                rtlTunerType = (RTLSDR_TUNERS)ntohl(tcpDongleInfo.tunerType);
+                rtlTunerGainCount = ntohl(tcpDongleInfo.tunerGainCount);
+                qDebug()<<"Dongle type "<<rtlTunerType;
+                qDebug()<<"Dongle gain count "<< rtlTunerGainCount;
+            }
+        }
+
+    }
+
+    quint16 bytesToFillBuffer;
+    while (bytesAvailable > 0) {
+        if (producerFreeBufPtr == NULL) {
+            //Starting a new buffer
+            //We wait for a free buffer for 100ms before giving up.  May need to adjust this
+            if ((producerFreeBufPtr = (char*)producerConsumer.AcquireFreeBuffer(1000)) == NULL) {
+                rtlTcpSocketMutex.unlock();
+                //We're sol in this situation because we won't get another readReady() signal
+                //emit reset(); //Start over
+                return;
+            }
+            //qDebug()<<"Acquired free buffer";
+            //qDebug()<<producerConsumer.IsFreeBufferOverflow();
+        }
+        bytesToFillBuffer = readBufferSize - readBufferIndex;
+        bytesToFillBuffer = (bytesToFillBuffer <= bytesAvailable) ? bytesToFillBuffer : bytesAvailable;
+        bytesRead = rtlTcpSocket->read(producerFreeBufPtr + readBufferIndex, bytesToFillBuffer);
+        bytesAvailable -= bytesRead;
+        readBufferIndex += bytesRead;
+        readBufferIndex %= readBufferSize;
+        if (readBufferIndex == 0) {
+            producerConsumer.ReleaseFilledBuffer();
+            producerFreeBufPtr = NULL; //Trigger new Acquire next loop
+        }
+
+    }
+
+    rtlTcpSocketMutex.unlock();
+
 }
 
 bool RTL2832SDRDevice::Disconnect()
@@ -290,6 +367,7 @@ bool RTL2832SDRDevice::Disconnect()
 
 void RTL2832SDRDevice::Start()
 {
+    //producerConsumer.
     if (deviceNumber == RTL_USB) {
         rtlTunerType = (RTLSDR_TUNERS) rtlsdr_get_tuner_type(dev);
 
@@ -468,7 +546,7 @@ bool RTL2832SDRDevice::SetRtlTunerMode(quint16 _mode)
     } else {
         SendTcpCmd(TCP_SET_GAIN_MODE, _mode);
     }
-
+    return true;
 }
 
 bool RTL2832SDRDevice::SetRtlIfGain(quint16 _stage, quint16 _gain)
@@ -967,223 +1045,165 @@ bool RTL2832SDRDevice::GetRtlValidTunerGains()
     return false;
 }
 
-
-void RTL2832SDRDevice::StopProducerThread()
+void RTL2832SDRDevice::producerWorker(cbProducerConsumerEvents _event)
 {
-    if (deviceNumber == RTL_TCP) {
-        rtlTcpSocketMutex.unlock();
-        if (tcpThreadSocket != NULL)
-            tcpThreadSocket->disconnectFromHost();
-    }
-}
-void RTL2832SDRDevice::RunProducerThread()
-{
-
-    if (!connected)
-        return;
-
-    int bytesRead;
-
-    //!!! Even though we keep up with incoming at 2msps in USB mode, and rtl-tcp server says we're keeping up in TCP mode
-    //  FreeBufs goes right to zero and mostly stays there.
-    //  Could be a problem with QT network threads interfering with ProducerConsumer consumer thread?
-    //  Tried all sorts of yeilds, etc, but no joy as of 1/19/14
-    //qDebug()<<producerConsumer.GetNumFreeBufs();
-
-    if (deviceNumber == RTL_USB) {
-        if (!running)
-            return;
-
-        if ((tcpThreadBufPtr = (char *)producerConsumer.AcquireFreeBuffer()) == NULL)
-            return;
-
-        //Insert code to put data from device in buffer
-        if (rtlsdr_read_sync(dev, tcpThreadBufPtr, readBufferSize, &bytesRead) < 0) {
-            qDebug("Sync transfer error");
-            producerConsumer.PutbackFreeBuffer(); //Put back buffer for next try
-            return;
-        }
-
-        if (bytesRead < readBufferSize) {
-            qDebug("Under read");
-            producerConsumer.PutbackFreeBuffer(); //Put back buffer for next try
-            return;
-        }
-        producerConsumer.ReleaseFilledBuffer();
-    } else if (deviceNumber == RTL_TCP) {
-        //Handle case where we may be shutting down and ProducerConsumer is not running
-        if (!running || !producerConsumer.IsRunning())
-            return;
-
-        if (tcpThreadDoInit) {
-            //First time, construct any thread local objects like QTcpSockets
-            tcpThreadSocket = new QTcpSocket();
-            tcpThreadSocket->setSocketDescriptor(rtlTcpSocket->socketDescriptor()); //Has same connection as rtlTpSocket
-            //Local socket will only get thread specific event, not UI events
-            tcpThreadSocket->setReadBufferSize(readBufferSize); //Not sure if this is necessary
-
-            tcpThreadDoInit = false;
-        }
-
-        rtlTcpSocketMutex.lock();
-
-        qint64 bytesRead;
-        //We have to process all the data we have because we limit buffer size
-        //We only get one readRead() signal for each block of data that's ready
-
-        qint64 bytesAvailable = tcpThreadSocket->bytesAvailable();
-        if (bytesAvailable == 0) {
-            rtlTcpSocketMutex.unlock();
-            return;
-        }
-
-        //qDebug()<<"Bytes available "<<bytesAvailable;
-
-        //The first bytes we get from rtl_tcp are dongle information
-        //This comes immediately after connect, before we start running
-        if (!haveDongleInfo && bytesAvailable >= (qint64)sizeof(DongleInfo)) {
-            rtlTunerType = RTLSDR_TUNER_UNKNOWN; //Default if we don't get valid data
-            bytesRead = tcpThreadSocket->peek((char *)&tcpDongleInfo,sizeof(DongleInfo));
-            haveDongleInfo = true; //We only try once for this after we read some bytes
-
-            if (bytesRead == sizeof(DongleInfo)) {
-                //If we got valid data, then use internally
-                if (tcpDongleInfo.magic[0] == 'R' &&
-                        tcpDongleInfo.magic[1] == 'T' &&
-                        tcpDongleInfo.magic[2] == 'L' &&
-                        tcpDongleInfo.magic[3] == '0') {
-                    //We have valid data
-                    rtlTunerType = (RTLSDR_TUNERS)ntohl(tcpDongleInfo.tunerType);
-                    rtlTunerGainCount = ntohl(tcpDongleInfo.tunerGainCount);
-                    qDebug()<<"Dongle type "<<rtlTunerType;
-                    qDebug()<<"Dongle gain count "<< rtlTunerGainCount;
+    switch (_event) {
+        case cbProducerConsumerEvents::Start:
+            if (deviceNumber == RTL_TCP) {
+                if (tcpThreadSocket == NULL) {
+                    //First time, construct any thread local objects like QTcpSockets
+                    tcpThreadSocket = new QTcpSocket();
+                    tcpThreadSocket->setSocketDescriptor(rtlTcpSocket->socketDescriptor()); //Has same connection as rtlTpSocket
+                    //Local socket will only get thread specific event, not UI events
+                    tcpThreadSocket->setReadBufferSize(readBufferSize); //Not sure if this is necessary
                 }
+
             }
+            break;
 
-        }
+        case cbProducerConsumerEvents::Run:
+            if (!connected)
+                return;
 
-        quint16 bytesToFillBuffer;
-        //while ((bytesAvailable = tcpSocket.bytesAvailable())!=0){        
-        while (bytesAvailable > 0) {
-            if (tcpThreadBufPtr == NULL) {
-                //Starting a new buffer
-                //We wait for a free buffer for 100ms before giving up.  May need to adjust this
-                if ((tcpThreadBufPtr = (char*)producerConsumer.AcquireFreeBuffer(1000)) == NULL) {
-                    rtlTcpSocketMutex.unlock();
-                    //We're sol in this situation because we won't get another readReady() signal
-                    //emit reset(); //Start over
+            int bytesRead;
+
+            if (deviceNumber == RTL_USB) {
+                if (!running)
+                    return;
+
+                if ((producerFreeBufPtr = (char *)producerConsumer.AcquireFreeBuffer()) == NULL)
+                    return;
+
+                //Insert code to put data from device in buffer
+                if (rtlsdr_read_sync(dev, producerFreeBufPtr, readBufferSize, &bytesRead) < 0) {
+                    qDebug("Sync transfer error");
+                    producerConsumer.PutbackFreeBuffer(); //Put back buffer for next try
                     return;
                 }
-                //qDebug()<<"Acquired free buffer";
-                //qDebug()<<producerConsumer.IsFreeBufferOverflow();
-            }
-            bytesToFillBuffer = readBufferSize - readBufferIndex;
-            bytesToFillBuffer = (bytesToFillBuffer <= bytesAvailable) ? bytesToFillBuffer : bytesAvailable;
-            bytesRead = tcpThreadSocket->read(tcpThreadBufPtr + readBufferIndex, bytesToFillBuffer);
-            bytesAvailable -= bytesRead;
-            readBufferIndex += bytesRead;
-            readBufferIndex %= readBufferSize;
-            if (readBufferIndex == 0) {
+
+                if (bytesRead < readBufferSize) {
+                    qDebug("RTL2832 Under read");
+                    producerConsumer.PutbackFreeBuffer(); //Put back buffer for next try
+                    return;
+                }
                 producerConsumer.ReleaseFilledBuffer();
-                tcpThreadBufPtr = NULL;
+                return;
+
+            } else if (deviceNumber == RTL_TCP) {
+                //Moved to TcpNewData
+            }
+            break;
+
+        case cbProducerConsumerEvents::Stop:
+            if (deviceNumber == RTL_TCP) {
+                rtlTcpSocketMutex.unlock();
+                if (tcpThreadSocket != NULL)
+                    tcpThreadSocket->disconnectFromHost();
+                tcpThreadSocket = NULL;
             }
 
-        }
-        //qDebug()<<"Read index "<<readBufferIndex;
-        rtlTcpSocketMutex.unlock();
-
+            break;
     }
 }
-
-void RTL2832SDRDevice::StopConsumerThread()
+void RTL2832SDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 {
-    //Problem - RunConsumerThread may be in process when we're asked to stopp
-    //We have to wait for it to complete, then return.  Bad dependency - should not have tight connection like this
-}
-
-void RTL2832SDRDevice::RunConsumerThread()
-{
-    if (!connected)
-        return;
-
-    if (!running)
-        return;
-
-
-    unsigned char *bufPtr; //rtl data is 0-255, we need to normalize to -1 to +1
-
-    //Wait for data to be available from producer
-    if ((bufPtr = producerConsumer.AcquireFilledBuffer()) == NULL)
-        return;
-
     double fpSampleRe;
     double fpSampleIm;
+    int bufInc;
+    int decMult;
+    int decNorm;;
+    double decAvg;
+
+    switch (_event) {
+        case cbProducerConsumerEvents::Start:
+            break;
+
+        case cbProducerConsumerEvents::Run:
+            if (!connected)
+                return;
+
+            if (!running)
+                return;
 
 
-    //RTL I/Q samples are 8bit unsigned 0-256
-    int bufInc = rtlDecimate * 2;
-    int decMult = 1; //1=8bit, 2=9bit, 3=10bit for rtlDecimate = 6 and sampleRate = 192k
-    int decNorm = 128 * decMult;
-    double decAvg = rtlDecimate / decMult; //Double the range = 1 bit of sample size
-    // i is index to CPX buffer, j is index to producer buffer (byte)
-    for (int i=0,j=0; i<framesPerBuffer; i++, j+=bufInc) {
-#if 0
-        //We are significantly oversampling, so we can use decimation to increase dynamic range
-        //http://www.atmel.com/Images/doc8003.pdf Each bit of resolution requires 4 bits of oversampling
-        //With atmel method, we add the oversampled data, and right shift by N
-        //THis is NOT the same as just averaging the samples, which is a LP filter function
-        //                      OverSampled     Right Shift (sames as /2)
-        // 8 bit resolution     N/A             N/A
-        // 9 bit resolution     4x              1   /2
-        //10 bit resolution     16x             2   /4
-        //
-        //Then scale by 2^n where n is # extra bits of resolution to get back to original signal level
+            unsigned char *bufPtr; //rtl data is 0-255, we need to normalize to -1 to +1
+
+            //Wait for data to be available from producer
+            if ((bufPtr = producerConsumer.AcquireFilledBuffer()) == NULL) {
+                //qDebug()<<"No filled buffer available";
+                return;
+            }
 
 
-        //See http://www.actel.com/documents/Improve_ADC_WP.pdf as one example
-        //We take N (rtlDecimate) samples and create one result
-        fpSampleRe = fpSampleIm = 0.0;
-        //When i is at end (2047), j is 4094, j+k+1 can't be more then readBufferSize
-        //Sum samples
-        for (int k = 0; k < bufInc; k+=2) {
-            //I/Q reversed from normal devices, correct here
-            fpSampleIm += bufPtr[j + k];
-            fpSampleRe += bufPtr[j + k + 1];
-        }
-        //If we average, we get a better sample
-        //But if we average with a smaller number, we increase range of samples
-        //Instead of 8bit 0-255, we get 9bit 0-511
-        //Testing assuming rtlDecmiate = 6
-        fpSampleRe = fpSampleRe / decAvg; //Effectively increasing dynamic range
-        fpSampleRe -= decNorm;
-        fpSampleRe /= decNorm;
-        fpSampleRe *= sampleGain;
-        fpSampleIm = fpSampleIm / decAvg;
-        fpSampleIm -= decNorm;
-        fpSampleIm /= decNorm;
-        fpSampleIm *= sampleGain;
-#else
-        //Oringal simple decimation - no increase in dynamic range
-        //Every nth sample from producer buffer
-        fpSampleRe = bufPtr[j];
-        fpSampleRe -= 127.0;
-        fpSampleRe /= 128.0;
-        fpSampleRe *= sampleGain;
+            //RTL I/Q samples are 8bit unsigned 0-256
+            bufInc = rtlDecimate * 2;
+            decMult = 1; //1=8bit, 2=9bit, 3=10bit for rtlDecimate = 6 and sampleRate = 192k
+            decNorm = 128 * decMult;
+            decAvg = rtlDecimate / decMult; //Double the range = 1 bit of sample size
+            // i is index to CPX buffer, j is index to producer buffer (byte)
+            for (int i=0,j=0; i<framesPerBuffer; i++, j+=bufInc) {
+        #if 0
+                //We are significantly oversampling, so we can use decimation to increase dynamic range
+                //http://www.atmel.com/Images/doc8003.pdf Each bit of resolution requires 4 bits of oversampling
+                //With atmel method, we add the oversampled data, and right shift by N
+                //THis is NOT the same as just averaging the samples, which is a LP filter function
+                //                      OverSampled     Right Shift (sames as /2)
+                // 8 bit resolution     N/A             N/A
+                // 9 bit resolution     4x              1   /2
+                //10 bit resolution     16x             2   /4
+                //
+                //Then scale by 2^n where n is # extra bits of resolution to get back to original signal level
 
-        fpSampleIm = bufPtr[j+1];
-        fpSampleIm -= 127.0;
-        fpSampleIm /= 128.0;
-        fpSampleIm *= sampleGain;
-#endif
-        inBuffer->Re(i) = fpSampleRe;
-        inBuffer->Im(i) = fpSampleIm;
+
+                //See http://www.actel.com/documents/Improve_ADC_WP.pdf as one example
+                //We take N (rtlDecimate) samples and create one result
+                fpSampleRe = fpSampleIm = 0.0;
+                //When i is at end (2047), j is 4094, j+k+1 can't be more then readBufferSize
+                //Sum samples
+                for (int k = 0; k < bufInc; k+=2) {
+                    //I/Q reversed from normal devices, correct here
+                    fpSampleIm += bufPtr[j + k];
+                    fpSampleRe += bufPtr[j + k + 1];
+                }
+                //If we average, we get a better sample
+                //But if we average with a smaller number, we increase range of samples
+                //Instead of 8bit 0-255, we get 9bit 0-511
+                //Testing assuming rtlDecmiate = 6
+                fpSampleRe = fpSampleRe / decAvg; //Effectively increasing dynamic range
+                fpSampleRe -= decNorm;
+                fpSampleRe /= decNorm;
+                fpSampleRe *= sampleGain;
+                fpSampleIm = fpSampleIm / decAvg;
+                fpSampleIm -= decNorm;
+                fpSampleIm /= decNorm;
+                fpSampleIm *= sampleGain;
+        #else
+                //Oringal simple decimation - no increase in dynamic range
+                //Every nth sample from producer buffer
+                fpSampleRe = bufPtr[j];
+                fpSampleRe -= 127.0;
+                fpSampleRe /= 128.0;
+                fpSampleRe *= sampleGain;
+
+                fpSampleIm = bufPtr[j+1];
+                fpSampleIm -= 127.0;
+                fpSampleIm /= 128.0;
+                fpSampleIm *= sampleGain;
+        #endif
+                inBuffer->Re(i) = fpSampleRe;
+                inBuffer->Im(i) = fpSampleIm;
+            }
+            //perform.StartPerformance("ProcessIQ");
+            ProcessIQData(inBuffer->Ptr(),framesPerBuffer);
+            //perform.StopPerformance(1000);
+            //We don't release a free buffer until ProcessIQData returns because that would also allow inBuffer to be reused
+            producerConsumer.ReleaseFreeBuffer();
+
+            break;
+
+        case cbProducerConsumerEvents::Stop:
+            break;
     }
-    //perform.StartPerformance("ProcessIQ");
-    ProcessIQData(inBuffer->Ptr(),framesPerBuffer);
-    //perform.StopPerformance(1000);
-    //We don't release a free buffer until ProcessIQData returns because that would also allow inBuffer to be reused
-
-    producerConsumer.ReleaseFreeBuffer();
 
 }
 

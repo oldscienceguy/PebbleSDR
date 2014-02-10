@@ -84,10 +84,9 @@ public:
     void WriteOptionUi();
 
 protected:
-    void StopProducerThread();
-    void RunProducerThread();
-    void StopConsumerThread();
-    void RunConsumerThread();
+    void producerWorker(cbProducerConsumerEvents _event);
+    void consumerWorker(cbProducerConsumerEvents _event);
+
 signals:
     void reset(); //When no recourse, signal this to restart
 
@@ -223,11 +222,10 @@ private:
     quint16 readBufferIndex; //Used to track whether we have full buffer or not, 0 to readBufferSize-1
 
     //These are used in the TCP worker thread and created in that thread to prevent QTcpSocket errors
-    bool tcpThreadDoInit;
     QTcpSocket *tcpThreadSocket;
-    char *tcpThreadBufPtr;
+    char *producerFreeBufPtr;
 
-
+    Perform perform;
 };
 
 #endif // RTL2832SDRDEVICE_H
