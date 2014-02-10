@@ -32,7 +32,8 @@ bool FileSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuff
 {
     ProcessIQData = _callback;
     framesPerBuffer = _framesPerBuffer;
-    producerConsumer.Initialize(this,1,framesPerBuffer * sizeof(CPX));
+    producerConsumer.Initialize(std::bind(&FileSDRDevice::producerWorker, this, std::placeholders::_1),
+        std::bind(&FileSDRDevice::consumerWorker, this, std::placeholders::_1),1,framesPerBuffer * sizeof(CPX));
 
     return true;
 }
@@ -240,29 +241,51 @@ void FileSDRDevice::SetupOptionUi(QWidget *parent)
     //Nothing to do
 }
 
-void FileSDRDevice::StopProducerThread(){}
-void FileSDRDevice::RunProducerThread()
+void FileSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 {
     CPX *bufPtr;
-    if ((bufPtr = (CPX*)producerConsumer.AcquireFreeBuffer()) == NULL)
-        return;
+    int samplesRead;
+    switch (_event) {
+        case cbProducerConsumerEvents::Start:
+            break;
 
-    int samplesRead = wavFileRead.ReadSamples(bufPtr,framesPerBuffer);
-    producerConsumer.ReleaseFilledBuffer();
+        case cbProducerConsumerEvents::Run:
+            if ((bufPtr = (CPX*)producerConsumer.AcquireFreeBuffer()) == NULL)
+                return;
 
+            samplesRead = wavFileRead.ReadSamples(bufPtr,framesPerBuffer);
+            producerConsumer.ReleaseFilledBuffer();
+
+            break;
+
+        case cbProducerConsumerEvents::Stop:
+            break;
+    }
 }
-void FileSDRDevice::StopConsumerThread(){}
-void FileSDRDevice::RunConsumerThread()
+void FileSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 {
     CPX *bufPtr;
+    switch (_event) {
+        case cbProducerConsumerEvents::Start:
+            break;
 
-    if ((bufPtr = (CPX*)producerConsumer.AcquireFilledBuffer()) == NULL)
-        return;
+        case cbProducerConsumerEvents::Run:
 
-    if (copyTest)
-        wavFileWrite.WriteSamples(bufPtr, framesPerBuffer);
-    ProcessIQData(bufPtr,framesPerBuffer);
-    producerConsumer.ReleaseFreeBuffer();
+            if ((bufPtr = (CPX*)producerConsumer.AcquireFilledBuffer()) == NULL)
+                return;
+
+            if (copyTest)
+                wavFileWrite.WriteSamples(bufPtr, framesPerBuffer);
+
+            ProcessIQData(bufPtr,framesPerBuffer);
+            producerConsumer.ReleaseFreeBuffer();
+
+            break;
+
+        case cbProducerConsumerEvents::Stop:
+            break;
+    }
+
 }
 
 //These need to be moved to a DeviceInterface implementation class, equivalent to SDR

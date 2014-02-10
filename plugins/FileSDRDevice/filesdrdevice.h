@@ -52,10 +52,8 @@ public:
     void InitSettings(QString fname);
 
 protected:
-    void StopProducerThread();
-    void RunProducerThread();
-    void StopConsumerThread();
-    void RunConsumerThread();
+    void producerWorker(cbProducerConsumerEvents _event);
+    void consumerWorker(cbProducerConsumerEvents _event);
 
 private:
     ProducerConsumer producerConsumer;
