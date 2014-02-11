@@ -47,10 +47,12 @@ public:
 		DeviceNumber,			//Optional index for plugins that support multiple devices
 		HighFrequency,			//Highest frequency device supports
 		LowFrequency,			//Lowest frequency device supports
+		FrequencyCorrection,	//???What's the universal format for this?  int ppm?
 		IQGain,					//double User adjustable to normalize levels among devices
 		SampleRate,
-		StartupMode,			//int (enum) Default mode for device if not otherwise specified
-		StarupFrequency,		//Default frequency for device if not otherwise specified
+		StartupType,			//int (enum STARTUP)
+		StartupMode,			//int (enum DEMODMODE) Default mode for device if not otherwise specified
+		StartupFrequency,		//Default frequency for device if not otherwise specified
 		LastMode,				//int (enum) Mode in use when power off
 		LastFrequency,			//Frequency displayed with power off
 		LastSpectrumMode,		//int (enum) Last spectrum selection
@@ -82,14 +84,6 @@ public:
 
     virtual void ReadSettings() = 0;
     virtual void WriteSettings() = 0;
-
-    virtual double GetStartupFrequency() = 0;
-    virtual int GetStartupMode() = 0;
-    virtual double GetHighLimit() = 0;
-    virtual double GetLowLimit() = 0;
-    virtual double GetGain() {return iqGain;}
-    virtual QString GetDeviceName() = 0;
-    virtual int GetSampleRate() = 0;
     virtual int* GetSampleRates(int &len) = 0; //Returns array of allowable rates and length of array as ref
     virtual bool UsesAudioInput() = 0;
     virtual bool GetTestBenchChecked() {return isTestBenchChecked;}
@@ -100,26 +94,10 @@ public:
 
     virtual void SetIQOrder(IQORDER o) {iqOrder = o;}
 
-    virtual double GetFreqToSet() {
-        //If freq is outside of mode we are in return default
-        if (freqToSet > GetHighLimit() || freqToSet < GetLowLimit())
-            return GetStartupFrequency();
-        else
-            return freqToSet;
-    }
-
-    virtual double GetLastFreq() {
-        //If freq is outside of mode we are in return default
-        if (lastFreq > GetHighLimit() || lastFreq < GetLowLimit())
-            return GetStartupFrequency();
-        else
-            return lastFreq;
-    }
     virtual void SetLastFreq(double f) {lastFreq = f;}
 
     virtual void SetLastMode(int mode) {lastMode = mode;}
 
-    virtual STARTUP GetStartup() {return startup;}
     virtual QString GetInputDeviceName() {return inputDeviceName;}
     virtual QString GetOutputDeviceName() {return outputDeviceName;}
 
@@ -133,7 +111,6 @@ public:
 
     //Support for multiple devices in one plugin
     virtual void SetDeviceNumber(quint16 _deviceNumber) {deviceNumber = _deviceNumber;}
-    virtual quint16 GetDeviceNumber() {return deviceNumber;}
 
     //Allows us to get/set any device specific data
     //Standard keys will be defined, but any key can be passed
@@ -156,13 +133,17 @@ public:
 				break;
 			case LowFrequency:
 				break;
+			case FrequencyCorrection:
+				break;
 			case IQGain:
 				break;
 			case SampleRate:
 				break;
+			case StartupType:
+				break;
 			case StartupMode:
 				break;
-			case StarupFrequency:
+			case StartupFrequency:
 				break;
 			case LastMode:
 				break;
@@ -204,13 +185,17 @@ public:
 				break;
 			case LowFrequency:
 				break;
+			case FrequencyCorrection:
+				break;
 			case IQGain:
 				break;
 			case SampleRate:
 				break;
+			case StartupType:
+				break;
 			case StartupMode:
 				break;
-			case StarupFrequency:
+			case StartupFrequency:
 				break;
 			case LastMode:
 				break;
@@ -231,10 +216,10 @@ public:
 			default:
 				break;
 		}
+		return false;
 	}
 	virtual bool Set(QString _key, QVariant _value) {return false;}
 
-    virtual quint16 GetFrequencyCorrection() {return 0;}
     virtual bool SetFrequencyCorrection(quint16 _correction) {return false;}
 
 protected:

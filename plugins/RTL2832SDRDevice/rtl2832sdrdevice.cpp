@@ -644,7 +644,7 @@ double RTL2832SDRDevice::GetStartupFrequency()
 int RTL2832SDRDevice::GetStartupMode()
 {
     if (rtlSampleMode == NORMAL)
-        return lastMode;
+		return dmFMN;
     else
         //No place to store two lastModes for normal and direct, so always start direct in AM for now
         return dmAM; //Direct mode
@@ -811,28 +811,46 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 			return 2;
 			break;
 		case DeviceName:
+			return GetDeviceName();
 			break;
 		case DeviceDescription:
 			break;
 		case DeviceNumber:
+			return deviceNumber;
 			break;
 		case HighFrequency:
+			return GetHighLimit();
 			break;
 		case LowFrequency:
+			return GetLowLimit();
+			break;
+		case FrequencyCorrection:
+			return rtlFreqencyCorrection; //int, may not be right format for all devices
 			break;
 		case IQGain:
 			return iqGain;
 			break;
 		case SampleRate:
+			return GetSampleRate();
+			break;
+		case StartupType:
+			return startup;
 			break;
 		case StartupMode:
+			return GetStartupMode();
 			break;
-		case StarupFrequency:
+		case StartupFrequency:
+			return GetStartupFrequency();
 			break;
 		case LastMode:
 			return lastMode;
 			break;
 		case LastFrequency:
+			//If freq is outside of mode we are in return default
+			if (lastFreq > GetHighLimit() || lastFreq < GetLowLimit())
+				return GetStartupFrequency();
+			else
+				return lastFreq;
 			break;
 		case LastSpectrumMode:
 			return lastSpectrumMode;
@@ -840,6 +858,11 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 		case UserMode:
 			break;
 		case UserFrequency:
+			//If freq is outside of mode we are in return default
+			if (freqToSet > GetHighLimit() || freqToSet < GetLowLimit())
+				return GetStartupFrequency();
+			else
+				return freqToSet;
 			break;
 		case IQOrder:
 			return iqOrder;

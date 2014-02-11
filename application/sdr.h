@@ -66,11 +66,8 @@ public:
     virtual bool UsesAudioInput();
 
     virtual bool GetTestBenchChecked();
-    virtual STARTUP GetStartup();
     virtual void SetLastDisplayMode(int mode);
     virtual void SetIQOrder(IQORDER o);
-    virtual double GetFreqToSet();
-    virtual double GetLastFreq();
     virtual void SetLastFreq(double f);
     virtual void SetLastMode(int mode);
     virtual QString GetInputDeviceName();

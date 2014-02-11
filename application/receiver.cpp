@@ -128,7 +128,7 @@ bool Receiver::On()
         mainWindow->setFocus(); //Makes sure it has keyboard focus
     }
 
-    sampleRate = demodSampleRate = sdr->GetSampleRate();
+	sampleRate = demodSampleRate = sdr->Get(DeviceInterface::SampleRate).toInt();
     framesPerBuffer = demodFrames = settings->framesPerBuffer;
     //These steps work on full sample rates
     noiseBlanker = new NoiseBlanker(sampleRate,framesPerBuffer);
@@ -224,24 +224,27 @@ bool Receiver::On()
 
 	//Limit tuning range and mixer range
 	//Todo: Get from SDR and enforce in UI
-	receiverWidget->SetLimits(sdr->GetHighLimit(),sdr->GetLowLimit(),sampleRate/2,-sampleRate/2);
+	receiverWidget->SetLimits(sdr->Get(DeviceInterface::HighFrequency).toDouble(),
+							  sdr->Get(DeviceInterface::LowFrequency).toDouble(),
+							  sampleRate/2,-sampleRate/2);
     receiverWidget->SetDisplayedGain(30,1,100);  //20%
     receiverWidget->SetDisplayedSquelch(global->minDb);
 	
-    if (sdr->GetSDRDevice() == SDR::FILE || sdr->GetStartup() == SDR::DEFAULTFREQ) {
-        frequency=sdr->GetStartupFrequency();
+	DeviceInterface::STARTUP startupType = (DeviceInterface::STARTUP)sdr->Get(DeviceInterface::StartupType).toInt();
+	if (sdr->GetSDRDevice() == SDR::FILE ||  startupType == SDR::DEFAULTFREQ) {
+		frequency=sdr->Get(DeviceInterface::StartupFrequency).toDouble();
         receiverWidget->SetFrequency(frequency);
         //This triggers indirect frequency set, so make sure we set widget first
-        receiverWidget->SetMode((DEMODMODE)sdr->GetStartupMode());
+		receiverWidget->SetMode((DEMODMODE)sdr->Get(DeviceInterface::StartupMode).toInt());
     }
-    else if (sdr->GetStartup() == SDR::SETFREQ) {
-        frequency = sdr->GetFreqToSet();
+	else if (startupType == SDR::SETFREQ) {
+		frequency = sdr->Get(DeviceInterface::UserFrequency).toDouble();
         receiverWidget->SetFrequency(frequency);
 
-        receiverWidget->SetMode((DEMODMODE)sdr->GetStartupMode());
+		receiverWidget->SetMode((DEMODMODE)sdr->Get(DeviceInterface::LastMode).toInt());
     }
-    else if (sdr->GetStartup() == SDR::LASTFREQ) {
-        frequency = sdr->GetLastFreq();
+	else if (startupType == SDR::LASTFREQ) {
+		frequency = sdr->Get(DeviceInterface::LastFrequency).toDouble();
         receiverWidget->SetFrequency(frequency);
 
 		receiverWidget->SetMode((DEMODMODE)sdr->Get(DeviceInterface::LastMode).toInt());
@@ -267,7 +270,7 @@ void Receiver::SetWindowTitle()
 {
     if (sdr == NULL)
         return;
-    QString devName = sdr->GetDeviceName();
+	QString devName = sdr->Get(DeviceInterface::DeviceName).toString();
     //In some cases, unknown, activeWindow() can return NULL
     QWidget *win = QApplication::activeWindow();
     if (win != NULL)

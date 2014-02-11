@@ -139,50 +139,33 @@ void SDR::Stop()
 
 double SDR::GetStartupFrequency()
 {
-    if (DelegateToPlugin())
-        return plugin->GetStartupFrequency();
-    else
-        return 0;
+	return 0; //Internal devices override
 }
 
 int SDR::GetStartupMode()
 {
-    if (DelegateToPlugin())
-        return plugin->GetStartupMode();
-    else
-        return 0;
+	return 0;
 }
 
 double SDR::GetHighLimit()
 {
-    if (DelegateToPlugin())
-        return plugin->GetHighLimit();
-    else
-        return 0;
+	return 0;
 }
 
 double SDR::GetLowLimit()
 {
-    if (DelegateToPlugin())
-        return plugin->GetLowLimit();
-    else
-        return 0;
+	return 0;
 }
 
+//Redundant with Get(), remove
 double SDR::GetGain()
 {
-    if (DelegateToPlugin())
-        return plugin->GetGain();
-    else
-        return 1;
+	return 1;
 }
 
 QString SDR::GetDeviceName()
 {
-    if (DelegateToPlugin())
-        return plugin->GetDeviceName();
-    else
-        return "";
+	return "";
 }
 
 //Must be called from derived class constructor to work correctly
@@ -587,11 +570,7 @@ void SDR::WriteSettings()
 //Devices may override this and return a rate based on other settings
 int SDR::GetSampleRate()
 {
-
-    if (DelegateToPlugin())
-        return plugin->GetSampleRate();
-    else
-        return sampleRate;
+	return sampleRate;
 }
 
 int *SDR::GetSampleRates(int &len)
@@ -643,14 +622,6 @@ bool SDR::GetTestBenchChecked()
 
 }
 
-DeviceInterface::STARTUP SDR::GetStartup()
-{
-  if (DelegateToPlugin())
-    return plugin->startup;
-  else
-    return startup;
-}
-
 void SDR::SetLastDisplayMode(int mode)
 {
     if (DelegateToPlugin())
@@ -665,22 +636,6 @@ void SDR::SetIQOrder(DeviceInterface::IQORDER o)
         plugin->iqOrder = o;
     else
         iqOrder = o;
-}
-
-double SDR::GetFreqToSet()
-{
-    if (DelegateToPlugin())
-        return plugin->GetFreqToSet();
-    else
-        return freqToSet;
-}
-
-double SDR::GetLastFreq()
-{
-    if (DelegateToPlugin())
-        return plugin->GetLastFreq();
-    else
-        return lastFreq;
 }
 
 void SDR::SetLastFreq(double f)
@@ -844,28 +799,46 @@ QVariant SDR::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 			return 1;
 			break;
 		case DeviceName:
+			return GetDeviceName();
 			break;
 		case DeviceDescription:
 			break;
 		case DeviceNumber:
+			return deviceNumber;
 			break;
 		case HighFrequency:
+			return GetHighLimit();
 			break;
 		case LowFrequency:
+			return GetLowLimit();
+			break;
+		case FrequencyCorrection:
+			return 0;
 			break;
 		case IQGain:
 			return iqGain;
 			break;
 		case SampleRate:
+			return GetSampleRate();
+			break;
+		case StartupType:
+			return startup;
 			break;
 		case StartupMode:
+			return GetStartupMode();
 			break;
-		case StarupFrequency:
+		case StartupFrequency:
+			return GetStartupFrequency();
 			break;
 		case LastMode:
 			return lastMode;
 			break;
 		case LastFrequency:
+			//If freq is outside of mode we are in return default
+			if (lastFreq > GetHighLimit() || lastFreq < GetLowLimit())
+				return GetStartupFrequency();
+			else
+				return lastFreq;
 			break;
 		case LastSpectrumMode:
 			return lastSpectrumMode;
@@ -873,6 +846,11 @@ QVariant SDR::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 		case UserMode:
 			break;
 		case UserFrequency:
+			//If freq is outside of mode we are in return default
+			if (freqToSet > GetHighLimit() || freqToSet < GetLowLimit())
+				return GetStartupFrequency();
+			else
+				return freqToSet;
 			break;
 		case IQOrder:
 			return iqOrder;
@@ -890,7 +868,7 @@ QVariant SDR::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 			break;
 
 	}
-
+	return QVariant();
 }
 
 //SDRThreads
