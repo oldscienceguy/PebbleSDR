@@ -76,7 +76,6 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	signalSpectrum = NULL;
 	agc = NULL;
 	iqBalance = NULL;
-	sdrThread = NULL;
     iDigitalModem = NULL;
 
 	//Testing

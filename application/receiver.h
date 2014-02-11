@@ -29,7 +29,6 @@
 #include "filters/fractresampler.h"
 #include "devices/wavfile.h"
 
-#include "devices/sdr_iq.h"
 #include "plugins.h"
 
 class Receiver:public QObject
@@ -163,7 +162,5 @@ private:
 	FIRFilter *usbFilter;
 	FIRFilter *lsbFilter;
 	FIRFilter *amFilter;
-
-	SDR_IQThread *sdrThread;
 
 };

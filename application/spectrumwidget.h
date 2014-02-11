@@ -5,7 +5,6 @@
 #include "global.h"
 
 #include <QWidget>
-#include <QThread>
 #include <QImage>
 #include <QHoverEvent>
 
