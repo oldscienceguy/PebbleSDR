@@ -37,13 +37,11 @@ public:
         HPSDR_USB, HPSDR_TCP, SPARE1, FUNCUBE,
         NOSDR, FILE, DVB_T, FUNCUBE_PLUS, SDR_IP_TCP, FiFi};
 
+	enum STANDARD_KEYS {PluginName,PluginDescription};
+
     DeviceInterface() {};
     virtual ~DeviceInterface() {};
     //Interface must be all pure virtual functions
-    //Info - return plugin name for menus
-    virtual QString GetPluginName(int _devNum = 0) = 0;
-    virtual QString GetPluginDescription(int _devNum = 0) = 0;
-
     virtual bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer) = 0;
     virtual bool Connect() = 0;
     virtual bool Disconnect() = 0;
@@ -124,8 +122,10 @@ public:
 
     //Allows us to get/set any device specific data
     //Standard keys will be defined, but any key can be passed
-    virtual QVariant GetKeyValue(QString _key) {return 0;}
-    virtual bool SetKeyValue(QString _key, QVariant _value) {return false;}
+	virtual QVariant Get(QString _key, quint16 _option = 0) {return 0;}
+	virtual QVariant Get(STANDARD_KEYS _key, quint16 _option = 0) {return 0;}
+
+	virtual bool Set(QString _key, QVariant _value) {return false;}
 
     virtual quint16 GetFrequencyCorrection() {return 0;}
     virtual bool SetFrequencyCorrection(quint16 _correction) {return false;}

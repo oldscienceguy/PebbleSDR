@@ -21,8 +21,6 @@ class FileSDRDevice : public QObject, public DeviceInterface
 public:
     FileSDRDevice();
     ~FileSDRDevice();
-    QString GetPluginName(int _devNum = 0);
-    QString GetPluginDescription(int _devNum = 0);
 
     bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer);
     bool Connect();
@@ -45,6 +43,8 @@ public:
     int* GetSampleRates(int &len); //Returns array of allowable rates and length of array as ref
     bool UsesAudioInput();
     bool GetTestBenchChecked();
+
+	virtual QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
 
     //Display device option widget in settings dialog
     void SetupOptionUi(QWidget *parent);

@@ -18,16 +18,6 @@ FileSDRDevice::~FileSDRDevice()
     Disconnect();
 }
 
-QString FileSDRDevice::GetPluginName(int _devNum)
-{
-    return "WAV File SDR";
-}
-
-QString FileSDRDevice::GetPluginDescription(int _devNum)
-{
-    return "Plays back I/Q WAV file";
-}
-
 bool FileSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
 {
     ProcessIQData = _callback;
@@ -233,7 +223,19 @@ bool FileSDRDevice::UsesAudioInput()
 
 bool FileSDRDevice::GetTestBenchChecked()
 {
-    return isTestBenchChecked;
+	return isTestBenchChecked;
+}
+
+QVariant FileSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
+{
+	switch (_key) {
+		case PluginName:
+			return "WAV File SDR";
+			break;
+		case PluginDescription:
+			return "Plays back I/Q WAV file";
+			break;
+	}
 }
 
 void FileSDRDevice::SetupOptionUi(QWidget *parent)

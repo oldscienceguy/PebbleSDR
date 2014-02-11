@@ -28,40 +28,6 @@ RTL2832SDRDevice::~RTL2832SDRDevice()
         delete (inBuffer);
 }
 
-QString RTL2832SDRDevice::GetPluginName(int _devNum)
-{
-    switch (_devNum) {
-        case RTL_USB:
-            return "RTL2832 USB";
-            break;
-        case RTL_TCP:
-            return "RTL2832 TCP";
-            break;
-        default:
-            qDebug()<<"Error: Unknown RTL device";
-            return "Error";
-            break;
-
-    }
-}
-
-QString RTL2832SDRDevice::GetPluginDescription(int _devNum)
-{
-    switch (_devNum) {
-        case RTL_USB:
-            return "RTL2832 USB Devices";
-            break;
-        case RTL_TCP:
-            return "RTL2832 TCP Servers";
-            break;
-        default:
-            qDebug()<<"Error: Unknown RTL device";
-            return "Error";
-            break;
-
-    }
-}
-
 bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
 {
     ProcessIQData = _callback;
@@ -792,7 +758,7 @@ bool RTL2832SDRDevice::GetTestBenchChecked()
     return isTestBenchChecked;
 }
 
-QVariant RTL2832SDRDevice::GetKeyValue(QString _key)
+QVariant RTL2832SDRDevice::Get(QString _key, quint16 _option)
 {
     if (_key == "KeyDeviceSampleRate")
         return rtlSampleRate;
@@ -807,10 +773,44 @@ QVariant RTL2832SDRDevice::GetKeyValue(QString _key)
     else if ( _key == "KeyOffsetMode")
         return rtlOffsetMode;
     else
-        return 0;
+		return 0;
 }
 
-bool RTL2832SDRDevice::SetKeyValue(QString _key, QVariant _value)
+QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
+{
+	switch (_key) {
+		case PluginName:
+			switch (_option) {
+				case RTL_USB:
+					return "RTL2832 USB";
+					break;
+				case RTL_TCP:
+					return "RTL2832 TCP";
+					break;
+				default:
+					qDebug()<<"Error: Unknown RTL device "<<_option;
+					return "Error";
+					break;
+			}
+			break;
+		case PluginDescription:
+			switch (_option) {
+				case RTL_USB:
+					return "RTL2832 USB Devices";
+					break;
+				case RTL_TCP:
+					return "RTL2832 TCP Servers";
+					break;
+				default:
+					qDebug()<<"Error: Unknown RTL device "<<_option;
+					return "Error";
+					break;
+			}
+			break;
+	}
+}
+
+bool RTL2832SDRDevice::Set(QString _key, QVariant _value)
 {
     if (_key == "KeyDeviceSampleRate")
         return SetRtlSampleRate(_value.toULongLong());

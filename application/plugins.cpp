@@ -213,8 +213,8 @@ void Plugins::findPlugins()
                 int numDevices = iDeviceInterface->GetNumDevices();
                 for (int i = 0; i<numDevices; i++) {
                     pluginInfo.type = PluginInfo::DEVICE_PLUGIN;
-                    pluginInfo.name = iDeviceInterface->GetPluginName(i);
-                    pluginInfo.description = iDeviceInterface->GetPluginDescription(i);
+					pluginInfo.name = iDeviceInterface->Get(DeviceInterface::PluginName,i).toString();
+					pluginInfo.description = iDeviceInterface->Get(DeviceInterface::PluginDescription,i).toString();
                     pluginInfo.fileName = fileName;
                     pluginInfo.deviceNumber  = i;
                     pluginInfo.deviceInterface = new SDR(iDeviceInterface, i);

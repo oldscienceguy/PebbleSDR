@@ -39,9 +39,6 @@ public:
     SDR(Receiver *receiver, SDRDEVICE dev, Settings *_settings);
     virtual ~SDR(void);
 
-    virtual QString GetPluginName(int _devNum = 1);
-    virtual QString GetPluginDescription(int _devNum = 1);
-
     virtual bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer);
 
     virtual bool Connect();
@@ -93,6 +90,7 @@ public:
     virtual void StopConsumerThread();
     virtual void RunConsumerThread();
 
+	virtual QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
 
 
 	SDRDEVICE GetDevice();

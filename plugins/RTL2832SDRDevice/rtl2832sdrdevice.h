@@ -48,9 +48,6 @@ public:
     ~RTL2832SDRDevice();
 
     //DeviceInterface abstract methods that must be implemented
-    QString GetPluginName(int _devNum = 0);
-    QString GetPluginDescription(int _devNum = 0);
-
     bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer);
     bool Connect();
     bool Disconnect();
@@ -75,8 +72,10 @@ public:
     bool GetTestBenchChecked();
     quint16 GetNumDevices() {return 2;}
 
-    QVariant GetKeyValue(QString _key);
-    bool SetKeyValue(QString _key, QVariant _value);
+	QVariant Get(QString _key, quint16 _option = 0);
+	QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
+
+    bool Set(QString _key, QVariant _value);
 
     //Display device option widget in settings dialog
     void SetupOptionUi(QWidget *parent);

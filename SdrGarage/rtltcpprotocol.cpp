@@ -136,17 +136,17 @@ void RtlTcpProtocol::tcpCommands(RTL_CMD cmd)
     case CMD_SAMPLERATE:
         sampleRate = ntohl(cmd.param);
         qDebug()<<"set sample rate"<<sampleRate;
-        sdr->SetKeyValue("KeyDeviceSampleRate",sampleRate);
+        sdr->Set("KeyDeviceSampleRate",sampleRate);
         break;
     case CMD_GAIN_MODE:
         tunerGainMode = ntohl(cmd.param);
         qDebug()<<"set gain mode"<<tunerGainMode;
-        sdr->SetKeyValue("KeyTunerGainMode",tunerGainMode);
+        sdr->Set("KeyTunerGainMode",tunerGainMode);
         break;
     case CMD_TUNER_GAIN:
         tunerGain = ntohl(cmd.param);
         qDebug()<<"set gain"<<tunerGain;
-        sdr->SetKeyValue("KeyTunerGain", tunerGain);
+        sdr->Set("KeyTunerGain", tunerGain);
         break;
     case CMD_FREQ_CORRECTION:
         frequencyCorrection = ntohl(cmd.param);
@@ -165,17 +165,17 @@ void RtlTcpProtocol::tcpCommands(RTL_CMD cmd)
     case CMD_AGC_MODE:
         agcMode = ntohl(cmd.param);
         qDebug()<<"set agc mode "<<agcMode;
-        sdr->SetKeyValue("KeyAgcMode",agcMode);
+        sdr->Set("KeyAgcMode",agcMode);
         break;
     case CMD_DIRECT_SAMPLING:
         directSampling = ntohl(cmd.param);
         qDebug()<<"set direct sampling "<<directSampling;
-        sdr->SetKeyValue("KeySampleMode",directSampling);
+        sdr->Set("KeySampleMode",directSampling);
         break;
     case CMD_OFFSET_TUNING:
         offsetTuning = ntohl(cmd.param);
         qDebug()<<"set offset tuning "<<offsetTuning;
-        sdr->SetKeyValue("KeyOffsetMode",offsetTuning);
+        sdr->Set("KeyOffsetMode",offsetTuning);
         break;
     case CMD_XTAL_FREQ:
         qDebug()<<"set rtl xtal "<<ntohl(cmd.param);

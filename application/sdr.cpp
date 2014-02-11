@@ -88,22 +88,6 @@ SDR::~SDR(void)
 
 }
 
-QString SDR::GetPluginName(int _devNum)
-{
-    if (DelegateToPlugin())
-        return plugin->GetPluginName();
-    else
-        return GetDeviceName(); //Use device name as pseudo plugin name
-}
-
-QString SDR::GetPluginDescription(int _devNum)
-{
-    if (DelegateToPlugin())
-        return plugin->GetPluginDescription();
-    else
-        return "";
-}
-
 bool SDR::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
 {
     if (DelegateToPlugin())
@@ -502,7 +486,7 @@ void SDR::ReadSettings()
 {
     QSettings *qs = GetQSettings();
     DeviceInterface *di = (plugin == NULL) ? this:plugin;
-    qDebug()<<"Reading settings for "<<di->GetPluginName(pluginDeviceNumber);
+	qDebug()<<"Reading settings for "<<di->Get(PluginName,pluginDeviceNumber).toString();
 
     if (DelegateToPlugin()) {
         plugin->ReadSettings();
@@ -552,7 +536,7 @@ void SDR::WriteSettings()
 {
     QSettings *qs = GetQSettings();
     DeviceInterface *di = (plugin == NULL) ? this:plugin;
-    qDebug()<<"Writing settings for "<<di->GetPluginName();
+	qDebug()<<"Writing settings for "<<di->Get(PluginName,pluginDeviceNumber).toString();
 
     if (DelegateToPlugin()) {
         plugin->WriteSettings();
@@ -898,6 +882,19 @@ void SDR::StopProducerThread(){}
 void SDR::RunProducerThread(){}
 void SDR::StopConsumerThread(){}
 void SDR::RunConsumerThread(){}
+
+QVariant SDR::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
+{
+	switch (_key) {
+		case PluginName:
+			return GetDeviceName(); //Not a plugin, return something meaningful
+			break;
+		case PluginDescription:
+			return "Internal Device (not a plugin)";
+			break;
+	}
+
+}
 
 //SDRThreads
 SDRProducerThread::SDRProducerThread(SDR *_sdr)
