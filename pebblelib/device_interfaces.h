@@ -31,12 +31,6 @@ friend class SDR; //Temp while we're transitioning from internal to plugins to s
 public:
     typedef enum IQORDER {IQ,QI,IONLY,QONLY} IQORDER;
     typedef enum STARTUP {SETFREQ = 0, LASTFREQ, DEFAULTFREQ} STARTUP;
-    enum SDRDEVICE {SR_LITE=1, SR_V9, SR_ENSEMBLE, SR_ENSEMBLE_2M,
-        SR_ENSEMBLE_4M, SR_ENSEMBLE_6M, SR_ENSEMBLE_LF,
-        ELEKTOR, ELEKTOR_PA, SDR_IQ_USB,
-        HPSDR_USB, HPSDR_TCP, SPARE1, FUNCUBE,
-        NOSDR, FILE, DVB_T, FUNCUBE_PLUS, SDR_IP_TCP, FiFi};
-
 	//These enums can only be extended, not changed, once released.  Otherwise will break existing plugins that are not rebuilt
 	enum STANDARD_KEYS {
 		PluginName,				//QString Name of plugin device was found in
@@ -102,10 +96,6 @@ public:
     virtual QString GetOutputDeviceName() {return outputDeviceName;}
 
     virtual void SetIQGain(double g) {iqGain = g;}
-
-    //These only apply to old internal
-    SDRDEVICE GetSDRDevice() {return sdrDevice;}
-    void SetSDRDevice(SDRDEVICE dev) {sdrDevice = dev;}
 
     virtual QSettings *GetQSettings() {return qSettings;}
 
@@ -247,8 +237,6 @@ protected:
     QSettings *qSettings;
 
     bool isTestBenchChecked;
-
-    SDRDEVICE sdrDevice;
 
     int deviceNumber; //For plugins that support multiple devices
 

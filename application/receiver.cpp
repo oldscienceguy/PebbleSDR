@@ -88,7 +88,8 @@ bool Receiver::On()
 {
 	powerOn = true;
 
-    sdr = global->sdr;
+	//We need SDR* for transition
+	sdr = dynamic_cast<SDR*>(global->sdr);
     if (sdr == NULL)
         return false; //Means something is wrong with plugins,
 
@@ -562,7 +563,7 @@ void Receiver::SdrOptionsPressed()
     //If power on, use active sdr to make changes
     if (sdr == NULL) {
         //Power is off, create temporary one so we can set settings
-        sdr = global->sdr;
+		sdr = dynamic_cast<SDR *>(global->sdr);
     }
     sdr->ShowSdrOptions(true);
 }

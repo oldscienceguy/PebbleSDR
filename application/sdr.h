@@ -35,6 +35,17 @@ class SDR:public QObject, public DeviceInterface
 	friend class SDRConsumerThread;
 
 public:
+	//For internal devices only
+	enum SDRDEVICE {SR_LITE=1, SR_V9, SR_ENSEMBLE, SR_ENSEMBLE_2M,
+		SR_ENSEMBLE_4M, SR_ENSEMBLE_6M, SR_ENSEMBLE_LF,
+		ELEKTOR, ELEKTOR_PA, SDR_IQ_USB,
+		HPSDR_USB, HPSDR_TCP, SPARE1, FUNCUBE,
+		NOSDR, FILE, DVB_T, FUNCUBE_PLUS, SDR_IP_TCP, FiFi};
+	//These only apply to old internal
+	SDRDEVICE GetSDRDevice() {return sdrDevice;}
+	void SetSDRDevice(SDRDEVICE dev) {sdrDevice = dev;}
+
+
     SDR(DeviceInterface *_plugin, int _devNum = 1);
     SDR(Receiver *receiver, SDRDEVICE dev, Settings *_settings);
     virtual ~SDR(void);
@@ -101,7 +112,11 @@ public:
     void ShowSdrOptions(bool b);
     void InitSettings(QString fname);
 
+	void ReadSettings();
+	void WriteSettings();
 protected:
+	SDRDEVICE sdrDevice;
+
     //Sync's deviceInterface with sdr object deviceNumber, sdr deviceNumber is always reliable
     bool DelegateToPlugin();
 
@@ -113,8 +128,6 @@ protected:
     QDialog *sdrOptions;
     Ui::SdrOptions *sd;
 
-    void ReadSettings();
-    void WriteSettings();
 
     QStringList inputDevices;
     QStringList outputDevices;
