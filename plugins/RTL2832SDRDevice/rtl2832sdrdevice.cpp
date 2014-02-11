@@ -867,6 +867,75 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 	}
 }
 
+bool RTL2832SDRDevice::Set(STANDARD_KEYS _key, QVariant _value, quint16 _option) {
+	switch (_key) {
+		case PluginName:
+			break;
+		case PluginDescription:
+			break;
+		case PluginNumDevices:
+			break;
+		case DeviceName:
+			break;
+		case DeviceDescription:
+			break;
+		case DeviceNumber:
+			deviceNumber = _value.toInt();
+			break;
+		case DeviceType:
+			break;
+		case DeviceSampleRates:
+			break;
+		case InputDeviceName:
+			break;
+		case OutputDeviceName:
+			break;
+		case HighFrequency:
+			break;
+		case LowFrequency:
+			break;
+		case FrequencyCorrection:
+			rtlFreqencyCorrection = _value.toInt();
+			break;
+		case IQGain:
+			iqGain = _value.toDouble();
+			break;
+		case SampleRate:
+			break;
+		case StartupType:
+			break;
+		case StartupMode:
+			break;
+		case StartupFrequency:
+			break;
+		case LastMode:
+			lastMode = _value.toInt();
+			break;
+		case LastFrequency:
+			lastFreq = _value.toDouble();
+			break;
+		case LastSpectrumMode:
+			lastSpectrumMode = _value.toInt();
+			break;
+		case UserMode:
+			break;
+		case UserFrequency:
+			break;
+		case IQOrder:
+			iqOrder = (IQORDER)_value.toInt();
+			break;
+		case IQBalanceEnabled:
+			break;
+		case IQBalanceGain:
+			break;
+		case IQBalancePhase:
+			break;
+		default:
+			break;
+	}
+	return false;
+}
+
 bool RTL2832SDRDevice::Set(QString _key, QVariant _value)
 {
     if (_key == "KeyDeviceSampleRate")

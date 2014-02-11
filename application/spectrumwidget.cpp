@@ -479,7 +479,7 @@ void SpectrumWidget::plotSelectionChanged(SignalSpectrum::DISPLAYMODE mode)
     }
 
     if (global->sdr != NULL)
-        global->sdr->SetLastDisplayMode(mode);
+		global->sdr->Set(DeviceInterface::LastSpectrumMode,mode);
 
     spectrumMode = mode;
     if (signalSpectrum != NULL) {

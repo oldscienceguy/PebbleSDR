@@ -91,6 +91,7 @@ public:
     virtual void RunConsumerThread();
 
 	virtual QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
+	virtual bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option=0);
 
 
 	SDRDEVICE GetDevice();

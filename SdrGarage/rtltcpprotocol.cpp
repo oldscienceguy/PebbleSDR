@@ -151,7 +151,7 @@ void RtlTcpProtocol::tcpCommands(RTL_CMD cmd)
     case CMD_FREQ_CORRECTION:
         frequencyCorrection = ntohl(cmd.param);
         qDebug()<<"set freq correction"<<frequencyCorrection;
-        sdr->SetFrequencyCorrection(frequencyCorrection);
+		sdr->Set(DeviceInterface::FrequencyCorrection,frequencyCorrection);
         break;
     case CMD_IF_GAIN:
         tmp = ntohl(cmd.param);

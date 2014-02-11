@@ -213,7 +213,6 @@ public:
 	}
 	virtual bool Set(QString _key, QVariant _value) {return false;}
 
-    virtual bool SetFrequencyCorrection(quint16 _correction) {return false;}
 
 protected:
     //Todo: Flag which of these is just a convenience for Pebble, vs required for the interface

@@ -396,7 +396,7 @@ void SDR::IQGainChanged(double i)
 void SDR::IQOrderChanged(int i)
 {
     DeviceInterface *di = (plugin == NULL) ? this:plugin;
-    di->iqOrder = (IQORDER)sd->IQSettings->itemData(i).toInt();
+	di->Set(DeviceInterface::IQOrder, sd->IQSettings->itemData(i).toInt());
     WriteSettings();
 }
 
@@ -602,34 +602,22 @@ bool SDR::UsesAudioInput()
 
 void SDR::SetLastDisplayMode(int mode)
 {
-    if (DelegateToPlugin())
-		plugin->lastSpectrumMode = mode;
-    else
-		lastSpectrumMode = mode;
+	lastSpectrumMode = mode;
 }
 
 void SDR::SetIQOrder(DeviceInterface::IQORDER o)
 {
-    if (DelegateToPlugin())
-        plugin->iqOrder = o;
-    else
-        iqOrder = o;
+	iqOrder = o;
 }
 
 void SDR::SetLastFreq(double f)
 {
-    if (DelegateToPlugin())
-        plugin->SetLastFreq(f);
-    else
-        lastFreq = f;
+	lastFreq = f;
 }
 
 void SDR::SetLastMode(int mode)
 {
-    if (DelegateToPlugin())
-        plugin->SetLastMode(mode);
-    else
-        lastMode = mode;
+	lastMode = mode;
 }
 
 QString SDR::GetInputDeviceName()
@@ -644,10 +632,7 @@ QString SDR::GetOutputDeviceName()
 
 void SDR::SetIQGain(double g)
 {
-    if (DelegateToPlugin())
-        plugin->iqGain = g;
-    else
-        iqGain = g;
+	iqGain = g;
 }
 
 QSettings *SDR::GetQSettings()
@@ -664,7 +649,7 @@ bool SDR::DelegateToPlugin()
     if (plugin == NULL)
         return false;
 
-    plugin->SetDeviceNumber(pluginDeviceNumber);
+	plugin->Set(DeviceInterface::DeviceNumber,pluginDeviceNumber);
     return true;
 }
 
@@ -853,6 +838,75 @@ QVariant SDR::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 
 	}
 	return QVariant();
+}
+
+bool SDR::Set(STANDARD_KEYS _key, QVariant _value, quint16 _option) {
+	switch (_key) {
+		case PluginName:
+			break;
+		case PluginDescription:
+			break;
+		case PluginNumDevices:
+			break;
+		case DeviceName:
+			break;
+		case DeviceDescription:
+			break;
+		case DeviceNumber:
+			deviceNumber = _value.toInt();
+			break;
+		case DeviceType:
+			break;
+		case DeviceSampleRates:
+			break;
+		case InputDeviceName:
+			break;
+		case OutputDeviceName:
+			break;
+		case HighFrequency:
+			break;
+		case LowFrequency:
+			break;
+		case FrequencyCorrection:
+			//Device specific
+			break;
+		case IQGain:
+			iqGain = _value.toDouble();
+			break;
+		case SampleRate:
+			break;
+		case StartupType:
+			break;
+		case StartupMode:
+			break;
+		case StartupFrequency:
+			break;
+		case LastMode:
+			lastMode = _value.toInt();
+			break;
+		case LastFrequency:
+			lastFreq = _value.toDouble();
+			break;
+		case LastSpectrumMode:
+			lastSpectrumMode = _value.toInt();
+			break;
+		case UserMode:
+			break;
+		case UserFrequency:
+			break;
+		case IQOrder:
+			iqOrder = (IQORDER)_value.toInt();
+			break;
+		case IQBalanceEnabled:
+			break;
+		case IQBalanceGain:
+			break;
+		case IQBalancePhase:
+			break;
+		default:
+			break;
+	}
+	return false;
 }
 
 //SDRThreads

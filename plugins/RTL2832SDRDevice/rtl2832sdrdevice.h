@@ -69,9 +69,11 @@ public:
     int GetSampleRate();
 
 	QVariant Get(QString _key, quint16 _option = 0);
-	QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
+	bool Set(QString _key, QVariant _value);
 
-    bool Set(QString _key, QVariant _value);
+	QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
+	bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option);
+
 
     //Display device option widget in settings dialog
     void SetupOptionUi(QWidget *parent);

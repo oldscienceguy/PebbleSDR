@@ -315,7 +315,7 @@ bool Receiver::Off()
 	//Now clean up rest
 	if (sdr != NULL){
         //Save any run time settings
-        sdr->SetLastFreq(frequency);
+		sdr->Set(DeviceInterface::LastFrequency,frequency);
 
 		sdr->Disconnect();
         sdr = NULL;
@@ -496,7 +496,7 @@ void Receiver::SetMode(DEMODMODE m)
 
         //Demod will return new demo
         demod->SetDemodMode(m, sampleRate, demodSampleRate);
-        sdr->SetLastMode(m);
+		sdr->Set(DeviceInterface::LastMode,m);
         sampleBufLen = 0;
 	}
     if (iDigitalModem != NULL) {
