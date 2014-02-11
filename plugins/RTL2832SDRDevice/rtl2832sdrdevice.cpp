@@ -748,11 +748,6 @@ int *RTL2832SDRDevice::GetSampleRates(int &len)
 
 }
 
-bool RTL2832SDRDevice::UsesAudioInput()
-{
-    return false;
-}
-
 bool RTL2832SDRDevice::GetTestBenchChecked()
 {
     return isTestBenchChecked;
@@ -817,6 +812,9 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 			break;
 		case DeviceNumber:
 			return deviceNumber;
+			break;
+		case DeviceType:
+			return DeviceInterface::INTERNAL_IQ;
 			break;
 		case HighFrequency:
 			return GetHighLimit();

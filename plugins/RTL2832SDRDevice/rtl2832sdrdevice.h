@@ -68,7 +68,6 @@ public:
     QString GetDeviceName();
     int GetSampleRate();
     int* GetSampleRates(int &len); //Returns array of allowable rates and length of array as ref
-    bool UsesAudioInput();
     bool GetTestBenchChecked();
 
 	QVariant Get(QString _key, quint16 _option = 0);

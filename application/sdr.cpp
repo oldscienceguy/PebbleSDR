@@ -215,7 +215,7 @@ void SDR::ShowSdrOptions(bool b)
 
         int id;
         QString dn;
-        if (di->UsesAudioInput()) {
+		if (di->Get(DeviceInterface::DeviceType).toInt() == DeviceInterface::AUDIO_IQ) {
             //Audio devices may have been plugged or unplugged, refresh list on each show
             //This will use PortAudio or QTAudio depending on configuration
             inputDevices = Audio::InputDeviceList();
@@ -607,10 +607,7 @@ void SDR::WriteOptionUi()
 
 bool SDR::UsesAudioInput()
 {
-    if (DelegateToPlugin())
-        return plugin->UsesAudioInput();
-    else
-        return true;
+	return true;
 }
 
 bool SDR::GetTestBenchChecked()
@@ -805,6 +802,9 @@ QVariant SDR::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 			break;
 		case DeviceNumber:
 			return deviceNumber;
+			break;
+		case DeviceType:
+			return UsesAudioInput();
 			break;
 		case HighFrequency:
 			return GetHighLimit();

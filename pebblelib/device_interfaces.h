@@ -31,6 +31,8 @@ friend class SDR; //Temp while we're transitioning from internal to plugins to s
 public:
     typedef enum IQORDER {IQ,QI,IONLY,QONLY} IQORDER;
     typedef enum STARTUP {SETFREQ = 0, LASTFREQ, DEFAULTFREQ} STARTUP;
+	//Does device generate IQ or rely on Sound Card (not in plugin)
+	typedef enum DEVICE_TYPE{INTERNAL_IQ, AUDIO_IQ} DEVICE_TYPE;
 	//These enums can only be extended, not changed, once released.  Otherwise will break existing plugins that are not rebuilt
 	enum STANDARD_KEYS {
 		PluginName,				//QString Name of plugin device was found in
@@ -39,6 +41,7 @@ public:
 		DeviceName,				//QString Actual device name, may be more than one device per plugin
 		DeviceDescription,		//QString Actual device description
 		DeviceNumber,			//Optional index for plugins that support multiple devices
+		DeviceType,				//int (enum DEVICE_TYPE)
 		HighFrequency,			//Highest frequency device supports
 		LowFrequency,			//Lowest frequency device supports
 		FrequencyCorrection,	//???What's the universal format for this?  int ppm?
@@ -79,7 +82,6 @@ public:
     virtual void ReadSettings() = 0;
     virtual void WriteSettings() = 0;
     virtual int* GetSampleRates(int &len) = 0; //Returns array of allowable rates and length of array as ref
-    virtual bool UsesAudioInput() = 0;
     virtual bool GetTestBenchChecked() {return isTestBenchChecked;}
 
     cbProcessIQData ProcessIQData;
@@ -118,6 +120,8 @@ public:
 			case DeviceDescription:
 				break;
 			case DeviceNumber:
+				break;
+			case DeviceType:
 				break;
 			case HighFrequency:
 				break;
@@ -170,6 +174,8 @@ public:
 			case DeviceDescription:
 				break;
 			case DeviceNumber:
+				break;
+			case DeviceType:
 				break;
 			case HighFrequency:
 				break;
