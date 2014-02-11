@@ -230,7 +230,7 @@ void SDR::ShowSdrOptions(bool b)
                 id = inputDevices[i].left(2).toInt();
                 dn = inputDevices[i].mid(3);
                 sd->sourceBox->addItem(dn, id);
-                if (dn == di->inputDeviceName)
+				if (dn == di->Get(DeviceInterface::InputDeviceName).toString())
                     sd->sourceBox->setCurrentIndex(i);
             }
             sd->sourceBox->blockSignals(false);
@@ -653,18 +653,12 @@ void SDR::SetLastMode(int mode)
 
 QString SDR::GetInputDeviceName()
 {
-    if (DelegateToPlugin())
-        return plugin->inputDeviceName;
-    else
-        return inputDeviceName;
+	return inputDeviceName;
 }
 
 QString SDR::GetOutputDeviceName()
 {
-    if (DelegateToPlugin())
-        return plugin->outputDeviceName;
-    else
-        return outputDeviceName;
+	return outputDeviceName;
 }
 
 void SDR::SetIQGain(double g)
@@ -805,6 +799,12 @@ QVariant SDR::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 			break;
 		case DeviceType:
 			return UsesAudioInput();
+			break;
+		case InputDeviceName:
+			return inputDeviceName;
+			break;
+		case OutputDeviceName:
+			return outputDeviceName;
 			break;
 		case HighFrequency:
 			return GetHighLimit();

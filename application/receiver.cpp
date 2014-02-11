@@ -258,7 +258,7 @@ bool Receiver::On()
 	}
 
 	//This should always be last because it starts samples flowing through the processBlocks
-    audioOutput->StartOutput(sdr->GetOutputDeviceName(), audioOutRate);
+	audioOutput->StartOutput(sdr->Get(DeviceInterface::OutputDeviceName).toString(), audioOutRate);
 	sdr->Start();
 
     //Don't set title until we connect and start.

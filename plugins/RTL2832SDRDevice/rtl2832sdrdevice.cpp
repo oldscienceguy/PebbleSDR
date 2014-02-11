@@ -816,6 +816,12 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 		case DeviceType:
 			return DeviceInterface::INTERNAL_IQ;
 			break;
+		case InputDeviceName:
+			return inputDeviceName;
+			break;
+		case OutputDeviceName:
+			return outputDeviceName;
+			break;
 		case HighFrequency:
 			return GetHighLimit();
 			break;

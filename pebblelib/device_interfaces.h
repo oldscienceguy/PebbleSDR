@@ -42,6 +42,8 @@ public:
 		DeviceDescription,		//QString Actual device description
 		DeviceNumber,			//Optional index for plugins that support multiple devices
 		DeviceType,				//int (enum DEVICE_TYPE)
+		InputDeviceName,		//QString Plugins manage settings - OS name for selected Audio input device, if any
+		OutputDeviceName,		//QString
 		HighFrequency,			//Highest frequency device supports
 		LowFrequency,			//Lowest frequency device supports
 		FrequencyCorrection,	//???What's the universal format for this?  int ppm?
@@ -94,9 +96,6 @@ public:
 
     virtual void SetLastMode(int mode) {lastMode = mode;}
 
-    virtual QString GetInputDeviceName() {return inputDeviceName;}
-    virtual QString GetOutputDeviceName() {return outputDeviceName;}
-
     virtual void SetIQGain(double g) {iqGain = g;}
 
     virtual QSettings *GetQSettings() {return qSettings;}
@@ -122,6 +121,10 @@ public:
 			case DeviceNumber:
 				break;
 			case DeviceType:
+				break;
+			case InputDeviceName:
+				break;
+			case OutputDeviceName:
 				break;
 			case HighFrequency:
 				break;
@@ -176,6 +179,10 @@ public:
 			case DeviceNumber:
 				break;
 			case DeviceType:
+				break;
+			case InputDeviceName:
+				break;
+			case OutputDeviceName:
 				break;
 			case HighFrequency:
 				break;
