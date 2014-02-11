@@ -37,7 +37,30 @@ public:
         HPSDR_USB, HPSDR_TCP, SPARE1, FUNCUBE,
         NOSDR, FILE, DVB_T, FUNCUBE_PLUS, SDR_IP_TCP, FiFi};
 
-	enum STANDARD_KEYS {PluginName,PluginDescription};
+	//These enums can only be extended, not changed, once released.  Otherwise will break existing plugins that are not rebuilt
+	enum STANDARD_KEYS {
+		PluginName,				//QString Name of plugin device was found in
+		PluginDescription,		//QString Description of plugin device was found in
+		PluginNumDevices,		//How many unique devices does plugin support, see DeviceNumber for correlation
+		DeviceName,				//QString Actual device name, may be more than one device per plugin
+		DeviceDescription,		//QString Actual device description
+		DeviceNumber,			//Optional index for plugins that support multiple devices
+		HighFrequency,			//Highest frequency device supports
+		LowFrequency,			//Lowest frequency device supports
+		IQGain,					//double User adjustable to normalize levels among devices
+		SampleRate,
+		StartupMode,			//int (enum) Default mode for device if not otherwise specified
+		StarupFrequency,		//Default frequency for device if not otherwise specified
+		LastMode,				//int (enum) Mode in use when power off
+		LastFrequency,			//Frequency displayed with power off
+		LastSpectrumMode,		//int (enum) Last spectrum selection
+		UserMode,				//int (enum) User specified startup mode
+		UserFrequency,			//User specified startup frequency
+		IQOrder,
+		IQBalanceEnabled,
+		IQBalanceGain,
+		IQBalancePhase
+	};
 
     DeviceInterface() {};
     virtual ~DeviceInterface() {};
@@ -73,14 +96,9 @@ public:
 
     cbProcessIQData ProcessIQData;
 
-    virtual int GetLastDisplayMode() {return lastDisplayMode;}
-    virtual void SetLastDisplayMode(int mode) {lastDisplayMode = mode;}
+	virtual void SetLastDisplayMode(int mode) {lastSpectrumMode = mode;}
 
-    virtual IQORDER GetIQOrder() {return iqOrder;}
     virtual void SetIQOrder(IQORDER o) {iqOrder = o;}
-    virtual bool GetIQBalanceEnabled() {return iqBalanceEnable;}
-    virtual bool GetIQBalanceGain() {return iqBalanceGain;}
-    virtual bool GetIQBalancePhase() {return iqBalancePhase;}
 
     virtual double GetFreqToSet() {
         //If freq is outside of mode we are in return default
@@ -99,14 +117,12 @@ public:
     }
     virtual void SetLastFreq(double f) {lastFreq = f;}
 
-    virtual int GetLastMode() {return lastMode;}
     virtual void SetLastMode(int mode) {lastMode = mode;}
 
     virtual STARTUP GetStartup() {return startup;}
     virtual QString GetInputDeviceName() {return inputDeviceName;}
     virtual QString GetOutputDeviceName() {return outputDeviceName;}
 
-    virtual double GetIQGain() {return iqGain;}
     virtual void SetIQGain(double g) {iqGain = g;}
 
     //These only apply to old internal
@@ -116,15 +132,106 @@ public:
     virtual QSettings *GetQSettings() {return qSettings;}
 
     //Support for multiple devices in one plugin
-    virtual quint16 GetNumDevices() {return 1;}
     virtual void SetDeviceNumber(quint16 _deviceNumber) {deviceNumber = _deviceNumber;}
     virtual quint16 GetDeviceNumber() {return deviceNumber;}
 
     //Allows us to get/set any device specific data
     //Standard keys will be defined, but any key can be passed
-	virtual QVariant Get(QString _key, quint16 _option = 0) {return 0;}
-	virtual QVariant Get(STANDARD_KEYS _key, quint16 _option = 0) {return 0;}
+	virtual QVariant Get(QString _key, quint16 _option = 0) {return QVariant();}
+	virtual QVariant Get(STANDARD_KEYS _key, quint16 _option = 0) {
+		switch (_key) {
+			case PluginName:
+				break;
+			case PluginDescription:
+				break;
+			case PluginNumDevices:
+				break;
+			case DeviceName:
+				break;
+			case DeviceDescription:
+				break;
+			case DeviceNumber:
+				break;
+			case HighFrequency:
+				break;
+			case LowFrequency:
+				break;
+			case IQGain:
+				break;
+			case SampleRate:
+				break;
+			case StartupMode:
+				break;
+			case StarupFrequency:
+				break;
+			case LastMode:
+				break;
+			case LastFrequency:
+				break;
+			case UserMode:
+				break;
+			case UserFrequency:
+				break;
+			case IQOrder:
+				break;
+			case IQBalanceEnabled:
+				break;
+			case IQBalanceGain:
+				break;
+			case IQBalancePhase:
+				break;
+			default:
+				break;
+		}
+		return QVariant();
+	}
 
+	virtual bool Set(STANDARD_KEYS _key, quint16 _option = 0) {
+		switch (_key) {
+			case PluginName:
+				break;
+			case PluginDescription:
+				break;
+			case PluginNumDevices:
+				break;
+			case DeviceName:
+				break;
+			case DeviceDescription:
+				break;
+			case DeviceNumber:
+				break;
+			case HighFrequency:
+				break;
+			case LowFrequency:
+				break;
+			case IQGain:
+				break;
+			case SampleRate:
+				break;
+			case StartupMode:
+				break;
+			case StarupFrequency:
+				break;
+			case LastMode:
+				break;
+			case LastFrequency:
+				break;
+			case UserMode:
+				break;
+			case UserFrequency:
+				break;
+			case IQOrder:
+				break;
+			case IQBalanceEnabled:
+				break;
+			case IQBalanceGain:
+				break;
+			case IQBalancePhase:
+				break;
+			default:
+				break;
+		}
+	}
 	virtual bool Set(QString _key, QVariant _value) {return false;}
 
     virtual quint16 GetFrequencyCorrection() {return 0;}
@@ -134,7 +241,7 @@ protected:
     //Todo: Flag which of these is just a convenience for Pebble, vs required for the interface
     quint16 framesPerBuffer;
 
-    int lastDisplayMode; //Spectrum, waterfall, etc
+	int lastSpectrumMode; //Spectrum, waterfall, etc
     STARTUP startup;
     double freqToSet;
     QString inputDeviceName;

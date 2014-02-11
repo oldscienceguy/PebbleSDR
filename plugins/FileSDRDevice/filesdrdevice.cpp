@@ -128,7 +128,7 @@ void FileSDRDevice::ReadSettings()
     iqBalanceEnable = qs->value("iqBalanceEnable",false).toBool();
     lastFreq = qs->value("LastFreq", 10000000).toDouble();
     lastMode = qs->value("LastMode",0).toInt();
-    lastDisplayMode = qs->value("LastDisplayMode",0).toInt();
+	lastSpectrumMode = qs->value("LastDisplayMode",0).toInt();
     isTestBenchChecked = qs->value("TestBench",false).toBool();
 
     fileName = qs->value("FileName", "").toString();
@@ -151,7 +151,7 @@ void FileSDRDevice::WriteSettings()
     qs->setValue("iqBalanceEnable", iqBalanceEnable);
     qs->setValue("LastFreq",lastFreq);
     qs->setValue("LastMode",lastMode);
-    qs->setValue("LastDisplayMode",lastDisplayMode);
+	qs->setValue("LastDisplayMode",lastSpectrumMode);
     qs->setValue("TestBench",isTestBenchChecked);
 
     qs->setValue("FileName", fileName);

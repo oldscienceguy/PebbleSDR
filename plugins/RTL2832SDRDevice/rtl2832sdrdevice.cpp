@@ -583,7 +583,7 @@ void RTL2832SDRDevice::ReadSettings()
     iqBalanceEnable = qs->value("iqBalanceEnable",false).toBool();
     lastFreq = qs->value("LastFreq", 10000000).toDouble();
     lastMode = qs->value("LastMode",0).toInt();
-    lastDisplayMode = qs->value("LastDisplayMode",0).toInt();
+	lastSpectrumMode = qs->value("LastDisplayMode",0).toInt();
     isTestBenchChecked = qs->value("TestBench",false).toBool();
 
     //Valid gain values (in tenths of a dB) for the E4000 tuner:
@@ -617,7 +617,7 @@ void RTL2832SDRDevice::WriteSettings()
     qs->setValue("iqBalanceEnable", iqBalanceEnable);
     qs->setValue("LastFreq",lastFreq);
     qs->setValue("LastMode",lastMode);
-    qs->setValue("LastDisplayMode",lastDisplayMode);
+	qs->setValue("LastDisplayMode",lastSpectrumMode);
     qs->setValue("TestBench",isTestBenchChecked);
 
     qs->setValue("RtlGain",rtlTunerGain);
@@ -807,6 +807,55 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 					break;
 			}
 			break;
+		case PluginNumDevices:
+			return 2;
+			break;
+		case DeviceName:
+			break;
+		case DeviceDescription:
+			break;
+		case DeviceNumber:
+			break;
+		case HighFrequency:
+			break;
+		case LowFrequency:
+			break;
+		case IQGain:
+			return iqGain;
+			break;
+		case SampleRate:
+			break;
+		case StartupMode:
+			break;
+		case StarupFrequency:
+			break;
+		case LastMode:
+			return lastMode;
+			break;
+		case LastFrequency:
+			break;
+		case LastSpectrumMode:
+			return lastSpectrumMode;
+			break;
+		case UserMode:
+			break;
+		case UserFrequency:
+			break;
+		case IQOrder:
+			return iqOrder;
+			break;
+		case IQBalanceEnabled:
+			return iqBalanceEnable;
+			break;
+		case IQBalanceGain:
+			return iqBalanceGain;
+			break;
+		case IQBalancePhase:
+			return iqBalancePhase;
+			break;
+		default:
+			break;
+
 	}
 }
 

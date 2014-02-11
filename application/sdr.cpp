@@ -503,7 +503,7 @@ void SDR::ReadSettings()
         di->iqBalanceEnable = qs->value("iqBalanceEnable",false).toBool();
         di->lastFreq = qs->value("LastFreq", 10000000).toDouble();
         di->lastMode = qs->value("LastMode",0).toInt();
-        di->lastDisplayMode = qs->value("LastDisplayMode",0).toInt();
+		di->lastSpectrumMode = qs->value("LastDisplayMode",0).toInt();
         di->isTestBenchChecked = qs->value("TestBench",false).toBool();
     }
 
@@ -554,7 +554,7 @@ void SDR::WriteSettings()
         qs->setValue("iqBalanceEnable", di->iqBalanceEnable);
         qs->setValue("LastFreq",di->lastFreq);
         qs->setValue("LastMode",di->lastMode);
-        qs->setValue("LastDisplayMode",di->lastDisplayMode);
+		qs->setValue("LastDisplayMode",di->lastSpectrumMode);
         qs->setValue("TestBench",di->isTestBenchChecked);
     }
 
@@ -651,28 +651,12 @@ DeviceInterface::STARTUP SDR::GetStartup()
     return startup;
 }
 
-int SDR::GetLastDisplayMode()
-{
-    if (DelegateToPlugin())
-      return plugin->lastDisplayMode;
-    else
-        return lastDisplayMode;
-}
-
 void SDR::SetLastDisplayMode(int mode)
 {
     if (DelegateToPlugin())
-        plugin->lastDisplayMode = mode;
+		plugin->lastSpectrumMode = mode;
     else
-        lastDisplayMode = mode;
-}
-
-DeviceInterface::IQORDER SDR::GetIQOrder()
-{
-    if (DelegateToPlugin())
-        return plugin->iqOrder;
-    else
-        return iqOrder;
+		lastSpectrumMode = mode;
 }
 
 void SDR::SetIQOrder(DeviceInterface::IQORDER o)
@@ -681,30 +665,6 @@ void SDR::SetIQOrder(DeviceInterface::IQORDER o)
         plugin->iqOrder = o;
     else
         iqOrder = o;
-}
-
-bool SDR::GetIQBalanceEnabled()
-{
-    if (DelegateToPlugin())
-        return plugin->iqBalanceEnable;
-    else
-        return iqBalanceEnable;
-}
-
-bool SDR::GetIQBalanceGain()
-{
-    if (DelegateToPlugin())
-        return plugin->iqBalanceGain;
-    else
-        return iqBalanceGain;
-}
-
-bool SDR::GetIQBalancePhase()
-{
-    if (DelegateToPlugin())
-        return plugin->iqBalancePhase;
-    else
-        return iqBalancePhase;
 }
 
 double SDR::GetFreqToSet()
@@ -731,14 +691,6 @@ void SDR::SetLastFreq(double f)
         lastFreq = f;
 }
 
-int SDR::GetLastMode()
-{
-    if (DelegateToPlugin())
-        return plugin->GetLastMode();
-    else
-        return lastMode;
-}
-
 void SDR::SetLastMode(int mode)
 {
     if (DelegateToPlugin())
@@ -761,14 +713,6 @@ QString SDR::GetOutputDeviceName()
         return plugin->outputDeviceName;
     else
         return outputDeviceName;
-}
-
-double SDR::GetIQGain()
-{
-    if (DelegateToPlugin())
-        return plugin->iqGain;
-    else
-        return iqGain;
 }
 
 void SDR::SetIQGain(double g)
@@ -885,6 +829,10 @@ void SDR::RunConsumerThread(){}
 
 QVariant SDR::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 {
+	if (DelegateToPlugin())
+		return plugin->Get(_key,_option);
+
+	//Handle transition here
 	switch (_key) {
 		case PluginName:
 			return GetDeviceName(); //Not a plugin, return something meaningful
@@ -892,6 +840,55 @@ QVariant SDR::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 		case PluginDescription:
 			return "Internal Device (not a plugin)";
 			break;
+		case PluginNumDevices:
+			return 1;
+			break;
+		case DeviceName:
+			break;
+		case DeviceDescription:
+			break;
+		case DeviceNumber:
+			break;
+		case HighFrequency:
+			break;
+		case LowFrequency:
+			break;
+		case IQGain:
+			return iqGain;
+			break;
+		case SampleRate:
+			break;
+		case StartupMode:
+			break;
+		case StarupFrequency:
+			break;
+		case LastMode:
+			return lastMode;
+			break;
+		case LastFrequency:
+			break;
+		case LastSpectrumMode:
+			return lastSpectrumMode;
+			break;
+		case UserMode:
+			break;
+		case UserFrequency:
+			break;
+		case IQOrder:
+			return iqOrder;
+			break;
+		case IQBalanceEnabled:
+			return iqBalanceEnable;
+			break;
+		case IQBalanceGain:
+			return iqBalanceGain;
+			break;
+		case IQBalancePhase:
+			return iqBalancePhase;
+			break;
+		default:
+			break;
+
 	}
 
 }

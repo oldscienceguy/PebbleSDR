@@ -173,7 +173,7 @@ void SpectrumWidget::Run(bool r)
     zoomPlotLabel.fill(Qt::black);
 
 	if (r) {
-        ui.displayBox->setCurrentIndex(global->sdr->GetLastDisplayMode()); //Initial display mode
+		ui.displayBox->setCurrentIndex(global->sdr->Get(DeviceInterface::LastSpectrumMode).toInt()); //Initial display mode
         ui.zoomSlider->setValue(0); //Left end of scale
         //zoomChanged(0); //Display initial value
         ui.zoomLabel->setText(QString().sprintf("Span: %.0f kHz",sampleRate/1000.0));

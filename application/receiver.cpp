@@ -135,9 +135,9 @@ bool Receiver::On()
     //Don't need Mixer anymore - TBD
     mixer = new Mixer(sampleRate, framesPerBuffer);
     iqBalance = new IQBalance(sampleRate,framesPerBuffer);
-    iqBalance->setEnabled(sdr->GetIQBalanceEnabled());
-    iqBalance->setGainFactor(sdr->GetIQBalanceGain());
-    iqBalance->setPhaseFactor(sdr->GetIQBalancePhase());
+	iqBalance->setEnabled(sdr->Get(DeviceInterface::IQBalanceEnabled).toBool());
+	iqBalance->setGainFactor(sdr->Get(DeviceInterface::IQBalanceGain).toDouble());
+	iqBalance->setPhaseFactor(sdr->Get(DeviceInterface::IQBalancePhase).toDouble());
 
     /*
      * Decimation strategy
@@ -244,7 +244,7 @@ bool Receiver::On()
         frequency = sdr->GetLastFreq();
         receiverWidget->SetFrequency(frequency);
 
-        receiverWidget->SetMode((DEMODMODE)sdr->GetLastMode());
+		receiverWidget->SetMode((DEMODMODE)sdr->Get(DeviceInterface::LastMode).toInt());
 	}
 	else {
 		frequency = 10000000;
@@ -622,10 +622,11 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 
 	float tmp;
     //Configure IQ order if not default
-    if (sdr->GetIQOrder() != SDR::IQ)
+	SDR::IQORDER iqOrder = (SDR::IQORDER)sdr->Get(DeviceInterface::IQOrder).toInt();
+	if (iqOrder != SDR::IQ)
         for (int i=0;i<framesPerBuffer;i++)
         {
-            switch(sdr->GetIQOrder())
+			switch(iqOrder)
             {
             case SDR::IQ:
                     //No change, this is the default order
@@ -660,9 +661,9 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 
 	//Normalize device gain
 	//Note that we DO modify IN buffer in this step
-	sdrGain = sdr->GetGain(); //Allow sdr to change gain while running
+	sdrGain = sdr->Get(DeviceInterface::IQGain).toDouble(); //Allow sdr to change gain while running
     if (sdrGain != 1)
-        CPXBuf::scale(in,in,sdrGain * sdr->GetIQGain(),framesPerBuffer);
+		CPXBuf::scale(in,in,sdrGain,framesPerBuffer);
 
 	CPX *nextStep = in;
 
