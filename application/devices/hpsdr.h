@@ -127,7 +127,7 @@ public:
 	QString GetDeviceName();
 	int GetSampleRate(); //Base override so we get match SR to HPSDR BW
     bool UsesAudioInput() {return false;}
-    int* GetSampleRates(int &len); //Returns array of allowable rates and length of array as ref
+	QStringList GetSampleRates(); //Returns array of allowable rates and length of array as ref
 
 	void ReadSettings();
 	void WriteSettings();

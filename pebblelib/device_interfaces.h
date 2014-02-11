@@ -42,6 +42,7 @@ public:
 		DeviceDescription,		//QString Actual device description
 		DeviceNumber,			//Optional index for plugins that support multiple devices
 		DeviceType,				//int (enum DEVICE_TYPE)
+		DeviceSampleRates,		//QStringList Sample rates supported by device
 		InputDeviceName,		//QString Plugins manage settings - OS name for selected Audio input device, if any
 		OutputDeviceName,		//QString
 		HighFrequency,			//Highest frequency device supports
@@ -83,7 +84,6 @@ public:
 
     virtual void ReadSettings() = 0;
     virtual void WriteSettings() = 0;
-    virtual int* GetSampleRates(int &len) = 0; //Returns array of allowable rates and length of array as ref
 
     cbProcessIQData ProcessIQData;
 
@@ -120,6 +120,8 @@ public:
 			case DeviceNumber:
 				break;
 			case DeviceType:
+				break;
+			case DeviceSampleRates:
 				break;
 			case InputDeviceName:
 				break;
@@ -178,6 +180,8 @@ public:
 			case DeviceNumber:
 				break;
 			case DeviceType:
+				break;
+			case DeviceSampleRates:
 				break;
 			case InputDeviceName:
 				break;

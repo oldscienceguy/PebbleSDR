@@ -208,10 +208,9 @@ int FileSDRDevice::GetSampleRate()
     return wavFileRead.GetSampleRate();
 }
 
-int *FileSDRDevice::GetSampleRates(int &len)
+QStringList FileSDRDevice::GetSampleRates()
 {
-    len = 0;
-    return NULL;
+	return QStringList();
 }
 
 bool FileSDRDevice::UsesAudioInput()

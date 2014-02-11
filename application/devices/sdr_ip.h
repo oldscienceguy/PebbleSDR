@@ -45,7 +45,7 @@ public:
     bool UsesAudioInput() {return false;}
 
     int GetSampleRate();
-    int* GetSampleRates(int &len);  //Returns array of allowable rates
+	QStringList GetSampleRates();  //Returns array of allowable rates
 
     void ReadSettings();
     void WriteSettings();

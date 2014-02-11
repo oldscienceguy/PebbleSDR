@@ -67,7 +67,6 @@ public:
     double GetLowLimit();
     QString GetDeviceName();
     int GetSampleRate();
-    int* GetSampleRates(int &len); //Returns array of allowable rates and length of array as ref
 
 	QVariant Get(QString _key, quint16 _option = 0);
 	QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);

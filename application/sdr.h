@@ -67,7 +67,7 @@ public:
     virtual QString GetDeviceName();
 	//Sample rate for some devices, like SDR-IQ, is dependent on bandwidth
 	virtual int GetSampleRate();
-    virtual int* GetSampleRates(int &len); //Returns array of allowable rates and length of array as ref
+	virtual QStringList GetSampleRates(); //Returns array of allowable rates and length of array as ref
 
     //Display device option widget in settings dialog
     virtual void SetupOptionUi(QWidget *parent);

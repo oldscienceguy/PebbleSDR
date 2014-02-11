@@ -731,21 +731,6 @@ int RTL2832SDRDevice::GetSampleRate()
     return sampleRate;
 }
 
-int *RTL2832SDRDevice::GetSampleRates(int &len)
-{
-    len = 6;
-    //Ugly, but couldn't find easy way to init with {1,2,3} array initializer
-    //These are all multiples of 2 to support easy decimation
-    sampleRates[0] = 64000;
-    sampleRates[1] = 128000;
-    sampleRates[2] = 256000;
-    sampleRates[3] = 512000;
-    sampleRates[4] = 1024000;
-    sampleRates[5] = 2048000;
-    return sampleRates;
-
-}
-
 QVariant RTL2832SDRDevice::Get(QString _key, quint16 _option)
 {
     if (_key == "KeyDeviceSampleRate")
@@ -808,6 +793,9 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 			break;
 		case DeviceType:
 			return DeviceInterface::INTERNAL_IQ;
+			break;
+		case DeviceSampleRates:
+			return QStringList()<<"64000"<<"128000"<<"256000"<<"512000"<<"1024000"<<"2048000";
 			break;
 		case InputDeviceName:
 			return inputDeviceName;

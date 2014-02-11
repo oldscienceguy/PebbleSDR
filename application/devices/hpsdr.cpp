@@ -685,15 +685,9 @@ int HPSDR::GetSampleRate()
 	}
 #endif
 }
-int *HPSDR::GetSampleRates(int &len)
+QStringList HPSDR::GetSampleRates()
 {
-    len = 3;
-    //Ugly, but couldn't find easy way to init with {1,2,3} array initializer
-    sampleRates[0] = 48000;
-    sampleRates[1] = 96000;
-    sampleRates[2] = 192000;
-    //sampleRates[3] = 384000; //Hermes only
-    return sampleRates;
+	return QStringList()<<"48000"<<"96000"<<"192000"; //384000 when we support Hermes
 }
 
 

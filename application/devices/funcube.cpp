@@ -1492,15 +1492,12 @@ int FunCube::GetSampleRate()
         return 192000;
 }
 
-int *FunCube::GetSampleRates(int &len)
+QStringList FunCube::GetSampleRates()
 {
-    len = 1;
     if (sdrDevice == SDR::FUNCUBE)
-        sampleRates[0] = 96000; //Always 96k
+		return QStringList()<<"96000"; //Always 96k
     else
-        sampleRates[0] = 192000; //Always 192k
-
-    return sampleRates;
+		return QStringList()<<"192000"; //Always 192k
 }
 void FunCube::ReadSettings()
 {

@@ -318,18 +318,11 @@ int SDR_IP::GetSampleRate()
     //return m_pSdrInterface->LookUpSampleRate(sampleRate);
 }
 
-int* SDR_IP::GetSampleRates(int &len)
+QStringList SDR_IP::GetSampleRates()
 {
-    len = 4;
-    //Ugly, but couldn't find easy way to init with {1,2,3} array initializer
-    //Assume SDR_IP for now, add other devices later
-    //These must be the same values as in sdrinterface.c
-    sampleRates[0] = 62500; //50000;
-    sampleRates[1] = 250000; //200000;
-    sampleRates[2] = 500000; //500000;
-    sampleRates[3] = 2000000; //1800000;
-    return sampleRates;
-
+	//Assume SDR_IP for now, add other devices later
+	//These must be the same values as in sdrinterface.c
+	return QStringList()<<"62500"<<"250000"<<"500000"<<"2000000";
 }
 
 //Called from CUdp thread when it's processed a packet

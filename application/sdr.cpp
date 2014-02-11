@@ -291,13 +291,14 @@ void SDR::ShowSdrOptions(bool b)
 
         //Set up options and get allowable sampleRates from device
 
-        int numSr;
-        int *sr = di->GetSampleRates(numSr);
+		int sr;
+		QStringList sampleRates = di->Get(DeviceInterface::DeviceSampleRates).toStringList();
         sd->sampleRateBox->blockSignals(true);
         sd->sampleRateBox->clear();
-        for (int i=0; i<numSr; i++) {
-            sd->sampleRateBox->addItem(QString::number(sr[i]),sr[i]);
-            if (di->sampleRate == sr[i])
+		for (int i=0; i<sampleRates.count(); i++) {
+			sr = sampleRates[i].toInt();
+			sd->sampleRateBox->addItem(sampleRates[i],sr);
+			if (di->sampleRate == sr)
                 sd->sampleRateBox->setCurrentIndex(i);
         }
         sd->sampleRateBox->blockSignals(false);
@@ -306,7 +307,7 @@ void SDR::ShowSdrOptions(bool b)
         connect(sd->closeButton,SIGNAL(clicked(bool)),this,SLOT(CloseOptions(bool)));
         connect(sd->resetAllButton,SIGNAL(clicked(bool)),this,SLOT(ResetAllSettings(bool)));
 
-		sd->testBenchBox->setChecked(settings->useTestBench);
+		sd->testBenchBox->setChecked(global->settings->useTestBench);
         connect(sd->testBenchBox, SIGNAL(toggled(bool)), this, SLOT(TestBenchChanged(bool)));
 
         //Careful here: Fragile coding practice
@@ -571,18 +572,9 @@ int SDR::GetSampleRate()
 	return sampleRate;
 }
 
-int *SDR::GetSampleRates(int &len)
+QStringList SDR::GetSampleRates()
 {
-    if (DelegateToPlugin())
-        return plugin->GetSampleRates(len);
-    else {
-        len = 3;
-        //Ugly, but couldn't find easy way to init with {1,2,3} array initializer
-        sampleRates[0] = 48000;
-        sampleRates[1] = 96000;
-        sampleRates[2] = 192000;
-        return sampleRates;
-    }
+	return QStringList()<<"48000"<<"96000"<<"192000";
 }
 
 void SDR::SetupOptionUi(QWidget *parent)
@@ -788,6 +780,9 @@ QVariant SDR::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 			break;
 		case DeviceType:
 			return UsesAudioInput();
+			break;
+		case DeviceSampleRates:
+			return GetSampleRates();
 			break;
 		case InputDeviceName:
 			return inputDeviceName;
