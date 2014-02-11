@@ -129,7 +129,6 @@ void FileSDRDevice::ReadSettings()
     lastFreq = qs->value("LastFreq", 10000000).toDouble();
     lastMode = qs->value("LastMode",0).toInt();
 	lastSpectrumMode = qs->value("LastDisplayMode",0).toInt();
-    isTestBenchChecked = qs->value("TestBench",false).toBool();
 
     fileName = qs->value("FileName", "").toString();
     recordingPath = qs->value("RecordingPath", "").toString();
@@ -152,7 +151,6 @@ void FileSDRDevice::WriteSettings()
     qs->setValue("LastFreq",lastFreq);
     qs->setValue("LastMode",lastMode);
 	qs->setValue("LastDisplayMode",lastSpectrumMode);
-    qs->setValue("TestBench",isTestBenchChecked);
 
     qs->setValue("FileName", fileName);
     qs->setValue("RecordingPath", recordingPath);
@@ -219,11 +217,6 @@ int *FileSDRDevice::GetSampleRates(int &len)
 bool FileSDRDevice::UsesAudioInput()
 {
     return false;
-}
-
-bool FileSDRDevice::GetTestBenchChecked()
-{
-	return isTestBenchChecked;
 }
 
 QVariant FileSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)

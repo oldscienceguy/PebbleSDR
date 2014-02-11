@@ -584,7 +584,6 @@ void RTL2832SDRDevice::ReadSettings()
     lastFreq = qs->value("LastFreq", 10000000).toDouble();
     lastMode = qs->value("LastMode",0).toInt();
 	lastSpectrumMode = qs->value("LastDisplayMode",0).toInt();
-    isTestBenchChecked = qs->value("TestBench",false).toBool();
 
     //Valid gain values (in tenths of a dB) for the E4000 tuner:
     //-10, 15, 40, 65, 90, 115, 140, 165, 190,
@@ -618,7 +617,6 @@ void RTL2832SDRDevice::WriteSettings()
     qs->setValue("LastFreq",lastFreq);
     qs->setValue("LastMode",lastMode);
 	qs->setValue("LastDisplayMode",lastSpectrumMode);
-    qs->setValue("TestBench",isTestBenchChecked);
 
     qs->setValue("RtlGain",rtlTunerGain);
     qs->setValue("IPAddr",rtlServerIP.toString());
@@ -746,11 +744,6 @@ int *RTL2832SDRDevice::GetSampleRates(int &len)
     sampleRates[5] = 2048000;
     return sampleRates;
 
-}
-
-bool RTL2832SDRDevice::GetTestBenchChecked()
-{
-    return isTestBenchChecked;
 }
 
 QVariant RTL2832SDRDevice::Get(QString _key, quint16 _option)

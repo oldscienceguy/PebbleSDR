@@ -76,7 +76,6 @@ public:
     //Assume each device uses audio input.  Devices that don't should over-ride and return false to hide options
     virtual bool UsesAudioInput();
 
-    virtual bool GetTestBenchChecked();
     virtual void SetLastDisplayMode(int mode);
     virtual void SetIQOrder(IQORDER o);
     virtual void SetLastFreq(double f);

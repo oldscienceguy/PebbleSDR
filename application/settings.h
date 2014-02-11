@@ -30,6 +30,7 @@ public:
 	int leftRightIncrement;
 	int upDownIncrement;
     int modeOffset; //tone offset for CW
+	bool useTestBench;
 
     //Fonts for consisten UI
     QFont smFont;

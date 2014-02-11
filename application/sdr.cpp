@@ -306,7 +306,7 @@ void SDR::ShowSdrOptions(bool b)
         connect(sd->closeButton,SIGNAL(clicked(bool)),this,SLOT(CloseOptions(bool)));
         connect(sd->resetAllButton,SIGNAL(clicked(bool)),this,SLOT(ResetAllSettings(bool)));
 
-        sd->testBenchBox->setChecked(di->isTestBenchChecked);
+		sd->testBenchBox->setChecked(settings->useTestBench);
         connect(sd->testBenchBox, SIGNAL(toggled(bool)), this, SLOT(TestBenchChanged(bool)));
 
         //Careful here: Fragile coding practice
@@ -333,7 +333,7 @@ void SDR::CloseOptions(bool b)
 void SDR::TestBenchChanged(bool b)
 {
     DeviceInterface *di = (plugin == NULL) ? this:plugin;
-    di->isTestBenchChecked = b;
+	settings->useTestBench = b;
     WriteSettings();
 }
 
@@ -487,7 +487,6 @@ void SDR::ReadSettings()
         di->lastFreq = qs->value("LastFreq", 10000000).toDouble();
         di->lastMode = qs->value("LastMode",0).toInt();
 		di->lastSpectrumMode = qs->value("LastDisplayMode",0).toInt();
-        di->isTestBenchChecked = qs->value("TestBench",false).toBool();
     }
 
     qs->beginGroup(tr("Testbench"));
@@ -538,7 +537,6 @@ void SDR::WriteSettings()
         qs->setValue("LastFreq",di->lastFreq);
         qs->setValue("LastMode",di->lastMode);
 		qs->setValue("LastDisplayMode",di->lastSpectrumMode);
-        qs->setValue("TestBench",di->isTestBenchChecked);
     }
 
     qs->beginGroup(tr("Testbench"));
@@ -608,15 +606,6 @@ void SDR::WriteOptionUi()
 bool SDR::UsesAudioInput()
 {
 	return true;
-}
-
-bool SDR::GetTestBenchChecked()
-{
-    if (DelegateToPlugin())
-        return plugin->isTestBenchChecked;
-    else
-        return isTestBenchChecked;
-
 }
 
 void SDR::SetLastDisplayMode(int mode)

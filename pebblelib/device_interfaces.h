@@ -84,7 +84,6 @@ public:
     virtual void ReadSettings() = 0;
     virtual void WriteSettings() = 0;
     virtual int* GetSampleRates(int &len) = 0; //Returns array of allowable rates and length of array as ref
-    virtual bool GetTestBenchChecked() {return isTestBenchChecked;}
 
     cbProcessIQData ProcessIQData;
 
@@ -248,8 +247,6 @@ protected:
 
     //Device needs to manage QSettings since it knows its own settings file name
     QSettings *qSettings;
-
-    bool isTestBenchChecked;
 
     int deviceNumber; //For plugins that support multiple devices
 

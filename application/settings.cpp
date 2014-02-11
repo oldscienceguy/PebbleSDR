@@ -55,6 +55,9 @@ void Settings::ReadSettings()
 	leftRightIncrement = qSettings->value("LeftRightIncrement",10).toInt();
 	upDownIncrement = qSettings->value("UpDownIncrement",100).toInt();
     modeOffset = qSettings->value("ModeOffset",1000).toInt(); //CW tone
+
+	useTestBench = qSettings->value("TestBench",false).toBool();
+
 }
 
 //Save to disk
@@ -71,6 +74,7 @@ void Settings::WriteSettings()
 	qSettings->setValue("LeftRightIncrement",leftRightIncrement);
 	qSettings->setValue("UpDownIncrement",upDownIncrement);
     qSettings->setValue("ModeOffset",modeOffset);
+	qSettings->setValue("TestBench",useTestBench);
 
 	qSettings->sync();
 }

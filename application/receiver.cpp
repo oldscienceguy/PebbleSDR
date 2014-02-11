@@ -108,7 +108,7 @@ bool Receiver::On()
 		return false;
 	}
 
-    if (sdr->GetTestBenchChecked()) {
+	if (settings->useTestBench) {
         CTestBench *testBench = global->testBench;
 
         testBench->Init(); //Sets up last device settings used
