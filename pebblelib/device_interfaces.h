@@ -49,7 +49,7 @@ public:
 		LowFrequency,			//Lowest frequency device supports
 		FrequencyCorrection,	//???What's the universal format for this?  int ppm?
 		IQGain,					//double User adjustable to normalize levels among devices
-		SampleRate,
+		SampleRate,				//quint32
 		StartupType,			//int (enum STARTUP)
 		StartupMode,			//int (enum DEMODMODE) Default mode for device if not otherwise specified
 		StartupFrequency,		//Default frequency for device if not otherwise specified
@@ -58,10 +58,10 @@ public:
 		LastSpectrumMode,		//int (enum) Last spectrum selection
 		UserMode,				//int (enum) User specified startup mode
 		UserFrequency,			//User specified startup frequency
-		IQOrder,
-		IQBalanceEnabled,
-		IQBalanceGain,
-		IQBalancePhase
+		IQOrder,				//Enum
+		IQBalanceEnabled,		//bool
+		IQBalanceGain,			//double
+		IQBalancePhase			//double
 	};
 
     DeviceInterface() {};
@@ -76,9 +76,6 @@ public:
     virtual double SetFrequency(double fRequested,double fCurrent) = 0;
     //Display device option widget in settings dialog
     virtual void SetupOptionUi(QWidget *parent) = 0;
-
-    //Device doesn't have to implement this.  Called by receiver to bring up SDR options dialog
-    virtual void ShowSdrOptions(bool b) {b=true;}
 
     virtual void ReadSettings() = 0;
     virtual void WriteSettings() = 0;

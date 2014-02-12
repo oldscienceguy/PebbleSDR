@@ -78,6 +78,8 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	iqBalance = NULL;
     iDigitalModem = NULL;
 
+	sdrOptions = new SdrOptions();
+
 	//Testing
 	useFreqDomainChain = false;
 
@@ -565,13 +567,13 @@ void Receiver::SdrOptionsPressed()
         //Power is off, create temporary one so we can set settings
 		sdr = dynamic_cast<SDR *>(global->sdr);
     }
-    sdr->ShowSdrOptions(true);
+	sdrOptions->ShowSdrOptions(sdr, true);
 }
 //Called by receiver widget with device selection changes to make sure any open options ui is closed
 void Receiver::CloseSdrOptions()
 {
     if (sdr != NULL) {
-        sdr->ShowSdrOptions(false);
+		sdrOptions->ShowSdrOptions(sdr, false);
         sdr = NULL;
     }
 }

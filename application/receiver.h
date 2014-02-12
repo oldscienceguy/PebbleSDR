@@ -28,6 +28,7 @@
 #include "filters/fir.h"
 #include "filters/fractresampler.h"
 #include "devices/wavfile.h"
+#include "sdroptions.h"
 
 #include "plugins.h"
 
@@ -85,6 +86,7 @@ public:
 
 private:
     Plugins *plugins;
+	SdrOptions *sdrOptions;
 
     //Test bench profiles we can output data to test bench
     enum TestBenchProfiles {

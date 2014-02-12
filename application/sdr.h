@@ -16,7 +16,6 @@ Base class for SDR Receivers
 #include "devices/usbutil.h"
 #include "audio.h"
 #include "ui_iqbalanceoptions.h"
-#include "ui_sdr.h"
 #include "device_interfaces.h"
 
 
@@ -106,7 +105,6 @@ public:
     void ReleaseFilledBuffer() {semNumFilledBuffers->release();}
     void IncrementConsumerBuffer() {nextConsumerDataBuf = (nextConsumerDataBuf +1 ) % numDataBufs;}
 
-    void ShowSdrOptions(bool b);
     void InitSettings(QString fname);
 
 	void ReadSettings();
@@ -122,12 +120,6 @@ protected:
     //Needed to determine when it's safe to fetch options for display
     bool connected;
 
-    QDialog *sdrOptions;
-    Ui::SdrOptions *sd;
-
-
-    QStringList inputDevices;
-    QStringList outputDevices;
 
 	Audio *audioInput;
 	Receiver *receiver;
@@ -158,22 +150,6 @@ protected:
 	bool isThreadRunning;
 	SDRProducerThread *producerThread;
 	SDRConsumerThread *consumerThread;
-
-private slots:
-    void InputChanged(int i);
-    void OutputChanged(int i);
-    void StartupChanged(int i);
-    void StartupFrequencyChanged();
-    void SampleRateChanged(int i);
-    void IQGainChanged(double i);
-    void IQOrderChanged(int i);
-    void BalancePhaseChanged(int v);
-    void BalanceGainChanged(int v);
-    void BalanceEnabledChanged(bool b);
-    void BalanceReset();
-    void ResetAllSettings(bool b);
-    void CloseOptions(bool b);
-    void TestBenchChanged(bool b);
 
 private:
     DeviceInterface *plugin; //Delegation to plugins

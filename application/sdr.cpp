@@ -24,8 +24,6 @@ SDR::SDR(DeviceInterface *_plugin, int _devNum)
     plugin = _plugin;
     pluginDeviceNumber = _devNum; //Critical - this is used everywhere to disambiguate multi device plugins
 
-    sdrOptions = NULL;
-    sd = NULL;
     //Note: Plugins with multiple device support will all have the same deviceInterface _plugin
     //So each call to this constructor with the same interface ptr will replace all settings
     //This is here just to make sure we get initial values, don't count on data
@@ -52,8 +50,6 @@ SDR::SDR(Receiver *_receiver, SDRDEVICE dev,Settings *_settings)
     semNumFreeBuffers = NULL;
     semNumFilledBuffers = NULL;
     producerBuffer = NULL;
-    sdrOptions = NULL;
-    sd = NULL;
     connected = false;
 
     //Setup callback for device plugins to use when they have new IQ data
@@ -71,9 +67,6 @@ SDR::~SDR(void)
 
     if (DelegateToPlugin())
         WriteSettings();
-
-    if (sdrOptions != NULL)
-        sdrOptions->hide();
 
 	if (audioInput != NULL) {
 		delete audioInput;
@@ -128,10 +121,6 @@ void SDR::Start()
 void SDR::Stop()
 {
     if (DelegateToPlugin()) {
-        //Things we used to do in ~SDR which is not destructed when we have plugins
-        if (sdrOptions != NULL)
-            sdrOptions->hide();
-
         return plugin->Stop();
     }
 }
@@ -181,286 +170,6 @@ void SDR::InitSettings(QString fname)
 #endif
     qSettings = new QSettings(path + "/PebbleData/" + fname +".ini",QSettings::IniFormat);
 
-}
-
-//If b is false, close and delete options
-void SDR::ShowSdrOptions(bool b)
-{
-    if (sdrOptions != NULL) {
-        //If we're visible, and asking to be shown again, toggle off
-        if (b && sdrOptions->isVisible())
-            b = false;
-        //Close and return
-        if (!b) {
-            sdrOptions->setVisible(b); //hide
-            delete sdrOptions;
-            sdrOptions = NULL;
-            return;
-        }
-    }
-
-    if (DelegateToPlugin()) {
-        //Do nothing, just call to sync
-    }
-    DeviceInterface *di = (plugin == NULL) ? this:plugin;
-
-    if (sdrOptions == NULL) {
-        int cur;
-
-        sdrOptions = new QDialog();
-        sd = new Ui::SdrOptions();
-        sd->setupUi(sdrOptions);
-        sdrOptions->setWindowTitle("Pebble Settings");
-
-        int id;
-        QString dn;
-		if (di->Get(DeviceInterface::DeviceType).toInt() == DeviceInterface::AUDIO_IQ) {
-            //Audio devices may have been plugged or unplugged, refresh list on each show
-            //This will use PortAudio or QTAudio depending on configuration
-            inputDevices = Audio::InputDeviceList();
-            //Adding items triggers selection, block signals until list is complete
-            sd->sourceBox->blockSignals(true);
-            sd->sourceBox->clear();
-            //Input devices may be restricted form some SDRs
-            for (int i=0; i<inputDevices.count(); i++)
-            {
-                //This is portAudio specific format ID:Name
-                //AudioQt will emulate
-                id = inputDevices[i].left(2).toInt();
-                dn = inputDevices[i].mid(3);
-                sd->sourceBox->addItem(dn, id);
-				if (dn == di->Get(DeviceInterface::InputDeviceName).toString())
-                    sd->sourceBox->setCurrentIndex(i);
-            }
-            sd->sourceBox->blockSignals(false);
-            connect(sd->sourceBox,SIGNAL(currentIndexChanged(int)),this,SLOT(InputChanged(int)));
-        } else {
-            sd->sourceLabel->setVisible(false);
-            sd->sourceBox->setVisible(false);
-        }
-        outputDevices = Audio::OutputDeviceList();
-        sd->outputBox->blockSignals(true);
-        sd->outputBox->clear();
-        for (int i=0; i<outputDevices.count(); i++)
-        {
-            id = outputDevices[i].left(2).toInt();
-            dn = outputDevices[i].mid(3);
-            sd->outputBox->addItem(dn, id);
-            if (dn == di->outputDeviceName)
-                sd->outputBox->setCurrentIndex(i);
-        }
-        sd->outputBox->blockSignals(false);
-        connect(sd->outputBox,SIGNAL(currentIndexChanged(int)),this,SLOT(OutputChanged(int)));
-
-        sd->startupBox->addItem("Last Frequency",SDR::LASTFREQ);
-        sd->startupBox->addItem("Set Frequency", SDR::SETFREQ);
-        sd->startupBox->addItem("Device Default", SDR::DEFAULTFREQ);
-        cur = sd->startupBox->findData(di->startup);
-        sd->startupBox->setCurrentIndex(cur);
-        connect(sd->startupBox,SIGNAL(currentIndexChanged(int)),this,SLOT(StartupChanged(int)));
-
-        sd->startupEdit->setText(QString::number(di->freqToSet,'f',0));
-        connect(sd->startupEdit,SIGNAL(editingFinished()),this,SLOT(StartupFrequencyChanged()));
-
-        sd->iqGain->setValue(di->iqGain);
-        connect(sd->iqGain,SIGNAL(valueChanged(double)),this,SLOT(IQGainChanged(double)));
-
-        sd->IQSettings->addItem("I/Q (normal)",IQ);
-        sd->IQSettings->addItem("Q/I (swap)",QI);
-        sd->IQSettings->addItem("I Only",IONLY);
-        sd->IQSettings->addItem("Q Only",QONLY);
-        sd->IQSettings->setCurrentIndex(di->iqOrder);
-        connect(sd->IQSettings,SIGNAL(currentIndexChanged(int)),this,SLOT(IQOrderChanged(int)));
-
-        sd->iqEnableBalance->setChecked(di->iqBalanceEnable);
-
-        sd->iqBalancePhase->setMaximum(500);
-        sd->iqBalancePhase->setMinimum(-500);
-        sd->iqBalancePhase->setValue(di->iqBalancePhase * 1000);
-        connect(sd->iqBalancePhase,SIGNAL(valueChanged(int)),this,SLOT(BalancePhaseChanged(int)));
-
-        sd->iqBalanceGain->setMaximum(1250);
-        sd->iqBalanceGain->setMinimum(750);
-        sd->iqBalanceGain->setValue(di->iqBalanceGain * 1000);
-        connect(sd->iqBalanceGain,SIGNAL(valueChanged(int)),this,SLOT(BalanceGainChanged(int)));
-
-        connect(sd->iqEnableBalance,SIGNAL(toggled(bool)),this,SLOT(BalanceEnabledChanged(bool)));
-
-        connect(sd->iqBalanceReset,SIGNAL(clicked()),this,SLOT(BalanceReset()));
-
-        //Set up options and get allowable sampleRates from device
-
-		int sr;
-		QStringList sampleRates = di->Get(DeviceInterface::DeviceSampleRates).toStringList();
-        sd->sampleRateBox->blockSignals(true);
-        sd->sampleRateBox->clear();
-		for (int i=0; i<sampleRates.count(); i++) {
-			sr = sampleRates[i].toInt();
-			sd->sampleRateBox->addItem(sampleRates[i],sr);
-			if (di->sampleRate == sr)
-                sd->sampleRateBox->setCurrentIndex(i);
-        }
-        sd->sampleRateBox->blockSignals(false);
-        connect(sd->sampleRateBox,SIGNAL(currentIndexChanged(int)),this,SLOT(SampleRateChanged(int)));
-
-        connect(sd->closeButton,SIGNAL(clicked(bool)),this,SLOT(CloseOptions(bool)));
-        connect(sd->resetAllButton,SIGNAL(clicked(bool)),this,SLOT(ResetAllSettings(bool)));
-
-		sd->testBenchBox->setChecked(global->settings->useTestBench);
-        connect(sd->testBenchBox, SIGNAL(toggled(bool)), this, SLOT(TestBenchChanged(bool)));
-
-        //Careful here: Fragile coding practice
-        //We're calling a virtual function in a base class method and expect it to call the over-ridden method in derived class
-        //This only works because ShowSdrOptions() is being called via a pointer to the derived class
-        //Some other method that's called from the base class could not do this
-        di->SetupOptionUi(sd->sdrSpecific);
-
-    }
-
-    if (b)
-        sdrOptions->show();
-    else
-        sdrOptions->hide();
-
-}
-
-void SDR::CloseOptions(bool b)
-{
-    if (sdrOptions != NULL)
-        sdrOptions->close();
-}
-
-void SDR::TestBenchChanged(bool b)
-{
-    DeviceInterface *di = (plugin == NULL) ? this:plugin;
-	settings->useTestBench = b;
-    WriteSettings();
-}
-
-void SDR::SampleRateChanged(int i)
-{
-    DeviceInterface *di = (plugin == NULL) ? this:plugin;
-    int cur = sd->sampleRateBox->currentIndex();
-    di->sampleRate = sd->sampleRateBox->itemText(cur).toInt();
-    WriteSettings();
-}
-
-void SDR::InputChanged(int i)
-{
-    DeviceInterface *di = (plugin == NULL) ? this:plugin;
-    int cur = sd->sourceBox->currentIndex();
-    di->inputDeviceName = sd->sourceBox->itemText(cur);
-    WriteSettings();
-}
-
-void SDR::OutputChanged(int i)
-{
-    DeviceInterface *di = (plugin == NULL) ? this:plugin;
-    int cur = sd->outputBox->currentIndex();
-    di->outputDeviceName = sd->outputBox->itemText(cur);
-    WriteSettings();
-}
-
-void SDR::StartupChanged(int i)
-{
-    DeviceInterface *di = (plugin == NULL) ? this:plugin;
-
-    di->startup = (STARTUP)sd->startupBox->itemData(i).toInt();
-    sd->startupEdit->setText(QString::number(freqToSet,'f',0));
-    if (startup == SETFREQ) {
-        sd->startupEdit->setEnabled(true);
-    }
-    else {
-        sd->startupEdit->setEnabled(false);
-    }
-    WriteSettings();
-}
-
-void SDR::StartupFrequencyChanged()
-{
-    DeviceInterface *di = (plugin == NULL) ? this:plugin;
-    di->freqToSet = sd->startupEdit->text().toDouble();
-    WriteSettings();
-}
-
-//IQ gain can be changed in real time, without saving
-void SDR::IQGainChanged(double i)
-{
-    DeviceInterface *di = (plugin == NULL) ? this:plugin;
-    di->iqGain = i;
-    WriteSettings();
-}
-
-//IQ order can be changed in real time, without saving
-void SDR::IQOrderChanged(int i)
-{
-    DeviceInterface *di = (plugin == NULL) ? this:plugin;
-	di->Set(DeviceInterface::IQOrder, sd->IQSettings->itemData(i).toInt());
-    WriteSettings();
-}
-
-void SDR::BalancePhaseChanged(int v)
-{
-    DeviceInterface *di = (plugin == NULL) ? this:plugin;
-    //v is an integer, convert to fraction -.500 to +.500
-    double newValue = v/1000.0;
-    sd->iqBalancePhaseLabel->setText("Phase: " + QString::number(newValue));
-    di->iqBalancePhase = newValue;
-
-    if (!global->receiver->GetPowerOn())
-        return;
-    global->receiver->GetIQBalance()->setPhaseFactor(newValue);
-    WriteSettings();
-}
-
-void SDR::BalanceGainChanged(int v)
-{
-    DeviceInterface *di = (plugin == NULL) ? this:plugin;
-    //v is an integer, convert to fraction -.750 to +1.250
-    double newValue = v/1000.0;
-    sd->iqBalanceGainLabel->setText("Gain: " + QString::number(newValue));
-    di->iqBalanceGain = newValue;
-    WriteSettings();
-    //Update in realtime
-    if (!global->receiver->GetPowerOn())
-        return;
-    global->receiver->GetIQBalance()->setGainFactor(newValue);
-}
-
-void SDR::BalanceEnabledChanged(bool b)
-{
-    DeviceInterface *di = (plugin == NULL) ? this:plugin;
-    di->iqBalanceEnable = b;
-    WriteSettings();
-    if (!global->receiver->GetPowerOn())
-        return;
-    global->receiver->GetIQBalance()->setEnabled(b);
-}
-
-void SDR::BalanceReset()
-{
-    sd->iqBalanceGain->setValue(1000);
-    sd->iqBalancePhase->setValue(0);
-}
-
-void SDR::ResetAllSettings(bool b)
-{
-    //Confirm
-    QMessageBox::StandardButton bt = QMessageBox::question(NULL,
-            tr("Confirm Reset"),
-            tr("Are you sure you want to reset all settings for this device")
-            );
-    if (bt == QMessageBox::Ok || bt == QMessageBox::Yes) {
-        //Delete ini files and restart
-        if (sdrOptions != NULL)
-            sdrOptions->close();
-        //Disabled
-        //emit Restart();
-
-		QString fName = qSettings->fileName();
-        QFile f(fName);
-        f.remove();
-    }
 }
 
 //Settings common to all devices
