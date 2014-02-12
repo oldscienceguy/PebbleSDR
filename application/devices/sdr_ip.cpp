@@ -393,10 +393,3 @@ void SDR_IP::SetupOptionUi(QWidget *parent)
 
 }
 
-void SDR_IP::WriteOptionUi()
-{
-    m_IPAdr = QHostAddress(optionUi->ipAddress->text());
-    m_Port = optionUi->port->text().toInt();
-    WriteSettings();
-}
-

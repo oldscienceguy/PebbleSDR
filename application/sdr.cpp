@@ -536,14 +536,6 @@ void SDR::SetupOptionUi(QWidget *parent)
         return;
 }
 
-void SDR::WriteOptionUi()
-{
-    if (DelegateToPlugin())
-        return plugin->WriteOptionUi();
-    else
-        return;
-}
-
 bool SDR::UsesAudioInput()
 {
 	return true;

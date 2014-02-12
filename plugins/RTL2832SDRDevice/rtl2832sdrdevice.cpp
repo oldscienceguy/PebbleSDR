@@ -741,6 +741,7 @@ int RTL2832SDRDevice::GetSampleRate()
 
 QVariant RTL2832SDRDevice::Get(QString _key, quint16 _option)
 {
+	Q_UNUSED(_option);
     if (_key == "KeyDeviceSampleRate")
         return rtlSampleRate;
     else if ( _key == "KeyTunerGainMode")
@@ -1114,14 +1115,6 @@ void RTL2832SDRDevice::OffsetModeChanged(bool _selected)
     rtlOffsetMode = optionUi->offsetModeBox->isChecked();
     if (!SetRtlOffsetMode(rtlOffsetMode))
         rtlOffsetMode = false;
-    WriteSettings();
-}
-
-//!!!Not currently called, but should be called when option dialog closes
-void RTL2832SDRDevice::WriteOptionUi()
-{
-    rtlServerIP = QHostAddress(optionUi->ipAddress->text());
-    rtlServerPort = optionUi->port->text().toInt();
     WriteSettings();
 }
 

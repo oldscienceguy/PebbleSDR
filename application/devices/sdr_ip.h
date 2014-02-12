@@ -41,7 +41,6 @@ public:
     double GetGain();
     QString GetDeviceName();
     void SetupOptionUi(QWidget *parent);
-    void WriteOptionUi();
     bool UsesAudioInput() {return false;}
 
     int GetSampleRate();

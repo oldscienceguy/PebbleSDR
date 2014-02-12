@@ -75,8 +75,6 @@ public:
 
     //Display device option widget in settings dialog
     void SetupOptionUi(QWidget *parent);
-    //Called by settings to write device options to ini file
-    void WriteOptionUi();
 
 protected:
     void producerWorker(cbProducerConsumerEvents _event);
