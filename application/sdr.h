@@ -83,7 +83,6 @@ public:
     virtual QString GetInputDeviceName();
     virtual QString GetOutputDeviceName();
     virtual void SetIQGain(double g);
-    virtual QSettings *GetQSettings();
 
     virtual void StopProducerThread();
     virtual void RunProducerThread();

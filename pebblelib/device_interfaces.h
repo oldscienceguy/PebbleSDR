@@ -87,12 +87,15 @@ public:
 
     cbProcessIQData ProcessIQData;
 
-    virtual QSettings *GetQSettings() {return qSettings;}
-
     //Allows us to get/set any device specific data
     //Standard keys will be defined, but any key can be passed
-	virtual QVariant Get(QString _key, quint16 _option = 0) {return QVariant();}
+	virtual QVariant Get(QString _key, quint16 _option = 0) {
+		Q_UNUSED(_key);
+		Q_UNUSED(_option);
+		return QVariant();
+	}
 	virtual QVariant Get(STANDARD_KEYS _key, quint16 _option = 0) {
+		Q_UNUSED(_option);
 		switch (_key) {
 			case PluginName:
 				break;
@@ -153,6 +156,8 @@ public:
 	}
 
 	virtual bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option = 0) {
+		Q_UNUSED(_value);
+		Q_UNUSED(_option);
 		switch (_key) {
 			case PluginName:
 				break;
@@ -211,9 +216,13 @@ public:
 		}
 		return false;
 	}
-	virtual bool Set(QString _key, QVariant _value) {return false;}
 
-    virtual bool SetFrequencyCorrection(quint16 _correction) {return false;}
+	virtual bool Set(QString _key, QVariant _value) {
+		Q_UNUSED(_key);
+		Q_UNUSED(_value);
+		return false;
+	}
+
 
 protected:
     //Todo: Flag which of these is just a convenience for Pebble, vs required for the interface

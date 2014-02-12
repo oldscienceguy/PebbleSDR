@@ -113,7 +113,7 @@ void FileSDRDevice::ShowOptions()
 
 void FileSDRDevice::ReadSettings()
 {
-    QSettings *qs = GetQSettings();
+	QSettings *qs = qSettings;
 
     //These are common settings for every device, variables are defined in DeviceInterface
     startup = (STARTUP)qs->value("Startup", DEFAULTFREQ).toInt();
@@ -136,7 +136,7 @@ void FileSDRDevice::ReadSettings()
 
 void FileSDRDevice::WriteSettings()
 {
-    QSettings *qs = GetQSettings();
+	QSettings *qs = qSettings;
 
     qs->setValue("Startup",startup);
     qs->setValue("StartupFreq",freqToSet);

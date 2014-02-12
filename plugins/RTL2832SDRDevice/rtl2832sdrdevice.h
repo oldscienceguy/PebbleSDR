@@ -54,8 +54,6 @@ public:
     void Start();
     void Stop();
 
-    QSettings *GetQSettings();
-
     double SetFrequency(double fRequested,double fCurrent);
     void ShowOptions();
     void ReadSettings();

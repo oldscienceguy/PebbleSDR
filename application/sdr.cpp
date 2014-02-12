@@ -16,7 +16,6 @@
 #include "soundcard.h"
 #include "receiver.h"
 #include "QMessageBox"
-#include "testbench.h"
 
 //Called from plugins.cpp to create an SDR object that delegates to a device plugin
 //Necessary while we are in transition from internal to plugins
@@ -458,7 +457,7 @@ void SDR::ResetAllSettings(bool b)
         //Disabled
         //emit Restart();
 
-        QString fName = GetQSettings()->fileName();
+		QString fName = qSettings->fileName();
         QFile f(fName);
         f.remove();
     }
@@ -468,56 +467,30 @@ void SDR::ResetAllSettings(bool b)
 //Make sure to call SDR::ReadSettings() in any derived class
 void SDR::ReadSettings()
 {
-    QSettings *qs = GetQSettings();
     DeviceInterface *di = (plugin == NULL) ? this:plugin;
 	qDebug()<<"Reading settings for "<<di->Get(PluginName,pluginDeviceNumber).toString();
 
     if (DelegateToPlugin()) {
         plugin->ReadSettings();
     } else {
-        di->startup = (STARTUP)qs->value("Startup", DEFAULTFREQ).toInt();
-        di->freqToSet = qs->value("StartupFreq", 10000000).toDouble();
-        di->inputDeviceName = qs->value("InputDeviceName", "").toString();
-        di->outputDeviceName = qs->value("OutputDeviceName", "").toString();
-        di->sampleRate = qs->value("SampleRate", 48000).toInt();
-        di->iqGain = qs->value("iqGain",1).toDouble();
-        di->iqOrder = (IQORDER)qs->value("IQOrder", SDR::IQ).toInt();
-        di->iqBalanceGain = qs->value("iqBalanceGain",1).toDouble();
-        di->iqBalancePhase = qs->value("iqBalancePhase",0).toDouble();
-        di->iqBalanceEnable = qs->value("iqBalanceEnable",false).toBool();
-        di->lastFreq = qs->value("LastFreq", 10000000).toDouble();
-        di->lastMode = qs->value("LastMode",0).toInt();
-		di->lastSpectrumMode = qs->value("LastDisplayMode",0).toInt();
+		di->startup = (STARTUP)qSettings->value("Startup", DEFAULTFREQ).toInt();
+		di->freqToSet = qSettings->value("StartupFreq", 10000000).toDouble();
+		di->inputDeviceName = qSettings->value("InputDeviceName", "").toString();
+		di->outputDeviceName = qSettings->value("OutputDeviceName", "").toString();
+		di->sampleRate = qSettings->value("SampleRate", 48000).toInt();
+		di->iqGain = qSettings->value("iqGain",1).toDouble();
+		di->iqOrder = (IQORDER)qSettings->value("IQOrder", SDR::IQ).toInt();
+		di->iqBalanceGain = qSettings->value("iqBalanceGain",1).toDouble();
+		di->iqBalancePhase = qSettings->value("iqBalancePhase",0).toDouble();
+		di->iqBalanceEnable = qSettings->value("iqBalanceEnable",false).toBool();
+		di->lastFreq = qSettings->value("LastFreq", 10000000).toDouble();
+		di->lastMode = qSettings->value("LastMode",0).toInt();
+		di->lastSpectrumMode = qSettings->value("LastDisplayMode",0).toInt();
     }
-
-    qs->beginGroup(tr("Testbench"));
-
-    global->testBench->m_SweepStartFrequency = qs->value(tr("SweepStartFrequency"),0.0).toDouble();
-    global->testBench->m_SweepStopFrequency = qs->value(tr("SweepStopFrequency"),1.0).toDouble();
-    global->testBench->m_SweepRate = qs->value(tr("SweepRate"),0.0).toDouble();
-    global->testBench->m_DisplayRate = qs->value(tr("DisplayRate"),10).toInt();
-    global->testBench->m_VertRange = qs->value(tr("VertRange"),10000).toInt();
-    global->testBench->m_TrigIndex = qs->value(tr("TrigIndex"),0).toInt();
-    global->testBench->m_TrigLevel = qs->value(tr("TrigLevel"),100).toInt();
-    global->testBench->m_HorzSpan = qs->value(tr("HorzSpan"),100).toInt();
-    global->testBench->m_Profile = qs->value(tr("Profile"),0).toInt();
-    global->testBench->m_TimeDisplay = qs->value(tr("TimeDisplay"),false).toBool();
-    global->testBench->m_GenOn = qs->value(tr("GenOn"),false).toBool();
-    global->testBench->m_PeakOn = qs->value(tr("PeakOn"),false).toBool();
-    global->testBench->m_PulseWidth = qs->value(tr("PulseWidth"),0.0).toDouble();
-    global->testBench->m_PulsePeriod = qs->value(tr("PulsePeriod"),0.0).toDouble();
-    global->testBench->m_SignalPower = qs->value(tr("SignalPower"),0.0).toDouble();
-    global->testBench->m_NoisePower = qs->value(tr("NoisePower"),-70.0).toDouble();
-    global->testBench->m_UseFmGen = qs->value(tr("UseFmGen"),false).toBool();
-
-    qs->endGroup();
-
-
 }
 //Make sure to call SDR::WriteSettings() in any derived class
 void SDR::WriteSettings()
 {
-    QSettings *qs = GetQSettings();
     DeviceInterface *di = (plugin == NULL) ? this:plugin;
 	qDebug()<<"Writing settings for "<<di->Get(PluginName,pluginDeviceNumber).toString();
 
@@ -525,45 +498,21 @@ void SDR::WriteSettings()
         plugin->WriteSettings();
     } else {
         //Plugins are responsible for these, but if no plugin, write them here
-        qs->setValue("Startup",di->startup);
-        qs->setValue("StartupFreq",di->freqToSet);
-        qs->setValue("InputDeviceName", di->inputDeviceName);
-        qs->setValue("OutputDeviceName", di->outputDeviceName);
-        qs->setValue("SampleRate",di->sampleRate);
-        qs->setValue("iqGain",di->iqGain);
-        qs->setValue("IQOrder", di->iqOrder);
-        qs->setValue("iqBalanceGain", di->iqBalanceGain);
-        qs->setValue("iqBalancePhase", di->iqBalancePhase);
-        qs->setValue("iqBalanceEnable", di->iqBalanceEnable);
-        qs->setValue("LastFreq",di->lastFreq);
-        qs->setValue("LastMode",di->lastMode);
-		qs->setValue("LastDisplayMode",di->lastSpectrumMode);
-    }
-
-    qs->beginGroup(tr("Testbench"));
-
-    qs->setValue(tr("SweepStartFrequency"),global->testBench->m_SweepStartFrequency);
-    qs->setValue(tr("SweepStopFrequency"),global->testBench->m_SweepStopFrequency);
-    qs->setValue(tr("SweepRate"),global->testBench->m_SweepRate);
-    qs->setValue(tr("DisplayRate"),global->testBench->m_DisplayRate);
-    qs->setValue(tr("VertRange"),global->testBench->m_VertRange);
-    qs->setValue(tr("TrigIndex"),global->testBench->m_TrigIndex);
-    qs->setValue(tr("TimeDisplay"),global->testBench->m_TimeDisplay);
-    qs->setValue(tr("HorzSpan"),global->testBench->m_HorzSpan);
-    qs->setValue(tr("TrigLevel"),global->testBench->m_TrigLevel);
-    qs->setValue(tr("Profile"),global->testBench->m_Profile);
-    qs->setValue(tr("GenOn"),global->testBench->m_GenOn);
-    qs->setValue(tr("PeakOn"),global->testBench->m_PeakOn);
-    qs->setValue(tr("PulseWidth"),global->testBench->m_PulseWidth);
-    qs->setValue(tr("PulsePeriod"),global->testBench->m_PulsePeriod);
-    qs->setValue(tr("SignalPower"),global->testBench->m_SignalPower);
-    qs->setValue(tr("NoisePower"),global->testBench->m_NoisePower);
-    qs->setValue(tr("UseFmGen"),global->testBench->m_UseFmGen);
-
-    qs->endGroup();
-
-    qs->sync();
-
+		qSettings->setValue("Startup",di->startup);
+		qSettings->setValue("StartupFreq",di->freqToSet);
+		qSettings->setValue("InputDeviceName", di->inputDeviceName);
+		qSettings->setValue("OutputDeviceName", di->outputDeviceName);
+		qSettings->setValue("SampleRate",di->sampleRate);
+		qSettings->setValue("iqGain",di->iqGain);
+		qSettings->setValue("IQOrder", di->iqOrder);
+		qSettings->setValue("iqBalanceGain", di->iqBalanceGain);
+		qSettings->setValue("iqBalancePhase", di->iqBalancePhase);
+		qSettings->setValue("iqBalanceEnable", di->iqBalanceEnable);
+		qSettings->setValue("LastFreq",di->lastFreq);
+		qSettings->setValue("LastMode",di->lastMode);
+		qSettings->setValue("LastDisplayMode",di->lastSpectrumMode);
+		qSettings->sync();
+	}
 }
 
 //Devices may override this and return a rate based on other settings
@@ -633,14 +582,6 @@ QString SDR::GetOutputDeviceName()
 void SDR::SetIQGain(double g)
 {
 	iqGain = g;
-}
-
-QSettings *SDR::GetQSettings()
-{
-    if (DelegateToPlugin())
-        return plugin->GetQSettings();
-    else
-        return qSettings;
 }
 
 //Call this in every deviceInterface method to see if we should delegate, and if so make sure deviceNumber is in sync

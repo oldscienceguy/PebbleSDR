@@ -568,7 +568,11 @@ void RTL2832SDRDevice::ShowOptions()
 
 void RTL2832SDRDevice::ReadSettings()
 {
-    QSettings * qs = GetQSettings();
+	QSettings *qs=NULL;
+	if (deviceNumber == RTL_USB)
+		qs = usbSettings;
+	else if (deviceNumber == RTL_TCP)
+		qs = tcpSettings;
 
     //These are common settings for every device, variables are defined in DeviceInterface
     startup = (STARTUP)qs->value("Startup", DEFAULTFREQ).toInt();
@@ -602,7 +606,11 @@ void RTL2832SDRDevice::ReadSettings()
 
 void RTL2832SDRDevice::WriteSettings()
 {
-    QSettings *qs = GetQSettings();
+	QSettings *qs=NULL;
+	if (deviceNumber == RTL_USB)
+		qs = usbSettings;
+	else if (deviceNumber == RTL_TCP)
+		qs = tcpSettings;
 
     qs->setValue("Startup",startup);
     qs->setValue("StartupFreq",freqToSet);
@@ -862,12 +870,15 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 			return iqBalancePhase;
 			break;
 		default:
+			return QVariant();
 			break;
 
 	}
+	return QVariant();
 }
 
 bool RTL2832SDRDevice::Set(STANDARD_KEYS _key, QVariant _value, quint16 _option) {
+	Q_UNUSED(_option);
 	switch (_key) {
 		case PluginName:
 			break;
@@ -1331,17 +1342,6 @@ void RTL2832SDRDevice::consumerWorker(cbProducerConsumerEvents _event)
             break;
     }
 
-}
-
-QSettings *RTL2832SDRDevice::GetQSettings()
-{
-    //REturn settings file for each deviceNumber
-    if (deviceNumber == RTL_USB)
-        return usbSettings;
-    else if (deviceNumber == RTL_TCP)
-        return tcpSettings;
-    else
-        return NULL;
 }
 
 //These need to be moved to a DeviceInterface implementation class, equivalent to SDR
