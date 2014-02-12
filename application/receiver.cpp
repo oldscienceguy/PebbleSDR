@@ -233,24 +233,24 @@ bool Receiver::On()
     receiverWidget->SetDisplayedGain(30,1,100);  //20%
     receiverWidget->SetDisplayedSquelch(global->minDb);
 	
-	DeviceInterface::STARTUP startupType = (DeviceInterface::STARTUP)sdr->Get(DeviceInterface::StartupType).toInt();
+	DeviceInterface::STARTUP_TYPE startupType = (DeviceInterface::STARTUP_TYPE)sdr->Get(DeviceInterface::StartupType).toInt();
 	if (sdr->GetSDRDevice() == SDR::FILE ||  startupType == SDR::DEFAULTFREQ) {
 		frequency=sdr->Get(DeviceInterface::StartupFrequency).toDouble();
         receiverWidget->SetFrequency(frequency);
         //This triggers indirect frequency set, so make sure we set widget first
-		receiverWidget->SetMode((DEMODMODE)sdr->Get(DeviceInterface::StartupMode).toInt());
+		receiverWidget->SetMode((DEMODMODE)sdr->Get(DeviceInterface::StartupDemodMode).toInt());
     }
 	else if (startupType == SDR::SETFREQ) {
 		frequency = sdr->Get(DeviceInterface::UserFrequency).toDouble();
         receiverWidget->SetFrequency(frequency);
 
-		receiverWidget->SetMode((DEMODMODE)sdr->Get(DeviceInterface::LastMode).toInt());
+		receiverWidget->SetMode((DEMODMODE)sdr->Get(DeviceInterface::LastDemodMode).toInt());
     }
 	else if (startupType == SDR::LASTFREQ) {
 		frequency = sdr->Get(DeviceInterface::LastFrequency).toDouble();
         receiverWidget->SetFrequency(frequency);
 
-		receiverWidget->SetMode((DEMODMODE)sdr->Get(DeviceInterface::LastMode).toInt());
+		receiverWidget->SetMode((DEMODMODE)sdr->Get(DeviceInterface::LastDemodMode).toInt());
 	}
 	else {
 		frequency = 10000000;
@@ -295,6 +295,8 @@ bool Receiver::Off()
 
     if (global->testBench->isVisible())
         global->testBench->setVisible(false);
+
+	sdrOptions->ShowSdrOptions(sdr, false);
 
     if (isRecording) {
         recordingFile.Close();
@@ -498,7 +500,7 @@ void Receiver::SetMode(DEMODMODE m)
 
         //Demod will return new demo
         demod->SetDemodMode(m, sampleRate, demodSampleRate);
-		sdr->Set(DeviceInterface::LastMode,m);
+		sdr->Set(DeviceInterface::LastDemodMode,m);
         sampleBufLen = 0;
 	}
     if (iDigitalModem != NULL) {
@@ -593,6 +595,9 @@ that is disabled and not do a useless copy from IN to OUT.
 //New ProcessBlock for device plugins
 void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 {
+	if (sdr == NULL || !powerOn)
+		return;
+
     /*
      * Critical timing!!
      * At 48k sample rate and 2048 samples per block, we need to process 48000/2048, rounded up = 24 blocks per second

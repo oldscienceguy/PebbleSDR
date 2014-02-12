@@ -116,8 +116,8 @@ void FileSDRDevice::ReadSettings()
 	QSettings *qs = qSettings;
 
     //These are common settings for every device, variables are defined in DeviceInterface
-    startup = (STARTUP)qs->value("Startup", DEFAULTFREQ).toInt();
-    freqToSet = qs->value("StartupFreq", 10000000).toDouble();
+	startupType = (STARTUP_TYPE)qs->value("Startup", DEFAULTFREQ).toInt();
+	userFrequency = qs->value("StartupFreq", 10000000).toDouble();
     inputDeviceName = qs->value("InputDeviceName", "").toString();
     outputDeviceName = qs->value("OutputDeviceName", "").toString();
     sampleRate = qs->value("SampleRate", 48000).toInt();
@@ -127,7 +127,7 @@ void FileSDRDevice::ReadSettings()
     iqBalancePhase = qs->value("iqBalancePhase",0).toDouble();
     iqBalanceEnable = qs->value("iqBalanceEnable",false).toBool();
     lastFreq = qs->value("LastFreq", 10000000).toDouble();
-    lastMode = qs->value("LastMode",0).toInt();
+	lastDemodMode = qs->value("LastMode",0).toInt();
 	lastSpectrumMode = qs->value("LastDisplayMode",0).toInt();
 
     fileName = qs->value("FileName", "").toString();
@@ -138,8 +138,8 @@ void FileSDRDevice::WriteSettings()
 {
 	QSettings *qs = qSettings;
 
-    qs->setValue("Startup",startup);
-    qs->setValue("StartupFreq",freqToSet);
+	qs->setValue("Startup",startupType);
+	qs->setValue("StartupFreq",userFrequency);
     qs->setValue("InputDeviceName", inputDeviceName);
     qs->setValue("OutputDeviceName", outputDeviceName);
     qs->setValue("SampleRate",sampleRate);
@@ -149,7 +149,7 @@ void FileSDRDevice::WriteSettings()
     qs->setValue("iqBalancePhase", iqBalancePhase);
     qs->setValue("iqBalanceEnable", iqBalanceEnable);
     qs->setValue("LastFreq",lastFreq);
-    qs->setValue("LastMode",lastMode);
+	qs->setValue("LastMode",lastDemodMode);
 	qs->setValue("LastDisplayMode",lastSpectrumMode);
 
     qs->setValue("FileName", fileName);
@@ -172,7 +172,7 @@ int FileSDRDevice::GetStartupMode()
     if (startupMode < 255)
         return startupMode;
     else
-        return lastMode;
+		return lastDemodMode;
 }
 
 double FileSDRDevice::GetHighLimit()

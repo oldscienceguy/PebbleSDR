@@ -123,11 +123,9 @@ protected:
 
 	Audio *audioInput;
 	Receiver *receiver;
-	double startupFrequency; //0 means auto-set
 	Settings *settings;
 	bool isLibUsbLoaded;
 	bool isFtdiLoaded;
-    int sampleRates[10]; //Max 10 for testing
 
     //Producer/Consumer buffer management
     int numDataBufs; //Producer/Consumer buffers

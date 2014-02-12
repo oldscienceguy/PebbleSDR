@@ -177,21 +177,21 @@ void SdrOptions::SampleRateChanged(int i)
 {
 	int cur = sd->sampleRateBox->currentIndex();
 	di->Set(DeviceInterface::SampleRate, sd->sampleRateBox->itemText(cur).toInt());
-	global->settings->WriteSettings();
+	di->WriteSettings();
 }
 
 void SdrOptions::InputChanged(int i)
 {
 	int cur = sd->sourceBox->currentIndex();
 	di->Set(DeviceInterface::InputDeviceName, sd->sourceBox->itemText(cur));
-	global->settings->WriteSettings();
+	di->WriteSettings();
 }
 
 void SdrOptions::OutputChanged(int i)
 {
 	int cur = sd->outputBox->currentIndex();
 	di->Set(DeviceInterface::OutputDeviceName, sd->outputBox->itemText(cur));
-	global->settings->WriteSettings();
+	di->WriteSettings();
 }
 
 void SdrOptions::StartupChanged(int i)
@@ -204,27 +204,27 @@ void SdrOptions::StartupChanged(int i)
 	else {
 		sd->startupEdit->setEnabled(false);
 	}
-	global->settings->WriteSettings();
+	di->WriteSettings();
 }
 
 void SdrOptions::StartupFrequencyChanged()
 {
 	di->Set(DeviceInterface::UserFrequency, sd->startupEdit->text().toDouble());
-	global->settings->WriteSettings();
+	di->WriteSettings();
 }
 
 //IQ gain can be changed in real time, without saving
 void SdrOptions::IQGainChanged(double i)
 {
 	di->Set(DeviceInterface::IQGain, i);
-	global->settings->WriteSettings();
+	di->WriteSettings();
 }
 
 //IQ order can be changed in real time, without saving
 void SdrOptions::IQOrderChanged(int i)
 {
 	di->Set(DeviceInterface::IQOrder, sd->IQSettings->itemData(i).toInt());
-	global->settings->WriteSettings();
+	di->WriteSettings();
 }
 
 void SdrOptions::BalancePhaseChanged(int v)
@@ -237,7 +237,7 @@ void SdrOptions::BalancePhaseChanged(int v)
 	if (!global->receiver->GetPowerOn())
 		return;
 	global->receiver->GetIQBalance()->setPhaseFactor(newValue);
-	global->settings->WriteSettings();
+	di->WriteSettings();
 }
 
 void SdrOptions::BalanceGainChanged(int v)
@@ -246,7 +246,7 @@ void SdrOptions::BalanceGainChanged(int v)
 	double newValue = v/1000.0;
 	sd->iqBalanceGainLabel->setText("Gain: " + QString::number(newValue));
 	di->Set(DeviceInterface::IQBalanceGain, newValue);
-	global->settings->WriteSettings();
+	di->WriteSettings();
 	//Update in realtime
 	if (!global->receiver->GetPowerOn())
 		return;
@@ -256,7 +256,7 @@ void SdrOptions::BalanceGainChanged(int v)
 void SdrOptions::BalanceEnabledChanged(bool b)
 {
 	di->Set(DeviceInterface::IQBalanceEnabled, b);
-	global->settings->WriteSettings();
+	di->WriteSettings();
 	if (!global->receiver->GetPowerOn())
 		return;
 	global->receiver->GetIQBalance()->setEnabled(b);

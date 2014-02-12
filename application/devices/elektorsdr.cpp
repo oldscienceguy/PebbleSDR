@@ -176,9 +176,9 @@ double ElektorSDR::GetStartupFrequency()
 int ElektorSDR::GetStartupMode()
 {
 	if (sdrDevice==ELEKTOR)
-        return startup;
+        return startupType;
 	else if(sdrDevice == ELEKTOR_PA)
-        return startup;
+        return startupType;
 	else
 		return 0;
 }

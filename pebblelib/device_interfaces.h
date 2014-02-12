@@ -30,32 +30,33 @@ friend class SDR; //Temp while we're transitioning from internal to plugins to s
 
 public:
     typedef enum IQORDER {IQ,QI,IONLY,QONLY} IQORDER;
-    typedef enum STARTUP {SETFREQ = 0, LASTFREQ, DEFAULTFREQ} STARTUP;
+	typedef enum STARTUP_TYPE {SETFREQ = 0, LASTFREQ, DEFAULTFREQ} STARTUP_TYPE;
 	//Does device generate IQ or rely on Sound Card (not in plugin)
 	typedef enum DEVICE_TYPE{INTERNAL_IQ, AUDIO_IQ} DEVICE_TYPE;
 	//These enums can only be extended, not changed, once released.  Otherwise will break existing plugins that are not rebuilt
 	enum STANDARD_KEYS {
-		PluginName,				//QString Name of plugin device was found in
-		PluginDescription,		//QString Description of plugin device was found in
-		PluginNumDevices,		//How many unique devices does plugin support, see DeviceNumber for correlation
-		DeviceName,				//QString Actual device name, may be more than one device per plugin
-		DeviceDescription,		//QString Actual device description
-		DeviceNumber,			//Optional index for plugins that support multiple devices
-		DeviceType,				//int (enum DEVICE_TYPE)
-		DeviceSampleRates,		//QStringList Sample rates supported by device
-		InputDeviceName,		//QString Plugins manage settings - OS name for selected Audio input device, if any
-		OutputDeviceName,		//QString
-		HighFrequency,			//Highest frequency device supports
-		LowFrequency,			//Lowest frequency device supports
-		FrequencyCorrection,	//???What's the universal format for this?  int ppm?
-		IQGain,					//double User adjustable to normalize levels among devices
-		SampleRate,				//quint32
-		StartupType,			//int (enum STARTUP)
-		StartupMode,			//int (enum DEMODMODE) Default mode for device if not otherwise specified
-		StartupFrequency,		//Default frequency for device if not otherwise specified
-		LastMode,				//int (enum) Mode in use when power off
-		LastFrequency,			//Frequency displayed with power off
-		LastSpectrumMode,		//int (enum) Last spectrum selection
+		PluginName,				//RO QString Name of plugin device was found in
+		PluginDescription,		//RO QString Description of plugin device was found in
+		PluginNumDevices,		//RO How many unique devices does plugin support, see DeviceNumber for correlation
+		DeviceName,				//RO QString Actual device name, may be more than one device per plugin
+		DeviceDescription,		//RO QString Actual device description
+		DeviceNumber,			//RW Optional index for plugins that support multiple devices
+		DeviceType,				//RO int (enum DEVICE_TYPE)
+		DeviceSampleRates,		//RO QStringList Sample rates supported by device
+		InputDeviceName,		//RW QString Plugins manage settings - OS name for selected Audio input device, if any
+		OutputDeviceName,		//RW QString
+		HighFrequency,			//RO Highest frequency device supports
+		LowFrequency,			//RO Lowest frequency device supports
+		FrequencyCorrection,	//RW ???What's the universal format for this?  int ppm?
+		IQGain,					//RW double User adjustable to normalize levels among devices
+		SampleRate,				//RW quint32
+		StartupType,			//RW int (enum STARTUP_TYPE)
+		StartupDemodMode,		//RO int (enum DEMODMODE) Default mode for device if not otherwise specified
+		StartupSpectrumMode,	//RO Not used yet
+		StartupFrequency,		//RO Default frequency for device if not otherwise specified
+		LastDemodMode,			//RW int (enum) Mode in use when power off
+		LastFrequency,			//RW Frequency displayed with power off
+		LastSpectrumMode,		//RW int (enum) Last spectrum selection
 		UserMode,				//int (enum) User specified startup mode
 		UserFrequency,			//User specified startup frequency
 		IQOrder,				//Enum
@@ -124,11 +125,15 @@ public:
 				break;
 			case StartupType:
 				break;
-			case StartupMode:
+			case StartupDemodMode:
+				break;
+			case StartupSpectrumMode:
 				break;
 			case StartupFrequency:
 				break;
-			case LastMode:
+			case LastDemodMode:
+				break;
+			case LastSpectrumMode:
 				break;
 			case LastFrequency:
 				break;
@@ -186,11 +191,15 @@ public:
 				break;
 			case StartupType:
 				break;
-			case StartupMode:
+			case StartupDemodMode:
+				break;
+			case StartupSpectrumMode:
 				break;
 			case StartupFrequency:
 				break;
-			case LastMode:
+			case LastDemodMode:
+				break;
+			case LastSpectrumMode:
 				break;
 			case LastFrequency:
 				break;
@@ -224,8 +233,8 @@ protected:
     quint16 framesPerBuffer;
 
 	int lastSpectrumMode; //Spectrum, waterfall, etc
-    STARTUP startup;
-    double freqToSet;
+	STARTUP_TYPE startupType;
+	double userFrequency;
     QString inputDeviceName;
     QString outputDeviceName;
     quint32 sampleRate;
@@ -238,7 +247,7 @@ protected:
     bool iqBalanceEnable;
 
     double lastFreq;
-    int lastMode;
+	int lastDemodMode;
 
     //Device needs to manage QSettings since it knows its own settings file name
     QSettings *qSettings;

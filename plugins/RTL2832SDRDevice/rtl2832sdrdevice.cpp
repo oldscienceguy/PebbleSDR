@@ -575,8 +575,8 @@ void RTL2832SDRDevice::ReadSettings()
 		qs = tcpSettings;
 
     //These are common settings for every device, variables are defined in DeviceInterface
-    startup = (STARTUP)qs->value("Startup", DEFAULTFREQ).toInt();
-    freqToSet = qs->value("StartupFreq", 10000000).toDouble();
+	startupType = (STARTUP_TYPE)qs->value("Startup", DEFAULTFREQ).toInt();
+	userFrequency = qs->value("StartupFreq", 10000000).toDouble();
     inputDeviceName = qs->value("InputDeviceName", "").toString();
     outputDeviceName = qs->value("OutputDeviceName", "").toString();
     sampleRate = qs->value("SampleRate", 48000).toInt();
@@ -586,7 +586,7 @@ void RTL2832SDRDevice::ReadSettings()
     iqBalancePhase = qs->value("iqBalancePhase",0).toDouble();
     iqBalanceEnable = qs->value("iqBalanceEnable",false).toBool();
     lastFreq = qs->value("LastFreq", 10000000).toDouble();
-    lastMode = qs->value("LastMode",0).toInt();
+	lastDemodMode = qs->value("LastMode",0).toInt();
 	lastSpectrumMode = qs->value("LastDisplayMode",0).toInt();
 
     //Valid gain values (in tenths of a dB) for the E4000 tuner:
@@ -612,8 +612,8 @@ void RTL2832SDRDevice::WriteSettings()
 	else if (deviceNumber == RTL_TCP)
 		qs = tcpSettings;
 
-    qs->setValue("Startup",startup);
-    qs->setValue("StartupFreq",freqToSet);
+	qs->setValue("Startup",startupType);
+	qs->setValue("StartupFreq",userFrequency);
     qs->setValue("InputDeviceName", inputDeviceName);
     qs->setValue("OutputDeviceName", outputDeviceName);
     qs->setValue("SampleRate",sampleRate);
@@ -623,7 +623,7 @@ void RTL2832SDRDevice::WriteSettings()
     qs->setValue("iqBalancePhase", iqBalancePhase);
     qs->setValue("iqBalanceEnable", iqBalanceEnable);
     qs->setValue("LastFreq",lastFreq);
-    qs->setValue("LastMode",lastMode);
+	qs->setValue("LastMode",lastDemodMode);
 	qs->setValue("LastDisplayMode",lastSpectrumMode);
 
     qs->setValue("RtlGain",rtlTunerGain);
@@ -828,16 +828,18 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 			return GetSampleRate();
 			break;
 		case StartupType:
-			return startup;
+			return startupType;
 			break;
-		case StartupMode:
+		case StartupDemodMode:
 			return GetStartupMode();
 			break;
 		case StartupFrequency:
 			return GetStartupFrequency();
 			break;
-		case LastMode:
-			return lastMode;
+		case StartupSpectrumMode:
+			break;
+		case LastDemodMode:
+			return lastDemodMode;
 			break;
 		case LastFrequency:
 			//If freq is outside of mode we are in return default
@@ -853,10 +855,10 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 			break;
 		case UserFrequency:
 			//If freq is outside of mode we are in return default
-			if (freqToSet > GetHighLimit() || freqToSet < GetLowLimit())
+			if (userFrequency > GetHighLimit() || userFrequency < GetLowLimit())
 				return GetStartupFrequency();
 			else
-				return freqToSet;
+				return userFrequency;
 			break;
 		case IQOrder:
 			return iqOrder;
@@ -882,29 +884,40 @@ bool RTL2832SDRDevice::Set(STANDARD_KEYS _key, QVariant _value, quint16 _option)
 	Q_UNUSED(_option);
 	switch (_key) {
 		case PluginName:
+			Q_UNREACHABLE(); //Flag read-only keys, mark in DeviceInterface also
 			break;
 		case PluginDescription:
+			Q_UNREACHABLE();
 			break;
 		case PluginNumDevices:
+			Q_UNREACHABLE();
 			break;
 		case DeviceName:
+			Q_UNREACHABLE();
 			break;
 		case DeviceDescription:
+			Q_UNREACHABLE();
 			break;
 		case DeviceNumber:
 			deviceNumber = _value.toInt();
 			break;
 		case DeviceType:
+			Q_UNREACHABLE();
 			break;
 		case DeviceSampleRates:
+			Q_UNREACHABLE();
 			break;
 		case InputDeviceName:
+			inputDeviceName = _value.toString();
 			break;
 		case OutputDeviceName:
+			outputDeviceName = _value.toString();
 			break;
 		case HighFrequency:
+			Q_UNREACHABLE();
 			break;
 		case LowFrequency:
+			Q_UNREACHABLE();
 			break;
 		case FrequencyCorrection:
 			rtlFreqencyCorrection = _value.toInt();
@@ -913,15 +926,21 @@ bool RTL2832SDRDevice::Set(STANDARD_KEYS _key, QVariant _value, quint16 _option)
 			iqGain = _value.toDouble();
 			break;
 		case SampleRate:
+			sampleRate = _value.toInt();
 			break;
 		case StartupType:
+			startupType = (STARTUP_TYPE)_value.toInt();
 			break;
-		case StartupMode:
+		case StartupDemodMode:
+			Q_UNREACHABLE();
+			break;
+		case StartupSpectrumMode:
 			break;
 		case StartupFrequency:
+			Q_UNREACHABLE();
 			break;
-		case LastMode:
-			lastMode = _value.toInt();
+		case LastDemodMode:
+			lastDemodMode = _value.toInt();
 			break;
 		case LastFrequency:
 			lastFreq = _value.toDouble();
@@ -930,17 +949,23 @@ bool RTL2832SDRDevice::Set(STANDARD_KEYS _key, QVariant _value, quint16 _option)
 			lastSpectrumMode = _value.toInt();
 			break;
 		case UserMode:
+			//Future use
+			Q_UNREACHABLE();
 			break;
 		case UserFrequency:
+			userFrequency = _value.toDouble();
 			break;
 		case IQOrder:
 			iqOrder = (IQORDER)_value.toInt();
 			break;
 		case IQBalanceEnabled:
+			iqBalanceEnable = _value.toBool();
 			break;
 		case IQBalanceGain:
+			iqBalanceGain = _value.toDouble();
 			break;
 		case IQBalancePhase:
+			iqBalancePhase = _value.toDouble();
 			break;
 		default:
 			break;
