@@ -21,6 +21,9 @@ SdrOptions::~SdrOptions()
 //If b is false, close and delete options
 void SdrOptions::ShowSdrOptions(DeviceInterface *_di, bool b)
 {
+	if (_di == NULL)
+		return;
+
 	di = _di;
 	if (sdrOptionsDialog != NULL) {
 		//If we're visible, and asking to be shown again, toggle off
