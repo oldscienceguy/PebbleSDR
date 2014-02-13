@@ -180,7 +180,9 @@ void SpectrumWidget::Run(bool r)
 		isRunning = true;
 	}
 	else {
-        ui.displayBox->setCurrentIndex(-1);
+		ui.displayBox->blockSignals(true);
+		ui.displayBox->setCurrentIndex(-1);
+		ui.displayBox->blockSignals(false);
         ui.zoomLabel->setText(QString().sprintf("Span:"));
         isRunning =false;
 		signalSpectrum = NULL;
@@ -478,9 +480,6 @@ void SpectrumWidget::plotSelectionChanged(SignalSpectrum::DISPLAYMODE mode)
         ui.zoomLabel->setVisible(true);
     }
 
-    if (global->sdr != NULL)
-		global->sdr->Set(DeviceInterface::LastSpectrumMode,mode);
-
     spectrumMode = mode;
     if (signalSpectrum != NULL) {
         signalSpectrum->SetDisplayMode(spectrumMode, zoom != 1);
@@ -667,6 +666,8 @@ void SpectrumWidget::displayChanged(int s)
 {
     //Get mode from itemData
     SignalSpectrum::DISPLAYMODE displayMode = (SignalSpectrum::DISPLAYMODE)ui.displayBox->itemData(s).toInt();
+	//Save in device ini
+	global->sdr->Set(DeviceInterface::LastSpectrumMode,displayMode);
     plotSelectionChanged(displayMode);
 }
 

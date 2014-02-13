@@ -35,16 +35,13 @@ void SdrOptions::ShowSdrOptions(DeviceInterface *_di, bool b)
 			delete sdrOptionsDialog;
 			sdrOptionsDialog = NULL;
 			return;
+		} else {
+			sdrOptionsDialog->show();
 		}
-	}
+	} else {
+		if (!b)
+			return; //Nothing to hide
 
-#if 0
-	if (DelegateToPlugin()) {
-		//Do nothing, just call to sync
-	}
-#endif
-
-	if (sdrOptionsDialog == NULL) {
 		int cur;
 
 		sdrOptionsDialog = new QDialog();
@@ -137,7 +134,7 @@ void SdrOptions::ShowSdrOptions(DeviceInterface *_di, bool b)
 		for (int i=0; i<sampleRates.count(); i++) {
 			sr = sampleRates[i].toInt();
 			sd->sampleRateBox->addItem(sampleRates[i],sr);
-			if (_di->Get(DeviceInterface::SampleRate).toUInt() == sr)
+			if (_di->Get(DeviceInterface::DeviceSampleRate).toUInt() == sr)
 				sd->sampleRateBox->setCurrentIndex(i);
 		}
 		sd->sampleRateBox->blockSignals(false);
@@ -154,14 +151,9 @@ void SdrOptions::ShowSdrOptions(DeviceInterface *_di, bool b)
 		//This only works because ShowSdrOptions() is being called via a pointer to the derived class
 		//Some other method that's called from the base class could not do this
 		_di->SetupOptionUi(sd->sdrSpecific);
+		sdrOptionsDialog->show();
 
 	}
-
-	if (b)
-		sdrOptionsDialog->show();
-	else
-		sdrOptionsDialog->hide();
-
 }
 
 void SdrOptions::CloseOptions(bool b)
@@ -179,7 +171,7 @@ void SdrOptions::TestBenchChanged(bool b)
 void SdrOptions::SampleRateChanged(int i)
 {
 	int cur = sd->sampleRateBox->currentIndex();
-	di->Set(DeviceInterface::SampleRate, sd->sampleRateBox->itemText(cur).toInt());
+	di->Set(DeviceInterface::DeviceSampleRate, sd->sampleRateBox->itemText(cur).toInt());
 	di->WriteSettings();
 }
 

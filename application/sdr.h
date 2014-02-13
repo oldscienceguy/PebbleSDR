@@ -73,14 +73,6 @@ public:
     //Assume each device uses audio input.  Devices that don't should over-ride and return false to hide options
     virtual bool UsesAudioInput();
 
-    virtual void SetLastDisplayMode(int mode);
-    virtual void SetIQOrder(IQORDER o);
-    virtual void SetLastFreq(double f);
-    virtual void SetLastMode(int mode);
-    virtual QString GetInputDeviceName();
-    virtual QString GetOutputDeviceName();
-    virtual void SetIQGain(double g);
-
     virtual void StopProducerThread();
     virtual void RunProducerThread();
     virtual void StopConsumerThread();

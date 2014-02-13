@@ -54,17 +54,12 @@ public:
     void Start();
     void Stop();
 
-    double SetFrequency(double fRequested,double fCurrent);
-    void ShowOptions();
     void ReadSettings();
     void WriteSettings();
 
     double GetStartupFrequency();
-    int GetStartupMode();
     double GetHighLimit();
     double GetLowLimit();
-    QString GetDeviceName();
-    int GetSampleRate();
 
 	QVariant Get(QString _key, quint16 _option = 0);
 	bool Set(QString _key, QVariant _value);
@@ -185,7 +180,6 @@ private:
     quint16 rtlTunerGainMode;
     qint16 rtlTunerGain; //in 10ths of a db
     //qint16 rtlIfGain; //Not used
-    quint32 rtlFrequency;
     quint32 rtlSampleRate;
     quint16 rtlDecimate;
 

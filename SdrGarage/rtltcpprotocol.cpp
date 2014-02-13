@@ -130,7 +130,7 @@ void RtlTcpProtocol::tcpCommands(RTL_CMD cmd)
     case CMD_FREQ:
         frequency = ntohl(cmd.param);
         qDebug()<<"set freq"<< frequency;
-        sdr->SetFrequency(frequency,frequency);
+		sdr->Set(DeviceInterface::DeviceFrequency,frequency);
         break;
 
     case CMD_SAMPLERATE:

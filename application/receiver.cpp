@@ -131,7 +131,7 @@ bool Receiver::On()
         mainWindow->setFocus(); //Makes sure it has keyboard focus
     }
 
-	sampleRate = demodSampleRate = sdr->Get(DeviceInterface::SampleRate).toInt();
+	sampleRate = demodSampleRate = sdr->Get(DeviceInterface::DeviceSampleRate).toInt();
     framesPerBuffer = demodFrames = settings->framesPerBuffer;
     //These steps work on full sample rates
     noiseBlanker = new NoiseBlanker(sampleRate,framesPerBuffer);
@@ -308,7 +308,6 @@ bool Receiver::Off()
 
 	//Stop incoming samples first
     if (sdr != NULL) {
-        sdr->WriteSettings(); //Always save last mode, last freq, etc
         sdr->Stop();
     }
 	if (audioOutput != NULL)
@@ -320,6 +319,7 @@ bool Receiver::Off()
 	if (sdr != NULL){
         //Save any run time settings
 		sdr->Set(DeviceInterface::LastFrequency,frequency);
+		sdr->WriteSettings(); //Always save last mode, last freq, etc
 
 		sdr->Disconnect();
         sdr = NULL;
@@ -478,16 +478,12 @@ double Receiver::SetFrequency(double fRequested, double fCurrent)
 		restart = true;
 	}
 #endif
-	//mutex.lock();
-	double actual = sdr->SetFrequency(fRequested,fCurrent);
-	//mutex.unlock();
-#if(0)
-	if (restart)
-		soundCard->Restart();
-#endif
-	frequency = actual;
-
-	return actual;
+	if (sdr->Set(DeviceInterface::DeviceFrequency,fRequested)) {
+		frequency = fRequested;
+		return fRequested;
+	} else {
+		return fCurrent;
+	}
 }
 //Sets demod modes and default bandpass filter for each mode
 void Receiver::SetMode(DEMODMODE m)

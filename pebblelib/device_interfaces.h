@@ -42,22 +42,24 @@ public:
 		DeviceDescription,		//RO QString Actual device description
 		DeviceNumber,			//RW Optional index for plugins that support multiple devices
 		DeviceType,				//RO int (enum DEVICE_TYPE)
+		DeviceSampleRate,		//RW quint32
 		DeviceSampleRates,		//RO QStringList Sample rates supported by device
+		DeviceFrequency,		//RW double Device center (LO) frequency
 		InputDeviceName,		//RW QString Plugins manage settings - OS name for selected Audio input device, if any
 		OutputDeviceName,		//RW QString
 		HighFrequency,			//RO Highest frequency device supports
 		LowFrequency,			//RO Lowest frequency device supports
 		FrequencyCorrection,	//RW ???What's the universal format for this?  int ppm?
 		IQGain,					//RW double User adjustable to normalize levels among devices
-		SampleRate,				//RW quint32
 		StartupType,			//RW int (enum STARTUP_TYPE)
 		StartupDemodMode,		//RO int (enum DEMODMODE) Default mode for device if not otherwise specified
 		StartupSpectrumMode,	//RO Not used yet
 		StartupFrequency,		//RO Default frequency for device if not otherwise specified
 		LastDemodMode,			//RW int (enum) Mode in use when power off
-		LastFrequency,			//RW Frequency displayed with power off
 		LastSpectrumMode,		//RW int (enum) Last spectrum selection
-		UserMode,				//int (enum) User specified startup mode
+		LastFrequency,			//RW Frequency displayed with power off
+		UserDemodMode,			// not used yet int (enum) User specified demod mode
+		UserSpectrumMode,		//not used yet
 		UserFrequency,			//User specified startup frequency
 		IQOrder,				//Enum
 		IQBalanceEnabled,		//bool
@@ -74,7 +76,6 @@ public:
     virtual void Start() = 0;
     virtual void Stop() = 0;
 
-    virtual double SetFrequency(double fRequested,double fCurrent) = 0;
     //Display device option widget in settings dialog
     virtual void SetupOptionUi(QWidget *parent) = 0;
 
@@ -90,6 +91,7 @@ public:
 		Q_UNUSED(_option);
 		return QVariant();
 	}
+	//Defaults so devices only have to handle what they need to
 	virtual QVariant Get(STANDARD_KEYS _key, quint16 _option = 0) {
 		Q_UNUSED(_option);
 		switch (_key) {
@@ -104,26 +106,36 @@ public:
 			case DeviceDescription:
 				break;
 			case DeviceNumber:
+				return deviceNumber;
 				break;
 			case DeviceType:
 				break;
+			case DeviceSampleRate:
+				return sampleRate;
+				break;
 			case DeviceSampleRates:
 				break;
+			case DeviceFrequency:
+				return deviceFrequency;
+				break;
 			case InputDeviceName:
+				return inputDeviceName;
 				break;
 			case OutputDeviceName:
+				return outputDeviceName;
 				break;
 			case HighFrequency:
 				break;
 			case LowFrequency:
 				break;
 			case FrequencyCorrection:
+				return 0;
 				break;
 			case IQGain:
-				break;
-			case SampleRate:
+				return iqGain;
 				break;
 			case StartupType:
+				return startupType;
 				break;
 			case StartupDemodMode:
 				break;
@@ -132,22 +144,35 @@ public:
 			case StartupFrequency:
 				break;
 			case LastDemodMode:
+				return lastDemodMode;
 				break;
 			case LastSpectrumMode:
+				return lastSpectrumMode;
 				break;
 			case LastFrequency:
+				//If freq is outside of mode we are in return default
+				if (lastFreq > Get(DeviceInterface::HighFrequency).toDouble() || lastFreq < Get(DeviceInterface::LowFrequency).toDouble())
+					return Get(DeviceInterface::StartupFrequency).toDouble();
+				else
+					return lastFreq;
 				break;
-			case UserMode:
+			case UserDemodMode:
+				break;
+			case UserSpectrumMode:
 				break;
 			case UserFrequency:
 				break;
 			case IQOrder:
+				return iqOrder;
 				break;
 			case IQBalanceEnabled:
+				return iqBalanceEnable;
 				break;
 			case IQBalanceGain:
+				return iqBalanceGain;
 				break;
 			case IQBalancePhase:
+				return iqBalancePhase;
 				break;
 			default:
 				break;
@@ -160,60 +185,93 @@ public:
 		Q_UNUSED(_option);
 		switch (_key) {
 			case PluginName:
+				Q_UNREACHABLE(); //Read only key
 				break;
 			case PluginDescription:
+				Q_UNREACHABLE();
 				break;
 			case PluginNumDevices:
+				Q_UNREACHABLE();
 				break;
 			case DeviceName:
+				Q_UNREACHABLE();
 				break;
 			case DeviceDescription:
+				Q_UNREACHABLE();
 				break;
 			case DeviceNumber:
+				deviceNumber = _value.toInt();
 				break;
 			case DeviceType:
+				Q_UNREACHABLE();
+				break;
+			case DeviceSampleRate:
+				sampleRate = _value.toInt();
 				break;
 			case DeviceSampleRates:
+				Q_UNREACHABLE();
+				break;
+			case DeviceFrequency:
+				Q_UNREACHABLE(); //Must be handled by device
 				break;
 			case InputDeviceName:
+				inputDeviceName = _value.toString();
 				break;
 			case OutputDeviceName:
+				outputDeviceName = _value.toString();
 				break;
 			case HighFrequency:
+				Q_UNREACHABLE();
 				break;
 			case LowFrequency:
+				Q_UNREACHABLE();
 				break;
 			case FrequencyCorrection:
 				break;
 			case IQGain:
-				break;
-			case SampleRate:
+				iqGain = _value.toDouble();
 				break;
 			case StartupType:
+				startupType = (STARTUP_TYPE)_value.toInt();
 				break;
 			case StartupDemodMode:
+				Q_UNREACHABLE();
 				break;
 			case StartupSpectrumMode:
+				Q_UNREACHABLE();
 				break;
 			case StartupFrequency:
+				Q_UNREACHABLE();
 				break;
 			case LastDemodMode:
+				lastDemodMode = _value.toInt();
 				break;
 			case LastSpectrumMode:
+				lastSpectrumMode = _value.toInt();
 				break;
 			case LastFrequency:
+				lastFreq = _value.toDouble();
 				break;
-			case UserMode:
+			case UserDemodMode:
+				Q_UNREACHABLE(); //Future
+				break;
+			case UserSpectrumMode:
+				Q_UNREACHABLE(); //Future
 				break;
 			case UserFrequency:
+				userFrequency = _value.toDouble();
 				break;
 			case IQOrder:
+				iqOrder = (IQORDER)_value.toInt();
 				break;
 			case IQBalanceEnabled:
+				iqBalanceEnable = _value.toBool();
 				break;
 			case IQBalanceGain:
+				iqBalanceGain = _value.toDouble();
 				break;
 			case IQBalancePhase:
+				iqBalancePhase = _value.toDouble();
 				break;
 			default:
 				break;
@@ -235,6 +293,7 @@ protected:
 	int lastSpectrumMode; //Spectrum, waterfall, etc
 	STARTUP_TYPE startupType;
 	double userFrequency;
+	double deviceFrequency; //Current device frequency
     QString inputDeviceName;
     QString outputDeviceName;
     quint32 sampleRate;
