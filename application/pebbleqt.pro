@@ -102,6 +102,7 @@ macx {
 	#CONFIG-=app_bundle
 
 	#dylib
+        #This can be removed when all devices have been moved to plugins, also any fixups
 	LIBS += -L$${PWD}/../D2XX/bin/10.5-10.7/ -lftd2xx.1.2.2
 	#static lib
 	LIBS += $${PWD}/../portaudio/lib/.libs/libportaudio.a
