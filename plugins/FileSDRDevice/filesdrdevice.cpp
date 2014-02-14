@@ -74,6 +74,9 @@ bool FileSDRDevice::Connect()
     if (!res)
         return false;
 
+	//We have sample rate for file, set polling interval
+	producerConsumer.SetPollingInterval(wavFileRead.GetSampleRate(), framesPerBuffer);
+
     if (copyTest) {
         res = wavFileWrite.OpenWrite(fileName + "2", wavFileRead.GetSampleRate(),0,0,0);
     }
@@ -95,20 +98,6 @@ void FileSDRDevice::Start()
 void FileSDRDevice::Stop()
 {
     producerConsumer.Stop();
-}
-
-double FileSDRDevice::SetFrequency(double fRequested,double fCurrent)
-{
-    quint32 loFreq = wavFileRead.GetLoFreq();
-    if (loFreq == 0)
-        return GetStartupFrequency();
-    else
-        return loFreq;
-}
-
-void FileSDRDevice::ShowOptions()
-{
-
 }
 
 void FileSDRDevice::ReadSettings()
@@ -156,70 +145,10 @@ void FileSDRDevice::WriteSettings()
     qs->setValue("RecordingPath", recordingPath);
 }
 
-double FileSDRDevice::GetStartupFrequency()
-{
-    //If it's a pebble wav file, we should have LO freq
-    quint32 loFreq = wavFileRead.GetLoFreq();
-    if (loFreq == 0)
-        return GetSampleRate() / 2.0; //Default
-    else
-        return loFreq;
-}
-
-int FileSDRDevice::GetStartupMode()
-{
-    int startupMode =  wavFileRead.GetMode();
-    if (startupMode < 255)
-        return startupMode;
-    else
-		return lastDemodMode;
-}
-
-double FileSDRDevice::GetHighLimit()
-{
-    quint32 loFreq = wavFileRead.GetLoFreq();
-    if (loFreq == 0)
-        return GetSampleRate();
-    else
-        return loFreq + GetSampleRate() / 2.0;
-}
-
-double FileSDRDevice::GetLowLimit()
-{
-    quint32 loFreq = wavFileRead.GetLoFreq();
-    if (loFreq == 0)
-        return 0;
-    else
-        return loFreq - GetSampleRate() / 2.0;
-}
-
-double FileSDRDevice::GetGain()
-{
-    return 0.5;
-}
-
-QString FileSDRDevice::GetDeviceName()
-{
-    return "SDRFile: " + QFileInfo(fileName).fileName() + "-" + QString::number(GetSampleRate());
-}
-
-int FileSDRDevice::GetSampleRate()
-{
-    return wavFileRead.GetSampleRate();
-}
-
-QStringList FileSDRDevice::GetSampleRates()
-{
-	return QStringList();
-}
-
-bool FileSDRDevice::UsesAudioInput()
-{
-    return false;
-}
-
 QVariant FileSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 {
+	Q_UNUSED(_option);
+
 	switch (_key) {
 		case PluginName:
 			return "WAV File SDR";
@@ -227,11 +156,76 @@ QVariant FileSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 		case PluginDescription:
 			return "Plays back I/Q WAV file";
 			break;
+		case DeviceName:
+			return "SDRFile: " + QFileInfo(fileName).fileName() + "-" + QString::number(wavFileRead.GetSampleRate());
+		case DeviceType:
+			return INTERNAL_IQ;
+		case DeviceSampleRate:
+			return wavFileRead.GetSampleRate();
+		case HighFrequency: {
+			quint32 loFreq = wavFileRead.GetLoFreq();
+			if (loFreq == 0)
+				return wavFileRead.GetSampleRate();
+			else
+				return loFreq + wavFileRead.GetSampleRate() / 2.0;
+		}
+		case LowFrequency: {
+			quint32 loFreq = wavFileRead.GetLoFreq();
+			if (loFreq == 0)
+				return 0;
+			else
+				return loFreq - wavFileRead.GetSampleRate() / 2.0;
+		}
+		case StartupFrequency: {
+			//If it's a pebble wav file, we should have LO freq
+			quint32 loFreq = wavFileRead.GetLoFreq();
+			if (loFreq == 0)
+				return wavFileRead.GetSampleRate() / 2.0; //Default
+			else
+				return loFreq;
+			break;
+		}
+		case StartupDemodMode: {
+			int startupMode =  wavFileRead.GetMode();
+			if (startupMode < 255)
+				return startupMode;
+			else
+				return lastDemodMode;
+
+			break;
+		}
+		case IQGain:
+			return 0.5;
+		default:
+			//If we don't handle it, let default grab it
+			return DeviceInterface::Get(_key, _option);
+			break;
+
+	}
+}
+
+bool FileSDRDevice::Set(STANDARD_KEYS _key, QVariant _value, quint16 _option)
+{
+	Q_UNUSED(_option);
+
+	switch (_key) {
+		case DeviceFrequency: {
+			quint32 loFreq = wavFileRead.GetLoFreq();
+			if (loFreq == 0)
+				return Get(DeviceInterface::StartupFrequency).toDouble();
+			else
+				return loFreq;
+		}
+		default:
+			return DeviceInterface::Set(_key, _value, _option);
+
 	}
 }
 
 void FileSDRDevice::SetupOptionUi(QWidget *parent)
 {
+	Q_UNUSED(parent);
+
     //Nothing to do
 }
 

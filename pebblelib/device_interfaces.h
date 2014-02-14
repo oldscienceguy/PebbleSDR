@@ -100,6 +100,7 @@ public:
 			case PluginDescription:
 				break;
 			case PluginNumDevices:
+				return 1;
 				break;
 			case DeviceName:
 				break;
@@ -109,11 +110,13 @@ public:
 				return deviceNumber;
 				break;
 			case DeviceType:
+				return AUDIO_IQ;
 				break;
 			case DeviceSampleRate:
 				return sampleRate;
 				break;
 			case DeviceSampleRates:
+				return QStringList();
 				break;
 			case DeviceFrequency:
 				return deviceFrequency;

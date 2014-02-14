@@ -28,22 +28,11 @@ public:
     void Start();
     void Stop();
 
-    double SetFrequency(double fRequested,double fCurrent);
-    void ShowOptions();
     void ReadSettings();
     void WriteSettings();
 
-    double GetStartupFrequency();
-    int GetStartupMode();
-    double GetHighLimit();
-    double GetLowLimit();
-    double GetGain();
-    QString GetDeviceName();
-    int GetSampleRate();
-	QStringList GetSampleRates(); //Returns array of allowable rates and length of array as ref
-    bool UsesAudioInput();
-
-	virtual QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
+	QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
+	bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option = 0);
 
     //Display device option widget in settings dialog
     void SetupOptionUi(QWidget *parent);
