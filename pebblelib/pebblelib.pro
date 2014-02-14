@@ -34,6 +34,7 @@ TEMPLATE = lib
 DEFINES += PEBBLELIB_LIBRARY
 
 LIBS += -L$${PWD}/../fftw-3.3.3/.libs/ -lfftw3
+LIBS += -L$${PWD}/../D2XX/bin/10.5-10.7/ -lftd2xx.1.2.2
 
 #In 5.2, Qt plugins that reference a different library than application cause errors (Application must be defined before widget)
 #Fix is to make sure all plugins reference libraries in app Frameworks directory
@@ -51,6 +52,12 @@ qtlib3.path += $${DESTDIR}
 qtlib3.commands += install_name_tool -change $$(QTDIR)/lib/QtCore.framework/Versions/5/QtCore  @rpath/QtCore.framework/Versions/5/QtCore $${DESTDIR}/lib$${TARGET}.dylib
 INSTALLS += qtlib3
 
+#We may need to copy ftd2xx.cfg with value ConfigFlags=0x40000000
+#ftd2xx.files += $${PWD}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
+ftd2xx.commands += install_name_tool -change /usr/local/lib/libftd2xx.1.2.2.dylib @rpath/libftd2xx.1.2.2.dylib $${DESTDIR}/lib$${TARGET}.dylib
+ftd2xx.path = $${DESTDIR}/lib
+INSTALLS += ftd2xx
+
 SOURCES += pebblelib.cpp \
     cpx.cpp \
     fldigifilters.cpp \
@@ -62,7 +69,8 @@ SOURCES += pebblelib.cpp \
     fft.cpp \
     iir.cpp \
     producerconsumer.cpp \
-    perform.cpp
+    perform.cpp \
+    usbutil.cpp
 
 HEADERS += pebblelib.h\
 	pebblelib_global.h \
@@ -80,5 +88,6 @@ HEADERS += pebblelib.h\
     iir.h \
     device_interfaces.h \
     producerconsumer.h \
-    perform.h
+    perform.h \
+    usbutil.h
 
