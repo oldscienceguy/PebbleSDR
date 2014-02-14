@@ -65,7 +65,7 @@ public:
 	bool Set(QString _key, QVariant _value);
 
 	QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
-	bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option);
+	bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option = 0);
 
 
     //Display device option widget in settings dialog

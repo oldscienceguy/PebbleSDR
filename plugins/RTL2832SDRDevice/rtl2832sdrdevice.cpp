@@ -79,6 +79,7 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerB
     //sampleRate must <= to rtlSampleRate, find closest /2 match
     sampleRate = (sampleRate <= rtlSampleRate) ? sampleRate : sampleRate/2;
 
+
     rtlDecimate = rtlSampleRate / sampleRate; //Must be even number, convert to lookup table
     /*
     //Find whole number decimate rate less than 2048000
@@ -90,6 +91,9 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerB
         tempRtlSampleRate = sampleRate * ++rtlDecimate;
     }
 */
+	//1 byte per I + 1 byte per Q
+	//This is set so we always get framesPerBuffer samples after decimating to lower sampleRate
+	readBufferSize = framesPerBuffer * rtlDecimate * 2;
 
     //sampleGain = .005; //Matched with rtlGain
     sampleGain = 1/128.0;
@@ -106,12 +110,11 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerB
     running = false;
     connected = false;
 
-    //1 byte per I + 1 byte per Q
-    //This is set so we always get framesPerBuffer samples after decimating to lower sampleRate
-    readBufferSize = framesPerBuffer * rtlDecimate * 2;
     numProducerBuffers = 50;
     producerConsumer.Initialize(std::bind(&RTL2832SDRDevice::producerWorker, this, std::placeholders::_1),
         std::bind(&RTL2832SDRDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, readBufferSize);
+	//Must be called after Initialize
+	producerConsumer.SetPollingInterval(rtlSampleRate,readBufferSize);
 
     readBufferIndex = 0;
 
@@ -254,7 +257,7 @@ void RTL2832SDRDevice::TCPSocketNewData()
     //  FreeBufs goes right to zero and mostly stays there.
     //  Could be a problem with QT network threads interfering with ProducerConsumer consumer thread?
     //  Tried all sorts of yeilds, etc, but no joy as of 1/19/14
-    //qDebug()<<producerConsumer.GetNumFreeBufs();
+	//qDebug()<<producerConsumer.GetNumFreeBufs();
 
 
     //The first bytes we get from rtl_tcp are dongle information
@@ -303,7 +306,7 @@ void RTL2832SDRDevice::TCPSocketNewData()
         if (readBufferIndex == 0) {
             producerConsumer.ReleaseFilledBuffer();
             producerFreeBufPtr = NULL; //Trigger new Acquire next loop
-        }
+		}
 
     }
 
@@ -1112,6 +1115,8 @@ void RTL2832SDRDevice::producerWorker(cbProducerConsumerEvents _event)
             break;
     }
 }
+//Now called via signal from producerConsumer that filled buffer is ready
+//Still running in consumerThread
 void RTL2832SDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 {
     double fpSampleRe;
@@ -1134,78 +1139,80 @@ void RTL2832SDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 
 
             unsigned char *bufPtr; //rtl data is 0-255, we need to normalize to -1 to +1
-
-            //Wait for data to be available from producer
-            if ((bufPtr = producerConsumer.AcquireFilledBuffer()) == NULL) {
-                //qDebug()<<"No filled buffer available";
-                return;
-            }
-
-
-            //RTL I/Q samples are 8bit unsigned 0-256
-            bufInc = rtlDecimate * 2;
-            decMult = 1; //1=8bit, 2=9bit, 3=10bit for rtlDecimate = 6 and sampleRate = 192k
-            decNorm = 128 * decMult;
-            decAvg = rtlDecimate / decMult; //Double the range = 1 bit of sample size
-            // i is index to CPX buffer, j is index to producer buffer (byte)
-            for (int i=0,j=0; i<framesPerBuffer; i++, j+=bufInc) {
-        #if 0
-                //We are significantly oversampling, so we can use decimation to increase dynamic range
-                //http://www.atmel.com/Images/doc8003.pdf Each bit of resolution requires 4 bits of oversampling
-                //With atmel method, we add the oversampled data, and right shift by N
-                //THis is NOT the same as just averaging the samples, which is a LP filter function
-                //                      OverSampled     Right Shift (sames as /2)
-                // 8 bit resolution     N/A             N/A
-                // 9 bit resolution     4x              1   /2
-                //10 bit resolution     16x             2   /4
-                //
-                //Then scale by 2^n where n is # extra bits of resolution to get back to original signal level
+			//qDebug()<<"Free buf "<<producerConsumer.GetNumFreeBufs();
+			//We always want to consume everything we have, producer will eventually block if we're not consuming fast enough
+			while (producerConsumer.GetNumFilledBufs() > 0) {
+				//Wait for data to be available from producer
+				if ((bufPtr = producerConsumer.AcquireFilledBuffer()) == NULL) {
+					//qDebug()<<"No filled buffer available";
+					return;
+				}
 
 
-                //See http://www.actel.com/documents/Improve_ADC_WP.pdf as one example
-                //We take N (rtlDecimate) samples and create one result
-                fpSampleRe = fpSampleIm = 0.0;
-                //When i is at end (2047), j is 4094, j+k+1 can't be more then readBufferSize
-                //Sum samples
-                for (int k = 0; k < bufInc; k+=2) {
-                    //I/Q reversed from normal devices, correct here
-                    fpSampleIm += bufPtr[j + k];
-                    fpSampleRe += bufPtr[j + k + 1];
-                }
-                //If we average, we get a better sample
-                //But if we average with a smaller number, we increase range of samples
-                //Instead of 8bit 0-255, we get 9bit 0-511
-                //Testing assuming rtlDecmiate = 6
-                fpSampleRe = fpSampleRe / decAvg; //Effectively increasing dynamic range
-                fpSampleRe -= decNorm;
-                fpSampleRe /= decNorm;
-                fpSampleRe *= sampleGain;
-                fpSampleIm = fpSampleIm / decAvg;
-                fpSampleIm -= decNorm;
-                fpSampleIm /= decNorm;
-                fpSampleIm *= sampleGain;
-        #else
-                //Oringal simple decimation - no increase in dynamic range
-                //Every nth sample from producer buffer
-                fpSampleRe = bufPtr[j];
-                fpSampleRe -= 127.0;
-                fpSampleRe /= 128.0;
-                fpSampleRe *= sampleGain;
+				//RTL I/Q samples are 8bit unsigned 0-256
+				bufInc = rtlDecimate * 2;
+				decMult = 1; //1=8bit, 2=9bit, 3=10bit for rtlDecimate = 6 and sampleRate = 192k
+				decNorm = 128 * decMult;
+				decAvg = rtlDecimate / decMult; //Double the range = 1 bit of sample size
+				// i is index to CPX buffer, j is index to producer buffer (byte)
+				for (int i=0,j=0; i<framesPerBuffer; i++, j+=bufInc) {
+			#if 0
+					//We are significantly oversampling, so we can use decimation to increase dynamic range
+					//http://www.atmel.com/Images/doc8003.pdf Each bit of resolution requires 4 bits of oversampling
+					//With atmel method, we add the oversampled data, and right shift by N
+					//THis is NOT the same as just averaging the samples, which is a LP filter function
+					//                      OverSampled     Right Shift (sames as /2)
+					// 8 bit resolution     N/A             N/A
+					// 9 bit resolution     4x              1   /2
+					//10 bit resolution     16x             2   /4
+					//
+					//Then scale by 2^n where n is # extra bits of resolution to get back to original signal level
 
-                fpSampleIm = bufPtr[j+1];
-                fpSampleIm -= 127.0;
-                fpSampleIm /= 128.0;
-                fpSampleIm *= sampleGain;
-        #endif
-                inBuffer->Re(i) = fpSampleRe;
-                inBuffer->Im(i) = fpSampleIm;
-            }
-            //perform.StartPerformance("ProcessIQ");
-            ProcessIQData(inBuffer->Ptr(),framesPerBuffer);
-            //perform.StopPerformance(1000);
-            //We don't release a free buffer until ProcessIQData returns because that would also allow inBuffer to be reused
-            producerConsumer.ReleaseFreeBuffer();
 
+					//See http://www.actel.com/documents/Improve_ADC_WP.pdf as one example
+					//We take N (rtlDecimate) samples and create one result
+					fpSampleRe = fpSampleIm = 0.0;
+					//When i is at end (2047), j is 4094, j+k+1 can't be more then readBufferSize
+					//Sum samples
+					for (int k = 0; k < bufInc; k+=2) {
+						//I/Q reversed from normal devices, correct here
+						fpSampleIm += bufPtr[j + k];
+						fpSampleRe += bufPtr[j + k + 1];
+					}
+					//If we average, we get a better sample
+					//But if we average with a smaller number, we increase range of samples
+					//Instead of 8bit 0-255, we get 9bit 0-511
+					//Testing assuming rtlDecmiate = 6
+					fpSampleRe = fpSampleRe / decAvg; //Effectively increasing dynamic range
+					fpSampleRe -= decNorm;
+					fpSampleRe /= decNorm;
+					fpSampleRe *= sampleGain;
+					fpSampleIm = fpSampleIm / decAvg;
+					fpSampleIm -= decNorm;
+					fpSampleIm /= decNorm;
+					fpSampleIm *= sampleGain;
+			#else
+					//Oringal simple decimation - no increase in dynamic range
+					//Every nth sample from producer buffer
+					fpSampleRe = bufPtr[j];
+					fpSampleRe -= 127.0;
+					fpSampleRe /= 128.0;
+					fpSampleRe *= sampleGain;
+
+					fpSampleIm = bufPtr[j+1];
+					fpSampleIm -= 127.0;
+					fpSampleIm /= 128.0;
+					fpSampleIm *= sampleGain;
+			#endif
+					inBuffer->Re(i) = fpSampleRe;
+					inBuffer->Im(i) = fpSampleIm;
+				}
+				//perform.StartPerformance("ProcessIQ");
+				ProcessIQData(inBuffer->Ptr(),framesPerBuffer);
+				//perform.StopPerformance(1000);
+				//We don't release a free buffer until ProcessIQData returns because that would also allow inBuffer to be reused
+				producerConsumer.ReleaseFreeBuffer();
+			}
             break;
 
         case cbProducerConsumerEvents::Stop:
