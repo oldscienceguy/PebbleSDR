@@ -6,15 +6,23 @@
  * This uses the QT producer/consumer model to avoid more complex and deadlock prone mutex's
  * QSemaphores protects the producer thread's buffer pointer  and the consumer threads' buffer pointer in a circular buffer
  *
+ * 2/12/14: New model
+ * Producer ReleaseFilledBuffer emits signal which is connected to Consumer new data slot
+ * Consumer should process as many filled buffers as possible before returning
+ * This eliminates high CPU caused by consumer thread looping doing nothing
  *
+ * Producer thread now has a polling interval which is calculated based on sample rate and samples/buffer
+ * This also reduces CPU load because we sleep for a safe amount of time between polling for new data
  */
 
 ProducerConsumer::ProducerConsumer()
 {
     //No difference in performance noted, use worker object as per recommendation
+	//useWorkerThread uses a subclassed thread with no event loop
+	//else we use a normal thread with an event loop and moveToThread
     useWorkerThread = false;
-    //useBlockingAcquire = false; //Higher CPU because we run loop faster?
-    useBlockingAcquire = true;
+	//Non blocking gives us more control and as long as polling interval is set correctly, same CPU as blocking
+	useBlockingAcquire = false;
 
     semNumFreeBuffers = NULL;
     semNumFilledBuffers = NULL;
@@ -25,6 +33,8 @@ ProducerConsumer::ProducerConsumer()
     producerWorkerThread = NULL;
     consumerWorker = NULL;
     consumerWorkerThread = NULL;
+
+	usPollingInterval = 0;
 }
 
 //This can get called on an existing ProducerConsumer object
@@ -89,11 +99,9 @@ void ProducerConsumer::Initialize(cbProducerConsumer _producerWorker, cbProducer
         if (useWorkerThread) {
             dynamic_cast<PCThread *>(producerWorkerThread)->SetWorker(cbProducerWorker);
         } else {
-            producerWorker = new PCWorker(cbProducerWorker);
+			producerWorker = new ProducerWorker(cbProducerWorker);
             producerWorker->moveToThread(producerWorkerThread);
-            connect(producerWorkerThread,&PCThread::started,producerWorker,&PCWorker::start);
-            //connect(producerWorkerThread,&PCThread::finished, producerWorker,&PCWorker::stop);
-            //connect(producerWorker,&PCWorker::finished,producerWorkerThread,&QThread::quit);
+			connect(producerWorkerThread,&PCThread::started,producerWorker,&ProducerWorker::start);
         }
     }
     if (consumerWorkerThread == NULL) {
@@ -107,14 +115,26 @@ void ProducerConsumer::Initialize(cbProducerConsumer _producerWorker, cbProducer
         if (useWorkerThread) {
             dynamic_cast<PCThread *>(consumerWorkerThread)->SetWorker(cbConsumerWorker);
         } else {
-            consumerWorker = new PCWorker(cbConsumerWorker);
+			consumerWorker = new ConsumerWorker(cbConsumerWorker);
             consumerWorker->moveToThread(consumerWorkerThread);
-            connect(consumerWorkerThread,&PCThread::started,consumerWorker,&PCWorker::start);
-            //connect(consumerWorkerThread,&PCThread::finished, consumerWorker,&PCWorker::stop);
-            //connect(consumerWorker,&PCWorker::finished,consumerWorkerThread,&QThread::quit);
+			connect(this,&ProducerConsumer::NewData, consumerWorker, &ConsumerWorker::processNewData);
         }
     }
 
+}
+
+//Only if producer is polling for data, not needed if producer is triggered via signal
+//Call after initialize
+void ProducerConsumer::SetPollingInterval(quint32 _sampleRate, quint16 _samplesPerBuffer)
+{
+	//How many data buffers do we have to process per second
+	quint16 buffersPerSec = _sampleRate / _samplesPerBuffer;
+	//What's the optimal interval between data buffers (in usec)
+	quint16 usBufferInterval = 1000000 / buffersPerSec;
+	//Set safe interval (experiment here)
+	usPollingInterval = usBufferInterval / 6;
+	if (producerWorker != NULL)
+		producerWorker->SetPollingInterval(usPollingInterval);
 }
 
 
@@ -152,23 +172,45 @@ bool ProducerConsumer::Stop()
         if (!useWorkerThread)
             producerWorker->stop(); //Stop the loop then stop the thread
         else
+			//This will not quit the thread if we are blocking in a semaphore acquire or release
             dynamic_cast<PCThread*>(producerWorkerThread)->quit();
-        if (!producerWorkerThread->wait(5000))
-            qDebug()<<"ProducerWorkerThread didn't respond to interupt request";
+		//If thread doesn't quit by itself, force it
+		if (!producerWorkerThread->wait(500)) {
+			qDebug()<<"ProducerWorkerThread waiting for free Buffer, force quit";
+			semNumFreeBuffers->release();
+			producerWorkerThread->quit();
+		}
         producerThreadIsRunning = false;
     }
 
     if (consumerThreadIsRunning) {
-        if (!useWorkerThread)
-            consumerWorker->stop();
-        else
-            dynamic_cast<PCThread*>(consumerWorkerThread)->quit();
-        if (!consumerWorkerThread->wait(5000))
-            qDebug()<<"ConsumerWorkerThread didn't respond to interupt request";
+		if (useWorkerThread)
+			//This will not quit the thread if we are blocking in a semaphore acquire or release
+			dynamic_cast<PCThread*>(consumerWorkerThread)->quit();
+		if (!consumerWorkerThread->wait(500)) {
+			qDebug()<<"ConsumerWorkerThread waiting for filled buffer, force quit";
+			semNumFilledBuffers->release();
+			consumerWorkerThread->quit();
+		}
         consumerThreadIsRunning = false;
     }
     isThreadRunning = false;
-    return true;
+	return true;
+}
+
+//Not generally needed because we reset everything in Initialize, but here in case we need to restart due to overflow
+bool ProducerConsumer::Reset()
+{
+	nextProducerDataBuf = nextConsumerDataBuf = 0;
+	//Reset filled buffers to zero
+	semNumFilledBuffers->release(semNumFilledBuffers->available());
+	qDebug()<<"ProducerConsumer reset - numFilled = "<<semNumFilledBuffers->available();
+
+	//Reset free buffers to max
+	semNumFreeBuffers->acquire(numDataBufs - semNumFreeBuffers->available());
+	qDebug()<<"ProducerConsumer reset - numFree = "<<semNumFreeBuffers->available();
+
+	return true;
 }
 
 bool ProducerConsumer::IsRunning()
@@ -253,6 +295,9 @@ void ProducerConsumer::ReleaseFilledBuffer()
 {
     nextProducerDataBuf = (nextProducerDataBuf +1 ) % numDataBufs; //Increment producer pointer
     semNumFilledBuffers->release();
+	emit NewData();
+	//Give thread with consumer a chance to pick this up
+	QThread::yieldCurrentThread();
 }
 
 void ProducerConsumer::PutbackFilledBuffer()
@@ -261,14 +306,14 @@ void ProducerConsumer::PutbackFilledBuffer()
 }
 
 //SDRThreads
-PCWorker::PCWorker(cbProducerConsumer _producerWorker)
+ProducerWorker::ProducerWorker(cbProducerConsumer _worker)
 {
-    worker = _producerWorker;
-    msSleep = 0;
+	worker = _worker;
+	usSleep = 0;
 }
 
 //This gets called by producerThread because we connected the started() signal to this method
-void PCWorker::start()
+void ProducerWorker::start()
 {
     //Do any worker construction here so it's in the thread
     worker(cbProducerConsumerEvents::Start);
@@ -277,30 +322,27 @@ void PCWorker::start()
         //perform.StartPerformance("Producer Thread");
         //This calls the actual worker function in each SDR device
         worker(cbProducerConsumerEvents::Run);
-        //Without this we consume +100% CPU, why doesn't yield prevent this?
-        QThread::currentThread()->msleep(msSleep);
+		//usSleep is calculated based on sample rate and samples per buffer for producer polling
+		QThread::currentThread()->usleep(usSleep);
         //perform.StopPerformance(1000);
-        //QThread::yieldCurrentThread();
     }
     //Do any worker destruction here
     worker(cbProducerConsumerEvents::Stop);
     //Quit the thread as if we were returnning from QThread::run() directly
     QThread::currentThread()->quit();
 }
-void PCWorker::stop()
+void ProducerWorker::stop()
 {
     doRun = false;
 }
 
-void Sleeper::usleep(unsigned long usecs)
+ConsumerWorker::ConsumerWorker(cbProducerConsumer _worker)
 {
-    QThread::usleep(usecs);
+	worker = _worker;
 }
-void Sleeper::msleep(unsigned long msecs)
+
+void ConsumerWorker::processNewData()
 {
-    QThread::msleep(msecs);
+	worker(cbProducerConsumerEvents::Run);
 }
-void Sleeper::sleep(unsigned long secs)
-{
-    QThread::sleep(secs);
-}
+

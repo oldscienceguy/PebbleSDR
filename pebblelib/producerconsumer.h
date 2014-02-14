@@ -12,7 +12,8 @@ enum cbProducerConsumerEvents{Start, Run, Stop};
 typedef std::function<void(cbProducerConsumerEvents _event)> cbProducerConsumer;
 
 //Alternative implemenation using QThread and pcWorker.moveToThread(...)
-class PCWorker;
+class ProducerWorker;
+class ConsumerWorker;
 
 class PCThread : public QThread
 {
@@ -62,8 +63,15 @@ public:
 
     void Initialize(cbProducerConsumer _producerWorker, cbProducerConsumer _consumerWorker, int _numDataBufs, int _producerBufferSize);
 
+	//When producer is in polling mode, we need to sleep in between polls in order to avoid excessive CPU usage
+	//This method calculates how many buffers per second we need to handle and a 'safe' sleep interval
+	//If we sleep too long, we'll get producer data loss and hear choppy audio
+	//If we sleep too short, we'll see excessive CPU
+	void SetPollingInterval(quint32 _sampleRate, quint16 _samplesPerBuffer);
+
     bool Start(bool _producer = true, bool _consumer = true);
     bool Stop();
+	bool Reset(); //Resets all semaphores and circular buffer pointers
 
     bool IsRunning();
 
@@ -83,6 +91,9 @@ public:
     bool IsFilledBufferOverflow() {return filledBufferOverflow;}
     quint16 GetNumFreeBufs() {return semNumFreeBuffers->available();}
     quint16 GetNumFilledBufs() {return semNumFilledBuffers->available();}
+
+signals:
+	void NewData(); //Producer released a filled buffer
 
 private:
     //Experiment using worker thread vs QThread and moveToThread
@@ -109,8 +120,8 @@ private:
     bool isThreadRunning;
     QThread *producerWorkerThread;
     QThread *consumerWorkerThread;
-    PCWorker *producerWorker;
-    PCWorker *consumerWorker;
+	ProducerWorker *producerWorker;
+	ConsumerWorker *consumerWorker;
 
     bool producerThreadIsRunning;
     bool consumerThreadIsRunning;
@@ -118,35 +129,41 @@ private:
     cbProducerConsumer cbProducerWorker;
     cbProducerConsumer cbConsumerWorker;
 
+	quint16 usPollingInterval;
+
 };
 
 //Alternative thread model using Worker objects and no QThread subclass
-class PCWorker: public QObject
+class ProducerWorker: public QObject
 {
     Q_OBJECT
 public:
-    PCWorker(cbProducerConsumer _producerWorker);
-    public slots:
+	ProducerWorker(cbProducerConsumer _worker);
+	void SetPollingInterval(quint16 _usSleep) {usSleep = _usSleep;}
+
+public slots:
     void start();
     void stop();
-signals:
-    void finished();
+
 private:
     cbProducerConsumer worker;
     Perform perform;
     volatile bool doRun; //volatile bool is thread safe, but not other volatile data types
-    quint16 msSleep;
+	quint16 usSleep;
 
 };
-
-//Replacement for windows Sleep() function
-class Sleeper : public QThread
+class ConsumerWorker: public QObject
 {
+	Q_OBJECT
 public:
-    static void usleep(unsigned long usecs);
-    static void msleep(unsigned long msecs);
-    static void sleep(unsigned long secs);
-};
+	ConsumerWorker(cbProducerConsumer _worker);
 
+public slots:
+	void processNewData();
+
+private:
+	cbProducerConsumer worker;
+	Perform perform;
+};
 
 #endif // PRODUCERCONSUMER_H
