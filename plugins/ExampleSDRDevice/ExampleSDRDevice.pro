@@ -14,6 +14,9 @@ include (../DigitalModemExample/fix_plugin_libraries.pri)
 #This anchors @rpath references in plugins to our lib directory, always at the same level os plugin directory
 QMAKE_LFLAGS += -rpath $${DESTDIR}/../lib
 
+#Required for options UI
+QT += widgets
+
 #Help plugin not worry about include paths
 INCLUDEPATH += ../../application
 DEPENDPATH += ../../application
