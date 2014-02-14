@@ -315,6 +315,7 @@ protected:
     QSettings *qSettings;
 
     int deviceNumber; //For plugins that support multiple devices
+	bool connected;
 
 };
 
