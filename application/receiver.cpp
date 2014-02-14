@@ -77,6 +77,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	agc = NULL;
 	iqBalance = NULL;
     iDigitalModem = NULL;
+	workingBuf = NULL;
 
 	sdrOptions = new SdrOptions();
 
