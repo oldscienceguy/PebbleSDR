@@ -182,8 +182,6 @@ private:
     quint32 rtlSampleRate;
     quint16 rtlDecimate;
 
-    int sampleRates[10]; //Max 10 for testing
-
     QTcpSocket *rtlTcpSocket;
     QMutex rtlTcpSocketMutex; //Control access to rtltcpSocket across thread
 

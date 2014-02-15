@@ -43,11 +43,6 @@ void DeviceInterfaceBase::SetupOptionUi(QWidget *parent)
 	return;
 }
 
-void DeviceInterfaceBase::WriteSettings()
-{
-	return;
-}
-
 QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, quint16 _option) {
 	Q_UNUSED(_option);
 	switch (_key) {
@@ -251,10 +246,44 @@ QVariant DeviceInterfaceBase::Get(QString _key, quint16 _option)
 	return QVariant();
 }
 
+//Settings shared by all devices
 void DeviceInterfaceBase::ReadSettings()
 {
-	return;
+	//These are common settings for every device, variables are defined in DeviceInterface
+	startupType = (STARTUP_TYPE)qSettings->value("StartupType", DEFAULTFREQ).toInt();
+	userFrequency = qSettings->value("StartupFreq", 10000000).toDouble();
+	inputDeviceName = qSettings->value("InputDeviceName", "").toString();
+	outputDeviceName = qSettings->value("OutputDeviceName", "").toString();
+	sampleRate = qSettings->value("SampleRate", 48000).toInt();
+	iqGain = qSettings->value("IQGain",1).toDouble();
+	iqOrder = (IQORDER)qSettings->value("IQOrder", IQ).toInt();
+	iqBalanceGain = qSettings->value("IQBalanceGain",1).toDouble();
+	iqBalancePhase = qSettings->value("IQBalancePhase",0).toDouble();
+	iqBalanceEnable = qSettings->value("IQBalanceEnable",false).toBool();
+	lastFreq = qSettings->value("LastFreq", 10000000).toDouble();
+	lastDemodMode = qSettings->value("LastDemodMode",0).toInt();
+	lastSpectrumMode = qSettings->value("LastSpectrumMode",0).toInt();
+	deviceNumber = qSettings->value("DeviceNumber",0).toInt();
 }
+
+void DeviceInterfaceBase::WriteSettings()
+{
+	qSettings->setValue("StartupType",startupType);
+	qSettings->setValue("StartupFreq",userFrequency);
+	qSettings->setValue("InputDeviceName", inputDeviceName);
+	qSettings->setValue("OutputDeviceName", outputDeviceName);
+	qSettings->setValue("SampleRate",sampleRate);
+	qSettings->setValue("IQGain",iqGain);
+	qSettings->setValue("IQOrder", iqOrder);
+	qSettings->setValue("IQBalanceGain", iqBalanceGain);
+	qSettings->setValue("IQBalancePhase", iqBalancePhase);
+	qSettings->setValue("IQBalanceEnable", iqBalanceEnable);
+	qSettings->setValue("LastFreq",lastFreq);
+	qSettings->setValue("LastDemodMode",lastDemodMode);
+	qSettings->setValue("LastSpectrumMode",lastSpectrumMode);
+	qSettings->setValue("DeviceNumber",deviceNumber);
+}
+
 
 //Should be a common function
 void DeviceInterfaceBase::InitSettings(QString fname)

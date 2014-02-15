@@ -2,6 +2,7 @@
 
 ExampleSDRDevice::ExampleSDRDevice():DeviceInterfaceBase()
 {
+	InitSettings("ExampleSDR");
 
 }
 
@@ -12,6 +13,8 @@ ExampleSDRDevice::~ExampleSDRDevice()
 
 bool ExampleSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
 {
+	Q_UNUSED(_callback);
+	Q_UNUSED(_framesPerBuffer);
 	return true;
 }
 
@@ -37,12 +40,14 @@ void ExampleSDRDevice::Stop()
 
 void ExampleSDRDevice::ReadSettings()
 {
-
+	DeviceInterfaceBase::ReadSettings();
+	//Device specific settings follow
 }
 
 void ExampleSDRDevice::WriteSettings()
 {
-
+	DeviceInterfaceBase::WriteSettings();
+	//Device specific settings follow
 }
 
 QVariant ExampleSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
@@ -75,15 +80,15 @@ bool ExampleSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value,
 
 void ExampleSDRDevice::SetupOptionUi(QWidget *parent)
 {
-
+	Q_UNUSED(parent);
 }
 
 void ExampleSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 {
-
+	Q_UNUSED(_event);
 }
 
 void ExampleSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 {
-
+	Q_UNUSED(_event);
 }

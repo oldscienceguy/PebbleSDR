@@ -535,74 +535,47 @@ bool RTL2832SDRDevice::SetRtlIfGain(quint16 _stage, quint16 _gain)
 
 void RTL2832SDRDevice::ReadSettings()
 {
-	QSettings *qs=NULL;
 	if (deviceNumber == RTL_USB)
-		qs = usbSettings;
+		qSettings = usbSettings;
 	else if (deviceNumber == RTL_TCP)
-		qs = tcpSettings;
+		qSettings = tcpSettings;
 
-    //These are common settings for every device, variables are defined in DeviceInterface
-	startupType = (STARTUP_TYPE)qs->value("StartupType", DEFAULTFREQ).toInt();
-	userFrequency = qs->value("StartupFreq", 10000000).toDouble();
-    inputDeviceName = qs->value("InputDeviceName", "").toString();
-    outputDeviceName = qs->value("OutputDeviceName", "").toString();
-    sampleRate = qs->value("SampleRate", 48000).toInt();
-	iqGain = qs->value("IQGain",1).toDouble();
-    iqOrder = (IQORDER)qs->value("IQOrder", IQ).toInt();
-	iqBalanceGain = qs->value("IQBalanceGain",1).toDouble();
-	iqBalancePhase = qs->value("IQBalancePhase",0).toDouble();
-	iqBalanceEnable = qs->value("IQBalanceEnable",false).toBool();
-    lastFreq = qs->value("LastFreq", 10000000).toDouble();
-	lastDemodMode = qs->value("LastDemodMode",0).toInt();
-	lastSpectrumMode = qs->value("LastSpectrumMode",0).toInt();
+	DeviceInterfaceBase::ReadSettings();
 
     //Valid gain values (in tenths of a dB) for the E4000 tuner:
     //-10, 15, 40, 65, 90, 115, 140, 165, 190,
     //215, 240, 290, 340, 420, 430, 450, 470, 490
     //0 for automatic gain
-    rtlTunerGain = qs->value("RtlGain",15).toInt();
-    rtlServerIP = QHostAddress(qs->value("IPAddr","127.0.0.1").toString());
-    rtlServerPort = qs->value("Port","1234").toInt();
-    rtlSampleRate = qs->value("RtlSampleRate",2048000).toUInt();
-    rtlTunerGainMode = qs->value("RtlGainMode",GAIN_MODE_AUTO).toUInt();
-    rtlFreqencyCorrection = qs->value("RtlFrequencyCorrection",0).toInt();
-    rtlSampleMode = (SAMPLING_MODES)qs->value("RtlSampleMode",NORMAL).toInt();
-    rtlAgcMode = qs->value("RtlAgcMode",false).toBool();
-    rtlOffsetMode = qs->value("RtlOffsetMode",false).toBool();
+	rtlTunerGain = qSettings->value("RtlGain",15).toInt();
+	rtlServerIP = QHostAddress(qSettings->value("IPAddr","127.0.0.1").toString());
+	rtlServerPort = qSettings->value("Port","1234").toInt();
+	rtlSampleRate = qSettings->value("RtlSampleRate",2048000).toUInt();
+	rtlTunerGainMode = qSettings->value("RtlGainMode",GAIN_MODE_AUTO).toUInt();
+	rtlFreqencyCorrection = qSettings->value("RtlFrequencyCorrection",0).toInt();
+	rtlSampleMode = (SAMPLING_MODES)qSettings->value("RtlSampleMode",NORMAL).toInt();
+	rtlAgcMode = qSettings->value("RtlAgcMode",false).toBool();
+	rtlOffsetMode = qSettings->value("RtlOffsetMode",false).toBool();
 }
 
 void RTL2832SDRDevice::WriteSettings()
 {
-	QSettings *qs=NULL;
 	if (deviceNumber == RTL_USB)
-		qs = usbSettings;
+		qSettings = usbSettings;
 	else if (deviceNumber == RTL_TCP)
-		qs = tcpSettings;
+		qSettings = tcpSettings;
 
-	qs->setValue("StartupType",startupType);
-	qs->setValue("StartupFreq",userFrequency);
-    qs->setValue("InputDeviceName", inputDeviceName);
-    qs->setValue("OutputDeviceName", outputDeviceName);
-    qs->setValue("SampleRate",sampleRate);
-	qs->setValue("IQGain",iqGain);
-    qs->setValue("IQOrder", iqOrder);
-	qs->setValue("IQBalanceGain", iqBalanceGain);
-	qs->setValue("IQBalancePhase", iqBalancePhase);
-	qs->setValue("IQBalanceEnable", iqBalanceEnable);
-    qs->setValue("LastFreq",lastFreq);
-	qs->setValue("LastDemodMode",lastDemodMode);
-	qs->setValue("LastSpectrumMode",lastSpectrumMode);
+	DeviceInterfaceBase::WriteSettings();
 
-    qs->setValue("RtlGain",rtlTunerGain);
-    qs->setValue("IPAddr",rtlServerIP.toString());
-    qs->setValue("Port",rtlServerPort);
-    qs->setValue("RtlSampleRate",rtlSampleRate);
-    qs->setValue("RtlGainMode",rtlTunerGainMode);
-    qs->setValue("RtlFrequencyCorrection",rtlFreqencyCorrection);
-    qs->setValue("RtlSampleMode",rtlSampleMode);
-    qs->setValue("RtlAgcMode",rtlAgcMode);
-    qs->setValue("RtlOffsetMode",rtlOffsetMode);
-    qs->sync();
+	qSettings->setValue("RtlGain",rtlTunerGain);
+	qSettings->setValue("IPAddr",rtlServerIP.toString());
+	qSettings->setValue("Port",rtlServerPort);
+	qSettings->setValue("RtlSampleRate",rtlSampleRate);
+	qSettings->setValue("RtlGainMode",rtlTunerGainMode);
+	qSettings->setValue("RtlFrequencyCorrection",rtlFreqencyCorrection);
+	qSettings->setValue("RtlSampleMode",rtlSampleMode);
+	qSettings->setValue("RtlAgcMode",rtlAgcMode);
+	qSettings->setValue("RtlOffsetMode",rtlOffsetMode);
+	qSettings->sync();
 
 }
 

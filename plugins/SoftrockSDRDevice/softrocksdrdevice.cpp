@@ -152,25 +152,13 @@ void SoftrockSDRDevice::Stop()
 
 void SoftrockSDRDevice::ReadSettings()
 {
-	QSettings *qs=qSettings;
+
+	DeviceInterfaceBase::ReadSettings();
 
 	//Device Settings
+	//Replace with deviceNumber
 	sdrNumber = qSettings->value("sdrNumber",-1).toInt();
 
-	//These are common settings for every device, variables are defined in DeviceInterface
-	startupType = (STARTUP_TYPE)qs->value("StartupType", DEFAULTFREQ).toInt();
-	userFrequency = qs->value("StartupFreq", 10000000).toDouble();
-	inputDeviceName = qs->value("InputDeviceName", "").toString();
-	outputDeviceName = qs->value("OutputDeviceName", "").toString();
-	sampleRate = qs->value("SampleRate", 48000).toInt();
-	iqGain = qs->value("IQGain",1).toDouble();
-	iqOrder = (IQORDER)qs->value("IQOrder", IQ).toInt();
-	iqBalanceGain = qs->value("IQBalanceGain",1).toDouble();
-	iqBalancePhase = qs->value("IQBalancePhase",0).toDouble();
-	iqBalanceEnable = qs->value("IQBalanceEnable",false).toBool();
-	lastFreq = qs->value("LastFreq", 10000000).toDouble();
-	lastDemodMode = qs->value("LastDemodMode",0).toInt();
-	lastSpectrumMode = qs->value("LastSpectrumMode",0).toInt();
 
 	//Keep si570 frequency within 'reasonable' range, not exactly to spec
 	//Standard si570 support 4000000 to 160000000
@@ -236,23 +224,10 @@ void SoftrockSDRDevice::ReadSettings()
 
 void SoftrockSDRDevice::WriteSettings()
 {
-	QSettings *qs=qSettings;
+	DeviceInterfaceBase::WriteSettings();
 
 	qSettings->setValue("sdrNumber",sdrNumber);
 
-	qs->setValue("StartupType",startupType);
-	qs->setValue("StartupFreq",userFrequency);
-	qs->setValue("InputDeviceName", inputDeviceName);
-	qs->setValue("OutputDeviceName", outputDeviceName);
-	qs->setValue("SampleRate",sampleRate);
-	qs->setValue("IQGain",iqGain);
-	qs->setValue("IQOrder", iqOrder);
-	qs->setValue("IQBalanceGain", iqBalanceGain);
-	qs->setValue("IQBalancePhase", iqBalancePhase);
-	qs->setValue("IQBalanceEnable", iqBalanceEnable);
-	qs->setValue("LastFreq",lastFreq);
-	qs->setValue("LastDemodMode",lastDemodMode);
-	qs->setValue("LastSpectrumMode",lastSpectrumMode);
 
 	switch(sdrDevice) {
 		case SR_LITE:
@@ -459,12 +434,12 @@ bool SoftrockSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value
 
 void SoftrockSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 {
-
+	Q_UNUSED(_event);
 }
 
 void SoftrockSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 {
-
+	Q_UNUSED(_event);
 }
 
 bool SoftrockSDRDevice::Version(short *major, short *minor)
