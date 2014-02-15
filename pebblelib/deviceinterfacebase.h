@@ -1,6 +1,7 @@
 #ifndef DEVICEINTERFACEBASE_H
 #define DEVICEINTERFACEBASE_H
 #include "device_interfaces.h"
+#include "perform.h"
 
 class PEBBLELIBSHARED_EXPORT DeviceInterfaceBase : public DeviceInterface
 {
@@ -33,6 +34,8 @@ public:
 
 
 protected:
+	virtual void InitSettings(QString fname);
+
 	//Todo: Flag which of these is just a convenience for Pebble, vs required for the interface
 	quint16 framesPerBuffer;
 
@@ -60,6 +63,7 @@ protected:
 	int deviceNumber; //For plugins that support multiple devices
 	bool connected;
 
+	Perform perform;
 
 };
 
