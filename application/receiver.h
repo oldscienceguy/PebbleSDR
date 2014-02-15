@@ -6,7 +6,6 @@
 #include <QMainWindow>
 #include <QtCore/QVariant>
 #include <QMutex>
-#include "devices/softrock.h"
 #include "audio.h"
 #include "soundcard.h"
 #include "cpx.h"

@@ -7,7 +7,6 @@
 #include <QLibrary>
 #include "sdr.h"
 #include "settings.h"
-#include "devices/softrock.h"
 #include "devices/elektorsdr.h"
 #include "devices/sdr_iq.h"
 #include "devices/hpsdr.h"
