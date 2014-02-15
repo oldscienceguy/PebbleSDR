@@ -5,23 +5,13 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include <QObject>
-#include "../pebblelib/device_interfaces.h"
+#include "deviceinterfacebase.h"
 #include "producerconsumer.h"
 #include "usbutil.h"
 #include "ui_softrockoptions.h"
 
-//Move to class
-//LibUSB id for SR driver
-#define SR_VID	0x16c0 //Vendor ID
-#define SR_PID  0x05dc //Product ID
-//Todo: The last digit on serial number can be changed to allow multiple SRocks to be used simultaneously
-#define SR_SERIAL_NUMBER "PE0FKO-0"
 
-//Si570 CMOS range
-#define SI570_MIN 3500000
-#define SI570_MAX 260000000
-
-class SoftrockSDRDevice : public QObject, public DeviceInterface
+class SoftrockSDRDevice : public QObject, public DeviceInterfaceBase
 {
 	Q_OBJECT
 
@@ -35,6 +25,14 @@ public:
 	//Devices supported by this plugin
 	enum SDRDEVICE {SR_LITE=1, SR_V9, SR_ENSEMBLE, SR_ENSEMBLE_2M,
 		SR_ENSEMBLE_4M, SR_ENSEMBLE_6M, SR_ENSEMBLE_LF, FiFi};
+	//LibUSB id for SR driver
+	const quint16 SR_VID = 0x16c0; //Vendor ID
+	const quint16 SR_PID = 0x05dc; //Product ID
+	//Todo: The last digit on serial number can be changed to allow multiple SRocks to be used simultaneously
+	const char* SR_SERIAL_NUMBER = "PE0FKO-0";
+	//Si570 CMOS range
+	const quint32 SI570_MIN = 3500000;
+	const quint32 SI570_MAX = 260000000;
 
 	SoftrockSDRDevice();
 	~SoftrockSDRDevice();
@@ -156,8 +154,6 @@ private:
 	int SR_ENSEMBLE_LF_StartupMode;
 	double SR_ENSEMBLE_LF_Gain;
 
-
-	void InitSettings(QString fname);
 };
 
 #endif // SOFTROCKSDRDEVICE_H

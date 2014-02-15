@@ -36,7 +36,7 @@ LIBS += -L$${PWD}/../../pebblelib/$${LIB_DIR} -lpebblelib
 LIBS += -L$${PWD}/../../D2XX/bin/10.5-10.7/ -lftd2xx.1.2.2
 
 ftd2xx.commands += install_name_tool -change /usr/local/lib/libftd2xx.1.2.2.dylib @rpath/libftd2xx.1.2.2.dylib $${DESTDIR}/lib$${TARGET}.dylib
-ftd2xx.path = $${DESTDIR}/lib
+ftd2xx.path = $${DESTDIR}
 INSTALLS += ftd2xx
 
 OTHER_FILES += \

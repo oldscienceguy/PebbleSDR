@@ -1,7 +1,7 @@
 #include "softrocksdrdevice.h"
 #include <QMessageBox>
 
-SoftrockSDRDevice::SoftrockSDRDevice()
+SoftrockSDRDevice::SoftrockSDRDevice():DeviceInterfaceBase()
 {
 	hDev = NULL;
 
@@ -11,36 +11,35 @@ SoftrockSDRDevice::SoftrockSDRDevice()
 	//Set ini file to specific version of SoftRock
 	switch(sdrDevice) {
 		case SR_ENSEMBLE:
-			InitSettings("softrock ensemble");
+			InitSettings("SoftrockEnsemble");
 			break;
 		case SR_ENSEMBLE_2M:
-			InitSettings("softrock ensemble 2m");
+			InitSettings("SoftrockEnsemble2m");
 			break;
 		case SR_ENSEMBLE_4M:
-			InitSettings("softrock ensemble 4m");
+			InitSettings("SoftrockEnsemble4m");
 			break;
 		case SR_ENSEMBLE_6M:
-			InitSettings("softrock ensemble 6m");
+			InitSettings("SoftrockEnsemble6m");
 			break;
 		case SR_ENSEMBLE_LF:
-			InitSettings("softrock ensemble lf");
+			InitSettings("SoftrockEnsembleLF");
 			break;
 		case SR_LITE:
-			InitSettings("softrock lite");
+			InitSettings("SoftrockLite");
 			break;
 		case SR_V9:
-			InitSettings("softrock v9");
+			InitSettings("SoftrockV9");
 			break;
 		case FiFi:
-			InitSettings("fifi");
+			InitSettings("FifiPlugin");
 			break;
 		default:
-			InitSettings("softrock");
+			InitSettings("Softrock");
 			break;
 	}
 
 	ReadSettings();
-
 	optionUi = NULL;
 
 	//Note: This uses libusb 0.1 not 1.0
@@ -79,6 +78,8 @@ SoftrockSDRDevice::~SoftrockSDRDevice()
 
 bool SoftrockSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
 {
+	Q_UNUSED(_callback);
+	Q_UNUSED(_framesPerBuffer);
 	return true;
 }
 
@@ -142,38 +143,34 @@ bool SoftrockSDRDevice::Disconnect()
 
 void SoftrockSDRDevice::Start()
 {
-	//How do we want to handle audio input from plugins?
-	//audioInput->StartInput(inputDeviceName, GetSampleRate());
+	//Receiver handles Start() for audio input
 }
 
 void SoftrockSDRDevice::Stop()
 {
-	//if (audioInput != NULL)
-	//	audioInput->Stop();
-
-
-}
-
-//Should be a common function
-void SoftrockSDRDevice::InitSettings(QString fname)
-{
-	//Use ini files to avoid any registry problems or install/uninstall
-	//Scope::UserScope puts file C:\Users\...\AppData\Roaming\N1DDY
-	//Scope::SystemScope puts file c:\ProgramData\n1ddy
-
-	QString path = QCoreApplication::applicationDirPath();
-#ifdef Q_OS_MAC
-		//Pebble.app/contents/macos = 25
-		path.chop(25);
-#endif
-	qSettings = new QSettings(path + "/PebbleData/" + fname +".ini",QSettings::IniFormat);
-
 }
 
 void SoftrockSDRDevice::ReadSettings()
 {
+	QSettings *qs=qSettings;
+
 	//Device Settings
 	sdrNumber = qSettings->value("sdrNumber",-1).toInt();
+
+	//These are common settings for every device, variables are defined in DeviceInterface
+	startupType = (STARTUP_TYPE)qs->value("StartupType", DEFAULTFREQ).toInt();
+	userFrequency = qs->value("StartupFreq", 10000000).toDouble();
+	inputDeviceName = qs->value("InputDeviceName", "").toString();
+	outputDeviceName = qs->value("OutputDeviceName", "").toString();
+	sampleRate = qs->value("SampleRate", 48000).toInt();
+	iqGain = qs->value("IQGain",1).toDouble();
+	iqOrder = (IQORDER)qs->value("IQOrder", IQ).toInt();
+	iqBalanceGain = qs->value("IQBalanceGain",1).toDouble();
+	iqBalancePhase = qs->value("IQBalancePhase",0).toDouble();
+	iqBalanceEnable = qs->value("IQBalanceEnable",false).toBool();
+	lastFreq = qs->value("LastFreq", 10000000).toDouble();
+	lastDemodMode = qs->value("LastDemodMode",0).toInt();
+	lastSpectrumMode = qs->value("LastSpectrumMode",0).toInt();
 
 	//Keep si570 frequency within 'reasonable' range, not exactly to spec
 	//Standard si570 support 4000000 to 160000000
@@ -239,7 +236,23 @@ void SoftrockSDRDevice::ReadSettings()
 
 void SoftrockSDRDevice::WriteSettings()
 {
+	QSettings *qs=qSettings;
+
 	qSettings->setValue("sdrNumber",sdrNumber);
+
+	qs->setValue("StartupType",startupType);
+	qs->setValue("StartupFreq",userFrequency);
+	qs->setValue("InputDeviceName", inputDeviceName);
+	qs->setValue("OutputDeviceName", outputDeviceName);
+	qs->setValue("SampleRate",sampleRate);
+	qs->setValue("IQGain",iqGain);
+	qs->setValue("IQOrder", iqOrder);
+	qs->setValue("IQBalanceGain", iqBalanceGain);
+	qs->setValue("IQBalancePhase", iqBalancePhase);
+	qs->setValue("IQBalanceEnable", iqBalanceEnable);
+	qs->setValue("LastFreq",lastFreq);
+	qs->setValue("LastDemodMode",lastDemodMode);
+	qs->setValue("LastSpectrumMode",lastSpectrumMode);
 
 	switch(sdrDevice) {
 		case SR_LITE:
@@ -322,7 +335,9 @@ QVariant SoftrockSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _op
 
 		case DeviceType:
 			return AUDIO_IQ;
-
+		case DeviceSampleRates:
+			//We shouldn't know this, depends on audio device connected to receiver
+			return QStringList()<<"48000"<<"96000"<<"192000";
 		case StartupFrequency:
 			switch (sdrDevice)
 			{
@@ -392,17 +407,53 @@ QVariant SoftrockSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _op
 
 
 		default:
-			return DeviceInterface::Get(_key, _option);
+			return DeviceInterfaceBase::Get(_key, _option);
 	}
 }
 
 bool SoftrockSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, quint16 _option)
 {
 	Q_UNUSED(_option);
-
+	double fRequested = _value.toDouble();
 	switch (_key) {
+		case DeviceFrequency: {
+			//What type of SoftRock are we using?  Determines how we calc LO
+			double mult = 4;
+			switch (sdrDevice)
+			{
+				//SR_LITE has no USB control, just return what was requested so app can set fixed freq
+				case SR_LITE:
+					return fRequested;
+
+				case FiFi:
+				case SR_V9:
+				case SR_ENSEMBLE:
+				case SR_ENSEMBLE_LF:
+					mult = 4;
+					break;
+				case SR_ENSEMBLE_2M:
+					mult = 0.8;
+					break;
+				case SR_ENSEMBLE_4M:
+					mult = 1.33333333;
+					break;
+				case SR_ENSEMBLE_6M:
+					mult = 1.33333333;
+					break;
+				default:
+					mult = 1;
+			}
+			bool result = SetFrequencyByValue(fRequested * mult);
+			if (result) {
+				deviceFrequency = fRequested;
+				return fRequested; //SoftRock sets exact freq
+			} else {
+				return deviceFrequency; //Freq didn't change, return previous value
+			}
+			break;
+		}
 		default:
-		return DeviceInterface::Set(_key, _value, _option);
+		return DeviceInterfaceBase::Set(_key, _value, _option);
 	}
 }
 
@@ -785,11 +836,13 @@ int SoftrockSDRDevice::usbCtrlMsgOut(int request, int value, int index, unsigned
 
 //Dialog stuff
 void SoftrockSDRDevice::selectAutomatic(bool b) {
+	Q_UNUSED(b);
 	if (!connected)
 		return;
 	SetAutoBPF(true);
 }
 void SoftrockSDRDevice::selectInput0(bool b) {
+	Q_UNUSED(b);
 	if (!connected)
 		return;
 	//Turn off ABPF
@@ -797,18 +850,21 @@ void SoftrockSDRDevice::selectInput0(bool b) {
 	SetInputMux(0);
 }
 void SoftrockSDRDevice::selectInput1(bool b) {
+	Q_UNUSED(b);
 	if (!connected)
 		return;
 	SetAutoBPF(false);
 	SetInputMux(1);
 }
 void SoftrockSDRDevice::selectInput2(bool b) {
+	Q_UNUSED(b);
 	if (!connected)
 		return;
 	SetAutoBPF(false);
 	SetInputMux(2);
 }
 void SoftrockSDRDevice::selectInput3(bool b) {
+	Q_UNUSED(b);
 	if (!connected)
 		return;
 	SetInputMux(3);
