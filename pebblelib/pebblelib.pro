@@ -70,7 +70,8 @@ SOURCES += pebblelib.cpp \
     iir.cpp \
     producerconsumer.cpp \
     perform.cpp \
-    usbutil.cpp
+    usbutil.cpp \
+    deviceinterfacebase.cpp
 
 HEADERS += pebblelib.h\
 	pebblelib_global.h \
@@ -89,5 +90,6 @@ HEADERS += pebblelib.h\
     device_interfaces.h \
     producerconsumer.h \
     perform.h \
-    usbutil.h
+    usbutil.h \
+    deviceinterfacebase.h
 
