@@ -6,11 +6,10 @@
   rtl_tcp info
 */
 
-RTL2832SDRDevice::RTL2832SDRDevice()
+RTL2832SDRDevice::RTL2832SDRDevice():DeviceInterfaceBase()
 {
     InitSettings("rtl2832sdr");
     inBuffer = NULL;
-    connected = false;
     running = false;
     optionUi = NULL;
     rtlTcpSocket = NULL;
@@ -780,7 +779,7 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 			break;
 		default:
 			//If we don't handle it, let default grab it
-			return DeviceInterface::Get(_key, _option);
+			return DeviceInterfaceBase::Get(_key, _option);
 			break;
 	}
 	return QVariant();
@@ -823,7 +822,7 @@ bool RTL2832SDRDevice::Set(STANDARD_KEYS _key, QVariant _value, quint16 _option)
 			rtlFreqencyCorrection = _value.toInt();
 			break;
 		default:
-			return DeviceInterface::Set(_key, _value, _option);
+			return DeviceInterfaceBase::Set(_key, _value, _option);
 	}
 	return true;
 }

@@ -4,10 +4,10 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include <QObject>
-#include "../pebblelib/device_interfaces.h"
+#include "deviceinterfacebase.h"
 #include "producerconsumer.h"
 
-class ExampleSDRDevice : public QObject, public DeviceInterface
+class ExampleSDRDevice : public QObject, public DeviceInterfaceBase
 {
 	Q_OBJECT
 

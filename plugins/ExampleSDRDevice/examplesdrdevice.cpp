@@ -1,6 +1,6 @@
 #include "examplesdrdevice.h"
 
-ExampleSDRDevice::ExampleSDRDevice()
+ExampleSDRDevice::ExampleSDRDevice():DeviceInterfaceBase()
 {
 
 }
@@ -59,7 +59,7 @@ QVariant ExampleSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 		case DeviceName:
 			return "ExampleDevice";
 		default:
-			return DeviceInterface::Get(_key, _option);
+			return DeviceInterfaceBase::Get(_key, _option);
 	}
 }
 
@@ -69,7 +69,7 @@ bool ExampleSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value,
 
 	switch (_key) {
 		default:
-		return DeviceInterface::Set(_key, _value, _option);
+		return DeviceInterfaceBase::Set(_key, _value, _option);
 	}
 }
 

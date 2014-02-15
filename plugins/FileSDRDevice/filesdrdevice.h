@@ -4,11 +4,11 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include <QObject>
-#include "../pebblelib/device_interfaces.h"
+#include "deviceinterfacebase.h"
 #include "producerconsumer.h"
 #include "wavfile.h"
 
-class FileSDRDevice : public QObject, public DeviceInterface
+class FileSDRDevice : public QObject, public DeviceInterfaceBase
 {
     Q_OBJECT
 
@@ -36,8 +36,6 @@ public:
 
     //Display device option widget in settings dialog
     void SetupOptionUi(QWidget *parent);
-
-    void InitSettings(QString fname);
 
 protected:
     void producerWorker(cbProducerConsumerEvents _event);

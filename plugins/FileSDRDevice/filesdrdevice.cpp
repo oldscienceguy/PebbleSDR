@@ -4,7 +4,7 @@
 #include "QFileDialog"
 
 
-FileSDRDevice::FileSDRDevice()
+FileSDRDevice::FileSDRDevice():DeviceInterfaceBase()
 {
     InitSettings("WavFileSDR");
     copyTest = false; //Write what we read
@@ -198,7 +198,7 @@ QVariant FileSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 			return 0.5;
 		default:
 			//If we don't handle it, let default grab it
-			return DeviceInterface::Get(_key, _option);
+			return DeviceInterfaceBase::Get(_key, _option);
 			break;
 
 	}
@@ -217,7 +217,7 @@ bool FileSDRDevice::Set(STANDARD_KEYS _key, QVariant _value, quint16 _option)
 				return loFreq;
 		}
 		default:
-			return DeviceInterface::Set(_key, _value, _option);
+			return DeviceInterfaceBase::Set(_key, _value, _option);
 
 	}
 }
@@ -273,25 +273,6 @@ void FileSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
         case cbProducerConsumerEvents::Stop:
             break;
     }
-
-}
-
-//These need to be moved to a DeviceInterface implementation class, equivalent to SDR
-//Must be called from derived class constructor to work correctly
-void FileSDRDevice::InitSettings(QString fname)
-{
-    //Use ini files to avoid any registry problems or install/uninstall
-    //Scope::UserScope puts file C:\Users\...\AppData\Roaming\N1DDY
-    //Scope::SystemScope puts file c:\ProgramData\n1ddy
-
-    QString path = QCoreApplication::applicationDirPath();
-#ifdef Q_OS_MAC
-    // RegExp for /Pebble.app/contents/macos
-    int pos = path.lastIndexOf(QRegExp("/.+\\.app/contents/macos$",Qt::CaseInsensitive));
-    if (pos > 0)
-        path.truncate(pos);
-#endif
-    qSettings = new QSettings(path + "/PebbleData/" + fname +".ini",QSettings::IniFormat);
 
 }
 

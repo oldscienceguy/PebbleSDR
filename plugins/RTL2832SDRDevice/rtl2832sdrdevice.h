@@ -29,11 +29,11 @@
 */
 
 #include <QObject>
-#include "../pebblelib/device_interfaces.h"
+#include "deviceinterfacebase.h"
 #include "producerconsumer.h"
 #include "cpx.h"
 
-class RTL2832SDRDevice: public QObject, public DeviceInterface
+class RTL2832SDRDevice: public QObject, public DeviceInterfaceBase
 {
     Q_OBJECT
 
@@ -165,7 +165,6 @@ private:
     rtlsdr_dev_t *dev;
 
     //Needed to determine when it's safe to fetch options for display
-    bool connected; //Set after Connect
     bool running; //Set after Start
 
     double sampleGain; //Factor to normalize output
@@ -211,8 +210,6 @@ private:
     //These are used in the TCP worker thread and created in that thread to prevent QTcpSocket errors
     QTcpSocket *tcpThreadSocket;
     char *producerFreeBufPtr;
-
-    Perform perform;
 };
 
 #endif // RTL2832SDRDEVICE_H
