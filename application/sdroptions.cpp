@@ -25,6 +25,7 @@ void SdrOptions::ShowSdrOptions(DeviceInterface *_di, bool b)
 		return;
 
 	di = _di;
+	di->ReadSettings();
 	if (sdrOptionsDialog != NULL) {
 		//If we're visible, and asking to be shown again, toggle off
 		if (b && sdrOptionsDialog->isVisible())
