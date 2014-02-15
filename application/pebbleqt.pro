@@ -447,7 +447,6 @@ SOURCES += \
 
 FORMS += \
     spectrumwidget.ui \
-    softrockoptions.ui \
     smeterwidget.ui \
     sdriqoptions.ui \
     receiverwidget.ui \
