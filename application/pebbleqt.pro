@@ -370,7 +370,6 @@ HEADERS += \
     demod/rdsdecode.h \
     filters/fractresampler.h \
     devices/sdr_iq.h \
-    devices/softrock.h \
     devices/hpsdr.h \
     devices/funcube.h \
     devices/elektorsdr.h \
@@ -428,7 +427,6 @@ SOURCES += \
     demod/rdsdecode.cpp \
     filters/fractresampler.cpp \
     devices/sdr_iq.cpp \
-    devices/softrock.cpp \
     devices/hpsdr.cpp \
     devices/funcube.cpp \
     devices/elektorsdr.cpp \

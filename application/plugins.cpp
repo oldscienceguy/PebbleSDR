@@ -4,7 +4,6 @@
 #include <QtPlugin>
 #include <QPluginLoader>
 //Temp for internal devices, will be deleted when everything is a plugin
-#include "devices/softrock.h"
 #include "devices/elektorsdr.h"
 #include "devices/sdr_iq.h"
 #include "devices/hpsdr.h"
@@ -49,48 +48,6 @@ QList<PluginInfo> Plugins::GetDevicePluginInfo()
     //Add transition non-plugin devices
     PluginInfo p;
     p.type = PluginInfo::DEVICE_PSEUDO_PLUGIN;
-    p.name = "SR Ensemble";
-    p.fileName = "SR_ENSEMBLE";
-    p.deviceInterface = new SoftRock(receiver, SDR::SR_ENSEMBLE,settings);
-    info.append(p);
-
-    p.name = "SR Ensemble 2M";
-    p.fileName = "SR_ENSEMBLE_2M";
-    p.deviceInterface = new SoftRock(receiver, SDR::SR_ENSEMBLE_2M,settings);
-    info.append(p);
-
-    p.name = "SR Ensemble 4M";
-    p.fileName = "SR_ENSEMBLE_4M";
-    p.deviceInterface = new SoftRock(receiver, SDR::SR_ENSEMBLE_4M,settings);
-    info.append(p);
-
-    p.name = "SR Ensemble 6M";
-    p.fileName = "SR_ENSEMBLE_6M";
-    p.deviceInterface = new SoftRock(receiver, SDR::SR_ENSEMBLE_6M,settings);
-    info.append(p);
-
-    p.name = "SR V9-ABPF";
-    p.fileName = "SR_V9";
-    p.deviceInterface = new SoftRock(receiver, SDR::SR_V9,settings);
-    info.append(p);
-
-    p.name = "SR LITE II";
-    p.fileName = "SR_LITE";
-    p.deviceInterface = new SoftRock(receiver, SDR::SR_LITE,settings);
-    info.append(p);
-
- #if 0
-    p.name = "SR Ensemble LF";
-    p.fileName = "SR_ENSEMBLE_LF";
-    p.deviceInterface = new SoftRock(receiver, SDR::SR_ENSEMBLE_LF,settings);
-    info.append(p);
-#endif
-
-    p.name = "FiFi";
-    p.fileName = "FiFi";
-    p.deviceInterface = new SoftRock(receiver, SDR::FiFi,settings);
-    info.append(p);
-
     p.name = "Elektor SDR";
     p.fileName = "ELEKTOR";
     p.deviceInterface = new ElektorSDR(receiver, SDR::ELEKTOR,settings);
