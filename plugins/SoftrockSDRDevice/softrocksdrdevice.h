@@ -23,7 +23,7 @@ class SoftrockSDRDevice : public QObject, public DeviceInterfaceBase
 
 public:
 	//Devices supported by this plugin
-	enum SDRDEVICE {SR_LITE=1, SR_V9, SR_ENSEMBLE, SR_ENSEMBLE_2M,
+	enum SDRDEVICE {SR_LITE=0, SR_V9, SR_ENSEMBLE, SR_ENSEMBLE_2M,
 		SR_ENSEMBLE_4M, SR_ENSEMBLE_6M, SR_ENSEMBLE_LF, FiFi};
 	//LibUSB id for SR driver
 	const quint16 SR_VID = 0x16c0; //Vendor ID
@@ -100,6 +100,8 @@ private slots:
 		void fifiUseABPFChanged(bool b);
 
 private:
+	void InitSettings(QString fname);
+
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
 	ProducerConsumer producerConsumer;
@@ -114,46 +116,19 @@ private:
 
 	Ui::SoftRockOptions *optionUi;
 	int sdrNumber; //For SoftRocks, selects last digit in serial number
-	SDRDEVICE sdrDevice;
 	USBUtil usbUtil;
 
-	double FiFi_Startup;
-	double FiFi_Low;
-	double FiFi_High;
-	int FiFi_StartupMode;
-	double FiFi_Gain;
-	bool FiFi_UseABPF;
+	bool useABPF;
 
-	double SR_ENSEMBLE_Startup;
-	double SR_ENSEMBLE_Low;
-	double SR_ENSEMBLE_High;
-	int SR_ENSEMBLE_StartupMode;
-	double SR_ENSEMBLE_Gain;
-
-	double SR_ENSEMBLE_2M_Startup;
-	double SR_ENSEMBLE_2M_Low;
-	double SR_ENSEMBLE_2M_High;
-	int SR_ENSEMBLE_2M_StartupMode;
-	double SR_ENSEMBLE_2M_Gain;
-
-	double SR_ENSEMBLE_4M_Startup;
-	double SR_ENSEMBLE_4M_Low;
-	double SR_ENSEMBLE_4M_High;
-	int SR_ENSEMBLE_4M_StartupMode;
-	double SR_ENSEMBLE_4M_Gain;
-
-	double SR_ENSEMBLE_6M_Startup;
-	double SR_ENSEMBLE_6M_Low;
-	double SR_ENSEMBLE_6M_High;
-	int SR_ENSEMBLE_6M_StartupMode;
-	double SR_ENSEMBLE_6M_Gain;
-
-	double SR_ENSEMBLE_LF_Startup;
-	double SR_ENSEMBLE_LF_Low;
-	double SR_ENSEMBLE_LF_High;
-	int SR_ENSEMBLE_LF_StartupMode;
-	double SR_ENSEMBLE_LF_Gain;
-
+	QSettings *srEnsembleSettings;
+	QSettings *srEnsemble2MSettings;
+	QSettings *srEnsemble4MSettings;
+	QSettings *srEnsemble6MSettings;
+	QSettings *srEnsembleLFSettings;
+	QSettings *srLiteSettings;
+	QSettings *srV9Settings;
+	QSettings *srFifiSettings;
 };
+
 
 #endif // SOFTROCKSDRDEVICE_H

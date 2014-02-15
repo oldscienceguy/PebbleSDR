@@ -4,42 +4,7 @@
 SoftrockSDRDevice::SoftrockSDRDevice():DeviceInterfaceBase()
 {
 	hDev = NULL;
-
-	//For testing
-	sdrDevice = FiFi;
-
-	//Set ini file to specific version of SoftRock
-	switch(sdrDevice) {
-		case SR_ENSEMBLE:
-			InitSettings("SoftrockEnsemble");
-			break;
-		case SR_ENSEMBLE_2M:
-			InitSettings("SoftrockEnsemble2m");
-			break;
-		case SR_ENSEMBLE_4M:
-			InitSettings("SoftrockEnsemble4m");
-			break;
-		case SR_ENSEMBLE_6M:
-			InitSettings("SoftrockEnsemble6m");
-			break;
-		case SR_ENSEMBLE_LF:
-			InitSettings("SoftrockEnsembleLF");
-			break;
-		case SR_LITE:
-			InitSettings("SoftrockLite");
-			break;
-		case SR_V9:
-			InitSettings("SoftrockV9");
-			break;
-		case FiFi:
-			InitSettings("FifiPlugin");
-			break;
-		default:
-			InitSettings("Softrock");
-			break;
-	}
-
-	ReadSettings();
+	InitSettings("");
 	optionUi = NULL;
 
 	//Note: This uses libusb 0.1 not 1.0
@@ -86,7 +51,7 @@ bool SoftrockSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPer
 bool SoftrockSDRDevice::Connect()
 {
 	//No USB to connect to for SR Lite
-	if (sdrDevice == SR_LITE || !usbUtil.isLibUsbLoaded) {
+	if (deviceNumber == SR_LITE || !usbUtil.isLibUsbLoaded) {
 		connected = true;
 		return true;
 	}
@@ -126,7 +91,7 @@ bool SoftrockSDRDevice::Connect()
 
 bool SoftrockSDRDevice::Disconnect()
 {
-	if (sdrDevice == SR_LITE || !usbUtil.isLibUsbLoaded) {
+	if (deviceNumber == SR_LITE || !usbUtil.isLibUsbLoaded) {
 		connected = false;
 		return true;
 	}
@@ -150,133 +115,132 @@ void SoftrockSDRDevice::Stop()
 {
 }
 
+void SoftrockSDRDevice::InitSettings(QString fname)
+{
+	Q_UNUSED(fname);
+
+	DeviceInterfaceBase::InitSettings("SREnsemble");
+	srEnsembleSettings = qSettings;
+	DeviceInterfaceBase::InitSettings("SREnsemble2M");
+	srEnsemble2MSettings = qSettings;
+	DeviceInterfaceBase::InitSettings("SREnsemble4M");
+	srEnsemble4MSettings = qSettings;
+	DeviceInterfaceBase::InitSettings("SREnsemble6M");
+	srEnsemble6MSettings = qSettings;
+	DeviceInterfaceBase::InitSettings("SREnsembleLF");
+	srEnsembleLFSettings = qSettings;
+	DeviceInterfaceBase::InitSettings("SRLite");
+	srLiteSettings = qSettings;
+	DeviceInterfaceBase::InitSettings("SRV9");
+	srV9Settings = qSettings;
+	DeviceInterfaceBase::InitSettings("SRFifi");
+	srFifiSettings = qSettings;
+}
+
 void SoftrockSDRDevice::ReadSettings()
 {
-
-	DeviceInterfaceBase::ReadSettings();
+	switch (deviceNumber)
+	{
+		case FiFi: qSettings = srFifiSettings; break;
+		case SR_V9: qSettings = srV9Settings; break;
+		case SR_LITE: qSettings = srLiteSettings; break;
+		case SR_ENSEMBLE: qSettings = srEnsembleSettings; break;
+		case SR_ENSEMBLE_LF: qSettings = srEnsembleLFSettings; break;
+		case SR_ENSEMBLE_2M: qSettings = srEnsemble2MSettings; break;
+		case SR_ENSEMBLE_4M: qSettings = srEnsemble4MSettings; break;
+		case SR_ENSEMBLE_6M: qSettings = srEnsemble6MSettings; break;
+		default:
+			qSettings = NULL; break;
+	}
 
 	//Device Settings
-	//Replace with deviceNumber
-	sdrNumber = qSettings->value("sdrNumber",-1).toInt();
-
 
 	//Keep si570 frequency within 'reasonable' range, not exactly to spec
 	//Standard si570 support 4000000 to 160000000
 	//Limits will be based on divider settings for each radio
 
-	switch(sdrDevice) {
+	//Different defaults for different devices
+	switch(deviceNumber) {
 		case SR_LITE: //Need separate settings
 		case SR_V9: //Same as ensemble
 		case SR_ENSEMBLE:
 			//si570 / 4.0
-			SR_ENSEMBLE_Startup = qSettings->value("SR_ENSEMBLE/Startup",10000000).toDouble();
-			SR_ENSEMBLE_Low = qSettings->value("SR_ENSEMBLE/Low",1000000).toDouble();
-			SR_ENSEMBLE_High = qSettings->value("SR_ENSEMBLE/High",40000000).toDouble();
-			SR_ENSEMBLE_StartupMode = qSettings->value("SR_ENSEMBLE/StartupMode",dmAM).toInt();
-			SR_ENSEMBLE_Gain = qSettings->value("SR_ENSEMBLE/Gain",1.0).toDouble();
+			startupFrequency = 10000000;
+			lowFrequency = 1000000;
+			highFrequency = 40000000;
+			startupDemodMode = dmAM;
+			iqGain = 1.0;
 			break;
 		case SR_ENSEMBLE_2M:
 			//si570 / 0.8 = 5000000 to 200000000
-			SR_ENSEMBLE_2M_Startup = qSettings->value("SR_ENSEMBLE_2M/Startup",146000000).toDouble();
-			SR_ENSEMBLE_2M_Low = qSettings->value("SR_ENSEMBLE_2M/Low",100000000).toDouble();
-			SR_ENSEMBLE_2M_High = qSettings->value("SR_ENSEMBLE_2M/High",175000000).toDouble();
-			SR_ENSEMBLE_2M_StartupMode = qSettings->value("SR_ENSEMBLE_2M/StartupMode",dmFMN).toInt();
-			SR_ENSEMBLE_2M_Gain = qSettings->value("SR_ENSEMBLE_2M/Gain",1.0).toDouble();
+			startupFrequency = 146000000;
+			lowFrequency = 100000000;
+			highFrequency = 175000000;
+			startupDemodMode = dmFMN;
+			iqGain = 1.0;
 			break;
 		case SR_ENSEMBLE_4M:
 			//si570 / 1.33 = 3000000 to 120000000
-			SR_ENSEMBLE_4M_Startup = qSettings->value("SR_ENSEMBLE_4M/Startup",70000000).toDouble();
-			SR_ENSEMBLE_4M_Low = qSettings->value("SR_ENSEMBLE_4M/Low",60000000).toDouble();
-			SR_ENSEMBLE_4M_High = qSettings->value("SR_ENSEMBLE_4M/High",100000000).toDouble();
-				SR_ENSEMBLE_4M_StartupMode = qSettings->value("SR_ENSEMBLE_4M/StartupMode",dmFMN).toInt();
-			SR_ENSEMBLE_4M_Gain = qSettings->value("SR_ENSEMBLE_4M/Gain",1.0).toDouble();
+			startupFrequency = 70000000;
+			lowFrequency = 60000000;
+			highFrequency = 100000000;
+			startupDemodMode = dmFMN;
+			iqGain = 1.0;
 			break;
 		case SR_ENSEMBLE_6M:
 			//si570 / 1.33
-			SR_ENSEMBLE_6M_Startup = qSettings->value("SR_ENSEMBLE_6M/Startup",52000000).toDouble();
-			SR_ENSEMBLE_6M_Low = qSettings->value("SR_ENSEMBLE_6M/Low",40000000).toDouble();
-			SR_ENSEMBLE_6M_High = qSettings->value("SR_ENSEMBLE_6M/High",60000000).toDouble();
-				SR_ENSEMBLE_6M_StartupMode = qSettings->value("SR_ENSEMBLE_6M/StartupMode",dmFMN).toInt();
-			SR_ENSEMBLE_6M_Gain = qSettings->value("SR_ENSEMBLE_6M/Gain",1.0).toDouble();
+			startupFrequency = 52000000;
+			lowFrequency = 40000000;
+			highFrequency = 60000000;
+			startupDemodMode = dmFMN;
+			iqGain = 1.0;
 			break;
 		case SR_ENSEMBLE_LF:
 			//Extra div/4 stage, so 1/4 normal SR
-			SR_ENSEMBLE_LF_Startup = qSettings->value("SR_ENSEMBLE_LF/Startup",1000000).toDouble();
-			SR_ENSEMBLE_LF_Low = qSettings->value("SR_ENSEMBLE_LF/Low",150000).toDouble();
-			SR_ENSEMBLE_LF_High = qSettings->value("SR_ENSEMBLE_LF/High",4000000).toDouble();
-			SR_ENSEMBLE_LF_StartupMode = qSettings->value("SR_ENSEMBLE_LF/StartupMode",dmAM).toInt();
-			SR_ENSEMBLE_LF_Gain = qSettings->value("SR_ENSEMBLE_LF/Gain",1.0).toDouble();
+			startupFrequency = 1000000;
+			lowFrequency = 150000;
+			highFrequency = 4000000;
+			startupDemodMode = dmAM;
+			iqGain = 1.0;
 			break;
 		case FiFi:
 			//si570 / 4.0
-			FiFi_Startup = qSettings->value("FiFi/Startup",10000000).toDouble();
-			FiFi_Low = qSettings->value("FiFi/Low",200000).toDouble();
-			FiFi_High = qSettings->value("FiFi/High",30000000).toDouble();
-			FiFi_StartupMode = qSettings->value("FiFi/StartupMode",dmAM).toInt();
+			startupFrequency = 10000000;
+			lowFrequency = 200000;
+			highFrequency = 30000000;
+			startupDemodMode = dmAM;
 			//FiFi runs hot, even at lowest device setting, reduce gain
-			FiFi_Gain = qSettings->value("FiFi/Gain",0.25).toDouble();
+			iqGain = 0.25;
 			break;
 		default:
 			break;
 	}
+
+	//Set defaults, then read common settings
+	DeviceInterfaceBase::ReadSettings();
+	sdrNumber = qSettings->value("SDRNumber",-1).toInt();
+	//useABPF = qSettings->value("UseABPF",true).toInt();
 
 }
 
 void SoftrockSDRDevice::WriteSettings()
 {
-	DeviceInterfaceBase::WriteSettings();
-
-	qSettings->setValue("sdrNumber",sdrNumber);
-
-
-	switch(sdrDevice) {
-		case SR_LITE:
-		case SR_V9:
-		case SR_ENSEMBLE:
-			qSettings->setValue("SR_ENSEMBLE/Startup",SR_ENSEMBLE_Startup);
-			qSettings->setValue("SR_ENSEMBLE/Low",SR_ENSEMBLE_Low);
-			qSettings->setValue("SR_ENSEMBLE/High",SR_ENSEMBLE_High);
-			qSettings->setValue("SR_ENSEMBLE/StartupMode",SR_ENSEMBLE_StartupMode);
-			qSettings->setValue("SR_ENSEMBLE/Gain",SR_ENSEMBLE_Gain);
-			break;
-		case SR_ENSEMBLE_2M:
-			qSettings->setValue("SR_ENSEMBLE_2M/Startup",SR_ENSEMBLE_2M_Startup);
-			qSettings->setValue("SR_ENSEMBLE_2M/Low",SR_ENSEMBLE_2M_Low);
-			qSettings->setValue("SR_ENSEMBLE_2M/High",SR_ENSEMBLE_2M_High);
-			qSettings->setValue("SR_ENSEMBLE_2M/StartupMode",SR_ENSEMBLE_2M_StartupMode);
-			qSettings->setValue("SR_ENSEMBLE_2M/Gain",SR_ENSEMBLE_2M_Gain);
-			break;
-		case SR_ENSEMBLE_4M:
-			qSettings->setValue("SR_ENSEMBLE_4M/Startup",SR_ENSEMBLE_4M_Startup);
-			qSettings->setValue("SR_ENSEMBLE_4M/Low",SR_ENSEMBLE_4M_Low);
-			qSettings->setValue("SR_ENSEMBLE_4M/High",SR_ENSEMBLE_4M_High);
-			qSettings->setValue("SR_ENSEMBLE_4M/StartupMode",SR_ENSEMBLE_4M_StartupMode);
-			qSettings->setValue("SR_ENSEMBLE_4M/Gain",SR_ENSEMBLE_4M_Gain);
-			break;
-		case SR_ENSEMBLE_6M:
-			qSettings->setValue("SR_ENSEMBLE_6M/Startup",SR_ENSEMBLE_6M_Startup);
-			qSettings->setValue("SR_ENSEMBLE_6M/Low",SR_ENSEMBLE_6M_Low);
-			qSettings->setValue("SR_ENSEMBLE_6M/High",SR_ENSEMBLE_6M_High);
-			qSettings->setValue("SR_ENSEMBLE_6M/StartupMode",SR_ENSEMBLE_6M_StartupMode);
-			qSettings->setValue("SR_ENSEMBLE_6M/Gain",SR_ENSEMBLE_6M_Gain);
-			break;
-		case SR_ENSEMBLE_LF:
-			qSettings->setValue("SR_ENSEMBLE_LF/Startup",SR_ENSEMBLE_LF_Startup);
-			qSettings->setValue("SR_ENSEMBLE_LF/Low",SR_ENSEMBLE_LF_Low);
-			qSettings->setValue("SR_ENSEMBLE_LF/High",SR_ENSEMBLE_LF_High);
-			qSettings->setValue("SR_ENSEMBLE_LF/StartupMode",SR_ENSEMBLE_LF_StartupMode);
-			qSettings->setValue("SR_ENSEMBLE_LF/Gain",SR_ENSEMBLE_LF_Gain);
-			break;
-		case FiFi:
-			qSettings->setValue("FiFi/Startup",FiFi_Startup);
-			qSettings->setValue("FiFi/Low",FiFi_Low);
-			qSettings->setValue("FiFi/High",FiFi_High);
-			qSettings->setValue("FiFi/StartupMode",FiFi_StartupMode);
-			qSettings->setValue("FiFi/Gain",FiFi_Gain);
-			break;
+	switch (deviceNumber)
+	{
+		case FiFi: qSettings = srFifiSettings; break;
+		case SR_V9: qSettings = srV9Settings; break;
+		case SR_LITE: qSettings = srLiteSettings; break;
+		case SR_ENSEMBLE: qSettings = srEnsembleSettings; break;
+		case SR_ENSEMBLE_LF: qSettings = srEnsembleLFSettings; break;
+		case SR_ENSEMBLE_2M: qSettings = srEnsemble2MSettings; break;
+		case SR_ENSEMBLE_4M: qSettings = srEnsemble4MSettings; break;
+		case SR_ENSEMBLE_6M: qSettings = srEnsemble6MSettings; break;
 		default:
-			break;
+			qSettings = NULL; break;
 	}
+
+	DeviceInterfaceBase::WriteSettings();
+	qSettings->setValue("SDRNumber",sdrNumber);
 
 	qSettings->sync();
 
@@ -284,102 +248,41 @@ void SoftrockSDRDevice::WriteSettings()
 
 QVariant SoftrockSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 {
-	Q_UNUSED(_option);
-
 	switch (_key) {
 		case PluginName:
-			return "Softrock family";
+			switch (_option)
+			{
+				case SR_LITE: return "SR Lite - Fixed"; break;
+				case FiFi: return "FiFi"; break;
+				case SR_V9: return "SR V9 - ABPF"; break;
+				case SR_ENSEMBLE: return "SoftRock Ensemble"; break;
+				case SR_ENSEMBLE_2M: return "SR Ensemble 2M"; break;
+				case SR_ENSEMBLE_4M: return "SR Ensemble 4M"; break;
+				case SR_ENSEMBLE_6M: return "SR Ensemble 6M"; break;
+				case SR_ENSEMBLE_LF: return "SR Ensemble LF"; break;
+				default:
+					return "";
+			}
 			break;
 		case PluginDescription:
 			return "Softrock devices";
 			break;
+		case PluginNumDevices:
+			return 8;
 		case DeviceName:
-			switch (sdrDevice)
+			switch (_option)
 			{
-			case SR_LITE: return "SR Lite - Fixed"; break;
-			case FiFi: return "FiFi"; break;
-			case SR_V9: return "SR V9 - ABPF"; break;
-			case SR_ENSEMBLE: return "SoftRock Ensemble"; break;
-			case SR_ENSEMBLE_2M: return "SR Ensemble 2M"; break;
-			case SR_ENSEMBLE_4M: return "SR Ensemble 4M"; break;
-			case SR_ENSEMBLE_6M: return "SR Ensemble 6M"; break;
-			case SR_ENSEMBLE_LF: return "SR Ensemble LF"; break;
-			default:
-				return "";
+				case SR_LITE: return "SR Lite - Fixed"; break;
+				case FiFi: return "FiFi"; break;
+				case SR_V9: return "SR V9 - ABPF"; break;
+				case SR_ENSEMBLE: return "SoftRock Ensemble"; break;
+				case SR_ENSEMBLE_2M: return "SR Ensemble 2M"; break;
+				case SR_ENSEMBLE_4M: return "SR Ensemble 4M"; break;
+				case SR_ENSEMBLE_6M: return "SR Ensemble 6M"; break;
+				case SR_ENSEMBLE_LF: return "SR Ensemble LF"; break;
+				default:
+					return "";
 			}
-
-		case DeviceType:
-			return AUDIO_IQ;
-		case DeviceSampleRates:
-			//We shouldn't know this, depends on audio device connected to receiver
-			return QStringList()<<"48000"<<"96000"<<"192000";
-		case StartupFrequency:
-			switch (sdrDevice)
-			{
-			case FiFi: return FiFi_Startup;
-			case SR_V9: return SR_ENSEMBLE_Startup;
-			case SR_ENSEMBLE: return SR_ENSEMBLE_Startup;
-			case SR_ENSEMBLE_LF: return SR_ENSEMBLE_LF_Startup;
-			case SR_ENSEMBLE_2M: return SR_ENSEMBLE_2M_Startup;
-			case SR_ENSEMBLE_4M: return SR_ENSEMBLE_4M_Startup;
-			case SR_ENSEMBLE_6M: return SR_ENSEMBLE_6M_Startup;
-			default:
-				return 0;
-			}
-		case StartupDemodMode:
-			switch (sdrDevice)
-			{
-			case FiFi: return FiFi_StartupMode;
-			case SR_V9: return SR_ENSEMBLE_StartupMode;
-			case SR_ENSEMBLE: return SR_ENSEMBLE_StartupMode;
-			case SR_ENSEMBLE_LF: return SR_ENSEMBLE_LF_StartupMode;
-			case SR_ENSEMBLE_2M: return SR_ENSEMBLE_2M_StartupMode;
-			case SR_ENSEMBLE_4M: return SR_ENSEMBLE_4M_StartupMode;
-			case SR_ENSEMBLE_6M: return SR_ENSEMBLE_6M_StartupMode;
-			default:
-				return 0;
-			}
-		case HighFrequency:
-			switch (sdrDevice)
-			{
-			case FiFi: return FiFi_High;
-			case SR_V9: return SR_ENSEMBLE_High;
-			case SR_ENSEMBLE: return SR_ENSEMBLE_High;
-			case SR_ENSEMBLE_LF: return SR_ENSEMBLE_LF_High;
-			case SR_ENSEMBLE_2M: return SR_ENSEMBLE_2M_High;
-			case SR_ENSEMBLE_4M: return SR_ENSEMBLE_4M_High;
-			case SR_ENSEMBLE_6M: return SR_ENSEMBLE_6M_High;
-			default:
-				return 0;
-			}
-		case LowFrequency:
-			switch (sdrDevice)
-			{
-			case FiFi: return FiFi_Low;
-			case SR_V9: return SR_ENSEMBLE_Low;
-			case SR_ENSEMBLE: return SR_ENSEMBLE_Low;
-			case SR_ENSEMBLE_LF: return SR_ENSEMBLE_LF_Low;
-			case SR_ENSEMBLE_2M: return SR_ENSEMBLE_2M_Low;
-			case SR_ENSEMBLE_4M: return SR_ENSEMBLE_4M_Low;
-			case SR_ENSEMBLE_6M: return SR_ENSEMBLE_6M_Low;
-			default:
-				return 0;
-			}
-		case IQGain:
-			switch (sdrDevice)
-			{
-			case FiFi: return FiFi_Gain;
-			case SR_V9: return SR_ENSEMBLE_Gain;
-			case SR_ENSEMBLE: return SR_ENSEMBLE_Gain;
-			case SR_ENSEMBLE_LF: return SR_ENSEMBLE_LF_Gain;
-			case SR_ENSEMBLE_2M: return SR_ENSEMBLE_2M_Gain;
-			case SR_ENSEMBLE_4M: return SR_ENSEMBLE_4M_Gain;
-			case SR_ENSEMBLE_6M: return SR_ENSEMBLE_6M_Gain;
-			default:
-				return 1.0;
-			}
-
-
 
 		default:
 			return DeviceInterfaceBase::Get(_key, _option);
@@ -394,7 +297,7 @@ bool SoftrockSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value
 		case DeviceFrequency: {
 			//What type of SoftRock are we using?  Determines how we calc LO
 			double mult = 4;
-			switch (sdrDevice)
+			switch (deviceNumber)
 			{
 				//SR_LITE has no USB control, just return what was requested so app can set fixed freq
 				case SR_LITE:
@@ -784,7 +687,7 @@ qint32 SoftrockSDRDevice::Freq2SRFreq(double iFreq)
 //Utility functions that each SoftRock command used to send/receive data.  See Firmware.txt
 int SoftrockSDRDevice::usbCtrlMsgIn(int request, int value, int index, unsigned char *bytes, int size)
 {
-	if (sdrDevice == SR_LITE || !usbUtil.isLibUsbLoaded)
+	if (deviceNumber == SR_LITE || !usbUtil.isLibUsbLoaded)
 		return size; //No USB, pretend everything is working
 #ifdef LIBUSB_VERSION1
 	int ret = usbUtil.ControlMsg(hDev,LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_IN,
@@ -798,7 +701,7 @@ int SoftrockSDRDevice::usbCtrlMsgIn(int request, int value, int index, unsigned 
 
 int SoftrockSDRDevice::usbCtrlMsgOut(int request, int value, int index, unsigned char *bytes, int size)
 {
-	if (sdrDevice == SR_LITE || !usbUtil.isLibUsbLoaded)
+	if (deviceNumber == SR_LITE || !usbUtil.isLibUsbLoaded)
 		return size; //No USB, pretend everything is working
 #ifdef LIBUSB_VERSION1
 	return usbUtil.ControlMsg(hDev, LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_OUT,
@@ -852,12 +755,13 @@ void SoftrockSDRDevice::serialNumberChanged(int s)
 }
 void SoftrockSDRDevice::fifiUseABPFChanged(bool b)
 {
-	FiFi_UseABPF = b;
+	useABPF = b;
 	if (b)
 		FiFiWritePreselctorMode(0);
 	else
 		FiFiWritePreselctorMode(1);
 }
+
 void SoftrockSDRDevice::SetupOptionUi(QWidget *parent)
 {
 	if (optionUi != NULL)
@@ -905,7 +809,7 @@ void SoftrockSDRDevice::SetupOptionUi(QWidget *parent)
 	connect(optionUi->fifiUseABPF,SIGNAL(toggled(bool)),this,SLOT(fifiUseABPFChanged(bool)));
 
 	//Enable/disable for different softrock-ish devices
-	if (sdrDevice == FiFi) {
+	if (deviceNumber == FiFi) {
 		optionUi->fifiVersionLabel->setVisible(true);
 		optionUi->fifiHelp->setVisible(true);
 		optionUi->fifiUseABPF->setVisible(true);
@@ -930,7 +834,7 @@ void SoftrockSDRDevice::SetupOptionUi(QWidget *parent)
 
 	//This can only be displayed when power is on
 	if (connected) {
-		if (sdrDevice == FiFi) {
+		if (deviceNumber == FiFi) {
 			quint32 fifiVersion;
 			if (FiFiVersion(&fifiVersion) )
 				optionUi->fifiVersionLabel->setText(QString().sprintf("FiFi version: %d",fifiVersion));
