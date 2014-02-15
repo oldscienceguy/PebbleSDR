@@ -291,8 +291,8 @@ void SdrOptions::ResetAllSettings(bool b)
 		settingsDir.setNameFilters({"*.ini"});
 		QStringList iniList = settingsDir.entryList();
 		for (int i=0; i<iniList.count(); i++) {
-			qDebug()<<iniList[i];
-			//QFile::remove(iniList[i]);
+			if (QFile::remove(settingsDir.absoluteFilePath(iniList[i])))
+				qDebug()<<"Deleting "<<iniList[i];
 		}
 	}
 }
