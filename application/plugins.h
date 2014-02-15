@@ -9,8 +9,8 @@
 #include <QDir>
 #include <QList>
 
-#include "../pebblelib/digital_modem_interfaces.h"
-#include "../pebblelib/device_interfaces.h"
+#include "digital_modem_interfaces.h"
+#include "device_interfaces.h"
 
 struct PluginInfo
 {
@@ -21,7 +21,7 @@ struct PluginInfo
     QString fileName;
     quint16 deviceNumber; //Combined with filename to reference multiple devices in one plugin
     DigitalModemInterface *modemInterface;
-    DeviceInterface *deviceInterface;
+	DeviceInterface *deviceInterface;
 };
 //Add to QT metatype so we can use QVariants with this in UI lists
 //QVariant v; v.setValue(p);
@@ -37,7 +37,7 @@ public:
     QList<PluginInfo> GetDevicePluginInfo();
 
     DigitalModemInterface *GetModemInterface(QString name);
-    DeviceInterface *GetDeviceInterface(QString name);
+	DeviceInterface *GetDeviceInterface(QString name);
 
 private:
     void findPlugins();

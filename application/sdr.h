@@ -45,7 +45,7 @@ public:
 	void SetSDRDevice(SDRDEVICE dev) {sdrDevice = dev;}
 
 
-    SDR(DeviceInterface *_plugin, int _devNum = 1);
+	SDR(DeviceInterface *_plugin, int _devNum, Receiver *_receiver, Settings *_settings);
     SDR(Receiver *receiver, SDRDEVICE dev, Settings *_settings);
     virtual ~SDR(void);
 
@@ -80,6 +80,10 @@ public:
 
 	virtual QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
 	virtual bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option=0);
+
+	//Not used in SDR, only plugins
+	virtual QVariant Get(QString _key, quint16 _option = 0) {return QVariant();}
+	virtual bool Set(QString _key, QVariant _value) {return true;}
 
 
 	SDRDEVICE GetDevice();
@@ -141,8 +145,35 @@ protected:
 	SDRProducerThread *producerThread;
 	SDRConsumerThread *consumerThread;
 
+	//These are all defined in DeviceInterfaceBase, here for transition
+	//Todo: Flag which of these is just a convenience for Pebble, vs required for the interface
+	quint16 framesPerBuffer;
+
+	int lastSpectrumMode; //Spectrum, waterfall, etc
+	STARTUP_TYPE startupType;
+	double userFrequency;
+	double deviceFrequency; //Current device frequency
+	QString inputDeviceName;
+	QString outputDeviceName;
+	quint32 sampleRate;
+
+	double iqGain; //Normalize device so incoming IQ levels are consistent
+	IQORDER iqOrder;
+	//Image rejection (iqbalance) factors for this device
+	double iqBalanceGain;
+	double iqBalancePhase;
+	bool iqBalanceEnable;
+
+	double lastFreq;
+	int lastDemodMode;
+
+	//Device needs to manage QSettings since it knows its own settings file name
+	QSettings *qSettings;
+
+	int deviceNumber; //For plugins that support multiple devices
+
 private:
-    DeviceInterface *plugin; //Delegation to plugins
+	DeviceInterface *plugin; //Delegation to plugins
     quint16 pluginDeviceNumber; //Which device in plugin (if > 1) are we delgating to
 };
 

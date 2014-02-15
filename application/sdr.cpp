@@ -17,12 +17,17 @@
 #include "receiver.h"
 #include "QMessageBox"
 
+using namespace std::placeholders;
+
 //Called from plugins.cpp to create an SDR object that delegates to a device plugin
 //Necessary while we are in transition from internal to plugins
-SDR::SDR(DeviceInterface *_plugin, int _devNum)
+SDR::SDR(DeviceInterface *_plugin, int _devNum, Receiver *_receiver, Settings *_settings)
 {
     plugin = _plugin;
     pluginDeviceNumber = _devNum; //Critical - this is used everywhere to disambiguate multi device plugins
+	receiver = _receiver;
+	settings = _settings;
+	audioInput = NULL;
 
     //Note: Plugins with multiple device support will all have the same deviceInterface _plugin
     //So each call to this constructor with the same interface ptr will replace all settings
@@ -52,7 +57,6 @@ SDR::SDR(Receiver *_receiver, SDRDEVICE dev,Settings *_settings)
     connected = false;
 
     //Setup callback for device plugins to use when they have new IQ data
-    using namespace std::placeholders;
     //function template must match exactly the method that is used in bind()
     //std::function<void(CPX *, quint16)> cb = std::bind(&Receiver::ProcessIQData, _receiver, std::placeholders::_1, std::placeholders::_2);
     //bind(Method ptr, object, arg1, ... argn)
@@ -81,8 +85,12 @@ SDR::~SDR(void)
 
 bool SDR::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
 {
-    if (DelegateToPlugin())
-        return plugin->Initialize(_callback, _framesPerBuffer);
+	if (DelegateToPlugin()) {
+		if (plugin->Get(DeviceInterface::DeviceType).toInt() == DeviceInterface::AUDIO_IQ) {
+			audioInput = Audio::Factory(receiver,_framesPerBuffer,settings);
+		}
+		return plugin->Initialize(_callback, _framesPerBuffer);
+	}
     audioInput = Audio::Factory(receiver,settings->framesPerBuffer,settings);
     return true;
 }
@@ -110,14 +118,25 @@ double SDR::SetFrequency(double fRequested, double fCurrent)
 
 void SDR::Start()
 {
-    if (DelegateToPlugin())
-        return plugin->Start();
+	if (DelegateToPlugin()) {
+		if (plugin->Get(DeviceInterface::DeviceType).toInt() == DeviceInterface::AUDIO_IQ) {
+			//We handle audio
+			audioInput->StartInput(plugin->Get(DeviceInterface::InputDeviceName).toString(),
+				plugin->Get(DeviceInterface::DeviceSampleRate).toUInt());
+
+		}
+		return plugin->Start();
+	}
 }
 
 void SDR::Stop()
 {
     if (DelegateToPlugin()) {
-        return plugin->Stop();
+		if (plugin->Get(DeviceInterface::DeviceType).toInt() == DeviceInterface::AUDIO_IQ) {
+			if (audioInput != NULL)
+				audioInput->Stop();
+		}
+		return plugin->Stop();
     }
 }
 
@@ -172,50 +191,44 @@ void SDR::InitSettings(QString fname)
 //Make sure to call SDR::ReadSettings() in any derived class
 void SDR::ReadSettings()
 {
-    DeviceInterface *di = (plugin == NULL) ? this:plugin;
-	qDebug()<<"Reading settings for "<<di->Get(PluginName,pluginDeviceNumber).toString();
-
     if (DelegateToPlugin()) {
         plugin->ReadSettings();
     } else {
-		di->startupType = (STARTUP_TYPE)qSettings->value("StartupType", DEFAULTFREQ).toInt();
-		di->userFrequency = qSettings->value("StartupFreq", 10000000).toDouble();
-		di->inputDeviceName = qSettings->value("InputDeviceName", "").toString();
-		di->outputDeviceName = qSettings->value("OutputDeviceName", "").toString();
-		di->sampleRate = qSettings->value("SampleRate", 48000).toInt();
-		di->iqGain = qSettings->value("IQGain",1).toDouble();
-		di->iqOrder = (IQORDER)qSettings->value("IQOrder", SDR::IQ).toInt();
-		di->iqBalanceGain = qSettings->value("IQBalanceGain",1).toDouble();
-		di->iqBalancePhase = qSettings->value("IQBalancePhase",0).toDouble();
-		di->iqBalanceEnable = qSettings->value("IQBalanceEnable",false).toBool();
-		di->lastFreq = qSettings->value("LastFreq", 10000000).toDouble();
-		di->lastDemodMode = qSettings->value("LastDemodMode",0).toInt();
-		di->lastSpectrumMode = qSettings->value("LastSpectrumMode",0).toInt();
+		startupType = (STARTUP_TYPE)qSettings->value("StartupType", DEFAULTFREQ).toInt();
+		userFrequency = qSettings->value("StartupFreq", 10000000).toDouble();
+		inputDeviceName = qSettings->value("InputDeviceName", "").toString();
+		outputDeviceName = qSettings->value("OutputDeviceName", "").toString();
+		sampleRate = qSettings->value("SampleRate", 48000).toInt();
+		iqGain = qSettings->value("IQGain",1).toDouble();
+		iqOrder = (IQORDER)qSettings->value("IQOrder", SDR::IQ).toInt();
+		iqBalanceGain = qSettings->value("IQBalanceGain",1).toDouble();
+		iqBalancePhase = qSettings->value("IQBalancePhase",0).toDouble();
+		iqBalanceEnable = qSettings->value("IQBalanceEnable",false).toBool();
+		lastFreq = qSettings->value("LastFreq", 10000000).toDouble();
+		lastDemodMode = qSettings->value("LastDemodMode",0).toInt();
+		lastSpectrumMode = qSettings->value("LastSpectrumMode",0).toInt();
     }
 }
 //Make sure to call SDR::WriteSettings() in any derived class
 void SDR::WriteSettings()
 {
-    DeviceInterface *di = (plugin == NULL) ? this:plugin;
-	qDebug()<<"Writing settings for "<<di->Get(PluginName,pluginDeviceNumber).toString();
-
     if (DelegateToPlugin()) {
         plugin->WriteSettings();
     } else {
         //Plugins are responsible for these, but if no plugin, write them here
-		qSettings->setValue("StartupType",di->startupType);
-		qSettings->setValue("StartupFreq",di->userFrequency);
-		qSettings->setValue("InputDeviceName", di->inputDeviceName);
-		qSettings->setValue("OutputDeviceName", di->outputDeviceName);
-		qSettings->setValue("SampleRate",di->sampleRate);
-		qSettings->setValue("IQGain",di->iqGain);
-		qSettings->setValue("IQOrder", di->iqOrder);
-		qSettings->setValue("IQBalanceGain", di->iqBalanceGain);
-		qSettings->setValue("IQBalancePhase", di->iqBalancePhase);
-		qSettings->setValue("IQBalanceEnable", di->iqBalanceEnable);
-		qSettings->setValue("LastFreq",di->lastFreq);
-		qSettings->setValue("LastDemodMode",di->lastDemodMode);
-		qSettings->setValue("LastSpectrumMode",di->lastSpectrumMode);
+		qSettings->setValue("StartupType",startupType);
+		qSettings->setValue("StartupFreq",userFrequency);
+		qSettings->setValue("InputDeviceName", inputDeviceName);
+		qSettings->setValue("OutputDeviceName", outputDeviceName);
+		qSettings->setValue("SampleRate",sampleRate);
+		qSettings->setValue("IQGain",iqGain);
+		qSettings->setValue("IQOrder", iqOrder);
+		qSettings->setValue("IQBalanceGain", iqBalanceGain);
+		qSettings->setValue("IQBalancePhase", iqBalancePhase);
+		qSettings->setValue("IQBalanceEnable", iqBalanceEnable);
+		qSettings->setValue("LastFreq",lastFreq);
+		qSettings->setValue("LastDemodMode",lastDemodMode);
+		qSettings->setValue("LastSpectrumMode",lastSpectrumMode);
 		qSettings->sync();
 	}
 }
@@ -369,8 +382,6 @@ QVariant SDR::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 		case DeviceSampleRates:
 			return GetSampleRates();
 			break;
-		case DeviceFrequency:
-			break;
 		case HighFrequency:
 			return GetHighLimit();
 			break;
@@ -390,9 +401,51 @@ QVariant SDR::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 			else
 				return userFrequency;
 			break;
+		case DeviceSampleRate:
+			return sampleRate;
+			break;
+		case DeviceFrequency:
+			return deviceFrequency;
+			break;
+		case InputDeviceName:
+			return inputDeviceName;
+			break;
+		case OutputDeviceName:
+			return outputDeviceName;
+			break;
+		case IQGain:
+			return iqGain;
+			break;
+		case StartupType:
+			return startupType;
+			break;
+		case LastDemodMode:
+			return lastDemodMode;
+			break;
+		case LastSpectrumMode:
+			return lastSpectrumMode;
+			break;
+		case LastFrequency:
+			//If freq is outside of mode we are in return default
+			if (lastFreq > Get(DeviceInterface::HighFrequency).toDouble() || lastFreq < Get(DeviceInterface::LowFrequency).toDouble())
+				return Get(DeviceInterface::StartupFrequency).toDouble();
+			else
+				return lastFreq;
+			break;
+		case IQBalanceEnabled:
+			return iqBalanceEnable;
+			break;
+		case IQBalanceGain:
+			return iqBalanceGain;
+			break;
+		case IQBalancePhase:
+			return iqBalancePhase;
+			break;
+		case IQOrder:
+			return iqOrder;
+			break;
 		default:
-			//If we don't handle it, let default grab it
-			return DeviceInterface::Get(_key, _option);
+			Q_UNREACHABLE(); //We have to handle it all, no impl in interface
 			break;
 	}
 	return QVariant();
@@ -409,8 +462,47 @@ bool SDR::Set(STANDARD_KEYS _key, QVariant _value, quint16 _option) {
 			lastFreq = deviceFrequency;
 			break;
 		}
+		case DeviceSampleRate:
+			sampleRate = _value.toInt();
+			break;
+		case InputDeviceName:
+			inputDeviceName = _value.toString();
+			break;
+		case OutputDeviceName:
+			outputDeviceName = _value.toString();
+			break;
+		case IQGain:
+			iqGain = _value.toDouble();
+			break;
+		case StartupType:
+			startupType = (STARTUP_TYPE)_value.toInt();
+			break;
+		case LastDemodMode:
+			lastDemodMode = _value.toInt();
+			break;
+		case LastSpectrumMode:
+			lastSpectrumMode = _value.toInt();
+			break;
+		case LastFrequency:
+			lastFreq = _value.toDouble();
+			break;
+		case UserFrequency:
+			userFrequency = _value.toDouble();
+			break;
+		case IQOrder:
+			iqOrder = (IQORDER)_value.toInt();
+			break;
+		case IQBalanceEnabled:
+			iqBalanceEnable = _value.toBool();
+			break;
+		case IQBalanceGain:
+			iqBalanceGain = _value.toDouble();
+			break;
+		case IQBalancePhase:
+			iqBalancePhase = _value.toDouble();
+			break;
 		default:
-			return DeviceInterface::Set(_key, _value, _option);
+			Q_UNREACHABLE(); //We have to handle it all, no impl in interface
 	}
 	return true;
 }

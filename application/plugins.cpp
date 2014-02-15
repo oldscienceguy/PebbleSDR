@@ -193,7 +193,7 @@ void Plugins::findPlugins()
             qDebug()<<loader.errorString();
         } else {
             DigitalModemInterface *iDigitalModem = qobject_cast<DigitalModemInterface *>(plugin);
-            DeviceInterface *iDeviceInterface = qobject_cast<DeviceInterface *>(plugin);
+			DeviceInterface *iDeviceInterface = qobject_cast<DeviceInterface *>(plugin);
             if (iDigitalModem) {
                 //plugin supports interface
                 pluginInfo.type = PluginInfo::MODEM_PLUGIN;
@@ -217,7 +217,7 @@ void Plugins::findPlugins()
 					pluginInfo.description = iDeviceInterface->Get(DeviceInterface::PluginDescription,i).toString();
                     pluginInfo.fileName = fileName;
                     pluginInfo.deviceNumber  = i;
-                    pluginInfo.deviceInterface = new SDR(iDeviceInterface, i);
+					pluginInfo.deviceInterface = new SDR(iDeviceInterface, i, receiver, settings);
                     pluginInfo.modemInterface = NULL;
                     pluginInfoList.append(pluginInfo);
                 }
