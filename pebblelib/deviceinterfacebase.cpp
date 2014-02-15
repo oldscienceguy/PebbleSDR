@@ -3,6 +3,26 @@
 DeviceInterfaceBase::DeviceInterfaceBase()
 {
 	connected = false;
+	//These are common settings for every device, variables are defined in DeviceInterface
+	startupType = DEFAULTFREQ;
+	userFrequency = 10000000;
+	inputDeviceName = "NA";
+	outputDeviceName = "NA";
+	sampleRate = 48000;
+	iqGain = 1.0;
+	iqOrder = IQ;
+	iqBalanceGain = 1.0;
+	iqBalancePhase = 0;
+	iqBalanceEnable = false;
+	lastFreq = 10000000;
+	lastDemodMode = dmAM;
+	lastSpectrumMode = 0;
+	deviceNumber = 0;
+	startupFrequency = 10000000;
+	lowFrequency = 150000;
+	highFrequency = 30000000;
+	startupDemodMode = dmAM;
+
 }
 
 DeviceInterfaceBase::~DeviceInterfaceBase()
@@ -67,7 +87,8 @@ QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, quint16 _option) {
 			return sampleRate;
 			break;
 		case DeviceSampleRates:
-			return QStringList();
+			//We shouldn't know this, depends on audio device connected to receiver
+			return QStringList()<<"48000"<<"96000"<<"192000";
 			break;
 		case DeviceFrequency:
 			return deviceFrequency;
@@ -79,9 +100,9 @@ QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, quint16 _option) {
 			return outputDeviceName;
 			break;
 		case HighFrequency:
-			break;
+			return highFrequency;
 		case LowFrequency:
-			break;
+			return lowFrequency;
 		case FrequencyCorrection:
 			return 0;
 			break;
@@ -92,11 +113,11 @@ QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, quint16 _option) {
 			return startupType;
 			break;
 		case StartupDemodMode:
-			break;
+			return startupDemodMode;
 		case StartupSpectrumMode:
 			break;
 		case StartupFrequency:
-			break;
+			return startupFrequency;
 		case LastDemodMode:
 			return lastDemodMode;
 			break;
@@ -247,23 +268,28 @@ QVariant DeviceInterfaceBase::Get(QString _key, quint16 _option)
 }
 
 //Settings shared by all devices
+//Set defaults first, then call ReadSettings to handle initial ini file creation
 void DeviceInterfaceBase::ReadSettings()
 {
 	//These are common settings for every device, variables are defined in DeviceInterface
-	startupType = (STARTUP_TYPE)qSettings->value("StartupType", DEFAULTFREQ).toInt();
-	userFrequency = qSettings->value("StartupFreq", 10000000).toDouble();
-	inputDeviceName = qSettings->value("InputDeviceName", "").toString();
-	outputDeviceName = qSettings->value("OutputDeviceName", "").toString();
-	sampleRate = qSettings->value("SampleRate", 48000).toInt();
-	iqGain = qSettings->value("IQGain",1).toDouble();
-	iqOrder = (IQORDER)qSettings->value("IQOrder", IQ).toInt();
-	iqBalanceGain = qSettings->value("IQBalanceGain",1).toDouble();
-	iqBalancePhase = qSettings->value("IQBalancePhase",0).toDouble();
-	iqBalanceEnable = qSettings->value("IQBalanceEnable",false).toBool();
-	lastFreq = qSettings->value("LastFreq", 10000000).toDouble();
-	lastDemodMode = qSettings->value("LastDemodMode",0).toInt();
-	lastSpectrumMode = qSettings->value("LastSpectrumMode",0).toInt();
-	deviceNumber = qSettings->value("DeviceNumber",0).toInt();
+	startupType = (STARTUP_TYPE)qSettings->value("StartupType", startupType).toInt();
+	userFrequency = qSettings->value("StartupFreq", userFrequency).toDouble();
+	inputDeviceName = qSettings->value("InputDeviceName", inputDeviceName).toString();
+	outputDeviceName = qSettings->value("OutputDeviceName", outputDeviceName).toString();
+	sampleRate = qSettings->value("SampleRate", sampleRate).toInt();
+	iqGain = qSettings->value("IQGain",iqGain).toDouble();
+	iqOrder = (IQORDER)qSettings->value("IQOrder", iqOrder).toInt();
+	iqBalanceGain = qSettings->value("IQBalanceGain",iqBalanceGain).toDouble();
+	iqBalancePhase = qSettings->value("IQBalancePhase",iqBalancePhase).toDouble();
+	iqBalanceEnable = qSettings->value("IQBalanceEnable",iqBalanceEnable).toBool();
+	lastFreq = qSettings->value("LastFreq", lastFreq).toDouble();
+	lastDemodMode = qSettings->value("LastDemodMode",lastDemodMode).toInt();
+	lastSpectrumMode = qSettings->value("LastSpectrumMode",lastSpectrumMode).toInt();
+	deviceNumber = qSettings->value("DeviceNumber",deviceNumber).toInt();
+	startupFrequency = qSettings->value("StartupFrequency",startupFrequency).toDouble();
+	lowFrequency = qSettings->value("LowFrequency",lowFrequency).toDouble();
+	highFrequency = qSettings->value("HighFrequency",highFrequency).toDouble();
+	startupDemodMode = qSettings->value("StartupDemodMode",startupDemodMode).toInt();
 }
 
 void DeviceInterfaceBase::WriteSettings()
@@ -282,6 +308,10 @@ void DeviceInterfaceBase::WriteSettings()
 	qSettings->setValue("LastDemodMode",lastDemodMode);
 	qSettings->setValue("LastSpectrumMode",lastSpectrumMode);
 	qSettings->setValue("DeviceNumber",deviceNumber);
+	qSettings->setValue("StartupFrequency",startupFrequency);
+	qSettings->setValue("LowFrequency",lowFrequency);
+	qSettings->setValue("HighFrequency",highFrequency);
+	qSettings->setValue("StartupDemodMode",startupDemodMode);
 }
 
 

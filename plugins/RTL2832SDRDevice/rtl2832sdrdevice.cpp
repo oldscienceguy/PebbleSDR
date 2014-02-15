@@ -540,6 +540,9 @@ void RTL2832SDRDevice::ReadSettings()
 	else if (deviceNumber == RTL_TCP)
 		qSettings = tcpSettings;
 
+	//Defaults for initial ini file
+	sampleRate = 2048000;
+	startupDemodMode = dmFMN;
 	DeviceInterfaceBase::ReadSettings();
 
     //Valid gain values (in tenths of a dB) for the E4000 tuner:
@@ -1197,23 +1200,9 @@ void RTL2832SDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 //Must be called from derived class constructor to work correctly
 void RTL2832SDRDevice::InitSettings(QString fname)
 {
-    //Use ini files to avoid any registry problems or install/uninstall
-    //Scope::UserScope puts file C:\Users\...\AppData\Roaming\N1DDY
-    //Scope::SystemScope puts file c:\ProgramData\n1ddy
-
-    //This returns the path to the application directory
-    //If a Mac application, we have to get back to the bundle directory
-    //If a Mac console app, we don't have a bundle and need to stay where we are
-    QString path = QCoreApplication::applicationDirPath();
-#ifdef Q_OS_MAC
-    // RegExp for /Pebble.app/contents/macos
-    int pos = path.lastIndexOf(QRegExp("/.+\\.app/contents/macos$",Qt::CaseInsensitive));
-    if (pos > 0)
-        path.truncate(pos);
-#endif
-    qSettings = NULL; //Not useing, trap access
-    //qSettings = new QSettings(path + "/PebbleData/" + fname +".ini",QSettings::IniFormat);
-    usbSettings = new QSettings(path + "/PebbleData/" + fname +"_usb.ini",QSettings::IniFormat);
-    tcpSettings = new QSettings(path + "/PebbleData/" + fname +"_tcp.ini",QSettings::IniFormat);
+	DeviceInterfaceBase::InitSettings(fname + "_usb");
+	usbSettings = qSettings;
+	DeviceInterfaceBase::InitSettings(fname + "_tcp");
+	tcpSettings = qSettings;
 
 }

@@ -43,6 +43,9 @@ protected:
 	STARTUP_TYPE startupType;
 	double userFrequency;
 	double deviceFrequency; //Current device frequency
+	double startupFrequency;
+	double highFrequency;
+	double lowFrequency;
 	QString inputDeviceName;
 	QString outputDeviceName;
 	quint32 sampleRate;
@@ -55,6 +58,7 @@ protected:
 	bool iqBalanceEnable;
 
 	double lastFreq;
+	int startupDemodMode;
 	int lastDemodMode;
 
 	//Device needs to manage QSettings since it knows its own settings file name
