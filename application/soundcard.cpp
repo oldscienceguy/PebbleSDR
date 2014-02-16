@@ -208,7 +208,6 @@ QStringList SoundCard::DeviceList(bool typeInput)
 {
 	//This static method may get called before constructor
 	//So we have to make sure Pa_Initialize is called, make sure we have matching Pa_Terminate()
-	Pa_Terminate(); //Need to call this first to flush device list, in case it wasn't terminated previously
 	Pa_Initialize();
 	QStringList devList;
 	QString di;
