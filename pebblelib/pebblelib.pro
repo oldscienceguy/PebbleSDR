@@ -19,9 +19,11 @@ macx {
 QMAKE_LFLAGS += -rpath $${DESTDIR}/lib
 
 macx {
-	#LIB_DIR defined in pebbleqt.pri
-	#Override DESTDIR from pebbleqt.pri
-	DESTDIR = $${PWD}/$${LIB_DIR}
+    #LIB_DIR defined in pebbleqt.pri
+    #Override DESTDIR from pebbleqt.pri
+    DESTDIR = $${PWD}/$${LIB_DIR}
+    SOURCES +=  hid-mac.c
+
 }
 
 QT       -= gui
@@ -35,6 +37,8 @@ DEFINES += PEBBLELIB_LIBRARY
 
 LIBS += -L$${PWD}/../fftw-3.3.3/.libs/ -lfftw3
 LIBS += -L$${PWD}/../D2XX/bin/10.5-10.7/ -lftd2xx.1.2.2
+LIBS += -framework IOKit #For HID
+LIBS += -framework CoreServices #For HID
 
 #In 5.2, Qt plugins that reference a different library than application cause errors (Application must be defined before widget)
 #Fix is to make sure all plugins reference libraries in app Frameworks directory
@@ -58,6 +62,10 @@ ftd2xx.commands += install_name_tool -change /usr/local/lib/libftd2xx.1.2.2.dyli
 ftd2xx.path = $${DESTDIR}/lib
 INSTALLS += ftd2xx
 
+win32 {
+    SOURCES += hid-win.c
+
+}
 SOURCES += pebblelib.cpp \
     cpx.cpp \
     fldigifilters.cpp \
@@ -91,5 +99,6 @@ HEADERS += pebblelib.h\
     producerconsumer.h \
     perform.h \
     usbutil.h \
-    deviceinterfacebase.h
+    deviceinterfacebase.h \
+    hidapi.h
 

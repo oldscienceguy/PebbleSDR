@@ -21,6 +21,7 @@ SUBDIRS =   pebblelib \
             plugins/rtl2832sdrdevice \
             plugins/SoftrockSDRDevice \
             plugins/ExampleSDRDevice \
+            plugins/FunCubeSDRDevice \
             SdrGarage
 
 # build must be last:
