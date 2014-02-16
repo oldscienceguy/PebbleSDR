@@ -110,8 +110,7 @@ macx {
 	LIBS += -framework CoreAudio
 	LIBS += -framework AudioToolbox
 	LIBS += -framework AudioUnit
-	LIBS += -framework CoreServices
-	LIBS += -framework IOKit
+        LIBS += -framework CoreServices
 
 	LIBS += -L$${PWD}/../pebblelib/$${LIB_DIR} -lpebblelib.1
 
@@ -124,7 +123,7 @@ macx {
 
 	#Mac only source files
 	#HIDAPI
-	SOURCES += devices/hid-mac.c
+	SOURCES +=
 
 	#INSTALLS is called when we manually make -install or add it to the Qt project build steps
 	pebbleData.files = eibireadme.txt eibi.csv bands.csv memory.csv	gpl.h ../readme.md hpsdr/ozyfw-sdr1k.hex hpsdr/ozy_janus.rbf
@@ -227,7 +226,7 @@ win32 {
 	LIBS += C:/Program Files/Microsoft SDKs/Windows/v6.0A/Lib/setupapi.lib
 
 	#Win only source files
-	SOURCES += devices/hid-win.c
+	SOURCES +=
 
 	CONFIG(release, debug|release) {
 		DESTDIR = ../WinRelease
@@ -371,12 +370,10 @@ HEADERS += \
     filters/fractresampler.h \
     devices/sdr_iq.h \
     devices/hpsdr.h \
-    devices/funcube.h \
     devices/elektorsdr.h \
     devices/usbutil.h \
     devices/usb.h \
     devices/extio.h \
-    devices/hidapi.h \
     devices/sdr_ip.h \
     devices/sdr-ip/dataprocess.h \
     devices/sdr-ip/ad6620.h \
@@ -428,7 +425,6 @@ SOURCES += \
     filters/fractresampler.cpp \
     devices/sdr_iq.cpp \
     devices/hpsdr.cpp \
-    devices/funcube.cpp \
     devices/elektorsdr.cpp \
 	devices/usbutil.cpp \
     devices/sdr_ip.cpp \
@@ -454,7 +450,6 @@ FORMS += \
     elektoroptions.ui \
     hpsdroptions.ui \
     iqbalanceoptions.ui \
-    funcubeoptions.ui \
     sdr-ip.ui \
     sdr.ui \
     directinput.ui \

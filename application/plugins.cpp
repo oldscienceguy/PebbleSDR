@@ -79,16 +79,6 @@ QList<PluginInfo> Plugins::GetDevicePluginInfo()
     //p.fileName = "HPSDR_TCP";
     //info.append(p);
 
-    p.name = "FUNcube Pro";
-    p.fileName = "FUNCUBE";
-    p.deviceInterface = new FunCube(receiver, SDR::FUNCUBE,settings);
-    info.append(p);
-
-    p.name = "FUNcube Pro+";
-    p.fileName = "FUNCUBE_PLUS";
-    p.deviceInterface = new FunCube(receiver, SDR::FUNCUBE_PLUS,settings);
-    info.append(p);
-
     foreach(PluginInfo p, pluginInfoList)
         if (p.type == PluginInfo::DEVICE_PLUGIN) {
             info.append(p);
