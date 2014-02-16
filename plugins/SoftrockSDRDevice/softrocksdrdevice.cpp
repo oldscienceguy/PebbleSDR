@@ -249,6 +249,7 @@ void SoftrockSDRDevice::WriteSettings()
 QVariant SoftrockSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 {
 	switch (_key) {
+		//Used to select device
 		case PluginName:
 			switch (_option)
 			{
@@ -269,8 +270,9 @@ QVariant SoftrockSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _op
 			break;
 		case PluginNumDevices:
 			return 8;
+		//Used in titles
 		case DeviceName:
-			switch (_option)
+			switch (deviceNumber)
 			{
 				case SR_LITE: return "SR Lite - Fixed"; break;
 				case FiFi: return "FiFi"; break;
