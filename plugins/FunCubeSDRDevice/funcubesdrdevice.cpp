@@ -10,8 +10,6 @@ FunCubeSDRDevice::FunCubeSDRDevice():DeviceInterfaceBase()
 
 	optionUi = NULL;
 
-	//Test, This causes FCD to crash in HID on exit
-	fcdSetFreqHz = true; //Seems to be the way new FCD+ code is working
 	hidDev = NULL;
 	hidDevInfo = NULL;
 
@@ -141,7 +139,7 @@ QVariant FunCubeSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 		case PluginNumDevices:
 			return 2;
 		case DeviceName:
-			switch (_option) {
+			switch (deviceNumber) {
 				case 0: return "Funcube Pro";
 				case 1: return "Funcube Pro+";
 				default: return "Unknown";
@@ -1230,7 +1228,7 @@ void FunCubeSDRDevice::ReadSettings()
 	fcdIFGainMode = qSettings->value("IFGainMode",-1).toInt();
 	fcdIFRCFilter = qSettings->value("IFRCFilter",-1).toInt();
 	fcdIFFilter = qSettings->value("IFFilter",-1).toInt();
-	fcdSetFreqHz = qSettings->value("SetFreqHz",false).toBool();
+	fcdSetFreqHz = qSettings->value("SetFreqHz",true).toBool();
 	fcdDCICorrection = qSettings->value("DCICorrection",0).toInt();
 	fcdDCQCorrection = qSettings->value("DCQCorrection",0).toInt();
 	fcdIQPhaseCorrection = qSettings->value("IQPhaseCorrection",0).toInt();
