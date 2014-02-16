@@ -25,26 +25,29 @@ void SdrOptions::ShowSdrOptions(DeviceInterface *_di, bool b)
 		return;
 
 	di = _di;
-	di->ReadSettings();
-	if (sdrOptionsDialog != NULL) {
+	//Simplified logic from earlier checkin
+	//We always delete dialog when closing so input/output devices and settings are always reset
+	if (!b) {
+		//We are closing dialog
+		if (sdrOptionsDialog != NULL) {
+			sdrOptionsDialog->setVisible(b); //hide
+			delete sdrOptionsDialog;
+			sdrOptionsDialog = NULL;
+		}
+		return;
+	} else {
+		//b is true
 		//If we're visible, and asking to be shown again, toggle off
-		if (b && sdrOptionsDialog->isVisible())
-			b = false;
-		//Close and return
-		if (!b) {
+		if (sdrOptionsDialog != NULL && sdrOptionsDialog->isVisible()) {
 			sdrOptionsDialog->setVisible(b); //hide
 			delete sdrOptionsDialog;
 			sdrOptionsDialog = NULL;
 			return;
-		} else {
-			sdrOptionsDialog->show();
 		}
-	} else {
-		if (!b)
-			return; //Nothing to hide
-
+		//Create new dialog and show
 		int cur;
-
+		//Read current settings if we're displaying
+		di->ReadSettings();
 		sdrOptionsDialog = new QDialog();
 		sd = new Ui::SdrOptions();
 		sd->setupUi(sdrOptionsDialog);
