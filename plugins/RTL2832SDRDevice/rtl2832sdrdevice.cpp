@@ -647,25 +647,6 @@ double RTL2832SDRDevice::GetLowLimit()
     }
 }
 
-QVariant RTL2832SDRDevice::Get(QString _key, quint16 _option)
-{
-	Q_UNUSED(_option);
-    if (_key == "KeyDeviceSampleRate")
-        return rtlSampleRate;
-    else if ( _key == "KeyTunerGainMode")
-        return rtlTunerGainMode;
-    else if ( _key == "KeyTunerGain")
-        return rtlTunerGain;
-    else if ( _key == "KeyAgcMode")
-        return rtlAgcMode;
-    else if ( _key == "KeySampleMode")
-        return rtlSampleMode;
-    else if ( _key == "KeyOffsetMode")
-        return rtlOffsetMode;
-    else
-		return 0;
-}
-
 QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 {
 	switch (_key) {
@@ -753,6 +734,19 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 			else
 				return userFrequency;
 			break;
+		//Custom keys
+		case K_RTLSampleRate:
+			return rtlSampleRate;
+		case K_RTLTunerGainMode:
+			return rtlTunerGainMode;
+		case K_RTLTunerGain:
+			return rtlTunerGain;
+		case K_RTLAgcMode:
+			return rtlAgcMode;
+		case K_RTLSampleMode:
+			return rtlSampleMode;
+		case K_RTLOffsetMode:
+			return rtlOffsetMode;
 		default:
 			//If we don't handle it, let default grab it
 			return DeviceInterfaceBase::Get(_key, _option);
@@ -797,28 +791,24 @@ bool RTL2832SDRDevice::Set(STANDARD_KEYS _key, QVariant _value, quint16 _option)
 		case FrequencyCorrection:
 			rtlFreqencyCorrection = _value.toInt();
 			break;
+		//Custom keys
+		case K_RTLSampleRate:
+			return SetRtlSampleRate(_value.toULongLong());
+		case K_RTLTunerGainMode:
+			return SetRtlTunerMode(_value.toInt());
+		case K_RTLTunerGain:
+			return SetRtlTunerGain(_value.toInt());
+		case K_RTLAgcMode:
+			return SetRtlAgcMode(_value.toBool());
+		case K_RTLSampleMode:
+			return SetRtlSampleMode((SAMPLING_MODES)_value.toInt());
+		case K_RTLOffsetMode:
+			return SetRtlOffsetMode(_value.toInt());
+
 		default:
 			return DeviceInterfaceBase::Set(_key, _value, _option);
 	}
 	return true;
-}
-
-bool RTL2832SDRDevice::Set(QString _key, QVariant _value)
-{
-    if (_key == "KeyDeviceSampleRate")
-        return SetRtlSampleRate(_value.toULongLong());
-    else if ( _key == "KeyTunerGainMode")
-        return SetRtlTunerMode(_value.toInt());
-    else if ( _key == "KeyTunerGain")
-        return SetRtlTunerGain(_value.toInt());
-    else if ( _key == "KeyAgcMode")
-        return SetRtlAgcMode(_value.toBool());
-    else if ( _key == "KeySampleMode")
-        return SetRtlSampleMode((SAMPLING_MODES)_value.toInt());
-    else if ( _key == "KeyOffsetMode")
-        return SetRtlOffsetMode(_value.toInt());
-    else
-        return false;
 }
 
 void RTL2832SDRDevice::SetupOptionUi(QWidget *parent)

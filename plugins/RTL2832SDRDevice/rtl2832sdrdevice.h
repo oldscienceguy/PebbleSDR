@@ -44,6 +44,13 @@ class RTL2832SDRDevice: public QObject, public DeviceInterfaceBase
     Q_INTERFACES(DeviceInterface)
 
 public:
+#define K_RTLSampleRate DeviceInterface::CustomKey1
+#define K_RTLTunerGainMode DeviceInterface::CustomKey2
+#define K_RTLTunerGain DeviceInterface::CustomKey3
+#define K_RTLAgcMode DeviceInterface::CustomKey4
+#define K_RTLSampleMode DeviceInterface::CustomKey5
+#define K_RTLOffsetMode DeviceInterface::CustomKey6
+
     RTL2832SDRDevice();
     ~RTL2832SDRDevice();
 
@@ -61,12 +68,8 @@ public:
     double GetHighLimit();
     double GetLowLimit();
 
-	QVariant Get(QString _key, quint16 _option = 0);
-	bool Set(QString _key, QVariant _value);
-
 	QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
 	bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option = 0);
-
 
     //Display device option widget in settings dialog
     void SetupOptionUi(QWidget *parent);

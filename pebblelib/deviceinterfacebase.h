@@ -22,16 +22,9 @@ public:
 
 	cbProcessIQData ProcessIQData;
 
-	//Allows us to get/set any device specific data
-	//Standard keys will be defined, but any key can be passed
-	virtual QVariant Get(QString _key, quint16 _option = 0);
 	//Defaults so devices only have to handle what they need to
 	virtual QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
-
 	virtual bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option = 0);
-
-	virtual bool Set(QString _key, QVariant _value);
-
 
 protected:
 	virtual void InitSettings(QString fname);

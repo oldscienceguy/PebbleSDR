@@ -33,7 +33,7 @@ public:
 	typedef enum DEVICE_TYPE{INTERNAL_IQ, AUDIO_IQ} DEVICE_TYPE;
 	//These enums can only be extended, not changed, once released.  Otherwise will break existing plugins that are not rebuilt
 	enum STANDARD_KEYS {
-		PluginName,				//RO QString Name of plugin device was found in
+		PluginName = 0,				//RO QString Name of plugin device was found in
 		PluginDescription,		//RO QString Description of plugin device was found in
 		PluginNumDevices,		//RO How many unique devices does plugin support, see DeviceNumber for correlation
 		DeviceName,				//RO QString Actual device name, may be more than one device per plugin
@@ -62,7 +62,18 @@ public:
 		IQOrder,				//Enum
 		IQBalanceEnabled,		//bool
 		IQBalanceGain,			//double
-		IQBalancePhase			//double
+		IQBalancePhase,			//double
+		//Expansion room if needed
+		CustomKey1 = 100,		//Devices can implement custom keys, as long as they start with this
+		CustomKey2,
+		CustomKey3,
+		CustomKey4,
+		CustomKey5,
+		CustomKey6,
+		CustomKey7,
+		CustomKey8,
+		CustomKey9,
+		CustomKey10,
 	};
 
     //Interface must be all pure virtual functions
@@ -81,15 +92,8 @@ public:
     cbProcessIQData ProcessIQData;
 
     //Allows us to get/set any device specific data
-    //Standard keys will be defined, but any key can be passed
-	virtual QVariant Get(QString _key, quint16 _option = 0) = 0;
-	//Defaults so devices only have to handle what they need to
 	virtual QVariant Get(STANDARD_KEYS _key, quint16 _option = 0) = 0;
-
 	virtual bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option = 0) = 0;
-
-	virtual bool Set(QString _key, QVariant _value) = 0;
-
 };
 
 //How best to encode version number in interface

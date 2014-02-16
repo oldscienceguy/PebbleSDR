@@ -155,12 +155,6 @@ QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, quint16 _option) {
 	return QVariant();
 }
 
-bool DeviceInterfaceBase::Set(QString _key, QVariant _value) {
-	Q_UNUSED(_key);
-	Q_UNUSED(_value);
-	return false;
-}
-
 bool DeviceInterfaceBase::Set(STANDARD_KEYS _key, QVariant _value, quint16 _option) {
 	Q_UNUSED(_value);
 	Q_UNUSED(_option);
@@ -258,13 +252,6 @@ bool DeviceInterfaceBase::Set(STANDARD_KEYS _key, QVariant _value, quint16 _opti
 			break;
 	}
 	return false;
-}
-
-QVariant DeviceInterfaceBase::Get(QString _key, quint16 _option)
-{
-	Q_UNUSED(_key);
-	Q_UNUSED(_option);
-	return QVariant();
 }
 
 //Settings shared by all devices

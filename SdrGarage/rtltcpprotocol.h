@@ -17,6 +17,13 @@ public:
                 CMD_IF_GAIN=0x06, CMD_TEST_MODE=0x07, CMD_AGC_MODE=0x08, CMD_DIRECT_SAMPLING = 0x09,
                 CMD_OFFSET_TUNING = 0x0a, CMD_XTAL_FREQ=0x0b, CMD_TUNER_XTAL=0x0c, CMD_TUNER_GAIN_BY_INDEX = 0x0d};
 
+#define K_RTLSampleRate DeviceInterface::CustomKey1
+#define K_RTLTunerGainMode DeviceInterface::CustomKey2
+#define K_RTLTunerGain DeviceInterface::CustomKey3
+#define K_RTLAgcMode DeviceInterface::CustomKey4
+#define K_RTLSampleMode DeviceInterface::CustomKey5
+#define K_RTLOffsetMode DeviceInterface::CustomKey6
+
 //This should go in global.h or somewhere we can use everywhere
 #ifdef _WIN32
     //gcc and clang use __attribute, define it for windows as noop
