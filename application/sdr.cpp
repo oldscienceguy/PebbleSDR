@@ -263,7 +263,9 @@ bool SDR::DelegateToPlugin()
 {
     if (plugin == NULL)
         return false;
-
+	//Plugins with multiple device support are still only 1 object
+	//So we have to set device number every time we use it
+	//Should be better place to do it, but this is defensive
 	plugin->Set(DeviceInterface::DeviceNumber,pluginDeviceNumber);
     return true;
 }
