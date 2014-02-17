@@ -5,36 +5,10 @@ SoftrockSDRDevice::SoftrockSDRDevice():DeviceInterfaceBase()
 {
 	InitSettings("");
 	optionUi = NULL;
-
-	//Note: This uses libusb 0.1 not 1.0
-	// See http://www.libusb.org/ and http://libusb.sourceforge.net/doc/ for details of API
-	// Look for libusb0.dll, libusb0.sys, lib0_x86.dll, libusb0_x64.dll, libusb0_x64.sys if you have problems
-	//Todo: Is there a crash bug if no libusb drivers are found on system?  Lib should handle and return error code
-
-	//Set up libusb
-	if (!usbUtil.IsUSBLoaded()) {
-		//Explicit load.  DLL may not exist on users system, in which case we can only suppoprt non-USB devices like SoftRock Lite
-		if (!usbUtil.LoadLibUsb()) {
-			QMessageBox::information(NULL,"Pebble","libusb0 could not be loaded.  SoftRock communication is disabled.");
-		}
-
-	}
-
-	usbUtil.InitUSB();
 }
 
 SoftrockSDRDevice::~SoftrockSDRDevice()
 {
-	WriteSettings();
-	if (usbUtil.IsUSBLoaded()) {
-#ifdef LIBUSB_VERSION1
-		usbUtil.ReleaseInterface(0);
-		usbUtil.CloseDevice();
-		usbUtil.Exit();
-#else
-#endif
-	}
-
 }
 
 bool SoftrockSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
@@ -46,6 +20,25 @@ bool SoftrockSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPer
 
 bool SoftrockSDRDevice::Connect()
 {
+	//Was in constructor for internal implemenation, but should be in Initialize or connect
+	//Note: This uses libusb 0.1 not 1.0
+	// See http://www.libusb.org/ and http://libusb.sourceforge.net/doc/ for details of API
+	// Look for libusb0.dll, libusb0.sys, lib0_x86.dll, libusb0_x64.dll, libusb0_x64.sys if you have problems
+	//Todo: Is there a crash bug if no libusb drivers are found on system?  Lib should handle and return error code
+
+	//Set up libusb
+	if (!usbUtil.IsUSBLoaded()) {
+		//Explicit load.  DLL may not exist on users system, in which case we can only suppoprt non-USB devices like SoftRock Lite
+		if (!usbUtil.LoadLibUsb()) {
+			QMessageBox::information(NULL,"Pebble","libusb0 could not be loaded.");
+			return false;
+		} else {
+			usbUtil.InitUSB();
+		}
+
+	}
+
+
 	//No USB to connect to for SR Lite
 	if (deviceNumber == SR_LITE || !usbUtil.IsUSBLoaded()) {
 		connected = true;
@@ -86,6 +79,7 @@ bool SoftrockSDRDevice::Connect()
 
 bool SoftrockSDRDevice::Disconnect()
 {
+	WriteSettings();
 	if (deviceNumber == SR_LITE || !usbUtil.IsUSBLoaded()) {
 		connected = false;
 		return true;
@@ -94,6 +88,7 @@ bool SoftrockSDRDevice::Disconnect()
 	//usb_reset(hDev); //Same as unplugging and plugging back in
 	usbUtil.ReleaseInterface(0);
 	usbUtil.CloseDevice();
+	//usbUtil.Exit();
 	connected = false;
 	return true;
 }
