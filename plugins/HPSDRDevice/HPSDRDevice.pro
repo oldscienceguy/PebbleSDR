@@ -39,6 +39,11 @@ ftd2xx.commands += install_name_tool -change /usr/local/lib/libftd2xx.1.2.2.dyli
 ftd2xx.path = $${DESTDIR}
 INSTALLS += ftd2xx
 
+#To update firmware files, copy them to generic (no version numbers) names below
+firmware.files = Firmware/ozyfw-sdr1k.hex Firmware/ozy_janus.rbf
+firmware.path = $${DESTDIR}/../PebbleData
+INSTALLS += firmware
+
 OTHER_FILES += \
         fix_plugin_libraries.pri
 
