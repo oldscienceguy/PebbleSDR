@@ -6,7 +6,6 @@
 //Temp for internal devices, will be deleted when everything is a plugin
 #include "devices/elektorsdr.h"
 #include "devices/sdr_iq.h"
-#include "devices/hpsdr.h"
 #include "devices/funcube.h"
 #include "devices/sdr_ip.h"
 
@@ -69,15 +68,6 @@ QList<PluginInfo> Plugins::GetDevicePluginInfo()
     p.fileName = "SDR_IP_TCP";
     p.deviceInterface = new SDR_IP(receiver, SDR::SDR_IP_TCP,settings);
     info.append(p);
-
-    p.name = "HPSDR USB";
-    p.fileName = "HPSDR_USB";
-    p.deviceInterface = new HPSDR(receiver, SDR::HPSDR_USB,settings);
-    info.append(p);
-
-    //p.name = "HPSDR TCP";
-    //p.fileName = "HPSDR_TCP";
-    //info.append(p);
 
     foreach(PluginInfo p, pluginInfoList)
         if (p.type == PluginInfo::DEVICE_PLUGIN) {

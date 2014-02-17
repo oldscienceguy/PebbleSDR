@@ -9,7 +9,6 @@
 #include "settings.h"
 #include "devices/elektorsdr.h"
 #include "devices/sdr_iq.h"
-#include "devices/hpsdr.h"
 #include "devices/funcube.h"
 #include "devices/sdr_ip.h"
 #include "soundcard.h"

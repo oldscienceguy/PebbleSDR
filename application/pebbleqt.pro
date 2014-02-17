@@ -126,7 +126,7 @@ macx {
 	SOURCES +=
 
 	#INSTALLS is called when we manually make -install or add it to the Qt project build steps
-	pebbleData.files = eibireadme.txt eibi.csv bands.csv memory.csv	gpl.h ../readme.md hpsdr/ozyfw-sdr1k.hex hpsdr/ozy_janus.rbf
+        pebbleData.files = eibireadme.txt eibi.csv bands.csv memory.csv	gpl.h ../readme.md
 
 	#We want this to be whatever the release or debug directory is or added to bundle
 	#This will copy the files into the app bundle, same place ini files go
@@ -329,8 +329,6 @@ OTHER_FILES += \
     memory.csv \
 	frequencylist-santacruz.csv \
     pebble.qss \
-    hpsdr/ozyfw-sdr1k.hex \
-    hpsdr/ozy_janus.rbf \
     codingstyle.txt \
     pebbleqt.pri
 
@@ -369,7 +367,6 @@ HEADERS += \
     demod/rdsdecode.h \
     filters/fractresampler.h \
     devices/sdr_iq.h \
-    devices/hpsdr.h \
     devices/elektorsdr.h \
     devices/usbutil.h \
     devices/usb.h \
@@ -424,7 +421,6 @@ SOURCES += \
     demod/rdsdecode.cpp \
     filters/fractresampler.cpp \
     devices/sdr_iq.cpp \
-    devices/hpsdr.cpp \
     devices/elektorsdr.cpp \
 	devices/usbutil.cpp \
     devices/sdr_ip.cpp \
@@ -448,7 +444,6 @@ FORMS += \
     receiverwidget.ui \
     pebbleii.ui \
     elektoroptions.ui \
-    hpsdroptions.ui \
     iqbalanceoptions.ui \
     sdr-ip.ui \
     sdr.ui \

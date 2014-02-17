@@ -5,7 +5,6 @@
 #include "qmessagebox.h"
 #include "devices/elektorsdr.h"
 #include "devices/sdr_iq.h"
-#include "devices/hpsdr.h"
 #include "signalprocessing.h"
 #include "audioqt.h"
 #include "testbench.h"
