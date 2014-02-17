@@ -166,26 +166,12 @@ private:
 
 	QString GetFirmwareInfo();
 
-	bool SetSpeed(int speed);
-
 	bool WriteOutputBuffer(char * commandBuf);
 	bool ProcessInputFrame(unsigned char *buf, int len);
 
 	int sampleCount;
 	CPX cpxBuffer[2048];
 
-#ifdef LIBUSB_VERSION1
-	//SDR-Widget testing
-	libusb_device_handle* swhDev; //DG8SAQ protocol
-	//libusb_device *swdev;
-
-#else
-	struct usb_device *dev;
-	usb_dev_handle* hDev;
-	//SDR-Widget testing
-	usb_dev_handle* swhDev; //DG8SAQ protocol
-	struct usb_device *swdev;
-#endif
 	//Buffer for outbound Ozy  traffic
 	unsigned char outputBuffer[BUFSIZE]; //
 	unsigned char inputBuffer[BUFSIZE * NUMFRAMES]; //2048 samples
@@ -200,7 +186,6 @@ private:
 	QString sFpga; //Ozy FPGA .rbf file
 	QString sFW; //Ozy Firmware .hex file
 	bool sNoInit;
-	bool sSDRW_DG8SAQ_SetFreq;
 
 	//Hardware config settings
 	int sPTT;

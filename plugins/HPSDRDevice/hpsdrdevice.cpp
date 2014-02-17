@@ -4,7 +4,6 @@
 HPSDRDevice::HPSDRDevice():DeviceInterfaceBase()
 {
 	InitSettings("HPSDR-USB");
-	swhDev = NULL;
 
 	ozyFX2FW.clear();
 	ozyFW=0;
@@ -27,21 +26,10 @@ HPSDRDevice::~HPSDRDevice()
 		usbUtil.CloseDevice();
 	}
 
-#if 0
-	if (swhDev && usbUtil.IsUSBLoaded()) {
-		libusb_release_interface(swhDev,0);
-		usbUtil.CloseDevice(swhDev);
-	}
-#endif
-
 #else
 	if (hDev && isLibUsbLoaded) {
 		usb_release_interface(hDev,0);
 		usbUtil.CloseDevice(hDev);
-	}
-	if (swhDev && isLibUsbLoaded) {
-		usb_release_interface(swhDev,0);
-		usbUtil.CloseDevice(swhDev);
 	}
 #endif
 
@@ -59,24 +47,29 @@ bool HPSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer
 	//Must be called after Initialize
 	producerConsumer.SetPollingInterval(sampleRate,readBufferSize);
 
-	//Set up libusb
-	if (!usbUtil.IsUSBLoaded()) {
-		//Explicit load.  DLL may not exist on users system, in which case we can only suppoprt non-USB devices like SoftRock Lite
-		if (!usbUtil.LoadLibUsb()) {
-			QMessageBox::information(NULL,"Pebble","libusb0 could not be loaded.  SoftRock communication is disabled.");
-		}
-
-	}
-	if (usbUtil.IsUSBLoaded()) {
-		usbUtil.InitUSB();
-	}
-
-
 	return true;
 }
 
 bool HPSDRDevice::Connect()
 {
+	//Was in constructor for internal implemenation, but should be in Initialize or connect
+	//Note: This uses libusb 0.1 not 1.0
+	// See http://www.libusb.org/ and http://libusb.sourceforge.net/doc/ for details of API
+	// Look for libusb0.dll, libusb0.sys, lib0_x86.dll, libusb0_x64.dll, libusb0_x64.sys if you have problems
+	//Todo: Is there a crash bug if no libusb drivers are found on system?  Lib should handle and return error code
+
+	//Set up libusb
+	if (!usbUtil.IsUSBLoaded()) {
+		//Explicit load.  DLL may not exist on users system, in which case we can only suppoprt non-USB devices like SoftRock Lite
+		if (!usbUtil.LoadLibUsb()) {
+			QMessageBox::information(NULL,"Pebble","libusb0 could not be loaded.");
+			return false;
+		} else {
+			usbUtil.InitUSB();
+		}
+
+	}
+
 	if (!Open())
 		return false;
 	connected = true;
@@ -239,8 +232,6 @@ void HPSDRDevice::ReadSettings()
 	//SDR-WIDGET
 	//Skips firmware check and upload
 	sNoInit = qSettings->value("NoInit",false).toBool();
-	//Sets options for SDR-Widget testing
-	sSDRW_DG8SAQ_SetFreq = qSettings->value("SDRW_DG8SAQ_SetFreq",true).toBool();
 
 	//Harware options
 	//sSpeed = qSettings->value("Speed",C1_SPEED_48KHZ).toInt();
@@ -250,7 +241,7 @@ void HPSDRDevice::ReadSettings()
 	sConfig = qSettings->value("AtlasConfig",C1_CONFIG_MERCURY).toInt();
 	sMic = qSettings->value("MicSource",C1_MIC_PENELOPE).toInt();
 	sMode = qSettings->value("Mode",C2_MODE_OTHERS).toInt();
-	sPreamp = qSettings->value("LT2208Preamp",C3_LT2208_PREAMP_OFF).toInt();
+	sPreamp = qSettings->value("LT2208Preamp",C3_LT2208_PREAMP_ON).toInt();
 	sDither = qSettings->value("LT2208Dither",C3_LT2208_DITHER_OFF).toInt();
 	sRandom = qSettings->value("LT2208Random",C3_LT2208_RANDOM_OFF).toInt();
 }
@@ -265,9 +256,7 @@ void HPSDRDevice::WriteSettings()
 	qSettings->setValue("VID",sVID);
 	qSettings->setValue("FPGA",sFpga);
 	qSettings->setValue("FW",sFW);
-	//qSettings->setValue("Speed",sSpeed);
 	qSettings->setValue("NoInit",sNoInit);
-	qSettings->setValue("SDRW_DG8SAQ_SetFreq",sSDRW_DG8SAQ_SetFreq);
 	qSettings->setValue("PTT",sPTT);
 	qSettings->setValue("10Mhz",s10Mhz);
 	qSettings->setValue("122Mhz",s122Mhz);
@@ -287,32 +276,19 @@ QVariant HPSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 
 	switch (_key) {
 		case PluginName:
-			return "HPSDR Device";
+			return "HPSDR-USB";
 			break;
 		case PluginDescription:
 			return "HPSDR Devices";
 			break;
 		case DeviceName:
-			return "HPSDRDevice";
+			return "HPSDR-USB";
+		case DeviceType:
+			return INTERNAL_IQ;
 		case HighFrequency:
 			return 33000000;
 		case LowFrequency:
 			return 150000;
-		case DeviceSampleRate:
-			return sampleRate;
-		#if 0
-			switch (sSpeed) {
-			case C1_SPEED_48KHZ:
-				return 48000;
-			case C1_SPEED_96KHZ:
-				return 96000;
-			case C1_SPEED_192KHZ:
-				return 192000;
-			default:
-				return 48000;
-			}
-		#endif
-			break;
 		case DeviceSampleRates:
 			return QStringList()<<"48000"<<"96000"<<"192000"; //384000 when we support Hermes
 		case CustomKey1:
@@ -498,12 +474,6 @@ bool HPSDRDevice::Close()
 	//Attempting to release interface caused error next time we open().  Why?
 	//result = usb_release_interface(hDev,0);
 	result = usbUtil.CloseDevice();
-#if(0)
-	if (swhDev) {
-		usbUtil.CloseDevice(swhDev);
-		swhDev = NULL;
-	}
-#endif
 	return true;
 }
 
@@ -522,12 +492,6 @@ bool HPSDRDevice::SendConfig()
 
 	memset(outputBuffer,0x00,BUFSIZE);
 	return WriteOutputBuffer(cmd);
-}
-
-//Set sample rate to 48k, 96k or 192k
-bool HPSDRDevice::SetSpeed(int speed)
-{
-	return false;
 }
 
 void HPSDRDevice::preampChanged(bool b)
