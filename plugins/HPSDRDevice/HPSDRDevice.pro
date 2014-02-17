@@ -34,6 +34,7 @@ SOURCES += hpsdrdevice.cpp
 HEADERS += hpsdrdevice.h
 
 LIBS += -L$${PWD}/../../pebblelib/$${LIB_DIR} -lpebblelib
+LIBS += -L$${PWD}/../../D2XX/bin/10.5-10.7/ -lftd2xx.1.2.2
 
 OTHER_FILES += \
         fix_plugin_libraries.pri
