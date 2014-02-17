@@ -3,7 +3,6 @@
 
 SoftrockSDRDevice::SoftrockSDRDevice():DeviceInterfaceBase()
 {
-	hDev = NULL;
 	InitSettings("");
 	optionUi = NULL;
 
@@ -13,28 +12,25 @@ SoftrockSDRDevice::SoftrockSDRDevice():DeviceInterfaceBase()
 	//Todo: Is there a crash bug if no libusb drivers are found on system?  Lib should handle and return error code
 
 	//Set up libusb
-	if (!usbUtil.isLibUsbLoaded) {
+	if (!usbUtil.IsUSBLoaded()) {
 		//Explicit load.  DLL may not exist on users system, in which case we can only suppoprt non-USB devices like SoftRock Lite
 		if (!usbUtil.LoadLibUsb()) {
 			QMessageBox::information(NULL,"Pebble","libusb0 could not be loaded.  SoftRock communication is disabled.");
 		}
 
 	}
-	if (!usbUtil.isLibUsbLoaded) {
-		usbUtil.isLibUsbLoaded = usbUtil.InitLibUsb();
-	}
 
-
+	usbUtil.InitUSB();
 }
 
 SoftrockSDRDevice::~SoftrockSDRDevice()
 {
 	WriteSettings();
-	if (hDev && usbUtil.isLibUsbLoaded) {
+	if (usbUtil.IsUSBLoaded()) {
 #ifdef LIBUSB_VERSION1
-		libusb_release_interface(hDev,0);
-		usbUtil.CloseDevice(hDev);
-		libusb_exit(NULL);
+		usbUtil.ReleaseInterface(0);
+		usbUtil.CloseDevice();
+		usbUtil.Exit();
 #else
 #endif
 	}
@@ -51,15 +47,14 @@ bool SoftrockSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPer
 bool SoftrockSDRDevice::Connect()
 {
 	//No USB to connect to for SR Lite
-	if (deviceNumber == SR_LITE || !usbUtil.isLibUsbLoaded) {
+	if (deviceNumber == SR_LITE || !usbUtil.IsUSBLoaded()) {
 		connected = true;
 		return true;
 	}
 	int numFound = 0;
 	int ret;
 	while(true){
-		hDev = usbUtil.LibUSB_FindAndOpenDevice(SR_PID,SR_VID,numFound);
-		if (hDev == NULL)
+		if (!usbUtil.LibUSB_FindAndOpenDevice(SR_PID,SR_VID,numFound))
 			return false; //No devices match and/or serial number not found
 
 		// Default is config #0, Select config #1 for SoftRock, -1 is flag to reset
@@ -68,7 +63,7 @@ bool SoftrockSDRDevice::Connect()
 		//ret = libusb_set_configuration(hDev,1);//Not sure what config 1 is yet
 
 		// Claim interface #0.
-		ret = libusb_claim_interface(hDev,0);
+		ret = usbUtil.Claim_interface(0);
 
 		//Is it the right serial number?
 		//unsigned serial = dev->descriptor.iSerialNumber; //This is NOT the SoftRock serial number suffix
@@ -80,8 +75,8 @@ bool SoftrockSDRDevice::Connect()
 			return true; //We've got it
 		}
 		//Not ours, close and keep looking
-		ret = libusb_release_interface(hDev,0);
-		usbUtil.CloseDevice(hDev);
+		ret = usbUtil.ReleaseInterface(0);
+		usbUtil.CloseDevice();
 		numFound++;
 	}
 
@@ -91,17 +86,14 @@ bool SoftrockSDRDevice::Connect()
 
 bool SoftrockSDRDevice::Disconnect()
 {
-	if (deviceNumber == SR_LITE || !usbUtil.isLibUsbLoaded) {
+	if (deviceNumber == SR_LITE || !usbUtil.IsUSBLoaded()) {
 		connected = false;
 		return true;
 	}
 
 	//usb_reset(hDev); //Same as unplugging and plugging back in
-	if (hDev) {
-		libusb_release_interface(hDev,0);
-		usbUtil.CloseDevice(hDev);
-		hDev = NULL;
-	}
+	usbUtil.ReleaseInterface(0);
+	usbUtil.CloseDevice();
 	connected = false;
 	return true;
 }
@@ -689,10 +681,10 @@ qint32 SoftrockSDRDevice::Freq2SRFreq(double iFreq)
 //Utility functions that each SoftRock command used to send/receive data.  See Firmware.txt
 int SoftrockSDRDevice::usbCtrlMsgIn(int request, int value, int index, unsigned char *bytes, int size)
 {
-	if (deviceNumber == SR_LITE || !usbUtil.isLibUsbLoaded)
+	if (deviceNumber == SR_LITE || !usbUtil.IsUSBLoaded())
 		return size; //No USB, pretend everything is working
 #ifdef LIBUSB_VERSION1
-	int ret = usbUtil.ControlMsg(hDev,LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_IN,
+	int ret = usbUtil.ControlMsg(LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_IN,
 						request,value,index,bytes,size,500);
 	return ret;
 #else
@@ -703,10 +695,10 @@ int SoftrockSDRDevice::usbCtrlMsgIn(int request, int value, int index, unsigned 
 
 int SoftrockSDRDevice::usbCtrlMsgOut(int request, int value, int index, unsigned char *bytes, int size)
 {
-	if (deviceNumber == SR_LITE || !usbUtil.isLibUsbLoaded)
+	if (deviceNumber == SR_LITE || !usbUtil.IsUSBLoaded())
 		return size; //No USB, pretend everything is working
 #ifdef LIBUSB_VERSION1
-	return usbUtil.ControlMsg(hDev, LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_OUT,
+	return usbUtil.ControlMsg(LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_OUT,
 						 request, value, index, bytes, size, 500);
 #else
 	return usbUtil.ControlMsg(hDev, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,

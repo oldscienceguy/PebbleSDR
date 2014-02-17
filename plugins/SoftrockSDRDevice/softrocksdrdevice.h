@@ -107,8 +107,6 @@ private:
 	ProducerConsumer producerConsumer;
 
 	//Device
-	libusb_device *dev;
-	libusb_device_handle* hDev;
 	int usbCtrlMsgIn(int request, int value, int index, unsigned char *bytes, int size);
 	int usbCtrlMsgOut(int request, int value, int index, unsigned char *bytes, int size);
 	double SRFreq2Freq(qint32 iFreq);

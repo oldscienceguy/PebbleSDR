@@ -41,28 +41,27 @@ class USBUtil
 public:
     USBUtil();
     //Placeholders to make sure we have libraries available
-	bool LoadLibUsb() {return true;}
-	bool LoadFtdi() {return true;}
+	bool LoadLibUsb();
+	bool LoadFtdi();
 
 	int FTDI_FindDeviceByName(QString deviceName);
 	int FTDI_FindDeviceBySerialNumber(QString serialNumber);
     //LibUSB
-	bool InitLibUsb();
-    bool LibUSBInit();
+	bool InitUSB();
 #ifdef LIBUSB_VERSION1
-	bool OpenDevice(libusb_device *dev,libusb_device_handle **hDev);
-	bool CloseDevice(libusb_device_handle *hDev);
-	bool SetConfiguration(libusb_device_handle *hDev,int config);
-	bool Claim_interface(libusb_device_handle *hDev, int iface);
-	int ControlMsg(libusb_device_handle *hDev, uint8_t reqType, uint8_t req, uint16_t value, uint16_t index,
+	bool OpenDevice();
+	bool CloseDevice();
+	bool SetConfiguration(int config);
+	bool Claim_interface(int iface);
+	bool ReleaseInterface(int iface);
+	int ControlMsg(uint8_t reqType, uint8_t req, uint16_t value, uint16_t index,
             unsigned char *data, uint16_t length, unsigned int timeout);
     int LibUSBControlMsg(uint8_t reqType, uint8_t req, uint16_t value, uint16_t index,
             unsigned char *data, uint16_t length, unsigned int timeout);
 	libusb_device *FindDevice(int PID, int VID, int multiple);
 
 #endif
-	libusb_device_handle * LibUSB_FindAndOpenDevice(int PID, int VID, int multiple);
-    void LibUSBFindAndOpenDevice(int PID, int VID, int multiple);
+	bool LibUSB_FindAndOpenDevice(int PID, int VID, int multiple);
 
 	void ListDevices();
 
@@ -71,7 +70,14 @@ public:
     bool LibUSBWriteReg(quint16 index, quint16 address, quint16 value, quint16 length);
     //LibUSBReadReg();
 
-    //libusb_device *dev;
+	bool LibUSBBulkTransfer(unsigned char endpoint, unsigned char *data, int length,
+							int *actual_length, unsigned int timeout);
+
+	bool IsUSBLoaded();
+	bool Exit();
+
+private:
+	libusb_device *dev;
     libusb_device_handle* hDev;
     quint16 timeout;
 
