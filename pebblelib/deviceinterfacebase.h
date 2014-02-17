@@ -62,6 +62,11 @@ protected:
 
 	Perform perform;
 
+	//Not used if we're not using ProducerConsumer
+	quint16 numProducerBuffers; //For faster sample rates, may need more producer buffers to handle
+	int readBufferSize; //Producer buffer size in bytes (not CPX)
+
+
 };
 
 #endif // DEVICEINTERFACEBASE_H

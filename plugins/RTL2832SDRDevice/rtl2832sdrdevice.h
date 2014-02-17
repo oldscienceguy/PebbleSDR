@@ -204,8 +204,6 @@ private:
     DongleInfo tcpDongleInfo;
 
 
-    int readBufferSize;
-    quint16 numProducerBuffers; //For faster sample rates, may need more producer buffers to handle
     quint16 readBufferIndex; //Used to track whether we have full buffer or not, 0 to readBufferSize-1
 
     //These are used in the TCP worker thread and created in that thread to prevent QTcpSocket errors

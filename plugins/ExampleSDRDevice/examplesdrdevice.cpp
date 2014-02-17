@@ -13,8 +13,10 @@ ExampleSDRDevice::~ExampleSDRDevice()
 
 bool ExampleSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
 {
-	Q_UNUSED(_callback);
-	Q_UNUSED(_framesPerBuffer);
+	ProcessIQData = _callback;
+	framesPerBuffer = _framesPerBuffer;
+	connected = false;
+	numProducerBuffers = 50;
 	return true;
 }
 
