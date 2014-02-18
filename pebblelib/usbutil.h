@@ -41,15 +41,9 @@ public:
 	enum USB_LIB_TYPE {LIB_USB, FTDI_D2XX, USB_H};
 
 	USBUtil(USB_LIB_TYPE _libType = LIB_USB);
-    //Placeholders to make sure we have libraries available
-	bool LoadLibUsb();
-	bool LoadFtdi();
 
-	int FTDI_FindDeviceByName(QString deviceName);
-	int FTDI_FindDeviceBySerialNumber(QString serialNumber);
-    //LibUSB
+	bool LoadUsb();
 	bool InitUSB();
-
 	bool OpenDevice();
 	bool CloseDevice();
 	bool SetConfiguration(int config);
@@ -57,21 +51,20 @@ public:
 	bool ReleaseInterface(int iface);
 	int ControlMsg(uint8_t reqType, uint8_t req, uint16_t value, uint16_t index,
             unsigned char *data, uint16_t length, unsigned int timeout);
-    int LibUSBControlMsg(uint8_t reqType, uint8_t req, uint16_t value, uint16_t index,
-            unsigned char *data, uint16_t length, unsigned int timeout);
-	libusb_device *FindDevice(int PID, int VID, int multiple);
 
+	bool FindDevice(int PID, int VID, int multiple); //LibUSB search terms
+	bool FindAndOpenDevice(int PID, int VID, int multiple); //LibUSB search terms
 
-	bool LibUSB_FindAndOpenDevice(int PID, int VID, int multiple);
+	bool FindDevice(QString query, bool matchSerialNumber); //FTDI
 
 	void ListDevices();
 
-    bool LibUSBReadArray(quint16 index, quint16 address, unsigned char *data, quint16 length);
-    bool LibUSBWriteArray(quint16 index, quint16 address, unsigned char*data, quint16 length);
-    bool LibUSBWriteReg(quint16 index, quint16 address, quint16 value, quint16 length);
+	bool ReadArray(quint16 index, quint16 address, unsigned char *data, quint16 length);
+	bool WriteArray(quint16 index, quint16 address, unsigned char*data, quint16 length);
+	bool WriteReg(quint16 index, quint16 address, quint16 value, quint16 length);
     //LibUSBReadReg();
 
-	bool LibUSBBulkTransfer(unsigned char endpoint, unsigned char *data, int length,
+	bool BulkTransfer(unsigned char endpoint, unsigned char *data, int length,
 							int *actual_length, unsigned int timeout);
 
 	bool IsUSBLoaded();
@@ -79,13 +72,15 @@ public:
 
 private:
 	USB_LIB_TYPE libType;
-
-	libusb_device *dev;
-    libusb_device_handle* hDev;
-    quint16 timeout;
+	quint16 timeout;
 
 	bool isLibUsbLoaded;
+	libusb_device *libusbDev;
+	libusb_device_handle* libusbDevHandle;
+
 	bool isFtdiLoaded;
+	int ftdiDevice;
+
 
 };
 
