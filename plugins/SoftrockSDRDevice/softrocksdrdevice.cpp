@@ -678,11 +678,11 @@ int SoftrockSDRDevice::usbCtrlMsgIn(int request, int value, int index, unsigned 
 {
 	if (deviceNumber == SR_LITE || !usbUtil.IsUSBLoaded())
 		return size; //No USB, pretend everything is working
-#ifdef LIBUSB_VERSION1
+
 	int ret = usbUtil.ControlMsg(LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_IN,
 						request,value,index,bytes,size,500);
 	return ret;
-#else
+#if 0
 	return usbUtil.ControlMsg(hDev, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_IN,
 						 request, value, index, bytes, size, 500);
 #endif
@@ -692,10 +692,10 @@ int SoftrockSDRDevice::usbCtrlMsgOut(int request, int value, int index, unsigned
 {
 	if (deviceNumber == SR_LITE || !usbUtil.IsUSBLoaded())
 		return size; //No USB, pretend everything is working
-#ifdef LIBUSB_VERSION1
+
 	return usbUtil.ControlMsg(LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_OUT,
 						 request, value, index, bytes, size, 500);
-#else
+#if 0
 	return usbUtil.ControlMsg(hDev, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
 						 request, value, index, bytes, size, 500);
 #endif

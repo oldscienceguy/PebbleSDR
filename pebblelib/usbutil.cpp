@@ -2,8 +2,9 @@
 #include "gpl.h"
 #include "usbutil.h"
 
-USBUtil::USBUtil()
+USBUtil::USBUtil(USB_LIB_TYPE _libType)
 {
+	libType = _libType;
     timeout = 1000; //default timeout in ms
 	dev = NULL;
 	hDev = NULL;
@@ -80,26 +81,29 @@ int USBUtil::FTDI_FindDeviceByName(QString deviceName)
 
 bool USBUtil::InitUSB()
 {
-#ifdef LIBUSB_VERSION1
-    int ret = libusb_init(NULL);
-    return ret == 0 ? true: false;
-#else
+	if (libType == LIB_USB) {
+		int ret = libusb_init(NULL);
+		return ret == 0 ? true: false;
+	}
+#if 0
     usb_init(NULL);
     usb_find_busses();
     usb_find_devices();
     return true;
 #endif
+	return false;
 }
 bool USBUtil::OpenDevice()
 {
-#ifdef LIBUSB_VERSION1
-	int ret = libusb_open(dev,&hDev);
-    if (ret < 0 ) {
-		hDev = NULL;
-        return false;
-    }
-    return true;
-#else
+	if (libType == LIB_USB) {
+		int ret = libusb_open(dev,&hDev);
+		if (ret < 0 ) {
+			hDev = NULL;
+			return false;
+		}
+		return true;
+	}
+#if 0
     hDev = usb_open(dev);
 
 #endif
@@ -107,9 +111,10 @@ bool USBUtil::OpenDevice()
 }
 bool USBUtil::CloseDevice()
 {
-#ifdef LIBUSB_VERSION1
-    libusb_close(hDev);
-#else
+	if (libType == LIB_USB) {
+		libusb_close(hDev);
+	}
+#if 0
     usb_close(hDev);
 #endif
 	hDev = NULL;
@@ -117,23 +122,25 @@ bool USBUtil::CloseDevice()
 }
 bool USBUtil::SetConfiguration(int config)
 {
-#ifdef LIBUSB_VERSION1
-    int ret = libusb_set_configuration(hDev,config);
-#else
+	if (libType == LIB_USB) {
+		int ret = libusb_set_configuration(hDev,config);
+		return ret == 0 ? true: false;
+	}
+#if 0
     usb_set_configuration(hDev,config);
 #endif
-    return ret == 0 ? true: false;
+	return false;
 }
 bool USBUtil::Claim_interface(int iface)
 {
 	if (hDev==NULL)
 		return false;
 
-#ifdef LIBUSB_VERSION1
-    int ret = libusb_claim_interface(hDev,iface);
-#else
-#endif
-    return ret == 0 ? true: false;
+	if (libType == LIB_USB) {
+		int ret = libusb_claim_interface(hDev,iface);
+		return ret == 0 ? true: false;
+	}
+	return false;
 }
 
 bool USBUtil::ReleaseInterface(int iface)
@@ -141,11 +148,11 @@ bool USBUtil::ReleaseInterface(int iface)
 	if (hDev==NULL)
 		return false;
 
-#ifdef LIBUSB_VERSION1
-	int ret = libusb_release_interface(hDev,iface);
-#else
-#endif
-	return ret == 0 ? true: false;
+	if (libType == LIB_USB) {
+		int ret = libusb_release_interface(hDev,iface);
+		return ret == 0 ? true: false;
+	}
+	return false;
 }
 
 /*
@@ -159,12 +166,14 @@ libusb_error {
 int USBUtil::ControlMsg(uint8_t reqType, uint8_t req, uint16_t value, uint16_t index,
 						 unsigned char *data, uint16_t length, unsigned int timeout)
 {
-#ifdef LIBUSB_VERSION1
-    return libusb_control_transfer(hDev,reqType,req,value,index,data,length,timeout);
-#else
+	if (libType == LIB_USB) {
+		return libusb_control_transfer(hDev,reqType,req,value,index,data,length,timeout);
+	}
+#if 0
     return = usb_control_msg(hDev,reqType, req, value, data, index, length, timeout);
 
 #endif
+	return 0;
 }
 
 int USBUtil::LibUSBControlMsg(uint8_t reqType, uint8_t req, uint16_t value, uint16_t index, unsigned char *data, uint16_t length, unsigned int timeout)
@@ -194,12 +203,13 @@ bool USBUtil::LibUSB_FindAndOpenDevice(int PID, int VID, int multiple)
 {
 	Q_UNUSED(multiple);
 
-#ifdef LIBUSB_VERSION1
-#if 1
+
+	if (libType == LIB_USB) {
         //Can't use this because we support multiple PIDs and may want nth one, but it works
         hDev = libusb_open_device_with_vid_pid(NULL,VID,PID);
 		return hDev != NULL;
-#else
+	}
+#if 0
     //This crashes with memAccess, use above for now
 	int numFound = 0;
 	libusb_device *dev; //Our device (hopefully)
@@ -236,7 +246,7 @@ bool USBUtil::LibUSB_FindAndOpenDevice(int PID, int VID, int multiple)
     libusb_free_device_list(devs,1);
     return NULL;
 #endif
-#else
+#if 0
     struct usb_device *dev;
     struct usb_bus *busses;
     busses = usb_get_busses();
@@ -263,6 +273,7 @@ bool USBUtil::LibUSB_FindAndOpenDevice(int PID, int VID, int multiple)
 
     return NULL; //Nothing found
 #endif
+	return 0;
 }
 
 libusb_device * USBUtil::FindDevice(int PID, int VID, int multiple)
