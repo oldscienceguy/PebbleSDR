@@ -1,6 +1,12 @@
 #include "hpsdrdevice.h"
 #include <QMessageBox>
 
+#if 0
+References
+Metis: http://www.w7ay.net/site/Software/Metis%20Framework/index.html
+
+#endif
+
 HPSDRDevice::HPSDRDevice():DeviceInterfaceBase()
 {
 	InitSettings("HPSDR-USB");
@@ -20,13 +26,12 @@ HPSDRDevice::~HPSDRDevice()
 {
 	WriteSettings();
 
-#ifdef LIBUSB_VERSION1
 	if (usbUtil.IsUSBLoaded()) {
 		usbUtil.ReleaseInterface(0);
 		usbUtil.CloseDevice();
 	}
 
-#else
+#if 0
 	if (hDev && isLibUsbLoaded) {
 		usb_release_interface(hDev,0);
 		usbUtil.CloseDevice(hDev);
@@ -61,7 +66,7 @@ bool HPSDRDevice::Connect()
 	//Set up libusb
 	if (!usbUtil.IsUSBLoaded()) {
 		//Explicit load.  DLL may not exist on users system, in which case we can only suppoprt non-USB devices like SoftRock Lite
-		if (!usbUtil.LoadLibUsb()) {
+		if (!usbUtil.LoadUsb()) {
 			QMessageBox::information(NULL,"Pebble","libusb0 could not be loaded.");
 			return false;
 		} else {
@@ -201,6 +206,13 @@ void HPSDRDevice::Stop()
 //Review and rename common in device base
 void HPSDRDevice::ReadSettings()
 {
+	//Set defaults before we call base ReadSettings
+	startupFrequency = 10000000;
+	lowFrequency = 150000;
+	highFrequency = 33000000;
+	startupDemodMode = dmAM;
+	iqGain = 1.0;
+
 	DeviceInterfaceBase::ReadSettings();
 	//Determine sSpeed from sampleRate
 	switch (sampleRate) {
@@ -285,12 +297,8 @@ QVariant HPSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 			return "HPSDR-USB";
 		case DeviceType:
 			return INTERNAL_IQ;
-		case HighFrequency:
-			return 33000000;
-		case LowFrequency:
-			return 150000;
 		case DeviceSampleRates:
-			return QStringList()<<"48000"<<"96000"<<"192000"; //384000 when we support Hermes
+			return QStringList()<<"48000"<<"96000"<<"192000"<<"384000";
 		case CustomKey1:
 			if (sPreamp == C3_LT2208_PREAMP_ON)
 				return sGainPreampOn;
@@ -316,9 +324,12 @@ bool HPSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, quin
 			cmd[3] = freq >> 8;
 			cmd[4] = freq;
 
-			if (!WriteOutputBuffer(cmd))
+			if (!WriteOutputBuffer(cmd)) {
+				qDebug()<<"HPSDR failed to update frequency";
 				return deviceFrequency;
+			}
 			deviceFrequency = freq;
+			lastFreq = freq;
 			return freq;
 		}
 		default:
@@ -334,12 +345,12 @@ void HPSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 	//Each sample is 3 bytes(24 bits) x 2 for I and Q plus 2 bytes for Mic-Line
 	//So we get 63 I/Q samples per frame and need 24 frames for 2048 samples
 	int result;
-#ifdef LIBUSB_VERSION1
 	int actual;
-	result = usbUtil.LibUSBBulkTransfer(IN_ENDPOINT6,inputBuffer,sizeof(inputBuffer),&actual,OZY_TIMEOUT);
+	result = usbUtil.BulkTransfer(IN_ENDPOINT6,inputBuffer,sizeof(inputBuffer),&actual,OZY_TIMEOUT);
 	if (result == 0) {
 		int remainingBytes = actual;
-#else
+
+#if 0
 	result = usb_bulk_read(hDev, IN_ENDPOINT6, inputBuffer, sizeof(inputBuffer), OZY_TIMEOUT);
 	if (result > 0) {
 		int remainingBytes = result;
@@ -450,7 +461,7 @@ bool HPSDRDevice::Open()
 {
 	//usbUtil.ListDevices();
 	//Keep dev for later use, it has all the descriptor information
-	if (!usbUtil.LibUSB_FindAndOpenDevice(sPID,sVID,0))
+	if (!usbUtil.FindAndOpenDevice(sPID,sVID,0))
 		return false;
 	// Default is config #0, Select config #1 for SoftRock
 	// Can't claim interface if config != 1
@@ -633,14 +644,13 @@ bool HPSDRDevice::WriteOutputBuffer(char * commandBuf)
 	outputBuffer[7] = commandBuf[4];
 
 	int result;
-#ifdef LIBUSB_VERSION1
 	int actual;
-	result = usbUtil.LibUSBBulkTransfer(OUT_ENDPOINT2,outputBuffer,BUFSIZE,&actual,OZY_TIMEOUT);
+	result = usbUtil.BulkTransfer(OUT_ENDPOINT2,outputBuffer,BUFSIZE,&actual,OZY_TIMEOUT);
 	if (result < 0 || actual != BUFSIZE) {
 		qDebug()<<"Error writing output buffer";
 		return false;
 	}
-#else
+#if 0
 	result = usb_bulk_write(hDev, OUT_ENDPOINT2, outputBuffer, BUFSIZE, OZY_TIMEOUT);
 	if (result != BUFSIZE) {
 		qDebug()<<"Error writing output buffer";

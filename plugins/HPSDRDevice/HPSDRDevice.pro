@@ -40,6 +40,7 @@ ftd2xx.path = $${DESTDIR}
 INSTALLS += ftd2xx
 
 #To update firmware files, copy them to generic (no version numbers) names below
+#Current firmware as of 2/17/14: ozy_janus_v2.5.rbf
 firmware.files = Firmware/ozyfw-sdr1k.hex Firmware/ozy_janus.rbf
 firmware.path = $${DESTDIR}/../PebbleData
 INSTALLS += firmware
