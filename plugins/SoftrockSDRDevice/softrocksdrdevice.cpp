@@ -29,7 +29,7 @@ bool SoftrockSDRDevice::Connect()
 	//Set up libusb
 	if (!usbUtil.IsUSBLoaded()) {
 		//Explicit load.  DLL may not exist on users system, in which case we can only suppoprt non-USB devices like SoftRock Lite
-		if (!usbUtil.LoadLibUsb()) {
+		if (!usbUtil.LoadUsb()) {
 			QMessageBox::information(NULL,"Pebble","libusb0 could not be loaded.");
 			return false;
 		} else {
@@ -47,7 +47,7 @@ bool SoftrockSDRDevice::Connect()
 	int numFound = 0;
 	int ret;
 	while(true){
-		if (!usbUtil.LibUSB_FindAndOpenDevice(SR_PID,SR_VID,numFound))
+		if (!usbUtil.FindAndOpenDevice(SR_PID,SR_VID,numFound))
 			return false; //No devices match and/or serial number not found
 
 		// Default is config #0, Select config #1 for SoftRock, -1 is flag to reset
