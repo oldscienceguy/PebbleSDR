@@ -59,7 +59,7 @@ void CFft::FreeMemory()
 ///////////////////////////////////////////////////////////////////
 //FFT initialization and parameter setup function
 ///////////////////////////////////////////////////////////////////
-void CFft::FFTParams( qint32 _size, bool _invert, double _dBCompensation, double _sampleRate)
+void CFft::FFTParams(quint32 _size, bool _invert, double _dBCompensation, double _sampleRate)
 {
     //Must call FFT base to properly init
     FFT::FFTParams(_size, _invert, _dBCompensation, _sampleRate);
@@ -231,6 +231,11 @@ void CFft::FFTForward(CPX * in, CPX * out, int size)
 
 void CFft::FFTMagnForward(CPX *in, int size, double baseline, double correction, double *fbr)
 {
+	Q_UNUSED(in);
+	Q_UNUSED(size);
+	Q_UNUSED(baseline);
+	Q_UNUSED(correction);
+	Q_UNUSED(fbr);
     // Not used, will be replaced by spectrum
 }
 

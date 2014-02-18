@@ -78,7 +78,7 @@ FFT::~FFT()
 //   so final constant K_B = -8.663833
 ///////////////////////////////////////////////////////////////////////
 
-void FFT::FFTParams(qint32 _size, bool _invert, double _dBCompensation, double _sampleRate)
+void FFT::FFTParams(quint32 _size, bool _invert, double _dBCompensation, double _sampleRate)
 {
     if (_size == 0)
         return; //Error
@@ -137,7 +137,7 @@ void FFT::FFTParams(qint32 _size, bool _invert, double _dBCompensation, double _
 ///////////////////////////////////////////////////////////////////
 //FFT initialization and parameter setup function
 ///////////////////////////////////////////////////////////////////
-void FFT::SetMovingAvgLimit( qint32 ave)
+void FFT::SetMovingAvgLimit( quint32 ave)
 {
     if(movingAvgLimit != ave)
     {

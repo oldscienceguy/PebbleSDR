@@ -14,7 +14,7 @@ FFTfftw::~FFTfftw()
     if (buf) CPXBuf::free(buf);
 }
 
-void FFTfftw::FFTParams(qint32 _size, bool _invert, double _dBCompensation, double _sampleRate)
+void FFTfftw::FFTParams(quint32 _size, bool _invert, double _dBCompensation, double _sampleRate)
 {
     //Must call FFT base to properly init
     FFT::FFTParams(_size, _invert, _dBCompensation, _sampleRate);

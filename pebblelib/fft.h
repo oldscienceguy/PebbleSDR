@@ -28,7 +28,7 @@ public:
 
     //Keep separate from constructor so we can change on the fly eventually
     //cutesdr usage
-    virtual void FFTParams(qint32 _size, bool _invert, double _dBCompensation, double _sampleRate);
+	virtual void FFTParams(quint32 _size, bool _invert, double _dBCompensation, double _sampleRate);
     //Reset to init state, same parameters
     virtual void ResetFFT();
 
@@ -50,7 +50,7 @@ public:
     //WIP Calculate m_pFFTPwrAveBuf for any FFT.  Heavily embedded in cuteSDR
     //Compare with cuteSDR to see if we got it right
     void CalcPowerAverages(CPX* in, double *out, int size);
-    void SetMovingAvgLimit( qint32 ave);
+	void SetMovingAvgLimit(quint32 ave);
 
     bool MapFFTToScreen(qint32 maxHeight, qint32 maxWidth,
                                     double maxdB, double mindB,
@@ -84,7 +84,7 @@ protected:
     qint32 lastPlotWidth;
 
     //For calculating power averages
-    qint32 movingAvgLimit; //How many time to do moving avg before exponential avg
+	quint32 movingAvgLimit; //How many time to do moving avg before exponential avg
     quint32 bufferCnt; //# buffers we've processed
     quint16 averageCnt;
     double* FFTPwrAvgBuf;

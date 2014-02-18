@@ -25,7 +25,7 @@ class PEBBLELIBSHARED_EXPORT CFft : public FFT
 public:
 	CFft();
 	virtual ~CFft();
-    void FFTParams(qint32 _size, bool _invert, double _dBCompensation, double _SampleFreq);
+	void FFTParams(quint32 _size, bool _invert, double _dBCompensation, double _SampleFreq);
     void FFTForward(CPX * in, CPX * out, int size);
     void FFTMagnForward(CPX *in, int size, double baseline, double correction, double *fbr);
     void FFTInverse(CPX * in, CPX * out, int size);
