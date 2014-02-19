@@ -30,7 +30,7 @@ public:
 	static const int IN_ENDPOINT6 = 0x86; //Received IQ data
 	static const int OUT_ENDPOINT6 = 0x06; //Received bandscope data
 
-	static const int BUFSIZE = 512; //Size of an Ozy frame
+	static const int OZY_FRAME_SIZE = 512; //Size of an Ozy frame
 	static const int NUMFRAMES = 24; //Number of frames to fetch at once to get 2048 samples
 
 	//USB_TYPE_VENDOR | USB_ENDPOINT_IN | USB_RECIP_DEVICE
@@ -170,11 +170,12 @@ private:
 	bool ProcessInputFrame(unsigned char *buf, int len);
 
 	int sampleCount;
-	CPX cpxBuffer[2048];
 
 	//Buffer for outbound Ozy  traffic
-	unsigned char outputBuffer[BUFSIZE]; //
-	unsigned char inputBuffer[BUFSIZE * NUMFRAMES]; //2048 samples
+	unsigned char *outputBuffer;
+	quint16 inputBufferSize;
+	unsigned char *inputBuffer;
+	CPX *producerFreeBufPtr;
 
 	//Settings
 	//GetGain() options used by processBlock

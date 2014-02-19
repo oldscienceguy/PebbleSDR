@@ -19,6 +19,9 @@ HPSDRDevice::HPSDRDevice():DeviceInterfaceBase()
 	ReadSettings();
 
 	optionUi = NULL;
+	inputBuffer = NULL;
+	outputBuffer = NULL;
+	producerFreeBufPtr = NULL;
 
 }
 
@@ -30,27 +33,36 @@ HPSDRDevice::~HPSDRDevice()
 		usbUtil.ReleaseInterface(0);
 		usbUtil.CloseDevice();
 	}
-
-#if 0
-	if (hDev && isLibUsbLoaded) {
-		usb_release_interface(hDev,0);
-		usbUtil.CloseDevice(hDev);
-	}
-#endif
-
 }
 
 bool HPSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
 {
 	ProcessIQData = _callback;
 	framesPerBuffer = _framesPerBuffer;
+
+	//Frames are 512 bytes, defined by HPSDR protocol
+	//Each frame has 3 sync and 5 Command and control bytes, leaving 504 for data
+	//Each sample is 3 bytes(24 bits) x 2 for I and Q plus 2 bytes for Mic-Line
+	//Experiment with different values here
+	//Lets start with makeing sure every fetch gets at least 2048 samples
+	inputBufferSize = OZY_FRAME_SIZE * qRound(framesPerBuffer / 63.0 * 0.5);
+
+	if (outputBuffer != NULL)
+		delete[] outputBuffer;
+	outputBuffer = new unsigned char[OZY_FRAME_SIZE]; //Max #bytes we can send to Ozy
+
+	if (inputBuffer != NULL)
+		delete[] inputBuffer;
+	inputBuffer = new unsigned char[inputBufferSize];
+
 	connected = false;
 	numProducerBuffers = 50;
 	readBufferSize = framesPerBuffer * sizeof(CPX);
 	producerConsumer.Initialize(std::bind(&HPSDRDevice::producerWorker, this, std::placeholders::_1),
 		std::bind(&HPSDRDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, readBufferSize);
 	//Must be called after Initialize
-	producerConsumer.SetPollingInterval(sampleRate,readBufferSize);
+	//Sample rate and size must be in consistent units - bytes
+	producerConsumer.SetPollingInterval(sampleRate*sizeof(CPX),inputBufferSize);
 
 	return true;
 }
@@ -340,13 +352,11 @@ bool HPSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, quin
 void HPSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 {
 	Q_UNUSED(_event);
-	//Should we read 512 bytes each time? or enough for 'framesPerBuffer', 2048?
-	//Each frame as 3 sync and 5 C&C bytes, leaving 504 for data
-	//Each sample is 3 bytes(24 bits) x 2 for I and Q plus 2 bytes for Mic-Line
-	//So we get 63 I/Q samples per frame and need 24 frames for 2048 samples
+	//We're using blocking I/O, so BulkTransfer will wait until we get size
+	//So fetch 1 frame at a time
 	int result;
 	int actual;
-	result = usbUtil.BulkTransfer(IN_ENDPOINT6,inputBuffer,sizeof(inputBuffer),&actual,OZY_TIMEOUT);
+	result = usbUtil.BulkTransfer(IN_ENDPOINT6,inputBuffer,inputBufferSize,&actual,OZY_TIMEOUT);
 	if (result == 0) {
 		int remainingBytes = actual;
 
@@ -358,7 +368,7 @@ void HPSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 		int len;
 		int bufPtr = 0;
 		while (remainingBytes > 0){
-			len = (remainingBytes < BUFSIZE) ? remainingBytes : BUFSIZE;
+			len = (remainingBytes < OZY_FRAME_SIZE) ? remainingBytes : OZY_FRAME_SIZE;
 			ProcessInputFrame(&inputBuffer[bufPtr],len);
 			bufPtr += len;
 			remainingBytes -= len;
@@ -373,7 +383,7 @@ void HPSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 //len is usually BUFSIZE
 bool HPSDRDevice::ProcessInputFrame(unsigned char *buf, int len)
 {
-	if(len < BUFSIZE)
+	if(len < OZY_FRAME_SIZE)
 		qDebug()<<"Partial frame received";
 
 	int b=0; //Buffer index
@@ -411,6 +421,13 @@ bool HPSDRDevice::ProcessInputFrame(unsigned char *buf, int len)
 		CPX cpx;
 		double mic;
 		while (b < len) {
+			if (sampleCount == 0) {
+				//Get a new buffer
+				producerFreeBufPtr = (CPX*)producerConsumer.AcquireFreeBuffer();
+				if (producerFreeBufPtr == NULL)
+					return false;
+			}
+
 			//24bit samples
 			//NOTE: The (signed char) and (unsigned char) casts are critical in order for the bit shift to work correctly
 			//Otherwise the MSB won't have the sign set correctly
@@ -430,11 +447,10 @@ bool HPSDRDevice::ProcessInputFrame(unsigned char *buf, int len)
 			mic /= 32767.0;
 
 			//Add to dataBuf and see if we have enough samples
-			cpxBuffer[sampleCount++] = cpx;
-			if (sampleCount == 2048) {
-				unsigned char * pcBuf = producerConsumer.AcquireFreeBuffer();
-				CPXBuf::copy((CPX*)pcBuf,cpxBuffer,2048);
+			producerFreeBufPtr[sampleCount++] = cpx;
+			if (sampleCount == framesPerBuffer) {
 				sampleCount = 0;
+				producerFreeBufPtr = NULL;
 				producerConsumer.ReleaseFilledBuffer();
 			}
 		}
@@ -501,7 +517,7 @@ bool HPSDRDevice::SendConfig()
 	//If C4_DUPLEX_ON, then tuning doesn't work
 	cmd[4] = C4_DUPLEX_OFF;
 
-	memset(outputBuffer,0x00,BUFSIZE);
+	memset(outputBuffer,0x00,OZY_FRAME_SIZE);
 	return WriteOutputBuffer(cmd);
 }
 
@@ -645,8 +661,8 @@ bool HPSDRDevice::WriteOutputBuffer(char * commandBuf)
 
 	int result;
 	int actual;
-	result = usbUtil.BulkTransfer(OUT_ENDPOINT2,outputBuffer,BUFSIZE,&actual,OZY_TIMEOUT);
-	if (result < 0 || actual != BUFSIZE) {
+	result = usbUtil.BulkTransfer(OUT_ENDPOINT2,outputBuffer,OZY_FRAME_SIZE,&actual,OZY_TIMEOUT);
+	if (result < 0 || actual != OZY_FRAME_SIZE) {
 		qDebug()<<"Error writing output buffer";
 		return false;
 	}
