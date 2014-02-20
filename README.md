@@ -251,15 +251,33 @@ I use a direct network cable, not wifi, when connecting to this device at the fu
 You will get a "Allow network connections?" box the first time you run any new version.  This is standard Mac protection.
 
 ###HPSDR-USB
-(TBW)
+The HPSDR plugin supports sampling rates of up to 384k (with Ozy 2.5 firmware).  Supported firmware is in the PebbleData directory and will be automatically uploaded to Ozy as needed. 
+
+HPSDR suggested slots ()Slot J6 is next to power connector, J1 is furthest away)
+
+* J6 Empty
+* J5 Mercury
+* J4
+* J3 Penelope if installed
+* J2 Ozy (USB)
+* J1 Metis (TCP)
+
+Tested Firmware.  Other firmware versions can be uploaded by manually editing the HPSDR.ini file.
+
+* Metis 2.6b
+* Ozy 2.5
+* Mercury 3.4
+* Use HPSDRBootLoader on Windows machine with direct network connection.  I had problems with JTAG mode over WiFi.
 
 ###HPSDR-Network (Not supported yet)
 
+Note: Use either Ozy (USB) or Metis (TCP), NOT both
+
 ###FunCube Pro
-(TBW)
+Plugin complete pending doc
 
 ###FunCube Pro Plus
-(TBW)
+Plugin complete, pending doc
 
 ###Wav File SDR
 Device Plugin that reads .wav files which have IQ data recorded.  These files are produced by most SDR applications using the 'record' feature and numerous examples can be found on the internet.  Pebble recordings also store LO and mode information in the .wav file.  When you open a Pebble recording, Pebble will show act as if the original SDR device was active.  The last directory is stored in the .ini file for convenience in reopening files.  The default directory is PebbleRecordings.
@@ -295,6 +313,10 @@ TCP Only Options
 
 If your computer is losing samples (you'll hear choppy audio), try a lower RTL sample rate and/or a lower Pebble sample rate.
 
+##SDRGarage
+
+This is an experimental server application that uses the same device plugins as Pebble.  The concept is to support any SDR device and multiple network protocols.  The first protocol is rtl-tcp because the first device driver is rtl2832.
+
 
 ##Advanced
 ###PebbleData directory
@@ -308,4 +330,11 @@ If your computer is losing samples (you'll hear choppy audio), try a lower RTL s
 ###Plugins directory
 
 ##Source Code notes
-(TBW)
+###Coding Style
+Basically a mess right now and needs to be cleaned up.
+
+QT Editor settings
+
+* Use tabs only
+* Tab size 4
+* Indent case statements
