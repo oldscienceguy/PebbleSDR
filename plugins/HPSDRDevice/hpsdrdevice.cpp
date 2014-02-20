@@ -1,5 +1,6 @@
 #include "hpsdrdevice.h"
 #include <QMessageBox>
+#include <QProgressDialog>
 
 #if 0
 References
@@ -22,6 +23,7 @@ HPSDRDevice::HPSDRDevice():DeviceInterfaceBase()
 	inputBuffer = NULL;
 	outputBuffer = NULL;
 	producerFreeBufPtr = NULL;
+	forceReload = false;
 
 }
 
@@ -91,22 +93,6 @@ bool HPSDRDevice::Connect()
 		return false;
 	connected = true;
 
-#if 0
-	//Testing access to device descriptor strings
-	unsigned char sn[256];
-	libusb_device_descriptor desc;
-	libusb_get_device_descriptor(dev,&desc);
-	if (desc.iSerialNumber) {
-		//int ret = usb_get_string_simple(hDev, desc.iSerialNumber, sn, sizeof(sn));
-		int ret = libusb_get_string_descriptor(hDev,desc.iSerialNumber,0,sn,sizeof(sn));
-		if (ret > 0) {
-			qDebug()<<"Serial number :"<<sn;
-		} else {
-			qDebug()<<"No Serial number";
-		}
-	}
-#endif
-
 	//This setting allows the user to load and manage the firmware directly if Pebble has a problem for some reason
 	//If no init flag, just send Ozy config
 	//If no firmware is loaded this will return error
@@ -117,53 +103,57 @@ bool HPSDRDevice::Connect()
 
 	//Check firmware version to see if already loaded
 	ozyFX2FW = GetFirmwareInfo();
-	if (ozyFX2FW!=NULL) {
+	if (!forceReload && ozyFX2FW!=NULL) {
+		//Firmware already loaded
 		qDebug()<<"Firmware String: "<<ozyFX2FW;
 		if (!SendConfig()) {
 			return false;
 		}
 	} else {
 		qDebug()<<"Firmware String not found, initializing";
-#if(0)
-		QMessageBox loadMsg;
-		loadMsg.setIcon(QMessageBox::Information);
-		loadMsg.setWindowTitle("Pebble");
-		loadMsg.setText("Loading Firmware and FPGA, please wait");
-		//QTimer::oneShot(2000, &loading, SLOT(hide()));  //Use this to auto hide after N ms
 
-		//Bug: Nothing shows in box.  exec() works but waits for user to click something
-		loadMsg.show();
-#endif
+		QProgressDialog progress("Loading FX2 and FPGA firmware...", NULL, 0, 10);
+		progress.setWindowModality(Qt::WindowModal);
+		progress.show();
+		progress.setValue(1);
+		
 		//Firmware and FPGA code are lost on when Ozy loses power
 		//We reload on every connect to make sure
 		if (!ResetCPU(true))
 			return false;
+		progress.setValue(2);
 		if (!LoadFirmware(sFW))
 			return false;
+		progress.setValue(3);
 		if (!ResetCPU(false))
 			return false;
+		progress.setValue(4);
 		if (!Close())
 			return false;
+		progress.setValue(5);
 
 		//Give Ozy a chance to process firmware
 		QThread::sleep(5);
+		progress.setValue(6);
 
 		if (!Open())
 			return false;
+		progress.setValue(7);
 
 		if(!SetLED(1,true))
 			return false;
 		if(!LoadFpga(sFpga))
 			return false;
+		progress.setValue(8);
 		if(!SetLED(1,false))
 			return false;
-		//loadMsg.hide();
 
 		if (!Close())
 			return false;
 
 		if (!Open())
 			return false;
+		progress.setValue(9);
 
 		//Ozy needs a few Command and Control frames to select the desired clock sources before data can be received
 		//So send C&C a few times
@@ -181,6 +171,7 @@ bool HPSDRDevice::Connect()
 			return false;
 		}
 
+		progress.close();
 	}
 
 	//        1E 00 - Reset chip
@@ -329,8 +320,9 @@ bool HPSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, quin
 	switch (_key) {
 		case DeviceFrequency: {
 			char cmd[5];
-			qint32 freq = _value.toDouble();
-			cmd[0] = C0_FREQUENCY; //Bits set receiver# (if > 1) are we setting for
+			quint32 freq = _value.toDouble();
+
+			cmd[0] = C0_RX1_FREQ; //Bits set receiver# (if > 1) are we setting for
 			cmd[1] = freq >> 24;
 			cmd[2] = freq >> 16;
 			cmd[3] = freq >> 8;
@@ -353,18 +345,9 @@ void HPSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 {
 	Q_UNUSED(_event);
 	//We're using blocking I/O, so BulkTransfer will wait until we get size
-	//So fetch 1 frame at a time
-	int result;
 	int actual;
-	result = usbUtil.BulkTransfer(IN_ENDPOINT6,inputBuffer,inputBufferSize,&actual,OZY_TIMEOUT);
-	if (result == 0) {
+	if (usbUtil.BulkTransfer(IN_ENDPOINT6,inputBuffer,inputBufferSize,&actual,OZY_TIMEOUT)) {
 		int remainingBytes = actual;
-
-#if 0
-	result = usb_bulk_read(hDev, IN_ENDPOINT6, inputBuffer, sizeof(inputBuffer), OZY_TIMEOUT);
-	if (result > 0) {
-		int remainingBytes = result;
-#endif
 		int len;
 		int bufPtr = 0;
 		while (remainingBytes > 0){
@@ -388,7 +371,7 @@ bool HPSDRDevice::ProcessInputFrame(unsigned char *buf, int len)
 
 	int b=0; //Buffer index
 	if (buf[b++]==OZY_SYNC && buf[b++]==OZY_SYNC && buf[b++]==OZY_SYNC){
-		char ctrlBuf[5];
+		unsigned char ctrlBuf[5];
 		ctrlBuf[0] = buf[b++];
 		ctrlBuf[1] = buf[b++];
 		ctrlBuf[2] = buf[b++];
@@ -403,18 +386,28 @@ bool HPSDRDevice::ProcessInputFrame(unsigned char *buf, int len)
 			//int HermesIO2 = ctrlBuf[0]&0x04;
 			//int HermesIO3 = ctrlBuf[0]&0x08;
 			//Firmware versions
-			mercuryFW = ctrlBuf[2];
+			//1 bit of Mercury version indicates ADC overflow, so versions run 0-127
+			//http://lists.openhpsdr.org/pipermail/hpsdr-openhpsdr.org/2012-January/016571.html
+			//But makes no sense per doc, when we install 3.4 rbf, reports as 3.3 here
+			//mercuryFW = ctrlBuf[2];
 			penelopeFW = ctrlBuf[3];
 			ozyFW = ctrlBuf[4];
 			break;
-		case 1:
+		case 0x01:
 			//Forward Power
 			break;
-		case 2:
+		case 0x02:
 			//Reverse Power
 			break;
-		case 3:
+		case 0x03:
 			//AIN4 & AIN6
+			break;
+		//Support for multiple mercury receivers
+		case 0x04: //100xxx
+			mercuryFW = (ctrlBuf[1] >> 1) + 1;
+			//mercury2FW = ctrlBuf[2];
+			//mercury3FW = ctrlBuf[3];
+			//mercury4FW = ctrolBuf[4];
 			break;
 		}
 		//Extract I/Q and add to buffer
@@ -515,9 +508,8 @@ bool HPSDRDevice::SendConfig()
 	cmd[2] = sMode;
 	cmd[3] = sPreamp | sDither | sRandom;
 	//If C4_DUPLEX_ON, then tuning doesn't work
-	cmd[4] = C4_DUPLEX_OFF;
+	cmd[4] = C4_DUPLEX_OFF |  C4_1RECEIVER;
 
-	memset(outputBuffer,0x00,OZY_FRAME_SIZE);
 	return WriteOutputBuffer(cmd);
 }
 
@@ -648,6 +640,9 @@ bool HPSDRDevice::WriteOutputBuffer(char * commandBuf)
 	if (!connected)
 		return false;
 
+	//We're not sending audio back to Ozy, so zero out all the data buffers
+	memset(outputBuffer,0x00,OZY_FRAME_SIZE);
+
 	outputBuffer[0] = OZY_SYNC;
 	outputBuffer[1] = OZY_SYNC;
 	outputBuffer[2] = OZY_SYNC;
@@ -659,20 +654,11 @@ bool HPSDRDevice::WriteOutputBuffer(char * commandBuf)
 	outputBuffer[6] = commandBuf[3];
 	outputBuffer[7] = commandBuf[4];
 
-	int result;
 	int actual;
-	result = usbUtil.BulkTransfer(OUT_ENDPOINT2,outputBuffer,OZY_FRAME_SIZE,&actual,OZY_TIMEOUT);
-	if (result < 0 || actual != OZY_FRAME_SIZE) {
+	if (!usbUtil.BulkTransfer(OUT_ENDPOINT2,outputBuffer,OZY_FRAME_SIZE,&actual,OZY_TIMEOUT)) {
 		qDebug()<<"Error writing output buffer";
 		return false;
 	}
-#if 0
-	result = usb_bulk_write(hDev, OUT_ENDPOINT2, outputBuffer, BUFSIZE, OZY_TIMEOUT);
-	if (result != BUFSIZE) {
-		qDebug()<<"Error writing output buffer";
-		return false;
-	}
-#endif
 	return true;
 }
 
@@ -686,12 +672,11 @@ int HPSDRDevice::WriteRam(int fx2StartAddr, unsigned char *buf, int count)
 		int numBytes = bytesRemaining > MAX_PACKET_SIZE ? MAX_PACKET_SIZE : bytesRemaining;
 		int result = usbUtil.ControlMsg(VENDOR_REQ_TYPE_OUT,OZY_WRITE_RAM,
 			fx2StartAddr+bytesWritten, 0, buf+bytesWritten, numBytes, OZY_TIMEOUT);
-		//int result = usb_control_msg(hDev, VENDOR_REQ_TYPE_OUT, OZY_WRITE_RAM,
-		//	fx2StartAddr+bytesWritten, 0, buf+bytesWritten, numBytes, OZY_TIMEOUT);
-		if (result > 0)
+		if (result >= 0){
 			bytesWritten += result;
-		else
+		} else {
 			return bytesWritten; //Timeout or error, return what was written
+		}
 	}
 	return bytesWritten;
 }
@@ -721,10 +706,7 @@ bool HPSDRDevice::LoadFpga(QString filename)
 		return false;
 	}
 	//Tell Ozy loading FPGA (no data sent)
-	int result;
-	result = usbUtil.ControlMsg(VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, 0, FL_BEGIN, NULL, 0, OZY_TIMEOUT);
-	//result = usb_control_msg(hDev, VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, 0, FL_BEGIN, NULL, 0, OZY_TIMEOUT);
-	if (result < 0) {
+	if (usbUtil.ControlMsg(VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, 0, FL_BEGIN, NULL, 0, OZY_TIMEOUT) < 0) {
 		rbfFile.close();
 		return false;
 	}
@@ -734,18 +716,14 @@ bool HPSDRDevice::LoadFpga(QString filename)
 	unsigned char buf[MAX_PACKET_SIZE];
 	while((bytesRead = rbfFile.read((char*)buf,sizeof(buf))) > 0) {
 
-		result = usbUtil.ControlMsg(VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, 0, FL_XFER,  buf, bytesRead, OZY_TIMEOUT);
-		//result = usb_control_msg(hDev, VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, 0, FL_XFER, buf, bytesRead, OZY_TIMEOUT);
-		if (result < 0) {
+		if (usbUtil.ControlMsg(VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, 0, FL_XFER,  buf, bytesRead, OZY_TIMEOUT) < 0) {
 			rbfFile.close();
 			return false;
 		}
 	}
 	rbfFile.close();
 	//Tell Ozy done with FPGA load
-	result = usbUtil.ControlMsg(VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, 0, FL_END, NULL, 0, OZY_TIMEOUT);
-	//result = usb_control_msg(hDev, VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, 0, FL_END, NULL, 0, OZY_TIMEOUT);
-	if (result < 0)
+	if (usbUtil.ControlMsg(VENDOR_REQ_TYPE_OUT, OZY_LOAD_FPGA, 0, FL_END, NULL, 0, OZY_TIMEOUT) < 0)
 		return false;
 	qDebug()<<"FPGA upload complete";
 	return true;
@@ -881,8 +859,7 @@ QString HPSDRDevice::GetFirmwareInfo()
 	unsigned char bytes[9]; //Version string is 8 char + null
 	int size = 8;
 	int result = usbUtil.ControlMsg(VENDOR_REQ_TYPE_IN, OZY_SDR1K_CTL, SDR1K_CTL_READ_VERSION,index, bytes, size, OZY_TIMEOUT);
-	//int result = usb_control_msg(hDev, VENDOR_REQ_TYPE_IN, OZY_SDR1K_CTL, SDR1K_CTL_READ_VERSION, index, bytes, size, OZY_TIMEOUT);
-	if (result > 0) {
+	if (result >= 0) {
 		bytes[result] = 0x00; //Null terminate string
 		return (char*)bytes;
 	} else {
@@ -894,19 +871,19 @@ int HPSDRDevice::WriteI2C(int i2c_addr, unsigned char byte[], int length)
 	if (length < 1 || length > MAX_PACKET_SIZE) {
 		return 0;
 	} else {
-	int result = usbUtil.ControlMsg(
-	   VENDOR_REQ_TYPE_OUT,
-	   OZY_I2C_WRITE,
-	   i2c_addr,
-	   0,
-	   byte,
-	   length,
-	   OZY_TIMEOUT
-	   );
-	if (result < 0)
-		return 0;
-	return result;
+		int result = usbUtil.ControlMsg(
+		   VENDOR_REQ_TYPE_OUT,
+		   OZY_I2C_WRITE,
+		   i2c_addr,
+		   0,
+		   byte,
+		   length,
+		   OZY_TIMEOUT
+		   );
+		if (result >= 0)
+			return result;
 	}
+	return 0;
 }
 
 //Ozy LEDs: #1 used to indicate FPGA upload in process
@@ -914,8 +891,5 @@ bool HPSDRDevice::SetLED(int which, bool on)
 {
 	int val;
 	val = on ? 1:0;
-	//usb_control_msg(hDev,reqType, req, value, data, index, length, timeout);
-	//int result = usb_control_msg(hDev, VENDOR_REQ_TYPE_OUT, OZY_SET_LED,val, which, NULL, 0, OZY_TIMEOUT);
-	int result = usbUtil.ControlMsg(VENDOR_REQ_TYPE_OUT, OZY_SET_LED, val, which,  NULL, 0, OZY_TIMEOUT);
-	return result<0 ? false:true;
+	return usbUtil.ControlMsg(VENDOR_REQ_TYPE_OUT, OZY_SET_LED, val, which,  NULL, 0, OZY_TIMEOUT) >= 0;
 }
