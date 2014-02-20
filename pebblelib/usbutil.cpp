@@ -148,19 +148,18 @@ int USBUtil::ControlMsg(uint8_t reqType, uint8_t req, uint16_t value, uint16_t i
 						 unsigned char *data, uint16_t length, unsigned int timeout)
 {
 	if (libType == LIB_USB) {
+		//Returns #bytes actually transfered or < 0 if error
 		return libusb_control_transfer(libusbDevHandle,reqType,req,value,index,data,length,timeout);
 	}
-#if 0
-    return = usb_control_msg(hDev,reqType, req, value, data, index, length, timeout);
-
-#endif
 	return 0;
 }
 
 bool USBUtil::BulkTransfer(unsigned char endpoint, unsigned char *data, int length, int *actual_length, unsigned int timeout)
 {
 	if (libType == LIB_USB) {
-		return libusb_bulk_transfer(libusbDevHandle, endpoint, data, length, actual_length, timeout);
+		int ret = libusb_bulk_transfer(libusbDevHandle, endpoint, data, length, actual_length, timeout);
+		return ret == 0 ? true: false;
+		//return libusb_interrupt_transfer(libusbDevHandle, endpoint, data, length, actual_length, timeout);
 	}
 	return false;
 }
@@ -337,7 +336,7 @@ bool USBUtil::ReadArray(quint16 index, quint16 address, unsigned char *data, qui
 	if (libType == LIB_USB) {
 		quint8 reqType = LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_IN;
 		quint8 req = 0;
-		return ControlMsg(reqType,req,address,index,data,length,timeout);
+		return ControlMsg(reqType,req,address,index,data,length,timeout) > 0;
 	}
 	return false;
 }
@@ -348,7 +347,7 @@ bool USBUtil::WriteArray(quint16 index, quint16 address, unsigned char*data, qui
 	if (libType == LIB_USB) {
 		quint8 reqType = LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_OUT;
 		quint8 req = 0;
-		return ControlMsg(reqType,req,address,index,data,length,timeout);
+		return ControlMsg(reqType,req,address,index,data,length,timeout) > 0;
 	}
 	return false;
 }
@@ -372,7 +371,7 @@ bool USBUtil::WriteReg(quint16 index, quint16 address, quint16 value, quint16 le
 			data[1] = value & 0xff; //mask hob so lob is all that's left
 		}
 
-		return ControlMsg(reqType,req,address,index,data,length,timeout);
+		return ControlMsg(reqType,req,address,index,data,length,timeout) > 0;
 	}
 	return false;
 }
