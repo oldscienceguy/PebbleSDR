@@ -101,25 +101,25 @@ public:
 	const int C2_MODE_CLASSE = 0x01;
 
 	//Alex attenuator
-	const int C3_ALEX_0DB = 0x00;
-	const int C3_ALEX_10DB = 0x01;
-	const int C3_ALEX_20DB = 0x02;
-	const int C3_ALEX_30DB = 0x03;
+	const int C3_ALEX_0DB = 0x00;			//00000000
+	const int C3_ALEX_10DB = 0x01;			//00000001
+	const int C3_ALEX_20DB = 0x02;			//00000010
+	const int C3_ALEX_30DB = 0x03;			//00000011
 	//LT2208 ADC
-	const int C3_LT2208_PREAMP_OFF = 0x00;
-	const int C3_LT2208_PREAMP_ON = 0x04;
-	const int C3_LT2208_DITHER_OFF = 0x0;
-	const int C3_LT2208_DITHER_ON = 0x08;
-	const int C3_LT2208_RANDOM_OFF = 0x00;
-	const int C3_LT2208_RANDOM_ON = 0x10;
+	const int C3_LT2208_PREAMP_OFF = 0x00;	//000000xx
+	const int C3_LT2208_PREAMP_ON = 0x04;	//000001xx
+	const int C3_LT2208_DITHER_OFF = 0x0;	//00000xxx
+	const int C3_LT2208_DITHER_ON = 0x08;	//00001xxx
+	const int C3_LT2208_RANDOM_OFF = 0x00;	//0000xxxx
+	const int C3_LT2208_RANDOM_ON = 0x10;	//0001xxxx
 	//Alex antenna
-	const int C3_ALEX_RXANT_NONE = 0x00;
-	const int C3_ALEX_RXANT_RX1 = 0x20;
-	const int C3_ALEX_RXANT_RX2 = 0x40;
-	const int C3_ALEX_RXANT_XV = 0x60;
+	const int C3_ALEX_RXANT_NONE = 0x00;	//000xxxxx
+	const int C3_ALEX_RXANT_RX1 = 0x20;		//001xxxxx
+	const int C3_ALEX_RXANT_RX2 = 0x40;		//010xxxxx
+	const int C3_ALEX_RXANT_XV = 0x60;		//011xxxxx
 
-	const int C3_ALEX_RXOUT_OFF = 0x00;
-	const int C3_ALEX_RXOUT_ON = 0x80;
+	const int C3_ALEX_RXOUT_OFF = 0x00;		//0xxxxxxx
+	const int C3_ALEX_RXOUT_ON = 0x80;		//1xxxxxxx
 
 	const int C4_ALEX_TXRELAY_TX1 = 0x00;
 	const int C4_ALEX_TXRELAY_TX2 = 0x01;

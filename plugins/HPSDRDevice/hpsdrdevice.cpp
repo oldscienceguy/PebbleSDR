@@ -507,8 +507,8 @@ bool HPSDRDevice::SendConfig()
 	cmd[1] = sSpeed | s10Mhz | s122Mhz | sConfig | sMic;
 	cmd[2] = sMode;
 	cmd[3] = sPreamp | sDither | sRandom;
-	//If C4_DUPLEX_ON, then tuning doesn't work
-	cmd[4] = C4_DUPLEX_OFF |  C4_1RECEIVER;
+	//C4_DUPLEX_ON must be ON with 2.5 fw otherwise setting config has unpredictable results while receiver is sending samples
+	cmd[4] = C4_DUPLEX_ON |  C4_1RECEIVER;
 
 	return WriteOutputBuffer(cmd);
 }
