@@ -679,13 +679,8 @@ int SoftrockSDRDevice::usbCtrlMsgIn(int request, int value, int index, unsigned 
 	if (deviceNumber == SR_LITE || !usbUtil.IsUSBLoaded())
 		return size; //No USB, pretend everything is working
 
-	int ret = usbUtil.ControlMsg(LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_IN,
+	return usbUtil.ControlMsg(LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_IN,
 						request,value,index,bytes,size,500);
-	return ret;
-#if 0
-	return usbUtil.ControlMsg(hDev, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_IN,
-						 request, value, index, bytes, size, 500);
-#endif
 }
 
 int SoftrockSDRDevice::usbCtrlMsgOut(int request, int value, int index, unsigned char *bytes, int size)
@@ -695,10 +690,6 @@ int SoftrockSDRDevice::usbCtrlMsgOut(int request, int value, int index, unsigned
 
 	return usbUtil.ControlMsg(LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_OUT,
 						 request, value, index, bytes, size, 500);
-#if 0
-	return usbUtil.ControlMsg(hDev, USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-						 request, value, index, bytes, size, 500);
-#endif
 }
 
 //Dialog stuff
