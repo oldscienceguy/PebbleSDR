@@ -9,6 +9,7 @@
 #include "ui_hpsdroptions.h"
 #include "usbutil.h"
 #include "cpx.h"
+#include "hpsdrnetwork.h"
 
 class HPSDRDevice : public QObject, public DeviceInterfaceBase
 {
@@ -21,6 +22,8 @@ class HPSDRDevice : public QObject, public DeviceInterfaceBase
 	Q_INTERFACES(DeviceInterface)
 
 public:
+	friend class HPSDRNetwork;
+
 	const int MAX_PACKET_SIZE = 64;
 
 	const int IN_ENDPOINT2 = 0x82;
@@ -232,6 +235,11 @@ private:
 	Ui::HPSDROptions *optionUi;
 
 	bool forceReload; //true will force firmware to be uploaded every time
+
+	//HPSDR Network
+	enum CONNECTION_TYPE {OZY, METIS};
+	CONNECTION_TYPE connectionType;
+	HPSDRNetwork hpsdrNetwork;
 
 };
 #endif // HPSDRDEVICE_H

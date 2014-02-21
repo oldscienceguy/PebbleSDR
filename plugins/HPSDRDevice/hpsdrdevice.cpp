@@ -25,13 +25,16 @@ HPSDRDevice::HPSDRDevice():DeviceInterfaceBase()
 	producerFreeBufPtr = NULL;
 	forceReload = false;
 
+	//Testing
+	connectionType = METIS;
+
 }
 
 HPSDRDevice::~HPSDRDevice()
 {
 	WriteSettings();
 
-	if (usbUtil.IsUSBLoaded()) {
+	if (connectionType == OZY && usbUtil.IsUSBLoaded()) {
 		usbUtil.ReleaseInterface(0);
 		usbUtil.CloseDevice();
 	}
@@ -71,13 +74,14 @@ bool HPSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer
 
 bool HPSDRDevice::Connect()
 {
-	//Was in constructor for internal implemenation, but should be in Initialize or connect
-	//Note: This uses libusb 0.1 not 1.0
-	// See http://www.libusb.org/ and http://libusb.sourceforge.net/doc/ for details of API
-	// Look for libusb0.dll, libusb0.sys, lib0_x86.dll, libusb0_x64.dll, libusb0_x64.sys if you have problems
-	//Todo: Is there a crash bug if no libusb drivers are found on system?  Lib should handle and return error code
-
-	//Set up libusb
+	if (connectionType == METIS) {
+		if (!hpsdrNetwork.Init(this)) {
+			return false;
+		} else {
+			return SendConfig();
+		}
+	}
+	//USB specific below
 	if (!usbUtil.IsUSBLoaded()) {
 		//Explicit load.  DLL may not exist on users system, in which case we can only suppoprt non-USB devices like SoftRock Lite
 		if (!usbUtil.LoadUsb()) {
@@ -191,6 +195,11 @@ bool HPSDRDevice::Connect()
 
 bool HPSDRDevice::Disconnect()
 {
+	if (connectionType == METIS) {
+		return true;
+	} else {
+
+	}
 	connected = false;
 	return Close();
 }
@@ -198,11 +207,23 @@ bool HPSDRDevice::Disconnect()
 void HPSDRDevice::Start()
 {
 	sampleCount = 0;
-	producerConsumer.Start(true,true);
+	if (connectionType == METIS) {
+		if (!hpsdrNetwork.SendStart())
+			return;
+		//TCP does not need producer thread because it uses QUDPSocket readyRead signal
+		producerConsumer.Start(false,true);
+	} else {
+		//USB needs producer thread to poll USB
+		producerConsumer.Start(true,true);
+	}
 }
 
 void HPSDRDevice::Stop()
 {
+	if (connectionType == METIS) {
+		if (!hpsdrNetwork.SendStop())
+			return;
+	}
 	producerConsumer.Stop();
 }
 
@@ -297,7 +318,10 @@ QVariant HPSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 			return "HPSDR Devices";
 			break;
 		case DeviceName:
-			return "HPSDR-USB";
+			if (connectionType == OZY)
+				return "HPSDR-USB";
+			else
+				return "HPSDR-TCP";
 		case DeviceType:
 			return INTERNAL_IQ;
 		case DeviceSampleRates:
@@ -328,9 +352,16 @@ bool HPSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, quin
 			cmd[3] = freq >> 8;
 			cmd[4] = freq;
 
-			if (!WriteOutputBuffer(cmd)) {
-				qDebug()<<"HPSDR failed to update frequency";
-				return deviceFrequency;
+			if (connectionType == METIS) {
+				if (hpsdrNetwork.SendCommand(cmd)) {
+					qDebug()<<"HPSDR-IP failed to update frequency";
+					return deviceFrequency;
+				}
+			} else {
+				if (!WriteOutputBuffer(cmd)) {
+					qDebug()<<"HPSDR-USB failed to update frequency";
+					return deviceFrequency;
+				}
 			}
 			deviceFrequency = freq;
 			lastFreq = freq;
@@ -341,6 +372,7 @@ bool HPSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, quin
 	}
 }
 
+//USB Only
 void HPSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 {
 	Q_UNUSED(_event);
@@ -468,6 +500,10 @@ void HPSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 //Gets called several times from connect
 bool HPSDRDevice::Open()
 {
+	if (connectionType == METIS) {
+		return true;
+	}
+
 	//usbUtil.ListDevices();
 	//Keep dev for later use, it has all the descriptor information
 	if (!usbUtil.FindAndOpenDevice(sPID,sVID,0))
@@ -490,6 +526,9 @@ bool HPSDRDevice::Open()
 
 bool HPSDRDevice::Close()
 {
+	if (connectionType == METIS) {
+		return true;
+	}
 	int result;
 	//Attempting to release interface caused error next time we open().  Why?
 	//result = usb_release_interface(hDev,0);
@@ -510,11 +549,16 @@ bool HPSDRDevice::SendConfig()
 	//C4_DUPLEX_ON must be ON with 2.5 fw otherwise setting config has unpredictable results while receiver is sending samples
 	cmd[4] = C4_DUPLEX_ON |  C4_1RECEIVER;
 
-	return WriteOutputBuffer(cmd);
+	if (connectionType == METIS) {
+		return hpsdrNetwork.SendCommand(cmd);
+	} else {
+		return WriteOutputBuffer(cmd);
+	}
 }
 
 void HPSDRDevice::preampChanged(bool b)
 {
+
 	//Weird gcc bug, can't use static consts in this construct
 	//sPreamp = b ? C3_LT2208_PREAMP_ON : C3_LT2208_PREAMP_OFF;
 	if(b)
@@ -637,6 +681,10 @@ void HPSDRDevice::SetupOptionUi(QWidget *parent)
 
 bool HPSDRDevice::WriteOutputBuffer(char * commandBuf)
 {
+	if (connectionType == METIS) {
+		return true;
+	}
+
 	if (!connected)
 		return false;
 
@@ -664,6 +712,9 @@ bool HPSDRDevice::WriteOutputBuffer(char * commandBuf)
 
 int HPSDRDevice::WriteRam(int fx2StartAddr, unsigned char *buf, int count)
 {
+	if (connectionType == METIS) {
+		return 0;
+	}
 	int bytesWritten = 0;
 	int bytesRemaining = count;
 	while (bytesWritten < count) {
@@ -684,6 +735,9 @@ int HPSDRDevice::WriteRam(int fx2StartAddr, unsigned char *buf, int count)
 //Turns reset mode on/off
 bool HPSDRDevice::ResetCPU(bool reset)
 {
+	if (connectionType == METIS) {
+		return true;
+	}
 	unsigned char writeBuf;
 	writeBuf = reset ? 1:0;
 	int bytesWritten = WriteRam(0xe600,&writeBuf,1);
@@ -692,6 +746,9 @@ bool HPSDRDevice::ResetCPU(bool reset)
 
 bool HPSDRDevice::LoadFpga(QString filename)
 {
+	if (connectionType == METIS) {
+		return true;
+	}
 	qDebug()<<"Loading FPGA";
 	QString path = QCoreApplication::applicationDirPath();
 #ifdef Q_OS_MAC
@@ -760,6 +817,9 @@ int HPSDRDevice::HexBytesToUInt(char * buf, int len)
 
 bool HPSDRDevice::LoadFirmware(QString filename)
 {
+	if (connectionType == METIS) {
+		return true;
+	}
 	qDebug()<<"Loading firmware";
 
 	QString path = QCoreApplication::applicationDirPath();
@@ -855,6 +915,9 @@ bool HPSDRDevice::LoadFirmware(QString filename)
 
 QString HPSDRDevice::GetFirmwareInfo()
 {
+	if (connectionType == METIS) {
+		return "";
+	}
 	int index = 0;
 	unsigned char bytes[9]; //Version string is 8 char + null
 	int size = 8;
@@ -868,6 +931,9 @@ QString HPSDRDevice::GetFirmwareInfo()
 }
 int HPSDRDevice::WriteI2C(int i2c_addr, unsigned char byte[], int length)
 {
+	if (connectionType == METIS) {
+		return 0;
+	}
 	if (length < 1 || length > MAX_PACKET_SIZE) {
 		return 0;
 	} else {
@@ -889,6 +955,9 @@ int HPSDRDevice::WriteI2C(int i2c_addr, unsigned char byte[], int length)
 //Ozy LEDs: #1 used to indicate FPGA upload in process
 bool HPSDRDevice::SetLED(int which, bool on)
 {
+	if (connectionType == METIS) {
+		return true;
+	}
 	int val;
 	val = on ? 1:0;
 	return usbUtil.ControlMsg(VENDOR_REQ_TYPE_OUT, OZY_SET_LED, val, which,  NULL, 0, OZY_TIMEOUT) >= 0;
