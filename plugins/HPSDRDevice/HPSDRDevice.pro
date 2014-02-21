@@ -15,7 +15,7 @@ include (../DigitalModemExample/fix_plugin_libraries.pri)
 QMAKE_LFLAGS += -rpath $${DESTDIR}/../lib
 
 #Required for options UI
-QT += widgets
+QT += widgets network
 
 #Help plugin not worry about include paths
 INCLUDEPATH += ../../application
@@ -29,9 +29,11 @@ VERSION = 1.0.0
 TEMPLATE = lib
 CONFIG += plugin
 
-SOURCES += hpsdrdevice.cpp
+SOURCES += hpsdrdevice.cpp \
+    hpsdrnetwork.cpp
 
-HEADERS += hpsdrdevice.h
+HEADERS += hpsdrdevice.h \
+    hpsdrnetwork.h
 
 LIBS += -L$${PWD}/../../pebblelib/$${LIB_DIR} -lpebblelib
 LIBS += -L$${PWD}/../../D2XX/bin/10.5-10.7/ -lftd2xx.1.2.2
