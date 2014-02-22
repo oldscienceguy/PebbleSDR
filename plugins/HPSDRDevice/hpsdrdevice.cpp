@@ -75,7 +75,8 @@ bool HPSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer
 }
 
 bool HPSDRDevice::ConnectUsb()
-{
+{	connectionType = OZY;
+
 	//USB specific below
 	if (!usbUtil.IsUSBLoaded()) {
 		//Explicit load.  DLL may not exist on users system, in which case we can only suppoprt non-USB devices like SoftRock Lite
@@ -189,13 +190,13 @@ bool HPSDRDevice::ConnectUsb()
 	//char foo[] = {0x1e,0x00};
 	//int count = WriteI2C(0x1a,foo,2);
 
-	connectionType = OZY;
 	return true;
 
 }
 bool HPSDRDevice::ConnectTcp()
 {
 	bool result;
+	connectionType = METIS;
 	//Shortest valid address is "0.0.0.0"
 	if (metisAddress.length() < 7)
 		result = hpsdrNetwork.Init(this, NULL, 0);
@@ -203,7 +204,6 @@ bool HPSDRDevice::ConnectTcp()
 		result = hpsdrNetwork.Init(this, metisAddress, metisPort);
 	if (result) {
 		connected = true;
-		connectionType = METIS;
 		return true;
 	}
 	return false;
