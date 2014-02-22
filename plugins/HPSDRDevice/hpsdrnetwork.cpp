@@ -18,7 +18,7 @@ HPSDRNetwork::~HPSDRNetwork()
 {
 }
 
-bool HPSDRNetwork::Init(HPSDRDevice *_hpsdrDevice)
+bool HPSDRNetwork::Init(HPSDRDevice *_hpsdrDevice, QString _metisAddress, quint16 _metisPort)
 {
 	bool result;
 	hpsdrDevice = _hpsdrDevice;
@@ -43,7 +43,13 @@ bool HPSDRNetwork::Init(HPSDRDevice *_hpsdrDevice)
 		}
 	}
 	//If we don't have fixed IP/Port for Metis, trigger discovery
-	if (metisHostAddress.isNull()) {
+	//if (metisHostAddress.isNull()) {
+	if (!_metisAddress.isNull()) {
+		metisHostAddress = QHostAddress(_metisAddress);
+		metisPort = _metisPort;
+		//Since we're sending datagrams, we have no way of knowing if IP/Port is valid unless we get a response to something
+		return true;
+	} else {
 		//If we don't have fixed IP address, then trigger automatic Metis discovery
 		waitingForDiscoveryResponse = false;
 		if (!SendDiscovery())
@@ -105,6 +111,8 @@ bool HPSDRNetwork::SendStop()
 	PcToMetisStart payload;
 	payload.command = 0x00; //0x02 to stop IQ only, 0x01 to stop Bandscope only, 0x00 to stop both
 	qint64 actual = udpSocket->writeDatagram((char*)&payload,sizeof(payload),metisHostAddress, metisPort);
+	metisHostAddress.clear();
+	metisPort = 0;
 	if (actual != sizeof(payload))
 		return false;
 	else

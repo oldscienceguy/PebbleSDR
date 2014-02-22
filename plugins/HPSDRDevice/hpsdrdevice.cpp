@@ -16,17 +16,22 @@ HPSDRDevice::HPSDRDevice():DeviceInterfaceBase()
 	ozyFW=0;
 	mercuryFW=0;
 	penelopeFW=0;
+	metisFW=0;
+	janusFW=0;
 
 	ReadSettings();
+	if (discovery == USE_OZY)
+		connectionType = OZY;
+	else if (discovery == USE_METIS)
+		connectionType = METIS;
+	else
+		connectionType = UNKNOWN;
 
 	optionUi = NULL;
 	inputBuffer = NULL;
 	outputBuffer = NULL;
 	producerFreeBufPtr = NULL;
 	forceReload = false;
-
-	//Testing
-	connectionType = METIS;
 
 }
 
@@ -65,24 +70,12 @@ bool HPSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer
 	readBufferSize = framesPerBuffer * sizeof(CPX);
 	producerConsumer.Initialize(std::bind(&HPSDRDevice::producerWorker, this, std::placeholders::_1),
 		std::bind(&HPSDRDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, readBufferSize);
-	//Must be called after Initialize
-	//Sample rate and size must be in consistent units - bytes
-	if (connectionType == OZY)
-		producerConsumer.SetPollingInterval(sampleRate*sizeof(CPX),inputBufferSize);
 
 	return true;
 }
 
-bool HPSDRDevice::Connect()
+bool HPSDRDevice::ConnectUsb()
 {
-	if (connectionType == METIS) {
-		if (!hpsdrNetwork.Init(this)) {
-			return false;
-		} else {
-			connected = true;
-			return true;
-		}
-	}
 	//USB specific below
 	if (!usbUtil.IsUSBLoaded()) {
 		//Explicit load.  DLL may not exist on users system, in which case we can only suppoprt non-USB devices like SoftRock Lite
@@ -94,6 +87,10 @@ bool HPSDRDevice::Connect()
 		}
 
 	}
+
+	//Must be called after Initialize
+	//Sample rate and size must be in consistent units - bytes
+	producerConsumer.SetPollingInterval(sampleRate*sizeof(CPX),inputBufferSize);
 
 	if (!Open())
 		return false;
@@ -122,7 +119,7 @@ bool HPSDRDevice::Connect()
 		progress.setWindowModality(Qt::WindowModal);
 		progress.show();
 		progress.setValue(1);
-		
+
 		//Firmware and FPGA code are lost on when Ozy loses power
 		//We reload on every connect to make sure
 		if (!ResetCPU(true))
@@ -192,18 +189,56 @@ bool HPSDRDevice::Connect()
 	//char foo[] = {0x1e,0x00};
 	//int count = WriteI2C(0x1a,foo,2);
 
+	connectionType = OZY;
 	return true;
+
+}
+bool HPSDRDevice::ConnectTcp()
+{
+	bool result;
+	//Shortest valid address is "0.0.0.0"
+	if (metisAddress.length() < 7)
+		result = hpsdrNetwork.Init(this, NULL, 0);
+	else
+		result = hpsdrNetwork.Init(this, metisAddress, metisPort);
+	if (result) {
+		connected = true;
+		connectionType = METIS;
+		return true;
+	}
+	return false;
+
+}
+
+bool HPSDRDevice::Connect()
+{
+	if (discovery == USE_AUTO_DISCOVERY) {
+		//Try USB first
+		if (!ConnectUsb())
+			return ConnectTcp();
+		else
+			return true;
+
+	} else if (discovery == USE_OZY) {
+		return ConnectUsb();
+	} else if (discovery == USE_METIS){
+		return ConnectTcp();
+	} else
+		return false;
 }
 
 bool HPSDRDevice::Disconnect()
 {
 	if (connectionType == METIS) {
 		connected = false;
+		connectionType = UNKNOWN;
 		return true;
-	} else {
+	} else if (connectionType == OZY){
 		connected = false;
+		connectionType = UNKNOWN;
 		return Close();
-	}
+	} else
+		return false;
 }
 
 void HPSDRDevice::Start()
@@ -216,7 +251,7 @@ void HPSDRDevice::Start()
 		SendConfig();
 		//TCP does not need producer thread because it uses QUDPSocket readyRead signal
 		producerConsumer.Start(false,true);
-	} else {
+	} else if (connectionType == OZY) {
 		//USB needs producer thread to poll USB
 		producerConsumer.Start(true,true);
 	}
@@ -227,6 +262,7 @@ void HPSDRDevice::Stop()
 	if (connectionType == METIS) {
 		if (!hpsdrNetwork.SendStop())
 			return;
+		QThread::msleep(500); //Short delay for data to stop
 	}
 	producerConsumer.Stop();
 }
@@ -284,6 +320,9 @@ void HPSDRDevice::ReadSettings()
 	sPreamp = qSettings->value("LT2208Preamp",C3_LT2208_PREAMP_ON).toInt();
 	sDither = qSettings->value("LT2208Dither",C3_LT2208_DITHER_OFF).toInt();
 	sRandom = qSettings->value("LT2208Random",C3_LT2208_RANDOM_OFF).toInt();
+	discovery = (DISCOVERY)qSettings->value("Discovery",HPSDRDevice::USE_AUTO_DISCOVERY).toInt();
+	metisAddress = qSettings->value("MetisAddress","").toString();
+	metisPort = qSettings->value("MetisPort",1024).toUInt();
 }
 
 void HPSDRDevice::WriteSettings()
@@ -306,6 +345,9 @@ void HPSDRDevice::WriteSettings()
 	qSettings->setValue("LT2208Preamp",sPreamp);
 	qSettings->setValue("LT2208Dither",sDither);
 	qSettings->setValue("LT2208Random",sRandom);
+	qSettings->setValue("Discovery",discovery);
+	qSettings->setValue("MetisAddress",metisAddress);
+	qSettings->setValue("MetisPort",metisPort);
 
 	qSettings->sync();
 }
@@ -316,16 +358,18 @@ QVariant HPSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 
 	switch (_key) {
 		case PluginName:
-			return "HPSDR-USB";
+			return "HPSDR";
 			break;
 		case PluginDescription:
 			return "HPSDR Devices";
 			break;
 		case DeviceName:
 			if (connectionType == OZY)
-				return "HPSDR-USB";
+				return "HPSDR-OZY";
+			else if (connectionType == METIS)
+				return "HPSDR-METIS";
 			else
-				return "HPSDR-TCP";
+				return "HPSDR";
 		case DeviceType:
 			return INTERNAL_IQ;
 		case DeviceSampleRates:
@@ -361,11 +405,13 @@ bool HPSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, quin
 					qDebug()<<"HPSDR-IP failed to update frequency";
 					return deviceFrequency;
 				}
-			} else {
+			} else if (connectionType == OZY){
 				if (!WriteOutputBuffer(cmd)) {
 					qDebug()<<"HPSDR-USB failed to update frequency";
 					return deviceFrequency;
 				}
+			} else {
+				return deviceFrequency;
 			}
 			deviceFrequency = freq;
 			lastFreq = freq;
@@ -380,6 +426,9 @@ bool HPSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, quin
 void HPSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 {
 	Q_UNUSED(_event);
+	if (!connected)
+		return;
+
 	//We're using blocking I/O, so BulkTransfer will wait until we get size
 	int actual;
 	if (usbUtil.BulkTransfer(IN_ENDPOINT6,inputBuffer,inputBufferSize,&actual,OZY_TIMEOUT)) {
@@ -426,8 +475,14 @@ bool HPSDRDevice::ProcessInputFrame(unsigned char *buf, int len)
 			//http://lists.openhpsdr.org/pipermail/hpsdr-openhpsdr.org/2012-January/016571.html
 			//But makes no sense per doc, when we install 3.4 rbf, reports as 3.3 here
 			//mercuryFW = ctrlBuf[2];
-			penelopeFW = ctrlBuf[3];
-			ozyFW = ctrlBuf[4];
+
+			//We're getting FW value for Penelope of 255 with no board, assume that's an invalid
+			if (ctrlBuf[3] < 255)
+				penelopeFW = ctrlBuf[3];
+			if (connectionType == OZY)
+				ozyFW = ctrlBuf[4];
+			else if (connectionType == METIS)
+				metisFW = ctrlBuf[4];
 			break;
 		case 0x01:
 			//Forward Power
@@ -440,7 +495,7 @@ bool HPSDRDevice::ProcessInputFrame(unsigned char *buf, int len)
 			break;
 		//Support for multiple mercury receivers
 		case 0x04: //100xxx
-			mercuryFW = (ctrlBuf[1] >> 1) + 1;
+			mercuryFW = (ctrlBuf[1] >> 1);
 			//mercury2FW = ctrlBuf[2];
 			//mercury3FW = ctrlBuf[3];
 			//mercury4FW = ctrolBuf[4];
@@ -492,6 +547,9 @@ bool HPSDRDevice::ProcessInputFrame(unsigned char *buf, int len)
 void HPSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 {
 	Q_UNUSED(_event);
+	if (!connected)
+		return;
+
 	//Wait for data from the producer thread
 	unsigned char *dataBuf = producerConsumer.AcquireFilledBuffer();
 
@@ -555,9 +613,10 @@ bool HPSDRDevice::SendConfig()
 
 	if (connectionType == METIS) {
 		return hpsdrNetwork.SendCommand(cmd);
-	} else {
+	} else if (connectionType == OZY) {
 		return WriteOutputBuffer(cmd);
-	}
+	} else
+		return false;
 }
 
 void HPSDRDevice::preampChanged(bool b)
@@ -613,6 +672,45 @@ void HPSDRDevice::optionsAccepted()
 
 }
 
+void HPSDRDevice::useDiscoveryChanged(bool b)
+{
+	if (b)
+		discovery = USE_AUTO_DISCOVERY;
+	optionUi->ipInput->setEnabled(false);
+	optionUi->portInput->setEnabled(false);
+	WriteSettings();
+}
+
+void HPSDRDevice::useOzyChanged(bool b)
+{
+	if (b)
+		discovery = USE_OZY;
+	optionUi->ipInput->setEnabled(false);
+	optionUi->portInput->setEnabled(false);
+	WriteSettings();
+}
+
+void HPSDRDevice::useMetisChanged(bool b)
+{
+	if (b)
+		discovery = USE_METIS;
+	optionUi->ipInput->setEnabled(true);
+	optionUi->portInput->setEnabled(true);
+	WriteSettings();
+}
+
+void HPSDRDevice::metisAddressChanged()
+{
+	metisAddress = optionUi->ipInput->text();
+	WriteSettings();
+}
+
+void HPSDRDevice::metisPortChanged()
+{
+	metisPort = optionUi->portInput->text().toInt();
+	WriteSettings();
+}
+
 void HPSDRDevice::SetupOptionUi(QWidget *parent)
 {
 	if (optionUi != NULL)
@@ -652,34 +750,69 @@ void HPSDRDevice::SetupOptionUi(QWidget *parent)
 	if (sRandom == C3_LT2208_RANDOM_ON)
 		optionUi->enableRandom->setChecked(true);
 
-	//hardwired config for now, just ozy and mercury
-	optionUi->hasOzy->setChecked(true);
-	optionUi->hasMetis->setEnabled(false);
-	optionUi->hasMercury->setChecked(true);
-	optionUi->hasMercury->setEnabled(false);
-	optionUi->hasPenelope->setEnabled(false);
-	optionUi->hasJanus->setEnabled(false);
-	optionUi->hasExcalibur->setEnabled(false);
+	if (connectionType == OZY && ozyFW > 0) {
+		optionUi->hasOzy->setChecked(true);
+		optionUi->hasOzy->setText("Ozy-USB FW: " + QString::number(ozyFW/10.0) + " FX: " + ozyFX2FW);
+	} else {
+		optionUi->hasOzy->setChecked(false);
+		optionUi->hasOzy->setText("Ozy-USB");
+	}
 
-	if (!ozyFX2FW.isEmpty())
-		optionUi->ozyFX2Label->setText("Ozy FX2 (.hex): " + ozyFX2FW);
-	else
-		optionUi->ozyFX2Label->setText("Ozy FX2 (.hex): No Firmware");
+	if (connectionType == METIS && metisFW > 0) {
+		optionUi->hasMetis->setChecked(true);
+		optionUi->hasMetis->setText("Metis-TCP FW: " + QString::number(metisFW/10.0));
+	} else {
+		optionUi->hasMetis->setChecked(false);
+		optionUi->hasMetis->setText("Metis-TCP");
+	}
 
-	if (ozyFW)
-		optionUi->ozyLabel->setText("Ozy FPGA (.rbf): " + QString::number(ozyFW));
-	else
-		optionUi->ozyLabel->setText("Ozy FPGA (.rbf): No Firmware");
+	if (mercuryFW > 0) {
+		optionUi->hasMercury->setChecked(true);
+		optionUi->hasMercury->setText("Mercury-Rx FW: " + QString::number(mercuryFW/10.0));
+	} else {
+		optionUi->hasMercury->setChecked(false);
+		optionUi->hasMercury->setText("Mercury-Rx");
+	}
 
-	if (mercuryFW)
-		optionUi->mercuryLabel->setText("Mercury FPGA (.rbf): " + QString::number(mercuryFW));
-	else
-		optionUi->mercuryLabel->setText("Mercury FPGA (.rbf): No Firmware");
+	if (penelopeFW > 0) {
+		optionUi->hasPenelope->setChecked(true);
+		optionUi->hasPenelope->setText("Penelope-Tx FW: " + QString::number(penelopeFW/10.0));
+	} else {
+		optionUi->hasPenelope->setText("Penelope-Tx");
+		optionUi->hasPenelope->setChecked(false);
+	}
 
-	if (penelopeFW)
-		optionUi->penelopeLabel->setText("Penelope FPGA (.rbf): " + QString::number(penelopeFW));
+	if (janusFW > 0) {
+		optionUi->hasJanus->setChecked(true);
+		optionUi->hasJanus->setText("Janus-audio FW: " + QString::number(penelopeFW/10.0));
+	} else {
+		optionUi->hasJanus->setText("Janus-audio");
+		optionUi->hasJanus->setChecked(false);
+	}
+
+	if (discovery == USE_OZY || discovery == USE_AUTO_DISCOVERY) {
+		optionUi->ipInput->setEnabled(false);
+		optionUi->portInput->setEnabled(false);
+	} else if (discovery == USE_METIS){
+		optionUi->ipInput->setEnabled(true);
+		optionUi->ipInput->setText(metisAddress);
+		optionUi->portInput->setEnabled(true);
+		optionUi->portInput->setText(QString::number(metisPort));
+	}
+
+	if (discovery == USE_AUTO_DISCOVERY)
+		optionUi->enableAutoDiscovery->setChecked(true);
+	else if (discovery == USE_OZY)
+		optionUi->enableUSB->setChecked(true);
 	else
-		optionUi->penelopeLabel->setText("Penelope FPGA (.rbf): No Firmware");
+		optionUi->enableMetis->setChecked(true);
+
+	connect(optionUi->enableAutoDiscovery,SIGNAL(clicked(bool)),this,SLOT(useDiscoveryChanged(bool)));
+	connect(optionUi->enableUSB,SIGNAL(clicked(bool)),this,SLOT(useOzyChanged(bool)));
+	connect(optionUi->enableMetis,SIGNAL(clicked(bool)),this,SLOT(useMetisChanged(bool)));
+
+	connect(optionUi->ipInput,&QLineEdit::editingFinished,this,&HPSDRDevice::metisAddressChanged);
+	connect(optionUi->portInput,&QLineEdit::editingFinished,this,&HPSDRDevice::metisPortChanged);
 
 }
 

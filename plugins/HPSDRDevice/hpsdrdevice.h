@@ -164,6 +164,11 @@ private slots:
 	void ditherChanged(bool b);
 	void randomChanged(bool b);
 	void optionsAccepted();
+	void useDiscoveryChanged(bool b);
+	void useOzyChanged(bool b);
+	void useMetisChanged(bool b);
+	void metisAddressChanged();
+	void metisPortChanged();
 
 
 private:
@@ -231,15 +236,24 @@ private:
 	int ozyFW;
 	int mercuryFW;
 	int penelopeFW;
+	int metisFW;
+	int janusFW;
 
 	Ui::HPSDROptions *optionUi;
 
 	bool forceReload; //true will force firmware to be uploaded every time
 
 	//HPSDR Network
-	enum CONNECTION_TYPE {OZY, METIS};
+	enum CONNECTION_TYPE {UNKNOWN, OZY, METIS};
 	CONNECTION_TYPE connectionType;
+	enum DISCOVERY {USE_AUTO_DISCOVERY, USE_OZY, USE_METIS};
+	DISCOVERY discovery;
 	HPSDRNetwork hpsdrNetwork;
 
+	QString metisAddress;
+	quint16 metisPort;
+
+	bool ConnectUsb();
+	bool ConnectTcp();
 };
 #endif // HPSDRDEVICE_H

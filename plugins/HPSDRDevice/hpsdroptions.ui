@@ -13,83 +13,13 @@
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
-  <widget class="QGroupBox" name="groupBox">
-   <property name="geometry">
-    <rect>
-     <x>4</x>
-     <y>4</y>
-     <width>178</width>
-     <height>111</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>10</pointsize>
-    </font>
-   </property>
-   <property name="title">
-    <string>Firmware</string>
-   </property>
-   <widget class="QLabel" name="ozyFX2Label">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>20</y>
-      <width>159</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>OzyFX2 (.hex):</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="mercuryLabel">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>60</y>
-      <width>160</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Mercury FPGA:</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="ozyLabel">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>40</y>
-      <width>162</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Ozy FPGA (.rbf):</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="penelopeLabel">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>80</y>
-      <width>162</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Penelope FPGA:</string>
-    </property>
-   </widget>
-  </widget>
   <widget class="QGroupBox" name="groupBox_2">
    <property name="geometry">
     <rect>
-     <x>192</x>
-     <y>4</y>
-     <width>159</width>
-     <height>108</height>
+     <x>160</x>
+     <y>30</y>
+     <width>171</width>
+     <height>81</height>
     </rect>
    </property>
    <property name="font">
@@ -98,14 +28,14 @@
     </font>
    </property>
    <property name="title">
-    <string>Options</string>
+    <string>Mercury Options</string>
    </property>
    <widget class="QCheckBox" name="enableDither">
     <property name="geometry">
      <rect>
-      <x>8</x>
-      <y>24</y>
-      <width>141</width>
+      <x>10</x>
+      <y>20</y>
+      <width>151</width>
       <height>17</height>
      </rect>
     </property>
@@ -116,9 +46,9 @@
    <widget class="QCheckBox" name="enableRandom">
     <property name="geometry">
      <rect>
-      <x>8</x>
-      <y>46</y>
-      <width>141</width>
+      <x>10</x>
+      <y>40</y>
+      <width>151</width>
       <height>17</height>
      </rect>
     </property>
@@ -129,9 +59,9 @@
    <widget class="QCheckBox" name="enablePreamp">
     <property name="geometry">
      <rect>
-      <x>8</x>
-      <y>68</y>
-      <width>121</width>
+      <x>10</x>
+      <y>60</y>
+      <width>151</width>
       <height>17</height>
      </rect>
     </property>
@@ -143,10 +73,10 @@
   <widget class="QGroupBox" name="groupBox_3">
    <property name="geometry">
     <rect>
-     <x>362</x>
-     <y>2</y>
-     <width>128</width>
-     <height>143</height>
+     <x>10</x>
+     <y>30</y>
+     <width>141</width>
+     <height>111</height>
     </rect>
    </property>
    <property name="font">
@@ -158,11 +88,14 @@
     <string>Boards</string>
    </property>
    <widget class="QRadioButton" name="hasOzy">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>10</x>
       <y>16</y>
-      <width>82</width>
+      <width>121</width>
       <height>17</height>
      </rect>
     </property>
@@ -171,11 +104,14 @@
     </property>
    </widget>
    <widget class="QRadioButton" name="hasMetis">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>10</x>
       <y>34</y>
-      <width>82</width>
+      <width>121</width>
       <height>17</height>
      </rect>
     </property>
@@ -184,11 +120,14 @@
     </property>
    </widget>
    <widget class="QRadioButton" name="hasJanus">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>10</x>
       <y>52</y>
-      <width>82</width>
+      <width>121</width>
       <height>17</height>
      </rect>
     </property>
@@ -200,11 +139,14 @@
     </property>
    </widget>
    <widget class="QRadioButton" name="hasPenelope">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>10</x>
       <y>70</y>
-      <width>82</width>
+      <width>121</width>
       <height>17</height>
      </rect>
     </property>
@@ -216,11 +158,14 @@
     </property>
    </widget>
    <widget class="QRadioButton" name="hasMercury">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>10</x>
       <y>88</y>
-      <width>82</width>
+      <width>121</width>
       <height>17</height>
      </rect>
     </property>
@@ -231,22 +176,155 @@
      <bool>false</bool>
     </property>
    </widget>
-   <widget class="QRadioButton" name="hasExcalibur">
+  </widget>
+  <widget class="QGroupBox" name="groupBox">
+   <property name="geometry">
+    <rect>
+     <x>340</x>
+     <y>30</y>
+     <width>141</width>
+     <height>80</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="title">
+    <string>Metis Options</string>
+   </property>
+   <widget class="QLineEdit" name="ipInput">
+    <property name="geometry">
+     <rect>
+      <x>40</x>
+      <y>20</y>
+      <width>91</width>
+      <height>16</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="portInput">
+    <property name="geometry">
+     <rect>
+      <x>40</x>
+      <y>40</y>
+      <width>91</width>
+      <height>16</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>108</y>
-      <width>111</width>
-      <height>17</height>
+      <y>20</y>
+      <width>21</width>
+      <height>16</height>
      </rect>
     </property>
-    <property name="text">
-     <string>Excalibur (Clock)</string>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
     </property>
-    <property name="autoExclusive">
-     <bool>false</bool>
+    <property name="text">
+     <string>IP</string>
     </property>
    </widget>
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>40</y>
+      <width>21</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Port</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="groupBox_4">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>327</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="title">
+    <string/>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <property name="spacing">
+     <number>2</number>
+    </property>
+    <property name="leftMargin">
+     <number>2</number>
+    </property>
+    <property name="topMargin">
+     <number>2</number>
+    </property>
+    <property name="rightMargin">
+     <number>2</number>
+    </property>
+    <property name="bottomMargin">
+     <number>2</number>
+    </property>
+    <item>
+     <widget class="QRadioButton" name="enableAutoDiscovery">
+      <property name="text">
+       <string>Auto Discovery</string>
+      </property>
+      <property name="checkable">
+       <bool>true</bool>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QRadioButton" name="enableUSB">
+      <property name="text">
+       <string>Ozy USB</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QRadioButton" name="enableMetis">
+      <property name="text">
+       <string>Metis IP</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <spacer name="horizontalSpacer">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>88</width>
+        <height>5</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+   </layout>
   </widget>
  </widget>
  <resources/>

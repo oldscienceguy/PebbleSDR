@@ -250,8 +250,14 @@ I use a direct network cable, not wifi, when connecting to this device at the fu
 
 You will get a "Allow network connections?" box the first time you run any new version.  This is standard Mac protection.
 
-###HPSDR-USB
-The HPSDR plugin supports sampling rates of up to 384k (with Ozy 2.5 firmware).  Supported firmware is in the PebbleData directory and will be automatically uploaded to Ozy as needed. 
+###HPSDR (OZY & Metis)
+The HPSDR plugin supports sampling rates of up to 384k (with Ozy 2.5 firmware) or Metis.  Supported firmware is in the PebbleData directory and will be automatically uploaded to Ozy as needed. 
+
+Three startup choices
+
+* Auto Discovery: Tries USB an if that fails, tries TCP auto-discovery.  Best choice unless you have a special situation
+* Ozy: Will only check for Ozy USB
+* Metis: Will use the specific IP/Port entered.  If the IP is blank, then will use Metis auto-discovery
 
 HPSDR suggested slots ()Slot J6 is next to power connector, J1 is furthest away)
 

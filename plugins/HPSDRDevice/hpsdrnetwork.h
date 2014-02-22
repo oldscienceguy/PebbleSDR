@@ -94,7 +94,7 @@ public:
 
 	bool SendDiscovery();
 
-	bool Init(HPSDRDevice *_hpsdrDevice);
+	bool Init(HPSDRDevice *_hpsdrDevice, QString _metisAddress, quint16 _metisPort);
 	bool SendStart();
 	bool SendStop();
 	bool SendCommand(char *cmd1, char *cmd2 = NULL);
