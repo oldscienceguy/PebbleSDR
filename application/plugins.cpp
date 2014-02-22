@@ -6,7 +6,6 @@
 //Temp for internal devices, will be deleted when everything is a plugin
 #include "devices/elektorsdr.h"
 #include "devices/sdr_iq.h"
-#include "devices/funcube.h"
 #include "devices/sdr_ip.h"
 
 //Use this if we want to import a static plugin, ie one that is always installed
