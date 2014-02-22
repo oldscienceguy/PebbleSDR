@@ -116,6 +116,7 @@ private:
 	bool waitingForDiscoveryResponse;
 	bool isBound; //Socket is listening for specific IP/Port address in datagrams
 	bool isSendingData;
+	bool isRunning;
 
 	HPSDRDevice *hpsdrDevice;
 };

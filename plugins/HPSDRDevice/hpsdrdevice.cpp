@@ -10,7 +10,7 @@ Metis: http://www.w7ay.net/site/Software/Metis%20Framework/index.html
 
 HPSDRDevice::HPSDRDevice():DeviceInterfaceBase()
 {
-	InitSettings("HPSDR-USB");
+	InitSettings("HPSDR");
 
 	ozyFX2FW.clear();
 	ozyFW=0;

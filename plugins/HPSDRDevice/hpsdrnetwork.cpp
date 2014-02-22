@@ -7,6 +7,7 @@ HPSDRNetwork::HPSDRNetwork()
 	waitingForDiscoveryResponse = false;
 	isBound = false;
 	isSendingData = false;
+	isRunning = false;
 	udpSocket = NULL;
 	metisHostAddress.clear();
 	udpSequenceNumberIn = 0;
@@ -100,6 +101,7 @@ bool HPSDRNetwork::SendStart()
 		return false;
 
 	udpSequenceNumberOut = 0;
+	isRunning = true;
 	return true;
 }
 
@@ -115,8 +117,8 @@ bool HPSDRNetwork::SendStop()
 	metisPort = 0;
 	if (actual != sizeof(payload))
 		return false;
-	else
-		return true;
+	isRunning = false;
+	return true;
 }
 
 //cmd is 5 byte array, same as USB
@@ -183,6 +185,8 @@ void HPSDRNetwork::NewUDPData()
 	//Now check the datagram info byte to see what it is
 	switch (dataGramBuffer[2]) {
 		case 0x01: {
+			if (!isRunning)
+				return;
 			//IQ or Bandscope data
 			MetisToPcIQData *payload = (MetisToPcIQData *)dataGramBuffer;
 			if (payload->endPoint == 0x04) {
