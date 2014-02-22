@@ -67,7 +67,8 @@ bool HPSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer
 		std::bind(&HPSDRDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, readBufferSize);
 	//Must be called after Initialize
 	//Sample rate and size must be in consistent units - bytes
-	producerConsumer.SetPollingInterval(sampleRate*sizeof(CPX),inputBufferSize);
+	if (connectionType == OZY)
+		producerConsumer.SetPollingInterval(sampleRate*sizeof(CPX),inputBufferSize);
 
 	return true;
 }
@@ -78,7 +79,8 @@ bool HPSDRDevice::Connect()
 		if (!hpsdrNetwork.Init(this)) {
 			return false;
 		} else {
-			return SendConfig();
+			connected = true;
+			return true;
 		}
 	}
 	//USB specific below
@@ -196,12 +198,12 @@ bool HPSDRDevice::Connect()
 bool HPSDRDevice::Disconnect()
 {
 	if (connectionType == METIS) {
+		connected = false;
 		return true;
 	} else {
-
+		connected = false;
+		return Close();
 	}
-	connected = false;
-	return Close();
 }
 
 void HPSDRDevice::Start()
@@ -210,6 +212,8 @@ void HPSDRDevice::Start()
 	if (connectionType == METIS) {
 		if (!hpsdrNetwork.SendStart())
 			return;
+		//Metis won't listen to any commands before Start, so send config right after
+		SendConfig();
 		//TCP does not need producer thread because it uses QUDPSocket readyRead signal
 		producerConsumer.Start(false,true);
 	} else {
@@ -353,7 +357,7 @@ bool HPSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, quin
 			cmd[4] = freq;
 
 			if (connectionType == METIS) {
-				if (hpsdrNetwork.SendCommand(cmd)) {
+				if (!hpsdrNetwork.SendCommand(cmd)) {
 					qDebug()<<"HPSDR-IP failed to update frequency";
 					return deviceFrequency;
 				}
@@ -476,7 +480,7 @@ bool HPSDRDevice::ProcessInputFrame(unsigned char *buf, int len)
 			if (sampleCount == framesPerBuffer) {
 				sampleCount = 0;
 				producerFreeBufPtr = NULL;
-				producerConsumer.ReleaseFilledBuffer();
+				producerConsumer.ReleaseFilledBuffer(); //Triggers signal that calls consumer
 			}
 		}
 		return true;

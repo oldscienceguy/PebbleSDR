@@ -1,5 +1,6 @@
 #include "hpsdrnetwork.h"
 #include "hpsdrdevice.h"
+#include "arpa/inet.h" //For ntohl()
 
 HPSDRNetwork::HPSDRNetwork()
 {
@@ -44,9 +45,20 @@ bool HPSDRNetwork::Init(HPSDRDevice *_hpsdrDevice)
 	//If we don't have fixed IP/Port for Metis, trigger discovery
 	if (metisHostAddress.isNull()) {
 		//If we don't have fixed IP address, then trigger automatic Metis discovery
+		waitingForDiscoveryResponse = false;
 		if (!SendDiscovery())
 			return false;
 		//Note we still don't have IP address here, have to wait for UDP response
+		for (int i=0; i<50; i++) {
+			if (waitingForDiscoveryResponse) {
+				QThread::msleep(100);
+				//We need to call this to give signals a chance to process and trigger readyRead
+				qApp->processEvents();
+			} else {
+				return true; //Got it
+			}
+		}
+		return false; //No response
 	}
 	return true;
 }
@@ -64,9 +76,6 @@ bool HPSDRNetwork::SendDiscovery()
 	if (actual == sizeof(payload)) {
 		//Set flag waiting for response
 		waitingForDiscoveryResponse = true;
-		//Put this on a timer
-		QThread::msleep(5000); //Wait for response
-		//Display Progress??
 		return true;
 	} else {
 		return false;
@@ -83,8 +92,9 @@ bool HPSDRNetwork::SendStart()
 	qint64 actual = udpSocket->writeDatagram((char*)&payload,sizeof(payload),metisHostAddress, metisPort);
 	if (actual != sizeof(payload))
 		return false;
-	else
-		return true;
+
+	udpSequenceNumberOut = 0;
+	return true;
 }
 
 bool HPSDRNetwork::SendStop()
@@ -102,17 +112,41 @@ bool HPSDRNetwork::SendStop()
 }
 
 //cmd is 5 byte array, same as USB
-bool HPSDRNetwork::SendCommand(char *cmd)
+bool HPSDRNetwork::SendCommand(char *cmd1, char *cmd2)
 {
 	if (metisHostAddress.isNull())
 		return false;
 
 	PcToMetisData payload;
+	memset(&payload.frame1,0x00,512);
+	memset(&payload.frame2,0x00,512);
+
+	//Do we need to use htonl() for big endian?
 	payload.sequenceNumber = udpSequenceNumberOut++;
-	memcpy(payload.frame1,cmd,5);
+	if (cmd1 != NULL) {
+		payload.frame1[0] = 0x7f;
+		payload.frame1[1] = 0x7f;
+		payload.frame1[2] = 0x7f;
+		payload.frame1[3] = cmd1[0];
+		payload.frame1[4] = cmd1[1];
+		payload.frame1[5] = cmd1[2];
+		payload.frame1[6] = cmd1[3];
+		payload.frame1[7] = cmd1[4];
+	}
+	if (cmd2 != NULL) {
+		payload.frame2[0] = 0x7f;
+		payload.frame2[1] = 0x7f;
+		payload.frame2[2] = 0x7f;
+		payload.frame2[3] = cmd2[0];
+		payload.frame2[4] = cmd2[1];
+		payload.frame2[5] = cmd2[2];
+		payload.frame2[6] = cmd2[3];
+		payload.frame2[7] = cmd2[4];
+	}
+
 	qint64 actual = udpSocket->writeDatagram((char*)&payload,sizeof(payload),metisHostAddress, metisPort);
 	if (actual != sizeof(payload)) {
-		qDebug()<<"Error sending command datagram";
+		qDebug()<<"Error sending command datagram: "<<udpSocket->errorString();
 		return false;
 	} else {
 		return true;
@@ -154,6 +188,7 @@ void HPSDRNetwork::NewUDPData()
 				qDebug()<<"Received invalid IQ datagram";
 				return;
 			}
+			break;
 		}
 
 		//Response to SetIP has same info byte as discovery response
@@ -162,6 +197,7 @@ void HPSDRNetwork::NewUDPData()
 			//Response to Discovery
 			if (!waitingForDiscoveryResponse) {
 				qDebug()<<"Received duplicate discovery datagram";
+				return;
 			}
 			MetisToPcDiscoveryResponse *payload = (MetisToPcDiscoveryResponse *)dataGramBuffer;
 			if (payload->info == 0x03)
@@ -172,8 +208,11 @@ void HPSDRNetwork::NewUDPData()
 			metisFWVersion = payload->fwVersion;
 			memcpy(metisMACAddress,payload->macAddress,6);
 			waitingForDiscoveryResponse = false;
+			break;
 		}
-
+		default: {
+			qDebug()<<"Unkown Metis datagram";
+			break;
+		}
 	}
-
 }

@@ -5,13 +5,6 @@
 
 class HPSDRDevice;
 
-//Every payload starts with <0xEFFE> followed by an info byte
-struct RawDatagram {
-	quint8 header[2];
-	quint8 info;
-	quint8 buf[1024];
-};
-
 //<0xEFFE><0x02><60 bytes of 0x00>
 struct PcToMetisDiscovery {
 	const quint8 header[2] = {0xEF,0xFE};
@@ -104,7 +97,7 @@ public:
 	bool Init(HPSDRDevice *_hpsdrDevice);
 	bool SendStart();
 	bool SendStop();
-	bool SendCommand(char *cmd);
+	bool SendCommand(char *cmd1, char *cmd2 = NULL);
 public slots:
 	void NewUDPData();
 private:
