@@ -23,7 +23,9 @@ class RFSpaceDevice : public QObject, public DeviceInterfaceBase
 
 public:
 	//Data blocks are fixed at 8192 bytes by SDR-IQ
-	static const int dataBlockSize = 8192;
+	//4096 samples at 2 bytes (short) per sample
+	static const quint16 samplesPerDataBlock = 4096; //shorts
+	static const quint16 dataBlockSize = samplesPerDataBlock * 2;
 
 	RFSpaceDevice();
 	~RFSpaceDevice();
@@ -41,12 +43,9 @@ public:
 	//Display device option widget in settings dialog
 	void SetupOptionUi(QWidget *parent);
 
-	int GetSampleRate(AD6620::BANDWIDTH bw);
 private slots:
 	void rfGainChanged(int i);
 	void ifGainChanged(int i);
-	void bandwidthChanged(int i);
-
 
 private:
 	void producerWorker(cbProducerConsumerEvents _event);
@@ -59,7 +58,6 @@ private:
 	unsigned CaptureBlocks(unsigned numBlocks);
 	unsigned StartCapture();
 	unsigned StopCapture();
-	int ReadResponse(int expectedType);
 	bool ReadDataBlock(CPX cpxBuf[], unsigned cpxBufSize);
 	void FlushDataBlocks();
 	//Write 5 bytes of data
@@ -78,11 +76,10 @@ private:
 	QString StatusString(unsigned char code);
 
 
-	Ui::SDRIQOptions *optionUi;
+	Ui::SdrIqOptions *optionUi;
 
 	QMutex mutex;
 	CPX *inBuffer;
-	CPX *outBuffer;
 	int inBufferSize;
 	unsigned char *readBuf;
 	unsigned char *readBufProducer; //Exclusively for producer thread to avoid possible buffer contention with main thread

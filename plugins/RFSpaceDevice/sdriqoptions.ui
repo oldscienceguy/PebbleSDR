@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>SDRIQOptions</class>
- <widget class="QWidget" name="SDRIQOptions">
+ <class>SdrIqOptions</class>
+ <widget class="QWidget" name="SdrIqOptions">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -60,34 +60,6 @@
      <x>291</x>
      <y>26</y>
      <width>94</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>7</pointsize>
-    </font>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_3">
-   <property name="geometry">
-    <rect>
-     <x>220</x>
-     <y>51</y>
-     <width>71</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Bandwidth</string>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="bandwidthBox">
-   <property name="geometry">
-    <rect>
-     <x>291</x>
-     <y>50</y>
-     <width>93</width>
      <height>20</height>
     </rect>
    </property>

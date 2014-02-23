@@ -171,6 +171,7 @@ bool USBUtil::SetBitMode(unsigned char _ucMask, unsigned char _ucEnable)
 	return false;
 }
 
+//Returns true if there is something in quque
 bool USBUtil::GetQueueStatus()
 {
 	if (libType == LIB_USB) {
@@ -178,7 +179,7 @@ bool USBUtil::GetQueueStatus()
 	} else if (libType == FTDI_D2XX) {
 		quint32 actual;
 		FT_STATUS result = FT_GetQueueStatus(ftHandle, &actual);
-		return result==FT_OK ? true : false;
+		return (result==FT_OK && actual > 0 )? true : false;
 	}
 	return false;
 }
@@ -190,7 +191,7 @@ bool USBUtil::Read(void *_buffer, quint32 _bytesToRead)
 	} else if (libType == FTDI_D2XX) {
 		quint32 actual;
 		FT_STATUS result = FT_Read(ftHandle,_buffer,_bytesToRead, &actual);
-		return result == FT_OK;
+		return result == FT_OK && actual == _bytesToRead;
 	} else
 		return false;
 }
