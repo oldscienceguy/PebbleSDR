@@ -24,6 +24,7 @@ SUBDIRS =   pebblelib \
             plugins/FunCubeSDRDevice \
             plugins/HPSDRDevice \
             plugins/ElektorDevice \
+            plugins/RFSpaceDevice \
             SdrGarage
 
 # build must be last:
