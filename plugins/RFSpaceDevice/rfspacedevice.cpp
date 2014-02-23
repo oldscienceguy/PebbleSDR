@@ -43,7 +43,7 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuff
 	numProducerBuffers = 50;
 	producerConsumer.Initialize(std::bind(&RFSpaceDevice::producerWorker, this, std::placeholders::_1),
 		std::bind(&RFSpaceDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, dataBlockSize);
-	producerConsumer.SetPollingInterval(sampleRate,samplesPerDataBlock);
+	producerConsumer.SetPollingInterval(sampleRate,dataBlockSize);
 	return true;
 }
 
@@ -137,6 +137,7 @@ void RFSpaceDevice::ReadSettings()
 {
 	lowFrequency = 150000;
 	highFrequency = 33000000;
+	iqGain = 0.5;
 	DeviceInterfaceBase::ReadSettings();
 	//Device specific settings follow
 	sRFGain = qSettings->value("RFGain",0).toInt();
@@ -145,16 +146,16 @@ void RFSpaceDevice::ReadSettings()
 	//Instead of getting BW from SDR_IQ options dialog, we now get it directly from settings dialog
 	//because we're passing GetSampleRates() during dialog setup
 	//So sampleRate is actually bandwidth
-	if (sampleRate==190000)
+	if (sampleRate==196078)
 		sBandwidth = AD6620::BW190K;
-	else if (sampleRate==150000)
+	else if (sampleRate==158730)
 		sBandwidth = AD6620::BW150K;
-	else if (sampleRate==100000)
+	else if (sampleRate==111111)
 		sBandwidth = AD6620::BW100K;
+	else if (sampleRate==55555)
+		sBandwidth = AD6620::BW50K;
 	else
 		sBandwidth = AD6620::BW50K;
-
-
 }
 
 void RFSpaceDevice::WriteSettings()
@@ -181,7 +182,7 @@ QVariant RFSpaceDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 		case DeviceName:
 			return "RFSpace";
 		case DeviceSampleRates:
-			return QStringList()<<"50000"<<"100000"<<"150000"<<"190000";
+			return QStringList()<<"55555"<<"111111"<<"158730"<<"196078";
 		case DeviceType:
 			return DeviceInterfaceBase::INTERNAL_IQ;
 		case DeviceSampleRate: {
@@ -288,24 +289,20 @@ void RFSpaceDevice::producerWorker(cbProducerConsumerEvents _event)
 		//mutex.unlock();
 		return;
 
-	//Get 13bit message length, mask 3 high order bits of 2nd byte
-	//Example from problem response rb = 0x01 0x03
-	//rb[0] = 0000 0001 rb[1] = 000 0011
-	//type is 0 and length is 769
-	int type = readBufProducer[1]>>5; //Get 3 high order bits
-	int length = readBufProducer[0] + (readBufProducer[1] & 0x1f) * 0x100;
+	ControlHeader header;
+	UnpackHeader(readBufProducer[0], readBufProducer[1], &header);
 
-	if (type == 0x04 && length==0) {
+	if (header.type == TargetHeaderTypes::TargetDataItem0 && header.length==0) {
 
 		//Special case to allow 2048 samples per block
 		//When length==0 it means to read 8192 bytes
 		//Largest value in a 13bit field is 8191 and we need length of 8192
-		length = 8192;
+		header.length = 8192;
 		char *producerFreeBufPtr;
 		if ((producerFreeBufPtr = (char *)producerConsumer.AcquireFreeBuffer()) == NULL)
 			return;
 
-		if (!usbUtil->Read(producerFreeBufPtr, length)) {
+		if (!usbUtil->Read(producerFreeBufPtr, header.length)) {
 			//Lost data
 			producerConsumer.ReleaseFreeBuffer(); //Put back what we acquired
 			return;
@@ -316,29 +313,29 @@ void RFSpaceDevice::producerWorker(cbProducerConsumerEvents _event)
 		return;
 	}
 
-	if (length <= 2 || length > 8192)
+	if (header.length <= 2 || header.length > 8192)
 		//Receive a 2 byte NAK nothing else to read
 		return;
 	else
 		//Length can never be zero
-		length -= 2; //length includes 2 byte header which we've already read
+		header.length -= 2; //length includes 2 byte header which we've already read
 
 	//BUG: We always get a type 0 with length 769(-2) early in the startup sequence
 	//readBuf is filled with 0x01 0x03 (repeated)
 	//FT_Read fails in this case because there are actually no more bytes to read
 	//See if we this is ack, nak, or something else that needs special casing
 	//Trace back and see what last FT_Write was?
-	if (!usbUtil->Read(readBufProducer,length)) {
+	if (!usbUtil->Read(readBufProducer,header.length)) {
 		//mutex.unlock();
 		return;
 	}
 
 	int itemCode = readBufProducer[0] | readBufProducer[1]<<8;
 	//qDebug()<<"Type ="<<type<<" ItemCode = "<<itemCode;
-	switch (type)
+	switch (header.type)
 	{
 	//Response to Set or Request Current Control Item
-	case 0x00:
+	case TargetHeaderTypes::ResponseControlItem:
 		switch (itemCode)
 		{
 		case 0x0001: //Target Name
@@ -383,27 +380,27 @@ void RFSpaceDevice::producerWorker(cbProducerConsumerEvents _event)
 		}
 		break;
 	//Unsolicited Control Item
-	case 0x01:
+	case TargetHeaderTypes::UnsolicitedControlItem:
 		break;
 	//Response to Request Control Item Range
-	case 0x02:
+	case TargetHeaderTypes::ResponseControlItemRange:
 		break;
-	case 0x03:
+	case TargetHeaderTypes::DataItemACKTargetToHost:
 		//ACK: ReadBuf[0] has data item being ack'e (0-3)
 		break;
 	//Target Data Item 0
-	case 0x04:
+	case TargetDataItem0:
 		//Should never get here, data blocks handled in separate thread
 		qDebug()<<"Should never get to case 0x04 in ReadResponse()";
 		break;
 	//Target Data Item 1 (not used in SDR-IQ)
-	case 0x05:
+	case TargetDataItem1:
 		break;
 	//Target Data Item 2 (not used in SDR-IQ)
-	case 0x06:
+	case TargetDataItem2:
 		break;
 	//Target Data Item 3 (not used in SDR-IQ)
-	case 0x07:
+	case TargetDataItem3:
 		break;
 	default:
 		break;
@@ -614,16 +611,8 @@ double RFSpaceDevice::SetFrequency(double freq)
 	if (freq==0)
 		return freq; //ignore
 
-	ULONG f = (ULONG)freq;
 	BYTE writeBuf[0x0a] = { 0x0a, 0x00, 0x20, 0x00, 0x00,0xff,0xff,0xff,0xff,0x01};
-	//Byte order is LSB/MSB
-	//Ex: 14010000 -> 0x00D5C690 -> 0x90C6D500
-	//We just reverse the byte order by masking and shifting
-	writeBuf[5] = (BYTE)((f) & 0xff);
-	writeBuf[6] = (BYTE)((f >> 8) & 0xff);
-	writeBuf[7] = (BYTE)((f >> 16) & 0xff);
-	writeBuf[8] = (BYTE)((f >> 24) & 0xff);;
-
+	DoubleToBuf(&writeBuf[5],freq);
 	if (!usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf)))
 		return 0;
 	return freq;
@@ -641,3 +630,35 @@ unsigned RFSpaceDevice::CaptureBlocks(unsigned numBlocks)
 
 	return 0;
 }
+
+//Static utility functions
+//Convert double to byte buffer, usually called with buf[5] before sending commands
+//Byte order is LSB/MSB
+//Ex: 14010000 -> 0x00D5C690 -> 0x90C6D500
+void RFSpaceDevice::DoubleToBuf(unsigned char *buf, double value)
+{
+	//So we can bit-shift
+	ULONG v = (ULONG)value;
+
+	//Byte order is LSB/MSB
+	//Ex: 14010000 -> 0x00D5C690 -> 0x90C6D500
+	//We just reverse the byte order by masking and shifting
+	buf[0] = (BYTE)((v) & 0xff);
+	buf[1] = (BYTE)((v >> 8) & 0xff);
+	buf[2] = (BYTE)((v >> 16) & 0xff);
+	buf[3] = (BYTE)((v >> 24) & 0xff);;
+
+}
+
+//byte0				byte1
+//8 bit Length lsb ,3 bit type , 5 bit Length msb
+void RFSpaceDevice::UnpackHeader(quint8 byte0, quint8 byte1, ControlHeader *unpacked)
+{
+	//Get 13bit message length, mask 3 high order bits of 2nd byte
+	//Example from problem response rb = 0x01 0x03
+	//rb[0] = 0000 0001 rb[1] = 000 0011
+	//type is 0 and length is 769
+	unpacked->type = byte1>>5; //Get 3 high order bits
+	unpacked->length = byte0 + (byte1 & 0x1f) * 0x100;
+}
+

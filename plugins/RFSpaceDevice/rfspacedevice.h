@@ -11,6 +11,36 @@
 #include "ad6620.h"
 #include "ui_sdriqoptions.h"
 
+//Host to Target(Device)
+enum HostHeaderTypes {
+	SetControlItem = 0x00,
+	RequestCurrentControlItem = 0x01,
+	RequestControlItemRange = 0x02,
+	DataItemACKHostToTarget = 0x03,
+	HostDataItem0 = 0x04,
+	HostDataItem1 = 0x05,
+	HostDataItem2 = 0x06,
+	HostDataItem3 = 0x07,
+};
+//Targt (Device) to Host
+enum TargetHeaderTypes {
+	ResponseControlItem = 0x00,
+	UnsolicitedControlItem = 0x01,
+	ResponseControlItemRange = 0x02,
+	DataItemACKTargetToHost = 0x03,
+	TargetDataItem0 = 0x04,
+	TargetDataItem1 = 0x05,
+	TargetDataItem2 = 0x06,
+	TargetDataItem3 = 0x07,
+};
+
+//Unpacked, not as received
+struct ControlHeader {
+	quint8 type;
+	quint16 length;
+};
+
+
 class RFSpaceDevice : public QObject, public DeviceInterfaceBase
 {
 	Q_OBJECT
@@ -43,6 +73,8 @@ public:
 	//Display device option widget in settings dialog
 	void SetupOptionUi(QWidget *parent);
 
+	static void UnpackHeader(quint8 byte0, quint8 byte1, ControlHeader *unpacked);
+	static void DoubleToBuf(unsigned char *buf, double value);
 private slots:
 	void rfGainChanged(int i);
 	void ifGainChanged(int i);
