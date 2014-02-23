@@ -1,6 +1,7 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include "usbutil.h"
+#include <QDebug>
 
 USBUtil::USBUtil(USB_LIB_TYPE _libType)
 {
@@ -9,6 +10,8 @@ USBUtil::USBUtil(USB_LIB_TYPE _libType)
 	libusbDev = NULL;
 	libusbDevHandle = NULL;
 	ftdiDevice = -1;
+	ftHandle = NULL;
+	isFtdiLoaded = false;
 }
 
 bool USBUtil::LoadUsb()
@@ -22,6 +25,15 @@ bool USBUtil::LoadUsb()
 	return true;
 }
 
+#if 0
+Mac OS 10.9 (Mavericks) now ships with a kernel extension that acts like FTDI's VCP drivers did.
+It creates a virtual comm port for FTDI USB-to-serial devices it detects, and means that you no longer have to install the VCP driver if you needed it before.
+This has an unfortunate side-effect, though, in that it breaks any application using FTDI's D2XX library.
+This exhibits itself as a failure for the D2XX functions to connect to the FTDI device, even though they can see it.
+As a work-around, you can manually unload the kext:
+	sudo kextunload -b com.apple.driver.AppleUSBFTDI
+but it will reload itself on next boot.
+#endif
 bool USBUtil::FindDevice(QString query, bool matchSerialNumber = true)
 {
 	if (libType == LIB_USB) {
@@ -46,6 +58,14 @@ bool USBUtil::FindDevice(QString query, bool matchSerialNumber = true)
     //We've got devices, see if ours is connected
     for (unsigned i=0; i<numDevices; i++)
     {
+		//Doc says we won't get Description or Serial number if device is open in another process
+		if (pDeviceInfoList[i].Flags == 0x01) {
+			qDebug()<<"Device is in use by another driver. Possible conflict with Mac Maverics driver";
+		}
+		//qDebug()<<"Flags: "<<pDeviceInfoList[i].Flags;
+		//qDebug()<<"Description: "<<pDeviceInfoList[i].Description;
+		//qDebug()<<"Serial #: "<<pDeviceInfoList[i].SerialNumber;
+
 		if ((matchSerialNumber && QString::compare(pDeviceInfoList[i].SerialNumber,query)) == 0 ||
 			(!matchSerialNumber && QString(pDeviceInfoList[i].Description).contains(query,Qt::CaseInsensitive)))
         {
@@ -63,13 +83,9 @@ bool USBUtil::InitUSB()
 	if (libType == LIB_USB) {
 		int ret = libusb_init(NULL);
 		return ret == 0 ? true: false;
+	} else if (libType == FTDI_D2XX) {
+		return true;
 	}
-#if 0
-    usb_init(NULL);
-    usb_find_busses();
-    usb_find_devices();
-    return true;
-#endif
 	return false;
 }
 bool USBUtil::OpenDevice()
@@ -82,24 +98,70 @@ bool USBUtil::OpenDevice()
 		}
 		return true;
 	} else if (libType == FTDI_D2XX) {
-		return false;
+		FT_STATUS result = FT_Open(ftdiDevice,&ftHandle);
+		return result==FT_OK ? true : false;
 	}
-#if 0
-    hDev = usb_open(dev);
-
-#endif
     return true;
 }
 bool USBUtil::CloseDevice()
 {
 	if (libType == LIB_USB) {
 		libusb_close(libusbDevHandle);
+		libusbDevHandle = NULL;
+	} else if (libType == FTDI_D2XX) {
+		FT_Close(ftHandle);
+		ftHandle = NULL;
 	}
-#if 0
-    usb_close(hDev);
-#endif
-	libusbDevHandle = NULL;
-    return true;
+	return true;
+}
+
+bool USBUtil::ResetDevice()
+{
+	if (libType == LIB_USB) {
+		return true; //No implementation
+	} else if (libType == FTDI_D2XX) {
+		FT_STATUS result = FT_ResetDevice(ftHandle);
+		return result==FT_OK ? true : false;
+	}
+	return false;
+}
+
+bool USBUtil::SetBaudRate(quint16 _baudRate)
+{
+	if (libType == LIB_USB) {
+		return true; //No implementation
+	} else if (libType == FTDI_D2XX) {
+		FT_STATUS result = FT_SetBaudRate(ftHandle, _baudRate);
+		return result==FT_OK ? true : false;
+	}
+	return false;
+}
+
+bool USBUtil::SetBitMode(unsigned char _ucMask, unsigned char _ucEnable)
+{
+	if (libType == LIB_USB) {
+		return true; //No implementation
+	} else if (libType == FTDI_D2XX) {
+		FT_STATUS result = FT_SetBitMode(ftHandle, _ucMask, _ucEnable);
+		return result==FT_OK ? true : false;
+	}
+	return false;
+}
+
+bool USBUtil::Write(void *_buffer, quint32 _length)
+{
+	if (libType == LIB_USB) {
+		return true; //No implementation
+	} else if (libType == FTDI_D2XX) {
+		quint32 actual;
+		FT_STATUS result = FT_Write(ftHandle,_buffer, _length, &actual);
+		if (result==FT_OK  && actual == _length)
+			return true;
+		else
+			return false;
+	}
+	return false;
+
 }
 bool USBUtil::SetConfiguration(int config)
 {
@@ -166,8 +228,12 @@ bool USBUtil::BulkTransfer(unsigned char endpoint, unsigned char *data, int leng
 
 bool USBUtil::IsUSBLoaded()
 {
-	return isLibUsbLoaded;
-	//return isFtdiLoaded;
+	if (libType == LIB_USB)
+		return isLibUsbLoaded;
+	else if (libType == FTDI_D2XX)
+		return isFtdiLoaded;
+	else
+		return false;
 }
 
 bool USBUtil::Exit()

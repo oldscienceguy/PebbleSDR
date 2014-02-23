@@ -46,6 +46,13 @@ public:
 	bool InitUSB();
 	bool OpenDevice();
 	bool CloseDevice();
+	//FTDI Specific, review all these and rename to indicate FT specific
+	bool ResetDevice();
+	bool SetBaudRate(quint16 _baudRate);
+	bool SetBitMode(unsigned char _ucMask, unsigned char _ucEnable);
+	bool Write(void *_buffer, quint32 _length);
+
+
 	bool SetConfiguration(int config);
 	bool Claim_interface(int iface);
 	bool ReleaseInterface(int iface);
@@ -80,7 +87,7 @@ private:
 
 	bool isFtdiLoaded;
 	int ftdiDevice;
-
+	FT_HANDLE ftHandle;
 
 };
 
