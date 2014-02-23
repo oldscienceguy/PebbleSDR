@@ -4,7 +4,6 @@
 #include <QtPlugin>
 #include <QPluginLoader>
 //Temp for internal devices, will be deleted when everything is a plugin
-#include "devices/elektorsdr.h"
 #include "devices/sdr_iq.h"
 #include "devices/sdr_ip.h"
 
@@ -46,17 +45,6 @@ QList<PluginInfo> Plugins::GetDevicePluginInfo()
     //Add transition non-plugin devices
     PluginInfo p;
     p.type = PluginInfo::DEVICE_PSEUDO_PLUGIN;
-    p.name = "Elektor SDR";
-    p.fileName = "ELEKTOR";
-    p.deviceInterface = new ElektorSDR(receiver, SDR::ELEKTOR,settings);
-    info.append(p);
-
-#if 0
-    p.name = "Elektor SDR + Preamp";
-    p.fileName = "ELEKTOR_PA";
-    p.deviceInterface = new ElektorSDR(receiver, SDR::ELEKTOR_PA,settings);
-    info.append(p);
-#endif
 
     p.name = "RFSpace SDR-IQ";
     p.fileName = "SDR_IQ_USB";

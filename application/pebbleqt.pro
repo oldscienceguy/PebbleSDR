@@ -367,7 +367,6 @@ HEADERS += \
     demod/rdsdecode.h \
     filters/fractresampler.h \
     devices/sdr_iq.h \
-    devices/elektorsdr.h \
     devices/usbutil.h \
     devices/usb.h \
     devices/extio.h \
@@ -421,7 +420,6 @@ SOURCES += \
     demod/rdsdecode.cpp \
     filters/fractresampler.cpp \
     devices/sdr_iq.cpp \
-    devices/elektorsdr.cpp \
 	devices/usbutil.cpp \
     devices/sdr_ip.cpp \
     devices/sdr-ip/dataprocess.cpp \
@@ -443,7 +441,6 @@ FORMS += \
     sdriqoptions.ui \
     receiverwidget.ui \
     pebbleii.ui \
-    elektoroptions.ui \
     iqbalanceoptions.ui \
     sdr-ip.ui \
     sdr.ui \
