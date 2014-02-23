@@ -126,6 +126,29 @@ bool USBUtil::ResetDevice()
 	return false;
 }
 
+bool USBUtil::Purge()
+{
+	if (libType == LIB_USB) {
+		return true;
+	} else if (libType == FTDI_D2XX) {
+		FT_STATUS result = FT_Purge(ftHandle,FT_PURGE_RX | FT_PURGE_TX);
+		return result == FT_OK;
+	} else
+		return false;
+}
+
+bool USBUtil::SetTimeouts(quint32 _readTimeout, quint32 _writeTimeout)
+{
+	if (libType == LIB_USB) {
+		return true;
+	} else if (libType == FTDI_D2XX) {
+		FT_STATUS result = FT_SetTimeouts(ftHandle,_readTimeout, _writeTimeout);
+		return result == FT_OK;
+	} else
+		return false;
+
+}
+
 bool USBUtil::SetBaudRate(quint16 _baudRate)
 {
 	if (libType == LIB_USB) {
@@ -146,6 +169,30 @@ bool USBUtil::SetBitMode(unsigned char _ucMask, unsigned char _ucEnable)
 		return result==FT_OK ? true : false;
 	}
 	return false;
+}
+
+bool USBUtil::GetQueueStatus()
+{
+	if (libType == LIB_USB) {
+		return true; //No implementation
+	} else if (libType == FTDI_D2XX) {
+		quint32 actual;
+		FT_STATUS result = FT_GetQueueStatus(ftHandle, &actual);
+		return result==FT_OK ? true : false;
+	}
+	return false;
+}
+
+bool USBUtil::Read(void *_buffer, quint32 _bytesToRead)
+{
+	if (libType == LIB_USB) {
+		return true;
+	} else if (libType == FTDI_D2XX) {
+		quint32 actual;
+		FT_STATUS result = FT_Read(ftHandle,_buffer,_bytesToRead, &actual);
+		return result == FT_OK;
+	} else
+		return false;
 }
 
 bool USBUtil::Write(void *_buffer, quint32 _length)

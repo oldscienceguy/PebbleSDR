@@ -77,6 +77,10 @@ public:
 	bool IsUSBLoaded();
 	bool Exit();
 
+	bool Read(void *_buffer, quint32 _bytesToRead);
+	bool Purge();
+	bool SetTimeouts(quint32 _readTimeout, quint32 _writeTimeout);
+	bool GetQueueStatus();
 private:
 	USB_LIB_TYPE libType;
 	quint16 timeout;
