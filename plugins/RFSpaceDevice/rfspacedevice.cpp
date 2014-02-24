@@ -17,8 +17,13 @@ RFSpaceDevice::RFSpaceDevice():DeviceInterfaceBase()
 	inBufferSize = 2048; //settings->framesPerBuffer;
 	inBuffer = CPXBuf::malloc(inBufferSize);
 	//Max data block we will ever read is dataBlockSize
-	readBuf = new BYTE[dataBlockSize];
-	readBufProducer = new BYTE[dataBlockSize];
+	readBuf = new unsigned char[dataBlockSize];
+	readBufProducer = new unsigned char[dataBlockSize];
+
+	tcpSocket = new QTcpSocket();
+	udpSocket = new QUdpSocket();
+
+	connectionType = CONNECTION_TYPE::USB;
 }
 
 RFSpaceDevice::~RFSpaceDevice()
@@ -32,7 +37,8 @@ RFSpaceDevice::~RFSpaceDevice()
 		free (readBuf);
 	if (readBufProducer != NULL)
 		free (readBufProducer);
-
+	delete tcpSocket;
+	delete udpSocket;
 }
 
 bool RFSpaceDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
@@ -49,55 +55,67 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuff
 
 bool RFSpaceDevice::Connect()
 {
-	if (!usbUtil->IsUSBLoaded()) {
-		if (!usbUtil->LoadUsb()) {
-			QMessageBox::information(NULL,"Pebble","USB not loaded.  Elektor communication is disabled.");
+	if (connectionType == TCP) {
+		return true;
+	} else if (connectionType == USB) {
+		if (!usbUtil->IsUSBLoaded()) {
+			if (!usbUtil->LoadUsb()) {
+				QMessageBox::information(NULL,"Pebble","USB not loaded.  Elektor communication is disabled.");
+				return false;
+			}
+		}
+
+		if (!usbUtil->FindDevice("SDR-IQ",false))
+			return false;
+
+		//Open device
+		if (!usbUtil->OpenDevice())
+			return false; // FT_Open failed
+
+		//Any errors after here need to call CloseDevice since we succeeded in opening
+		if (!usbUtil->ResetDevice()) {
+			usbUtil->CloseDevice();
 			return false;
 		}
+
+		//Make sure driver buffers are empty
+		if (!usbUtil->Purge()) {
+			usbUtil->CloseDevice();
+			return false;
+		}
+
+		if (!usbUtil->SetTimeouts(500,500)) {
+			usbUtil->CloseDevice();
+			return false;
+		}
+
+		//Testing: Increase size of internal buffers from default 4096
+		//ftStatus = FT_SetUSBParameters(ftHandle,8192,8192);
+
+
+		//SDR sends a 0 on startup, clear it out of buffer
+		//Ignore error if we don't get 1 byte
+		usbUtil->Read(readBuf,1);
+
+		connected = true;
+		return true;
+
 	}
-
-	if (!usbUtil->FindDevice("SDR-IQ",false))
-		return false;
-
-	//Open device
-	if (!usbUtil->OpenDevice())
-		return false; // FT_Open failed
-
-	//Any errors after here need to call CloseDevice since we succeeded in opening
-	if (!usbUtil->ResetDevice()) {
-		usbUtil->CloseDevice();
-		return false;
-	}
-
-	//Make sure driver buffers are empty
-	if (!usbUtil->Purge()) {
-		usbUtil->CloseDevice();
-		return false;
-	}
-
-	if (!usbUtil->SetTimeouts(500,500)) {
-		usbUtil->CloseDevice();
-		return false;
-	}
-
-	//Testing: Increase size of internal buffers from default 4096
-	//ftStatus = FT_SetUSBParameters(ftHandle,8192,8192);
-
-
-	//SDR sends a 0 on startup, clear it out of buffer
-	//Ignore error if we don't get 1 byte
-	usbUtil->Read(readBuf,1);
-
-	connected = true;
-	return true;
+	return false; //Invalid connection type
 }
 
 bool RFSpaceDevice::Disconnect()
 {
-	usbUtil->CloseDevice();
-	connected = false;
-	return true;
+	if (connectionType == TCP) {
+		return true;
+	} else if (connectionType == USB) {
+		usbUtil->CloseDevice();
+		connected = false;
+		return true;
+	}
+	return false;
 }
+
 
 void RFSpaceDevice::Start()
 {
@@ -416,7 +434,7 @@ void RFSpaceDevice::consumerWorker(cbProducerConsumerEvents _event)
 {
 	Q_UNUSED(_event);
 
-	//BYTE ackBuf[] = {0x03,0x60,0x00}; //Ack data block 0
+	//unsigned char ackBuf[] = {0x03,0x60,0x00}; //Ack data block 0
 	//DWORD bytesWritten;
 	//FT_STATUS ftStatus;
 	float I,Q;
@@ -488,54 +506,72 @@ void RFSpaceDevice::ifGainChanged(int i)
 	SetIFGain(ifGain);
 }
 
+bool RFSpaceDevice::SendTcpCommand(void *buf, qint64 len)
+{
+	qint64 actual = tcpSocket->write((char *)buf, len);
+	return actual == len;
+
+}
 
 //Device specific
 //0,-10,-20,-30
 bool RFSpaceDevice::SetRFGain(qint8 gain)
 {
-	BYTE writeBuf[6] = { 0x06, 0x00, 0x38, 0x00, 0xff, 0xff};
+	unsigned char writeBuf[6] = { 0x06, 0x00, 0x38, 0x00, 0xff, 0xff};
 	writeBuf[4] = 0x00;
 	writeBuf[5] = gain ;
-
-	if (!usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf))) {
-		return false;
+	if (connectionType == TCP) {
+		return SendTcpCommand(writeBuf,sizeof(writeBuf));
+	} else if (connectionType == USB) {
+		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
 	}
-	return true;
+	return false;
 }
 //This is not documented in Interface spec, but used in activeX examples
 bool RFSpaceDevice::SetIFGain(qint8 gain)
 {
-	BYTE writeBuf[6] = { 0x06, 0x00, 0x40, 0x00, 0xff, 0xff};
+	unsigned char writeBuf[6] = { 0x06, 0x00, 0x40, 0x00, 0xff, 0xff};
 	//Bits 7,6,5 are Factory test bits and are masked
 	writeBuf[4] = 0; //gain & 0xE0;
 	writeBuf[5] = gain;
-
-	if (!usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf)))
-		return false;
-	else
-		return true;
+	if (connectionType == TCP) {
+		return SendTcpCommand(writeBuf,sizeof(writeBuf));
+	} else if (connectionType == USB) {
+		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+	}
+	return false;
 }
-unsigned RFSpaceDevice::StartCapture()
+bool RFSpaceDevice::StartCapture()
 {
-	BYTE writeBuf[8] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x02, 0x00, 0x00};
-	if (!usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf)))
-		return -1;
-	return 0;
+	unsigned char writeBuf[8] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x02, 0x00, 0x00};
+	if (connectionType == TCP) {
+		return SendTcpCommand(writeBuf,sizeof(writeBuf));
+	} else if (connectionType == USB) {
+		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+	}
+	return false;
 }
 
-unsigned RFSpaceDevice::StopCapture()
+bool RFSpaceDevice::StopCapture()
 {
-	BYTE writeBuf[8] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x01, 0x00, 0x00};
-	if (!usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf)))
-		return -1;
-	return 0;
+	unsigned char writeBuf[8] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x01, 0x00, 0x00};
+	if (connectionType == TCP) {
+		return SendTcpCommand(writeBuf,sizeof(writeBuf));
+	} else if (connectionType == USB) {
+		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+	}
+	return false;
 }
 void RFSpaceDevice::FlushDataBlocks()
 {
 	bool result;
-	do
-		result = usbUtil->Read(readBuf, 1);
-	while (result);
+	if (connectionType == TCP) {
+		return;
+	} else if (connectionType == USB) {
+		do
+			result = usbUtil->Read(readBuf, 1);
+		while (result);
+	}
 }
 //Control Item Code 0x0001
 bool RFSpaceDevice::RequestTargetName()
@@ -543,92 +579,119 @@ bool RFSpaceDevice::RequestTargetName()
 	targetName = "Pending";
 	//0x04, 0x20 is the request command
 	//0x01, 0x00 is the Control Item Code (command)
-	BYTE writeBuf[4] = { 0x04, 0x20, 0x01, 0x00 };
-	//Ask for data
-	if (!usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf)))
-		return false;
-	return true;
+	unsigned char writeBuf[4] = { 0x04, 0x20, 0x01, 0x00 };
+	if (connectionType == TCP) {
+		return SendTcpCommand(writeBuf,sizeof(writeBuf));
+	} else if (connectionType == USB) {
+		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+	}
+	return false;
 }
 //Same pattern as TargetName
 bool RFSpaceDevice::RequestTargetSerialNumber()
 {
 	serialNumber = "Pending";
-	BYTE writeBuf[4] = { 0x04, 0x20, 0x02, 0x00 };
-	if (!usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf)))
-		return false;
-	return true;
+	unsigned char writeBuf[4] = { 0x04, 0x20, 0x02, 0x00 };
+	if (connectionType == TCP) {
+		return SendTcpCommand(writeBuf,sizeof(writeBuf));
+	} else if (connectionType == USB) {
+		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+	}
+	return false;
 }
 bool RFSpaceDevice::RequestInterfaceVersion()
 {
 	interfaceVersion = 0;
-	BYTE writeBuf[4] = { 0x04, 0x20, 0x03, 0x00 };
-	if (!usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf)))
-		return false;
-	else
-		return true;
+	unsigned char writeBuf[4] = { 0x04, 0x20, 0x03, 0x00 };
+	if (connectionType == TCP) {
+		return SendTcpCommand(writeBuf,sizeof(writeBuf));
+	} else if (connectionType == USB) {
+		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+	}
+	return false;
 }
 bool RFSpaceDevice::RequestFirmwareVersion()
 {
 	firmwareVersion = 0;
-	BYTE writeBuf[5] = { 0x05, 0x20, 0x04, 0x00, 0x01 };
-	if (!usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf)))
-		return false;
-	return true;
+	unsigned char writeBuf[5] = { 0x05, 0x20, 0x04, 0x00, 0x01 };
+	if (connectionType == TCP) {
+		return SendTcpCommand(writeBuf,sizeof(writeBuf));
+	} else if (connectionType == USB) {
+		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+	}
+	return false;
 }
 bool RFSpaceDevice::RequestBootcodeVersion()
 {
 	bootcodeVersion = 0;
-	BYTE writeBuf[5] = { 0x05, 0x20, 0x04, 0x00, 0x00 };
-	if (!usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf)))
-		return false;
-	return true;
+	unsigned char writeBuf[5] = { 0x05, 0x20, 0x04, 0x00, 0x00 };
+	if (connectionType == TCP) {
+		return SendTcpCommand(writeBuf,sizeof(writeBuf));
+	} else if (connectionType == USB) {
+		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+	}
+	return false;
 }
 
-unsigned RFSpaceDevice::StatusCode()
+bool RFSpaceDevice::RequestStatusCode()
 {
-	BYTE writeBuf[4] = { 0x04, 0x20, 0x05, 0x00};
-	if (!usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf)))
-		return -1;
-	return 0;
+	unsigned char writeBuf[4] = { 0x04, 0x20, 0x05, 0x00};
+	if (connectionType == TCP) {
+		return SendTcpCommand(writeBuf,sizeof(writeBuf));
+	} else if (connectionType == USB) {
+		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+	}
+	return false;
 }
 //Call may not be working right in SDR-IQ
-QString RFSpaceDevice::StatusString(BYTE code)
+bool RFSpaceDevice::RequestStatusString(unsigned char code)
 {
-	BYTE writeBuf[5] = { 0x05, 0x20, 0x06, 0x00, code};
-	if (!usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf)))
-		return "";
-	return "TBD";
+	unsigned char writeBuf[5] = { 0x05, 0x20, 0x06, 0x00, code};
+	if (connectionType == TCP) {
+		return SendTcpCommand(writeBuf,sizeof(writeBuf));
+	} else if (connectionType == USB) {
+		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+	}
+	return false;
 }
-double RFSpaceDevice::GetFrequency()
+bool RFSpaceDevice::GetFrequency()
 {
-	BYTE writeBuf[5] = { 0x05, 0x20, 0x20, 0x00, 0x00};
-	if (!usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf)))
-		return -1;
-	return 0;
+	unsigned char writeBuf[5] = { 0x05, 0x20, 0x20, 0x00, 0x00};
+	if (connectionType == TCP) {
+		return SendTcpCommand(writeBuf,sizeof(writeBuf));
+	} else if (connectionType == USB) {
+		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+	}
+	return false;
 }
-double RFSpaceDevice::SetFrequency(double freq)
+bool RFSpaceDevice::SetFrequency(double freq)
 {
 	if (freq==0)
 		return freq; //ignore
 
-	BYTE writeBuf[0x0a] = { 0x0a, 0x00, 0x20, 0x00, 0x00,0xff,0xff,0xff,0xff,0x01};
+	unsigned char writeBuf[0x0a] = { 0x0a, 0x00, 0x20, 0x00, 0x00,0xff,0xff,0xff,0xff,0x01};
 	DoubleToBuf(&writeBuf[5],freq);
-	if (!usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf)))
-		return 0;
-	return freq;
+	if (connectionType == TCP) {
+		return SendTcpCommand(writeBuf,sizeof(writeBuf));
+	} else if (connectionType == USB) {
+		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+	}
+	return false;
 }
 
 //OneShot - Requests SDR to send numBlocks of data
 //Note: Blocks are fixed size, 8192 bytes
-unsigned RFSpaceDevice::CaptureBlocks(unsigned numBlocks)
+bool RFSpaceDevice::CaptureBlocks(unsigned numBlocks)
 {
 	//C++11 doesn't allow variable in constant initializer, so we set writeBuf[7] separately
-	BYTE writeBuf[8] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x02, 0x02, 0x00};
+	unsigned char writeBuf[8] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x02, 0x02, 0x00};
 	writeBuf[7] = numBlocks;
-	if (!usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf)))
-		return -1;
-
-	return 0;
+	if (connectionType == TCP) {
+		return SendTcpCommand(writeBuf,sizeof(writeBuf));
+	} else if (connectionType == USB) {
+		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+	}
+	return false;
 }
 
 //Static utility functions
@@ -643,10 +706,10 @@ void RFSpaceDevice::DoubleToBuf(unsigned char *buf, double value)
 	//Byte order is LSB/MSB
 	//Ex: 14010000 -> 0x00D5C690 -> 0x90C6D500
 	//We just reverse the byte order by masking and shifting
-	buf[0] = (BYTE)((v) & 0xff);
-	buf[1] = (BYTE)((v >> 8) & 0xff);
-	buf[2] = (BYTE)((v >> 16) & 0xff);
-	buf[3] = (BYTE)((v >> 24) & 0xff);;
+	buf[0] = (unsigned char)((v) & 0xff);
+	buf[1] = (unsigned char)((v >> 8) & 0xff);
+	buf[2] = (unsigned char)((v >> 16) & 0xff);
+	buf[3] = (unsigned char)((v >> 24) & 0xff);;
 
 }
 

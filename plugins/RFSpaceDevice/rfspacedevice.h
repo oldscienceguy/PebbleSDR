@@ -10,6 +10,8 @@
 #include "cpx.h"
 #include "ad6620.h"
 #include "ui_sdriqoptions.h"
+#include <QTcpSocket>
+#include <QUdpSocket>
 
 //Host to Target(Device)
 enum HostHeaderTypes {
@@ -80,6 +82,9 @@ private slots:
 	void ifGainChanged(int i);
 
 private:
+	enum CONNECTION_TYPE {UNKNOWN, USB, TCP};
+	CONNECTION_TYPE connectionType;
+
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
 	ProducerConsumer producerConsumer;
@@ -87,9 +92,9 @@ private:
 	AD6620 *ad6620;
 
 	//Capture N blocks of data
-	unsigned CaptureBlocks(unsigned numBlocks);
-	unsigned StartCapture();
-	unsigned StopCapture();
+	bool CaptureBlocks(unsigned numBlocks);
+	bool StartCapture();
+	bool StopCapture();
 	bool ReadDataBlock(CPX cpxBuf[], unsigned cpxBufSize);
 	void FlushDataBlocks();
 	//Write 5 bytes of data
@@ -104,8 +109,8 @@ private:
 	bool RequestInterfaceVersion(); //Version * 100, ie 1.23 returned as 123
 	bool RequestFirmwareVersion();
 	bool RequestBootcodeVersion();
-	unsigned StatusCode();
-	QString StatusString(unsigned char code);
+	bool RequestStatusCode();
+	bool RequestStatusString(unsigned char code);
 
 
 	Ui::SdrIqOptions *optionUi;
@@ -115,9 +120,6 @@ private:
 	int inBufferSize;
 	unsigned char *readBuf;
 	unsigned char *readBufProducer; //Exclusively for producer thread to avoid possible buffer contention with main thread
-
-	int msTimeOut;
-
 
 	//Returned data values from SDR-IQ
 	QString targetName;
@@ -131,21 +133,20 @@ private:
 	double receiverFrequency;
 	int rfGain;
 	int ifGain;
-	AD6620::BANDWIDTH bandwidth;
 
-	//Remove
 	//Settings
-	double sDefaultStartup;
-	double sLow;
-	double sHigh;
-	int sStartupMode;
-	double sGain;
-	int sBandwidth;
+	AD6620::BANDWIDTH sBandwidth;
 	int sRFGain;
 	int sIFGain;
 
-	double SetFrequency(double freq);
-	double GetFrequency();
+	bool SetFrequency(double freq);
+	bool GetFrequency();
+
+	//SDR-IP Specific
+	QTcpSocket *tcpSocket;
+	QUdpSocket *udpSocket;
+
+	bool SendTcpCommand(void *buf, qint64 len);
 };
 
 

@@ -15,7 +15,7 @@ include (../DigitalModemExample/fix_plugin_libraries.pri)
 QMAKE_LFLAGS += -rpath $${DESTDIR}/../lib
 
 #Required for options UI
-QT += widgets
+QT += widgets network
 
 #Help plugin not worry about include paths
 INCLUDEPATH += ../../application
