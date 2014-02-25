@@ -81,6 +81,13 @@ private slots:
 	void rfGainChanged(int i);
 	void ifGainChanged(int i);
 
+	void TCPSocketError(QAbstractSocket::SocketError socketError);
+	void TCPSocketConnected();
+	void TCPSocketDisconnected();
+	void TCPSocketNewData();
+	void UDPSocketNewData();
+
+
 private:
 	enum CONNECTION_TYPE {UNKNOWN, USB, TCP};
 	CONNECTION_TYPE connectionType;
@@ -119,7 +126,9 @@ private:
 	CPX *inBuffer;
 	int inBufferSize;
 	unsigned char *readBuf;
-	unsigned char *readBufProducer; //Exclusively for producer thread to avoid possible buffer contention with main thread
+	unsigned char *usbReadBuf; //Exclusively for producer thread to avoid possible buffer contention with main thread
+	unsigned char *udpReadBuf;
+	unsigned char *tcpReadBuf;
 
 	//Returned data values from SDR-IQ
 	QString targetName;
@@ -145,8 +154,15 @@ private:
 	//SDR-IP Specific
 	QTcpSocket *tcpSocket;
 	QUdpSocket *udpSocket;
+	QHostAddress deviceAddress;
+	quint16 devicePort;
+
+	quint16 readBufferIndex; //Used to track whether we have full buffer or not, 0 to readBufferSize-1
+	char *producerFreeBufPtr;
+
 
 	bool SendTcpCommand(void *buf, qint64 len);
+	void processControlItem(quint16 headerType, quint16 itemCode);
 };
 
 

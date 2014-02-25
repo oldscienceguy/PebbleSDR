@@ -9,7 +9,7 @@ RFSpaceDevice::RFSpaceDevice():DeviceInterfaceBase()
 
 	optionUi = NULL;
 	inBuffer = NULL;
-	readBuf = readBufProducer = NULL;
+	readBuf = usbReadBuf = NULL;
 	usbUtil = new USBUtil(USBUtil::FTDI_D2XX);
 	ad6620 = new AD6620(usbUtil);
 
@@ -18,10 +18,12 @@ RFSpaceDevice::RFSpaceDevice():DeviceInterfaceBase()
 	inBuffer = CPXBuf::malloc(inBufferSize);
 	//Max data block we will ever read is dataBlockSize
 	readBuf = new unsigned char[dataBlockSize];
-	readBufProducer = new unsigned char[dataBlockSize];
-
-	tcpSocket = new QTcpSocket();
-	udpSocket = new QUdpSocket();
+	usbReadBuf = new unsigned char[dataBlockSize];
+	//Separate buffers for tcp/udp
+	udpReadBuf = new unsigned char[dataBlockSize];
+	tcpReadBuf = new unsigned char[dataBlockSize];
+	tcpSocket = NULL;
+	udpSocket = NULL;
 
 	connectionType = CONNECTION_TYPE::USB;
 }
@@ -34,11 +36,17 @@ RFSpaceDevice::~RFSpaceDevice()
 	if (inBuffer != NULL)
 		CPXBuf::free(inBuffer);
 	if (readBuf != NULL)
-		free (readBuf);
-	if (readBufProducer != NULL)
-		free (readBufProducer);
-	delete tcpSocket;
-	delete udpSocket;
+		delete [] readBuf;
+	if (usbReadBuf != NULL)
+		delete [] usbReadBuf;
+	if (udpReadBuf != NULL)
+		delete [] udpReadBuf;
+	if (tcpReadBuf != NULL)
+		delete [] tcpReadBuf;
+	if (tcpSocket != NULL)
+		delete tcpSocket;
+	if (udpSocket != NULL)
+		delete udpSocket;
 }
 
 bool RFSpaceDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
@@ -50,6 +58,33 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuff
 	producerConsumer.Initialize(std::bind(&RFSpaceDevice::producerWorker, this, std::placeholders::_1),
 		std::bind(&RFSpaceDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, dataBlockSize);
 	producerConsumer.SetPollingInterval(sampleRate,dataBlockSize);
+
+	readBufferIndex = 0;
+
+	if (connectionType == TCP && tcpSocket == NULL) {
+		tcpSocket = new QTcpSocket();
+
+		//We use the signals emitted by QTcpSocket to get new data, instead of polling in a separate thread
+		//As a result, there is no producer thread in the TCP case.
+		//Set up state change connections
+		connect(tcpSocket,&QTcpSocket::connected, this, &RFSpaceDevice::TCPSocketConnected);
+		connect(tcpSocket,&QTcpSocket::disconnected, this, &RFSpaceDevice::TCPSocketDisconnected);
+		connect(tcpSocket,SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(TCPSocketError(QAbstractSocket::SocketError)));
+		connect(tcpSocket,&QTcpSocket::readyRead, this, &RFSpaceDevice::TCPSocketNewData);
+	}
+	if (connectionType == TCP && udpSocket == NULL) {
+		udpSocket = new QUdpSocket();
+		//Set up UDP Socket to listen for datagrams addressed to whatever IP/Port we set
+		bool result = udpSocket->bind(); //Binds to QHostAddress:Any on port which is randomly chosen
+		//Alternative if we need to set a specific HostAddress and port
+		//result = udpSocket->bind(QHostAddress::Any, port=0);
+		if (result) {
+			connect(udpSocket, &QUdpSocket::readyRead, this, &RFSpaceDevice::UDPSocketNewData);
+		} else {
+			return false;
+		}
+
+	}
 	return true;
 }
 
@@ -119,7 +154,10 @@ bool RFSpaceDevice::Disconnect()
 
 void RFSpaceDevice::Start()
 {
-	producerConsumer.Start(true,true);
+	if (connectionType == TCP)
+		producerConsumer.Start(false,true);
+	else
+		producerConsumer.Start(true,true);
 	//Set bandwidth first, takes a while and returns lots of garbage ACKs
 	ad6620->SetBandwidth(sBandwidth);
 
@@ -160,6 +198,8 @@ void RFSpaceDevice::ReadSettings()
 	//Device specific settings follow
 	sRFGain = qSettings->value("RFGain",0).toInt();
 	sIFGain = qSettings->value("IFGain",18).toInt();
+	deviceAddress = QHostAddress(qSettings->value("DeviceAddress","10.0.1.100").toString());
+	devicePort = qSettings->value("DevicePort",50000).toInt();
 
 	//Instead of getting BW from SDR_IQ options dialog, we now get it directly from settings dialog
 	//because we're passing GetSampleRates() during dialog setup
@@ -182,6 +222,8 @@ void RFSpaceDevice::WriteSettings()
 	//Device specific settings follow
 	qSettings->setValue("RFGain",sRFGain);
 	qSettings->setValue("IFGain",sIFGain);
+	qSettings->setValue("DeviceAddress",deviceAddress.toString());
+	qSettings->setValue("DevicePort",devicePort);
 
 	qSettings->sync();
 }
@@ -291,6 +333,83 @@ void RFSpaceDevice::SetupOptionUi(QWidget *parent)
 	}
 }
 
+void RFSpaceDevice::processControlItem(quint16 headerType, quint16 itemCode)
+{
+	switch (headerType)
+	{
+	//Response to Set or Request Current Control Item
+	case TargetHeaderTypes::ResponseControlItem:
+		switch (itemCode)
+		{
+		case 0x0001: //Target Name
+			targetName = QString((char*)&usbReadBuf[2]);
+			break;
+		case 0x0002: //Serial Number
+			serialNumber = QString((char*)&usbReadBuf[2]);
+			break;
+		case 0x0003: //Interface Version
+			interfaceVersion = (unsigned)(usbReadBuf[2] + usbReadBuf[3] * 256);
+			break;
+		case 0x0004: //Hardware/Firmware Version
+			if (usbReadBuf[2] == 0x00)
+				bootcodeVersion = (unsigned)(usbReadBuf[3] + usbReadBuf[4] * 256);
+			else if (usbReadBuf[2] == 0x01)
+				firmwareVersion = (unsigned)(usbReadBuf[3] + usbReadBuf[4] * 256);
+			break;
+		case 0x0005: //Status/Error Code
+			statusCode = (unsigned)(usbReadBuf[2]);
+			break;
+		case 0x0006: //Status String
+			statusString = QString((char*)&usbReadBuf[4]);
+			break;
+		case 0x0018: //Receiver Control
+			lastReceiverCommand = usbReadBuf[3];
+			//More to get if we really need it
+			break;
+		case 0x0020: //Receiver Frequency
+			receiverFrequency = (double) usbReadBuf[3] + usbReadBuf[4] * 0x100 + usbReadBuf[5] * 0x10000 + usbReadBuf[6] * 0x1000000;
+			break;
+		case 0x0038: //RF Gain - values are 0 to -30
+			rfGain = (qint8)usbReadBuf[3];
+			break;
+		case 0x0040: //IF Gain - values are all 8bit
+			ifGain = (qint8)usbReadBuf[3];
+			break;
+		case 0x00B0: //A/D Input Sample Rate
+			break;
+		default:
+			//bool brk = true;
+			break;
+		}
+		break;
+	//Unsolicited Control Item
+	case TargetHeaderTypes::UnsolicitedControlItem:
+		break;
+	//Response to Request Control Item Range
+	case TargetHeaderTypes::ResponseControlItemRange:
+		break;
+	case TargetHeaderTypes::DataItemACKTargetToHost:
+		//ACK: ReadBuf[0] has data item being ack'e (0-3)
+		break;
+	case TargetDataItem0:
+		//Should never get here, data blocks handled elsewhere
+		Q_UNREACHABLE();
+		break;
+	case TargetDataItem1:
+		Q_UNREACHABLE();
+		break;
+	case TargetDataItem2:
+		Q_UNREACHABLE();
+		break;
+	case TargetDataItem3:
+		Q_UNREACHABLE();
+		break;
+	default:
+		break;
+	}
+
+}
+
 void RFSpaceDevice::producerWorker(cbProducerConsumerEvents _event)
 {
 	Q_UNUSED(_event);
@@ -303,12 +422,12 @@ void RFSpaceDevice::producerWorker(cbProducerConsumerEvents _event)
 
 	//Note, this assumes that we're in sync with stream
 	//Read 16 bit Header which contains message length and type
-	if (!usbUtil->Read(readBufProducer,2))
+	if (!usbUtil->Read(usbReadBuf,2))
 		//mutex.unlock();
 		return;
 
 	ControlHeader header;
-	UnpackHeader(readBufProducer[0], readBufProducer[1], &header);
+	UnpackHeader(usbReadBuf[0], usbReadBuf[1], &header);
 
 	if (header.type == TargetHeaderTypes::TargetDataItem0 && header.length==0) {
 
@@ -343,86 +462,15 @@ void RFSpaceDevice::producerWorker(cbProducerConsumerEvents _event)
 	//FT_Read fails in this case because there are actually no more bytes to read
 	//See if we this is ack, nak, or something else that needs special casing
 	//Trace back and see what last FT_Write was?
-	if (!usbUtil->Read(readBufProducer,header.length)) {
+	if (!usbUtil->Read(usbReadBuf,header.length)) {
 		//mutex.unlock();
 		return;
 	}
 
-	int itemCode = readBufProducer[0] | readBufProducer[1]<<8;
+	int itemCode = usbReadBuf[0] | usbReadBuf[1]<<8;
 	//qDebug()<<"Type ="<<type<<" ItemCode = "<<itemCode;
-	switch (header.type)
-	{
-	//Response to Set or Request Current Control Item
-	case TargetHeaderTypes::ResponseControlItem:
-		switch (itemCode)
-		{
-		case 0x0001: //Target Name
-			targetName = QString((char*)&readBufProducer[2]);
-			break;
-		case 0x0002: //Serial Number
-			serialNumber = QString((char*)&readBufProducer[2]);
-			break;
-		case 0x0003: //Interface Version
-			interfaceVersion = (unsigned)(readBufProducer[2] + readBufProducer[3] * 256);
-			break;
-		case 0x0004: //Hardware/Firmware Version
-			if (readBufProducer[2] == 0x00)
-				bootcodeVersion = (unsigned)(readBufProducer[3] + readBufProducer[4] * 256);
-			else if (readBufProducer[2] == 0x01)
-				firmwareVersion = (unsigned)(readBufProducer[3] + readBufProducer[4] * 256);
-			break;
-		case 0x0005: //Status/Error Code
-			statusCode = (unsigned)(readBufProducer[2]);
-			break;
-		case 0x0006: //Status String
-			statusString = QString((char*)&readBufProducer[4]);
-			break;
-		case 0x0018: //Receiver Control
-			lastReceiverCommand = readBufProducer[3];
-			//More to get if we really need it
-			break;
-		case 0x0020: //Receiver Frequency
-			receiverFrequency = (double) readBufProducer[3] + readBufProducer[4] * 0x100 + readBufProducer[5] * 0x10000 + readBufProducer[6] * 0x1000000;
-			break;
-		case 0x0038: //RF Gain - values are 0 to -30
-			rfGain = (qint8)readBufProducer[3];
-			break;
-		case 0x0040: //IF Gain - values are all 8bit
-			ifGain = (qint8)readBufProducer[3];
-			break;
-		case 0x00B0: //A/D Input Sample Rate
-			break;
-		default:
-			//bool brk = true;
-			break;
-		}
-		break;
-	//Unsolicited Control Item
-	case TargetHeaderTypes::UnsolicitedControlItem:
-		break;
-	//Response to Request Control Item Range
-	case TargetHeaderTypes::ResponseControlItemRange:
-		break;
-	case TargetHeaderTypes::DataItemACKTargetToHost:
-		//ACK: ReadBuf[0] has data item being ack'e (0-3)
-		break;
-	//Target Data Item 0
-	case TargetDataItem0:
-		//Should never get here, data blocks handled in separate thread
-		qDebug()<<"Should never get to case 0x04 in ReadResponse()";
-		break;
-	//Target Data Item 1 (not used in SDR-IQ)
-	case TargetDataItem1:
-		break;
-	//Target Data Item 2 (not used in SDR-IQ)
-	case TargetDataItem2:
-		break;
-	//Target Data Item 3 (not used in SDR-IQ)
-	case TargetDataItem3:
-		break;
-	default:
-		break;
-	}
+	processControlItem(header.type,itemCode);
+
 	//mutex.unlock();
 	return;
 
@@ -504,6 +552,82 @@ void RFSpaceDevice::ifGainChanged(int i)
 	ifGain = i * 6;
 	sIFGain = ifGain;
 	SetIFGain(ifGain);
+}
+
+void RFSpaceDevice::TCPSocketError(QAbstractSocket::SocketError socketError)
+{
+	Q_UNUSED(socketError);
+	qDebug()<<"Socket Error";
+}
+
+void RFSpaceDevice::TCPSocketConnected()
+{
+	qDebug()<<"Connected";
+}
+
+void RFSpaceDevice::TCPSocketDisconnected()
+{
+	qDebug()<<"Disconnected";
+}
+
+//TCP is all command and control responses
+void RFSpaceDevice::TCPSocketNewData()
+{
+	qint64 bytesAvailable = tcpSocket->bytesAvailable();
+
+	qint64 bytesRead = tcpSocket->read((char*)tcpReadBuf,bytesAvailable);
+	if (bytesRead != bytesAvailable) {
+		return;
+	}
+
+	ControlHeader header;
+	UnpackHeader(tcpReadBuf[0], tcpReadBuf[1], &header);
+	int itemCode = tcpReadBuf[2] | tcpReadBuf[3]<<8;
+	processControlItem(header.type,itemCode);
+}
+
+//UDP is all IQ data
+void RFSpaceDevice::UDPSocketNewData()
+{
+	QHostAddress sender;
+	quint16 senderPort;
+	qint16 actual;
+	qint64 dataGramSize = udpSocket->pendingDatagramSize();
+	actual = udpSocket->readDatagram((char*)udpReadBuf,dataGramSize, &sender, &senderPort);
+	if (actual != dataGramSize) {
+		qDebug()<<"ReadDatagram size error";
+		return;
+	}
+	//Double check to make sure datagram is right format
+	if (udpReadBuf[0] != TargetDataItem0 ||
+			udpReadBuf[1] != 0x84) {
+		return; //Invalid
+	}
+	//Ignore sequence nubmer for now and assume we get in correct order
+	//Eventually we can get fancy and buffer datagrams that arrive out of sequence and re-assemble in right order
+	quint16 sequenceNumer = udpReadBuf[2];
+	Q_UNUSED(sequenceNumer);
+	//1024 data bytes follow or 512 2 byte samples
+
+	if (readBufferIndex == 0) {
+		//Starting a new producer buffer
+		if ((producerFreeBufPtr = (char *)producerConsumer.AcquireFreeBuffer()) == NULL)
+			return;
+	}
+
+	//USB gets 2048 I and 2048 Q samples at a time, or 8192 bytes
+	//We need to build over 8 datagrams
+	memcpy(producerFreeBufPtr, &udpReadBuf[2+readBufferIndex], 1024);
+	readBufferIndex += 1024;
+
+	if (readBufferIndex == 8192) {
+		readBufferIndex = 0;
+		//Increment the number of data buffers that are filled so consumer thread can access
+		producerConsumer.ReleaseFilledBuffer();
+	}
+
+	return;
+
 }
 
 bool RFSpaceDevice::SendTcpCommand(void *buf, qint64 len)
