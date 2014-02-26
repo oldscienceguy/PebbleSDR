@@ -25,7 +25,7 @@ RFSpaceDevice::RFSpaceDevice():DeviceInterfaceBase()
 	tcpSocket = NULL;
 	udpSocket = NULL;
 
-	connectionType = CONNECTION_TYPE::USB;
+	connectionType = CONNECTION_TYPE::TCP;
 }
 
 RFSpaceDevice::~RFSpaceDevice()
@@ -74,10 +74,18 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuff
 	}
 	if (connectionType == TCP && udpSocket == NULL) {
 		udpSocket = new QUdpSocket();
+
 		//Set up UDP Socket to listen for datagrams addressed to whatever IP/Port we set
-		bool result = udpSocket->bind(); //Binds to QHostAddress:Any on port which is randomly chosen
+		//bool result = udpSocket->bind(); //Binds to QHostAddress:Any on port which is randomly chosen
 		//Alternative if we need to set a specific HostAddress and port
-		//result = udpSocket->bind(QHostAddress::Any, port=0);
+		//result = udpSocket->bind(QHostAddress(), SomePort);
+
+
+		//SDR-IP sends UPD datagrams to same port it uses for TCP
+		//So this binds our socket to accept datagrams from any IP, as long as port matches
+		//We could add an explicit setup where we tell SDR-IP what IP/Port to use for datagrams, but not needed I think
+		// ie SetUDPAddressAndPort(QHostAddress("192.168.0.255"),1234);
+		bool result = udpSocket->bind(devicePort);
 		if (result) {
 			connect(udpSocket, &QUdpSocket::readyRead, this, &RFSpaceDevice::UDPSocketNewData);
 		} else {
@@ -91,6 +99,15 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuff
 bool RFSpaceDevice::Connect()
 {
 	if (connectionType == TCP) {
+		tcpSocket->connectToHost(deviceAddress,devicePort,QTcpSocket::ReadWrite);
+		if (!tcpSocket->waitForConnected(1000)) {
+			//Socket was closed or error
+			qDebug()<<"Server error "<<tcpSocket->errorString();
+			return false;
+		}
+		qDebug()<<"Server connected";
+		connected = true;
+
 		return true;
 	} else if (connectionType == USB) {
 		if (!usbUtil->IsUSBLoaded()) {
@@ -142,6 +159,8 @@ bool RFSpaceDevice::Connect()
 bool RFSpaceDevice::Disconnect()
 {
 	if (connectionType == TCP) {
+		tcpSocket->disconnectFromHost();
+		connected = false;
 		return true;
 	} else if (connectionType == USB) {
 		usbUtil->CloseDevice();
@@ -154,22 +173,31 @@ bool RFSpaceDevice::Disconnect()
 
 void RFSpaceDevice::Start()
 {
-	if (connectionType == TCP)
+	if (connectionType == TCP) {
 		producerConsumer.Start(false,true);
-	else
+	} else {
 		producerConsumer.Start(true,true);
-	//Set bandwidth first, takes a while and returns lots of garbage ACKs
-	ad6620->SetBandwidth(sBandwidth);
+		//We're going to get back over 256 ACKs, eat em before continuing
+		//Otherwise we fill up data buffers while processing acks
+		FlushDataBlocks();
+	}
 
-	//We're going to get back over 256 ACKs, eat em before continuing
-	//Otherwise we fill up data buffers while processing acks
-	FlushDataBlocks();
 	//Get basic Device Information for later use, name, version, etc
 	bool result = RequestTargetName();
 	result = RequestTargetSerialNumber();
 	result = RequestFirmwareVersion();
 	result = RequestBootcodeVersion();
 	result = RequestInterfaceVersion();
+
+	//From SDR-IP doc.  1-5 can be in any order
+	//1-Set DDC Output sample rate to 100000. ( do not change after start command issued) [09] [00] [B8] [00] [00] [A0] [86] [01] [00]
+	//2-Set the RF Filter mode to automatic. [06] [00] [44] [00] [00] [00]
+	//3-Set the A/D mode to Dither and Gain of 1.5. [06] [00] [8A] [00] [00] [03]
+	//4-Set the NCO frequency to 20.0MHz [0A] [00] [20] [00] [00] [00] [2D] [31] [01] [00]
+	//5-Set the SDR-IP LCD frequency display to match NCO frequency.(optional command) [0A] [00] [20] [00] [01] [00] [2D] [31] [01] [00]
+	//6-Send the Start Capture command, Complex I/Q data, 24 bit contiguous mode [08] [00] [18] [00] [81] [02] [80] [00]
+
+	SetSampleRate();
 
 	//Set IF Gain, 0,+6, +12,+18,+24
 	SetIFGain(sIFGain);
@@ -234,30 +262,43 @@ QVariant RFSpaceDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 
 	switch (_key) {
 		case PluginName:
-			return "RFSPace";
+			return "RFSpace";
 			break;
 		case PluginDescription:
 			return "RFSpace SDR-IQ and SDR-IP";
 			break;
 		case DeviceName:
-			return "RFSpace";
+			if (connectionType == TCP)
+				return "SDR-IP";
+			else
+				return "SDR-IQ";
 		case DeviceSampleRates:
-			return QStringList()<<"55555"<<"111111"<<"158730"<<"196078";
+			if (connectionType == TCP)
+				return QStringList()<<"62500"<<"250000"<<"500000"<<"2000000";
+			else if (connectionType == USB)
+				return QStringList()<<"55555"<<"111111"<<"158730"<<"196078";
+			else
+				return QStringList();
 		case DeviceType:
 			return DeviceInterfaceBase::INTERNAL_IQ;
 		case DeviceSampleRate: {
-			//Sample rate is derived from bandwidth
-			switch (sBandwidth)
-			{
-				case AD6620::BW5K: return 8138;
-				case AD6620::BW10K: return 16276;
-				case AD6620::BW25K: return 37792;
-				case AD6620::BW50K: return 55555;
-				case AD6620::BW100K: return 111111;
-				case AD6620::BW150K: return 158730;
-				case AD6620::BW190K: return 196078;
-			}
-			return 48000;
+			if (connectionType == TCP) {
+				return sampleRate;
+			} else if (connectionType == USB) {
+				//Sample rate is derived from bandwidth
+				switch (sBandwidth)
+				{
+					case AD6620::BW5K: return 8138;
+					case AD6620::BW10K: return 16276;
+					case AD6620::BW25K: return 37792;
+					case AD6620::BW50K: return 55555;
+					case AD6620::BW100K: return 111111;
+					case AD6620::BW150K: return 158730;
+					case AD6620::BW190K: return 196078;
+				}
+				return 48000;
+			} else
+				return 0;
 		}
 		case DeviceFrequency:
 			return GetFrequency();
@@ -333,8 +374,10 @@ void RFSpaceDevice::SetupOptionUi(QWidget *parent)
 	}
 }
 
-void RFSpaceDevice::processControlItem(quint16 headerType, quint16 itemCode)
+void RFSpaceDevice::processControlItem(quint16 headerType, char *buf)
 {
+	int itemCode = buf[0] | buf[1]<<8;
+
 	switch (headerType)
 	{
 	//Response to Set or Request Current Control Item
@@ -342,38 +385,38 @@ void RFSpaceDevice::processControlItem(quint16 headerType, quint16 itemCode)
 		switch (itemCode)
 		{
 		case 0x0001: //Target Name
-			targetName = QString((char*)&usbReadBuf[2]);
+			targetName = QString((char*)&buf[2]);
 			break;
 		case 0x0002: //Serial Number
-			serialNumber = QString((char*)&usbReadBuf[2]);
+			serialNumber = QString((char*)&buf[2]);
 			break;
 		case 0x0003: //Interface Version
-			interfaceVersion = (unsigned)(usbReadBuf[2] + usbReadBuf[3] * 256);
+			interfaceVersion = (unsigned)(buf[2] + buf[3] * 256);
 			break;
 		case 0x0004: //Hardware/Firmware Version
-			if (usbReadBuf[2] == 0x00)
-				bootcodeVersion = (unsigned)(usbReadBuf[3] + usbReadBuf[4] * 256);
-			else if (usbReadBuf[2] == 0x01)
-				firmwareVersion = (unsigned)(usbReadBuf[3] + usbReadBuf[4] * 256);
+			if (buf[2] == 0x00)
+				bootcodeVersion = (unsigned)(buf[3] + buf[4] * 256);
+			else if (buf[2] == 0x01)
+				firmwareVersion = (unsigned)(buf[3] + buf[4] * 256);
 			break;
 		case 0x0005: //Status/Error Code
-			statusCode = (unsigned)(usbReadBuf[2]);
+			statusCode = (unsigned)(buf[2]);
 			break;
 		case 0x0006: //Status String
-			statusString = QString((char*)&usbReadBuf[4]);
+			statusString = QString((char*)&buf[4]);
 			break;
 		case 0x0018: //Receiver Control
-			lastReceiverCommand = usbReadBuf[3];
+			lastReceiverCommand = buf[3];
 			//More to get if we really need it
 			break;
 		case 0x0020: //Receiver Frequency
-			receiverFrequency = (double) usbReadBuf[3] + usbReadBuf[4] * 0x100 + usbReadBuf[5] * 0x10000 + usbReadBuf[6] * 0x1000000;
+			receiverFrequency = (double) buf[3] + buf[4] * 0x100 + buf[5] * 0x10000 + buf[6] * 0x1000000;
 			break;
 		case 0x0038: //RF Gain - values are 0 to -30
-			rfGain = (qint8)usbReadBuf[3];
+			rfGain = (qint8)buf[3];
 			break;
 		case 0x0040: //IF Gain - values are all 8bit
-			ifGain = (qint8)usbReadBuf[3];
+			ifGain = (qint8)buf[3];
 			break;
 		case 0x00B0: //A/D Input Sample Rate
 			break;
@@ -467,9 +510,8 @@ void RFSpaceDevice::producerWorker(cbProducerConsumerEvents _event)
 		return;
 	}
 
-	int itemCode = usbReadBuf[0] | usbReadBuf[1]<<8;
 	//qDebug()<<"Type ="<<type<<" ItemCode = "<<itemCode;
-	processControlItem(header.type,itemCode);
+	processControlItem(header.type, (char *)usbReadBuf);
 
 	//mutex.unlock();
 	return;
@@ -580,10 +622,14 @@ void RFSpaceDevice::TCPSocketNewData()
 		return;
 	}
 
+	//Assume we always get complete responses, ie responses don't cross NewData signals
 	ControlHeader header;
-	UnpackHeader(tcpReadBuf[0], tcpReadBuf[1], &header);
-	int itemCode = tcpReadBuf[2] | tcpReadBuf[3]<<8;
-	processControlItem(header.type,itemCode);
+	int index = 0;
+	while ( index < bytesRead ) {
+		UnpackHeader(tcpReadBuf[index], tcpReadBuf[index+1], &header);
+		processControlItem(header.type,(char*)&tcpReadBuf[index + 2]);
+		index += header.length;
+	}
 }
 
 //UDP is all IQ data
@@ -593,6 +639,10 @@ void RFSpaceDevice::UDPSocketNewData()
 	quint16 senderPort;
 	qint16 actual;
 	qint64 dataGramSize = udpSocket->pendingDatagramSize();
+	if (dataGramSize != 1028) {
+		qDebug()<<"Invalid IQ datagram size: "<< dataGramSize;
+		return;
+	}
 	actual = udpSocket->readDatagram((char*)udpReadBuf,dataGramSize, &sender, &senderPort);
 	if (actual != dataGramSize) {
 		qDebug()<<"ReadDatagram size error";
@@ -617,7 +667,7 @@ void RFSpaceDevice::UDPSocketNewData()
 
 	//USB gets 2048 I and 2048 Q samples at a time, or 8192 bytes
 	//We need to build over 8 datagrams
-	memcpy(producerFreeBufPtr, &udpReadBuf[2+readBufferIndex], 1024);
+	memcpy(&producerFreeBufPtr[readBufferIndex], &udpReadBuf[4], 1024); //256 I/Q samples
 	readBufferIndex += 1024;
 
 	if (readBufferIndex == 8192) {
@@ -638,6 +688,34 @@ bool RFSpaceDevice::SendTcpCommand(void *buf, qint64 len)
 }
 
 //Device specific
+bool RFSpaceDevice::SetUDPAddressAndPort(QHostAddress address, quint16 port) {
+	//To set the UDP IP address to 192.168.3.123 and port to 12345: [0A][00] [C5][00] [7B][03][A8]C0] [39][30]
+	if (connectionType != TCP)
+		return false;
+	unsigned char writeBuf[] {0x0a, 0x00, 0xc5, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+	//192.168.0.1 is stored as 1, 0, 168, 192 in buffer
+	*(quint32 *)&writeBuf[4] = address.toIPv4Address();
+	*(quint16 *)&writeBuf[8] = port;
+	return SendTcpCommand(writeBuf,sizeof(writeBuf));
+}
+
+bool RFSpaceDevice::SetSampleRate()
+{
+	if (connectionType == TCP) {
+		//100k sample rate example: [09] [00] [B8] [00] [00] [A0] [86] [01] [00]
+		unsigned char writeBuf[] = {0x09, 0x00, 0xb8, 0x00, 0x00, 0xa0, 0x86, 0x01, 0x00};
+		//Verified that this cast to quint32 puts things in right order by setting sampleRate = 100000 and comparing
+		*(quint32 *)&writeBuf[5] = sampleRate;
+		return SendTcpCommand(writeBuf,sizeof(writeBuf));
+	} else if (connectionType == USB) {
+		//Set bandwidth first, takes a while and returns lots of garbage ACKs
+		ad6620->SetBandwidth(sBandwidth);
+		return true;
+	}
+	return false;
+}
+
+
 //0,-10,-20,-30
 bool RFSpaceDevice::SetRFGain(qint8 gain)
 {
@@ -665,12 +743,61 @@ bool RFSpaceDevice::SetIFGain(qint8 gain)
 	}
 	return false;
 }
+
+#if 0
+SDR-IP This is the main “Start/Stop” command to start or stop data capture by the SDR-IP. Several other control items need to be set first before starting the capture process such as output sample rate, packet size, etc. See the “Examples” section for typical start-up sequences.
+	1: The first parameter is a 1 byte data channel/type specifier:
+		Bit 7 == 1 specifies complex base band data 0 == real A/D samples
+		The remaining 7 bits are for future expansion and should be ignored or set to zero.
+		0xxx xxxx = real A/D sample data mode
+		1xxx xxxx = complex I/Q base band data mode
+
+	2:The second parameter is a 1 byte run/stop control byte defined as:
+		0x01 = Idle(Stop) stops the UDP port and data capture
+		0x02 = Run starts the UDP port SDR-IP capturing data
+	3: The third parameter is a 1 byte parameter specifying the capture mode.
+		Bit 7 == 1 specifies 24 bit data 0 == specifies 16 bit data
+		Bit [1:0] Specify the way in which the SDR-IP captures data
+		Bit [1:0] == 00 -Contiguously sends data as long as the SDR-IP is running.
+		Bit [1:0] == 01 -FIFO mode captures data into FIFO then sends data to the host then repeats. Bit [1:0] == 11 -Hardware triggered mode where start and stop is controlled by HW trigger input
+		The following modes are currently defined:
+		0x00 = 16 bit Contiguous mode where the data is contiguously sent back to the Host.
+		0x80 = 24 bit Contiguous mode where the data is contiguously sent back to the Host.
+		0x01 = 16 bit FIFO mode where N samples of data is captured in a FIFO then sent back to the Host. 0x83 = 24 bit Hardware Triggered Pulse mode.(start/stop controlled by HW trigger input)
+		0x03 = 16 bit Hardware Triggered Pulse mode.(start/stop controlled by HW trigger input)
+
+	4: The fourth parameter is a 1 byte parameter N specifying the number of 4096 16 bit data samples to capture in the FIFO mode.
+
+USB
+		0x08	# bytes in message
+		0x00	message type
+		0x18	Receiver State Control item
+		0x00	Receiver State Control item (Bit 7 specifies complex (1) or Real (0))
+		0x81	24 bit data,
+		0x02	Run command: 0x02=Start , 0x01 to Stop
+		0x00	Continuous samples mode
+		0x00	Ignored
+
+TCP
+		0x08	# bytes in message
+		0x00	message type
+		0x18	Receiver State Control item
+		0x00
+		0x80	1: Complex I/Q data
+		0x02	2:Run command: 0x02=Start , 0x01 to Stop
+		0x00	3:Capture Mode: 00= 16 bit Continuous
+		0x00	4:Num samples in FIFO data buffer
+
+
+
+#endif
 bool RFSpaceDevice::StartCapture()
 {
-	unsigned char writeBuf[8] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x02, 0x00, 0x00};
 	if (connectionType == TCP) {
+		unsigned char writeBuf[] = { 0x08, 0x00, 0x18, 0x00, 0x80, 0x02, 0x00, 0x00};
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
 	} else if (connectionType == USB) {
+		unsigned char writeBuf[] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x02, 0x00, 0x00};
 		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
 	}
 	return false;
@@ -678,10 +805,11 @@ bool RFSpaceDevice::StartCapture()
 
 bool RFSpaceDevice::StopCapture()
 {
-	unsigned char writeBuf[8] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x01, 0x00, 0x00};
 	if (connectionType == TCP) {
+		unsigned char writeBuf[] = { 0x08, 0x00, 0x18, 0x00, 0x80, 0x01, 0x00, 0x00};
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
 	} else if (connectionType == USB) {
+		unsigned char writeBuf[] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x01, 0x00, 0x00};
 		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
 	}
 	return false;

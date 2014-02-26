@@ -162,7 +162,9 @@ private:
 
 
 	bool SendTcpCommand(void *buf, qint64 len);
-	void processControlItem(quint16 headerType, quint16 itemCode);
+	void processControlItem(quint16 headerType, char *buf);
+	bool SetSampleRate();
+	bool SetUDPAddressAndPort(QHostAddress address, quint16 port);
 };
 
 

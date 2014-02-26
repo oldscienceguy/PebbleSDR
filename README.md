@@ -243,10 +243,14 @@ I've also found that updating the firmware with a Mac doesn't work.  It looks li
 (TBW)
 
 ###RFSpace SDR-IQ
-(TBW)
+Note there is a conflict with FTDI driver that Pebble uses (D2XX) and the built in FTDI driver that is included with OSX 10.9 (Mavericks).  There is a way to temporarily disable the Mavericks driver (insert here), but the following may also work.
+
+1. Plugin the SDR-IQ and open Network Preferences
+2. You should see a new device called FT232 ...
+3. Click the gear icon and select 'Disable Interface'
 
 ###RFSpace SDR-IP & AFEDRI
-I use a direct network cable, not wifi, when connecting to this device at the full 2mhz bandwidth.  I set my Mac to a fixed IP of 10.0.1.101 and the AFEDRI to 10.0.1.100.
+I use a direct network cable, not wifi, when connecting to this device at the full 2mhz bandwidth.  I set my Mac to a fixed IP of 10.0.1.0 using DHCP Manual in Network settings and the AFEDRI to 10.0.1.100.
 
 You will get a "Allow network connections?" box the first time you run any new version.  This is standard Mac protection.
 
