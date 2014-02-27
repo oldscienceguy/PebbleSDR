@@ -77,6 +77,8 @@ public:
 
 	static void UnpackHeader(quint8 byte0, quint8 byte1, ControlHeader *unpacked);
 	static void DoubleToBuf(unsigned char *buf, double value);
+protected:
+	void InitSettings(QString fname);
 private slots:
 	void rfGainChanged(int i);
 	void ifGainChanged(int i);
@@ -89,14 +91,16 @@ private slots:
 
 
 private:
-	enum CONNECTION_TYPE {UNKNOWN, USB, TCP};
-	CONNECTION_TYPE connectionType;
+	enum SDRDEVICE {SDR_IQ =0, SDR_IP};
 
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
 	ProducerConsumer producerConsumer;
 	USBUtil *usbUtil;
 	AD6620 *ad6620;
+
+	QSettings *sdripSettings;
+	QSettings *sdriqSettings;
 
 	//Capture N blocks of data
 	bool CaptureBlocks(unsigned numBlocks);

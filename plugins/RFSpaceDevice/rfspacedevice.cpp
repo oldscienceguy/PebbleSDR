@@ -4,7 +4,7 @@
 
 RFSpaceDevice::RFSpaceDevice():DeviceInterfaceBase()
 {
-	InitSettings("RFSpace");
+	InitSettings("");
 	ReadSettings();
 
 	optionUi = NULL;
@@ -24,8 +24,6 @@ RFSpaceDevice::RFSpaceDevice():DeviceInterfaceBase()
 	tcpReadBuf = new unsigned char[dataBlockSize];
 	tcpSocket = NULL;
 	udpSocket = NULL;
-
-	connectionType = CONNECTION_TYPE::TCP;
 }
 
 RFSpaceDevice::~RFSpaceDevice()
@@ -49,6 +47,15 @@ RFSpaceDevice::~RFSpaceDevice()
 		delete udpSocket;
 }
 
+void RFSpaceDevice::InitSettings(QString fname)
+{
+	DeviceInterfaceBase::InitSettings("SDR_IQ");
+	sdriqSettings = qSettings;
+	DeviceInterfaceBase::InitSettings("SDR_IP");
+	sdripSettings = qSettings;
+	qSettings = NULL; //Catch errors
+}
+
 bool RFSpaceDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
 {
 	ProcessIQData = _callback;
@@ -61,7 +68,7 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuff
 
 	readBufferIndex = 0;
 
-	if (connectionType == TCP && tcpSocket == NULL) {
+	if (deviceNumber == SDR_IP && tcpSocket == NULL) {
 		tcpSocket = new QTcpSocket();
 
 		//We use the signals emitted by QTcpSocket to get new data, instead of polling in a separate thread
@@ -72,7 +79,7 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuff
 		connect(tcpSocket,SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(TCPSocketError(QAbstractSocket::SocketError)));
 		connect(tcpSocket,&QTcpSocket::readyRead, this, &RFSpaceDevice::TCPSocketNewData);
 	}
-	if (connectionType == TCP && udpSocket == NULL) {
+	if (deviceNumber == SDR_IP && udpSocket == NULL) {
 		udpSocket = new QUdpSocket();
 
 		//Set up UDP Socket to listen for datagrams addressed to whatever IP/Port we set
@@ -98,7 +105,7 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuff
 
 bool RFSpaceDevice::Connect()
 {
-	if (connectionType == TCP) {
+	if (deviceNumber == SDR_IP) {
 		tcpSocket->connectToHost(deviceAddress,devicePort,QTcpSocket::ReadWrite);
 		if (!tcpSocket->waitForConnected(1000)) {
 			//Socket was closed or error
@@ -109,7 +116,7 @@ bool RFSpaceDevice::Connect()
 		connected = true;
 
 		return true;
-	} else if (connectionType == USB) {
+	} else if (deviceNumber == SDR_IQ) {
 		if (!usbUtil->IsUSBLoaded()) {
 			if (!usbUtil->LoadUsb()) {
 				QMessageBox::information(NULL,"Pebble","USB not loaded.  Elektor communication is disabled.");
@@ -158,11 +165,14 @@ bool RFSpaceDevice::Connect()
 
 bool RFSpaceDevice::Disconnect()
 {
-	if (connectionType == TCP) {
+	if (!connected)
+		return false;
+
+	if (deviceNumber == SDR_IP) {
 		tcpSocket->disconnectFromHost();
 		connected = false;
 		return true;
-	} else if (connectionType == USB) {
+	} else if (deviceNumber == SDR_IQ) {
 		usbUtil->CloseDevice();
 		connected = false;
 		return true;
@@ -173,7 +183,7 @@ bool RFSpaceDevice::Disconnect()
 
 void RFSpaceDevice::Start()
 {
-	if (connectionType == TCP) {
+	if (deviceNumber == SDR_IP) {
 		producerConsumer.Start(false,true);
 	} else {
 		producerConsumer.Start(true,true);
@@ -223,6 +233,13 @@ void RFSpaceDevice::Stop()
 
 void RFSpaceDevice::ReadSettings()
 {
+	if (deviceNumber == SDR_IQ)
+		qSettings = sdriqSettings;
+	else if (deviceNumber == SDR_IP)
+		qSettings = sdripSettings;
+	else
+		return;
+
 	lowFrequency = 150000;
 	highFrequency = 33000000;
 	iqGain = 0.5;
@@ -250,6 +267,13 @@ void RFSpaceDevice::ReadSettings()
 
 void RFSpaceDevice::WriteSettings()
 {
+	if (deviceNumber == SDR_IQ)
+		qSettings = sdriqSettings;
+	else if (deviceNumber == SDR_IP)
+		qSettings = sdripSettings;
+	else
+		return;
+
 	DeviceInterfaceBase::WriteSettings();
 	//Device specific settings follow
 	qSettings->setValue("RFGain",sRFGain);
@@ -282,23 +306,23 @@ QVariant RFSpaceDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 					return "Unknown";
 			}
 
-			if (connectionType == TCP)
+			if (deviceNumber == SDR_IP)
 				return "SDR-IP";
 			else
 				return "SDR-IQ";
 		case DeviceSampleRates:
-			if (connectionType == TCP)
+			if (deviceNumber == SDR_IP)
 				return QStringList()<<"62500"<<"250000"<<"500000"<<"2000000";
-			else if (connectionType == USB)
+			else if (deviceNumber == SDR_IQ)
 				return QStringList()<<"55555"<<"111111"<<"158730"<<"196078";
 			else
 				return QStringList();
 		case DeviceType:
 			return DeviceInterfaceBase::INTERNAL_IQ;
 		case DeviceSampleRate: {
-			if (connectionType == TCP) {
+			if (deviceNumber == SDR_IP) {
 				return sampleRate;
-			} else if (connectionType == USB) {
+			} else if (deviceNumber == SDR_IQ) {
 				//Sample rate is derived from bandwidth
 				switch (sBandwidth)
 				{
@@ -706,7 +730,7 @@ bool RFSpaceDevice::SendTcpCommand(void *buf, qint64 len)
 //Device specific
 bool RFSpaceDevice::SetUDPAddressAndPort(QHostAddress address, quint16 port) {
 	//To set the UDP IP address to 192.168.3.123 and port to 12345: [0A][00] [C5][00] [7B][03][A8]C0] [39][30]
-	if (connectionType != TCP)
+	if (deviceNumber != SDR_IP)
 		return false;
 	unsigned char writeBuf[] {0x0a, 0x00, 0xc5, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 	//192.168.0.1 is stored as 1, 0, 168, 192 in buffer
@@ -717,13 +741,13 @@ bool RFSpaceDevice::SetUDPAddressAndPort(QHostAddress address, quint16 port) {
 
 bool RFSpaceDevice::SetSampleRate()
 {
-	if (connectionType == TCP) {
+	if (deviceNumber == SDR_IP) {
 		//100k sample rate example: [09] [00] [B8] [00] [00] [A0] [86] [01] [00]
 		unsigned char writeBuf[] = {0x09, 0x00, 0xb8, 0x00, 0x00, 0xa0, 0x86, 0x01, 0x00};
 		//Verified that this cast to quint32 puts things in right order by setting sampleRate = 100000 and comparing
 		*(quint32 *)&writeBuf[5] = sampleRate;
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (connectionType == USB) {
+	} else if (deviceNumber == SDR_IQ) {
 		//Set bandwidth first, takes a while and returns lots of garbage ACKs
 		ad6620->SetBandwidth(sBandwidth);
 		return true;
@@ -738,9 +762,9 @@ bool RFSpaceDevice::SetRFGain(qint8 gain)
 	unsigned char writeBuf[6] = { 0x06, 0x00, 0x38, 0x00, 0xff, 0xff};
 	writeBuf[4] = 0x00;
 	writeBuf[5] = gain ;
-	if (connectionType == TCP) {
+	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (connectionType == USB) {
+	} else if (deviceNumber == SDR_IQ) {
 		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
 	}
 	return false;
@@ -752,9 +776,9 @@ bool RFSpaceDevice::SetIFGain(qint8 gain)
 	//Bits 7,6,5 are Factory test bits and are masked
 	writeBuf[4] = 0; //gain & 0xE0;
 	writeBuf[5] = gain;
-	if (connectionType == TCP) {
+	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (connectionType == USB) {
+	} else if (deviceNumber == SDR_IQ) {
 		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
 	}
 	return false;
@@ -809,10 +833,10 @@ TCP
 #endif
 bool RFSpaceDevice::StartCapture()
 {
-	if (connectionType == TCP) {
+	if (deviceNumber == SDR_IP) {
 		unsigned char writeBuf[] = { 0x08, 0x00, 0x18, 0x00, 0x80, 0x02, 0x00, 0x00};
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (connectionType == USB) {
+	} else if (deviceNumber == SDR_IQ) {
 		unsigned char writeBuf[] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x02, 0x00, 0x00};
 		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
 	}
@@ -821,10 +845,10 @@ bool RFSpaceDevice::StartCapture()
 
 bool RFSpaceDevice::StopCapture()
 {
-	if (connectionType == TCP) {
+	if (deviceNumber == SDR_IP) {
 		unsigned char writeBuf[] = { 0x08, 0x00, 0x18, 0x00, 0x80, 0x01, 0x00, 0x00};
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (connectionType == USB) {
+	} else if (deviceNumber == SDR_IQ) {
 		unsigned char writeBuf[] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x01, 0x00, 0x00};
 		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
 	}
@@ -833,9 +857,9 @@ bool RFSpaceDevice::StopCapture()
 void RFSpaceDevice::FlushDataBlocks()
 {
 	bool result;
-	if (connectionType == TCP) {
+	if (deviceNumber == SDR_IP) {
 		return;
-	} else if (connectionType == USB) {
+	} else if (deviceNumber == SDR_IQ) {
 		do
 			result = usbUtil->Read(readBuf, 1);
 		while (result);
@@ -848,9 +872,9 @@ bool RFSpaceDevice::RequestTargetName()
 	//0x04, 0x20 is the request command
 	//0x01, 0x00 is the Control Item Code (command)
 	unsigned char writeBuf[4] = { 0x04, 0x20, 0x01, 0x00 };
-	if (connectionType == TCP) {
+	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (connectionType == USB) {
+	} else if (deviceNumber == SDR_IQ) {
 		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
 	}
 	return false;
@@ -860,9 +884,9 @@ bool RFSpaceDevice::RequestTargetSerialNumber()
 {
 	serialNumber = "Pending";
 	unsigned char writeBuf[4] = { 0x04, 0x20, 0x02, 0x00 };
-	if (connectionType == TCP) {
+	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (connectionType == USB) {
+	} else if (deviceNumber == SDR_IQ) {
 		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
 	}
 	return false;
@@ -871,9 +895,9 @@ bool RFSpaceDevice::RequestInterfaceVersion()
 {
 	interfaceVersion = 0;
 	unsigned char writeBuf[4] = { 0x04, 0x20, 0x03, 0x00 };
-	if (connectionType == TCP) {
+	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (connectionType == USB) {
+	} else if (deviceNumber == SDR_IQ) {
 		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
 	}
 	return false;
@@ -882,9 +906,9 @@ bool RFSpaceDevice::RequestFirmwareVersion()
 {
 	firmwareVersion = 0;
 	unsigned char writeBuf[5] = { 0x05, 0x20, 0x04, 0x00, 0x01 };
-	if (connectionType == TCP) {
+	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (connectionType == USB) {
+	} else if (deviceNumber == SDR_IQ) {
 		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
 	}
 	return false;
@@ -893,9 +917,9 @@ bool RFSpaceDevice::RequestBootcodeVersion()
 {
 	bootcodeVersion = 0;
 	unsigned char writeBuf[5] = { 0x05, 0x20, 0x04, 0x00, 0x00 };
-	if (connectionType == TCP) {
+	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (connectionType == USB) {
+	} else if (deviceNumber == SDR_IQ) {
 		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
 	}
 	return false;
@@ -904,9 +928,9 @@ bool RFSpaceDevice::RequestBootcodeVersion()
 bool RFSpaceDevice::RequestStatusCode()
 {
 	unsigned char writeBuf[4] = { 0x04, 0x20, 0x05, 0x00};
-	if (connectionType == TCP) {
+	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (connectionType == USB) {
+	} else if (deviceNumber == SDR_IQ) {
 		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
 	}
 	return false;
@@ -915,9 +939,9 @@ bool RFSpaceDevice::RequestStatusCode()
 bool RFSpaceDevice::RequestStatusString(unsigned char code)
 {
 	unsigned char writeBuf[5] = { 0x05, 0x20, 0x06, 0x00, code};
-	if (connectionType == TCP) {
+	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (connectionType == USB) {
+	} else if (deviceNumber == SDR_IQ) {
 		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
 	}
 	return false;
@@ -925,9 +949,9 @@ bool RFSpaceDevice::RequestStatusString(unsigned char code)
 bool RFSpaceDevice::GetFrequency()
 {
 	unsigned char writeBuf[5] = { 0x05, 0x20, 0x20, 0x00, 0x00};
-	if (connectionType == TCP) {
+	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (connectionType == USB) {
+	} else if (deviceNumber == SDR_IQ) {
 		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
 	}
 	return false;
@@ -939,9 +963,9 @@ bool RFSpaceDevice::SetFrequency(double freq)
 
 	unsigned char writeBuf[0x0a] = { 0x0a, 0x00, 0x20, 0x00, 0x00,0xff,0xff,0xff,0xff,0x01};
 	DoubleToBuf(&writeBuf[5],freq);
-	if (connectionType == TCP) {
+	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (connectionType == USB) {
+	} else if (deviceNumber == SDR_IQ) {
 		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
 	}
 	return false;
@@ -954,9 +978,9 @@ bool RFSpaceDevice::CaptureBlocks(unsigned numBlocks)
 	//C++11 doesn't allow variable in constant initializer, so we set writeBuf[7] separately
 	unsigned char writeBuf[8] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x02, 0x02, 0x00};
 	writeBuf[7] = numBlocks;
-	if (connectionType == TCP) {
+	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (connectionType == USB) {
+	} else if (deviceNumber == SDR_IQ) {
 		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
 	}
 	return false;
