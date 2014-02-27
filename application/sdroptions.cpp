@@ -46,8 +46,6 @@ void SdrOptions::ShowSdrOptions(DeviceInterface *_di, bool b)
 		}
 		//Create new dialog and show
 		int cur;
-		//Read current settings if we're displaying
-		di->ReadSettings();
 		sdrOptionsDialog = new QDialog();
 		sd = new Ui::SdrOptions();
 		sd->setupUi(sdrOptionsDialog);
@@ -59,9 +57,14 @@ void SdrOptions::ShowSdrOptions(DeviceInterface *_di, bool b)
 			sd->deviceSelection->addItem(di->Get(DeviceInterface::DeviceName,i).toString());
 		}
 		//Select active device
-		sd->deviceSelection->setCurrentIndex(di->Get(DeviceInterface::DeviceNumber).toInt());
+		sd->deviceSelection->setCurrentIndex(global->settings->sdrDeviceNumber);
+		//And make sure device has same number
+		di->Set(DeviceInterface::DeviceNumber,global->settings->sdrDeviceNumber);
 		//And connect so we get changes
 		connect(sd->deviceSelection,SIGNAL(currentIndexChanged(int)),this,SLOT(DeviceSelectionChanged(int)));
+
+		//Read current settings now that we have correct deviceNumber
+		di->ReadSettings();
 
 		sd->startupBox->addItem("Last Frequency",SDR::LASTFREQ);
 		sd->startupBox->addItem("Set Frequency", SDR::SETFREQ);

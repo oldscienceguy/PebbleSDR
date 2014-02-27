@@ -82,6 +82,8 @@ protected:
 private slots:
 	void rfGainChanged(int i);
 	void ifGainChanged(int i);
+	void IPAddressChanged();
+	void IPPortChanged();
 
 	void TCPSocketError(QAbstractSocket::SocketError socketError);
 	void TCPSocketConnected();

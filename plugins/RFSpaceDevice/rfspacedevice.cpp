@@ -49,6 +49,8 @@ RFSpaceDevice::~RFSpaceDevice()
 
 void RFSpaceDevice::InitSettings(QString fname)
 {
+	Q_UNUSED(fname);
+
 	DeviceInterfaceBase::InitSettings("SDR_IQ");
 	sdriqSettings = qSettings;
 	DeviceInterfaceBase::InitSettings("SDR_IP");
@@ -359,9 +361,13 @@ bool RFSpaceDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, qu
 
 void RFSpaceDevice::SetupOptionUi(QWidget *parent)
 {
-	Q_UNUSED(parent);
-	if (optionUi != NULL)
+	if (optionUi != NULL) {
+		//This will delete everything from the previous option page, then we re-create
+		foreach (QObject *o,parent->children()) {
+			delete o;
+		}
 		delete optionUi;
+	}
 	optionUi = new Ui::SdrIqOptions;
 	optionUi->setupUi(parent);
 	parent->setVisible(true);
@@ -396,6 +402,19 @@ void RFSpaceDevice::SetupOptionUi(QWidget *parent)
 	optionUi->ifGainBox->addItem("+18db");
 	optionUi->ifGainBox->addItem("+24db");
 	connect(optionUi->ifGainBox,SIGNAL(currentIndexChanged(int)),this,SLOT(ifGainChanged(int)));
+
+	if (deviceNumber == SDR_IQ) {
+		optionUi->ipEdit->setVisible(false);
+		optionUi->portEdit->setVisible(false);
+	} else if (deviceNumber == SDR_IP) {
+		optionUi->ipEdit->setVisible(true);
+		optionUi->portEdit->setVisible(true);
+		optionUi->ipEdit->setText(deviceAddress.toString());
+		optionUi->portEdit->setText(QString::number(devicePort));
+		connect(optionUi->ipEdit,&QLineEdit::editingFinished,this,&RFSpaceDevice::IPAddressChanged);
+		connect(optionUi->portEdit,&QLineEdit::editingFinished,this,&RFSpaceDevice::IPPortChanged);
+
+	}
 
 	if (connected) {
 		optionUi->nameLabel->setText("Name: " + targetName);
@@ -634,6 +653,18 @@ void RFSpaceDevice::ifGainChanged(int i)
 	ifGain = i * 6;
 	sIFGain = ifGain;
 	SetIFGain(ifGain);
+}
+void RFSpaceDevice::IPAddressChanged()
+{
+	//qDebug()<<optionUi->ipAddress->text();
+	deviceAddress = QHostAddress(optionUi->ipEdit->text());
+	WriteSettings();
+}
+
+void RFSpaceDevice::IPPortChanged()
+{
+	devicePort = optionUi->portEdit->text().toInt();
+	WriteSettings();
 }
 
 void RFSpaceDevice::TCPSocketError(QAbstractSocket::SocketError socketError)
