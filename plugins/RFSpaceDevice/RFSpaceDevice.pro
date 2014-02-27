@@ -42,5 +42,4 @@ OTHER_FILES += \
         fix_plugin_libraries.pri
 
 FORMS += \
-    sdripoptions.ui \
     sdriqoptions.ui
