@@ -358,15 +358,18 @@ QVariant HPSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 
 	switch (_key) {
 		case PluginName:
-			return "HPSDR";
+			return "HPSDR USB & TCP";
 			break;
 		case PluginDescription:
 			return "HPSDR Devices";
 			break;
+		case PluginNumDevices:
+			return 2;
 		case DeviceName:
-			if (connectionType == OZY)
+			//Add AFEDRI as explicit choice?
+			if (_option == 0)
 				return "HPSDR-OZY";
-			else if (connectionType == METIS)
+			else if (_option == 1)
 				return "HPSDR-METIS";
 			else
 				return "HPSDR";

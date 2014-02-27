@@ -53,95 +53,41 @@ void SdrOptions::ShowSdrOptions(DeviceInterface *_di, bool b)
 		sd->setupUi(sdrOptionsDialog);
 		sdrOptionsDialog->setWindowTitle("Pebble Settings");
 
-		int id;
-		QString dn;
-		if (_di->Get(DeviceInterface::DeviceType).toInt() == DeviceInterface::AUDIO_IQ) {
-			//Audio devices may have been plugged or unplugged, refresh list on each show
-			//This will use PortAudio or QTAudio depending on configuration
-			inputDevices = Audio::InputDeviceList();
-			//Adding items triggers selection, block signals until list is complete
-			sd->sourceBox->blockSignals(true);
-			sd->sourceBox->clear();
-			//Input devices may be restricted form some SDRs
-			for (int i=0; i<inputDevices.count(); i++)
-			{
-				//This is portAudio specific format ID:Name
-				//AudioQt will emulate
-				id = inputDevices[i].left(2).toInt();
-				dn = inputDevices[i].mid(3);
-				sd->sourceBox->addItem(dn, id);
-				if (dn == _di->Get(DeviceInterface::InputDeviceName).toString())
-					sd->sourceBox->setCurrentIndex(i);
-			}
-			sd->sourceBox->blockSignals(false);
-			connect(sd->sourceBox,SIGNAL(currentIndexChanged(int)),this,SLOT(InputChanged(int)));
-		} else {
-			sd->sourceLabel->setVisible(false);
-			sd->sourceBox->setVisible(false);
+		//Populate device selector
+		int deviceCount = di->Get(DeviceInterface::PluginNumDevices).toInt();
+		for (int i=0; i<deviceCount; i++) {
+			sd->deviceSelection->addItem(di->Get(DeviceInterface::DeviceName,i).toString());
 		}
-		outputDevices = Audio::OutputDeviceList();
-		sd->outputBox->blockSignals(true);
-		sd->outputBox->clear();
-		for (int i=0; i<outputDevices.count(); i++)
-		{
-			id = outputDevices[i].left(2).toInt();
-			dn = outputDevices[i].mid(3);
-			sd->outputBox->addItem(dn, id);
-			if (dn == _di->Get(DeviceInterface::OutputDeviceName).toString())
-				sd->outputBox->setCurrentIndex(i);
-		}
-		sd->outputBox->blockSignals(false);
-		connect(sd->outputBox,SIGNAL(currentIndexChanged(int)),this,SLOT(OutputChanged(int)));
+		//Select active device
+		sd->deviceSelection->setCurrentIndex(di->Get(DeviceInterface::DeviceNumber).toInt());
+		//And connect so we get changes
+		connect(sd->deviceSelection,SIGNAL(currentIndexChanged(int)),this,SLOT(DeviceSelectionChanged(int)));
 
 		sd->startupBox->addItem("Last Frequency",SDR::LASTFREQ);
 		sd->startupBox->addItem("Set Frequency", SDR::SETFREQ);
 		sd->startupBox->addItem("Device Default", SDR::DEFAULTFREQ);
-		cur = sd->startupBox->findData(_di->Get(DeviceInterface::StartupType).toInt());
-		sd->startupBox->setCurrentIndex(cur);
 		connect(sd->startupBox,SIGNAL(currentIndexChanged(int)),this,SLOT(StartupChanged(int)));
 
-		sd->startupEdit->setText(_di->Get(DeviceInterface::UserFrequency).toString());
 		connect(sd->startupEdit,SIGNAL(editingFinished()),this,SLOT(StartupFrequencyChanged()));
-
-		sd->iqGain->setValue(_di->Get(DeviceInterface::IQGain).toDouble());
 		connect(sd->iqGain,SIGNAL(valueChanged(double)),this,SLOT(IQGainChanged(double)));
 
 		sd->IQSettings->addItem("I/Q (normal)",DeviceInterface::IQ);
 		sd->IQSettings->addItem("Q/I (swap)",DeviceInterface::QI);
 		sd->IQSettings->addItem("I Only",DeviceInterface::IONLY);
 		sd->IQSettings->addItem("Q Only",DeviceInterface::QONLY);
-		sd->IQSettings->setCurrentIndex(_di->Get(DeviceInterface::IQOrder).toInt());
 		connect(sd->IQSettings,SIGNAL(currentIndexChanged(int)),this,SLOT(IQOrderChanged(int)));
-
-		sd->iqEnableBalance->setChecked(_di->Get(DeviceInterface::IQBalanceEnabled).toBool());
 
 		sd->iqBalancePhase->setMaximum(500);
 		sd->iqBalancePhase->setMinimum(-500);
-		sd->iqBalancePhase->setValue(_di->Get(DeviceInterface::IQBalancePhase).toDouble() * 1000);
 		connect(sd->iqBalancePhase,SIGNAL(valueChanged(int)),this,SLOT(BalancePhaseChanged(int)));
 
 		sd->iqBalanceGain->setMaximum(1250);
 		sd->iqBalanceGain->setMinimum(750);
-		sd->iqBalanceGain->setValue(_di->Get(DeviceInterface::IQBalanceGain).toDouble() * 1000);
 		connect(sd->iqBalanceGain,SIGNAL(valueChanged(int)),this,SLOT(BalanceGainChanged(int)));
 
 		connect(sd->iqEnableBalance,SIGNAL(toggled(bool)),this,SLOT(BalanceEnabledChanged(bool)));
-
 		connect(sd->iqBalanceReset,SIGNAL(clicked()),this,SLOT(BalanceReset()));
 
-		//Set up options and get allowable sampleRates from device
-
-		int sr;
-		QStringList sampleRates = _di->Get(DeviceInterface::DeviceSampleRates).toStringList();
-		sd->sampleRateBox->blockSignals(true);
-		sd->sampleRateBox->clear();
-		for (int i=0; i<sampleRates.count(); i++) {
-			sr = sampleRates[i].toInt();
-			sd->sampleRateBox->addItem(sampleRates[i],sr);
-			if (_di->Get(DeviceInterface::DeviceSampleRate).toUInt() == sr)
-				sd->sampleRateBox->setCurrentIndex(i);
-		}
-		sd->sampleRateBox->blockSignals(false);
 		connect(sd->sampleRateBox,SIGNAL(currentIndexChanged(int)),this,SLOT(SampleRateChanged(int)));
 
 		connect(sd->closeButton,SIGNAL(clicked(bool)),this,SLOT(CloseOptions(bool)));
@@ -150,20 +96,119 @@ void SdrOptions::ShowSdrOptions(DeviceInterface *_di, bool b)
 		sd->testBenchBox->setChecked(global->settings->useTestBench);
 		connect(sd->testBenchBox, SIGNAL(toggled(bool)), this, SLOT(TestBenchChanged(bool)));
 
-		//Careful here: Fragile coding practice
-		//We're calling a virtual function in a base class method and expect it to call the over-ridden method in derived class
-		//This only works because ShowSdrOptions() is being called via a pointer to the derived class
-		//Some other method that's called from the base class could not do this
-		_di->SetupOptionUi(sd->sdrSpecific);
+		connect(sd->sourceBox,SIGNAL(currentIndexChanged(int)),this,SLOT(InputChanged(int)));
+		connect(sd->outputBox,SIGNAL(currentIndexChanged(int)),this,SLOT(OutputChanged(int)));
+
+		//From here on, everything can change if different device is selected
+		UpdateOptions();
+
 		sdrOptionsDialog->show();
 
 	}
+}
+
+//Called when we need to update an open options dialog, like when different device is selected
+void SdrOptions::UpdateOptions()
+{
+	int id;
+	QString dn;
+	if (di->Get(DeviceInterface::DeviceType).toInt() == DeviceInterface::AUDIO_IQ) {
+		//Audio devices may have been plugged or unplugged, refresh list on each show
+		//This will use PortAudio or QTAudio depending on configuration
+		inputDevices = Audio::InputDeviceList();
+		//Adding items triggers selection, block signals until list is complete
+		sd->sourceBox->blockSignals(true);
+		sd->sourceBox->clear();
+		//Input devices may be restricted form some SDRs
+		for (int i=0; i<inputDevices.count(); i++)
+		{
+			//This is portAudio specific format ID:Name
+			//AudioQt will emulate
+			id = inputDevices[i].left(2).toInt();
+			dn = inputDevices[i].mid(3);
+			sd->sourceBox->addItem(dn, id);
+			if (dn == di->Get(DeviceInterface::InputDeviceName).toString())
+				sd->sourceBox->setCurrentIndex(i);
+		}
+		sd->sourceBox->blockSignals(false);
+	} else {
+		sd->sourceLabel->setVisible(false);
+		sd->sourceBox->setVisible(false);
+	}
+	outputDevices = Audio::OutputDeviceList();
+	sd->outputBox->blockSignals(true);
+	sd->outputBox->clear();
+	for (int i=0; i<outputDevices.count(); i++)
+	{
+		id = outputDevices[i].left(2).toInt();
+		dn = outputDevices[i].mid(3);
+		sd->outputBox->addItem(dn, id);
+		if (dn == di->Get(DeviceInterface::OutputDeviceName).toString())
+			sd->outputBox->setCurrentIndex(i);
+	}
+	sd->outputBox->blockSignals(false);
+
+	sd->startupBox->blockSignals(true);
+	int cur = sd->startupBox->findData(di->Get(DeviceInterface::StartupType).toInt());
+	sd->startupBox->setCurrentIndex(cur);
+	sd->startupBox->blockSignals(false);
+
+	sd->startupEdit->setText(di->Get(DeviceInterface::UserFrequency).toString());
+
+	sd->iqGain->blockSignals(true);
+	sd->iqGain->setValue(di->Get(DeviceInterface::IQGain).toDouble());
+	sd->iqGain->blockSignals(false);
+
+	sd->IQSettings->blockSignals(true);
+	sd->IQSettings->setCurrentIndex(di->Get(DeviceInterface::IQOrder).toInt());
+	sd->IQSettings->blockSignals(false);
+
+	sd->iqEnableBalance->setChecked(di->Get(DeviceInterface::IQBalanceEnabled).toBool());
+
+	sd->iqBalancePhase->blockSignals(true);
+	sd->iqBalancePhase->setValue(di->Get(DeviceInterface::IQBalancePhase).toDouble() * 1000);
+	sd->iqBalancePhase->blockSignals(false);
+
+	sd->iqBalanceGain->blockSignals(true);
+	sd->iqBalanceGain->setValue(di->Get(DeviceInterface::IQBalanceGain).toDouble() * 1000);
+	sd->iqBalanceGain->blockSignals(false);
+
+	//Set up options and get allowable sampleRates from device
+
+	int sr;
+	QStringList sampleRates = di->Get(DeviceInterface::DeviceSampleRates).toStringList();
+	sd->sampleRateBox->blockSignals(true);
+	sd->sampleRateBox->clear();
+	for (int i=0; i<sampleRates.count(); i++) {
+		sr = sampleRates[i].toInt();
+		sd->sampleRateBox->addItem(sampleRates[i],sr);
+		if (di->Get(DeviceInterface::DeviceSampleRate).toUInt() == sr)
+			sd->sampleRateBox->setCurrentIndex(i);
+	}
+	sd->sampleRateBox->blockSignals(false);
+
+	//Careful here: Fragile coding practice
+	//We're calling a virtual function in a base class method and expect it to call the over-ridden method in derived class
+	//This only works because ShowSdrOptions() is being called via a pointer to the derived class
+	//Some other method that's called from the base class could not do this
+	di->SetupOptionUi(sd->sdrSpecific);
+
 }
 
 void SdrOptions::CloseOptions(bool b)
 {
 	if (sdrOptionsDialog != NULL)
 		sdrOptionsDialog->close();
+}
+
+void SdrOptions::DeviceSelectionChanged(int i) {
+	global->settings->sdrDeviceNumber = i;
+	//Set device number
+	di->Set(DeviceInterface::DeviceNumber, i); //Which ini file to read from
+	//Read settings, ReadSettings will switch on deviceNumber
+	di->ReadSettings();
+	//Update sdr specific section
+	UpdateOptions();
 }
 
 void SdrOptions::TestBenchChanged(bool b)

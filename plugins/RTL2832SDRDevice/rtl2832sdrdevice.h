@@ -167,9 +167,6 @@ private:
 
     rtlsdr_dev_t *dev;
 
-    //Needed to determine when it's safe to fetch options for display
-    bool running; //Set after Start
-
     double sampleGain; //Factor to normalize output
 
     SAMPLING_MODES rtlSampleMode;

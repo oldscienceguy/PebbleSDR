@@ -651,37 +651,23 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 {
 	switch (_key) {
 		case PluginName:
-			switch (_option) {
-				case RTL_USB:
-					return "RTL2832 USB";
-					break;
-				case RTL_TCP:
-					return "RTL2832 TCP";
-					break;
-				default:
-					qDebug()<<"Error: Unknown RTL device "<<_option;
-					return "Error";
-					break;
-			}
-			break;
+			return "RTL2832 Family";
 		case PluginDescription:
-			switch (_option) {
-				case RTL_USB:
-					return "RTL2832 USB Devices";
-					break;
-				case RTL_TCP:
-					return "RTL2832 TCP Servers";
-					break;
-				default:
-					qDebug()<<"Error: Unknown RTL device "<<_option;
-					return "Error";
-					break;
-			}
-			break;
+			return "RTL2832 Family";
 		case PluginNumDevices:
 			return 2;
 			break;
 		case DeviceName:
+			switch (_option) {
+				case 0:
+					return "RTL2832 USB";
+				case 1:
+					return "RTL2832 TCP";
+				default:
+					return "RTL2832 Unknown";
+			}
+
+#if 0
 			switch (rtlTunerType) {
 				case RTLSDR_TUNER_E4000:
 					return "RTL2832-E4000";
@@ -699,7 +685,7 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 				default:
 					return "RTL2832-Unknown";
 			}
-			break;
+#endif
 		case DeviceDescription:
 			break;
 		case DeviceType:

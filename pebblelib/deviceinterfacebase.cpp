@@ -22,6 +22,8 @@ DeviceInterfaceBase::DeviceInterfaceBase()
 	lowFrequency = 150000;
 	highFrequency = 30000000;
 	startupDemodMode = dmAM;
+	connected = false;
+	running = false;
 
 }
 

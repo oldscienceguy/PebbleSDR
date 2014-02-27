@@ -126,6 +126,7 @@ void SoftrockSDRDevice::InitSettings(QString fname)
 
 void SoftrockSDRDevice::ReadSettings()
 {
+	int currentDeviceNumber = deviceNumber; //Save until we remove it from settings
 	switch (deviceNumber)
 	{
 		case FiFi: qSettings = srFifiSettings; break;
@@ -205,6 +206,9 @@ void SoftrockSDRDevice::ReadSettings()
 
 	//Set defaults, then read common settings
 	DeviceInterfaceBase::ReadSettings();
+
+	deviceNumber = currentDeviceNumber; //Restore
+
 	sdrNumber = qSettings->value("SDRNumber",-1).toInt();
 	//useABPF = qSettings->value("UseABPF",true).toInt();
 
@@ -238,28 +242,14 @@ QVariant SoftrockSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _op
 	switch (_key) {
 		//Used to select device
 		case PluginName:
-			switch (_option)
-			{
-				case SR_LITE: return "SR Lite - Fixed"; break;
-				case FiFi: return "FiFi"; break;
-				case SR_V9: return "SR V9 - ABPF"; break;
-				case SR_ENSEMBLE: return "SoftRock Ensemble"; break;
-				case SR_ENSEMBLE_2M: return "SR Ensemble 2M"; break;
-				case SR_ENSEMBLE_4M: return "SR Ensemble 4M"; break;
-				case SR_ENSEMBLE_6M: return "SR Ensemble 6M"; break;
-				case SR_ENSEMBLE_LF: return "SR Ensemble LF"; break;
-				default:
-					return "";
-			}
-			break;
+			return "SoftRock Family";
 		case PluginDescription:
 			return "Softrock devices";
-			break;
 		case PluginNumDevices:
 			return 8;
 		//Used in titles
 		case DeviceName:
-			switch (deviceNumber)
+			switch (_option)
 			{
 				case SR_LITE: return "SR Lite - Fixed"; break;
 				case FiFi: return "FiFi"; break;

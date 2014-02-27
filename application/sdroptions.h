@@ -13,6 +13,8 @@ public:
 	~SdrOptions();
 	void ShowSdrOptions(DeviceInterface *_di, bool b);
 
+public slots:
+	void DeviceSelectionChanged(int i);
 private slots:
 	void InputChanged(int i);
 	void OutputChanged(int i);
@@ -39,6 +41,7 @@ private:
 	QStringList inputDevices;
 	QStringList outputDevices;
 
+	void UpdateOptions();
 };
 
 #endif // SDROPTIONS_H

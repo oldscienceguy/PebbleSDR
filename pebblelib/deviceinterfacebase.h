@@ -59,6 +59,7 @@ protected:
 
 	int deviceNumber; //For plugins that support multiple devices
 	bool connected;
+	bool running;
 
 	Perform perform;
 
