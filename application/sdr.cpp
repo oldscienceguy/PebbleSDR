@@ -462,6 +462,10 @@ bool SDR::Set(STANDARD_KEYS _key, QVariant _value, quint16 _option) {
 			lastFreq = deviceFrequency;
 			break;
 		}
+		case DeviceNumber: {
+			deviceNumber = _value.toInt();
+			break;
+		}
 		case DeviceSampleRate:
 			sampleRate = _value.toInt();
 			break;
