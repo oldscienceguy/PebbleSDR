@@ -207,6 +207,8 @@ void SdrOptions::DeviceSelectionChanged(int i) {
 	di->Set(DeviceInterface::DeviceNumber, i); //Which ini file to read from
 	//Read settings, ReadSettings will switch on deviceNumber
 	di->ReadSettings();
+	//ReadSettings will read in last device number and overwrite our change, so reset it again
+	di->Set(DeviceInterface::DeviceNumber, i); //Which ini file to read from
 	//Update sdr specific section
 	UpdateOptions();
 }
