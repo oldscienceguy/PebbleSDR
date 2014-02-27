@@ -149,6 +149,10 @@ bool ProducerConsumer::Start(bool _producer, bool _consumer)
     //Note: QT only allows us to set thread priority on a running thread or in start()
     if (_consumer) {
         consumerWorkerThread->start();
+		//Thread priorities from CuteSdr model
+		//Producer get highest, time critical, slices in order to be able to keep up with data
+		//Consumer gets next highest, in order to run faster than main UI thread
+		consumerWorkerThread->setPriority(QThread::HighestPriority);
         //Process event loop so thread signals and slots can all execute
         //If we don't do this, then consumer thread may or may not start before producer
         QCoreApplication::processEvents();
@@ -156,7 +160,7 @@ bool ProducerConsumer::Start(bool _producer, bool _consumer)
     }
     if (_producer) {
         producerWorkerThread->start();
-
+		producerWorkerThread->setPriority(QThread::TimeCriticalPriority);
         QCoreApplication::processEvents();
         producerThreadIsRunning = true;
     }
