@@ -363,16 +363,8 @@ QVariant HPSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 		case PluginDescription:
 			return "HPSDR Devices";
 			break;
-		case PluginNumDevices:
-			return 2;
 		case DeviceName:
-			//Add AFEDRI as explicit choice?
-			if (_option == 0)
-				return "HPSDR-OZY";
-			else if (_option == 1)
-				return "HPSDR-METIS";
-			else
-				return "HPSDR";
+			return "HPSDR Metis or Ozy";
 		case DeviceType:
 			return INTERNAL_IQ;
 		case DeviceSampleRates:

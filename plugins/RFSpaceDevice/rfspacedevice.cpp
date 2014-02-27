@@ -208,13 +208,17 @@ void RFSpaceDevice::Start()
 
 	//Finally ready to start getting data samples
 	StartCapture();
+	running = true;
 }
 
 void RFSpaceDevice::Stop()
 {
+	if (!running)
+		return;
 	StopCapture();
 	producerConsumer.Stop();
 	FlushDataBlocks();
+	running = false;
 }
 
 void RFSpaceDevice::ReadSettings()
@@ -262,12 +266,22 @@ QVariant RFSpaceDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 
 	switch (_key) {
 		case PluginName:
-			return "RFSpace";
+			return "RFSpace Family";
 			break;
 		case PluginDescription:
 			return "RFSpace SDR-IQ and SDR-IP";
-			break;
+		case PluginNumDevices:
+			return 2;
 		case DeviceName:
+			switch (_option) {
+				case 0:
+					return "SDR-IQ";
+				case 1:
+					return "SDR-IP";
+				default:
+					return "Unknown";
+			}
+
 			if (connectionType == TCP)
 				return "SDR-IP";
 			else
@@ -530,54 +544,56 @@ void RFSpaceDevice::consumerWorker(cbProducerConsumerEvents _event)
 	float I,Q;
 	//Wait for data to be available from producer
 	short *consumerFilledBufPtr; //Treat producerConsumer buffer as an array of short
-	if ((consumerFilledBufPtr = (short *)producerConsumer.AcquireFilledBuffer()) == NULL)
-		return;
+	while (producerConsumer.GetNumFilledBufs() > 0) {
 
-	for (int i=0,j=0; i<inBufferSize; i++, j+=2)
-	{
-		/*
-		After a couple of days of banging my head trying to figure why I couldn't get anything but static,
-		I figured out how to interpret the data coming back from the SDR-IQ.
-		I tried converting LSB/MSB to an integer (0-65535) and normalizing to -32767 to +32767
-			I = (SHORT)(readBuf[j] + (readBuf[j + 1] * 0x100));
-			I -= 32767.0;
-		I tried bit shifting and cast to signed
-			I = (short)(readBuf[j] | (readBuf[j + 1] <<8))
-		And several other crazy (with hindsight) interpretations
-		Finally this worked: csst address in buffer as (short *)
-		Update: Reading the AD6620 data sheet, I see that the data is a 16bit integer in 2's compliment form
-		Better late than never!
-		*/
-		//producerBuffer is an array of bytes that we need to treat as array of shorts
-		I = consumerFilledBufPtr[j];
-		//Convert to float: div by 32767 for -1 to 1,
-		I /= (32767.0);
-		//SoundCard levels approx 0.02 at 50% mic
+		if ((consumerFilledBufPtr = (short *)producerConsumer.AcquireFilledBuffer()) == NULL)
+			return;
 
-		//maxI = I>maxI ? I : maxI;
-		//minI = I<minI ? I : minI;
+		for (int i=0,j=0; i<inBufferSize; i++, j+=2)
+		{
+			/*
+			After a couple of days of banging my head trying to figure why I couldn't get anything but static,
+			I figured out how to interpret the data coming back from the SDR-IQ.
+			I tried converting LSB/MSB to an integer (0-65535) and normalizing to -32767 to +32767
+				I = (SHORT)(readBuf[j] + (readBuf[j + 1] * 0x100));
+				I -= 32767.0;
+			I tried bit shifting and cast to signed
+				I = (short)(readBuf[j] | (readBuf[j + 1] <<8))
+			And several other crazy (with hindsight) interpretations
+			Finally this worked: csst address in buffer as (short *)
+			Update: Reading the AD6620 data sheet, I see that the data is a 16bit integer in 2's compliment form
+			Better late than never!
+			*/
+			//producerBuffer is an array of bytes that we need to treat as array of shorts
+			I = consumerFilledBufPtr[j];
+			//Convert to float: div by 32767 for -1 to 1,
+			I /= (32767.0);
+			//SoundCard levels approx 0.02 at 50% mic
+
+			//maxI = I>maxI ? I : maxI;
+			//minI = I<minI ? I : minI;
 
 
-		Q = consumerFilledBufPtr[j+1];
-		Q /= (32767.0);
+			Q = consumerFilledBufPtr[j+1];
+			Q /= (32767.0);
 
-		//IQ appear to be reversed
-		inBuffer[i].re =  Q;
-		inBuffer[i].im =  I;
-		//qDebug() << QString::number(I) << ":" << QString::number(Q);
-		//qDebug() << minI << "-" << maxI;
+			//IQ appear to be reversed
+			inBuffer[i].re =  Q;
+			inBuffer[i].im =  I;
+			//qDebug() << QString::number(I) << ":" << QString::number(Q);
+			//qDebug() << minI << "-" << maxI;
+
+		}
+
+		//Not sure if this is required for SDR-IQ, but it is for SDR-14
+		//Send Ack
+		//FT_Write(sdr_iq->ftHandle,ackBuf,sizeof(ackBuf),&bytesWritten);
+
+		ProcessIQData(inBuffer,inBufferSize);
+		//Update lastDataBuf & release dataBuf
+		producerConsumer.ReleaseFreeBuffer();
 
 	}
-
-	//Not sure if this is required for SDR-IQ, but it is for SDR-14
-	//Send Ack
-	//FT_Write(sdr_iq->ftHandle,ackBuf,sizeof(ackBuf),&bytesWritten);
-
-	//We're done with databuf, so we can release before we call ProcessBlock
-	//Update lastDataBuf & release dataBuf
-	producerConsumer.ReleaseFreeBuffer();
-
-	ProcessIQData(inBuffer,inBufferSize);
 }
 
 
