@@ -95,6 +95,9 @@ bool Receiver::On()
     if (sdr == NULL)
         return false; //Means something is wrong with plugins,
 
+	//If plugin has multiple devices, we need to set the last one used
+	sdr->Set(DeviceInterface::DeviceNumber,global->settings->sdrDeviceNumber);
+
     //Setup callback for device plugins to use when they have new IQ data
     using namespace std::placeholders;
     //function template must match exactly the method that is used in bind()
