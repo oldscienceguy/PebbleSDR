@@ -171,15 +171,18 @@ bool USBUtil::SetBitMode(unsigned char _ucMask, unsigned char _ucEnable)
 	return false;
 }
 
-//Returns true if there is something in quque
-bool USBUtil::GetQueueStatus()
+//Returns #bytes in quque
+quint32 USBUtil::GetQueueStatus()
 {
 	if (libType == LIB_USB) {
-		return true; //No implementation
+		return 0; //No implementation
 	} else if (libType == FTDI_D2XX) {
 		quint32 actual;
 		FT_STATUS result = FT_GetQueueStatus(ftHandle, &actual);
-		return (result==FT_OK && actual > 0 )? true : false;
+		if (result==FT_OK)
+			return actual;
+		else
+			return 0;
 	}
 	return false;
 }
@@ -203,7 +206,9 @@ bool USBUtil::Write(void *_buffer, quint32 _length)
 	} else if (libType == FTDI_D2XX) {
 		quint32 actual;
 		FT_STATUS result = FT_Write(ftHandle,_buffer, _length, &actual);
-		if (result==FT_OK  && actual == _length)
+		if (actual != _length)
+			return false;
+		if (result==FT_OK)
 			return true;
 		else
 			return false;
@@ -217,9 +222,6 @@ bool USBUtil::SetConfiguration(int config)
 		int ret = libusb_set_configuration(libusbDevHandle,config);
 		return ret == 0 ? true: false;
 	}
-#if 0
-    usb_set_configuration(hDev,config);
-#endif
 	return false;
 }
 bool USBUtil::Claim_interface(int iface)
