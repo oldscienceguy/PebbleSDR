@@ -43,6 +43,8 @@ public:
 		DeviceSampleRate,		//RW quint32
 		DeviceSampleRates,		//RO QStringList Sample rates supported by device
 		DeviceFrequency,		//RW double Device center (LO) frequency
+		DeviceHealthValue,		//RO quin16 0-100 where 0 = throwing away data and 100 = within expected tollerances
+		DeviceHealthString,		//RO QString explaining last DeviceHealth returned value
 		InputDeviceName,		//RW QString Plugins manage settings - OS name for selected Audio input device, if any
 		OutputDeviceName,		//RW QString
 		HighFrequency,			//RO Highest frequency device supports

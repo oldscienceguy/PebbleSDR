@@ -95,6 +95,10 @@ QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, quint16 _option) {
 		case DeviceFrequency:
 			return deviceFrequency;
 			break;
+		case DeviceHealthValue:
+			return 100; //Default is perfect health
+		case DeviceHealthString:
+			return "Device running normally";
 		case InputDeviceName:
 			return inputDeviceName;
 			break;
