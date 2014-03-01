@@ -75,7 +75,8 @@ bool FileSDRDevice::Connect()
         return false;
 
 	//We have sample rate for file, set polling interval
-	producerConsumer.SetPollingInterval(wavFileRead.GetSampleRate(), framesPerBuffer);
+	producerConsumer.SetProducerInterval(wavFileRead.GetSampleRate(), framesPerBuffer);
+	producerConsumer.SetConsumerInterval(wavFileRead.GetSampleRate(), framesPerBuffer);
 
     if (copyTest) {
         res = wavFileWrite.OpenWrite(fileName + "2", wavFileRead.GetSampleRate(),0,0,0);

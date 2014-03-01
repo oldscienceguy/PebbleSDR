@@ -113,7 +113,8 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerB
     producerConsumer.Initialize(std::bind(&RTL2832SDRDevice::producerWorker, this, std::placeholders::_1),
         std::bind(&RTL2832SDRDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, readBufferSize);
 	//Must be called after Initialize
-	producerConsumer.SetPollingInterval(rtlSampleRate,readBufferSize);
+	producerConsumer.SetProducerInterval(rtlSampleRate,readBufferSize);
+	producerConsumer.SetConsumerInterval(rtlSampleRate,readBufferSize);
 
     readBufferIndex = 0;
 

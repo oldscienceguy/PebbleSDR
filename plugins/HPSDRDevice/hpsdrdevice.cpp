@@ -91,7 +91,8 @@ bool HPSDRDevice::ConnectUsb()
 
 	//Must be called after Initialize
 	//Sample rate and size must be in consistent units - bytes
-	producerConsumer.SetPollingInterval(sampleRate*sizeof(CPX),inputBufferSize);
+	producerConsumer.SetProducerInterval(sampleRate*sizeof(CPX),inputBufferSize);
+	producerConsumer.SetConsumerInterval(sampleRate*sizeof(CPX),inputBufferSize);
 
 	if (!Open())
 		return false;
