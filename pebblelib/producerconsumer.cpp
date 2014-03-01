@@ -107,6 +107,8 @@ void ProducerConsumer::Initialize(cbProducerConsumer _producerWorker, cbProducer
 
 }
 
+//Make sure sampleRate and samplesPerBuffer are in same units
+//Bytes, CPX's, etc
 void ProducerConsumer::SetConsumerInterval(quint32 _sampleRate, quint16 _samplesPerBuffer)
 {
 	//How many data buffers do we have to process per second
@@ -114,7 +116,9 @@ void ProducerConsumer::SetConsumerInterval(quint32 _sampleRate, quint16 _samples
 	//What's the optimal interval between data buffers (in usec)
 	quint16 msBufferInterval = 1000 / buffersPerSec;
 	//Set safe interval (experiment here)
-	msConsumerInterval = msBufferInterval/2;
+	msBufferInterval *= 0.90; //Some spare room
+	//Interval can never be 0 which is a special case for QTimer
+	msConsumerInterval = msBufferInterval > 0 ? msBufferInterval : 1;
 	if (consumerWorker != NULL)
 		consumerWorker->SetPollingInterval(msConsumerInterval);
 
@@ -129,7 +133,9 @@ void ProducerConsumer::SetProducerInterval(quint32 _sampleRate, quint16 _samples
 	//What's the optimal interval between data buffers (in usec)
 	quint16 msBufferInterval = 1000 / buffersPerSec;
 	//Set safe interval (experiment here)
-	msProducerInterval = msBufferInterval/2;
+	msBufferInterval *= 0.90; //Some spare room
+	//Interval can never be 0 which is a special case for QTimer
+	msProducerInterval = msBufferInterval > 0 ? msBufferInterval : 1;
 	if (producerWorker != NULL)
 		producerWorker->SetPollingInterval(msProducerInterval);
 }
@@ -246,7 +252,7 @@ unsigned char *ProducerConsumer::AcquireFilledBuffer(quint16 _timeout)
     if (semNumFilledBuffers == NULL)
         return NULL; //Not initialized yet
 
-    if (!useBlockingAcquire) {
+	if (!useBlockingAcquire) {
         //We can't block with just acquire() because thread will never finish
         //If we can't get a buffer in N ms, return NULL and caller will exit
         if (semNumFilledBuffers->tryAcquire(1, _timeout)) {
@@ -255,6 +261,9 @@ unsigned char *ProducerConsumer::AcquireFilledBuffer(quint16 _timeout)
             return NULL;
         }
     } else {
+		//This will block the thread waiting for a filled buffer
+		//Internally QSemaphore wraps QWaitCondition, see QWaitCondition for lower level example
+		//Does QWaitCondition wait() just block, or yield
         semNumFilledBuffers->acquire();
         return producerBuffer[nextConsumerDataBuf];
     }
