@@ -2,6 +2,11 @@
 #include "rfsfilters.h"
 #include <QMessageBox>
 
+//Mac native socket API, needed for UDP buffer
+#ifndef Q_OS_WIN
+#include <sys/socket.h>
+#endif
+
 RFSpaceDevice::RFSpaceDevice():DeviceInterfaceBase()
 {
 	InitSettings("");
@@ -66,7 +71,13 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuff
 	numProducerBuffers = 50;
 	producerConsumer.Initialize(std::bind(&RFSpaceDevice::producerWorker, this, std::placeholders::_1),
 		std::bind(&RFSpaceDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, dataBlockSize);
-	producerConsumer.SetPollingInterval(sampleRate,dataBlockSize);
+	if (deviceNumber == SDR_IQ) {
+		//SR * 2 bytes for I * 2 bytes for Q .  dataBlockSize is 8192
+		producerConsumer.SetProducerInterval(sampleRate * 4,dataBlockSize);
+		producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
+	} else if(deviceNumber == SDR_IP) {
+		//No producer or consumer
+	}
 
 	readBufferIndex = 0;
 
@@ -96,6 +107,15 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuff
 		// ie SetUDPAddressAndPort(QHostAddress("192.168.0.255"),1234);
 		bool result = udpSocket->bind(devicePort);
 		if (result) {
+			//Note: QUdpSocket uses native buffering per Qt documentation and ignores this.  Use native mac api
+			//udpSocket->setReadBufferSize(1028000);
+			//CuteSDR sets buffer size using native Mac UI after bind
+			//Datagrams are 1028 bytes, so set buffer to a large enough mutiple
+			//Works on dev box from 102800, make larger just to be sure
+			int v = 102800; //CuteSDR sets to 2,000,000
+			//socket descriptor, level, option, option value, length
+			//SOL_SOCKET, SO_RCVBUF defined in socket.h
+			::setsockopt(udpSocket->socketDescriptor(), SOL_SOCKET, SO_RCVBUF, (char *)&v, sizeof(v));
 			connect(udpSocket, &QUdpSocket::readyRead, this, &RFSpaceDevice::UDPSocketNewData);
 		} else {
 			return false;
@@ -119,6 +139,8 @@ bool RFSpaceDevice::Connect()
 
 		return true;
 	} else if (deviceNumber == SDR_IQ) {
+		header.gotHeader = false;
+
 		if (!usbUtil->IsUSBLoaded()) {
 			if (!usbUtil->LoadUsb()) {
 				QMessageBox::information(NULL,"Pebble","USB not loaded.  Elektor communication is disabled.");
@@ -145,14 +167,16 @@ bool RFSpaceDevice::Connect()
 			return false;
 		}
 
-		if (!usbUtil->SetTimeouts(500,500)) {
+		//This will cause Read or Write to return after 500ms with whatever data was read or written
+		//independent of requested size
+		//It can really slow things down if data too high and data is not available
+		if (!usbUtil->SetTimeouts(100,100)) {
 			usbUtil->CloseDevice();
 			return false;
 		}
 
-		//Testing: Increase size of internal buffers from default 4096
-		//ftStatus = FT_SetUSBParameters(ftHandle,8192,8192);
-
+		//Increase size of internal buffers from default 4096 reduces CPU load
+		usbUtil->SetUSBParameters(8192,4096);
 
 		//SDR sends a 0 on startup, clear it out of buffer
 		//Ignore error if we don't get 1 byte
@@ -186,13 +210,15 @@ bool RFSpaceDevice::Disconnect()
 void RFSpaceDevice::Start()
 {
 	if (deviceNumber == SDR_IP) {
-		producerConsumer.Start(false,true);
+		//Fastest is no threads, just signals from NewUDPData to ConsumerWorker via ProducerConsumer
+		producerConsumer.Start(false,false);
 	} else {
 		producerConsumer.Start(true,true);
-		//We're going to get back over 256 ACKs, eat em before continuing
-		//Otherwise we fill up data buffers while processing acks
-		FlushDataBlocks();
 	}
+	//If we don't set sample rate first then FlushDataBlock, then sdr-iq crashes with garbage data later
+	SetSampleRate();
+	//We're going to get back over 256 ACKs, eat em before continuing
+	FlushDataBlocks();
 
 	//Get basic Device Information for later use, name, version, etc
 	bool result = RequestTargetName();
@@ -209,7 +235,6 @@ void RFSpaceDevice::Start()
 	//5-Set the SDR-IP LCD frequency display to match NCO frequency.(optional command) [0A] [00] [20] [00] [01] [00] [2D] [31] [01] [00]
 	//6-Send the Start Capture command, Complex I/Q data, 24 bit contiguous mode [08] [00] [18] [00] [81] [02] [80] [00]
 
-	SetSampleRate();
 
 	//Set IF Gain, 0,+6, +12,+18,+24
 	SetIFGain(sIFGain);
@@ -255,13 +280,13 @@ void RFSpaceDevice::ReadSettings()
 	//Instead of getting BW from SDR_IQ options dialog, we now get it directly from settings dialog
 	//because we're passing GetSampleRates() during dialog setup
 	//So sampleRate is actually bandwidth
-	if (sampleRate==196078)
+	if (sampleRate==190000)
 		sBandwidth = AD6620::BW190K;
-	else if (sampleRate==158730)
+	else if (sampleRate==150000)
 		sBandwidth = AD6620::BW150K;
-	else if (sampleRate==111111)
+	else if (sampleRate==100000)
 		sBandwidth = AD6620::BW100K;
-	else if (sampleRate==55555)
+	else if (sampleRate==50000)
 		sBandwidth = AD6620::BW50K;
 	else
 		sBandwidth = AD6620::BW50K;
@@ -316,16 +341,16 @@ QVariant RFSpaceDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 			if (deviceNumber == SDR_IP)
 				return QStringList()<<"62500"<<"250000"<<"500000"<<"2000000";
 			else if (deviceNumber == SDR_IQ)
-				return QStringList()<<"55555"<<"111111"<<"158730"<<"196078";
+				//return QStringList()<<"55555"<<"111111"<<"158730"<<"196078";
+				return QStringList()<<"50000"<<"100000"<<"150000"<<"190000";
 			else
 				return QStringList();
 		case DeviceType:
 			return DeviceInterfaceBase::INTERNAL_IQ;
 		case DeviceSampleRate: {
-			if (deviceNumber == SDR_IP) {
-				return sampleRate;
-			} else if (deviceNumber == SDR_IQ) {
-				//Sample rate is derived from bandwidth
+			return sampleRate;
+			//Note, actual sample rate for SDR_IQ is tied to bandwidth
+#if 0
 				switch (sBandwidth)
 				{
 					case AD6620::BW5K: return 8138;
@@ -337,11 +362,18 @@ QVariant RFSpaceDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 					case AD6620::BW190K: return 196078;
 				}
 				return 48000;
-			} else
-				return 0;
+#endif
 		}
 		case DeviceFrequency:
 			return GetFrequency();
+		case DeviceHealthValue:
+			return producerConsumer.GetPercentageFree();
+		case DeviceHealthString:
+			if (producerConsumer.GetPercentageFree() > 50)
+				return "Device running normally";
+			else
+				return "Device under stress";
+
 		default:
 			return DeviceInterfaceBase::Get(_key, _option);
 	}
@@ -493,16 +525,16 @@ void RFSpaceDevice::processControlItem(quint16 headerType, char *buf)
 		break;
 	case TargetDataItem0:
 		//Should never get here, data blocks handled elsewhere
-		Q_UNREACHABLE();
+		Q_UNIMPLEMENTED();
 		break;
 	case TargetDataItem1:
-		Q_UNREACHABLE();
+		Q_UNIMPLEMENTED();
 		break;
 	case TargetDataItem2:
-		Q_UNREACHABLE();
+		Q_UNIMPLEMENTED();
 		break;
 	case TargetDataItem3:
-		Q_UNREACHABLE();
+		Q_UNIMPLEMENTED();
 		break;
 	default:
 		break;
@@ -513,31 +545,46 @@ void RFSpaceDevice::processControlItem(quint16 headerType, char *buf)
 void RFSpaceDevice::producerWorker(cbProducerConsumerEvents _event)
 {
 	Q_UNUSED(_event);
-	//mutex.lock();
-	//FT_Read blocks until bytes are ready or timeout, which wastes time
-	//Check to make sure we've got bytes ready before proceeding
-	if (!usbUtil->GetQueueStatus())
-		//We get a lot of this initially as there's no data to return until rcv gets set up
-		return;
-
-	//Note, this assumes that we're in sync with stream
-	//Read 16 bit Header which contains message length and type
-	if (!usbUtil->Read(usbReadBuf,2))
-		//mutex.unlock();
-		return;
-
-	ControlHeader header;
-	UnpackHeader(usbReadBuf[0], usbReadBuf[1], &header);
-
-	if (header.type == TargetHeaderTypes::TargetDataItem0 && header.length==0) {
-
+	if (!header.gotHeader) {
+		//We're looking for 2 byte header
+		//FT_Read blocks until bytes are ready or timeout, which wastes time
+		//Check to make sure we've got at least 2 bytes ready before proceeding
+		if (usbUtil->GetQueueStatus() < 2)
+			//We get a lot of this initially as there's no data to return until rcv gets set up
+			return;
+		//Note, this assumes that we're in sync with stream
+		//Read 16 bit Header which contains message length and type
+		if (!usbUtil->Read(usbReadBuf,2))
+			//mutex.unlock();
+			return;
+		UnpackHeader(usbReadBuf[0], usbReadBuf[1], &header);
 		//Special case to allow 2048 samples per block
 		//When length==0 it means to read 8192 bytes
 		//Largest value in a 13bit field is 8191 and we need length of 8192
-		header.length = 8192;
-		char *producerFreeBufPtr;
-		if ((producerFreeBufPtr = (char *)producerConsumer.AcquireFreeBuffer()) == NULL)
+		if (header.type == TargetHeaderTypes::TargetDataItem0 && header.length==0)
+			header.length = 8192;
+		if (header.length <= 2 ) {
+			//2 byte NAK, no additional bytes
 			return;
+		} else if (header.length > 8192) {
+			return; //Invalid length
+		}
+		header.gotHeader = true;
+	}
+
+	//Note: Waiting for sufficient data instead of blocking in Read() resulted in lowest CPU usage ever
+	if (usbUtil->GetQueueStatus() < header.length - 2)
+		return;
+
+	//We know we have enough data in buffer to process item
+	header.gotHeader = false;
+	if (header.type == TargetHeaderTypes::TargetDataItem0) {
+		char *producerFreeBufPtr;
+		if ((producerFreeBufPtr = (char *)producerConsumer.AcquireFreeBuffer()) == NULL) {
+			//We have to read data and throw away or we'll get out of sync
+			usbUtil->Read(usbReadBuf, header.length);
+			return;
+		}
 
 		if (!usbUtil->Read(producerFreeBufPtr, header.length)) {
 			//Lost data
@@ -548,32 +595,15 @@ void RFSpaceDevice::producerWorker(cbProducerConsumerEvents _event)
 		//Increment the number of data buffers that are filled so consumer thread can access
 		producerConsumer.ReleaseFilledBuffer();
 		return;
-	}
-
-	if (header.length <= 2 || header.length > 8192)
-		//Receive a 2 byte NAK nothing else to read
-		return;
-	else
-		//Length can never be zero
-		header.length -= 2; //length includes 2 byte header which we've already read
-
-	//BUG: We always get a type 0 with length 769(-2) early in the startup sequence
-	//readBuf is filled with 0x01 0x03 (repeated)
-	//FT_Read fails in this case because there are actually no more bytes to read
-	//See if we this is ack, nak, or something else that needs special casing
-	//Trace back and see what last FT_Write was?
-	if (!usbUtil->Read(usbReadBuf,header.length)) {
-		//mutex.unlock();
+	} else {
+		if (usbUtil->Read(usbReadBuf,header.length - 2)) {
+			//qDebug()<<"Type ="<<type<<" ItemCode = "<<itemCode;
+			processControlItem(header.type, (char *)usbReadBuf);
+			return;
+		}
 		return;
 	}
-
-	//qDebug()<<"Type ="<<type<<" ItemCode = "<<itemCode;
-	processControlItem(header.type, (char *)usbReadBuf);
-
-	//mutex.unlock();
 	return;
-
-
 }
 
 //This is called from Consumer thread
@@ -581,14 +611,11 @@ void RFSpaceDevice::consumerWorker(cbProducerConsumerEvents _event)
 {
 	Q_UNUSED(_event);
 
-	//unsigned char ackBuf[] = {0x03,0x60,0x00}; //Ack data block 0
-	//DWORD bytesWritten;
-	//FT_STATUS ftStatus;
 	float I,Q;
 	//Wait for data to be available from producer
 	short *consumerFilledBufPtr; //Treat producerConsumer buffer as an array of short
-	while (producerConsumer.GetNumFilledBufs() > 0) {
-
+	quint16 numFilledBufs = producerConsumer.GetNumFilledBufs();
+	while (numFilledBufs-- > 0) {
 		if ((consumerFilledBufPtr = (short *)producerConsumer.AcquireFilledBuffer()) == NULL)
 			return;
 
@@ -629,14 +656,14 @@ void RFSpaceDevice::consumerWorker(cbProducerConsumerEvents _event)
 		}
 
 		//Not sure if this is required for SDR-IQ, but it is for SDR-14
-		//Send Ack
-		//FT_Write(sdr_iq->ftHandle,ackBuf,sizeof(ackBuf),&bytesWritten);
+		SendAck();
 
 		ProcessIQData(inBuffer,inBufferSize);
 		//Update lastDataBuf & release dataBuf
 		producerConsumer.ReleaseFreeBuffer();
 
 	}
+	//qDebug()<<producerConsumer.GetNumFilledBufs()<<" "<<producerConsumer.GetNumFreeBufs();
 }
 
 
@@ -709,46 +736,52 @@ void RFSpaceDevice::UDPSocketNewData()
 	QHostAddress sender;
 	quint16 senderPort;
 	qint16 actual;
-	qint64 dataGramSize = udpSocket->pendingDatagramSize();
-	if (dataGramSize != 1028) {
-		qDebug()<<"Invalid IQ datagram size: "<< dataGramSize;
-		return;
-	}
-	actual = udpSocket->readDatagram((char*)udpReadBuf,dataGramSize, &sender, &senderPort);
-	if (actual != dataGramSize) {
-		qDebug()<<"ReadDatagram size error";
-		return;
-	}
-	//Double check to make sure datagram is right format
-	if (udpReadBuf[0] != TargetDataItem0 ||
-			udpReadBuf[1] != 0x84) {
-		return; //Invalid
-	}
-	//Ignore sequence nubmer for now and assume we get in correct order
-	//Eventually we can get fancy and buffer datagrams that arrive out of sequence and re-assemble in right order
-	quint16 sequenceNumer = udpReadBuf[2];
-	Q_UNUSED(sequenceNumer);
-	//1024 data bytes follow or 512 2 byte samples
-
-	if (readBufferIndex == 0) {
-		//Starting a new producer buffer
-		if ((producerFreeBufPtr = (char *)producerConsumer.AcquireFreeBuffer()) == NULL)
+	qint64 dataGramSize;
+	quint16 sequenceNumer;
+	//We have to process all the data we have, won't get a second signal for same data
+	while (udpSocket->hasPendingDatagrams()) {
+		dataGramSize = udpSocket->pendingDatagramSize();
+		//qDebug()<<"UDP datagram count: "<<++dataGramCount<<" size: "<<dataGramSize;
+		if (dataGramSize != 1028) {
+			qDebug()<<"Invalid IQ datagram size: "<< dataGramSize;
 			return;
+		}
+		actual = udpSocket->readDatagram((char*)udpReadBuf,dataGramSize, &sender, &senderPort);
+		if (actual != dataGramSize) {
+			qDebug()<<"ReadDatagram size error";
+			return;
+		}
+		//Double check to make sure datagram is right format
+		if (udpReadBuf[0] != TargetDataItem0 ||
+				udpReadBuf[1] != 0x84) {
+			return; //Invalid
+		}
+		//Ignore sequence nubmer for now and assume we get in correct order
+		//Eventually we can get fancy and buffer datagrams that arrive out of sequence and re-assemble in right order
+		//Or we can determine how many packets we missed by comparing with last sequence number
+		sequenceNumer = udpReadBuf[2];
+		Q_UNUSED(sequenceNumer);
+		//1024 data bytes follow or 512 2 byte samples
+
+		if (readBufferIndex == 0) {
+			//qDebug()<<producerConsumer.GetNumFreeBufs();
+			//Starting a new producer buffer
+			if ((producerFreeBufPtr = (char *)producerConsumer.AcquireFreeBuffer()) == NULL)
+				return;
+		}
+
+		//USB gets 2048 I and 2048 Q samples at a time, or 8192 bytes
+		//We need to build over 8 datagrams
+		memcpy(&producerFreeBufPtr[readBufferIndex], &udpReadBuf[4], 1024); //256 I/Q samples
+		readBufferIndex += 1024;
+
+		if (readBufferIndex == 8192) {
+			readBufferIndex = 0;
+			//Increment the number of data buffers that are filled so consumer thread can access
+			producerConsumer.ReleaseFilledBuffer();
+		}
 	}
-
-	//USB gets 2048 I and 2048 Q samples at a time, or 8192 bytes
-	//We need to build over 8 datagrams
-	memcpy(&producerFreeBufPtr[readBufferIndex], &udpReadBuf[4], 1024); //256 I/Q samples
-	readBufferIndex += 1024;
-
-	if (readBufferIndex == 8192) {
-		readBufferIndex = 0;
-		//Increment the number of data buffers that are filled so consumer thread can access
-		producerConsumer.ReleaseFilledBuffer();
-	}
-
 	return;
-
 }
 
 bool RFSpaceDevice::SendTcpCommand(void *buf, qint64 len)
@@ -756,6 +789,15 @@ bool RFSpaceDevice::SendTcpCommand(void *buf, qint64 len)
 	qint64 actual = tcpSocket->write((char *)buf, len);
 	return actual == len;
 
+}
+
+bool RFSpaceDevice::SendAck()
+{
+	unsigned char writeBuf[] = {0x03,0x60,0x00}; //Ack data block 0
+	if (deviceNumber == SDR_IQ)
+		return usbUtil->Write(writeBuf, sizeof(writeBuf));
+	else
+		return SendTcpCommand(writeBuf,sizeof(writeBuf));
 }
 
 //Device specific

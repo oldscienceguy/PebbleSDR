@@ -38,6 +38,7 @@ enum TargetHeaderTypes {
 
 //Unpacked, not as received
 struct ControlHeader {
+	bool gotHeader;
 	quint8 type;
 	quint16 length;
 };
@@ -100,6 +101,8 @@ private:
 	ProducerConsumer producerConsumer;
 	USBUtil *usbUtil;
 	AD6620 *ad6620;
+
+	ControlHeader header;
 
 	QSettings *sdripSettings;
 	QSettings *sdriqSettings;
@@ -171,6 +174,7 @@ private:
 	void processControlItem(quint16 headerType, char *buf);
 	bool SetSampleRate();
 	bool SetUDPAddressAndPort(QHostAddress address, quint16 port);
+	bool SendAck();
 };
 
 
