@@ -99,6 +99,12 @@ bool USBUtil::OpenDevice()
 		return true;
 	} else if (libType == FTDI_D2XX) {
 		FT_STATUS result = FT_Open(ftdiDevice,&ftHandle);
+#if 0
+		//Check latency, defaults to 0x10 or 16ms, but can be set from 2ms to 255ms on some FTDI devices
+		//
+		unsigned char timer;
+		FT_GetLatencyTimer (ftHandle, &timer);
+#endif
 		return result==FT_OK ? true : false;
 	}
     return true;
@@ -149,6 +155,15 @@ bool USBUtil::SetTimeouts(quint32 _readTimeout, quint32 _writeTimeout)
 
 }
 
+//FTDI defaults to 4096 byte inbound and outbound chunks
+//Devices like RFSpace SDR-IQ transfer 8192 bytes per data chunk
+//Sizes must be multiple of 64 from 64 bytes to 64k
+bool USBUtil::SetUSBParameters(quint32 inboundBufferSize, quint32 outboundBufferSize)
+{
+	FT_STATUS result = FT_SetUSBParameters(ftHandle,inboundBufferSize,outboundBufferSize);
+	return result == FT_OK;
+}
+
 bool USBUtil::SetBaudRate(quint16 _baudRate)
 {
 	if (libType == LIB_USB) {
@@ -193,6 +208,8 @@ bool USBUtil::Read(void *_buffer, quint32 _bytesToRead)
 		return true;
 	} else if (libType == FTDI_D2XX) {
 		quint32 actual;
+		//This will BLOCK until bytesToRead are available or SetTimeout values have been exceeded
+		//When this happens, we return with whatever data was available, which may not be actual
 		FT_STATUS result = FT_Read(ftHandle,_buffer,_bytesToRead, &actual);
 		return result == FT_OK && actual == _bytesToRead;
 	} else

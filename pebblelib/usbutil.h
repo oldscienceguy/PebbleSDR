@@ -81,6 +81,7 @@ public:
 	bool Purge();
 	bool SetTimeouts(quint32 _readTimeout, quint32 _writeTimeout);
 	quint32 GetQueueStatus();
+	bool SetUSBParameters(quint32 inboundBufferSize, quint32 outboundBufferSize);
 private:
 	USB_LIB_TYPE libType;
 	quint16 timeout;
