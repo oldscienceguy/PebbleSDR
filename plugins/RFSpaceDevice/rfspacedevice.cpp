@@ -73,10 +73,13 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuff
 		std::bind(&RFSpaceDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, dataBlockSize);
 	if (deviceNumber == SDR_IQ) {
 		//SR * 2 bytes for I * 2 bytes for Q .  dataBlockSize is 8192
-		producerConsumer.SetProducerInterval(sampleRate * 4,dataBlockSize);
-		producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
+		producerConsumer.SetProducerInterval(sampleRate,dataBlockSize / 4);
+		producerConsumer.SetConsumerInterval(sampleRate,dataBlockSize / 4);
 	} else if(deviceNumber == SDR_IP) {
-		//No producer or consumer
+		//Get get UDP datagrams of 1024 bytes, 4bytes per CPX or 256 CPX samples
+		producerConsumer.SetProducerInterval(sampleRate,1024 / 4);
+		//Consumer only has to run once every 2048 CPX samples
+		producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
 	}
 
 	readBufferIndex = 0;
@@ -92,6 +95,8 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuff
 		connect(tcpSocket,SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(TCPSocketError(QAbstractSocket::SocketError)));
 		connect(tcpSocket,&QTcpSocket::readyRead, this, &RFSpaceDevice::TCPSocketNewData);
 	}
+	//Move to ProducerWorker Start so in producer thread
+#if 0
 	if (deviceNumber == SDR_IP && udpSocket == NULL) {
 		udpSocket = new QUdpSocket();
 
@@ -117,11 +122,13 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuff
 			//SOL_SOCKET, SO_RCVBUF defined in socket.h
 			::setsockopt(udpSocket->socketDescriptor(), SOL_SOCKET, SO_RCVBUF, (char *)&v, sizeof(v));
 			connect(udpSocket, &QUdpSocket::readyRead, this, &RFSpaceDevice::UDPSocketNewData);
-		} else {
+		}
+		else {
 			return false;
 		}
 
 	}
+#endif
 	return true;
 }
 
@@ -211,7 +218,7 @@ void RFSpaceDevice::Start()
 {
 	if (deviceNumber == SDR_IP) {
 		//Fastest is no threads, just signals from NewUDPData to ConsumerWorker via ProducerConsumer
-		producerConsumer.Start(false,false);
+		producerConsumer.Start(true,true);
 	} else {
 		producerConsumer.Start(true,true);
 	}
@@ -544,7 +551,65 @@ void RFSpaceDevice::processControlItem(quint16 headerType, char *buf)
 
 void RFSpaceDevice::producerWorker(cbProducerConsumerEvents _event)
 {
-	Q_UNUSED(_event);
+	switch (_event) {
+		//Thread local constuction.  All tcp and udp port access must be kept within thread
+		case cbProducerConsumerEvents::Start: {
+			if (deviceNumber == SDR_IQ)
+				return;
+			//Construct UDP sockets in thread local
+			if (udpSocket == NULL) {
+				udpSocket = new QUdpSocket();
+			}
+			//Set up UDP Socket to listen for datagrams addressed to whatever IP/Port we set
+			//bool result = udpSocket->bind(); //Binds to QHostAddress:Any on port which is randomly chosen
+			//Alternative if we need to set a specific HostAddress and port
+			//result = udpSocket->bind(QHostAddress(), SomePort);
+
+
+			//SDR-IP sends UPD datagrams to same port it uses for TCP
+			//So this binds our socket to accept datagrams from any IP, as long as port matches
+			//We could add an explicit setup where we tell SDR-IP what IP/Port to use for datagrams, but not needed I think
+			// ie SetUDPAddressAndPort(QHostAddress("192.168.0.255"),1234);
+			bool result = udpSocket->bind(devicePort);
+			if (result) {
+				//Note: QUdpSocket uses native buffering per Qt documentation and ignores this.  Use native mac api
+				//udpSocket->setReadBufferSize(1028000);
+				//CuteSDR sets buffer size using native Mac UI after bind
+				//Datagrams are 1028 bytes, so set buffer to a large enough mutiple
+				//Works on dev box from 102800, make larger just to be sure
+				int v = 102800; //CuteSDR sets to 2,000,000
+				//socket descriptor, level, option, option value, length
+				//SOL_SOCKET, SO_RCVBUF defined in socket.h
+				::setsockopt(udpSocket->socketDescriptor(), SOL_SOCKET, SO_RCVBUF, (char *)&v, sizeof(v));
+				//Remember we're being called from thread and signal needs to go to something in our thread
+				//In this case, we translate the udpSocket signal to a producerConsumer signal
+				connect(udpSocket, SIGNAL(readyRead()), &producerConsumer, SIGNAL(ProcessNewData()));
+			}
+		}
+			break;
+		case cbProducerConsumerEvents::Stop:
+			if (deviceNumber == SDR_IQ)
+				return;
+			//Destruct UDP sockets in thread local
+			udpSocket->disconnectFromHost();
+			disconnect(udpSocket,0,0,0);
+			break;
+		case cbProducerConsumerEvents::Run:
+			if (deviceNumber == SDR_IQ) {
+				DoUSBProducer();
+			} else if (deviceNumber == SDR_IP) {
+				DoUDPProducer();
+			}
+			break;
+	}
+}
+void RFSpaceDevice::DoUDPProducer()
+{
+	UDPSocketNewData();
+}
+
+void RFSpaceDevice::DoUSBProducer()
+{
 	if (!header.gotHeader) {
 		//We're looking for 2 byte header
 		//FT_Read blocks until bytes are ready or timeout, which wastes time
@@ -562,11 +627,11 @@ void RFSpaceDevice::producerWorker(cbProducerConsumerEvents _event)
 		//When length==0 it means to read 8192 bytes
 		//Largest value in a 13bit field is 8191 and we need length of 8192
 		if (header.type == TargetHeaderTypes::TargetDataItem0 && header.length==0)
-			header.length = 8192;
+			header.length = 8194; //Includes 2 bytes we just read
 		if (header.length <= 2 ) {
 			//2 byte NAK, no additional bytes
 			return;
-		} else if (header.length > 8192) {
+		} else if (header.length > 8194) {
 			return; //Invalid length
 		}
 		header.gotHeader = true;
@@ -582,11 +647,11 @@ void RFSpaceDevice::producerWorker(cbProducerConsumerEvents _event)
 		char *producerFreeBufPtr;
 		if ((producerFreeBufPtr = (char *)producerConsumer.AcquireFreeBuffer()) == NULL) {
 			//We have to read data and throw away or we'll get out of sync
-			usbUtil->Read(usbReadBuf, header.length);
+			usbUtil->Read(usbReadBuf, 8192);
 			return;
 		}
 
-		if (!usbUtil->Read(producerFreeBufPtr, header.length)) {
+		if (!usbUtil->Read(producerFreeBufPtr, 8192)) {
 			//Lost data
 			producerConsumer.ReleaseFreeBuffer(); //Put back what we acquired
 			return;
@@ -609,13 +674,23 @@ void RFSpaceDevice::producerWorker(cbProducerConsumerEvents _event)
 //This is called from Consumer thread
 void RFSpaceDevice::consumerWorker(cbProducerConsumerEvents _event)
 {
-	Q_UNUSED(_event);
-
+	switch (_event) {
+		case cbProducerConsumerEvents::Start:
+			break;
+		case cbProducerConsumerEvents::Stop:
+			break;
+		case cbProducerConsumerEvents::Run:
+			DoConsumer();
+			break;
+	}
+}
+void RFSpaceDevice::DoConsumer()
+{
 	float I,Q;
 	//Wait for data to be available from producer
 	short *consumerFilledBufPtr; //Treat producerConsumer buffer as an array of short
-	quint16 numFilledBufs = producerConsumer.GetNumFilledBufs();
-	while (numFilledBufs-- > 0) {
+	while (producerConsumer.GetNumFilledBufs() > 0) {
+		//qDebug()<<producerConsumer.GetNumFilledBufs()<<" "<<producerConsumer.GetNumFreeBufs();
 		if ((consumerFilledBufPtr = (short *)producerConsumer.AcquireFilledBuffer()) == NULL)
 			return;
 
@@ -656,14 +731,19 @@ void RFSpaceDevice::consumerWorker(cbProducerConsumerEvents _event)
 		}
 
 		//Not sure if this is required for SDR-IQ, but it is for SDR-14
-		SendAck();
+		//SendAck();
 
+		//ProcessIQ has a max of about 2800us with 2m sample rate from sdr-ip
+		//But ramps to 200,000us with sdr-iq!
+		//Why?  Wierd samples in sdr-iq causing some error loop?
+		//Lower time/slice
+		//perform.StartPerformance("ProcessIQ");
 		ProcessIQData(inBuffer,inBufferSize);
+		//perform.StopPerformance(100);
+
 		//Update lastDataBuf & release dataBuf
 		producerConsumer.ReleaseFreeBuffer();
-
 	}
-	//qDebug()<<producerConsumer.GetNumFilledBufs()<<" "<<producerConsumer.GetNumFreeBufs();
 }
 
 
@@ -756,6 +836,7 @@ void RFSpaceDevice::UDPSocketNewData()
 				udpReadBuf[1] != 0x84) {
 			return; //Invalid
 		}
+
 		//Ignore sequence nubmer for now and assume we get in correct order
 		//Eventually we can get fancy and buffer datagrams that arrive out of sequence and re-assemble in right order
 		//Or we can determine how many packets we missed by comparing with last sequence number
@@ -791,13 +872,22 @@ bool RFSpaceDevice::SendTcpCommand(void *buf, qint64 len)
 
 }
 
+bool RFSpaceDevice::SendUsbCommand(void *buf, qint64 len)
+{
+	qint64 actual = usbUtil->Write((char *)buf, len);
+	return actual == len;
+
+}
+
 bool RFSpaceDevice::SendAck()
 {
 	unsigned char writeBuf[] = {0x03,0x60,0x00}; //Ack data block 0
 	if (deviceNumber == SDR_IQ)
-		return usbUtil->Write(writeBuf, sizeof(writeBuf));
-	else
-		return SendTcpCommand(writeBuf,sizeof(writeBuf));
+		return SendUsbCommand(writeBuf, sizeof(writeBuf));
+	return false;
+	//If udpSocket is in ProducerThread and tcpSocket is in main thread, we can't send ack from ProducerThread
+	//else
+	//	return SendTcpCommand(writeBuf,sizeof(writeBuf));
 }
 
 //Device specific
@@ -832,27 +922,27 @@ bool RFSpaceDevice::SetSampleRate()
 //0,-10,-20,-30
 bool RFSpaceDevice::SetRFGain(qint8 gain)
 {
-	unsigned char writeBuf[6] = { 0x06, 0x00, 0x38, 0x00, 0xff, 0xff};
+	unsigned char writeBuf[] = { 0x06, 0x00, 0x38, 0x00, 0xff, 0xff};
 	writeBuf[4] = 0x00;
 	writeBuf[5] = gain ;
 	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
 	} else if (deviceNumber == SDR_IQ) {
-		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+		return SendUsbCommand(writeBuf,sizeof(writeBuf));
 	}
 	return false;
 }
 //This is not documented in Interface spec, but used in activeX examples
 bool RFSpaceDevice::SetIFGain(qint8 gain)
 {
-	unsigned char writeBuf[6] = { 0x06, 0x00, 0x40, 0x00, 0xff, 0xff};
+	unsigned char writeBuf[] = { 0x06, 0x00, 0x40, 0x00, 0xff, 0xff};
 	//Bits 7,6,5 are Factory test bits and are masked
 	writeBuf[4] = 0; //gain & 0xE0;
 	writeBuf[5] = gain;
 	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
 	} else if (deviceNumber == SDR_IQ) {
-		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+		return SendUsbCommand(writeBuf,sizeof(writeBuf));
 	}
 	return false;
 }
@@ -911,7 +1001,7 @@ bool RFSpaceDevice::StartCapture()
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
 	} else if (deviceNumber == SDR_IQ) {
 		unsigned char writeBuf[] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x02, 0x00, 0x00};
-		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+		return SendUsbCommand(writeBuf,sizeof(writeBuf));
 	}
 	return false;
 }
@@ -923,7 +1013,7 @@ bool RFSpaceDevice::StopCapture()
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
 	} else if (deviceNumber == SDR_IQ) {
 		unsigned char writeBuf[] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x01, 0x00, 0x00};
-		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+		return SendUsbCommand(writeBuf,sizeof(writeBuf));
 	}
 	return false;
 }
@@ -944,11 +1034,11 @@ bool RFSpaceDevice::RequestTargetName()
 	targetName = "Pending";
 	//0x04, 0x20 is the request command
 	//0x01, 0x00 is the Control Item Code (command)
-	unsigned char writeBuf[4] = { 0x04, 0x20, 0x01, 0x00 };
+	unsigned char writeBuf[] = { 0x04, 0x20, 0x01, 0x00 };
 	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
 	} else if (deviceNumber == SDR_IQ) {
-		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+		return SendUsbCommand(writeBuf,sizeof(writeBuf));
 	}
 	return false;
 }
@@ -956,76 +1046,76 @@ bool RFSpaceDevice::RequestTargetName()
 bool RFSpaceDevice::RequestTargetSerialNumber()
 {
 	serialNumber = "Pending";
-	unsigned char writeBuf[4] = { 0x04, 0x20, 0x02, 0x00 };
+	unsigned char writeBuf[] = { 0x04, 0x20, 0x02, 0x00 };
 	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
 	} else if (deviceNumber == SDR_IQ) {
-		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+		return SendUsbCommand(writeBuf,sizeof(writeBuf));
 	}
 	return false;
 }
 bool RFSpaceDevice::RequestInterfaceVersion()
 {
 	interfaceVersion = 0;
-	unsigned char writeBuf[4] = { 0x04, 0x20, 0x03, 0x00 };
+	unsigned char writeBuf[] = { 0x04, 0x20, 0x03, 0x00 };
 	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
 	} else if (deviceNumber == SDR_IQ) {
-		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+		return SendUsbCommand(writeBuf,sizeof(writeBuf));
 	}
 	return false;
 }
 bool RFSpaceDevice::RequestFirmwareVersion()
 {
 	firmwareVersion = 0;
-	unsigned char writeBuf[5] = { 0x05, 0x20, 0x04, 0x00, 0x01 };
+	unsigned char writeBuf[] = { 0x05, 0x20, 0x04, 0x00, 0x01 };
 	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
 	} else if (deviceNumber == SDR_IQ) {
-		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+		return SendUsbCommand(writeBuf,sizeof(writeBuf));
 	}
 	return false;
 }
 bool RFSpaceDevice::RequestBootcodeVersion()
 {
 	bootcodeVersion = 0;
-	unsigned char writeBuf[5] = { 0x05, 0x20, 0x04, 0x00, 0x00 };
+	unsigned char writeBuf[] = { 0x05, 0x20, 0x04, 0x00, 0x00 };
 	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
 	} else if (deviceNumber == SDR_IQ) {
-		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+		return SendUsbCommand(writeBuf,sizeof(writeBuf));
 	}
 	return false;
 }
 
 bool RFSpaceDevice::RequestStatusCode()
 {
-	unsigned char writeBuf[4] = { 0x04, 0x20, 0x05, 0x00};
+	unsigned char writeBuf[] = { 0x04, 0x20, 0x05, 0x00};
 	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
 	} else if (deviceNumber == SDR_IQ) {
-		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+		return SendUsbCommand(writeBuf,sizeof(writeBuf));
 	}
 	return false;
 }
 //Call may not be working right in SDR-IQ
 bool RFSpaceDevice::RequestStatusString(unsigned char code)
 {
-	unsigned char writeBuf[5] = { 0x05, 0x20, 0x06, 0x00, code};
+	unsigned char writeBuf[] = { 0x05, 0x20, 0x06, 0x00, code};
 	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
 	} else if (deviceNumber == SDR_IQ) {
-		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+		return SendUsbCommand(writeBuf,sizeof(writeBuf));
 	}
 	return false;
 }
 bool RFSpaceDevice::GetFrequency()
 {
-	unsigned char writeBuf[5] = { 0x05, 0x20, 0x20, 0x00, 0x00};
+	unsigned char writeBuf[] = { 0x05, 0x20, 0x20, 0x00, 0x00};
 	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
 	} else if (deviceNumber == SDR_IQ) {
-		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+		return SendUsbCommand(writeBuf,sizeof(writeBuf));
 	}
 	return false;
 }
@@ -1034,12 +1124,12 @@ bool RFSpaceDevice::SetFrequency(double freq)
 	if (freq==0)
 		return freq; //ignore
 
-	unsigned char writeBuf[0x0a] = { 0x0a, 0x00, 0x20, 0x00, 0x00,0xff,0xff,0xff,0xff,0x01};
+	unsigned char writeBuf[] = { 0x0a, 0x00, 0x20, 0x00, 0x00,0xff,0xff,0xff,0xff,0x01};
 	DoubleToBuf(&writeBuf[5],freq);
 	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
 	} else if (deviceNumber == SDR_IQ) {
-		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+		return SendUsbCommand(writeBuf,sizeof(writeBuf));
 	}
 	return false;
 }
@@ -1049,12 +1139,12 @@ bool RFSpaceDevice::SetFrequency(double freq)
 bool RFSpaceDevice::CaptureBlocks(unsigned numBlocks)
 {
 	//C++11 doesn't allow variable in constant initializer, so we set writeBuf[7] separately
-	unsigned char writeBuf[8] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x02, 0x02, 0x00};
+	unsigned char writeBuf[] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x02, 0x02, 0x00};
 	writeBuf[7] = numBlocks;
 	if (deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
 	} else if (deviceNumber == SDR_IQ) {
-		return usbUtil->Write((LPVOID)writeBuf,sizeof(writeBuf));
+		return SendUsbCommand(writeBuf,sizeof(writeBuf));
 	}
 	return false;
 }

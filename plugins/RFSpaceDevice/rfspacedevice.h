@@ -171,10 +171,14 @@ private:
 
 
 	bool SendTcpCommand(void *buf, qint64 len);
+	bool SendUsbCommand(void *buf, qint64 len);
 	void processControlItem(quint16 headerType, char *buf);
 	bool SetSampleRate();
 	bool SetUDPAddressAndPort(QHostAddress address, quint16 port);
 	bool SendAck();
+	void DoConsumer();
+	void DoUSBProducer();
+	void DoUDPProducer();
 };
 
 
