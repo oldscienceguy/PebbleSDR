@@ -609,23 +609,27 @@ void RFSpaceDevice::DoUDPProducer()
 
 void RFSpaceDevice::DoUSBProducer()
 {
-	//We're looking for 2 byte header
-	//FT_Read blocks until bytes are ready or timeout, which wastes time
-	//Check to make sure we've got at least 2 bytes ready before proceeding
-	if (usbUtil->GetQueueStatus() < 2) {
-		//We get a lot of this initially as there's no data to return until rcv gets set up
-		return;
-	} else {
-		//Note, this assumes that we're in sync with stream
-		//Read 16 bit Header which contains message length and type
+	//USB Reads block until requested #bytes are availble.  We never want this to happen, since it burns CPU
+	quint32 bytesAvailable = usbUtil->GetQueueStatus();
+
+	if (!header.gotHeader) {
+		//We need 2 bytes for header
+		if (bytesAvailable < 2)
+			return;
 		if (!usbUtil->Read(usbReadBuf,2))
 			return;
+		UnpackHeader(usbReadBuf[0], usbReadBuf[1], &header);
+		header.gotHeader = true;
+		bytesAvailable -= 2;
 	}
-	UnpackHeader(usbReadBuf[0], usbReadBuf[1], &header);
+
 	//Special case to allow 2048 samples per block
 	//When length==0 it means to read 8192 bytes
 	//Largest value in a 13bit field is 8191 and we need length of 8192
 	if (header.type == TargetHeaderTypes::TargetDataItem0 && header.length==0) {
+		if (bytesAvailable < 8192)
+			return;
+		header.gotHeader = false; //ready for new header
 		char *producerFreeBufPtr;
 		if ((producerFreeBufPtr = (char *)producerConsumer.AcquireFreeBuffer()) == NULL) {
 			//We have to read data and throw away or we'll get out of sync
@@ -642,10 +646,12 @@ void RFSpaceDevice::DoUSBProducer()
 		return;
 	} else if (header.length < 2 || header.length > 100) {
 		qDebug()<<"SDR-IQ header error";
+		header.gotHeader = false;
 		return;
 	} else {
 		//Adj for 2 bytes already read
 		if (usbUtil->Read(usbReadBuf,header.length-2)) {
+			header.gotHeader = false;
 			//qDebug()<<"Type ="<<type<<" ItemCode = "<<itemCode;
 			processControlItem(header, usbReadBuf);
 			return;
