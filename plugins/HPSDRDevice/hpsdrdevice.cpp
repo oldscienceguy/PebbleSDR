@@ -71,6 +71,16 @@ bool HPSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer
 	producerConsumer.Initialize(std::bind(&HPSDRDevice::producerWorker, this, std::placeholders::_1),
 		std::bind(&HPSDRDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, readBufferSize);
 
+	if (connectionType == OZY) {
+		//Must be called after Initialize
+		//Sample rate and size must be in consistent units - cpx samples
+		producerConsumer.SetProducerInterval(sampleRate,inputBufferSize / sizeof(CPX));
+		producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
+	} else {
+		//Producer triggered by readyRead signal, so set polling for long time 1 sec
+		producerConsumer.SetProducerInterval(inputBufferSize,inputBufferSize);
+		producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
+	}
 	return true;
 }
 
@@ -88,11 +98,6 @@ bool HPSDRDevice::ConnectUsb()
 		}
 
 	}
-
-	//Must be called after Initialize
-	//Sample rate and size must be in consistent units - bytes
-	producerConsumer.SetProducerInterval(sampleRate*sizeof(CPX),inputBufferSize);
-	producerConsumer.SetConsumerInterval(sampleRate*sizeof(CPX),inputBufferSize);
 
 	if (!Open())
 		return false;
@@ -251,7 +256,7 @@ void HPSDRDevice::Start()
 		//Metis won't listen to any commands before Start, so send config right after
 		SendConfig();
 		//TCP does not need producer thread because it uses QUDPSocket readyRead signal
-		producerConsumer.Start(false,true);
+		producerConsumer.Start(true,true);
 	} else if (connectionType == OZY) {
 		//USB needs producer thread to poll USB
 		producerConsumer.Start(true,true);
@@ -421,27 +426,36 @@ bool HPSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, quin
 //USB Only
 void HPSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 {
-	Q_UNUSED(_event);
 	if (!connected)
 		return;
+	switch (_event) {
+		case cbProducerConsumerEvents::Start:
+			break;
+		case cbProducerConsumerEvents::Stop:
+			break;
+		case cbProducerConsumerEvents::Run: {
+			if (connectionType == METIS) {
+				return;
+			}
+			//We're using blocking I/O, so BulkTransfer will wait until we get size
+			int actual;
+			if (usbUtil.BulkTransfer(IN_ENDPOINT6,inputBuffer,inputBufferSize,&actual,OZY_TIMEOUT)) {
+				int remainingBytes = actual;
+				int len;
+				int bufPtr = 0;
+				while (remainingBytes > 0){
+					len = (remainingBytes < OZY_FRAME_SIZE) ? remainingBytes : OZY_FRAME_SIZE;
+					ProcessInputFrame(&inputBuffer[bufPtr],len);
+					bufPtr += len;
+					remainingBytes -= len;
+				}
 
-	//We're using blocking I/O, so BulkTransfer will wait until we get size
-	int actual;
-	if (usbUtil.BulkTransfer(IN_ENDPOINT6,inputBuffer,inputBufferSize,&actual,OZY_TIMEOUT)) {
-		int remainingBytes = actual;
-		int len;
-		int bufPtr = 0;
-		while (remainingBytes > 0){
-			len = (remainingBytes < OZY_FRAME_SIZE) ? remainingBytes : OZY_FRAME_SIZE;
-			ProcessInputFrame(&inputBuffer[bufPtr],len);
-			bufPtr += len;
-			remainingBytes -= len;
+			} else {
+				qDebug()<<"Error or timeout in usb_bulk_read";
+			}
+			break;
 		}
-
-	} else {
-		qDebug()<<"Error or timeout in usb_bulk_read";
 	}
-
 }
 //Processes each 512 byte frame from inputBuffer
 //len is usually BUFSIZE
@@ -542,17 +556,28 @@ bool HPSDRDevice::ProcessInputFrame(unsigned char *buf, int len)
 
 void HPSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 {
-	Q_UNUSED(_event);
 	if (!connected)
 		return;
 
-	//Wait for data from the producer thread
-	unsigned char *dataBuf = producerConsumer.AcquireFilledBuffer();
+	switch (_event) {
+		case cbProducerConsumerEvents::Start:
+			break;
+		case cbProducerConsumerEvents::Stop:
+			break;
+		case cbProducerConsumerEvents::Run: {
+			//Wait for data from the producer thread
+			unsigned char *dataBuf = producerConsumer.AcquireFilledBuffer();
+			if (dataBuf == NULL) {
+				return; //No data available
+			}
 
-	//Got data, process
-	ProcessIQData((CPX *)dataBuf,2048); //!!Check size, CPX samples?
+			//Got data, process
+			ProcessIQData((CPX *)dataBuf,2048); //!!Check size, CPX samples?
 
-	producerConsumer.ReleaseFreeBuffer();
+			producerConsumer.ReleaseFreeBuffer();
+			break;
+		}
+	}
 }
 
 //Gets called several times from connect
