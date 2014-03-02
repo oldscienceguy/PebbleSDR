@@ -3,9 +3,6 @@
 #include "plugins.h"
 #include <QtPlugin>
 #include <QPluginLoader>
-//Temp for internal devices, will be deleted when everything is a plugin
-#include "devices/sdr_iq.h"
-#include "devices/sdr_ip.h"
 
 //Use this if we want to import a static plugin, ie one that is always installed
 //Q_IMPORT_PLUGIN(...)
@@ -42,27 +39,11 @@ QList<PluginInfo> Plugins::GetModemPluginInfo()
 QList<PluginInfo> Plugins::GetDevicePluginInfo()
 {
     QList<PluginInfo> info;
-    //Add transition non-plugin devices
-    PluginInfo p;
-    p.type = PluginInfo::DEVICE_PSEUDO_PLUGIN;
-
-    p.name = "RFSpace SDR-IQ";
-    p.fileName = "SDR_IQ_USB";
-    p.deviceInterface = new SDR_IQ(receiver, SDR::SDR_IQ_USB,settings);
-    info.append(p);
-
-    p.name = "RFSpace SDR-IP";
-    p.fileName = "SDR_IP_TCP";
-    p.deviceInterface = new SDR_IP(receiver, SDR::SDR_IP_TCP,settings);
-    info.append(p);
-
     foreach(PluginInfo p, pluginInfoList)
         if (p.type == PluginInfo::DEVICE_PLUGIN) {
             info.append(p);
         }
     return info;
-
-
 }
 
 DigitalModemInterface *Plugins::GetModemInterface(QString name)

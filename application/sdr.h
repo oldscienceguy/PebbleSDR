@@ -13,7 +13,6 @@ Base class for SDR Receivers
 #include <QDialog>
 #include "QSemaphore"
 
-#include "devices/usbutil.h"
 #include "audio.h"
 #include "ui_iqbalanceoptions.h"
 #include "device_interfaces.h"

@@ -240,14 +240,12 @@ I've also found that updating the firmware with a Mac doesn't work.  It looks li
 
 
 ###Elektor SDR
-(TBW)
+Basic FTDI based plugin.  See Mac Mavericks issue in SDR-IQ
 
 ###RFSpace SDR-IQ
-Note there is a conflict with FTDI driver that Pebble uses (D2XX) and the built in FTDI driver that is included with OSX 10.9 (Mavericks).  There is a way to temporarily disable the Mavericks driver (insert here), but the following may also work.
+Note there is a conflict with FTDI driver that Pebble uses (D2XX) and the built in FTDI driver that is included with OSX 10.9 (Mavericks).  There is a way to temporarily disable the Mavericks driver (sudo kextunload -b com.apple.driver.AppleUSBFTDI), but it has to be re-done after every startup.
 
-1. Plugin the SDR-IQ and open Network Preferences
-2. You should see a new device called FT232 ...
-3. Click the gear icon and select 'Disable Interface'
+Minimum firmware is 1.05
 
 ###RFSpace SDR-IP & AFEDRI
 I use a direct network cable, not wifi, when connecting to this device at the full 2mhz bandwidth.  I set my Mac to a fixed IP of 10.0.1.0 using DHCP Manual in Network settings and the AFEDRI to 10.0.1.100.
@@ -255,6 +253,8 @@ I use a direct network cable, not wifi, when connecting to this device at the fu
 You will get a "Allow network connections?" box the first time you run any new version.  This is standard Mac protection.
 
 ###HPSDR (OZY & Metis)
+Note: Use either Ozy (USB) or Metis (TCP), NOT both.
+
 The HPSDR plugin supports sampling rates of up to 384k (with Ozy 2.5 firmware) or Metis.  Supported firmware is in the PebbleData directory and will be automatically uploaded to Ozy as needed. 
 
 Three startup choices
@@ -278,10 +278,6 @@ Tested Firmware.  Other firmware versions can be uploaded by manually editing th
 * Ozy 2.5
 * Mercury 3.4
 * Use HPSDRBootLoader on Windows machine with direct network connection.  I had problems with JTAG mode over WiFi.
-
-###HPSDR-Network (Not supported yet)
-
-Note: Use either Ozy (USB) or Metis (TCP), NOT both
 
 ###FunCube Pro
 Plugin complete pending doc
@@ -339,7 +335,12 @@ This is an experimental server application that uses the same device plugins as 
 
 ###Plugins directory
 
-##Source Code notes
+##Source Code
+### Build Notes
+
+* Mavericks / XCode 5 does not include a GDB debugger in the command line tools as in previous releases.  QT Creator will work with the new LLVM, but works better with GDB.  To install GDB (actually ggdb) using macports:
+	* sudo port install gdb
+* 
 ###Coding Style
 Basically a mess right now and needs to be cleaned up.
 

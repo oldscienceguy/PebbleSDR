@@ -366,18 +366,7 @@ HEADERS += \
     demod/rbdsconstants.h \
     demod/rdsdecode.h \
     filters/fractresampler.h \
-    devices/sdr_iq.h \
-    devices/usbutil.h \
-    devices/usb.h \
     devices/extio.h \
-    devices/sdr_ip.h \
-    devices/sdr-ip/dataprocess.h \
-    devices/sdr-ip/ad6620.h \
-    devices/sdr-ip/ascpmsg.h \
-    devices/sdr-ip/netiobase.h \
-    devices/sdr-ip/sdrinterface.h \
-    devices/sdr-ip/threadwrapper.h \
-    devices/sdr-ip/protocoldefs.h \
     devices/wavfile.h \
     bargraphmeter.h \
     testbench.h \
@@ -419,13 +408,6 @@ SOURCES += \
 	demod/demod_wfm.cpp \
     demod/rdsdecode.cpp \
     filters/fractresampler.cpp \
-    devices/sdr_iq.cpp \
-	devices/usbutil.cpp \
-    devices/sdr_ip.cpp \
-    devices/sdr-ip/dataprocess.cpp \
-    devices/sdr-ip/ad6620.cpp \
-    devices/sdr-ip/netiobase.cpp \
-    devices/sdr-ip/sdrinterface.cpp \
     devices/wavfile.cpp \
     bargraphmeter.cpp \
     testbench.cpp \
