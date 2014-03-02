@@ -211,7 +211,11 @@ bool USBUtil::Read(void *_buffer, quint32 _bytesToRead)
 		//This will BLOCK until bytesToRead are available or SetTimeout values have been exceeded
 		//When this happens, we return with whatever data was available, which may not be actual
 		FT_STATUS result = FT_Read(ftHandle,_buffer,_bytesToRead, &actual);
-		return result == FT_OK && actual == _bytesToRead;
+		if (actual != _bytesToRead)
+			return false;
+		if (result != FT_OK)
+			return false;
+		return true;
 	} else
 		return false;
 }
