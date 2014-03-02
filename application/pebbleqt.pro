@@ -340,7 +340,6 @@ HEADERS += \
 	signalspectrum.h \
 	signalprocessing.h \
 	settings.h \
-	sdr.h \
 	receiverwidget.h \
 	receiver.h \
     presets.h \
@@ -384,7 +383,6 @@ SOURCES += \
 	signalspectrum.cpp \
 	signalprocessing.cpp \
 	settings.cpp \
-	sdr.cpp \
 	receiverwidget.cpp \
 	receiver.cpp \
     presets.cpp \
@@ -420,11 +418,9 @@ SOURCES += \
 FORMS += \
     spectrumwidget.ui \
     smeterwidget.ui \
-    sdriqoptions.ui \
     receiverwidget.ui \
     pebbleii.ui \
     iqbalanceoptions.ui \
-    sdr-ip.ui \
     sdr.ui \
     directinput.ui \
     bargraphmeter.ui \

@@ -236,19 +236,19 @@ bool Receiver::On()
     receiverWidget->SetDisplayedSquelch(global->minDb);
 	
 	DeviceInterface::STARTUP_TYPE startupType = (DeviceInterface::STARTUP_TYPE)sdr->Get(DeviceInterface::StartupType).toInt();
-	if (startupType == SDR::DEFAULTFREQ) {
+	if (startupType == DeviceInterface::DEFAULTFREQ) {
 		frequency=sdr->Get(DeviceInterface::StartupFrequency).toDouble();
         receiverWidget->SetFrequency(frequency);
         //This triggers indirect frequency set, so make sure we set widget first
 		receiverWidget->SetMode((DEMODMODE)sdr->Get(DeviceInterface::StartupDemodMode).toInt());
     }
-	else if (startupType == SDR::SETFREQ) {
+	else if (startupType == DeviceInterface::SETFREQ) {
 		frequency = sdr->Get(DeviceInterface::UserFrequency).toDouble();
         receiverWidget->SetFrequency(frequency);
 
 		receiverWidget->SetMode((DEMODMODE)sdr->Get(DeviceInterface::LastDemodMode).toInt());
     }
-	else if (startupType == SDR::LASTFREQ) {
+	else if (startupType == DeviceInterface::LASTFREQ) {
 		frequency = sdr->Get(DeviceInterface::LastFrequency).toDouble();
         receiverWidget->SetFrequency(frequency);
 
@@ -305,7 +305,7 @@ bool Receiver::Off()
         isRecording = false;
     }
 	//Carefull with order of shutting down
-    //if (settings->sdrDevice == SDR::SDR_IQ_USB) {
+	//if (settings->sdrDevice == DeviceInterface::SDR_IQ_USB) {
     //}
 
 	//Stop incoming samples first
@@ -565,7 +565,7 @@ void Receiver::SdrOptionsPressed()
     //If power on, use active sdr to make changes
     if (sdr == NULL) {
         //Power is off, create temporary one so we can set settings
-		sdr = dynamic_cast<SDR *>(global->sdr);
+		sdr = global->sdr;
     }
 	sdrOptions->ShowSdrOptions(sdr, true);
 }
@@ -631,24 +631,24 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 
 	float tmp;
     //Configure IQ order if not default
-	SDR::IQORDER iqOrder = (SDR::IQORDER)sdr->Get(DeviceInterface::IQOrder).toInt();
-	if (iqOrder != SDR::IQ)
+	DeviceInterface::IQORDER iqOrder = (DeviceInterface::IQORDER)sdr->Get(DeviceInterface::IQOrder).toInt();
+	if (iqOrder != DeviceInterface::IQ)
         for (int i=0;i<framesPerBuffer;i++)
         {
 			switch(iqOrder)
             {
-            case SDR::IQ:
+			case DeviceInterface::IQ:
                     //No change, this is the default order
                     break;
-            case SDR::QI:
+			case DeviceInterface::QI:
                     tmp = in[i].im;
                     in[i].im = in[i].re;
                     in[i].re = tmp;
                     break;
-            case SDR::IONLY:
+			case DeviceInterface::IONLY:
                     in[i].im = in[i].re;
                     break;
-            case SDR::QONLY:
+			case DeviceInterface::QONLY:
                     in[i].re = in[i].im;
                     break;
             }

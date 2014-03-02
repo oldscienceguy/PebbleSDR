@@ -1,5 +1,4 @@
 #include "sdroptions.h"
-#include "sdr.h"
 #include "settings.h"
 #include "receiver.h"
 #include <QMessageBox>
@@ -66,9 +65,9 @@ void SdrOptions::ShowSdrOptions(DeviceInterface *_di, bool b)
 		//Read current settings now that we have correct deviceNumber
 		di->ReadSettings();
 
-		sd->startupBox->addItem("Last Frequency",SDR::LASTFREQ);
-		sd->startupBox->addItem("Set Frequency", SDR::SETFREQ);
-		sd->startupBox->addItem("Device Default", SDR::DEFAULTFREQ);
+		sd->startupBox->addItem("Last Frequency",DeviceInterface::LASTFREQ);
+		sd->startupBox->addItem("Set Frequency", DeviceInterface::SETFREQ);
+		sd->startupBox->addItem("Device Default", DeviceInterface::DEFAULTFREQ);
 		connect(sd->startupBox,SIGNAL(currentIndexChanged(int)),this,SLOT(StartupChanged(int)));
 
 		connect(sd->startupEdit,SIGNAL(editingFinished()),this,SLOT(StartupFrequencyChanged()));

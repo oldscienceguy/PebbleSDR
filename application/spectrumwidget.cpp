@@ -6,6 +6,7 @@
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include <QWindow>
+#include "device_interfaces.h"
 
 class Receiver;
 

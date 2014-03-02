@@ -14,7 +14,6 @@
 #include "smeterwidget.h"
 #include "receiverwidget.h"
 #include "settings.h"
-#include "sdr.h"
 #include "presets.h"
 #include "signalprocessing.h"
 #include "noiseblanker.h"
