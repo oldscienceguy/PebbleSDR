@@ -119,8 +119,7 @@ void Plugins::findPlugins()
 				pluginInfo.name = iDeviceInterface->Get(DeviceInterface::PluginName).toString();
 				pluginInfo.description = iDeviceInterface->Get(DeviceInterface::PluginDescription).toString();
 				pluginInfo.fileName = fileName;
-				//This will change to just iDeviceInterface when we're done with internal
-				pluginInfo.deviceInterface = new SDR(iDeviceInterface, 0, receiver, settings);
+				pluginInfo.deviceInterface = iDeviceInterface;
 				pluginInfo.modemInterface = NULL;
 				pluginInfoList.append(pluginInfo);
             }

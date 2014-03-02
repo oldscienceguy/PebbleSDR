@@ -14,7 +14,6 @@
 
 class Receiver;
 class Settings;
-class SDR;
 class CTestBench;
 class DeviceInterface;
 

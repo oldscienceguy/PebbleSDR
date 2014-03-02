@@ -90,7 +90,7 @@ bool Receiver::On()
 	powerOn = true;
 
 	//We need SDR* for transition
-	sdr = dynamic_cast<SDR*>(global->sdr);
+	sdr = global->sdr;
     if (sdr == NULL)
         return false; //Means something is wrong with plugins,
 
@@ -236,7 +236,7 @@ bool Receiver::On()
     receiverWidget->SetDisplayedSquelch(global->minDb);
 	
 	DeviceInterface::STARTUP_TYPE startupType = (DeviceInterface::STARTUP_TYPE)sdr->Get(DeviceInterface::StartupType).toInt();
-	if (sdr->GetSDRDevice() == SDR::FILE ||  startupType == SDR::DEFAULTFREQ) {
+	if (startupType == SDR::DEFAULTFREQ) {
 		frequency=sdr->Get(DeviceInterface::StartupFrequency).toDouble();
         receiverWidget->SetFrequency(frequency);
         //This triggers indirect frequency set, so make sure we set widget first
