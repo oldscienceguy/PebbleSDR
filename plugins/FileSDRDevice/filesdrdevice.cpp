@@ -134,6 +134,8 @@ QVariant FileSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 			return INTERNAL_IQ;
 		case DeviceSampleRate:
 			return wavFileRead.GetSampleRate();
+		case StartupType:
+			return DeviceInterface::DEFAULTFREQ; //Fixed, can't change freq
 		case HighFrequency: {
 			quint32 loFreq = wavFileRead.GetLoFreq();
 			if (loFreq == 0)
