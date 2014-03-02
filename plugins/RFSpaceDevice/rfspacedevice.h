@@ -169,16 +169,16 @@ private:
 	quint16 readBufferIndex; //Used to track whether we have full buffer or not, 0 to readBufferSize-1
 	char *producerFreeBufPtr;
 
-
 	bool SendTcpCommand(void *buf, qint64 len);
 	bool SendUsbCommand(void *buf, qint64 len);
-	void processControlItem(quint16 headerType, char *buf);
+	void processControlItem(ControlHeader header, unsigned char *buf);
 	bool SetSampleRate();
 	bool SetUDPAddressAndPort(QHostAddress address, quint16 port);
 	bool SendAck();
 	void DoConsumer();
 	void DoUSBProducer();
 	void DoUDPProducer();
+	bool SetADSampleRate();
 };
 
 
