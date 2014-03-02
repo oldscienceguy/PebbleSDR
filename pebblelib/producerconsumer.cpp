@@ -301,7 +301,8 @@ quint16 ProducerConsumer::GetPercentageFree()
 ProducerWorker::ProducerWorker(cbProducerConsumer _worker)
 {
 	worker = _worker;
-	msInterval = 0;
+	msInterval = 1; //0 reserved by QTimer
+	isRunning = false;
 }
 
 //This gets called by producerThread because we connected the started() signal to this method
@@ -312,17 +313,21 @@ void ProducerWorker::start()
 	timer = new QTimer(this);
 	connect(timer, SIGNAL(timeout()), this, SLOT(checkNewData()));
 	timer->start(msInterval); //Times out when there's nothing in the event queue
+	isRunning = true;
 	return; //Event loop will take over and our timer will fire worker function
 }
 void ProducerWorker::stop()
 {
 	timer->stop();
+	isRunning = false;
 	delete timer;
 	//Do any worker destruction here
 	worker(cbProducerConsumerEvents::Stop);
 }
 void ProducerWorker::checkNewData()
 {
+	if (!isRunning)
+		return;
 	//perform.StartPerformance("Producer");
 	worker(cbProducerConsumerEvents::Run);
 	//perform.StopPerformance(100);
@@ -331,7 +336,8 @@ void ProducerWorker::checkNewData()
 ConsumerWorker::ConsumerWorker(cbProducerConsumer _worker)
 {
 	worker = _worker;
-	msInterval = 0;
+	msInterval = 1;
+	isRunning = false;
 }
 
 void ConsumerWorker::start()
@@ -341,12 +347,14 @@ void ConsumerWorker::start()
 	timer = new QTimer(this);
 	connect(timer, SIGNAL(timeout()), this, SLOT(processNewData()));
 	timer->start(msInterval); //Times out when there's nothing in the event queue
+	isRunning = true;
 	return; //Event loop will take over and our timer will fire worker function
 }
 //Called just before thread finishes
 void ConsumerWorker::stop()
 {
 	timer->stop();
+	isRunning = false;
 	delete timer;
 	//Do any worker destruction here
 	worker(cbProducerConsumerEvents::Stop);
@@ -356,6 +364,8 @@ void ConsumerWorker::stop()
 //
 void ConsumerWorker::processNewData()
 {
+	if (!isRunning)
+		return;
 	//perform.StartPerformance("Consumer");
 	worker(cbProducerConsumerEvents::Run);
 	//perform.StopPerformance(100);

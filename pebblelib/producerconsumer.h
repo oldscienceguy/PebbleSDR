@@ -107,6 +107,7 @@ private:
     Perform perform;
 	quint16 msInterval;
 	QTimer *timer;
+	bool isRunning;
 };
 class ConsumerWorker: public QObject
 {
@@ -125,6 +126,7 @@ private:
 	Perform perform;
 	quint16 msInterval;
 	QTimer *timer;
+	bool isRunning;
 };
 
 #endif // PRODUCERCONSUMER_H
