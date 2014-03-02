@@ -116,9 +116,10 @@ void ProducerConsumer::SetConsumerInterval(quint32 _sampleRate, quint16 _samples
 	//What's the optimal interval between data buffers (in usec)
 	quint16 msBufferInterval = 1000 / buffersPerSec;
 	//Set safe interval (experiment here)
-	msBufferInterval *= 0.90; //Some spare room
+	msBufferInterval *= 0.50; //Some spare room
 	//Interval can never be 0 which is a special case for QTimer
 	msConsumerInterval = msBufferInterval > 0 ? msBufferInterval : 1;
+	qDebug()<<"Consumer interval "<<msConsumerInterval;
 	if (consumerWorker != NULL)
 		consumerWorker->SetPollingInterval(msConsumerInterval);
 
@@ -133,9 +134,10 @@ void ProducerConsumer::SetProducerInterval(quint32 _sampleRate, quint16 _samples
 	//What's the optimal interval between data buffers (in usec)
 	quint16 msBufferInterval = 1000 / buffersPerSec;
 	//Set safe interval (experiment here)
-	msBufferInterval *= 0.90; //Some spare room
+	msBufferInterval *= 0.50; //Some spare room
 	//Interval can never be 0 which is a special case for QTimer
 	msProducerInterval = msBufferInterval > 0 ? msBufferInterval : 1;
+	qDebug()<<"Producer interval "<<msProducerInterval;
 	if (producerWorker != NULL)
 		producerWorker->SetPollingInterval(msProducerInterval);
 }
@@ -156,13 +158,13 @@ bool ProducerConsumer::Start(bool _producer, bool _consumer)
 		//Thread priorities from CuteSdr model
 		//Producer get highest, time critical, slices in order to be able to keep up with data
 		//Consumer gets next highest, in order to run faster than main UI thread
-		//consumerWorkerThread->setPriority(QThread::TimeCriticalPriority);
+		consumerWorkerThread->setPriority(QThread::HighestPriority);
         consumerThreadIsRunning = true;
     }
 	if (_producer) {
 		producerWorker->moveToThread(producerWorkerThread);
 		producerWorkerThread->start();
-		//producerWorkerThread->setPriority(QThread::HighestPriority);
+		producerWorkerThread->setPriority(QThread::NormalPriority);
         producerThreadIsRunning = true;
     }
     return true;
@@ -240,6 +242,7 @@ void ProducerConsumer::ReleaseFreeBuffer()
 {
     nextConsumerDataBuf = (nextConsumerDataBuf +1 ) % numDataBufs;
     semNumFreeBuffers->release();
+	emit CheckNewData();
 }
 
 void ProducerConsumer::PutbackFreeBuffer()
@@ -320,7 +323,9 @@ void ProducerWorker::stop()
 }
 void ProducerWorker::checkNewData()
 {
+	//perform.StartPerformance("Producer");
 	worker(cbProducerConsumerEvents::Run);
+	//perform.StopPerformance(100);
 }
 
 ConsumerWorker::ConsumerWorker(cbProducerConsumer _worker)
@@ -351,6 +356,8 @@ void ConsumerWorker::stop()
 //
 void ConsumerWorker::processNewData()
 {
+	//perform.StartPerformance("Consumer");
 	worker(cbProducerConsumerEvents::Run);
+	//perform.StopPerformance(100);
 }
 
