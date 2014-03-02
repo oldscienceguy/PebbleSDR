@@ -866,16 +866,16 @@ void ReceiverWidget::showTime()
         text[2] = ' ';
     ui.clockWidget->display(text);
 
-	if (global->sdr != NULL) {
+	if (powerOn && global->sdr != NULL) {
 		quint16 freeBuf = global->sdr->Get(DeviceInterface::DeviceHealthValue).toInt();
 		if (freeBuf >= 75)
 			ui.sdrOptions->setStyleSheet("background:green");
 		else if (freeBuf >= 25)
-			ui.sdrOptions->setStyleSheet("background:yellow");
+			ui.sdrOptions->setStyleSheet("background:orange");
 		else
 			ui.sdrOptions->setStyleSheet("background:red");
 	} else {
-		ui.sdrOptions->setStyleSheet("background:green");
+		ui.sdrOptions->setStyleSheet("");
 	}
 }
 
