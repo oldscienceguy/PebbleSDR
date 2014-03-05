@@ -74,12 +74,24 @@ You can manually switch between LO and Mixer, but Pebble will also automatically
 2. Clicking on a signal in the Spectrum window will always switch to Mixer mode.
 
 ###SDR Device selector
-A number of SDR devices are directly supported by Pebble and can be selected with this pull down.  The settings for each device are stored in a separate file (see advanced section), so if you have multiple devices, you can quickly restore to the last settings for each one.
+Pebble includes a number of SDR device plugins. These are located in the 'plugins' directory and all of the valid device plugins are listed in this drop down. 
+
+Each plugin may support a number of devices.  These are selectable once you open the Options dialog.
+
+The settings for each device are stored in a separate file (see advanced section), so if you have multiple devices, you can quickly restore to the last settings for each one.
 
 Note: The Device selector can not be changed when a device is on.  Power off, select new device, check options, then power back on.
 
 ###Device options  
+Clicking on the Device Options button '...' opens the Option dialog.  Clicking on it while the dialog is open will close it.  This makes it easy to quickly check something and close the dialog.
+
+The Option button also serves as a 'device status' indicator and will change from Green, to Orange, to Red if the device is not able to keep up with the selected sample rate.  Note that even though the button is Red, you still may be able to receive without data loss.  This is just an indication that there may be a problem.
+
 Except as notes, Device options do not take effect until the device is powered off and back on.
+
+###Device Selection
+
+This drop down at the top of the Options dialog lists all of the specifi devices supported by the selected plugin.  Each device may have it's own device-specific options (see below).
 
 ###Audio Ouput  
 Select "Core Audio built-in Output" as default.  Option options may be visible if other output devices are installed
@@ -118,7 +130,7 @@ This bar is used to change frequencies to known bands and stations.  It also is 
 3. memory.csv: Stores user defined station information
 
 ###Band Category
-There is a large amount of band information that can be selected from.  To make this more manageable, all the band information is broken into categories.  To select a frequency, first select a band category from this drop down.
+There is a large amount of possible band information to select from.  To make this more manageable, all the band information is broken into categories.  To select a frequency, first select a band category from this drop down.
 1. All
 2. Ham
 3. Broadcast
@@ -338,7 +350,12 @@ This is an experimental server application that uses the same device plugins as 
 ##Source Code
 ### Build Notes
 
-* Mavericks / XCode 5 does not include a GDB debugger in the command line tools as in previous releases.  QT Creator will work with the new LLVM, but works better with GDB.  To install GDB (actually ggdb) using macports:
+Install QT and after loading PebbleII.pro add ""make install" steps to Debug and Release configuration.
+
+Sometimes you have to manually delete the QT directories with makefiles when changing from Debug to Release.
+
+Mavericks / XCode 5 does not include a GDB debugger in the command line tools as in previous releases.  QT Creator will work with the new LLVM, but works better with GDB.  To install GDB (actually ggdb) using macports:
+
 	* sudo port install gdb
 * 
 ###Coding Style

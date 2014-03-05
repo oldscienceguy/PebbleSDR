@@ -29,6 +29,8 @@ RFSpaceDevice::RFSpaceDevice():DeviceInterfaceBase()
 	tcpReadBuf = new unsigned char[dataBlockSize];
 	tcpSocket = NULL;
 	udpSocket = NULL;
+	deviceDiscoveredAddress.clear();
+	deviceDiscoveredPort = 0;
 }
 
 RFSpaceDevice::~RFSpaceDevice()
@@ -129,6 +131,10 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuff
 
 	}
 #endif
+
+	//Test discovery mode
+	SendUDPDiscovery();
+
 	return true;
 }
 
@@ -583,6 +589,7 @@ void RFSpaceDevice::producerWorker(cbProducerConsumerEvents _event)
 				//Remember we're being called from thread and signal needs to go to something in our thread
 				//In this case, we translate the udpSocket signal to a producerConsumer signal
 				connect(udpSocket, SIGNAL(readyRead()), &producerConsumer, SIGNAL(ProcessNewData()));
+
 			}
 		}
 			break;
@@ -812,20 +819,16 @@ void RFSpaceDevice::UDPSocketNewData()
 	while (udpSocket->hasPendingDatagrams()) {
 		dataGramSize = udpSocket->pendingDatagramSize();
 		//qDebug()<<"UDP datagram count: "<<++dataGramCount<<" size: "<<dataGramSize;
-		if (dataGramSize != 1028) {
-			qDebug()<<"Invalid IQ datagram size: "<< dataGramSize;
-			return;
-		}
 		actual = udpSocket->readDatagram((char*)udpReadBuf,dataGramSize, &sender, &senderPort);
 		if (actual != dataGramSize) {
 			qDebug()<<"ReadDatagram size error";
 			return;
 		}
-		//Double check to make sure datagram is right format
-		if (udpReadBuf[0] != TargetDataItem0 ||
-				udpReadBuf[1] != 0x84) {
+		//The only datagrams we handle are IQ
+		if (dataGramSize != 1028 || udpReadBuf[0] != TargetDataItem0 || udpReadBuf[1] != 0x84) {
 			return; //Invalid
 		}
+
 
 		//Ignore sequence nubmer for now and assume we get in correct order
 		//Eventually we can get fancy and buffer datagrams that arrive out of sequence and re-assemble in right order
@@ -879,6 +882,79 @@ bool RFSpaceDevice::SendAck()
 }
 
 //Device specific
+//Self contained method
+//Finds 1st device, can be extended to find multiple if needed
+bool RFSpaceDevice::SendUDPDiscovery()
+{
+	QUdpSocket discoverUdpSocket;
+	//We listen for a different port than we send so we don't get our own datagram
+	quint16 discoverPort = 48322; //Accept UPD packets on this port (bind)
+	quint16 discoverServerPort = 48321; //Send UDP broadcast packets to this port
+	QHostAddress discoveredHostAddress;
+	quint16 discoveredPort;
+	QHostAddress sender;
+	quint16 senderPort;
+
+	DISCOVER_MSG discover;
+	DISCOVER_MSG_SDRIP discoverSDR_IP;
+	quint16 discoverSize = sizeof(DISCOVER_MSG);
+
+	memset((void*)&discover, 0, discoverSize); //zero out all fields
+	discover.length = discoverSize;
+	discover.key[0] = 0x5a;
+	discover.key[1] = 0xa5;
+	discover.op = 0; //PC to Device
+	//strcpy((char *)discover.name,"SDR-IP"); //Device we're looking for
+
+	if (!discoverUdpSocket.bind(discoverPort)){
+		qDebug()<<"Failed bind";
+		return false;
+	}
+	//Send broadcast (255.255.255.255) with the port we are listening on
+	discoverUdpSocket.writeDatagram((char*)&discover, discoverSize, QHostAddress::Broadcast, discoverServerPort);
+
+	//If we don't get response in 10 sec, give up
+	QTimer timer;
+	timer.start(10000);
+	while (timer.remainingTime() > 0) {
+		if (!discoverUdpSocket.hasPendingDatagrams()) {
+			//Nothing pending, wait a bit
+			QThread::msleep(100);
+			continue;
+		}
+		//Read datagram and see if a discovery response
+		qint64 dataGramSize = discoverUdpSocket.pendingDatagramSize();
+		//qDebug()<<"UDP datagram count: "<<++dataGramCount<<" size: "<<dataGramSize;
+		qint64 actual = discoverUdpSocket.readDatagram((char*)udpReadBuf,dataGramSize, &sender, &senderPort);
+		if (actual != dataGramSize) {
+			qDebug()<<"ReadDatagram size error";
+			return false;
+		}
+
+		//SDR-IP returns 103 bytes
+		if (udpReadBuf[2] == 0x5a && udpReadBuf[3] == 0xa5) {
+			//Handle disovery data
+			DISCOVER_MSG discover;
+			//Read standard stuff first
+			memcpy(&discover, udpReadBuf,discoverSize);
+			discoveredHostAddress = QHostAddress(discover.ipAddr.ip4.addr);
+			discoveredPort = discover.port;
+			qDebug()<<"Found "<<(char*)discover.name<<"("<<(char*)discover.sn<<") at "<<discoveredHostAddress<<" port "<<discoveredPort;
+
+			//Now extra
+			if (QString::compare((char*)discover.name,"SDR-IP") == 0) {
+				memcpy(&discoverSDR_IP, &udpReadBuf[discoverSize], sizeof(DISCOVER_MSG_SDRIP));
+				qDebug()<<"SDR-IP fw version "<<discoverSDR_IP.fwver<<" boot version "<<discoverSDR_IP.btver<<" hw version "<<discoverSDR_IP.hwver;
+			}
+			discoverUdpSocket.close();
+			return true;
+		}
+	}
+	qDebug()<<"Discovery timed out";
+	return false;
+}
+
+
 bool RFSpaceDevice::SetUDPAddressAndPort(QHostAddress address, quint16 port) {
 	//To set the UDP IP address to 192.168.3.123 and port to 12345: [0A][00] [C5][00] [7B][03][A8]C0] [39][30]
 	if (deviceNumber != SDR_IP)

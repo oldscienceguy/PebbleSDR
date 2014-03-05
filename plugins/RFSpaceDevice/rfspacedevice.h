@@ -13,6 +13,17 @@
 #include <QTcpSocket>
 #include <QUdpSocket>
 
+//This should go in global.h or somewhere we can use everywhere
+#ifdef _WIN32
+	//gcc and clang use __attribute, define it for windows as noop
+	#define __attribute__(x)
+	#define packStart pack(push, 1)
+	#define packEnd pragma pack(pop)
+#else
+	#define packStart
+	#define packEnd
+#endif
+
 //Host to Target(Device)
 enum HostHeaderTypes {
 	SetControlItem = 0x00,
@@ -43,6 +54,66 @@ struct ControlHeader {
 	quint16 length;
 };
 
+//Simple Network Discovery Protocol
+//
+struct DISCOVER_MSG
+{
+	packStart
+	//Fixed common fields (56 bytes)
+	quint16 length; //length of total message in bytes (little endian byte order)
+	quint8 key[2]; //fixed key key[0]==0x5A key[1]==0xA5
+	quint8 op; //0==Request(to device) 1==Response(from device) 2 ==Set(to device)
+	unsigned char name[16]; //Device name string null terminated
+	unsigned char sn[16]; //Serial number string null terminated
+	//device IP address (little endian byte order)
+	union {
+		struct {
+			quint32 addr;
+			quint8 unused[12];
+		}ip4;
+		quint8 ip6Addr[16];
+	}ipAddr;
+	quint16 port; //device Port number (little endian byte order)
+	quint8 customfield; //Specifies a custom data field for a particular device
+	//start of optional variable custom byte fields
+	//unsigned char custom1;
+	packEnd
+}__attribute__((packed));
+
+//Optional fields for SDR-IP
+struct DISCOVER_MSG_SDRIP
+{
+	packStart
+	unsigned char macaddr[6];	//HW mac address (little endian byte order) (read only)
+	quint16 hwver;				//Hardware version*100  (little endian byte order) (read only)
+	quint16 fwver;				//Firmware version*100 (little endian byte order)(read only)
+	quint16 btver;				//Boot version*100 (little endian byte order) (read only)
+	unsigned char fpgaid;		//FPGA ID (read only)
+	unsigned char fpgarev;		//FPGA revision (read only)
+	unsigned char opts;			//Options (read only)
+	unsigned char mode;			//0 == Use DHCP 1==manual  2==manual Alternate data address
+	unsigned char subnet[4];	//IP subnet mask (little endian byte order)
+	unsigned char gwaddr[4];	//gateway address (little endian byte order)
+	unsigned char dataipaddr[4];// Alternate data IP address for UDP data  (little endian byte order)
+	unsigned char dataport[2];	// Alternate data Port address for UDP (little endian byte order)
+	unsigned char fpga;			//0 == default cfg   1==custom1    2==custom2
+	unsigned char status;		//bit 0 == TCP connected   Bit 1 == running  Bit 2-7 not defined
+	unsigned char future[15];	//future use
+	packEnd
+}__attribute__ ((packed));
+
+struct DISCOVER_MSG_SDRIQ
+{
+	packStart
+	quint16 fwver;		//Firmware version*100 (little endian byte order)(read only)
+	quint16 btver;		//Boot version*100 (little endian byte order) (read only)
+	unsigned char subnet[4];	//IP subnet mask (little endian byte order)
+	unsigned char gwaddr[4];	//gateway address (little endian byte order)
+	char connection[32];		//interface connection string null terminated(ex: COM3, DEVTTY5, etc)
+	unsigned char status;		//bit 0 == TCP connected   Bit 1 == running  Bit 2-7 not defined
+	unsigned char future[15];	//future use
+	packEnd
+}__attribute__ ((packed));
 
 class RFSpaceDevice : public QObject, public DeviceInterfaceBase
 {
@@ -165,6 +236,8 @@ private:
 	QUdpSocket *udpSocket;
 	QHostAddress deviceAddress;
 	quint16 devicePort;
+	QHostAddress deviceDiscoveredAddress;
+	quint16 deviceDiscoveredPort;
 
 	quint16 readBufferIndex; //Used to track whether we have full buffer or not, 0 to readBufferSize-1
 	char *producerFreeBufPtr;
@@ -179,6 +252,7 @@ private:
 	void DoUSBProducer();
 	void DoUDPProducer();
 	bool SetADSampleRate();
+	bool SendUDPDiscovery();
 };
 
 
