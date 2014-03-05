@@ -76,6 +76,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
     iDigitalModem = NULL;
 	workingBuf = NULL;
 	sampleBuf = NULL;
+	audioBuf = NULL;
 
 	sdrOptions = new SdrOptions();
 
@@ -104,7 +105,10 @@ bool Receiver::On()
     //bind(Method ptr, object, arg1, ... argn)
 
     sdr->ReadSettings(); //Always start with most current
-    sdr->Initialize(std::bind(&Receiver::ProcessIQData, this, _1, _2),settings->framesPerBuffer);
+	if (!sdr->Initialize(std::bind(&Receiver::ProcessIQData, this, _1, _2),settings->framesPerBuffer)) {
+		Off();
+		return false;
+	}
 
 	if (!sdr->Connect()){
         QMessageBox::information(NULL,"Pebble","SDR device is not connected");

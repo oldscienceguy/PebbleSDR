@@ -16,12 +16,15 @@
 //This should go in global.h or somewhere we can use everywhere
 #ifdef _WIN32
 	//gcc and clang use __attribute, define it for windows as noop
-	#define __attribute__(x)
+	#define packStruct
+	//Use within struct definition
 	#define packStart pack(push, 1)
 	#define packEnd pragma pack(pop)
 #else
 	#define packStart
 	#define packEnd
+	//Use at end of struct definition
+	#define packStruct __attribute__((packed))
 #endif
 
 //Host to Target(Device)
@@ -78,7 +81,8 @@ struct DISCOVER_MSG
 	//start of optional variable custom byte fields
 	//unsigned char custom1;
 	packEnd
-}__attribute__((packed));
+}packStruct;
+//}__attribute__((packed));
 
 //Optional fields for SDR-IP
 struct DISCOVER_MSG_SDRIP
@@ -100,7 +104,7 @@ struct DISCOVER_MSG_SDRIP
 	unsigned char status;		//bit 0 == TCP connected   Bit 1 == running  Bit 2-7 not defined
 	unsigned char future[15];	//future use
 	packEnd
-}__attribute__ ((packed));
+}packStruct;
 
 struct DISCOVER_MSG_SDRIQ
 {
@@ -113,7 +117,7 @@ struct DISCOVER_MSG_SDRIQ
 	unsigned char status;		//bit 0 == TCP connected   Bit 1 == running  Bit 2-7 not defined
 	unsigned char future[15];	//future use
 	packEnd
-}__attribute__ ((packed));
+}packStruct;
 
 class RFSpaceDevice : public QObject, public DeviceInterfaceBase
 {
@@ -154,6 +158,7 @@ protected:
 private slots:
 	void rfGainChanged(int i);
 	void ifGainChanged(int i);
+	void discoverBoxChanged(bool b);
 	void IPAddressChanged();
 	void IPPortChanged();
 
@@ -236,6 +241,7 @@ private:
 	QUdpSocket *udpSocket;
 	QHostAddress deviceAddress;
 	quint16 devicePort;
+	bool autoDiscover;
 	QHostAddress deviceDiscoveredAddress;
 	quint16 deviceDiscoveredPort;
 

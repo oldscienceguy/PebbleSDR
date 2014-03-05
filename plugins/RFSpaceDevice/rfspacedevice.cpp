@@ -132,9 +132,20 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuff
 	}
 #endif
 
-	//Test discovery mode
-	SendUDPDiscovery();
-
+	if (autoDiscover) {
+		if (!SendUDPDiscovery()) {
+			QMessageBox::information(NULL,"RFSpace Discovery",
+				"No SDR-IP compatible device found.\nPlease try again or set a fixed IP/Port");
+			return false;
+		} else {
+			//Got something
+			deviceAddress = deviceDiscoveredAddress;
+			devicePort = deviceDiscoveredPort;
+			WriteSettings(); //Save
+			return true;
+		}
+	}
+	//Device address/port from settings will be used
 	return true;
 }
 
@@ -287,6 +298,7 @@ void RFSpaceDevice::ReadSettings()
 	sIFGain = qSettings->value("IFGain",18).toInt();
 	deviceAddress = QHostAddress(qSettings->value("DeviceAddress","10.0.1.100").toString());
 	devicePort = qSettings->value("DevicePort",50000).toInt();
+	autoDiscover = qSettings->value("AutoDiscover",true).toBool();
 
 	//Instead of getting BW from SDR_IQ options dialog, we now get it directly from settings dialog
 	//because we're passing GetSampleRates() during dialog setup
@@ -318,6 +330,7 @@ void RFSpaceDevice::WriteSettings()
 	qSettings->setValue("IFGain",sIFGain);
 	qSettings->setValue("DeviceAddress",deviceAddress.toString());
 	qSettings->setValue("DevicePort",devicePort);
+	qSettings->setValue("AutoDiscover",autoDiscover);
 
 	qSettings->sync();
 }
@@ -449,14 +462,23 @@ void RFSpaceDevice::SetupOptionUi(QWidget *parent)
 	if (deviceNumber == SDR_IQ) {
 		optionUi->ipEdit->setVisible(false);
 		optionUi->portEdit->setVisible(false);
+		optionUi->discoverBox->setVisible(false);
+		optionUi->ipDiscovered->setVisible(false);
 	} else if (deviceNumber == SDR_IP) {
 		optionUi->ipEdit->setVisible(true);
 		optionUi->portEdit->setVisible(true);
+		optionUi->discoverBox->setVisible(true);
+		optionUi->ipDiscovered->setVisible(true);
+		if (autoDiscover) {
+			optionUi->discoverBox->setChecked(true);
+			optionUi->ipEdit->setEnabled(false);
+			optionUi->portEdit->setEnabled(false);
+		}
 		optionUi->ipEdit->setText(deviceAddress.toString());
 		optionUi->portEdit->setText(QString::number(devicePort));
 		connect(optionUi->ipEdit,&QLineEdit::editingFinished,this,&RFSpaceDevice::IPAddressChanged);
 		connect(optionUi->portEdit,&QLineEdit::editingFinished,this,&RFSpaceDevice::IPPortChanged);
-
+		connect(optionUi->discoverBox,SIGNAL(clicked(bool)), this, SLOT(discoverBoxChanged(bool)));
 	}
 
 	if (connected) {
@@ -751,13 +773,22 @@ void RFSpaceDevice::rfGainChanged(int i)
 	rfGain = i * -10;
 	sRFGain = rfGain;
 	SetRFGain(rfGain);
+	WriteSettings();
 }
 void RFSpaceDevice::ifGainChanged(int i)
 {
 	ifGain = i * 6;
 	sIFGain = ifGain;
 	SetIFGain(ifGain);
+	WriteSettings();
 }
+void RFSpaceDevice::discoverBoxChanged(bool b)
+{
+	autoDiscover = b;
+	//Update options dialog if displayed
+	WriteSettings();
+}
+
 void RFSpaceDevice::IPAddressChanged()
 {
 	//qDebug()<<optionUi->ipAddress->text();
@@ -890,8 +921,6 @@ bool RFSpaceDevice::SendUDPDiscovery()
 	//We listen for a different port than we send so we don't get our own datagram
 	quint16 discoverPort = 48322; //Accept UPD packets on this port (bind)
 	quint16 discoverServerPort = 48321; //Send UDP broadcast packets to this port
-	QHostAddress discoveredHostAddress;
-	quint16 discoveredPort;
 	QHostAddress sender;
 	quint16 senderPort;
 
@@ -912,10 +941,13 @@ bool RFSpaceDevice::SendUDPDiscovery()
 	}
 	//Send broadcast (255.255.255.255) with the port we are listening on
 	discoverUdpSocket.writeDatagram((char*)&discover, discoverSize, QHostAddress::Broadcast, discoverServerPort);
+	//Sometimes this doesn't work and user has to try multiple times, try sending again after short delay to increase changes
+	QThread::msleep(500);
+	discoverUdpSocket.writeDatagram((char*)&discover, discoverSize, QHostAddress::Broadcast, discoverServerPort);
 
-	//If we don't get response in 10 sec, give up
+	//If we don't get response in 5 sec, give up
 	QTimer timer;
-	timer.start(10000);
+	timer.start(5000);
 	while (timer.remainingTime() > 0) {
 		if (!discoverUdpSocket.hasPendingDatagrams()) {
 			//Nothing pending, wait a bit
@@ -937,14 +969,16 @@ bool RFSpaceDevice::SendUDPDiscovery()
 			DISCOVER_MSG discover;
 			//Read standard stuff first
 			memcpy(&discover, udpReadBuf,discoverSize);
-			discoveredHostAddress = QHostAddress(discover.ipAddr.ip4.addr);
-			discoveredPort = discover.port;
-			qDebug()<<"Found "<<(char*)discover.name<<"("<<(char*)discover.sn<<") at "<<discoveredHostAddress<<" port "<<discoveredPort;
+			deviceDiscoveredAddress = QHostAddress(discover.ipAddr.ip4.addr);
+			deviceDiscoveredPort = discover.port;
+			qDebug()<<"Found "<<(char*)discover.name<<"("<<(char*)discover.sn<<") at "<<deviceDiscoveredAddress<<" port "<<deviceDiscoveredPort;
 
 			//Now extra
 			if (QString::compare((char*)discover.name,"SDR-IP") == 0) {
 				memcpy(&discoverSDR_IP, &udpReadBuf[discoverSize], sizeof(DISCOVER_MSG_SDRIP));
-				qDebug()<<"SDR-IP fw version "<<discoverSDR_IP.fwver<<" boot version "<<discoverSDR_IP.btver<<" hw version "<<discoverSDR_IP.hwver;
+				qDebug()<<"SDR-IP fw version "<<discoverSDR_IP.fwver<<
+					" boot version "<<discoverSDR_IP.btver<<
+					" hw version "<<discoverSDR_IP.hwver;
 			}
 			discoverUdpSocket.close();
 			return true;
