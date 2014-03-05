@@ -11,7 +11,7 @@
 class AudioQT : public Audio
 {
 public:
-    AudioQT(Receiver *r, int fpb, Settings *s);
+	AudioQT(cbProcessIQData cb, int fpb);
     ~AudioQT();
 
 	//Virtual functions

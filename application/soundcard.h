@@ -12,7 +12,7 @@ class Receiver; //Forward declaration since soundcard and receiver are dependent
 class SoundCard:public Audio
 {
 public:
-    SoundCard(Receiver *r,int fpb, Settings *s);
+	SoundCard(cbProcessIQData cb, int fpb);
 	~SoundCard(void);
 	//Virtual functions
 	//We may get input from some other source, if so inputSampleRate = 0

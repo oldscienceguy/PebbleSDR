@@ -7,8 +7,7 @@
 
 bool Audio::useQtAudio = false;
 
-Audio::Audio(QObject *parent) :
-    QObject(parent)
+Audio::Audio(QObject *parent) : QObject(parent)
 {
 }
 
@@ -16,17 +15,18 @@ Audio::~Audio()
 {
 }
 
-Audio * Audio::Factory(Receiver *rcv, int framesPerBuffer, Settings *settings)
+Audio *Audio::Factory(cbProcessIQData cb, int framesPerBuffer)
 {
-    if (Audio::useQtAudio) {
-        qDebug()<<"Using QTAudio";
-        return new AudioQT(rcv, framesPerBuffer,settings);
-    } else {
-        qDebug()<<"Using PortAudio";
-        return new SoundCard(rcv, framesPerBuffer,settings);
-    }
+	if (Audio::useQtAudio) {
+		qDebug()<<"Using QTAudio";
+		return new AudioQT(cb, framesPerBuffer);
+	} else {
+		qDebug()<<"Using PortAudio";
+		return new SoundCard(cb, framesPerBuffer);
+	}
 
 }
+
 
 QStringList Audio::InputDeviceList()
 {

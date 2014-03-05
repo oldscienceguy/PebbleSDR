@@ -1,7 +1,6 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include "soundcard.h"
-#include "receiver.h"
 
 /*
   Notes:
@@ -11,14 +10,14 @@
     Files should be re-created and problem goes away.
 
 */
-SoundCard::SoundCard(Receiver *r, int fpb, Settings *s):Audio()
+SoundCard::SoundCard(cbProcessIQData cb, int fpb):Audio()
 {
-	settings = s;
+	ProcessIQData = cb;
+
 	//Float32 format returns values between -1 and +1
 	sampleFormat = paFloat32;
 	//Todo: These can be removed I think, we're now setting them in Start() where we have SDR context
 	framesPerBuffer = fpb;
-	receiver=r;
 	//Deliver samples to this buffer
 	inBuffer = CPXBuf::malloc(framesPerBuffer);
 	outBuffer = CPXBuf::malloc(framesPerBuffer);
@@ -109,7 +108,7 @@ int SoundCard::StartOutput(QString outputDeviceName, int _outputSampleRate)
         //of the buffer due to downsampling.
         //SendToOutput() will use the actual number of samples in buffer, not the size.
         error = Pa_OpenStream(&outStream,NULL,outParam,
-            outputSampleRate,settings->framesPerBuffer,paNoFlag,NULL,NULL );
+			outputSampleRate,framesPerBuffer,paNoFlag,NULL,NULL );
 
         error = Pa_StartStream(outStream);
     }
@@ -305,7 +304,7 @@ int SoundCard::streamCallback(
 		sc->inBuffer[i]=CPX(I,Q);
 	}
     //ProcessIQData handles all receive chain and ouput
-    sc->receiver->ProcessIQData(sc->inBuffer,frameCount);
+	sc->ProcessIQData(sc->inBuffer,frameCount);
 
 	return paContinue;
 }

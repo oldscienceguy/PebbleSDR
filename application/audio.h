@@ -2,6 +2,7 @@
 #define AUDIO_H
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
+#include "device_interfaces.h"
 
 //Ignore warnings about OS X version unsupported (QT 5.1 bug)
 #pragma clang diagnostic ignored "-W#warnings"
@@ -10,14 +11,11 @@
 #include <QstringList>
 #include "cpx.h"
 
-class Settings;
-class Receiver;
-
 class Audio : public QObject
 {
     Q_OBJECT
 public:
-    Audio(QObject *parent = 0);
+	Audio(QObject *parent = 0);
     ~Audio();
     virtual int StartInput(QString inputDeviceName, int inputSampleRate)=0;
     virtual int StartOutput(QString outputDeviceName, int outputSampleRate)=0;
@@ -29,7 +27,7 @@ public:
 	virtual void ClearCounts()=0;
 
     //Creates either PortAudio or QTAudio device
-    static Audio *Factory(Receiver *rcv, int framesPerBuffer, Settings *settings);
+	static Audio *Factory(cbProcessIQData cb, int framesPerBuffer);
 
     //Returns a list of input devices for settings to chose from
     static QStringList InputDeviceList();
@@ -56,11 +54,10 @@ signals:
 public slots:
 
 protected:
-	Settings *settings;
-	Receiver *receiver;
 	int inputSampleRate;
 	int outputSampleRate;
 	int framesPerBuffer; //#samples in each callback
+	cbProcessIQData ProcessIQData;
 
 };
 

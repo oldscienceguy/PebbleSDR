@@ -3,13 +3,12 @@
 #include "audioqt.h"
 #include <QDebug>
 #include "settings.h"
-#include "receiver.h"
 
-AudioQT::AudioQT(Receiver *r,int fpb, Settings *s):Audio()
+AudioQT::AudioQT(cbProcessIQData cb, int fpb):Audio()
 {
+	ProcessIQData = cb;
+
 	framesPerBuffer = fpb;
-	settings = s;
-	receiver=r;
 
 	this->OutputDeviceList();
 	this->InputDeviceList();
@@ -92,7 +91,7 @@ void AudioQT::ProcessInputData()
         cpxInBuffer[i]=CPX(I,Q);
     }
     //ProcessBlock handles all receive chain and ouput
-    receiver->ProcessIQData(cpxInBuffer,frameCount);
+	ProcessIQData(cpxInBuffer,frameCount);
 }
 
 int AudioQT::StartOutput(QString outputDeviceName, int _outputSampleRate)
