@@ -24,8 +24,7 @@ FunCubeSDRDevice::~FunCubeSDRDevice()
 
 bool FunCubeSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
 {
-	Q_UNUSED(_callback);
-	Q_UNUSED(_framesPerBuffer);
+	DeviceInterfaceBase::Initialize(_callback, _framesPerBuffer);
 	hid_init();
 	return true;
 }
@@ -80,6 +79,7 @@ void FunCubeSDRDevice::Start()
 	//First thing HID does is read all values
 	//ReadFCDOptions();
 
+
 	if (deviceNumber == FUNCUBE_PRO) {
 		SetDCCorrection(fcdDCICorrection,fcdDCQCorrection);
 		SetIQCorrection(fcdIQPhaseCorrection,fcdIQGainCorrection);
@@ -112,12 +112,12 @@ void FunCubeSDRDevice::Start()
 
 	}
 
-	//Receiver handles Start() for audio input
+	DeviceInterfaceBase::Start();
 }
 
 void FunCubeSDRDevice::Stop()
 {
-
+	DeviceInterfaceBase::Stop();
 }
 
 QVariant FunCubeSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
@@ -126,13 +126,7 @@ QVariant FunCubeSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 
 	switch (_key) {
 		case PluginName:
-			switch (_option) {
-				case 0: return "Funcube Pro";
-				case 1: return "Funcube Pro+";
-				default: return "Unknown";
-			}
-
-			break;
+			return "FunCube Pro family";
 		case PluginDescription:
 			return "Funcube Pro and Funcube Pro+";
 			break;

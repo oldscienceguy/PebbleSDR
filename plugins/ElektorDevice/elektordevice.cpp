@@ -35,6 +35,7 @@ ElektorDevice::~ElektorDevice()
 
 bool ElektorDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
 {
+	DeviceInterfaceBase::Initialize(_callback, _framesPerBuffer);
 	ProcessIQData = _callback;
 	framesPerBuffer = _framesPerBuffer;
 	connected = false;
@@ -119,15 +120,12 @@ bool ElektorDevice::Disconnect()
 
 void ElektorDevice::Start()
 {
-	//audioInput->StartInput(inputDeviceName, GetSampleRate());
-
+	DeviceInterfaceBase::Start();
 }
 
 void ElektorDevice::Stop()
 {
-	//if (audioInput != NULL)
-	//	audioInput->Stop();
-
+	DeviceInterfaceBase::Stop();
 }
 
 void ElektorDevice::ReadSettings()

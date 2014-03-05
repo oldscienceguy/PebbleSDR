@@ -13,9 +13,7 @@ SoftrockSDRDevice::~SoftrockSDRDevice()
 
 bool SoftrockSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
 {
-	Q_UNUSED(_callback);
-	Q_UNUSED(_framesPerBuffer);
-	return true;
+	return DeviceInterfaceBase::Initialize(_callback, _framesPerBuffer);
 }
 
 bool SoftrockSDRDevice::Connect()
@@ -95,11 +93,12 @@ bool SoftrockSDRDevice::Disconnect()
 
 void SoftrockSDRDevice::Start()
 {
-	//Receiver handles Start() for audio input
+	return DeviceInterfaceBase::Start();
 }
 
 void SoftrockSDRDevice::Stop()
 {
+	return DeviceInterfaceBase::Stop();
 }
 
 void SoftrockSDRDevice::InitSettings(QString fname)
