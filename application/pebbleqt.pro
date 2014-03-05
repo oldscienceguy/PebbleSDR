@@ -4,7 +4,7 @@ include(pebbleqt.pri)
 TEMPLATE = app
 TARGET = Pebble
 #QT5 requires explicit add of Widgets to add QtWidgets which was in QtGui in earlier releases
-QT += widgets core gui multimedia
+QT += widgets core gui
 
 #Download & install QT 5.2 from http://qt-project.org
 #Edit Projects and make sure Kits use Clang
@@ -105,11 +105,6 @@ macx {
         #This can be removed when all devices have been moved to plugins, also any fixups
 	LIBS += -L$${PWD}/../D2XX/bin/10.5-10.7/ -lftd2xx.1.2.2
 	#static lib
-	LIBS += $${PWD}/../portaudio/lib/.libs/libportaudio.a
-	#Portaudio needs mac frameworks, this is how to add them
-	LIBS += -framework CoreAudio
-	LIBS += -framework AudioToolbox
-	LIBS += -framework AudioUnit
         LIBS += -framework CoreServices
 
 	LIBS += -L$${PWD}/../pebblelib/$${LIB_DIR} -lpebblelib.1
@@ -334,7 +329,6 @@ OTHER_FILES += \
 
 HEADERS += \
     spectrumwidget.h \
-	soundcard.h \
     smeterwidget.h \
 	signalstrength.h \
 	signalspectrum.h \
@@ -355,8 +349,6 @@ HEADERS += \
 	butterworth.h \
 	#build.h \
 	agc.h \
-    audio.h \
-    audioqt.h \
 	iqbalance.h \
     global.h \
     goertzel.h \
@@ -377,7 +369,6 @@ HEADERS += \
 
 SOURCES += \
     spectrumwidget.cpp \
-	soundcard.cpp \
     smeterwidget.cpp \
 	signalstrength.cpp \
 	signalspectrum.cpp \
@@ -397,8 +388,6 @@ SOURCES += \
 	demod.cpp \
 	butterworth.cpp \
 	agc.cpp \
-    audio.cpp \
-    audioqt.cpp \
     iqbalance.cpp \
     global.cpp \
     goertzel.cpp \

@@ -2,6 +2,7 @@
 #define DEVICEINTERFACEBASE_H
 #include "device_interfaces.h"
 #include "perform.h"
+#include "audio.h"
 
 class PEBBLELIBSHARED_EXPORT DeviceInterfaceBase : public DeviceInterface
 {
@@ -67,6 +68,7 @@ protected:
 	quint16 numProducerBuffers; //For faster sample rates, may need more producer buffers to handle
 	int readBufferSize; //Producer buffer size in bytes (not CPX)
 
+	Audio *audioInput;
 
 };
 

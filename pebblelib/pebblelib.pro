@@ -26,7 +26,8 @@ macx {
 
 }
 
-QT       -= gui
+QT -= gui
+QT += multimedia
 
 TARGET = pebblelib
 VERSION = 1.0.0
@@ -39,6 +40,11 @@ LIBS += -L$${PWD}/../fftw-3.3.3/.libs/ -lfftw3
 LIBS += -L$${PWD}/../D2XX/bin/10.5-10.7/ -lftd2xx.1.2.2
 LIBS += -framework IOKit #For HID
 LIBS += -framework CoreServices #For HID
+LIBS += $${PWD}/../portaudio/lib/.libs/libportaudio.a
+#Portaudio needs mac frameworks, this is how to add them
+LIBS += -framework CoreAudio
+LIBS += -framework AudioToolbox
+LIBS += -framework AudioUnit
 
 #In 5.2, Qt plugins that reference a different library than application cause errors (Application must be defined before widget)
 #Fix is to make sure all plugins reference libraries in app Frameworks directory
@@ -79,7 +85,10 @@ SOURCES += pebblelib.cpp \
     producerconsumer.cpp \
     perform.cpp \
     usbutil.cpp \
-    deviceinterfacebase.cpp
+    deviceinterfacebase.cpp \
+    audio.cpp \
+    audioqt.cpp \
+    soundcard.cpp
 
 HEADERS += pebblelib.h\
 	pebblelib_global.h \
@@ -100,5 +109,8 @@ HEADERS += pebblelib.h\
     perform.h \
     usbutil.h \
     deviceinterfacebase.h \
-    hidapi.h
+    hidapi.h \
+    audio.h \
+    audioqt.h \
+    soundcard.h
 

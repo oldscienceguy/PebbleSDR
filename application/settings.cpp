@@ -5,7 +5,6 @@
 #include "soundcard.h"
 #include "demod.h" //For DEMODMODE
 #include "receiver.h"
-#include "audioqt.h"
 #include "testbench.h"
 
 

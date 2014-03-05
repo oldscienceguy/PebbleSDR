@@ -24,6 +24,7 @@ DeviceInterfaceBase::DeviceInterfaceBase()
 	startupDemodMode = dmAM;
 	connected = false;
 	running = false;
+	audioInput = NULL;
 
 }
 
@@ -34,8 +35,10 @@ DeviceInterfaceBase::~DeviceInterfaceBase()
 
 bool DeviceInterfaceBase::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
 {
-	Q_UNUSED(_callback);
-	Q_UNUSED(_framesPerBuffer);
+	if (Get(DeviceInterface::DeviceType).toInt() == AUDIO_IQ) {
+		audioInput = Audio::Factory(_callback, _framesPerBuffer);
+	}
+
 	return true;
 }
 
@@ -51,11 +54,20 @@ bool DeviceInterfaceBase::Disconnect()
 
 void DeviceInterfaceBase::Start()
 {
+	if (Get(DeviceInterface::DeviceType).toInt() == AUDIO_IQ) {
+		//We handle audio
+		audioInput->StartInput(inputDeviceName, sampleRate);
+	}
 	return;
 }
 
 void DeviceInterfaceBase::Stop()
 {
+	if (Get(DeviceInterface::DeviceType).toInt() == AUDIO_IQ) {
+		if (audioInput != NULL)
+			audioInput->Stop();
+	}
+
 	return;
 }
 

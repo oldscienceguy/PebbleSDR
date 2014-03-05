@@ -4,7 +4,6 @@
 #include "receiver.h"
 #include "qmessagebox.h"
 #include "signalprocessing.h"
-#include "audioqt.h"
 #include "testbench.h"
 
 /*
@@ -209,7 +208,7 @@ bool Receiver::On()
     //These steps work on demodSampleRate rates
 
     //WIP, testing QT audio as alternative to PortAudio
-    audioOutput = Audio::Factory(this,demodFrames, settings);
+	audioOutput = Audio::Factory(NULL, demodFrames);
 
     noiseFilter = new NoiseFilter(demodSampleRate,demodFrames);
     //signalStrength is used by normal demod and wfm, so buffer len needs to be max
