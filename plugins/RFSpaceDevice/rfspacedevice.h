@@ -1,6 +1,8 @@
 #ifndef RFSPACEDEVICE_H
 #define RFSPACEDEVICE_H
 
+#include "afedri.h"
+
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include <QObject>
@@ -170,7 +172,7 @@ private slots:
 
 
 private:
-	enum SDRDEVICE {SDR_IQ =0, SDR_IP};
+	enum SDRDEVICE {SDR_IQ =0, SDR_IP, AFEDRI_USB};
 
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
@@ -182,6 +184,7 @@ private:
 
 	QSettings *sdripSettings;
 	QSettings *sdriqSettings;
+	QSettings *afedri_usbSettings;
 
 	//Capture N blocks of data
 	bool CaptureBlocks(unsigned numBlocks);
@@ -221,6 +224,7 @@ private:
 	unsigned interfaceVersion;
 	unsigned firmwareVersion;
 	unsigned bootcodeVersion;
+	unsigned hardwareVersion;
 	unsigned statusCode;
 	QString statusString;
 	unsigned lastReceiverCommand;
@@ -247,6 +251,8 @@ private:
 
 	quint16 readBufferIndex; //Used to track whether we have full buffer or not, 0 to readBufferSize-1
 	char *producerFreeBufPtr;
+
+	AFEDRI *afedri; //USB HID protocol and special features
 
 	bool SendTcpCommand(void *buf, qint64 len);
 	bool SendUsbCommand(void *buf, qint64 len);

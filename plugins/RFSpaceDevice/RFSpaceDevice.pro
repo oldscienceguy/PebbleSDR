@@ -30,11 +30,13 @@ TEMPLATE = lib
 CONFIG += plugin
 
 SOURCES += rfspacedevice.cpp \
-    ad6620.cpp
+    ad6620.cpp \
+    afedri.cpp
 
 HEADERS += rfspacedevice.h \
     rfsfilters.h \
-    ad6620.h
+    ad6620.h \
+    afedri.h
 
 LIBS += -L$${PWD}/../../pebblelib/$${LIB_DIR} -lpebblelib
 
