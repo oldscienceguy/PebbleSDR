@@ -41,17 +41,17 @@ macx {
     #In 5.2, Qt plugins that reference a different library than application cause errors (Application must be defined before widget)
     #Fix is to make sure all plugins reference libraries in a common library directory
     #Check dependencies with otool if still looking for installed QT libraries
-    qtlib1.files += $$(QTDIR)/lib/QtWidgets.framework/Versions/5/QtMultimedia
+    qtlib1.files += $$(QTDIR)/lib/QtWidgets.framework/Versions/5/QtWidgets
     qtlib1.path += $${INSTALLDIR}/lib/QtWidgets.framework/Versions/5
     qtlib1.commands += install_name_tool -change $$(QTDIR)/lib/QtWidgets.framework/Versions/5/QtWidgets @rpath/QtWidgets.framework/Versions/5/QtWidgets $${DESTDIR}/lib$${TARGET}.dylib
     INSTALLS += qtlib1
 
-    qtlib2.files += $$(QTDIR)/lib/QtGui.framework/Versions/5/QtMultimedia
+    qtlib2.files += $$(QTDIR)/lib/QtGui.framework/Versions/5/QtGui
     qtlib2.path += $${INSTALLDIR}/lib/QtGui.framework/Versions/5
     qtlib2.commands += install_name_tool -change $$(QTDIR)/lib/QtGui.framework/Versions/5/QtGui  @rpath/QtGui.framework/Versions/5/QtGui $${DESTDIR}/lib$${TARGET}.dylib
     INSTALLS += qtlib2
 
-    qtlib3.files += $$(QTDIR)/lib/QtCore.framework/Versions/5/QtMultimedia
+    qtlib3.files += $$(QTDIR)/lib/QtCore.framework/Versions/5/QtCore
     qtlib3.path += $${INSTALLDIR}/lib/QtCore.framework/Versions/5
     qtlib3.commands += install_name_tool -change $$(QTDIR)/lib/QtCore.framework/Versions/5/QtCore  @rpath/QtCore.framework/Versions/5/QtCore $${DESTDIR}/lib$${TARGET}.dylib
     INSTALLS += qtlib3
