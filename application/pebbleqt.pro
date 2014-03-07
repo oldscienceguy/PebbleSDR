@@ -102,19 +102,10 @@ macx {
 	#CONFIG-=app_bundle
 
 	#dylib
-        #This can be removed when all devices have been moved to plugins, also any fixups
-	LIBS += -L$${PWD}/../D2XX/bin/10.5-10.7/ -lftd2xx.1.2.2
 	#static lib
         LIBS += -framework CoreServices
 
 	LIBS += -L$${PWD}/../pebblelib/$${LIB_DIR} -lpebblelib.1
-
-	#Don't know if we need these
-	#INCLUDEPATH += ../portaudio/include
-	#LIBPATH += ../portaudio/lib
-	#INCLUDEPATH adds directories for header file searches
-	INCLUDEPATH += $${PWD}/../D2XX/bin/10.5-10.7
-	DEPENDPATH += $${PWD}/../D2XX/bin/10.5-10.7
 
 	#Mac only source files
 	#HIDAPI
@@ -159,17 +150,11 @@ macx {
 	#This anchors @rpath references in plugins to our lib directory, always at the same level os plugin directory
 	QMAKE_LFLAGS += -rpath $${DESTDIR}/lib
 
-	#We may need to copy ftd2xx.cfg with value ConfigFlags=0x40000000
-	#ftd2xx.files += $${PWD}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
-	ftd2xx.commands += install_name_tool -change /usr/local/lib/libftd2xx.1.2.2.dylib @rpath/libftd2xx.1.2.2.dylib $${DESTDIR}/pebble.app/contents/macos/pebble
-	ftd2xx.path = $${DESTDIR}/lib
-	INSTALLS += ftd2xx
-
 	plib.commands += install_name_tool -change libpebblelib.1.dylib @rpath/libpebblelib.1.dylib $${DESTDIR}/pebble.app/contents/macos/pebble
 	plib.path = $${DESTDIR}/lib
 	INSTALLS += plib
 
-	#Qt files
+        #Qt files, may be duplicate of some in PebbleLib
 	qt2.files += $$(QTDIR)/lib/QtGui.framework/Versions/5/QtGui
 	qt2.commands += install_name_tool -change $$(QTDIR)/lib/QtGui.framework/Versions/5/QtGui @rpath/QtGui.framework/Versions/5/QtGui $${DESTDIR}/pebble.app/contents/macos/pebble
 	qt2.path = $${DESTDIR}/lib/QtGui.framework/Versions/5

@@ -7,25 +7,6 @@
 #Project common
 include(../application/pebbleqt.pri)
 
-#Copy PebbleLib specific files before we change DESTDIR
-macx {
-	rtl2.files += $${DESTDIR}/../pebblelib/$${LIB_DIR}/libpebblelib.1.dylib
-	rtl2.files += $${DESTDIR}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
-	rtl2.path = $${DESTDIR}/lib
-	INSTALLS += rtl2
-}
-
-#This anchors @rpath references in plugins to our lib directory, always at the same level os plugin directory
-QMAKE_LFLAGS += -rpath $${DESTDIR}/lib
-
-macx {
-    #LIB_DIR defined in pebbleqt.pri
-    #Override DESTDIR from pebbleqt.pri
-    DESTDIR = $${PWD}/$${LIB_DIR}
-    SOURCES +=  hid-mac.c
-
-}
-
 QT -= gui
 QT += multimedia
 
@@ -36,48 +17,72 @@ TEMPLATE = lib
 
 DEFINES += PEBBLELIB_LIBRARY
 
-LIBS += -L$${PWD}/../fftw-3.3.3/.libs/ -lfftw3
-LIBS += -L$${PWD}/../D2XX/bin/10.5-10.7/ -lftd2xx.1.2.2
-LIBS += -framework IOKit #For HID
-LIBS += -framework CoreServices #For HID
-LIBS += $${PWD}/../portaudio/lib/.libs/libportaudio.a
-#Portaudio needs mac frameworks, this is how to add them
-LIBS += -framework CoreAudio
-LIBS += -framework AudioToolbox
-LIBS += -framework AudioUnit
+#Copy PebbleLib specific files before we change DESTDIR, which is set to top level MacDebug or MacRelease
+macx {
 
-#In 5.2, Qt plugins that reference a different library than application cause errors (Application must be defined before widget)
-#Fix is to make sure all plugins reference libraries in app Frameworks directory
-#QT libraries already exist in pebble.app... form macdeployqt in pebbleqt.pro, so we don't copy - just fix
-#Check dependencies with otool if still looking for installed QT libraries
-qtlib1.path += $${DESTDIR}
-qtlib1.commands += install_name_tool -change $$(QTDIR)/lib/QtWidgets.framework/Versions/5/QtWidgets @rpath/QtWidgets.framework/Versions/5/QtWidgets $${DESTDIR}/lib$${TARGET}.dylib
-INSTALLS += qtlib1
+    #DESTDIR is either top level MacDebug or MacRelease
+    #Change it to point to pebblelib/MacDebug or MacRelease
+    INSTALLDIR = $${DESTDIR} #Save before we modify
+    DESTDIR = $${PWD}/$${LIB_DIR}
 
-qtlib2.path += $${DESTDIR}
-qtlib2.commands += install_name_tool -change $$(QTDIR)/lib/QtGui.framework/Versions/5/QtGui  @rpath/QtGui.framework/Versions/5/QtGui $${DESTDIR}/lib$${TARGET}.dylib
-INSTALLS += qtlib2
+    #This anchors @rpath references in plugins to our lib directory, always at the same level os plugin directory
+    QMAKE_LFLAGS += -rpath $${INSTALLDIR}/lib
 
-qtlib3.path += $${DESTDIR}
-qtlib3.commands += install_name_tool -change $$(QTDIR)/lib/QtCore.framework/Versions/5/QtCore  @rpath/QtCore.framework/Versions/5/QtCore $${DESTDIR}/lib$${TARGET}.dylib
-INSTALLS += qtlib3
+    #Mac specific
+    SOURCES +=  hid-mac.c
 
-#We may need to copy ftd2xx.cfg with value ConfigFlags=0x40000000
-#ftd2xx.files += $${PWD}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
-ftd2xx.commands += install_name_tool -change /usr/local/lib/libftd2xx.1.2.2.dylib @rpath/libftd2xx.1.2.2.dylib $${DESTDIR}/lib$${TARGET}.dylib
-ftd2xx.path = $${DESTDIR}/lib
-INSTALLS += ftd2xx
+    rtl2.files += $${PWD}/../pebblelib/$${LIB_DIR}/libpebblelib.1.dylib
+    #rtl2.files += $${DESTDIR}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
+    rtl2.path = $${INSTALLDIR}/lib
+    INSTALLS += rtl2
 
-qt1.files += $$(QTDIR)/lib/QtMultimedia.framework/Versions/5/QtMultimedia
-qt1.commands += install_name_tool -change $$(QTDIR)/lib/QtMultimedia.framework/Versions/5/QtMultimedia @rpath/QtMultimedia.framework/Versions/5/QtMultimedia $${DESTDIR}/lib$${TARGET}.dylib
-qt1.path = $${DESTDIR}/lib/QtMultimedia.framework/Versions/5
-INSTALLS += qt1
+    #We may need to copy ftd2xx.cfg with value ConfigFlags=0x40000000
+    ftd2xx.files += $${PWD}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
+    ftd2xx.commands += install_name_tool -change /usr/local/lib/libftd2xx.1.2.2.dylib @rpath/libftd2xx.1.2.2.dylib $${DESTDIR}/lib$${TARGET}.dylib
+    ftd2xx.path = $${INSTALLDIR}/lib
+    INSTALLS += ftd2xx
+
+    #In 5.2, Qt plugins that reference a different library than application cause errors (Application must be defined before widget)
+    #Fix is to make sure all plugins reference libraries in a common library directory
+    #Check dependencies with otool if still looking for installed QT libraries
+    qtlib1.files += $$(QTDIR)/lib/QtWidgets.framework/Versions/5/QtMultimedia
+    qtlib1.path += $${INSTALLDIR}/lib/QtWidgets.framework/Versions/5
+    qtlib1.commands += install_name_tool -change $$(QTDIR)/lib/QtWidgets.framework/Versions/5/QtWidgets @rpath/QtWidgets.framework/Versions/5/QtWidgets $${DESTDIR}/lib$${TARGET}.dylib
+    INSTALLS += qtlib1
+
+    qtlib2.files += $$(QTDIR)/lib/QtGui.framework/Versions/5/QtMultimedia
+    qtlib2.path += $${INSTALLDIR}/lib/QtGui.framework/Versions/5
+    qtlib2.commands += install_name_tool -change $$(QTDIR)/lib/QtGui.framework/Versions/5/QtGui  @rpath/QtGui.framework/Versions/5/QtGui $${DESTDIR}/lib$${TARGET}.dylib
+    INSTALLS += qtlib2
+
+    qtlib3.files += $$(QTDIR)/lib/QtCore.framework/Versions/5/QtMultimedia
+    qtlib3.path += $${INSTALLDIR}/lib/QtCore.framework/Versions/5
+    qtlib3.commands += install_name_tool -change $$(QTDIR)/lib/QtCore.framework/Versions/5/QtCore  @rpath/QtCore.framework/Versions/5/QtCore $${DESTDIR}/lib$${TARGET}.dylib
+    INSTALLS += qtlib3
+
+    qtlib4.files += $$(QTDIR)/lib/QtMultimedia.framework/Versions/5/QtMultimedia
+    qtlib4.commands += install_name_tool -change $$(QTDIR)/lib/QtMultimedia.framework/Versions/5/QtMultimedia @rpath/QtMultimedia.framework/Versions/5/QtMultimedia $${DESTDIR}/lib$${TARGET}.dylib
+    qtlib4.path = $${INSTALLDIR}/lib/QtMultimedia.framework/Versions/5
+    INSTALLS += qtlib4
+
+    qtlib5.files += $$(QTDIR)/lib/QtNetwork.framework/Versions/5/QtNetwork
+    qtlib5.commands += install_name_tool -change $$(QTDIR)/lib/QtNetwork.framework/Versions/5/QtNetwork @rpath/QtNetwork.framework/Versions/5/QtNetwork $${DESTDIR}/lib$${TARGET}.dylib
+    qtlib5.path = $${INSTALLDIR}/lib/QtNetwork.framework/Versions/5
+    INSTALLS += qtlib5
 
 
-qt4.files += $$(QTDIR)/lib/QtNetwork.framework/Versions/5/QtNetwork
-qt4.commands += install_name_tool -change $$(QTDIR)/lib/QtNetwork.framework/Versions/5/QtNetwork @rpath/QtNetwork.framework/Versions/5/QtNetwork $${DESTDIR}/lib$${TARGET}.dylib
-qt4.path = $${DESTDIR}/lib/QtNetwork.framework/Versions/5
-INSTALLS += qt4
+    LIBS += -L$${PWD}/../fftw-3.3.3/.libs/ -lfftw3
+    LIBS += -L$${PWD}/../D2XX/bin/10.5-10.7/ -lftd2xx.1.2.2
+    LIBS += -framework IOKit #For HID
+    LIBS += -framework CoreServices #For HID
+    LIBS += $${PWD}/../portaudio/lib/.libs/libportaudio.a
+    #Portaudio needs mac frameworks, this is how to add them
+    LIBS += -framework CoreAudio
+    LIBS += -framework AudioToolbox
+    LIBS += -framework AudioUnit
+
+}
+
 
 win32 {
     SOURCES += hid-win.c
@@ -102,7 +107,7 @@ SOURCES += pebblelib.cpp \
     soundcard.cpp
 
 HEADERS += pebblelib.h\
-	pebblelib_global.h \
+    pebblelib_global.h \
     cpx.h \
     gpl.h \
     digital_modem_interfaces.h \
