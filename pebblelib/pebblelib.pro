@@ -68,6 +68,17 @@ ftd2xx.commands += install_name_tool -change /usr/local/lib/libftd2xx.1.2.2.dyli
 ftd2xx.path = $${DESTDIR}/lib
 INSTALLS += ftd2xx
 
+qt1.files += $$(QTDIR)/lib/QtMultimedia.framework/Versions/5/QtMultimedia
+qt1.commands += install_name_tool -change $$(QTDIR)/lib/QtMultimedia.framework/Versions/5/QtMultimedia @rpath/QtMultimedia.framework/Versions/5/QtMultimedia $${DESTDIR}/lib$${TARGET}.dylib
+qt1.path = $${DESTDIR}/lib/QtMultimedia.framework/Versions/5
+INSTALLS += qt1
+
+
+qt4.files += $$(QTDIR)/lib/QtNetwork.framework/Versions/5/QtNetwork
+qt4.commands += install_name_tool -change $$(QTDIR)/lib/QtNetwork.framework/Versions/5/QtNetwork @rpath/QtNetwork.framework/Versions/5/QtNetwork $${DESTDIR}/lib$${TARGET}.dylib
+qt4.path = $${DESTDIR}/lib/QtNetwork.framework/Versions/5
+INSTALLS += qt4
+
 win32 {
     SOURCES += hid-win.c
 

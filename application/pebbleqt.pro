@@ -170,11 +170,6 @@ macx {
 	INSTALLS += plib
 
 	#Qt files
-	qt1.files += $$(QTDIR)/lib/QtMultimedia.framework/Versions/5/QtMultimedia
-	qt1.commands += install_name_tool -change $$(QTDIR)/lib/QtMultimedia.framework/Versions/5/QtMultimedia @rpath/QtMultimedia.framework/Versions/5/QtMultimedia $${DESTDIR}/pebble.app/contents/macos/pebble
-	qt1.path = $${DESTDIR}/lib/QtMultimedia.framework/Versions/5
-	INSTALLS += qt1
-
 	qt2.files += $$(QTDIR)/lib/QtGui.framework/Versions/5/QtGui
 	qt2.commands += install_name_tool -change $$(QTDIR)/lib/QtGui.framework/Versions/5/QtGui @rpath/QtGui.framework/Versions/5/QtGui $${DESTDIR}/pebble.app/contents/macos/pebble
 	qt2.path = $${DESTDIR}/lib/QtGui.framework/Versions/5
@@ -184,11 +179,6 @@ macx {
 	qt3.commands += install_name_tool -change $$(QTDIR)/lib/QtCore.framework/Versions/5/QtCore @rpath/QtCore.framework/Versions/5/QtCore $${DESTDIR}/pebble.app/contents/macos/pebble
 	qt3.path = $${DESTDIR}/lib/QtCore.framework/Versions/5
 	INSTALLS += qt3
-
-	qt4.files += $$(QTDIR)/lib/QtNetwork.framework/Versions/5/QtNetwork
-	qt4.commands += install_name_tool -change $$(QTDIR)/lib/QtNetwork.framework/Versions/5/QtNetwork @rpath/QtNetwork.framework/Versions/5/QtNetwork $${DESTDIR}/pebble.app/contents/macos/pebble
-	qt4.path = $${DESTDIR}/lib/QtNetwork.framework/Versions/5
-	INSTALLS += qt4
 
 	qt5.files += $$(QTDIR)/lib/QtWidgets.framework/Versions/5/QtWidgets
 	qt5.commands += install_name_tool -change $$(QTDIR)/lib/QtWidgets.framework/Versions/5/QtWidgets @rpath/QtWidgets.framework/Versions/5/QtWidgets $${DESTDIR}/pebble.app/contents/macos/pebble
