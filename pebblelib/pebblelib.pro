@@ -25,16 +25,12 @@ macx {
     INSTALLDIR = $${DESTDIR} #Save before we modify
     DESTDIR = $${PWD}/$${LIB_DIR}
 
-    #This anchors @rpath references in plugins to our lib directory, always at the same level os plugin directory
-    QMAKE_LFLAGS += -rpath $${INSTALLDIR}/lib
+    #rpath should be set by application that uses Pebblelib.
+    #In case it's not, this sets it so all the dependenty libraries are found in same directory as PebbleLib
+    QMAKE_LFLAGS += -rpath @loader_path
 
     #Mac specific
     SOURCES +=  hid-mac.c
-
-    rtl2.files += $${PWD}/../pebblelib/$${LIB_DIR}/libpebblelib.1.dylib
-    #rtl2.files += $${DESTDIR}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
-    rtl2.path = $${INSTALLDIR}/lib
-    INSTALLS += rtl2
 
     #We may need to copy ftd2xx.cfg with value ConfigFlags=0x40000000
     ftd2xx.files += $${PWD}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
@@ -70,6 +66,7 @@ macx {
     qtlib5.path = $${INSTALLDIR}/lib/QtNetwork.framework/Versions/5
     INSTALLS += qtlib5
 
+    #Don't copy the fixed up lib file here, let the application do it so we make sure we get fixed up copy
 
     LIBS += -L$${PWD}/../fftw-3.3.3/.libs/ -lfftw3
     LIBS += -L$${PWD}/../D2XX/bin/10.5-10.7/ -lftd2xx.1.2.2

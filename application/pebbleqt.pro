@@ -148,8 +148,11 @@ macx {
 	#INSTALLS += mylib
 
 	#This anchors @rpath references in plugins to our lib directory, always at the same level os plugin directory
-	QMAKE_LFLAGS += -rpath $${DESTDIR}/lib
+        #@loader path will be .../Pebble.app/Contents/MacOS/Pebble
+        #We set rpath to be 'lib' in thesame directory as Pebble.app
+        QMAKE_LFLAGS += -rpath @loader_path/../../../lib
 
+        plib.files += $${PWD}/../pebblelib/$${LIB_DIR}/libpebblelib.1.dylib
 	plib.commands += install_name_tool -change libpebblelib.1.dylib @rpath/libpebblelib.1.dylib $${DESTDIR}/pebble.app/contents/macos/pebble
 	plib.path = $${DESTDIR}/lib
 	INSTALLS += plib

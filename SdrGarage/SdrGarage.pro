@@ -17,7 +17,7 @@ include(../application/pebbleqt.pri)
 #See use of @rpath in install_tool usage below
 
 #This anchors @rpath references in plugins to our lib directory, always at the same level os plugin directory
-QMAKE_LFLAGS += -rpath $${DESTDIR}/lib
+QMAKE_LFLAGS += -rpath @loader_path/lib
 
 INCLUDEPATH += ../pebblelib
 DEPENDPATH += ../pebblelib
