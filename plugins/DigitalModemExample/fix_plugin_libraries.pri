@@ -22,5 +22,5 @@ qtlib3.commands += install_name_tool -change $$(QTDIR)/lib/QtCore.framework/Vers
 INSTALLS += qtlib3
 
 qtlib4.path += $${DESTDIR}
-qtlib4.commands += install_name_tool -change $$(QTDIR)/lib/QtNetwork.framework/Versions/5/QtNetwork @rpath//QtNetwork.framework/Versions/5/QtNetwork $${DESTDIR}/lib$${TARGET}.dylib
+qtlib4.commands += install_name_tool -change $$(QTDIR)/lib/QtNetwork.framework/Versions/5/QtNetwork @rpath/QtNetwork.framework/Versions/5/QtNetwork $${DESTDIR}/lib$${TARGET}.dylib
 INSTALLS += qtlib4
