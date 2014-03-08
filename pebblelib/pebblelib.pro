@@ -66,6 +66,38 @@ macx {
     qtlib5.path = $${INSTALLDIR}/lib/QtNetwork.framework/Versions/5
     INSTALLS += qtlib5
 
+    #Since we're not using macdeployqt, we have to fixup each qt library also
+    #QtCore has no other Qt dependencies
+
+    #QtGui dependencies
+    qgui1.commands += install_name_tool -change $$(QTDIR)/lib/QtCore.framework/Versions/5/QtCore  @rpath/QtCore.framework/Versions/5/QtCore $${INSTALLDIR}/lib/QtGui.framework/Versions/5/QtGui
+    qgui1.path = $${INSTALLDIR}/lib/QtMultimedia.framework/Versions/5
+    INSTALLS += qgui1
+
+    #QtNetwork
+    qnet1.commands += install_name_tool -change $$(QTDIR)/lib/QtCore.framework/Versions/5/QtCore  @rpath/QtCore.framework/Versions/5/QtCore $${INSTALLDIR}/lib/QtNetwork.framework/Versions/5/QtNetwork
+    qnet1.path = $${INSTALLDIR}/lib/QtMultimedia.framework/Versions/5
+    INSTALLS += qnet1
+
+    #QtWidgets
+    qwid1.commands += install_name_tool -change $$(QTDIR)/lib/QtCore.framework/Versions/5/QtCore  @rpath/QtCore.framework/Versions/5/QtCore $${INSTALLDIR}/lib/QtWidgets.framework/Versions/5/QtWidgets
+    qwid1.path = $${INSTALLDIR}/lib/QtMultimedia.framework/Versions/5
+    INSTALLS += qwid1
+    qwid2.commands += install_name_tool -change $$(QTDIR)/lib/QtGui.framework/Versions/5/QtGui  @rpath/QtGui.framework/Versions/5/QtGui $${INSTALLDIR}/lib/QtWidgets.framework/Versions/5/QtWidgets
+    qwid2.path = $${INSTALLDIR}/lib/QtMultimedia.framework/Versions/5
+    INSTALLS += qwid2
+
+    #QtMultimedia dependencies
+    qmm1.commands += install_name_tool -change $$(QTDIR)/lib/QtGui.framework/Versions/5/QtGui  @rpath/QtGui.framework/Versions/5/QtGui $${INSTALLDIR}/lib/QtMultimedia.framework/Versions/5/QtMultimedia
+    qmm1.path = $${INSTALLDIR}/lib/QtMultimedia.framework/Versions/5
+    INSTALLS += qmm1
+    qmm2.commands += install_name_tool -change $$(QTDIR)/lib/QtCore.framework/Versions/5/QtCore  @rpath/QtCore.framework/Versions/5/QtCore $${INSTALLDIR}/lib/QtMultimedia.framework/Versions/5/QtMultimedia
+    qmm2.path = $${INSTALLDIR}/lib/QtMultimedia.framework/Versions/5
+    INSTALLS += qmm2
+    qmm3.commands += install_name_tool -change $$(QTDIR)/lib/QtNetwork.framework/Versions/5/QtNetwork  @rpath/QtNetwork.framework/Versions/5/QtNetwork $${INSTALLDIR}/lib/QtMultimedia.framework/Versions/5/QtMultimedia
+    qmm3.path = $${INSTALLDIR}/lib/QtMultimedia.framework/Versions/5
+    INSTALLS += qmm3
+
     #Don't copy the fixed up lib file here, let the application do it so we make sure we get fixed up copy
 
     LIBS += -L$${PWD}/../fftw-3.3.3/.libs/ -lfftw3

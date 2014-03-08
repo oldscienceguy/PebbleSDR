@@ -157,18 +157,18 @@ macx {
 	plib.path = $${DESTDIR}/lib
 	INSTALLS += plib
 
-        #Qt files, may be duplicate of some in PebbleLib
-	qt2.files += $$(QTDIR)/lib/QtGui.framework/Versions/5/QtGui
+        #Qt files.  These are patched in pebblelib.pro, so don't re-copy and over-write the patched versions
+        #qt2.files += $$(QTDIR)/lib/QtGui.framework/Versions/5/QtGui
 	qt2.commands += install_name_tool -change $$(QTDIR)/lib/QtGui.framework/Versions/5/QtGui @rpath/QtGui.framework/Versions/5/QtGui $${DESTDIR}/pebble.app/contents/macos/pebble
 	qt2.path = $${DESTDIR}/lib/QtGui.framework/Versions/5
 	INSTALLS += qt2
 
-	qt3.files += $$(QTDIR)/lib/QtCore.framework/Versions/5/QtCore
+        #qt3.files += $$(QTDIR)/lib/QtCore.framework/Versions/5/QtCore
 	qt3.commands += install_name_tool -change $$(QTDIR)/lib/QtCore.framework/Versions/5/QtCore @rpath/QtCore.framework/Versions/5/QtCore $${DESTDIR}/pebble.app/contents/macos/pebble
 	qt3.path = $${DESTDIR}/lib/QtCore.framework/Versions/5
 	INSTALLS += qt3
 
-	qt5.files += $$(QTDIR)/lib/QtWidgets.framework/Versions/5/QtWidgets
+        #qt5.files += $$(QTDIR)/lib/QtWidgets.framework/Versions/5/QtWidgets
 	qt5.commands += install_name_tool -change $$(QTDIR)/lib/QtWidgets.framework/Versions/5/QtWidgets @rpath/QtWidgets.framework/Versions/5/QtWidgets $${DESTDIR}/pebble.app/contents/macos/pebble
 	qt5.path = $${DESTDIR}/lib/QtWidgets.framework/Versions/5
 	INSTALLS += qt5
