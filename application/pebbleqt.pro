@@ -107,9 +107,17 @@ macx {
 
 	LIBS += -L$${PWD}/../pebblelib/$${LIB_DIR} -lpebblelib.1
 
-	#Mac only source files
-	#HIDAPI
-	SOURCES +=
+        #QT libraries expected by PebbleLib.  Adding here makes sure macdeployqt copies them all to Frameworks
+        LIBS += -framework QtMultimedia
+        LIBS += -framework QtNetwork
+        #Copy all the other PebbleLib files (Check pebblelib.pro file to make sure)
+        plib.files += $${PWD}/../pebblelib/$${LIB_DIR}/libpebblelib.1.dylib
+        plib.files += $${PWD}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
+        #Copy all plugin dependencies (Check all the .pro files to make sure)
+        plib.files += /usr/local/lib/librtlsdr.0.dylib
+        plib.files += /opt/local/lib/libusb-1.0.0.dylib
+        plib.path = $${DESTDIR}/Pebble.app/Contents/Frameworks
+        INSTALLS += plib
 
 	#INSTALLS is called when we manually make -install or add it to the Qt project build steps
         pebbleData.files = eibireadme.txt eibi.csv bands.csv memory.csv	gpl.h ../readme.md
@@ -122,62 +130,23 @@ macx {
 	#message($${pebbleData.path})
 	INSTALLS += pebbleData
 
-	# Get .dylib files in package for easier user install
-	# See http://qt-project.org/doc/qt-5.0/qtdoc/deployment-mac.html
-
 	#To find all dependent dylib: otool -L ./Pebble.app/contents/macos/pebble >> dylib.txt
 	#1st arg is the path and name of dylib as shown from otool ouput
 	#2nd arg starts with @executable_path which expands to (path to bundle)/pebble.app/contents/macos
 	#Up one dir to Frameworks which is where we copy .dylib files
 	#3rd arg is the actual executable to patch
-	#Add this command to QtCreator make steps or use QMAKE_POST_LINK below
-	#install_name_tool -change /usr/local/lib/libftd2xx.1.1.0.dylib @executable_path/../Frameworks/libftd2xx.1.1.0.dylib pebble.app/contents/macos/pebble
+        #3/9/14 YoYo: Switched back to macdeployqt because tracking down all the Qt plugins, fixing them, and updating directories
+        #just got too complicated
+        #New strategy:
+        # 1. Let macdeployqt handle all the Pebble fixups and move dylibs to Framewords and plugins to Plugins
+        # 2. Set all PebbleLib and Pebble plugins to use @rpath
+        # 3. Set rpath to Pebble.app/Contents/Frameworks
+        # 4. Set rpath to ??? for SDR Garage?
+        QMAKE_POST_LINK += macdeployqt $${DESTDIR}/Pebble.app
+        #QMAKE_POST_LINK += macchangeqt $${DESTDIR}/Pebble.app ./ #This changes location to a fixed directory, not that useful
 
-	#macdeployqt replaces all the install detail below and handles Qt and any non-system dylibs
-	#Turn this off if you are having any problem with libraries or plugins
-	#Starting in QT5.02 the cocoa plugin is always required, so we can't use -no-plugins
-	#1/26/14: Stopped using macdeployqt because we are setting @rpath to our lib folder
-	#All apps and plugins expect to find lib folder at same level as application
-	#Easier to make sure everyone shares same instance
-	#QMAKE_POST_LINK += macdeployqt $${DESTDIR}/Pebble.app
-	#message("Reminder - macdeployqt 5.1 has bug and must be run from fix_macdeployqt script")
-
-	# macdeployqt fixes references, but does not copy non QT dylib.  We have to do this manually
-	#mylib.files += $${PWD}/../pebblelib/$${LIB_DIR}/libpebblelib.1.dylib
-	#mylib.path = $${DESTDIR}/Pebble.app/Contents/Frameworks
-	#INSTALLS += mylib
-
-	#This anchors @rpath references in plugins to our lib directory, always at the same level os plugin directory
-        #@loader path will be .../Pebble.app/Contents/MacOS/Pebble
-        #We set rpath to be 'lib' in thesame directory as Pebble.app
-        QMAKE_LFLAGS += -rpath @loader_path/../../../lib
-
-        plib.files += $${PWD}/../pebblelib/$${LIB_DIR}/libpebblelib.1.dylib
-	plib.commands += install_name_tool -change libpebblelib.1.dylib @rpath/libpebblelib.1.dylib $${DESTDIR}/pebble.app/contents/macos/pebble
-	plib.path = $${DESTDIR}/lib
-	INSTALLS += plib
-
-        #Qt files.  These are patched in pebblelib.pro, so don't re-copy and over-write the patched versions
-        #qt2.files += $$(QTDIR)/lib/QtGui.framework/Versions/5/QtGui
-	qt2.commands += install_name_tool -change $$(QTDIR)/lib/QtGui.framework/Versions/5/QtGui @rpath/QtGui.framework/Versions/5/QtGui $${DESTDIR}/pebble.app/contents/macos/pebble
-	qt2.path = $${DESTDIR}/lib/QtGui.framework/Versions/5
-	INSTALLS += qt2
-
-        #qt3.files += $$(QTDIR)/lib/QtCore.framework/Versions/5/QtCore
-	qt3.commands += install_name_tool -change $$(QTDIR)/lib/QtCore.framework/Versions/5/QtCore @rpath/QtCore.framework/Versions/5/QtCore $${DESTDIR}/pebble.app/contents/macos/pebble
-	qt3.path = $${DESTDIR}/lib/QtCore.framework/Versions/5
-	INSTALLS += qt3
-
-        #qt5.files += $$(QTDIR)/lib/QtWidgets.framework/Versions/5/QtWidgets
-	qt5.commands += install_name_tool -change $$(QTDIR)/lib/QtWidgets.framework/Versions/5/QtWidgets @rpath/QtWidgets.framework/Versions/5/QtWidgets $${DESTDIR}/pebble.app/contents/macos/pebble
-	qt5.path = $${DESTDIR}/lib/QtWidgets.framework/Versions/5
-	INSTALLS += qt5
-
-	#
-	# Check to see if these are standard OS files
-	# /usr/lib/libstdc++.6.dylib
-	# /usr/lib/libSystem.B.dylib
-
+        #This anchors @rpath references to use bundle's Frameworks directory
+        QMAKE_LFLAGS += -rpath @executable_path/../Frameworks
 }
 
 win32 {

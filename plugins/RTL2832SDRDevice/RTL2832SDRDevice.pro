@@ -19,8 +19,6 @@ DESTDIR = $${DESTDIR}/plugins
 
 #Common library dependency code for all Pebble plugins
 include (../DigitalModemExample/fix_plugin_libraries.pri)
-#This anchors @rpath references in plugins to our lib directory, always at the same level os plugin directory
-QMAKE_LFLAGS += -rpath @loader_path/../lib
 
 #Custom rtl libraries that have to be relocated
 rtl1.path += $${DESTDIR}
@@ -32,10 +30,12 @@ INSTALLS += rtl1
 #Try removing directory first
 
 macx {
-	rtl2.files += /usr/local/lib/librtlsdr.0.dylib
-	rtl2.files += /opt/local/lib/libusb-1.0.0.dylib
-	rtl2.path = $${DESTDIR}/../lib
-	INSTALLS += rtl2
+        #Application is responsible for copying these, since we don't know destination
+        #Here as a reminder and reference
+        #rtl2.files += /usr/local/lib/librtlsdr.0.dylib
+        #rtl2.files += /opt/local/lib/libusb-1.0.0.dylib
+        #rtl2.path = $${DESTDIR}/../lib
+        #INSTALLS += rtl2
 }
 
 #We have to fixup librtlsdr dependencies

@@ -16,8 +16,8 @@ include(../application/pebbleqt.pri)
 #then each dylib is found relative to the anchor point.
 #See use of @rpath in install_tool usage below
 
-#This anchors @rpath references in plugins to our lib directory, always at the same level os plugin directory
-QMAKE_LFLAGS += -rpath @loader_path/lib
+#This anchors @rpath, make sure all dependent dylibs are copied here
+QMAKE_LFLAGS += -rpath @loader_path/sdrgaragelib
 
 INCLUDEPATH += ../pebblelib
 DEPENDPATH += ../pebblelib
