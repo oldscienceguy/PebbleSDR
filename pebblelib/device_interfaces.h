@@ -88,7 +88,7 @@ public:
 	virtual ~DeviceInterface() = 0;
 
 	virtual bool Initialize(cbProcessIQData _callback,
-							cbProcessBandscopeData _callbackSpectrum,
+							cbProcessBandscopeData _callbackBandscope,
 							cbProcessAudioData _callbackAudio,
 							quint16 _framesPerBuffer) = 0;
     virtual bool Connect() = 0;

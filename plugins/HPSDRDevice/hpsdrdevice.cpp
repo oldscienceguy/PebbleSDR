@@ -46,14 +46,10 @@ HPSDRDevice::~HPSDRDevice()
 }
 
 bool HPSDRDevice::Initialize(cbProcessIQData _callback,
-							  cbProcessBandscopeData _callbackSpectrum,
+							  cbProcessBandscopeData _callbackBandscope,
 							  cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
-	Q_UNUSED(_callbackSpectrum);
-	Q_UNUSED(_callbackAudio);
-	DeviceInterfaceBase::Initialize(_callback, _callbackSpectrum, _callbackAudio, _framesPerBuffer);
-	ProcessIQData = _callback;
-	framesPerBuffer = _framesPerBuffer;
+	DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
 
 	//Frames are 512 bytes, defined by HPSDR protocol
 	//Each frame has 3 sync and 5 Command and control bytes, leaving 504 for data
@@ -70,7 +66,6 @@ bool HPSDRDevice::Initialize(cbProcessIQData _callback,
 		delete[] inputBuffer;
 	inputBuffer = new unsigned char[inputBufferSize];
 
-	connected = false;
 	numProducerBuffers = 50;
 	readBufferSize = framesPerBuffer * sizeof(CPX);
 	producerConsumer.Initialize(std::bind(&HPSDRDevice::producerWorker, this, std::placeholders::_1),

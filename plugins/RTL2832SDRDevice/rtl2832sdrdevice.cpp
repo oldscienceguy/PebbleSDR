@@ -28,14 +28,10 @@ RTL2832SDRDevice::~RTL2832SDRDevice()
 }
 
 bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback,
-								   cbProcessBandscopeData _callbackSpectrum,
+								   cbProcessBandscopeData _callbackBandscope,
 								   cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
-	Q_UNUSED(_callbackSpectrum);
-	Q_UNUSED(_callbackAudio);
-	DeviceInterfaceBase::Initialize(_callback, _callbackSpectrum, _callbackAudio, _framesPerBuffer);
-    ProcessIQData = _callback;
-    framesPerBuffer = _framesPerBuffer;
+	DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
     inBuffer = new CPXBuf(framesPerBuffer);
 
     //crystalFreqHz = DEFAULT_CRYSTAL_FREQUENCY;
@@ -112,7 +108,6 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback,
     tcpDongleInfo.tunerGainCount = 0;
 
     running = false;
-    connected = false;
 
     numProducerBuffers = 50;
     producerConsumer.Initialize(std::bind(&RTL2832SDRDevice::producerWorker, this, std::placeholders::_1),

@@ -12,15 +12,10 @@ ExampleSDRDevice::~ExampleSDRDevice()
 }
 
 bool ExampleSDRDevice::Initialize(cbProcessIQData _callback,
-								  cbProcessBandscopeData _callbackSpectrum,
+								  cbProcessBandscopeData _callbackBandscope,
 								  cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
-	Q_UNUSED(_callbackSpectrum);
-	Q_UNUSED(_callbackAudio);
-	DeviceInterfaceBase::Initialize(_callback, _callbackSpectrum, _callbackAudio, _framesPerBuffer);
-	ProcessIQData = _callback;
-	framesPerBuffer = _framesPerBuffer;
-	connected = false;
+	DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
 	numProducerBuffers = 50;
 	return true;
 }

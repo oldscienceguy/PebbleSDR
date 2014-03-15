@@ -55,7 +55,7 @@ public:
 
     //DeviceInterface abstract methods that must be implemented
 	bool Initialize(cbProcessIQData _callback,
-					cbProcessBandscopeData _callbackSpectrum,
+					cbProcessBandscopeData _callbackBandscope,
 					cbProcessAudioData _callbackAudio,
 					quint16 _framesPerBuffer);
 	bool Connect();
