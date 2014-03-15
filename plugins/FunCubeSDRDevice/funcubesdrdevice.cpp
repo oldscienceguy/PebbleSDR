@@ -22,9 +22,13 @@ FunCubeSDRDevice::~FunCubeSDRDevice()
 	hid_exit();
 }
 
-bool FunCubeSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
+bool FunCubeSDRDevice::Initialize(cbProcessIQData _callback,
+								   cbProcessSpectrumIQData _callbackSpectrum,
+								   cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
-	DeviceInterfaceBase::Initialize(_callback, _framesPerBuffer);
+	Q_UNUSED(_callbackSpectrum);
+	Q_UNUSED(_callbackAudio);
+	DeviceInterfaceBase::Initialize(_callback, _callbackSpectrum, _callbackAudio, _framesPerBuffer);
 	hid_init();
 	return true;
 }

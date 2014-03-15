@@ -11,9 +11,13 @@ SoftrockSDRDevice::~SoftrockSDRDevice()
 {
 }
 
-bool SoftrockSDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
+bool SoftrockSDRDevice::Initialize(cbProcessIQData _callback,
+								   cbProcessSpectrumIQData _callbackSpectrum,
+								   cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
-	return DeviceInterfaceBase::Initialize(_callback, _framesPerBuffer);
+	Q_UNUSED(_callbackSpectrum);
+	Q_UNUSED(_callbackAudio);
+	return DeviceInterfaceBase::Initialize(_callback, _callbackSpectrum, _callbackAudio, _framesPerBuffer);
 }
 
 bool SoftrockSDRDevice::Connect()

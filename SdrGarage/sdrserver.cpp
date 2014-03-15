@@ -67,7 +67,7 @@ void SdrServer::newConnection()
 
     sdr->ReadSettings(); //Gets current settings or defaults if first use
 
-    sdr->Initialize(std::bind(&RtlTcpProtocol::ProcessIQData, protocol, _1, _2),2048);
+	sdr->Initialize(std::bind(&RtlTcpProtocol::ProcessIQData, protocol, _1, _2),NULL,NULL,2048);
 
     if (!sdr->Connect()) {
         qDebug()<<"Could not connect to device";

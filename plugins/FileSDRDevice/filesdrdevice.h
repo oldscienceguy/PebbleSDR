@@ -22,8 +22,11 @@ public:
     FileSDRDevice();
     ~FileSDRDevice();
 
-    bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer);
-    bool Connect();
+	bool Initialize(cbProcessIQData _callback,
+					cbProcessSpectrumIQData _callbackSpectrum,
+					cbProcessAudioData _callbackAudio,
+					quint16 _framesPerBuffer);
+	bool Connect();
     bool Disconnect();
     void Start();
     void Stop();

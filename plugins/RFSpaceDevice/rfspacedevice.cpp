@@ -70,8 +70,13 @@ void RFSpaceDevice::InitSettings(QString fname)
 	qSettings = NULL; //Catch errors
 }
 
-bool RFSpaceDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
+bool RFSpaceDevice::Initialize(cbProcessIQData _callback,
+							   cbProcessSpectrumIQData _callbackSpectrum,
+							   cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
+	Q_UNUSED(_callbackSpectrum);
+	Q_UNUSED(_callbackAudio);
+	DeviceInterfaceBase::Initialize(_callback, _callbackSpectrum, _callbackAudio, _framesPerBuffer);
 	ProcessIQData = _callback;
 	framesPerBuffer = _framesPerBuffer;
 	connected = false;
@@ -88,7 +93,7 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuff
 		//Consumer only has to run once every 2048 CPX samples
 		producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
 	} else if (deviceNumber == AFEDRI_USB) {
-		DeviceInterfaceBase::Initialize(_callback, _framesPerBuffer); //Handle audio input
+		DeviceInterfaceBase::Initialize(_callback, NULL, NULL, _framesPerBuffer); //Handle audio input
 		afedri->Initialize(); //HID
 	}
 

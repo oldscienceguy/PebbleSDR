@@ -27,8 +27,13 @@ RTL2832SDRDevice::~RTL2832SDRDevice()
         delete (inBuffer);
 }
 
-bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
+bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback,
+								   cbProcessSpectrumIQData _callbackSpectrum,
+								   cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
+	Q_UNUSED(_callbackSpectrum);
+	Q_UNUSED(_callbackAudio);
+	DeviceInterfaceBase::Initialize(_callback, _callbackSpectrum, _callbackAudio, _framesPerBuffer);
     ProcessIQData = _callback;
     framesPerBuffer = _framesPerBuffer;
     inBuffer = new CPXBuf(framesPerBuffer);
@@ -158,7 +163,7 @@ void RTL2832SDRDevice::Reset()
     qDebug()<<"RTL reset signal received";
     Stop();
     Disconnect();
-    Initialize(ProcessIQData,framesPerBuffer);
+	Initialize(ProcessIQData, NULL, NULL, framesPerBuffer);
     Connect();
     Start();
 }

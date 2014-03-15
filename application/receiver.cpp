@@ -104,7 +104,7 @@ bool Receiver::On()
     //bind(Method ptr, object, arg1, ... argn)
 
     sdr->ReadSettings(); //Always start with most current
-	if (!sdr->Initialize(std::bind(&Receiver::ProcessIQData, this, _1, _2),settings->framesPerBuffer)) {
+	if (!sdr->Initialize(std::bind(&Receiver::ProcessIQData, this, _1, _2),NULL,NULL,settings->framesPerBuffer)) {
 		Off();
 		return false;
 	}

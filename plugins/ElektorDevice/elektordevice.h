@@ -24,7 +24,10 @@ public:
 	~ElektorDevice();
 
 	//Required
-	bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer);
+	bool Initialize(cbProcessIQData _callback,
+					cbProcessSpectrumIQData _callbackSpectrum,
+					cbProcessAudioData _callbackAudio,
+					quint16 _framesPerBuffer);
 	bool Connect();
 	bool Disconnect();
 	void Start();

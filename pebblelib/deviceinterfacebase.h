@@ -9,7 +9,10 @@ class PEBBLELIBSHARED_EXPORT DeviceInterfaceBase : public DeviceInterface
 public:
 	DeviceInterfaceBase();
 	virtual ~DeviceInterfaceBase();
-	virtual bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer);
+	virtual bool Initialize(cbProcessIQData _callback,
+							cbProcessSpectrumIQData _callbackSpectrum,
+							cbProcessAudioData _callbackAudio,
+							quint16 _framesPerBuffer);
 	virtual bool Connect();
 	virtual bool Disconnect();
 	virtual void Start();
@@ -22,6 +25,8 @@ public:
 	virtual void WriteSettings();
 
 	cbProcessIQData ProcessIQData;
+	cbProcessSpectrumIQData ProcessSpectrumIQData;
+	cbProcessAudioData ProcessAudioData;
 
 	//Defaults so devices only have to handle what they need to
 	virtual QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);

@@ -25,6 +25,9 @@ DeviceInterfaceBase::DeviceInterfaceBase()
 	connected = false;
 	running = false;
 	audioInput = NULL;
+	ProcessIQData = NULL;
+	ProcessSpectrumIQData = NULL;
+	ProcessAudioData = NULL;
 
 }
 
@@ -33,8 +36,13 @@ DeviceInterfaceBase::~DeviceInterfaceBase()
 
 }
 
-bool DeviceInterfaceBase::Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer)
+bool DeviceInterfaceBase::Initialize(cbProcessIQData _callback,
+									 cbProcessSpectrumIQData _callbackSpectrum,
+									 cbProcessAudioData _callbackAudio,
+									 quint16 _framesPerBuffer)
 {
+	Q_UNUSED(_callbackSpectrum);
+	Q_UNUSED(_callbackAudio);
 	if (Get(DeviceInterface::DeviceType).toInt() == AUDIO_IQ) {
 		audioInput = Audio::Factory(_callback, _framesPerBuffer);
 	}

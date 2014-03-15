@@ -21,16 +21,22 @@
 class CPX;
 
 //using std::placeholders;
-//ProcessIQData callback: Call with CPX buffer and number of samples
+//ProcessIQData callback: Call with CPX buffer of I/Q unprocessed samples and number of samples
 typedef std::function<void(CPX *, quint16)> cbProcessIQData;
+
+//ProcessIQData callback: Call with CPX buffer of I/Q spectrum values and number of samples
+typedef std::function<void(CPX *, quint16)> cbProcessSpectrumIQData;
+
+//ProcessAudioData callback: Call with CPX buffer with left/right audio values and number of samples
+typedef std::function<void(CPX *, quint16)> cbProcessAudioData;
 
 class PEBBLELIBSHARED_EXPORT DeviceInterface
 {
 public:
     typedef enum IQORDER {IQ,QI,IONLY,QONLY} IQORDER;
 	typedef enum STARTUP_TYPE {SETFREQ = 0, LASTFREQ, DEFAULTFREQ} STARTUP_TYPE;
-	//Does device generate IQ or rely on Sound Card (not in plugin)
-	typedef enum DEVICE_TYPE{INTERNAL_IQ, AUDIO_IQ} DEVICE_TYPE;
+	//Does device generate IQ, rely on Sound Card for IQ (not in plugin) or return processed audio
+	typedef enum DEVICE_TYPE{INTERNAL_IQ, AUDIO_IQ, AUDIO_ONLY} DEVICE_TYPE;
 	//These enums can only be extended, not changed, once released.  Otherwise will break existing plugins that are not rebuilt
 	enum STANDARD_KEYS {
 		PluginName = 0,				//RO QString Name of plugin device was found in
@@ -79,7 +85,10 @@ public:
 	};
 
     //Interface must be all pure virtual functions
-    virtual bool Initialize(cbProcessIQData _callback, quint16 _framesPerBuffer) = 0;
+	virtual bool Initialize(cbProcessIQData _callback,
+							cbProcessSpectrumIQData _callbackSpectrum,
+							cbProcessAudioData _callbackAudio,
+							quint16 _framesPerBuffer) = 0;
     virtual bool Connect() = 0;
     virtual bool Disconnect() = 0;
     virtual void Start() = 0;
