@@ -5,7 +5,6 @@
 #include "gpl.h"
 #include <QObject>
 #include "deviceinterfacebase.h"
-#include "producerconsumer.h"
 #include "ui_hpsdroptions.h"
 #include "usbutil.h"
 #include "cpx.h"
@@ -177,7 +176,6 @@ private slots:
 private:
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
-	ProducerConsumer producerConsumer;
 	USBUtil usbUtil;
 
 	bool Open();

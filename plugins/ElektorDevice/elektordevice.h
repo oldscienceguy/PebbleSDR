@@ -5,7 +5,6 @@
 #include "gpl.h"
 #include <QObject>
 #include "deviceinterfacebase.h"
-#include "producerconsumer.h"
 #include "usbutil.h"
 #include "ui_elektoroptions.h"
 
@@ -42,7 +41,6 @@ public:
 private:
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
-	ProducerConsumer producerConsumer;
 	USBUtil *usbUtil;
 
 	void FindBand(double freq);

@@ -5,7 +5,6 @@
 #include "gpl.h"
 #include <QObject>
 #include "deviceinterfacebase.h"
-#include "producerconsumer.h"
 #include "wavfile.h"
 
 class FileSDRDevice : public QObject, public DeviceInterfaceBase
@@ -45,7 +44,6 @@ protected:
     void consumerWorker(cbProducerConsumerEvents _event);
 
 private:
-    ProducerConsumer producerConsumer;
     QString fileName;
     QString recordingPath;
 

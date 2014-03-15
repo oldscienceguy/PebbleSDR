@@ -3,6 +3,7 @@
 #include "device_interfaces.h"
 #include "perform.h"
 #include "audio.h"
+#include "producerconsumer.h"
 
 class PEBBLELIBSHARED_EXPORT DeviceInterfaceBase : public DeviceInterface
 {
@@ -70,6 +71,7 @@ protected:
 	Perform perform;
 
 	//Not used if we're not using ProducerConsumer
+	ProducerConsumer producerConsumer;
 	quint16 numProducerBuffers; //For faster sample rates, may need more producer buffers to handle
 	int readBufferSize; //Producer buffer size in bytes (not CPX)
 

@@ -6,7 +6,6 @@
 #include "gpl.h"
 #include <QObject>
 #include "deviceinterfacebase.h"
-#include "producerconsumer.h"
 #include "usbutil.h"
 #include "ui_softrockoptions.h"
 
@@ -107,7 +106,6 @@ private:
 
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
-	ProducerConsumer producerConsumer;
 
 	//Device
 	int usbCtrlMsgIn(int request, int value, int index, unsigned char *bytes, int size);

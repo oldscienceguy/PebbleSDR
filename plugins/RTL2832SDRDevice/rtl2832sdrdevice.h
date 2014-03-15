@@ -30,7 +30,6 @@
 
 #include <QObject>
 #include "deviceinterfacebase.h"
-#include "producerconsumer.h"
 #include "cpx.h"
 
 class RTL2832SDRDevice: public QObject, public DeviceInterfaceBase
@@ -166,7 +165,6 @@ private:
     bool SetRtlOffsetMode(bool _on);
 
     void InitSettings(QString fname);
-    ProducerConsumer producerConsumer;
 
     rtlsdr_dev_t *dev;
 

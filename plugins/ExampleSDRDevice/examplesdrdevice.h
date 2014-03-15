@@ -5,7 +5,6 @@
 #include "gpl.h"
 #include <QObject>
 #include "deviceinterfacebase.h"
-#include "producerconsumer.h"
 
 class ExampleSDRDevice : public QObject, public DeviceInterfaceBase
 {
@@ -40,7 +39,6 @@ public:
 private:
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
-	ProducerConsumer producerConsumer;
 
 };
 #endif // EXAMPLESDRDEVICE_H

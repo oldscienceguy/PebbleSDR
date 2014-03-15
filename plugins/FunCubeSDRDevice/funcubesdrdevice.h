@@ -5,7 +5,6 @@
 #include "gpl.h"
 #include <QObject>
 #include "deviceinterfacebase.h"
-#include "producerconsumer.h"
 #include "hidapi.h"
 #include "ui_funcubeoptions.h"
 
@@ -63,7 +62,6 @@ private slots:
 private:
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
-	ProducerConsumer producerConsumer;
 	QSettings *funCubeProSettings;
 	QSettings *funCubeProPlusSettings;
 
