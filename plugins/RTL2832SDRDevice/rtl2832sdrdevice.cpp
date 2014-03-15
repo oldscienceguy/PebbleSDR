@@ -28,7 +28,7 @@ RTL2832SDRDevice::~RTL2832SDRDevice()
 }
 
 bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback,
-								   cbProcessSpectrumIQData _callbackSpectrum,
+								   cbProcessBandscopeData _callbackSpectrum,
 								   cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
 	Q_UNUSED(_callbackSpectrum);

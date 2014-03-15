@@ -12,7 +12,7 @@ Ghpsdr3Device::~Ghpsdr3Device()
 }
 
 bool Ghpsdr3Device::Initialize(cbProcessIQData _callback,
-							   cbProcessSpectrumIQData _callbackSpectrum,
+							   cbProcessBandscopeData _callbackSpectrum,
 							   cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
 	Q_UNUSED(_callbackSpectrum);

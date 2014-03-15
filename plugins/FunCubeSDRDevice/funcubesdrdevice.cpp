@@ -23,7 +23,7 @@ FunCubeSDRDevice::~FunCubeSDRDevice()
 }
 
 bool FunCubeSDRDevice::Initialize(cbProcessIQData _callback,
-								   cbProcessSpectrumIQData _callbackSpectrum,
+								   cbProcessBandscopeData _callbackSpectrum,
 								   cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
 	Q_UNUSED(_callbackSpectrum);

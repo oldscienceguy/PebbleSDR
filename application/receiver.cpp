@@ -104,7 +104,10 @@ bool Receiver::On()
     //bind(Method ptr, object, arg1, ... argn)
 
     sdr->ReadSettings(); //Always start with most current
-	if (!sdr->Initialize(std::bind(&Receiver::ProcessIQData, this, _1, _2),NULL,NULL,settings->framesPerBuffer)) {
+	if (!sdr->Initialize(std::bind(&Receiver::ProcessIQData, this, _1, _2),
+						 std::bind(&Receiver::ProcessBandscopeData, this, _1, _2),
+						 std::bind(&Receiver::ProcessAudioData, this, _1, _2),
+						 settings->framesPerBuffer)) {
 		Off();
 		return false;
 	}
@@ -836,11 +839,21 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 
     int numResamp = fractResampler.Resample(demodFrames,resampRate,nextStep,audioBuf);
 
-    // apply volume setting, mute and output
-    //global->perform.StartPerformance();
-    audioOutput->SendToOutput(audioBuf,numResamp, gain, mute);
-    //global->perform.StopPerformance(100);
+	ProcessAudioData(audioBuf,numResamp);
+}
 
+void Receiver::ProcessBandscopeData(quint8 *in, quint16 numPoints)
+{
+
+}
+
+//Called by devices and other call backs to output audio data
+void Receiver::ProcessAudioData(CPX *in, quint16 numSamples)
+{
+	// apply volume setting, mute and output
+	//global->perform.StartPerformance();
+	audioOutput->SendToOutput(in,numSamples, gain, mute);
+	//global->perform.StopPerformance(100);
 }
 
 #if 0

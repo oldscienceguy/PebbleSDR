@@ -147,7 +147,7 @@ public:
 
 	//Required
 	bool Initialize(cbProcessIQData _callback,
-					cbProcessSpectrumIQData _callbackSpectrum,
+					cbProcessBandscopeData _callbackSpectrum,
 					cbProcessAudioData _callbackAudio,
 					quint16 _framesPerBuffer);
 	bool Connect();

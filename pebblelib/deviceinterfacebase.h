@@ -10,7 +10,7 @@ public:
 	DeviceInterfaceBase();
 	virtual ~DeviceInterfaceBase();
 	virtual bool Initialize(cbProcessIQData _callback,
-							cbProcessSpectrumIQData _callbackSpectrum,
+							cbProcessBandscopeData _callbackSpectrum,
 							cbProcessAudioData _callbackAudio,
 							quint16 _framesPerBuffer);
 	virtual bool Connect();
@@ -25,7 +25,7 @@ public:
 	virtual void WriteSettings();
 
 	cbProcessIQData ProcessIQData;
-	cbProcessSpectrumIQData ProcessSpectrumIQData;
+	cbProcessBandscopeData ProcessSpectrumIQData;
 	cbProcessAudioData ProcessAudioData;
 
 	//Defaults so devices only have to handle what they need to

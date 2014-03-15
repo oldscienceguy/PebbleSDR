@@ -24,8 +24,8 @@ class CPX;
 //ProcessIQData callback: Call with CPX buffer of I/Q unprocessed samples and number of samples
 typedef std::function<void(CPX *, quint16)> cbProcessIQData;
 
-//ProcessIQData callback: Call with CPX buffer of I/Q spectrum values and number of samples
-typedef std::function<void(CPX *, quint16)> cbProcessSpectrumIQData;
+//ProcessBandscopeData callback: Call with buffer of spectrum values and number of data points
+typedef std::function<void(quint8 *, quint16)> cbProcessBandscopeData;
 
 //ProcessAudioData callback: Call with CPX buffer with left/right audio values and number of samples
 typedef std::function<void(CPX *, quint16)> cbProcessAudioData;
@@ -88,7 +88,7 @@ public:
 	virtual ~DeviceInterface() = 0;
 
 	virtual bool Initialize(cbProcessIQData _callback,
-							cbProcessSpectrumIQData _callbackSpectrum,
+							cbProcessBandscopeData _callbackSpectrum,
 							cbProcessAudioData _callbackAudio,
 							quint16 _framesPerBuffer) = 0;
     virtual bool Connect() = 0;

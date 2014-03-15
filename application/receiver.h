@@ -61,6 +61,8 @@ public:
 
 	Settings * GetSettings() {return settings;}
     void ProcessIQData(CPX *in, quint16 numSamples);
+	void ProcessBandscopeData(quint8 *in, quint16 numPoints);
+	void ProcessAudioData(CPX *in, quint16 numSamples);
 	SignalStrength *GetSignalStrength() {return signalStrength;}
 	SignalSpectrum *GetSignalSpectrum() {return signalSpectrum;}
 	IQBalance *GetIQBalance(){return iqBalance;}
@@ -104,7 +106,6 @@ private:
 	bool powerOn;
 	Settings *settings;
 	Presets *presets;
-	//SoftRock *softRock;
 	QMainWindow *mainWindow;
 	DeviceInterface *sdr;
 	Audio *audioOutput;
