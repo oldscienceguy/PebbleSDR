@@ -85,6 +85,8 @@ public:
 	};
 
     //Interface must be all pure virtual functions
+	virtual ~DeviceInterface() = 0;
+
 	virtual bool Initialize(cbProcessIQData _callback,
 							cbProcessSpectrumIQData _callbackSpectrum,
 							cbProcessAudioData _callbackAudio,
@@ -99,8 +101,6 @@ public:
 
     virtual void ReadSettings() = 0;
     virtual void WriteSettings() = 0;
-
-    cbProcessIQData ProcessIQData;
 
     //Allows us to get/set any device specific data
 	virtual QVariant Get(STANDARD_KEYS _key, quint16 _option = 0) = 0;

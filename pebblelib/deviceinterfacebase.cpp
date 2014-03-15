@@ -31,6 +31,12 @@ DeviceInterfaceBase::DeviceInterfaceBase()
 
 }
 
+//Implement pure virtual destructor from interface, otherwise we don't link
+DeviceInterface::~DeviceInterface()
+{
+
+}
+
 DeviceInterfaceBase::~DeviceInterfaceBase()
 {
 
