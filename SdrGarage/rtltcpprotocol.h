@@ -3,7 +3,7 @@
 
 #include <QCommandLineParser>
 #include <QHostAddress>
-#include "device_interfaces.h"
+#include "deviceinterfacebase.h"
 #include "cpx.h"
 #include <QTcpSocket>
 
@@ -23,17 +23,6 @@ public:
 #define K_RTLAgcMode DeviceInterface::CustomKey4
 #define K_RTLSampleMode DeviceInterface::CustomKey5
 #define K_RTLOffsetMode DeviceInterface::CustomKey6
-
-//This should go in global.h or somewhere we can use everywhere
-#ifdef _WIN32
-    //gcc and clang use __attribute, define it for windows as noop
-    #define __attribute__(x)
-    #define packStart pack(push, 1)
-    #define packEnd pragma pack(pop)
-#else
-    #define packStart
-    #define packEnd
-#endif
 
     union RTL_CMD {
         //This needs to be packed for network transfer, no padded bytes

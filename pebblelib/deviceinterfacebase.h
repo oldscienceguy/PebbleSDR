@@ -5,6 +5,20 @@
 #include "audio.h"
 #include "producerconsumer.h"
 
+//Cross platform structure packing
+#ifdef _WIN32
+	//gcc and clang use __attribute, define it for windows as noop
+	#define packStruct
+	//Use within struct definition
+	#define packStart pack(push, 1)
+	#define packEnd pragma pack(pop)
+#else
+	#define packStart
+	#define packEnd
+	//Use at end of struct definition
+	#define packStruct __attribute__((packed))
+#endif
+
 class PEBBLELIBSHARED_EXPORT DeviceInterfaceBase : public DeviceInterface
 {
 public:

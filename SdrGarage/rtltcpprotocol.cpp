@@ -212,5 +212,5 @@ void RtlTcpProtocol::ProcessIQData(CPX *in, quint16 numSamples)
     }
 
     qint64 bytesWritten = threadSocket->write(out, numSamples*2);
-
+	Q_UNUSED(bytesWritten);
 }

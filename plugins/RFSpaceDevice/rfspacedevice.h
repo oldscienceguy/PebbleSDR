@@ -14,20 +14,6 @@
 #include <QTcpSocket>
 #include <QUdpSocket>
 
-//This should go in global.h or somewhere we can use everywhere
-#ifdef _WIN32
-	//gcc and clang use __attribute, define it for windows as noop
-	#define packStruct
-	//Use within struct definition
-	#define packStart pack(push, 1)
-	#define packEnd pragma pack(pop)
-#else
-	#define packStart
-	#define packEnd
-	//Use at end of struct definition
-	#define packStruct __attribute__((packed))
-#endif
-
 //Host to Target(Device)
 enum HostHeaderTypes {
 	SetControlItem = 0x00,
