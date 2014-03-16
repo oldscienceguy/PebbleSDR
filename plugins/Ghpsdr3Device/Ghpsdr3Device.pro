@@ -13,7 +13,7 @@ DESTDIR = $${DESTDIR}/plugins
 include (../DigitalModemExample/fix_plugin_libraries.pri)
 
 #Required for options UI
-QT += widgets
+QT += widgets network
 
 #Help plugin not worry about include paths
 INCLUDEPATH += ../../application
@@ -21,7 +21,6 @@ DEPENDPATH += ../../application
 INCLUDEPATH += ../../pebblelib
 DEPENDPATH += ../../pebblelib
 
-QT += widgets
 TARGET = Ghpsdr3Device
 VERSION = 1.0.0
 TEMPLATE = lib
