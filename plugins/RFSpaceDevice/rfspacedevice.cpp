@@ -15,9 +15,6 @@ RFSpaceDevice::RFSpaceDevice():DeviceInterfaceBase()
 	optionUi = NULL;
 	inBuffer = NULL;
 	readBuf = usbReadBuf = NULL;
-	usbUtil = new USBUtil(USBUtil::FTDI_D2XX);
-	ad6620 = new AD6620(usbUtil);
-	afedri = new AFEDRI();
 
 	//Todo: SDR-IQ has fixed block size 2048, are we going to support variable size or just force
 	inBufferSize = 2048; //settings->framesPerBuffer;
@@ -78,6 +75,13 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback,
 	numProducerBuffers = 50;
 	producerConsumer.Initialize(std::bind(&RFSpaceDevice::producerWorker, this, std::placeholders::_1),
 		std::bind(&RFSpaceDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, dataBlockSize);
+
+	usbUtil = new USBUtil(USBUtil::FTDI_D2XX);
+	ad6620 = new AD6620(usbUtil);
+	afedri = new AFEDRI();
+
+
+
 	if (deviceNumber == SDR_IQ) {
 		//SR * 2 bytes for I * 2 bytes for Q .  dataBlockSize is 8192
 		producerConsumer.SetProducerInterval(sampleRate,8192 / 4);
