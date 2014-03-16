@@ -21,7 +21,6 @@ DEPENDPATH += ../../application
 INCLUDEPATH += ../../pebblelib
 DEPENDPATH += ../../pebblelib
 
-QT += widgets
 TARGET = ExampleSDRDevice
 VERSION = 1.0.0
 TEMPLATE = lib

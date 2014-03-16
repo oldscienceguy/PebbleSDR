@@ -8,7 +8,9 @@ DESTDIR = $${DESTDIR}/plugins
 #Common library dependency code for all Pebble plugins
 include (../DigitalModemExample/fix_plugin_libraries.pri)
 
+#Required for options UI
 QT += widgets
+
 TEMPLATE = lib
 CONFIG += plugin
 
