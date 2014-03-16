@@ -15,7 +15,9 @@ RFSpaceDevice::RFSpaceDevice():DeviceInterfaceBase()
 	optionUi = NULL;
 	inBuffer = NULL;
 	readBuf = usbReadBuf = NULL;
-
+	usbUtil = NULL;
+	ad6620 = NULL;
+	afedri = NULL;
 	//Todo: SDR-IQ has fixed block size 2048, are we going to support variable size or just force
 	inBufferSize = 2048; //settings->framesPerBuffer;
 	inBuffer = CPXBuf::malloc(inBufferSize);
@@ -34,7 +36,8 @@ RFSpaceDevice::RFSpaceDevice():DeviceInterfaceBase()
 RFSpaceDevice::~RFSpaceDevice()
 {
 	WriteSettings();
-	usbUtil->CloseDevice();
+	if (usbUtil != NULL)
+		usbUtil->CloseDevice();
 
 	if (inBuffer != NULL)
 		CPXBuf::free(inBuffer);
