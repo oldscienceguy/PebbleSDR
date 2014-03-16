@@ -15,17 +15,6 @@ ElektorDevice::ElektorDevice():DeviceInterfaceBase()
 {
 	InitSettings("Elektor");
 	ReadSettings();
-
-	usbUtil = new USBUtil(USBUtil::FTDI_D2XX);
-
-	ftWriteBuffer = NULL;
-	optionUi = NULL;
-	if (!usbUtil->IsUSBLoaded()) {
-		if (!usbUtil->LoadUsb()) {
-			QMessageBox::information(NULL,"Pebble","USB not loaded.  Elektor communication is disabled.");
-			return;
-		}
-	}
 }
 
 ElektorDevice::~ElektorDevice()
@@ -39,6 +28,18 @@ bool ElektorDevice::Initialize(cbProcessIQData _callback,
 {
 	DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
 	numProducerBuffers = 50;
+
+	usbUtil = new USBUtil(USBUtil::FTDI_D2XX);
+
+	ftWriteBuffer = NULL;
+	optionUi = NULL;
+	if (!usbUtil->IsUSBLoaded()) {
+		if (!usbUtil->LoadUsb()) {
+			QMessageBox::information(NULL,"Pebble","USB not loaded.  Elektor communication is disabled.");
+			return false;
+		}
+	}
+
 	return true;
 }
 
