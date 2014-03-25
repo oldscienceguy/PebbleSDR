@@ -105,7 +105,8 @@ SOURCES += pebblelib.cpp \
     deviceinterfacebase.cpp \
     audio.cpp \
     audioqt.cpp \
-    soundcard.cpp
+    soundcard.cpp \
+    alawcompression.cpp
 
 HEADERS += pebblelib.h\
     pebblelib_global.h \
@@ -129,5 +130,6 @@ HEADERS += pebblelib.h\
     hidapi.h \
     audio.h \
     audioqt.h \
-    soundcard.h
+    soundcard.h \
+    alawcompression.h
 
