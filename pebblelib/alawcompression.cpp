@@ -3,6 +3,8 @@
 
 ALawCompression::ALawCompression()
 {
+	//Testing to make sure this generates same table as our fixed
+	//GenerateAlawToLinearTable();
 }
 
 quint8 ALawCompression::LinearToMuLaw(qint16 sample)
@@ -44,6 +46,26 @@ quint8 ALawCompression::LinearToALaw(qint16 sample)
 	 return compressedByte;
 }
 
+//From ghpsdr.  Here to compare with fixed table
+void ALawCompression::GenerateAlawToLinearTable() {
+	for (int i = 0; i < 256; i++) {
+		int input = i ^ 85;
+		int mantissa = (input & 15) << 4;
+		int segment = (input & 112) >> 4;
+		int value = mantissa + 8;
+		if (segment >= 1) {
+			value += 256;
+		}
+		if (segment > 1) {
+			value <<= (segment - 1);
+		}
+		if ((input & 128) == 0) {
+			value = -value;
+		}
+		//aLawDecompressTable[i] = (short) value;
+		qDebug()<<(short) value;
+	}
+}
 
 quint8 ALawCompression::muLawCompressTable[256] =
 {

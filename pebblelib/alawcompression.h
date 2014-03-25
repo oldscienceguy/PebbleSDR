@@ -29,6 +29,7 @@ private:
 	static quint8 muLawCompressTable[256];
 	static qint16 muLawDecompressTable[256];
 
-};
+	void GenerateAlawToLinearTable();
+	};
 
 #endif // ALAWCOMPRESSION_H
