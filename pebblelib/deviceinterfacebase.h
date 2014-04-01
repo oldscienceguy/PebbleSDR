@@ -90,6 +90,7 @@ protected:
 	int readBufferSize; //Producer buffer size in bytes (not CPX)
 
 	Audio *audioInput;
+	quint16 audioOutputSampleRate;
 
 };
 

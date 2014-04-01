@@ -71,6 +71,8 @@ public:
 		IQBalanceEnabled,		//bool
 		IQBalanceGain,			//double
 		IQBalancePhase,			//double
+		//Adding support for remote servers that control things like audio output rate
+		AudioOutputSampleRate,
 		//Expansion room if needed
 		CustomKey1 = 100,		//Devices can implement custom keys, as long as they start with this
 		CustomKey2,

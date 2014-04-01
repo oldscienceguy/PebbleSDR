@@ -28,7 +28,7 @@ DeviceInterfaceBase::DeviceInterfaceBase()
 	ProcessIQData = NULL;
 	ProcessBandscopeData = NULL;
 	ProcessAudioData = NULL;
-
+	audioOutputSampleRate = 11025;
 }
 
 //Implement pure virtual destructor from interface, otherwise we don't link
@@ -184,6 +184,9 @@ QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, quint16 _option) {
 			break;
 		case IQBalancePhase:
 			return iqBalancePhase;
+			break;
+		case AudioOutputSampleRate:
+			return audioOutputSampleRate;
 			break;
 		default:
 			break;

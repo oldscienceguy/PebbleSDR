@@ -167,7 +167,9 @@ bool Receiver::On()
     fractResampler.Init(framesPerBuffer);
     //Calculates the number of decimation states and returns converted sample rate
     //SetDataRate() doesn't downsample below 256k?
-    audioOutRate = 11025; //This rate supported by QTAudio and PortAudio on Mac
+
+	//audioOutRate can be fixed by remote devices, default to 11025 which is a rate supported by QTAudio and PortAudio on Mac
+	audioOutRate = sdr->Get(DeviceInterface::AudioOutputSampleRate).toUInt();
     //SetDataRate MaxBW should be driven by our filter selection, ie width of filter
     //For now just set to widest filter, which is 20k for AM, 30k for FMN
     demodSampleRate = downConvert1.SetDataRate(sampleRate, Demod::demodInfo[dmFMN].maxOutputBandWidth);
