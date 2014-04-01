@@ -58,7 +58,9 @@ int SoundCard::StartInput(QString inputDeviceName, int _inputSampleRate)
         error = Pa_OpenStream(&inStream,inParam,NULL,
             inputSampleRate,framesPerBuffer,paNoFlag,&SoundCard::streamCallback,this );
         error = Pa_StartStream(inStream);
-    }
+	} else {
+		qDebug()<<"Error starting audio input stream";
+	}
 
     return 0;
 }
@@ -111,7 +113,9 @@ int SoundCard::StartOutput(QString outputDeviceName, int _outputSampleRate)
 			outputSampleRate,framesPerBuffer,paNoFlag,NULL,NULL );
 
         error = Pa_StartStream(outStream);
-    }
+	} else {
+		qDebug()<<"Error starting audio output stream";
+	}
 	return 0;
 }
 
