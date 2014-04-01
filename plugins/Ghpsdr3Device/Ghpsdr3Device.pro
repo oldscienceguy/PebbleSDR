@@ -13,7 +13,7 @@ DESTDIR = $${DESTDIR}/plugins
 include (../DigitalModemExample/fix_plugin_libraries.pri)
 
 #Required for options UI
-QT += widgets network
+QT += widgets network multimedia
 
 #Help plugin not worry about include paths
 INCLUDEPATH += ../../application

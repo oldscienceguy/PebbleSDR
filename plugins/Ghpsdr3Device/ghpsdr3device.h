@@ -8,6 +8,7 @@
 #include <QHostAddress>
 #include <QTcpSocket>
 //#include <QUdpSocket>
+#include "alawcompression.h"
 
 
 #if 0
@@ -15,11 +16,18 @@ On line servers can be found at http://qtradio.napan.ca/qtradio/qtradio.pl
 74.85.89.174 is a Hermes transceiver that is good for testing
 71.47.206.230 is SDR-IQ
 
+WARNING: There are at least 2 different prototocols I found in various source code repositories
+
+Codec2 from David Rowe at http://www.rowetel.com/blog/?page_id=452
+https://svn.code.sf.net/p/freetel/code/codec2/
+
+
 Documentation may not be up to date, look at client.c readcb() in ghpsdr3 source
 	'!' Documented
 
 	First byte == '*' signals hardware directed command
-	First byte == 'q' signals ???
+	First byte == 'q-' signals a query that returns data in ANSWER packet type
+
 	"mic" Incoming microphone data
 	! "getspectrum"
 	! "setfrequency"
@@ -115,6 +123,107 @@ Documentation may not be up to date, look at client.c readcb() in ghpsdr3 source
 	"zoom"
 	"setmaster"
 
+  QTRadio Command Sequence
+  Debug: Connection::sendCommand:  "SetNRVals 64 8 0.00064 1e-06"
+  Debug: Connection::sendCommand:  "SetNRVals 64 8 0.00016 1e-06"
+  Debug: Connection::sendCommand:  "SetANFVals 64 8 0.00064 1e-07"
+  Debug: Connection::sendCommand:  "SetANFVals 64 8 0.00032 1e-07"
+  Debug: Connection::sendCommand:  "SetIQEnable false"
+  Debug: Connection::sendCommand:  "RxIQmuVal 0.25"
+  Debug: Connection::sendCommand:  "SetIQEnable true"
+  Debug: Connection::sendCommand:  "SetRXOutputGain 30"
+  Debug: Connection::sendCommand:  "SetSubRXOutputGain 30"
+  Debug: Connection::sendCommand:  "setrx10bdgreq 0 0 0 0 0 0 0 0 0 0 0"
+  Debug: Connection::sendCommand:  "settx10bdgreq 0 0 0 0 0 0 0 0 0 0 0"
+  Debug: Connection::sendCommand:  "setpwsmode 0"
+  Debug: Connection::sendCommand:  "setFilter -3450 -150"
+  Debug: Connection::sendCommand:  "setMode 0"
+  Debug: Connection::sendCommand:  "setFrequency 1134900"
+
+  Debug: Connection::connect: connectToHost:  "71.47.206.230" : 8000
+
+  Debug: Connection::sendCommand:  "SetIQEnable false"
+  Debug: Connection::sendCommand:  "RxIQmuVal 0.25"
+  Debug: Connection::sendCommand:  "SetIQEnable true"
+  Debug: Connection::Connected true
+  Debug: Connection::sendCommand:  "setClient QtRadio"
+  Debug: Connection::sendCommand:  "q-server"
+  Debug: Connection::sendCommand:  "setFrequency 1134900"
+  Debug: Connection::sendCommand:  "setMode 0"
+  Debug: Connection::sendCommand:  "setFilter -3450 -150"
+  Debug: Connection::sendCommand:  "setpwsmode 0"
+  Debug: Connection::sendCommand:  "setEncoding 0"
+  Debug: Connection::sendCommand:  "SetRXOutputGain 30"
+  Debug: Connection::sendCommand:  "SetSubRXOutputGain 30"
+
+  Debug: Connection::sendCommand:  "startAudioStream 800 8000 1 0"
+
+  Debug: Connection::sendCommand:  "SetPan 0.5"
+  Debug: Connection::sendCommand:  "SetAGC 2"
+  Debug: Connection::sendCommand:  "setpwsmode 0"
+  Debug: Connection::sendCommand:  "SetANFVals 64 8 0.00032 1e-07"
+  Debug: Connection::sendCommand:  "SetNRVals 64 8 0.00016 1e-06"
+  Debug: Connection::sendCommand:  "SetNBVals 3.3"
+  Debug: Connection::sendCommand:  "SetSquelchVal -100"
+  Debug: Connection::sendCommand:  "SetSquelchState off"
+  Debug: Connection::sendCommand:  "SetANF false"
+  Debug: Connection::sendCommand:  "SetNR false"
+  Debug: Connection::sendCommand:  "SetNB false"
+
+  Debug: Sending advanced setup commands.
+  Debug: Connection::sendCommand:  "setrxdcblock 0"
+  Debug: Connection::sendCommand:  "settxdcblock 0"
+  Debug: Connection::sendCommand:  "setrxagcmaxgain 75"
+  Debug: Connection::sendCommand:  "setrxagcattack 2"
+  Debug: Connection::sendCommand:  "setrxagcdecay 250"
+  Debug: Connection::sendCommand:  "setrxagchang 250"
+  Debug: Connection::sendCommand:  "setfixedagc 22"
+  Debug: Connection::sendCommand:  "setrxagchangthreshold 0"
+  Debug: Connection::sendCommand:  "settxlevelerstate 0"
+  Debug: Connection::sendCommand:  "settxlevelermaxgain 5"
+  Debug: Connection::sendCommand:  "settxlevelerattack 2"
+  Debug: Connection::sendCommand:  "settxlevelerdecay 500"
+  Debug: Connection::sendCommand:  "settxlevelerhang 500"
+  Debug: Connection::sendCommand:  "setalcstate 0"
+  Debug: Connection::sendCommand:  "settxalcattack 2"
+  Debug: Connection::sendCommand:  "settxalcdecay 10"
+  Debug: Connection::sendCommand:  "settxalchang 500"
+  Debug: Connection::sendCommand:  "*hardware?"
+  Debug: Connection::sendCommand:  "enablenotchfilter 0 0 0"
+  Debug: Connection::sendCommand:  "enablenotchfilter 1 0 0"
+  Debug: Connection::sendCommand:  "enablenotchfilter 0 1 0"
+  Debug: Connection::sendCommand:  "enablenotchfilter 1 1 0"
+  Debug: Connection::sendCommand:  "enablenotchfilter 0 2 0"
+  Debug: Connection::sendCommand:  "enablenotchfilter 1 2 0"
+  Debug: Connection::sendCommand:  "enablenotchfilter 0 3 0"
+  Debug: Connection::sendCommand:  "enablenotchfilter 1 3 0"
+  Debug: Connection::sendCommand:  "enablenotchfilter 0 4 0"
+  Debug: Connection::sendCommand:  "enablenotchfilter 1 4 0"
+  Debug: Connection::sendCommand:  "enablenotchfilter 0 5 0"
+  Debug: Connection::sendCommand:  "enablenotchfilter 1 5 0"
+  Debug: Connection::sendCommand:  "enablenotchfilter 0 6 0"
+  Debug: Connection::sendCommand:  "enablenotchfilter 1 6 0"
+  Debug: Connection::sendCommand:  "enablenotchfilter 0 7 0"
+  Debug: Connection::sendCommand:  "enablenotchfilter 1 7 0"
+  Debug: Connection::sendCommand:  "enablenotchfilter 0 8 0"
+  Debug: Connection::sendCommand:  "enablenotchfilter 1 8 0"
+  Debug: Connection::sendCommand:  "q-version"
+  Debug: Connection::sendCommand:  "q-loffset"
+  Debug: Connection::sendCommand:  "q-protocol3"
+
+  Debug: Connection::sendCommand:  "getSpectrum 964"
+  Debug: Connection::sendCommand:  "getSpectrum 964"
+  Debug: Connection::sendCommand:  "q-master"
+  Debug: Connection::sendCommand:  "setFPS 964 15"
+  Debug: Connection::sendCommand:  "q-cantx#None"
+  Debug: Connection::sendCommand:  "q-master"
+  Debug: Connection::sendCommand:  "q-info"
+  Debug: Connection::sendCommand:  "setFrequency 18143000"
+  Debug: Connection::sendCommand:  "setFilter -3450 -150"
+  Debug: Connection::sendCommand:  "setMode 0"
+  Debug: Connection::sendCommand:  "setFrequency 18143000"
+
+
 
 
 #endif
@@ -149,6 +258,9 @@ public:
 	//Display device option widget in settings dialog
 	void SetupOptionUi(QWidget *parent);
 
+signals:
+	void CheckNewData();
+
 private slots:
 	void TCPSocketError(QAbstractSocket::SocketError socketError);
 	void TCPSocketConnected();
@@ -157,19 +269,80 @@ private slots:
 	//void UDPSocketNewData();
 
 private:
-	//48 byte header returned in every tcp response from dspserver
+	static const quint16 SEND_BUFFER_SIZE = 64;
+	static const quint16 AUDIO_PACKET_SIZE = 2000; //# 8bit samples we get from server
+	static const quint16 AUDIO_OUTPUT_SIZE = 512; //#audio samples to sent to output at a time
+
+	enum AudioEncoding {
+		ALAW = 0,
+		PCM = 1,
+		CODEC2 = 2
+	};
+
+	enum PacketType {
+		SpectrumData = 0,
+		AudioData = 1,
+		BandscopeData = 2,
+		RTPReplyData = 3,
+		AnswerData = 4
+	};
+
+	//3 byte header common to all data
+	struct dspCommonHeader {
+		union {
+			quint8 bytes[3];
+			//0 Packet type: 0=spectrum data, 1=audio data 1-31 Reserved
+			struct {
+				packStart
+				quint8 packetType;
+				//From source
+				quint8 version;
+				quint8 subVersion;
+				packEnd
+			}packStruct;
+		};
+	};
+
+	//48 byte header returned in every tcp spectrum response from dspserver
 	struct dspServerHeader {
 		packStart
 		//0 Packet type: 0=spectrum data, 1=audio data 1-31 Reserved
 		quint8 packetType;
-		quint8 reserved[31];
+		//From source
+		quint8 version;
+		quint8 subVersion;
+		quint16 bufLen;
+		quint8 reserved[27];
 		//32-39 Sample rate in ASCII characters
-		unsigned char asciiSampleRate[8];
+		char asciiSampleRate[8];
 		//40-47 Meter reading in ASCII characters
 		unsigned char asciiMeter[8];
 		//48-... spectrum or audio data
 		packEnd
 	}packStruct;
+
+	//5 byte header returned with every tcp audio response from dspServer
+	struct dspAudioHeader {
+		packStart
+		//3 byte commonHeader
+		quint16 bufLen; //BigEndian, use qFromBigEndian() to platform quint16
+		packEnd
+	}packStruct;
+
+	enum gDemodMode {
+		LSB=0, USB, DSB, CWL, CWH, FM, AM, DIGU, SPEC, DIGL, SAM, DRM
+	};
+
+	//State machine for tcp reads
+	enum TcpReadState {
+		READ_HEADER_TYPE,
+		READ_HEADER,
+		READ_AUDIO_BUFFER,
+		READ_AUDIO_HEADER,
+		READ_RTP_REPLY,
+		READ_ANSWER
+	};
+	TcpReadState tcpReadState;
 
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
@@ -178,12 +351,29 @@ private:
 	QHostAddress deviceAddress;
 	quint16 devicePort;
 	static const quint16 tcpHeaderSize = 48; //Must match size of packed structure
-	static const quint16 tcpDataBufSize = 480; //Number bytes of data in each packet
-	static const quint16 tcpReadBufSize = tcpDataBufSize + tcpHeaderSize; //Data buffer size + prefix
-	unsigned char tcpReadBuf[tcpReadBufSize];
+	static const quint16 tcpAudioHeaderSize = 5;
+	static const quint16 tcpReadBufSize = AUDIO_PACKET_SIZE + tcpAudioHeaderSize; //Data buffer size + prefix
+
+	dspCommonHeader commonHeader;
+	dspAudioHeader audioHeader;
+
+	quint8 audioBuffer[AUDIO_PACKET_SIZE]; //Typically 2000
+	quint16 audioBufferIndex; //#bytes processed so far, reset every 2000
+
+	quint8 answerBuf[256]; //Max length is 99
+	quint16 answerLength;
 
 	//QUdpSocket *udpSocket;
 	QMutex mutex;
 
-};
+	CPX* producerBuf;
+	quint16 producerBufIndex;
+	ALawCompression alaw;
+
+	bool SendFrequencyCmd(double f);
+	bool SendModeCmd(gDemodMode m);
+	bool SendTcpCmd(QString buf);
+	bool SendGainCmd(quint8 gain);
+	bool SendFilterCmd(qint16 low, qint16 high);
+	};
 #endif // GHPSDR3DEVICE_H
