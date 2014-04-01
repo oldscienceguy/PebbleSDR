@@ -111,15 +111,14 @@ void ProducerConsumer::Initialize(cbProducerConsumer _producerWorker, cbProducer
 //Bytes, CPX's, etc
 void ProducerConsumer::SetConsumerInterval(quint32 _sampleRate, quint16 _samplesPerBuffer)
 {
-	//How many data buffers do we have to process per second
-	quint16 buffersPerSec = _sampleRate / _samplesPerBuffer;
-	//What's the optimal interval between data buffers (in usec)
-	quint16 msBufferInterval = 1000 / buffersPerSec;
+	//1 sample every N ms X number of samples per buffer = how long it takes device to fill a buffer
+	quint16 msToFillBuffer = (1000.0 / _sampleRate) * _samplesPerBuffer;
 	//Set safe interval (experiment here)
-	msBufferInterval *= 0.50; //Some spare room
+	//Use something that results in a non-cyclic interval to avoid checking constantly at the wrong time
+	quint16 msBufferInterval = msToFillBuffer * 0.66;
 	//Interval can never be 0 which is a special case for QTimer
 	msConsumerInterval = msBufferInterval > 0 ? msBufferInterval : 1;
-	qDebug()<<"Consumer interval "<<msConsumerInterval;
+	qDebug()<<"Consumer checks every "<<msConsumerInterval<<" ms "<<"SampleRate | SamplesPerBuffer"<<_sampleRate<<_samplesPerBuffer;
 	if (consumerWorker != NULL)
 		consumerWorker->SetPollingInterval(msConsumerInterval);
 
@@ -129,15 +128,13 @@ void ProducerConsumer::SetConsumerInterval(quint32 _sampleRate, quint16 _samples
 //Call after initialize
 void ProducerConsumer::SetProducerInterval(quint32 _sampleRate, quint16 _samplesPerBuffer)
 {
-	//How many data buffers do we have to process per second
-	quint16 buffersPerSec = _sampleRate / _samplesPerBuffer;
-	//What's the optimal interval between data buffers (in usec)
-	quint16 msBufferInterval = 1000 / buffersPerSec;
+	//1 sample every N ms X number of samples per buffer = how long it takes device to fill a buffer
+	quint16 msToFillBuffer = (1000.0 / _sampleRate) * _samplesPerBuffer;
 	//Set safe interval (experiment here)
-	msBufferInterval *= 0.50; //Some spare room
+	quint16 msBufferInterval = msToFillBuffer * 0.66;
 	//Interval can never be 0 which is a special case for QTimer
 	msProducerInterval = msBufferInterval > 0 ? msBufferInterval : 1;
-	qDebug()<<"Producer interval "<<msProducerInterval;
+	qDebug()<<"Producer checks every "<<msProducerInterval<<" ms"<<"SampleRate | SamplesPerBuffer"<<_sampleRate<<_samplesPerBuffer;;
 	if (producerWorker != NULL)
 		producerWorker->SetPollingInterval(msProducerInterval);
 }
@@ -312,14 +309,14 @@ void ProducerWorker::start()
 	worker(cbProducerConsumerEvents::Start);
 	timer = new QTimer(this);
 	connect(timer, SIGNAL(timeout()), this, SLOT(checkNewData()));
-	timer->start(msInterval); //Times out when there's nothing in the event queue
 	isRunning = true;
+	timer->start(msInterval); //Times out when there's nothing in the event queue
 	return; //Event loop will take over and our timer will fire worker function
 }
 void ProducerWorker::stop()
 {
-	timer->stop();
 	isRunning = false;
+	timer->stop();
 	delete timer;
 	//Do any worker destruction here
 	worker(cbProducerConsumerEvents::Stop);
@@ -346,15 +343,15 @@ void ConsumerWorker::start()
 	worker(cbProducerConsumerEvents::Start);
 	timer = new QTimer(this);
 	connect(timer, SIGNAL(timeout()), this, SLOT(processNewData()));
-	timer->start(msInterval); //Times out when there's nothing in the event queue
 	isRunning = true;
+	timer->start(msInterval); //Times out when there's nothing in the event queue
 	return; //Event loop will take over and our timer will fire worker function
 }
 //Called just before thread finishes
 void ConsumerWorker::stop()
 {
-	timer->stop();
 	isRunning = false;
+	timer->stop();
 	delete timer;
 	//Do any worker destruction here
 	worker(cbProducerConsumerEvents::Stop);
