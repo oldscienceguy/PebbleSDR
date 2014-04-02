@@ -3,7 +3,7 @@
 ExampleSDRDevice::ExampleSDRDevice():DeviceInterfaceBase()
 {
 	InitSettings("ExampleSDR");
-
+	optionUi = NULL;
 }
 
 ExampleSDRDevice::~ExampleSDRDevice()
@@ -75,14 +75,24 @@ bool ExampleSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value,
 	Q_UNUSED(_option);
 
 	switch (_key) {
+		case DeviceFrequency:
+			return true; //Must be handled by device
+
 		default:
-		return DeviceInterfaceBase::Set(_key, _value, _option);
+			return DeviceInterfaceBase::Set(_key, _value, _option);
 	}
 }
 
+//Add ui header file include
+//Add private uiOptions
 void ExampleSDRDevice::SetupOptionUi(QWidget *parent)
 {
-	Q_UNUSED(parent);
+	if (optionUi != NULL)
+		delete optionUi;
+	//Change .h and this to correct class name for ui
+	optionUi = new Ui::ExampleSdrOptions();
+	optionUi->setupUi(parent);
+	parent->setVisible(true);
 }
 
 void ExampleSDRDevice::producerWorker(cbProducerConsumerEvents _event)

@@ -34,3 +34,6 @@ LIBS += -L$${PWD}/../../pebblelib/$${LIB_DIR} -lpebblelib
 
 OTHER_FILES += \
         fix_plugin_libraries.pri
+
+FORMS += \
+    examplesdroptions.ui

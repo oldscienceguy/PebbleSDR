@@ -5,6 +5,7 @@
 #include "gpl.h"
 #include <QObject>
 #include "deviceinterfacebase.h"
+#include "ui_examplesdroptions.h"
 
 class ExampleSDRDevice : public QObject, public DeviceInterfaceBase
 {
@@ -39,6 +40,8 @@ public:
 private:
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
+	Ui::ExampleSdrOptions *optionUi;
+
 
 };
 #endif // EXAMPLESDRDEVICE_H
