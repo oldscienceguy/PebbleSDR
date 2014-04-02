@@ -18,10 +18,12 @@ Ghpsdr3Device::Ghpsdr3Device():DeviceInterfaceBase()
 	InitSettings("Ghpsdr3");
 	tcpSocket = NULL;
 
+
 	//Testing
 	//deviceAddress = QHostAddress("74.85.89.174");
 	//deviceAddress = QHostAddress("71.47.206.230");
-	deviceAddress = QHostAddress("79.255.247.138");
+	//deviceAddress = QHostAddress("79.255.247.138");
+	deviceAddress = QHostAddress("84.175.15.210");
 	devicePort = 8000; //8000 + Receiver #
 
 }
@@ -56,6 +58,7 @@ bool Ghpsdr3Device::Initialize(cbProcessIQData _callback,
 		connect(this,SIGNAL(CheckNewData()), this, SLOT(TCPSocketNewData()));
 	}
 
+	serverInfo.isValid = false;
 	return true;
 }
 
@@ -73,7 +76,6 @@ bool Ghpsdr3Device::Connect()
 	connected = true;
 	running = false;
 	//Sometimes server responds with data, before we call startAudio...
-	qDebug()<<tcpSocket->bytesAvailable();
 	tcpSocket->readAll(); //Clear it
 	return true;
 }
@@ -124,20 +126,15 @@ void Ghpsdr3Device::Start()
 	SendGainCmd(50); //0-100, 100 overloads
 	SendFilterCmd(-2000, 2000);
 	SendTcpCmd("setencoding 0"); //ALAW
+	//Get all the status data from server with q- commands
+	RequestInfo();
+
+	//If slave mode, we get audio stream even when we don't call this
+	//But safe to call either way
 	//Don't rely on default buffer size, set explicitly
 	//Buffer size(seems to be ignored), sample, channels
 	QString buf = "startaudiostream 512 8000 1 0";
 	SendTcpCmd(buf);
-	//Get all the status data from server
-	SendTcpCmd("q-version");
-	SendTcpCmd("q-protocol3");
-	SendTcpCmd("q-master");
-	SendTcpCmd("q-info");
-	SendTcpCmd("q-loffset");
-	SendTcpCmd("q-cantx#None");
-	SendTcpCmd("q-rtpport");
-	SendTcpCmd("q-server");
-
 
 }
 
@@ -177,14 +174,32 @@ QVariant Ghpsdr3Device::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 			return "Ghpsdr3Server";
 			break;
 		case DeviceName:
-			return "Ghpsdr3Server";
+			if (serverInfo.isValid)
+				return "Ghpsdr3Server " + serverInfo.serverName + (serverInfo.isSlave?"(Slave)":"(Master)");
+			else
+				return "Ghpsdr3Server (Unknown status)";
+		case DeviceFrequency:
+			if (serverInfo.isValid && serverInfo.isSlave)
+				return serverInfo.frequency;
+			else
+				return 0;
+
 		case DeviceType:
 			//!!Todo: Update all DeviceType usage to handle Audio_only
-			return DeviceInterface::INTERNAL_IQ; //AUDIO_ONLY;
+			return DeviceInterface::IQ_DEVICE; //AUDIO_ONLY;
 		case AudioOutputSampleRate:
 			return 8000; //Fixed?
 			break;
-
+		case DeviceSlave:
+			if (!serverInfo.isValid || !serverInfo.isSlave)
+				return false;
+			else
+				return serverInfo.isSlave;
+		case DeviceDemodMode:
+			if (!serverInfo.isValid || !serverInfo.isSlave)
+				return DEMODMODE::dmAM;
+			else
+				return serverInfo.demodMode;
 		default:
 			return DeviceInterfaceBase::Get(_key, _option);
 	}
@@ -196,12 +211,62 @@ bool Ghpsdr3Device::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, qu
 
 	switch (_key) {
 		case DeviceFrequency:
-			return SendFrequencyCmd(_value.toFloat());
+			if (serverInfo.isValid && !serverInfo.isSlave)
+				return SendFrequencyCmd(_value.toFloat());
+			return false;
+		case DeviceDemodMode:		//RW quint16 enum DEMODMODE
+			if (serverInfo.isValid && !serverInfo.isSlave)
+				return true;
+			return false;
+		case DeviceOutputGain:		//RW quint16
+			if (serverInfo.isValid && !serverInfo.isSlave)
+				return true;
+			return false;
+		case DeviceFilter:			//RW QString "lowFilter:highFilter"
+			if (serverInfo.isValid && !serverInfo.isSlave)
+				return true;
+			return false;
+		case DeviceAGC:				//RW quint16
+			if (serverInfo.isValid && !serverInfo.isSlave)
+				return true;
+			return false;
+		case DeviceANF:				//RW quint16
+			if (serverInfo.isValid && !serverInfo.isSlave)
+				return true;
+			return false;
+		case DeviceNB:				//RW quint16
+			if (serverInfo.isValid && !serverInfo.isSlave)
+				return true;
+			return false;
+
+		case DeviceSlave:
+			//Fetch new data
+			RequestInfo();
+			return true;
+
 		default:
-		return DeviceInterfaceBase::Set(_key, _value, _option);
+			return DeviceInterfaceBase::Set(_key, _value, _option);
 	}
 }
 
+void Ghpsdr3Device::RequestInfo()
+{
+	if (!running)
+		return;
+
+	mutex.lock();
+	SendTcpCmd("q-version");
+	SendTcpCmd("q-protocol3");
+	SendTcpCmd("q-master");
+	SendTcpCmd("q-loffset");
+	SendTcpCmd("q-cantx#None");
+	SendTcpCmd("q-rtpport");
+	SendTcpCmd("q-server");
+	//SendTcpCmd("*hardware?"); //Doesn't return any answer
+	//Send q-info last.  We use response to determine if serverInfo has been set.  Not perfect, but ok
+	SendTcpCmd("q-info");
+	mutex.unlock();
+}
 
 bool Ghpsdr3Device::SendTcpCmd(QString buf)
 {
@@ -211,7 +276,7 @@ bool Ghpsdr3Device::SendTcpCmd(QString buf)
 	memcpy(cmdBuf,buf.toUtf8(),buf.length());
 	qint64 actual = tcpSocket->write((char*)cmdBuf, SEND_BUFFER_SIZE);
 	tcpSocket->flush(); //Force immediate blocking write
-	qDebug()<<(char*)cmdBuf;
+	//qDebug()<<(char*)cmdBuf;
 	if (actual != SEND_BUFFER_SIZE) {
 		qDebug()<<"SendTcpCmd did not write 64 bytes";
 		return false;
@@ -313,6 +378,9 @@ void Ghpsdr3Device::TCPSocketNewData()
 	quint16 headerCommonSize = sizeof(commonHeader);
 	quint16 audioHeaderSize = sizeof(audioHeader);
 	QString answer;
+	//QStringList answerParts;
+	QRegExp rx; //Used for parsing answers, regex from QTRadio source
+
 	qint64 bytesRead;
 	quint16 bytesToCompleteAudioBuffer;
 	quint64 bytesAvailable = tcpSocket->bytesAvailable();
@@ -467,18 +535,70 @@ void Ghpsdr3Device::TCPSocketNewData()
 					//"q-version:20130609;-master"
 				} else if(answer.contains("q-server")){
 					//"q-server:KL7NA P"
+					rx.setPattern("q-server:(\\S+)");
+					rx.indexIn(answer);
+					serverInfo.serverName = rx.cap(1);
+
 				} else if(answer.contains("q-master")){
 					//"q-master:master"
+					if (answer.contains("slave")){
+						serverInfo.isSlave = true;
+					}else{
+						serverInfo.isSlave = false;
+					}
+
 				} else if(answer.contains("q-rtpport")){
 					//"q-rtpport:5004;"
+					rx.setPattern("rtpport:(\\d+);");
+					rx.indexIn(answer);
+					serverInfo.rtpPort = rx.cap(1);
+
 				} else if(answer.contains("q-cantx:")){
 					//"q-cantx:N"
+					//Not used, transmit not supported
+
 				} else if(answer.contains("q-loffset:")){
 					//"q-loffset:9000.000000;"
+					rx.setPattern("q-loffset:(\\d+)\\.");
+					rx.indexIn(answer);
+					serverInfo.offset = rx.cap(1).toDouble();
+
 				} else if(answer.contains("q-info")){
 					//"q-info:s;1;f;10000000;m;6;z;0;l;-2000;r;2000;"
+					rx.setPattern("info:s;(\\d+);f;(\\d+);m;(\\d+);z;(\\d+);l;(\\d+|-\\d+);r;(\\d+|-\\d+)");
+					rx.indexIn(answer);
+					serverInfo.serverNum = rx.cap(1).toInt();
+					serverInfo.frequency = rx.cap(2).toLongLong();
+					//Map demo mode to Pebble
+					gDemodMode gdm = (gDemodMode)rx.cap(3).toInt();
+					switch (gdm) {
+						case LSB: serverInfo.demodMode = DEMODMODE::dmLSB; break;
+						case USB: serverInfo.demodMode = DEMODMODE::dmUSB; break;
+						case DSB: serverInfo.demodMode = DEMODMODE::dmDSB; break;
+						case CWL: serverInfo.demodMode = DEMODMODE::dmCWL; break;
+						case CWH: serverInfo.demodMode = DEMODMODE::dmCWU; break;
+						case FM: serverInfo.demodMode = DEMODMODE::dmFMN; break; //Check
+						case AM: serverInfo.demodMode = DEMODMODE::dmAM; break;
+						case DIGU: serverInfo.demodMode = DEMODMODE::dmDIGU; break;
+						case SPEC: serverInfo.demodMode = DEMODMODE::dmNONE; break;
+						case DIGL: serverInfo.demodMode = DEMODMODE::dmDIGL; break;
+						case SAM: serverInfo.demodMode = DEMODMODE::dmSAM; break;
+						case DRM: serverInfo.demodMode = DEMODMODE::dmNONE; break; //Missing
+						default: serverInfo.demodMode = DEMODMODE::dmAM; break;
+
+					}
+
+					serverInfo.zoom = rx.cap(4).toInt();
+					serverInfo.lowFilter = rx.cap(5).toInt();
+					serverInfo.highFilter = rx.cap(6).toInt();
+					serverInfo.isValid = true;
+
 				} else if (answer.contains("q-protocol3")){
 					//"q-protocol3:Y"
+					rx.setPattern("([YN])$");
+					rx.indexIn(answer);
+					serverInfo.protocol3 = rx.cap(1).compare("Y")==0;
+
 				} else if (answer[0] == '*') {
 
 				}

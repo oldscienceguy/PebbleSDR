@@ -28,6 +28,8 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	powerOn = false;
 	frequency = 0;
 
+	slaveMode = false;
+
     QFont smFont = receiver->GetSettings()->smFont;
     QFont medFont = receiver->GetSettings()->medFont;
     QFont lgFont = receiver->GetSettings()->lgFont;
@@ -156,10 +158,11 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     utcClockButtonClicked();
 
     //Does clockTimer need to be a member?
-    QTimer *clockTimer = new QTimer(this);
-    connect(clockTimer, SIGNAL(timeout()), this, SLOT(showTime()));
-    clockTimer->start(1000);
-    showTime();
+	masterClock = new QTimer(this);
+	connect(masterClock, SIGNAL(timeout()), this, SLOT(masterClockTicked()));
+	masterClockTicks = 0;
+	masterClock->start(MASTER_CLOCK_INTERVAL);
+	updateClock();
 
     QComboBox *sdrSelector = ui.sdrSelector;
     //Add device plugins
@@ -390,6 +393,13 @@ void ReceiverWidget::SetFrequency(double f)
 	if (highFrequency > 0 && f > highFrequency){
         //qApp->beep();
         DisplayNixieNumber(frequency);
+		return;
+	}
+
+	//If slave mode, just display frequency and return
+	if (slaveMode) {
+		frequency = f;
+		DisplayNixieNumber(frequency);
 		return;
 	}
 
@@ -786,6 +796,9 @@ void ReceiverWidget::dataSelectionChanged(int s)
 
 void ReceiverWidget::modeSelectionChanged(QString m) 
 {
+	if (slaveMode)
+		return;
+
 	mode = Demod::StringToMode(m);
 		//Adj to mode, ie we don't want to be exactly on cw, we want to be +/- 200hz
 	switch (mode)
@@ -867,7 +880,7 @@ void ReceiverWidget::utcClockButtonClicked()
    showUtcTime = true;
    ui.utcClockButton->setFlat(false);
    ui.localClockButton->setFlat(true);
-   showTime();
+   updateClock();
 }
 
 void ReceiverWidget::localClockButtonClicked()
@@ -875,23 +888,48 @@ void ReceiverWidget::localClockButtonClicked()
     showUtcTime = false;
     ui.utcClockButton->setFlat(true);
     ui.localClockButton->setFlat(false);
-    showTime();
+	updateClock();
 }
 
-void ReceiverWidget::showTime()
+//Called every MASTER_CLOCK_INTERVAL (100ms)
+void ReceiverWidget::masterClockTicked()
 {
-    //Add Day of the week
-    QDateTime time;
-    if (showUtcTime)
-        time = QDateTime::currentDateTimeUtc();
-    else
-        time = QDateTime::currentDateTime();
-    QString text = time.toString("hh:mm");
-    //text = "23:59"; //For testing
-    if ((time.time().second() % 2) == 0)
-        text[2] = ' ';
-    ui.clockWidget->display(text);
+	masterClockTicks++;
 
+	//Process once per tick actions
+
+	//Process once per second actions
+	if (masterClockTicks % (1000 / MASTER_CLOCK_INTERVAL) == 0) {
+		updateClock();
+		updateHealth();
+		updateSlaveInfo();
+	}
+}
+//If device is in slave mode, then we get info from device and update display to track
+void ReceiverWidget::updateSlaveInfo()
+{
+	if (!powerOn || sdr==NULL)
+		return;
+
+	if (!sdr->Get(DeviceInterface::DeviceSlave).toBool()) {
+		slaveMode = false;
+		return;
+	}
+	slaveMode = true;
+
+	//Display last info fetched
+	double f = sdr->Get(DeviceInterface::DeviceFrequency).toDouble();
+	SetFrequency(f);
+
+	DEMODMODE dm = (DEMODMODE)sdr->Get(DeviceInterface::DeviceDemodMode).toInt();
+	SetMode(dm);
+
+	//Ask the device to return new info
+	sdr->Set(DeviceInterface::DeviceSlave,0);
+}
+
+void ReceiverWidget::updateHealth()
+{
 	if (powerOn && sdr != NULL) {
 		quint16 freeBuf = sdr->Get(DeviceInterface::DeviceHealthValue).toInt();
 		if (freeBuf >= 75)
@@ -903,6 +941,23 @@ void ReceiverWidget::showTime()
 	} else {
 		ui.sdrOptions->setStyleSheet("");
 	}
+
+}
+
+void ReceiverWidget::updateClock()
+{
+	//Add Day of the week
+	QDateTime time;
+	if (showUtcTime)
+		time = QDateTime::currentDateTimeUtc();
+	else
+		time = QDateTime::currentDateTime();
+	QString text = time.toString("hh:mm");
+	//text = "23:59"; //For testing
+	if ((time.time().second() % 2) == 0)
+		text[2] = ' '; //Flash ':' for seconds
+	ui.clockWidget->display(text);
+
 }
 
 //Returns the number displayed by all the nixies

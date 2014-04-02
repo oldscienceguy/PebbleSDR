@@ -58,10 +58,16 @@ protected:
 	bool eventFilter(QObject *o, QEvent *e);
 
 private:
+	static const quint16 MASTER_CLOCK_INTERVAL = 100; //ms
+
 	DeviceInterface *sdr; //global->sdr is always updated whenever the user changes device selection
 	Receiver *receiver;
     QWidget *directInputWidget;
     Ui::DirectInput *directInputUi;
+
+	//Master clock to update time, refresh status etc
+	QTimer *masterClock;
+	quint64 masterClockTicks;
 
 	//Set tuner limits
 	void SetLimits(double highF, double lowF, int highM, int lowM);
@@ -94,8 +100,12 @@ private:
     int currentBandIndex;
 
     bool showUtcTime;
+	bool slaveMode;
 
-	private slots:
+	void updateClock();
+	void updateHealth();
+	void updateSlaveInfo();
+private slots:
         void ReceiverChanged(int i);
 
         void stationChanged(int s);
@@ -138,7 +148,7 @@ private:
         void nixie1gUpClicked();
         void nixie1gDownClicked();
 
-        void showTime();
+		void masterClockTicked();
         void utcClockButtonClicked();
         void localClockButtonClicked();
 };

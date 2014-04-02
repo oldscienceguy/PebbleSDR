@@ -2,6 +2,8 @@
 #define GHPSDR3DEVICE_H
 
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
+//QTRadio source fragments used in many places as reference for protocol
+
 #include "gpl.h"
 #include <QObject>
 #include "deviceinterfacebase.h"
@@ -344,6 +346,21 @@ private:
 	};
 	TcpReadState tcpReadState;
 
+	struct {
+		bool isValid; //Set when q-info returns data
+		QString serverName;
+		QString rtpPort;
+		bool isSlave;
+		quint16 serverNum; //Not sure this is correct
+		quint32 frequency;
+		DEMODMODE demodMode; //Pebble demod mode, mapped to gDemodMode
+		quint16 zoom;
+		qint16 lowFilter;
+		qint16 highFilter;
+		double offset;
+		bool protocol3;
+	}serverInfo;
+
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
 
@@ -375,5 +392,6 @@ private:
 	bool SendTcpCmd(QString buf);
 	bool SendGainCmd(quint8 gain);
 	bool SendFilterCmd(qint16 low, qint16 high);
+	void RequestInfo();
 	};
 #endif // GHPSDR3DEVICE_H
