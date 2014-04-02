@@ -53,7 +53,7 @@ bool DeviceInterfaceBase::Initialize(cbProcessIQData _callback,
 	framesPerBuffer = _framesPerBuffer;
 	connected = false;
 
-	if (Get(DeviceInterface::DeviceType).toInt() == AUDIO_IQ) {
+	if (Get(DeviceInterface::DeviceType).toInt() == AUDIO_IQ_DEVICE) {
 		audioInput = Audio::Factory(_callback, _framesPerBuffer);
 	}
 
@@ -72,7 +72,7 @@ bool DeviceInterfaceBase::Disconnect()
 
 void DeviceInterfaceBase::Start()
 {
-	if (Get(DeviceInterface::DeviceType).toInt() == AUDIO_IQ) {
+	if (Get(DeviceInterface::DeviceType).toInt() == AUDIO_IQ_DEVICE) {
 		//We handle audio
 		audioInput->StartInput(inputDeviceName, sampleRate);
 	}
@@ -81,7 +81,7 @@ void DeviceInterfaceBase::Start()
 
 void DeviceInterfaceBase::Stop()
 {
-	if (Get(DeviceInterface::DeviceType).toInt() == AUDIO_IQ) {
+	if (Get(DeviceInterface::DeviceType).toInt() == AUDIO_IQ_DEVICE) {
 		if (audioInput != NULL)
 			audioInput->Stop();
 	}
@@ -113,7 +113,7 @@ QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, quint16 _option) {
 			return deviceNumber;
 			break;
 		case DeviceType:
-			return AUDIO_IQ;
+			return AUDIO_IQ_DEVICE;
 			break;
 		case DeviceSampleRate:
 			return sampleRate;
@@ -188,6 +188,26 @@ QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, quint16 _option) {
 		case AudioOutputSampleRate:
 			return audioOutputSampleRate;
 			break;
+		case DeviceDemodMode:		//RW quint16 enum DEMODMODE
+			return 0;
+			break;
+		case DeviceOutputGain:		//RW quint16
+			return 0;
+			break;
+		case DeviceFilter:			//RW QString "lowFilter:highFilter"
+			return "-2000:2000";
+			break;
+		case DeviceAGC:				//RW quint16
+			return 0;
+			break;
+		case DeviceANF:				//RW quint16
+			return 0;
+			break;
+		case DeviceNB:				//RW quint16
+			return 0;
+			break;
+		case DeviceSlave:			//RO bool true if device is controled by somthing other than Pebble
+			return false;
 		default:
 			break;
 	}
@@ -286,6 +306,24 @@ bool DeviceInterfaceBase::Set(STANDARD_KEYS _key, QVariant _value, quint16 _opti
 			break;
 		case IQBalancePhase:
 			iqBalancePhase = _value.toDouble();
+			break;
+		case AudioOutputSampleRate:
+			Q_UNREACHABLE();
+			break;
+		case DeviceDemodMode:		//RW quint16 enum DEMODMODE
+			break;
+		case DeviceOutputGain:		//RW quint16
+			break;
+		case DeviceFilter:			//RW QString "lowFilter:highFilter"
+			break;
+		case DeviceAGC:				//RW quint16
+			break;
+		case DeviceANF:				//RW quint16
+			break;
+		case DeviceNB:				//RW quint16
+			break;
+		case DeviceSlave:			//RO bool true if device is controled by somthing other than Pebble
+			Q_UNREACHABLE();
 			break;
 		default:
 			break;

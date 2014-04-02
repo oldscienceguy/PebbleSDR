@@ -114,7 +114,7 @@ void SdrOptions::UpdateOptions()
 {
 	int id;
 	QString dn;
-	if (di->Get(DeviceInterface::DeviceType).toInt() == DeviceInterface::AUDIO_IQ) {
+	if (di->Get(DeviceInterface::DeviceType).toInt() == DeviceInterface::AUDIO_IQ_DEVICE) {
 		//Audio devices may have been plugged or unplugged, refresh list on each show
 		//This will use PortAudio or QTAudio depending on configuration
 		inputDevices = Audio::InputDeviceList();

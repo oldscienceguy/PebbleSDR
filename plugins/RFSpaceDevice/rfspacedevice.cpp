@@ -383,11 +383,11 @@ QVariant RFSpaceDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 				return QStringList();
 		case DeviceType:
 			if (deviceNumber == SDR_IP || SDR_IQ)
-				return DeviceInterfaceBase::INTERNAL_IQ;
+				return DeviceInterfaceBase::IQ_DEVICE;
 			else if(deviceNumber == AFEDRI_USB)
-				return DeviceInterfaceBase::AUDIO_IQ;
+				return DeviceInterfaceBase::AUDIO_IQ_DEVICE;
 			else
-				return DeviceInterfaceBase::AUDIO_IQ;
+				return DeviceInterfaceBase::AUDIO_IQ_DEVICE;
 		case DeviceSampleRate: {
 			return sampleRate;
 			//Note, actual sample rate for SDR_IQ is tied to bandwidth

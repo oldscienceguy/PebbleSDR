@@ -372,7 +372,7 @@ QVariant HPSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 		case DeviceName:
 			return "HPSDR Metis or Ozy";
 		case DeviceType:
-			return INTERNAL_IQ;
+			return IQ_DEVICE;
 		case DeviceSampleRates:
 			return QStringList()<<"48000"<<"96000"<<"192000"<<"384000";
 		case CustomKey1:

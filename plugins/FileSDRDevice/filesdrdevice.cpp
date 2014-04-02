@@ -132,7 +132,7 @@ QVariant FileSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 		case DeviceName:
 			return "SDRFile: " + QFileInfo(fileName).fileName() + "-" + QString::number(wavFileRead.GetSampleRate());
 		case DeviceType:
-			return INTERNAL_IQ;
+			return IQ_DEVICE;
 		case DeviceSampleRate:
 			return wavFileRead.GetSampleRate();
 		case StartupType:

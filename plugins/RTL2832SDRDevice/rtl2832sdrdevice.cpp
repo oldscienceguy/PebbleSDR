@@ -690,7 +690,7 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 		case DeviceDescription:
 			break;
 		case DeviceType:
-			return DeviceInterface::INTERNAL_IQ;
+			return DeviceInterface::IQ_DEVICE;
 			break;
 		case DeviceSampleRates:
 			return QStringList()<<"64000"<<"128000"<<"256000"<<"512000"<<"1024000"<<"2048000";
