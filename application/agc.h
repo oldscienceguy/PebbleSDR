@@ -23,6 +23,8 @@ public:
 
     void SetParameters(bool UseHang, int Threshold, int ManualGain, int SlopeFactor, int Decay);
 private:
+	static const int DEFAULT_THRESHOLD = 20;
+
 	AGCMODE agcMode;
 	DelayLine *agcDelay;
 

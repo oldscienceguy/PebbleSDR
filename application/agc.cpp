@@ -20,7 +20,7 @@ AGC::AGC(int r, int n):SignalProcessing(r,n)
 	agcDelay = NULL;
 
 
-    thresholdFromUi = 20; //Either 20db gain or -20db threshold depending on mode
+	thresholdFromUi = DEFAULT_THRESHOLD; //Either 20db gain or -20db threshold depending on mode
     //cuteSDR
     m_UseHang = false;
     m_Threshold = 0;
@@ -87,12 +87,15 @@ void AGC::setAgcThreshold(int g)
 
 void AGC::setAgcMode(AGCMODE m)
 {
-    agcMode = OFF; //stop processing while changing
     bool useHang = false;
     int threshold;
     int manualGain;
     int slopeFactor = 0; //0db to 10db
     int decay = 200; //20ms to 2000ms
+
+	//If change, reset threshold
+	if (agcMode != m)
+		thresholdFromUi = DEFAULT_THRESHOLD;
 
     switch (m) {
         case OFF:
@@ -126,7 +129,7 @@ void AGC::setAgcMode(AGCMODE m)
         default:
             break;
     }
-
+	agcMode = OFF; //stop processing while changing
     SetParameters(useHang,threshold,manualGain,slopeFactor, decay);
     agcMode = m;
 
