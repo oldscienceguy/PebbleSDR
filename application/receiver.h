@@ -53,7 +53,7 @@ public:
 	void SetAnfEnabled(bool b);
 	void SetNbEnabled(bool b);
 	void SetNb2Enabled(bool b);
-	void SetAgcMode(AGC::AGCMODE m);
+	int SetAgcMode(AGC::AGCMODE m);
 	void SetMute(bool b);
 	void ShowPresets();
     Presets *GetPresets() {return presets;}

@@ -64,7 +64,7 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 
 	loMode = true;
 	//Set intial gain slider position
-	ui.gainSlider->setValue(50);
+	ui.gainSlider->setValue(0);
 	tunerStep=1000;
 
 	modeOffset = 0;
@@ -167,17 +167,12 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     foreach (PluginInfo p,receiver->getDevicePluginInfo()) {
         v.setValue(p);
         sdrSelector->addItem(p.name,v);
-        if (p.fileName == global->settings->sdrDeviceFilename) {
-            //If it's internal, all we need is filename match
-            if (p.type == PluginInfo::DEVICE_PSEUDO_PLUGIN) {
-                global->sdr = p.deviceInterface;
-                global->sdr->ReadSettings();
+		if (p.fileName == global->settings->sdrDeviceFilename &&
+			p.type == PluginInfo::DEVICE_PLUGIN) {
                 cur = sdrSelector->count()-1;
-			} else if (p.type == PluginInfo::DEVICE_PLUGIN) {
-                cur = sdrSelector->count()-1;
-                global->sdr = p.deviceInterface;
-                global->sdr->ReadSettings();
-            }
+				sdr = p.deviceInterface;
+				sdr->ReadSettings();
+				global->sdr = sdr;
         }
     }
 
@@ -461,6 +456,7 @@ DEMODMODE ReceiverWidget::GetMode()
 //Note: Pushbutton text color is changed with a style sheet in deigner
 //	QPushButton:on {color:red;}
 //
+//sdr is already initialized by SetReceiver or ReceiverChanged when we get here
 void ReceiverWidget::powerToggled(bool on) 
 {
 
@@ -470,6 +466,25 @@ void ReceiverWidget::powerToggled(bool on)
 			ui.powerButton->setChecked(false); //Turn power button back off
 			return; //Error setting up receiver
 		}
+
+		//Limit tuning range and mixer range
+		int sampleRate = sdr->Get(DeviceInterface::DeviceSampleRate).toInt();
+		SetLimits(sdr->Get(DeviceInterface::HighFrequency).toDouble(),
+					sdr->Get(DeviceInterface::LowFrequency).toDouble(),
+					sampleRate/2,-sampleRate/2);
+
+		//Setup Gain slider
+		ui.gainSlider->setMinimum(1);
+		ui.gainSlider->setMaximum(100);
+		ui.gainSlider->setValue(30);
+		receiver->SetGain(30);
+
+		//Setup Squelch
+		ui.squelchSlider->setValue(global->minDb);
+		receiver->SetSquelch(global->minDb);
+
+		//Set default AGC mode
+		agcBoxChanged(AGC::FAST);
 
         //Set squelch to default
 
@@ -488,12 +503,37 @@ void ReceiverWidget::powerToggled(bool on)
         ui.sMeterWidget->SetSignalSpectrum(receiver->GetSignalSpectrum());
         ui.spectrumWidget->SetSignalSpectrum(receiver->GetSignalSpectrum());
 
-		ui.spectrumWidget->plotSelectionChanged((SignalSpectrum::DISPLAYMODE)global->sdr->Get(DeviceInterface::LastSpectrumMode).toInt());
+		ui.spectrumWidget->plotSelectionChanged((SignalSpectrum::DISPLAYMODE)sdr->Get(DeviceInterface::LastSpectrumMode).toInt());
         ui.bandType->setCurrentIndex(Band::HAM);
 
 		ui.spectrumWidget->Run(true);
         ui.sMeterWidget->start();
 		setLoMode(true);
+
+		//Set startup frequency last
+		DeviceInterface::STARTUP_TYPE startupType = (DeviceInterface::STARTUP_TYPE)sdr->Get(DeviceInterface::StartupType).toInt();
+		if (startupType == DeviceInterface::DEFAULTFREQ) {
+			frequency=sdr->Get(DeviceInterface::StartupFrequency).toDouble();
+			SetFrequency(frequency);
+			//This triggers indirect frequency set, so make sure we set widget first
+			SetMode((DEMODMODE)sdr->Get(DeviceInterface::StartupDemodMode).toInt());
+		}
+		else if (startupType == DeviceInterface::SETFREQ) {
+			frequency = sdr->Get(DeviceInterface::UserFrequency).toDouble();
+			SetFrequency(frequency);
+			SetMode((DEMODMODE)sdr->Get(DeviceInterface::LastDemodMode).toInt());
+		}
+		else if (startupType == DeviceInterface::LASTFREQ) {
+			frequency = sdr->Get(DeviceInterface::LastFrequency).toDouble();
+			SetFrequency(frequency);
+			SetMode((DEMODMODE)sdr->Get(DeviceInterface::LastDemodMode).toInt());
+		}
+		else {
+			frequency = 10000000;
+			SetFrequency(frequency);
+			SetMode(dmAM);
+		}
+
 
 	} else {
 		//Turning power off, shut down receiver widget display BEFORE telling receiver to clean up
@@ -563,7 +603,9 @@ void ReceiverWidget::agcBoxChanged(int item)
 {
     if (!powerOn)
         return;
-	receiver->SetAgcMode((AGC::AGCMODE)item);
+	int threshold = receiver->SetAgcMode((AGC::AGCMODE)item);
+	ui.agcSlider->setValue(threshold);
+
 }
 void ReceiverWidget::muteButtonToggled(bool b)
 {
@@ -777,28 +819,12 @@ void ReceiverWidget::modeSelectionChanged(QString m)
 	ui.filterBox->blockSignals(false);
 	this->filterSelectionChanged(ui.filterBox->currentText());
 }
-void ReceiverWidget::SetDisplayedAgcThreshold(int g)
-{
-	ui.agcSlider->setValue(g);
-}
-//Allows receiver to set gain and range
-void ReceiverWidget::SetDisplayedGain(int g, int min, int max)
-{
-	ui.gainSlider->setMinimum(min);
-	ui.gainSlider->setMaximum(max);
-	//Set gain slider and let signals do the rest
-	ui.gainSlider->setValue(g);
-}
-void ReceiverWidget::SetDisplayedSquelch(int s)
-{
-	ui.squelchSlider->setValue(s);
-	squelchSliderChanged(s);
-}
+
 void ReceiverWidget::agcSliderChanged(int g)
 {
-    if (!powerOn)
-        return;
-    receiver->SetAgcThreshold(g);
+	if (!powerOn)
+		return;
+	receiver->SetAgcThreshold(g);
 }
 
 void ReceiverWidget::gainSliderChanged(int g) 
@@ -866,8 +892,8 @@ void ReceiverWidget::showTime()
         text[2] = ' ';
     ui.clockWidget->display(text);
 
-	if (powerOn && global->sdr != NULL) {
-		quint16 freeBuf = global->sdr->Get(DeviceInterface::DeviceHealthValue).toInt();
+	if (powerOn && sdr != NULL) {
+		quint16 freeBuf = sdr->Get(DeviceInterface::DeviceHealthValue).toInt();
 		if (freeBuf >= 75)
 			ui.sdrOptions->setStyleSheet("background:green");
 		else if (freeBuf >= 25)
@@ -907,7 +933,8 @@ void ReceiverWidget::ReceiverChanged(int i)
     global->settings->sdrDeviceFilename = p.fileName;
     global->settings->sdrDeviceNumber = p.deviceNumber;
 
-    global->sdr = p.deviceInterface;
+	sdr = p.deviceInterface;
+	global->sdr = sdr;
     //Close the sdr option window if open
     receiver->CloseSdrOptions();
 }

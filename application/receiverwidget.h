@@ -38,12 +38,7 @@ public:
 	double GetFrequency();
 	void SetMode(DEMODMODE m); 
     void SetDataMode(int _dataMode);
-    void SetDisplayedGain(int g, int min = 10, int max = 100);
-    void SetDisplayedAgcThreshold(int g);
-    void SetDisplayedSquelch(int s);
 	DEMODMODE GetMode();
-	//Set tuner limits
-	void SetLimits(double highF, double lowF, int highM, int lowM);
 	void SetMessage(QStringList s);
 
     void DisplayBand(double freq);
@@ -63,9 +58,13 @@ protected:
 	bool eventFilter(QObject *o, QEvent *e);
 
 private:
+	DeviceInterface *sdr; //global->sdr is always updated whenever the user changes device selection
 	Receiver *receiver;
     QWidget *directInputWidget;
     Ui::DirectInput *directInputUi;
+
+	//Set tuner limits
+	void SetLimits(double highF, double lowF, int highM, int lowM);
 
     void DisplayNixieNumber(double d);
     double GetNixieNumber();

@@ -233,41 +233,6 @@ bool Receiver::On()
 	bpFilter->setEnabled(true);
 	
     agc = new AGC(demodSampleRate, demodFrames);
-    SetAgcMode(AGC::FAST); //Default mode
-
-	//Limit tuning range and mixer range
-	//Todo: Get from SDR and enforce in UI
-	receiverWidget->SetLimits(sdr->Get(DeviceInterface::HighFrequency).toDouble(),
-							  sdr->Get(DeviceInterface::LowFrequency).toDouble(),
-							  sampleRate/2,-sampleRate/2);
-    receiverWidget->SetDisplayedGain(30,1,100);  //20%
-    receiverWidget->SetDisplayedSquelch(global->minDb);
-	
-	DeviceInterface::STARTUP_TYPE startupType = (DeviceInterface::STARTUP_TYPE)sdr->Get(DeviceInterface::StartupType).toInt();
-	if (startupType == DeviceInterface::DEFAULTFREQ) {
-		frequency=sdr->Get(DeviceInterface::StartupFrequency).toDouble();
-        receiverWidget->SetFrequency(frequency);
-        //This triggers indirect frequency set, so make sure we set widget first
-		receiverWidget->SetMode((DEMODMODE)sdr->Get(DeviceInterface::StartupDemodMode).toInt());
-    }
-	else if (startupType == DeviceInterface::SETFREQ) {
-		frequency = sdr->Get(DeviceInterface::UserFrequency).toDouble();
-        receiverWidget->SetFrequency(frequency);
-
-		receiverWidget->SetMode((DEMODMODE)sdr->Get(DeviceInterface::LastDemodMode).toInt());
-    }
-	else if (startupType == DeviceInterface::LASTFREQ) {
-		frequency = sdr->Get(DeviceInterface::LastFrequency).toDouble();
-        receiverWidget->SetFrequency(frequency);
-
-		receiverWidget->SetMode((DEMODMODE)sdr->Get(DeviceInterface::LastDemodMode).toInt());
-	}
-	else {
-		frequency = 10000000;
-        receiverWidget->SetFrequency(frequency);
-
-		receiverWidget->SetMode(dmAM);
-	}
 
 	//This should always be last because it starts samples flowing through the processBlocks
 	audioOutput->StartOutput(sdr->Get(DeviceInterface::OutputDeviceName).toString(), audioOutRate);
@@ -495,7 +460,8 @@ double Receiver::SetFrequency(double fRequested, double fCurrent)
 		return fCurrent;
 	}
 }
-//Sets demod modes and default bandpass filter for each mode
+
+//Called by ReceiverWidget to sets demod mode and default bandpass filter for each mode
 void Receiver::SetMode(DEMODMODE m)
 {
 	if(demod != NULL) {
@@ -512,7 +478,8 @@ void Receiver::SetMode(DEMODMODE m)
     if (iDigitalModem != NULL) {
         iDigitalModem->SetDemodMode(m);
     }
-}	
+}
+//Called by ReceiverWidget when UI changes filter settings
 void Receiver::SetFilter(int lo, int hi)
 {
 	if (demod == NULL)
@@ -520,44 +487,51 @@ void Receiver::SetFilter(int lo, int hi)
 	bpFilter->SetBandPass(lo,hi);
     demod->SetBandwidth(hi - lo);
 }
+//Called by ReceiverWidget when UI changes ANF
 void Receiver::SetAnfEnabled(bool b)
 {
 	noiseFilter->setAnfEnabled(b);
 }
+//Called by ReceiverWidget when UI changes NB
 void Receiver::SetNbEnabled(bool b)
 {
 	noiseBlanker->setNbEnabled(b);
 }
+//Called by ReceiverWidget when UI changed NB2
 void Receiver::SetNb2Enabled(bool b)
 {
 	noiseBlanker->setNb2Enabled(b);
 }
-void Receiver::SetAgcMode(AGC::AGCMODE m)
+//Called by ReceiverWidget when UI changes AGC, returns new threshold for display
+int Receiver::SetAgcMode(AGC::AGCMODE m)
 {
 	agc->setAgcMode(m);
-	//AGC sets a default gain with mode, update widget
-    receiverWidget->SetDisplayedAgcThreshold(agc->getAgcThreshold());
+	//AGC sets a default gain with mode
+	return agc->getAgcThreshold();
 }
+//Called by ReceiverWidget
 void Receiver::SetAgcThreshold(int g)
 {
     agc->setAgcThreshold(g);
 }
-
+//Called by ReceiverWidget
 void Receiver::SetMute(bool b)
 {
 	mute = b;
 }
-
+//Called by ReceiverWidget
 void Receiver::SetGain(int g)
 {
 	//Convert dbGain to amplitude so we can use it to scale
 	//No magic DSP math, just found something that sounds right to convert slider 0-100 reasonable vol
     gain=DB::dbToAmplitude(25 + g * 0.35);
 }
+//Called by ReceiverWidget
 void Receiver::SetSquelch(int s)
 {
 	squelch = s;
 }
+//Called by ReceiverWidget
 void Receiver::SetMixer(int f)
 {
     if (mixer != NULL) {

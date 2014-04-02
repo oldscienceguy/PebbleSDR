@@ -14,7 +14,7 @@
 
 struct PluginInfo
 {
-    enum PluginType {MODEM_PLUGIN, DEVICE_PLUGIN, MODEM_PSEUDO_PLUGIN, DEVICE_PSEUDO_PLUGIN};
+	enum PluginType {MODEM_PLUGIN, DEVICE_PLUGIN, MODEM_PSEUDO_PLUGIN};
     PluginType type;
     QString name;
     QString description;
