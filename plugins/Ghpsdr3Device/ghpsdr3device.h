@@ -241,6 +241,8 @@ class Ghpsdr3Device : public QObject, public DeviceInterfaceBase
 	Q_INTERFACES(DeviceInterface)
 
 public:
+	friend class Servers;
+
 	Ghpsdr3Device();
 	~Ghpsdr3Device();
 

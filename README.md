@@ -331,7 +331,16 @@ TCP Only Options
 
 If your computer is losing samples (you'll hear choppy audio), try a lower RTL sample rate and/or a lower Pebble sample rate.
 
+###Ghpsdr3 Servers
+
+WIP
+
+Online servers can be found at <http://qtradio.napan.ca/qtradio/qtradio.pl>
+
+
 ##SDRGarage
+
+WIP
 
 This is an experimental server application that uses the same device plugins as Pebble.  The concept is to support any SDR device and multiple network protocols.  The first protocol is rtl-tcp because the first device driver is rtl2832.
 
@@ -357,7 +366,7 @@ Sometimes you have to manually delete the QT directories with makefiles when cha
 Mavericks / XCode 5 does not include a GDB debugger in the command line tools as in previous releases.  QT Creator will work with the new LLVM, but works better with GDB.  To install GDB (actually ggdb) using macports:
 
 	* sudo port install gdb
-* 
+
 ###Coding Style
 Basically a mess right now and needs to be cleaned up.
 
@@ -366,3 +375,13 @@ QT Editor settings
 * Use tabs only
 * Tab size 4
 * Indent case statements
+
+###Internal
+
+There are three main classes that coordinate to do all the work.
+
+**Receiver**: Responsible for all DSP processing, audio, demodulation, mixer, filters and Pebble settings.  Plugins have call-backs to this class for IQ and Audio handling.
+
+**RecieverWidget**: Responsible for all UI, SDR device listing and selection (updates global->sdr).  Communicates to Receiver and Device (sdr*) when UI changes
+
+**DeviceInterface Plugins**:  All device specific interaction.  Device specific settings.  Uses Receiver call-backs to process IQ and audio.  Uses DeviceInterface Get/Set function to get or set functionality.

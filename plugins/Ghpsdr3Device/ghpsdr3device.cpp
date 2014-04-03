@@ -21,11 +21,11 @@ Ghpsdr3Device::Ghpsdr3Device():DeviceInterfaceBase()
 	servers = NULL;
 
 	//Testing
-	deviceAddress = QHostAddress("74.85.89.174");
+	//deviceAddress = QHostAddress("74.85.89.174");
 	//deviceAddress = QHostAddress("71.47.206.230");
 	//deviceAddress = QHostAddress("79.255.247.138");
 	//deviceAddress = QHostAddress("84.175.15.210");
-	devicePort = 8000; //8000 + Receiver #
+	//devicePort = 8000; //8000 + Receiver #
 	//Servers *servers = new Servers();
 	//servers->show();
 
@@ -163,12 +163,18 @@ void Ghpsdr3Device::ReadSettings()
 {
 	DeviceInterfaceBase::ReadSettings();
 	//Device specific settings follow
+	deviceAddress = QHostAddress(qSettings->value("DeviceAddress","127.0.0.1").toString());
+	devicePort = qSettings->value("DevicePort",8000).toUInt();
+
 }
 
 void Ghpsdr3Device::WriteSettings()
 {
 	DeviceInterfaceBase::WriteSettings();
 	//Device specific settings follow
+	qSettings->setValue("DeviceAddress",deviceAddress.toString());
+	qSettings->setValue("DevicePort",devicePort);
+	qSettings->sync();
 }
 
 QVariant Ghpsdr3Device::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
@@ -322,7 +328,7 @@ void Ghpsdr3Device::SetupOptionUi(QWidget *parent)
 	if (servers != NULL)
 		delete servers;
 	//Change .h and this to correct class name for ui
-	servers = new Servers(parent);
+	servers = new Servers(this,parent);
 	parent->setVisible(true);
 }
 

@@ -2,12 +2,15 @@
 #define SERVERS_H
 #include <QNetworkReply>
 #include <QtCore>
+#include <QTreeWidget>
 
 #if QT_VERSION >= 0x050000
 #include <QtWidgets/QDialog>
 #else
 #include <QDialog>
 #endif
+
+class Ghpsdr3Device;
 
 namespace Ui {
     class Servers;
@@ -18,7 +21,7 @@ class Servers : public QObject
     Q_OBJECT
 
 public:
-	explicit Servers(QWidget *parent = 0 );
+	explicit Servers(Ghpsdr3Device *_sdr, QWidget *parent = 0 );
 
     ~Servers();
     void refreshList();
@@ -28,9 +31,23 @@ private slots:
     void finishedSlot(QNetworkReply* reply);
     void on_refreshButton_clicked();
     void TimerFired();
-	void lineClicked();
+	void lineClicked(QTreeWidgetItem *item, int col);
 
 private:
+	//Order of fields returned by http query
+	enum FIELD {
+		Status = 0,
+		Call,
+		Location,
+		Band,
+		Rig,
+		Antenna,
+		LastReport,
+		IP
+	};
+
+	Ghpsdr3Device *sdr;
+
     Ui::Servers *ui;
 	QNetworkAccessManager* nam;
 
