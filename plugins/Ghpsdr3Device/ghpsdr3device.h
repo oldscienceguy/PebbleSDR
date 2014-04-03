@@ -11,7 +11,7 @@
 #include <QTcpSocket>
 //#include <QUdpSocket>
 #include "alawcompression.h"
-
+#include "servers.h"
 
 #if 0
 On line servers can be found at http://qtradio.napan.ca/qtradio/qtradio.pl
@@ -274,6 +274,7 @@ private:
 	static const quint16 SEND_BUFFER_SIZE = 64;
 	static const quint16 AUDIO_PACKET_SIZE = 2000; //# 8bit samples we get from server
 	static const quint16 AUDIO_OUTPUT_SIZE = 512; //#audio samples to sent to output at a time
+	static const quint16 SPECTRUM_PACKET_SIZE = 2048; //Check this
 
 	enum AudioEncoding {
 		ALAW = 0,
@@ -290,7 +291,7 @@ private:
 	};
 
 	//3 byte header common to all data
-	struct dspCommonHeader {
+	struct DspCommonHeader {
 		union {
 			quint8 bytes[3];
 			//0 Packet type: 0=spectrum data, 1=audio data 1-31 Reserved
@@ -306,7 +307,7 @@ private:
 	};
 
 	//48 byte header returned in every tcp spectrum response from dspserver
-	struct dspServerHeader {
+	struct DspServerHeader {
 		packStart
 		//0 Packet type: 0=spectrum data, 1=audio data 1-31 Reserved
 		quint8 packetType;
@@ -324,10 +325,19 @@ private:
 	}packStruct;
 
 	//5 byte header returned with every tcp audio response from dspServer
-	struct dspAudioHeader {
+	struct DspAudioHeader {
 		packStart
-		//3 byte commonHeader
+		//3 byte commonHeader plus
 		quint16 bufLen; //BigEndian, use qFromBigEndian() to platform quint16
+		packEnd
+	}packStruct;
+
+	//15 byte header returned with every tcp spectrum response from dspServer
+	struct DspSpectrumHeader {
+		packStart
+		//3 byte commonHeader plus
+		quint16 bufLen; //BigEndian, use qFromBigEndian() to platform quint16
+		quint8 reserved[10]; //Size is 15 bytes, not sure what for
 		packEnd
 	}packStruct;
 
@@ -338,9 +348,10 @@ private:
 	//State machine for tcp reads
 	enum TcpReadState {
 		READ_HEADER_TYPE,
-		READ_HEADER,
-		READ_AUDIO_BUFFER,
 		READ_AUDIO_HEADER,
+		READ_AUDIO_BUFFER,
+		READ_SPECTRUM_HEADER,
+		READ_SPECTRUM_BUFFER,
 		READ_RTP_REPLY,
 		READ_ANSWER
 	};
@@ -371,11 +382,15 @@ private:
 	static const quint16 tcpAudioHeaderSize = 5;
 	static const quint16 tcpReadBufSize = AUDIO_PACKET_SIZE + tcpAudioHeaderSize; //Data buffer size + prefix
 
-	dspCommonHeader commonHeader;
-	dspAudioHeader audioHeader;
+	DspCommonHeader dspCommonHeader;
+	DspAudioHeader dspAudioHeader;
+	DspSpectrumHeader dspSpectrumHeader;
 
 	quint8 audioBuffer[AUDIO_PACKET_SIZE]; //Typically 2000
 	quint16 audioBufferIndex; //#bytes processed so far, reset every 2000
+
+	quint8 spectrumBuffer[SPECTRUM_PACKET_SIZE];
+	quint16 spectrumBufferIndex;
 
 	quint8 answerBuf[256]; //Max length is 99
 	quint16 answerLength;
@@ -386,6 +401,8 @@ private:
 	CPX* producerBuf;
 	quint16 producerBufIndex;
 	ALawCompression alaw;
+
+	Servers *servers;
 
 	bool SendFrequencyCmd(double f);
 	bool SendModeCmd(gDemodMode m);

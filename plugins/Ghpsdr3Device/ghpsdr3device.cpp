@@ -1,4 +1,5 @@
 #include "ghpsdr3device.h"
+#include "servers.h"
 
 #if 0
 http://qtradio.napan.ca/qtradio/qtradio.pl
@@ -17,14 +18,16 @@ Ghpsdr3Device::Ghpsdr3Device():DeviceInterfaceBase()
 {
 	InitSettings("Ghpsdr3");
 	tcpSocket = NULL;
-
+	servers = NULL;
 
 	//Testing
-	//deviceAddress = QHostAddress("74.85.89.174");
+	deviceAddress = QHostAddress("74.85.89.174");
 	//deviceAddress = QHostAddress("71.47.206.230");
 	//deviceAddress = QHostAddress("79.255.247.138");
-	deviceAddress = QHostAddress("84.175.15.210");
+	//deviceAddress = QHostAddress("84.175.15.210");
 	devicePort = 8000; //8000 + Receiver #
+	//Servers *servers = new Servers();
+	//servers->show();
 
 }
 
@@ -38,6 +41,9 @@ bool Ghpsdr3Device::Initialize(cbProcessIQData _callback,
 							   cbProcessBandscopeData _callbackBandscope,
 							   cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
+	running = false;
+	connected = false;
+
 	DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
 	numProducerBuffers = 50;
 	producerConsumer.Initialize(std::bind(&Ghpsdr3Device::producerWorker, this, std::placeholders::_1),
@@ -50,7 +56,7 @@ bool Ghpsdr3Device::Initialize(cbProcessIQData _callback,
 	tcpReadState = READ_HEADER_TYPE; //Start out looking for header type
 
 	if (tcpSocket == NULL) {
-		tcpSocket = new QTcpSocket();
+		tcpSocket = new QTcpSocket(this);
 		connect(tcpSocket,&QTcpSocket::connected, this, &Ghpsdr3Device::TCPSocketConnected);
 		connect(tcpSocket,&QTcpSocket::disconnected, this, &Ghpsdr3Device::TCPSocketDisconnected);
 		connect(tcpSocket,SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(TCPSocketError(QAbstractSocket::SocketError)));
@@ -64,8 +70,9 @@ bool Ghpsdr3Device::Initialize(cbProcessIQData _callback,
 
 bool Ghpsdr3Device::Connect()
 {
+	running = false;
 	//Smaller buffers generally work better, shorter processing time per buffer
-	tcpSocket->setReadBufferSize(AUDIO_OUTPUT_SIZE);
+	tcpSocket->setReadBufferSize(AUDIO_OUTPUT_SIZE*2);
 
 	tcpSocket->connectToHost(deviceAddress,devicePort,QTcpSocket::ReadWrite);
 	if (!tcpSocket->waitForConnected(1000)) {
@@ -74,7 +81,6 @@ bool Ghpsdr3Device::Connect()
 		return false;
 	}
 	connected = true;
-	running = false;
 	//Sometimes server responds with data, before we call startAudio...
 	tcpSocket->readAll(); //Clear it
 	return true;
@@ -87,6 +93,7 @@ bool Ghpsdr3Device::Disconnect()
 		if (tcpSocket->state() == QTcpSocket::ConnectedState  && !tcpSocket->waitForDisconnected(1000)) {
 			qDebug()<<"tcpSocket disconnect timed out";
 		}
+		tcpSocket->close(); //Redundant?
 	}
 	connected = false;
 	return true;
@@ -126,6 +133,8 @@ void Ghpsdr3Device::Start()
 	SendGainCmd(50); //0-100, 100 overloads
 	SendFilterCmd(-2000, 2000);
 	SendTcpCmd("setencoding 0"); //ALAW
+	SendTcpCmd("SetSquelchVal -100");
+	SendTcpCmd("SetSquelchState off");
 	//Get all the status data from server with q- commands
 	RequestInfo();
 
@@ -310,7 +319,11 @@ bool Ghpsdr3Device::SendFilterCmd(qint16 low, qint16 high)
 
 void Ghpsdr3Device::SetupOptionUi(QWidget *parent)
 {
-	Q_UNUSED(parent);
+	if (servers != NULL)
+		delete servers;
+	//Change .h and this to correct class name for ui
+	servers = new Servers(parent);
+	parent->setVisible(true);
 }
 
 void Ghpsdr3Device::producerWorker(cbProducerConsumerEvents _event)
@@ -374,9 +387,11 @@ void Ghpsdr3Device::TCPSocketNewData()
 		return;
 	}
 	//qDebug()<<"New data";
-	//mutex.lock();
-	quint16 headerCommonSize = sizeof(commonHeader);
-	quint16 audioHeaderSize = sizeof(audioHeader);
+	mutex.lock();
+	quint16 headerCommonSize = sizeof(dspCommonHeader); //3
+	quint16 audioHeaderSize = sizeof(dspAudioHeader); //3 + 2
+	quint16 spectrumHeaderSize = sizeof(DspSpectrumHeader); //3 + 12
+
 	QString answer;
 	//QStringList answerParts;
 	QRegExp rx; //Used for parsing answers, regex from QTRadio source
@@ -385,20 +400,25 @@ void Ghpsdr3Device::TCPSocketNewData()
 	quint16 bytesToCompleteAudioBuffer;
 	quint64 bytesAvailable = tcpSocket->bytesAvailable();
 	if (bytesAvailable <= 0) {
+		mutex.unlock();
 		return; //Nothing to do
 	}
 	while (bytesAvailable > 0) {
 		switch (tcpReadState) {
 			case READ_HEADER_TYPE:
 				audioBufferIndex = 0;
+				spectrumBufferIndex = 0;
+
 				//Looking for 3 byte common header
 				if (bytesAvailable < headerCommonSize) {
-					qDebug()<<"Waiting for enough data for common header";
+					//qDebug()<<"Waiting for enough data for common header";
+					mutex.unlock();
 					return; //Wait for more data
 				}
-				bytesRead = tcpSocket->read((char*)&commonHeader,headerCommonSize);
+				bytesRead = tcpSocket->read((char*)&dspCommonHeader,headerCommonSize);
 				if (bytesRead != headerCommonSize) {
 					qDebug()<<"Expected header but didn't get it";
+					mutex.unlock();
 					return;
 				}
 				bytesAvailable -= bytesRead;
@@ -406,7 +426,7 @@ void Ghpsdr3Device::TCPSocketNewData()
 
 				//Answer type combines packetType and part of length in byte[0]
 				//We need to mask high order bits in first byte
-				switch (commonHeader.packetType & 0x0f) {
+				switch (dspCommonHeader.packetType & 0x0f) {
 					case SpectrumData:
 						qDebug()<<"Unexpected spectrum data";
 						break;
@@ -423,13 +443,13 @@ void Ghpsdr3Device::TCPSocketNewData()
 					case AnswerData:
 						//qDebug()<<commonHeader.bytes[0]  << " "<< commonHeader.bytes[1]<< " "<< commonHeader.bytes[2];
 						//First bytes are interpreted as ascii
-						answerLength = (commonHeader.bytes[1] - 0x30) * 10 + (commonHeader.bytes[2] - 0x30);
+						answerLength = (dspCommonHeader.bytes[1] - 0x30) * 10 + (dspCommonHeader.bytes[2] - 0x30);
 						//qDebug()<<"Answer header length"<<answerLength;
 						tcpReadState = READ_ANSWER;
 						break;
 					default:
 						//This usually means we missed some data
-						qDebug()<<"Invalid packet type "<<(commonHeader.packetType & 0x0f);
+						qDebug()<<"Invalid packet type "<<(dspCommonHeader.packetType & 0x0f);
 						break;
 				}
 
@@ -439,23 +459,26 @@ void Ghpsdr3Device::TCPSocketNewData()
 				//qDebug()<<"READ_AUDIO_HEADER";
 				if (bytesAvailable < audioHeaderSize) {
 					qDebug()<<"Waiting for enough data for audio header";
+					mutex.unlock();
 					return; //Wait for more data
 				}
-				bytesRead = tcpSocket->read((char*)&audioHeader,audioHeaderSize);
+				bytesRead = tcpSocket->read((char*)&dspAudioHeader,audioHeaderSize);
 				if (bytesRead != audioHeaderSize) {
 					qDebug()<<"Expected audio header but didn't get it";
 					tcpReadState = READ_HEADER_TYPE;
+					mutex.unlock();
 					return;
 				}
 				bytesAvailable -= bytesRead;
 				tcpReadState = READ_AUDIO_BUFFER;
 				//Use QT's qFromBigEndian aToBitEndian and qFromLittleEndian and qToLittleEndian instead of nthl()
 				//Convert to LittleEndian format we can use
-				audioHeader.bufLen = qFromBigEndian(audioHeader.bufLen);
-				if (audioHeader.bufLen != AUDIO_PACKET_SIZE) {
+				dspAudioHeader.bufLen = qFromBigEndian(dspAudioHeader.bufLen);
+				if (dspAudioHeader.bufLen != AUDIO_PACKET_SIZE) {
 					//We're out of sync
 					qDebug()<<"Invalid audio buffer length";
 					tcpReadState = READ_HEADER_TYPE;
+					mutex.unlock();
 					return;
 				}
 				break;
@@ -463,7 +486,7 @@ void Ghpsdr3Device::TCPSocketNewData()
 			case READ_AUDIO_BUFFER:
 				//qDebug()<<"READ_AUDIO_BUFFER "<<bytesAvailable<<" "<<audioHeader.bufLen;
 				//Process whatever bytes we have, even if not a full buffer
-				bytesToCompleteAudioBuffer = audioHeader.bufLen - audioBufferIndex;
+				bytesToCompleteAudioBuffer = dspAudioHeader.bufLen - audioBufferIndex;
 				if (bytesAvailable > bytesToCompleteAudioBuffer)
 					bytesRead = tcpSocket->read((char*)&audioBuffer,bytesToCompleteAudioBuffer);
 				else
@@ -471,6 +494,7 @@ void Ghpsdr3Device::TCPSocketNewData()
 
 				if (bytesRead < 0) {
 					qDebug()<<"Error in tcpSocketRead";
+					mutex.unlock();
 					return;
 				}
 				bytesAvailable -= bytesRead;
@@ -483,11 +507,13 @@ void Ghpsdr3Device::TCPSocketNewData()
 						if (producerBuf == NULL) {
 							qDebug()<<"No free buffer available";
 							//Todo: We need a reset function to start everything over, reconnect etc
+							mutex.unlock();
 							return;
 						}
 					}
 
 					decoded = alaw.ALawToLinear(audioBuffer[i]);
+					//qDebug()<<audioBuffer[i]<<" "<<decoded;
 					producerBuf[producerBufIndex].re = producerBuf[producerBufIndex].im = decoded / 32767.0;
 					producerBufIndex++;
 					if (producerBufIndex >= AUDIO_OUTPUT_SIZE) {
@@ -498,38 +524,67 @@ void Ghpsdr3Device::TCPSocketNewData()
 				}
 				//If we've processed AUDIO_OUTPUT_SIZE samples, then change state
 				audioBufferIndex += bytesRead;
-				if (audioBufferIndex >= audioHeader.bufLen) {
+				if (audioBufferIndex >= dspAudioHeader.bufLen) {
 					audioBufferIndex = 0;
 					tcpReadState = READ_HEADER_TYPE; //Start over and look for next header
 				}
 
 				break;
 
-			case READ_HEADER:
-				qDebug()<<"Unexpected read_header";
+			case READ_SPECTRUM_HEADER:
+				//qDebug()<<"READ_SPECTRUM_HEADER";
+				if (bytesAvailable < spectrumHeaderSize) {
+					qDebug()<<"Waiting for enough data for spectrum header";
+					return; //Wait for more data
+				}
+				bytesRead = tcpSocket->read((char*)&dspSpectrumHeader,spectrumHeaderSize);
+				if (bytesRead != spectrumHeaderSize) {
+					qDebug()<<"Expected spectrum header but didn't get it";
+					tcpReadState = READ_HEADER_TYPE;
+					mutex.unlock();
+					return;
+				}
+				bytesAvailable -= bytesRead;
+				tcpReadState = READ_SPECTRUM_BUFFER;
+				//Use QT's qFromBigEndian aToBitEndian and qFromLittleEndian and qToLittleEndian instead of nthl()
+				//Convert to LittleEndian format we can use
+				dspSpectrumHeader.bufLen = qFromBigEndian(dspSpectrumHeader.bufLen);
+				if (dspSpectrumHeader.bufLen != SPECTRUM_PACKET_SIZE) {
+					//We're out of sync
+					qDebug()<<"Invalid spectrum buffer length";
+					tcpReadState = READ_HEADER_TYPE;
+					mutex.unlock();
+					return;
+				}
+				break;
+
+			case READ_SPECTRUM_BUFFER:
 				break;
 
 			case READ_ANSWER:
 				//qDebug()<<"READ_ANSWER";
 				if (answerLength > 99) {
 					qDebug()<<"Invalid answer length";
+					mutex.unlock();
 					return;
 				}
 				if (bytesAvailable < answerLength) {
 					qDebug()<<"Waiting for enough data for answer";
+					mutex.unlock();
 					return; //Wait for more data
 				}
 				bytesRead = tcpSocket->read((char*)&answerBuf,answerLength);
 				if (bytesRead != answerLength) {
 					qDebug()<<"Expected answer but didn't get it";
 					tcpReadState = READ_HEADER_TYPE;
+					mutex.unlock();
 					return;
 				}
 				bytesAvailable -= bytesRead;
 				tcpReadState = READ_HEADER_TYPE;
 				answerBuf[answerLength] = 0x00;
 				answer = (char*)answerBuf;
-				qDebug()<<answer;
+				//qDebug()<<answer;
 				//Process answer
 				if(answer.contains("q-version")){
 					//"q-version:20130609;-master"
@@ -609,6 +664,6 @@ void Ghpsdr3Device::TCPSocketNewData()
 		}
 
 	}
-	//mutex.unlock();
+	mutex.unlock();
 }
 

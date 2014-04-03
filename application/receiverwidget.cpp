@@ -924,6 +924,8 @@ void ReceiverWidget::updateSlaveInfo()
 	DEMODMODE dm = (DEMODMODE)sdr->Get(DeviceInterface::DeviceDemodMode).toInt();
 	SetMode(dm);
 
+	receiver->SetWindowTitle();
+
 	//Ask the device to return new info
 	sdr->Set(DeviceInterface::DeviceSlave,0);
 }

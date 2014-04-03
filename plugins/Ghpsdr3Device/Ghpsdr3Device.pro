@@ -26,11 +26,16 @@ VERSION = 1.0.0
 TEMPLATE = lib
 CONFIG += plugin
 
-SOURCES += ghpsdr3device.cpp
+SOURCES += ghpsdr3device.cpp \
+    servers.cpp
 
-HEADERS += ghpsdr3device.h
+HEADERS += ghpsdr3device.h \
+    servers.h
 
 LIBS += -L$${PWD}/../../pebblelib/$${LIB_DIR} -lpebblelib
 
 OTHER_FILES += \
         fix_plugin_libraries.pri
+
+FORMS += \
+    servers.ui
