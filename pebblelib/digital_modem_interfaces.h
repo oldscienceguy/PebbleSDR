@@ -3,6 +3,7 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include <QWidget>
+#include "device_interfaces.h"
 #include "pebblelib_global.h"
 
 class CPX;
@@ -14,7 +15,7 @@ public:
     virtual void SetSampleRate(int _sampleRate, int _sampleCount) = 0;
 
     //Setup demod mode etc
-    virtual void SetDemodMode(DEMODMODE _demodMode) = 0;
+    virtual void SetDemodMode(DeviceInterface::DEMODMODE _demodMode) = 0;
 
     //Process samples
     virtual CPX * ProcessBlock(CPX * in) = 0;

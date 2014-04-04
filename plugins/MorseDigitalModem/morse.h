@@ -49,7 +49,7 @@ public:
     ~Morse();
     //DigitalModemInterface
     void SetSampleRate(int _sampleRate, int _sampleCount);
-    void SetDemodMode(DEMODMODE _demodMode);
+    void SetDemodMode(DeviceInterface::DEMODMODE _demodMode);
     CPX * ProcessBlock(CPX * in);
     void SetupDataUi(QWidget *parent);
     QString GetPluginName();
@@ -92,7 +92,7 @@ protected:
 
     Ui::dataMorse *dataUi;
     CPXBuf *workingBuf;
-    int demodMode; //See DEMODMODE for enum, move to lib?
+    int demodMode; //See DeviceInterface::DEMODMODE for enum, move to lib?
     bool useNormalizingThreshold; //Switch how we compare tone values to determine rising or falling
 
     int modemFrequency; //CW tone we're looking for.  This is the goertzel freq or the NCO freq for mixer approach

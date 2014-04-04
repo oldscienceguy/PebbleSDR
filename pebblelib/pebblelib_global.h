@@ -11,24 +11,4 @@
 #  define PEBBLELIBSHARED_EXPORT Q_DECL_IMPORT
 #endif
 
-//Enums
-//Temp ifndef while we move things around
-
-enum DEMODMODE {
-    dmAM,
-    dmSAM,
-    dmFMN,
-    dmFMM,
-    dmFMS,
-    dmDSB,
-    dmLSB,
-    dmUSB,
-    dmCWL,
-    dmCWU,
-    dmDIGL,
-    dmDIGU,
-    dmNONE
-};
-
-
 #endif // PEBBLELIB_GLOBAL_H

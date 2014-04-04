@@ -17,25 +17,25 @@
 //CW 200-500hz
 //PSK31 100hz
 
-//Must be in same order as DEMODMODE
+//Must be in same order as DeviceInterface::DEMODMODE
 //Verified with CuteSDR values
 //AM, SAM, FM are expressed in bandwidth, ie 16k am = -8000 to +8000 filter
 //Rest are 0 relative
 
 const Demod::DemodInfo Demod::demodInfo[] = {
-    {dmAM, QStringList() << "20000" << "10000" << "5000", 0, -10000, 10000, 10000, 0, -120, 20},
-    {dmSAM,QStringList() << "20000" << "10000" << "5000", 1, -10000, 10000, 10000, 0, -100, 200},
-    {dmFMN,QStringList() << "30000" << "10000" << "7000", 0, -15000, 15000, 15000, 0, -100, 200},
-    {dmFMM,QStringList(), 0, -100000, 100000, 100000, 0, -100, 200},
-    {dmFMS,QStringList(), 0, -100000, 100000, 100000, 0, -100, 200},
-    {dmDSB,QStringList() << "20000" << "10000" << "5000", 0, -10000, 10000, 10000, 0, -100, 200},
-    {dmLSB,QStringList() << "10000" << "5000" << "2500" << "1500", 1, -20000, 0, 20000, 0, -100, 200},
-    {dmUSB,QStringList() << "10000" << "5000" << "2500" << "1500", 1, 0, 20000, 20000, 0, -100, 200},
-    {dmCWL,QStringList() << "1000" << "500" << "250" << "100" << "50", 1, -1000, 1000, 1000, 0, -100, 200}, //Check CW
-    {dmCWU,QStringList() << "1000" << "500" << "250" << "100" << "50", 1, -1000, 1000, 1000, 0, -100, 200},
-    {dmDIGL,QStringList() << "2000" << "1000" << "500" << "250" << "100",2,-20000, 0, 20000, 0, -100, 200},
-    {dmDIGU,QStringList() << "2000" << "1000" << "500" << "250" << "100",2, 0, 20000, 20000, 0, -100, 200},
-    {dmNONE,QStringList(), 0, 0, 0, 0, 0, -100, 200}
+	{DeviceInterface::dmAM, QStringList() << "20000" << "10000" << "5000", 0, -10000, 10000, 10000, 0, -120, 20},
+	{DeviceInterface::dmSAM,QStringList() << "20000" << "10000" << "5000", 1, -10000, 10000, 10000, 0, -100, 200},
+	{DeviceInterface::dmFMN,QStringList() << "30000" << "10000" << "7000", 0, -15000, 15000, 15000, 0, -100, 200},
+	{DeviceInterface::dmFMM,QStringList(), 0, -100000, 100000, 100000, 0, -100, 200},
+	{DeviceInterface::dmFMS,QStringList(), 0, -100000, 100000, 100000, 0, -100, 200},
+	{DeviceInterface::dmDSB,QStringList() << "20000" << "10000" << "5000", 0, -10000, 10000, 10000, 0, -100, 200},
+	{DeviceInterface::dmLSB,QStringList() << "10000" << "5000" << "2500" << "1500", 1, -20000, 0, 20000, 0, -100, 200},
+	{DeviceInterface::dmUSB,QStringList() << "10000" << "5000" << "2500" << "1500", 1, 0, 20000, 20000, 0, -100, 200},
+	{DeviceInterface::dmCWL,QStringList() << "1000" << "500" << "250" << "100" << "50", 1, -1000, 1000, 1000, 0, -100, 200}, //Check CW
+	{DeviceInterface::dmCWU,QStringList() << "1000" << "500" << "250" << "100" << "50", 1, -1000, 1000, 1000, 0, -100, 200},
+	{DeviceInterface::dmDIGL,QStringList() << "2000" << "1000" << "500" << "250" << "100",2,-20000, 0, 20000, 0, -100, 200},
+	{DeviceInterface::dmDIGU,QStringList() << "2000" << "1000" << "500" << "250" << "100",2, 0, 20000, 20000, 0, -100, 200},
+	{DeviceInterface::dmNONE,QStringList(), 0, 0, 0, 0, 0, -100, 200}
 
 };
 
@@ -53,7 +53,7 @@ Demod::Demod(int _inputRate, int _inputWfmRate, int ns) :
     inputSampleRate = _inputRate;
     inputWfmSampleRate = _inputWfmRate;
 
-    SetDemodMode(dmAM, sampleRate, sampleRate);
+	SetDemodMode(DeviceInterface::dmAM, sampleRate, sampleRate);
 	
     //We're no longer decimating to audio in wfmdemod, so audio rate is same as input rate
     //This fixed bug where FM filters were not working because rate was wrong
@@ -100,22 +100,22 @@ CPX * Demod::ProcessBlock(CPX * in, int bufSize)
 {
 
     switch(mode) {
-        case dmAM: // AM
+		case DeviceInterface::dmAM: // AM
             //SimpleAM(in,out, bufSize);
             demodAM->ProcessBlockFiltered(in,out, bufSize); //Sounds slightly better
             break;
-        case dmSAM: // SAM
+		case DeviceInterface::dmSAM: // SAM
             demodSAM->ProcessBlock(in, out, bufSize);
             break;
-        case dmFMN: // FMN
+		case DeviceInterface::dmFMN: // FMN
             //demodNFM->ProcessBlockFM1(in, out, bufSize);
             //demodNFM->ProcessBlockFM2(in, out, bufSize);
             demodNFM->ProcessBlockNCO(in, out, bufSize);
             break;
-        case dmFMM: // FMW
+		case DeviceInterface::dmFMM: // FMW
             FMMono(in,out, bufSize);
             break;
-        case dmFMS:
+		case DeviceInterface::dmFMS:
             //Will only work if sample rate is at least 192k
             FMStereo(in,out,bufSize);
             break;
@@ -123,11 +123,11 @@ CPX * Demod::ProcessBlock(CPX * in, int bufSize)
 		//We've already filtered the undesired sideband @ BPFilter
 		//So we don't need additional demod
 		//
-		case dmUSB:
+		case DeviceInterface::dmUSB:
             //SimpleUSB(in,out,bufSize); //Only if we still have both sidebands
 			//break;
 		
-		case dmLSB:
+		case DeviceInterface::dmLSB:
             //SimpleLSB(in,out, bufSize); //Only if we still have both sidebands
 			//break;
 
@@ -227,7 +227,7 @@ void Demod::FMStereo(CPX * in, CPX * out, int bufSize)
 void Demod::SetBandwidth(double bandwidth)
 {
     switch (mode) {
-        case dmAM:
+		case DeviceInterface::dmAM:
             demodAM->SetBandwidth(bandwidth);
             break;
         default:
@@ -235,15 +235,15 @@ void Demod::SetBandwidth(double bandwidth)
     }
 }
 
-void Demod::SetDemodMode(DEMODMODE _mode, int _sourceSampleRate, int _audioSampleRate)
+void Demod::SetDemodMode(DeviceInterface::DEMODMODE _mode, int _sourceSampleRate, int _audioSampleRate)
 {
     mode = _mode;
     inputSampleRate = _sourceSampleRate;
     audioSampleRate = _audioSampleRate;
 
     switch (mode) {
-        case dmFMM:
-        case dmFMS:
+		case DeviceInterface::dmFMM:
+		case DeviceInterface::dmFMS:
             //FM Stereo testing
             rdsDecode.DecodeReset(true);
             break;
@@ -253,7 +253,7 @@ void Demod::SetDemodMode(DEMODMODE _mode, int _sourceSampleRate, int _audioSampl
 
 }
 
-DEMODMODE Demod::DemodMode() const
+DeviceInterface::DEMODMODE Demod::DemodMode() const
 {
     return mode;
 }
@@ -268,38 +268,38 @@ void Demod::ResetDemod()
     rdsUpdate = true; //Update display next loop
 }
 
-DEMODMODE Demod::StringToMode(QString m)
+DeviceInterface::DEMODMODE Demod::StringToMode(QString m)
 {
-	if (m == "AM") return dmAM;
-	else if (m == "SAM") return dmSAM;
-	else if (m == "LSB") return dmLSB;
-	else if (m == "USB") return dmUSB;
-	else if (m == "DSB") return dmDSB;
-    else if (m == "FM-Mono") return dmFMM;
-    else if (m == "FM-Stereo") return dmFMS;
-    else if (m == "FMN") return dmFMN;
-	else if (m == "CWL") return dmCWL;
-	else if (m == "CWU") return dmCWU;
-	else if (m == "DIGL") return dmDIGL;
-	else if (m == "DIGU") return dmDIGU;
-	else if (m == "NONE") return dmNONE;
-	else return dmAM; //default
+	if (m == "AM") return DeviceInterface::dmAM;
+	else if (m == "SAM") return DeviceInterface::dmSAM;
+	else if (m == "LSB") return DeviceInterface::dmLSB;
+	else if (m == "USB") return DeviceInterface::dmUSB;
+	else if (m == "DSB") return DeviceInterface::dmDSB;
+	else if (m == "FM-Mono") return DeviceInterface::dmFMM;
+	else if (m == "FM-Stereo") return DeviceInterface::dmFMS;
+	else if (m == "FMN") return DeviceInterface::dmFMN;
+	else if (m == "CWL") return DeviceInterface::dmCWL;
+	else if (m == "CWU") return DeviceInterface::dmCWU;
+	else if (m == "DIGL") return DeviceInterface::dmDIGL;
+	else if (m == "DIGU") return DeviceInterface::dmDIGU;
+	else if (m == "NONE") return DeviceInterface::dmNONE;
+	else return DeviceInterface::dmAM; //default
 }
-QString Demod::ModeToString(DEMODMODE dm)
+QString Demod::ModeToString(DeviceInterface::DEMODMODE dm)
 {
-	if (dm == dmAM) return "AM";
-	else if (dm == dmSAM) return "SAM";
-	else if (dm == dmLSB) return "LSB";
-	else if (dm == dmUSB) return "USB";
-	else if (dm == dmDSB) return "DSB";
-    else if (dm == dmFMM) return "FM-Mono";
-    else if (dm == dmFMS) return "FM-Stereo";
-    else if (dm == dmFMN) return "FMN";
-	else if (dm == dmCWL) return "CWL";
-	else if (dm == dmCWU) return "CWU";
-	else if (dm == dmDIGL) return "DIGL";
-	else if (dm == dmDIGU) return "DIGU";
-	else if (dm == dmNONE) return "NONE";
+	if (dm == DeviceInterface::dmAM) return "AM";
+	else if (dm == DeviceInterface::dmSAM) return "SAM";
+	else if (dm == DeviceInterface::dmLSB) return "LSB";
+	else if (dm == DeviceInterface::dmUSB) return "USB";
+	else if (dm == DeviceInterface::dmDSB) return "DSB";
+	else if (dm == DeviceInterface::dmFMM) return "FM-Mono";
+	else if (dm == DeviceInterface::dmFMS) return "FM-Stereo";
+	else if (dm == DeviceInterface::dmFMN) return "FMN";
+	else if (dm == DeviceInterface::dmCWL) return "CWL";
+	else if (dm == DeviceInterface::dmCWU) return "CWU";
+	else if (dm == DeviceInterface::dmDIGL) return "DIGL";
+	else if (dm == DeviceInterface::dmDIGU) return "DIGU";
+	else if (dm == DeviceInterface::dmNONE) return "NONE";
 	else return "AM"; //default
 }
 

@@ -44,7 +44,7 @@ public:
 	//Called with a requested frequency and the last frequency
 	//Calculates next higher or lower (actual), sets it and return to widget for display
 	double SetFrequency(double fRequested, double fCurrent);
-	void SetMode(DEMODMODE m);
+	void SetMode(DeviceInterface::DEMODMODE m);
 	void SetGain(int g);
 	void SetAgcThreshold(int g);
 	void SetSquelch(int s);

@@ -427,7 +427,7 @@ void SpectrumWidget::mousePressEvent ( QMouseEvent * event )
     }
     event->accept();
 }
-void SpectrumWidget::SetMode(DEMODMODE m, int _modeOffset)
+void SpectrumWidget::SetMode(DeviceInterface::DEMODMODE m, int _modeOffset)
 {
 	demodMode = m;
     modeOffset = _modeOffset;
@@ -545,12 +545,12 @@ void SpectrumWidget::DrawCursor(QPainter *painter, QRect plotFr, bool isZoomed, 
     //This doesn't work for CW because we have to take into account offset
     int xLo, xHi;
     int filterWidth = hiFilter - loFilter; //Could be pos or neg
-    if (demodMode == dmCWU) {
+	if (demodMode == DeviceInterface::dmCWU) {
         //loFilter = 500 hiFilter = 1500 modeOffset = 1000
         //Filter should be displayed 0 to 1000 or -1000 to 0 relative to cursor
         xLo = x1; //At the cursor
         xHi = x1 + filterWidth / hzPerPixel;
-    } else if (demodMode == dmCWL) {
+	} else if (demodMode == DeviceInterface::dmCWL) {
         xLo = x1 - filterWidth / hzPerPixel;
         xHi = x1;
     } else {

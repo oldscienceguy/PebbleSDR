@@ -80,7 +80,7 @@ public:
     double high;
     double tune; //Default freq when user switches to band
     BANDTYPE bType;
-    DEMODMODE mode;
+	DeviceInterface::DEMODMODE mode;
     QString notes;
     //List of stations in band
     int *stations; //Array of indices to stations[]

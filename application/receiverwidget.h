@@ -36,9 +36,9 @@ public:
 	void SetReceiver (Receiver *r); //Our 'model'
 	void SetFrequency(double f);
 	double GetFrequency();
-	void SetMode(DEMODMODE m); 
+	void SetMode(DeviceInterface::DEMODMODE m); 
     void SetDataMode(int _dataMode);
-	DEMODMODE GetMode();
+	DeviceInterface::DEMODMODE GetMode();
 	void SetMessage(QStringList s);
 
     void DisplayBand(double freq);
@@ -90,7 +90,7 @@ private:
 	int highMixer;
 	int lowMixer;
 	bool powerOn;
-	DEMODMODE mode;
+	DeviceInterface::DEMODMODE mode;
     int modeOffset; //make CW +- tone instead of actual freq
     Presets *presets;
 

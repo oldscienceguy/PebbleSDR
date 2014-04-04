@@ -188,7 +188,7 @@ QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, quint16 _option) {
 		case AudioOutputSampleRate:
 			return audioOutputSampleRate;
 			break;
-		case DeviceDemodMode:		//RW quint16 enum DEMODMODE
+		case DeviceDemodMode:		//RW quint16 enum DeviceInterface::DEMODMODE
 			return 0;
 			break;
 		case DeviceOutputGain:		//RW quint16
@@ -310,7 +310,7 @@ bool DeviceInterfaceBase::Set(STANDARD_KEYS _key, QVariant _value, quint16 _opti
 		case AudioOutputSampleRate:
 			Q_UNREACHABLE();
 			break;
-		case DeviceDemodMode:		//RW quint16 enum DEMODMODE
+		case DeviceDemodMode:		//RW quint16 enum DeviceInterface::DEMODMODE
 			break;
 		case DeviceOutputGain:		//RW quint16
 			break;

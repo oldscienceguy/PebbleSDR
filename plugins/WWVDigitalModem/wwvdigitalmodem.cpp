@@ -359,7 +359,7 @@ WWVDigitalModem::~WWVDigitalModem()
 {
 }
 
-void WWVDigitalModem::SetDemodMode(DEMODMODE _demodMode)
+void WWVDigitalModem::SetDemodMode(DeviceInterface::DEMODMODE _demodMode)
 {
 }
 

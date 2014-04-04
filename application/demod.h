@@ -11,7 +11,7 @@
 #include "iir.h"
 #include "demod/rdsdecode.h"
 #include "ui_data-band.h"
-#include "../pebblelib/pebblelib_global.h" //Pick up common enums like DEMODMODE
+#include "device_interfaces.h"
 
 class Demod_AM;
 class Demod_SAM;
@@ -31,14 +31,14 @@ public:
     void SetupDataUi(QWidget *parent);
 
     CPX * ProcessBlock(CPX * in, int _numSamples);
-    DEMODMODE DemodMode() const;
+	DeviceInterface::DEMODMODE DemodMode() const;
     void ResetDemod(); //Resets all data decoders, called after frequency change from receiver
-    void SetDemodMode(DEMODMODE mode, int _sourceSampleRate, int _audioSampleRate);
-	static DEMODMODE StringToMode(QString m);
-	static QString ModeToString(DEMODMODE dm);
+	void SetDemodMode(DeviceInterface::DEMODMODE mode, int _sourceSampleRate, int _audioSampleRate);
+	static DeviceInterface::DEMODMODE StringToMode(QString m);
+	static QString ModeToString(DeviceInterface::DEMODMODE dm);
 
     struct DemodInfo {
-        DEMODMODE mode;
+		DeviceInterface::DEMODMODE mode;
         QStringList filters;
         qint32 defaultFilter;
         qint32 lowCutMin; //Low bandpass
@@ -64,7 +64,7 @@ private:
     Demod_WFM *demodWFM;
     Demod_NFM *demodNFM;
 
-    DEMODMODE mode;
+	DeviceInterface::DEMODMODE mode;
     Ui::dataBand *dataUi;
     bool outputOn;
 

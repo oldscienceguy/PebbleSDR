@@ -43,6 +43,8 @@ public:
 	cbProcessBandscopeData ProcessBandscopeData;
 	cbProcessAudioData ProcessAudioData;
 
+	virtual bool Command(STANDARD_COMMANDS _cmd, QVariant _arg) {}
+
 	//Defaults so devices only have to handle what they need to
 	virtual QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
 	virtual bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option = 0);

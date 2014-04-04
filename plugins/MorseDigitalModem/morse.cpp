@@ -174,7 +174,7 @@ void Morse::SetSampleRate(int _sampleRate, int _sampleCount)
 
     syncTiming();
 
-    demodMode = dmCWL;
+	demodMode = DeviceInterface::dmCWL;
     outputBufIndex = 0;
 
 
@@ -292,7 +292,7 @@ int Morse::UsecToWPM(quint32 u)
     return DOT_MAGIC / u;
 }
 
-void Morse::SetDemodMode(DEMODMODE _demodMode)
+void Morse::SetDemodMode(DeviceInterface::DEMODMODE _demodMode)
 {
     demodMode = _demodMode;
 }
@@ -591,9 +591,9 @@ CPX * Morse::ProcessBlock(CPX *in)
     //We need to account for modemOffset in ReceiverWidget added so we hear tone but freq display is correct
     //Actual freq for CWU will be freq + modemFrequency for CWL will be freq -modemFrequency.
     //And we want actual freq to be at baseband
-    if (demodMode == dmCWL)
+	if (demodMode == DeviceInterface::dmCWL)
         modemDownConvert.SetFrequency(-modemFrequency);
-    else if (demodMode == dmCWU)
+	else if (demodMode == DeviceInterface::dmCWU)
         modemDownConvert.SetFrequency(modemFrequency);
     else
         //Other modes, like DIGU and DIGL will still work with cursor on signal, but we won't hear tones.  Feature?

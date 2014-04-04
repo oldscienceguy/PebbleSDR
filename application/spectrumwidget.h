@@ -26,7 +26,7 @@ public:
 	void SetMixer(int m, double f);
 	void SetFilter(int lo, int hi);
 	void Run(bool r);
-    void SetMode(DEMODMODE m, int _modeOffset);
+    void SetMode(DeviceInterface::DEMODMODE m, int _modeOffset);
 	//Text is displayed when spectrum is 'off' for now
 	void SetMessage(QStringList s);
 	void SetSignalSpectrum(SignalSpectrum *s);
@@ -88,7 +88,7 @@ private:
 
 	SignalSpectrum::DISPLAYMODE spectrumMode;
 	int sampleRate;
-	DEMODMODE demodMode;
+	DeviceInterface::DEMODMODE demodMode;
 
     bool useZoomSpectrum; //True if zoom is within high-res buffer range
 	bool isRunning;

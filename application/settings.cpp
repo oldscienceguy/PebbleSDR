@@ -3,7 +3,7 @@
 #include "global.h"
 #include "settings.h"
 #include "soundcard.h"
-#include "demod.h" //For DEMODMODE
+#include "demod.h" //For DeviceInterface::DEMODMODE
 #include "receiver.h"
 #include "testbench.h"
 

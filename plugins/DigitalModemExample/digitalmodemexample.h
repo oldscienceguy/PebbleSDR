@@ -23,7 +23,7 @@ public:
     void SetSampleRate(int _sampleRate, int _sampleCount);
 
     //Setup demod mode etc
-    void SetDemodMode(DEMODMODE _demodMode);
+    void SetDemodMode(DeviceInterface::DEMODMODE _demodMode);
 
     //Process samples
     CPX * ProcessBlock(CPX * in);

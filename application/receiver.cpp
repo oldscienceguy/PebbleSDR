@@ -172,11 +172,11 @@ bool Receiver::On()
 	audioOutRate = sdr->Get(DeviceInterface::AudioOutputSampleRate).toUInt();
     //SetDataRate MaxBW should be driven by our filter selection, ie width of filter
     //For now just set to widest filter, which is 20k for AM, 30k for FMN
-    demodSampleRate = downConvert1.SetDataRate(sampleRate, Demod::demodInfo[dmFMN].maxOutputBandWidth);
+	demodSampleRate = downConvert1.SetDataRate(sampleRate, Demod::demodInfo[DeviceInterface::dmFMN].maxOutputBandWidth);
 
     //For FMStereo, initial rate should be close to 300k
     //Different decimation technique than SetDataRate
-    demodWfmSampleRate = downConvertWfm1.SetDataRateSimple(sampleRate, Demod::demodInfo[dmFMS].maxOutputBandWidth);
+	demodWfmSampleRate = downConvertWfm1.SetDataRateSimple(sampleRate, Demod::demodInfo[DeviceInterface::dmFMS].maxOutputBandWidth);
 
     //We need original sample rate, and post mixer sample rate for zoomed spectrum
     signalSpectrum = new SignalSpectrum(sampleRate, demodSampleRate, framesPerBuffer, settings);
@@ -462,10 +462,10 @@ double Receiver::SetFrequency(double fRequested, double fCurrent)
 }
 
 //Called by ReceiverWidget to sets demod mode and default bandpass filter for each mode
-void Receiver::SetMode(DEMODMODE m)
+void Receiver::SetMode(DeviceInterface::DEMODMODE m)
 {
 	if(demod != NULL) {
-        if (m == dmFMM || m == dmFMS)
+		if (m == DeviceInterface::dmFMM || m == DeviceInterface::dmFMS)
             signalSpectrum->SetSampleRate(sampleRate, demodWfmSampleRate);
         else
             signalSpectrum->SetSampleRate(sampleRate, demodSampleRate);
@@ -706,7 +706,7 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
     double resampRate;
 
     //global->perform.StartPerformance();
-    if (demod->DemodMode() == dmFMM || demod->DemodMode() == dmFMS) {
+	if (demod->DemodMode() == DeviceInterface::dmFMM || demod->DemodMode() == DeviceInterface::dmFMS) {
         //These steps are at demodWfmSampleRate NOT demodSampleRate
         //Special handling for wide band fm
 
@@ -786,7 +786,7 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
         //global->perform.StartPerformance();
 
         //Tune only mode, no demod or output
-        if (demod->DemodMode() == dmNONE){
+		if (demod->DemodMode() == DeviceInterface::dmNONE){
             CPXBuf::clear(audioBuf,framesPerBuffer);
             return;
         }

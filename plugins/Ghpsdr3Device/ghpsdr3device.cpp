@@ -212,7 +212,7 @@ QVariant Ghpsdr3Device::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 				return serverInfo.isSlave;
 		case DeviceDemodMode:
 			if (!serverInfo.isValid || !serverInfo.isSlave)
-				return DEMODMODE::dmAM;
+				return DeviceInterface::DEMODMODE::dmAM;
 			else
 				return serverInfo.demodMode;
 		default:
@@ -229,7 +229,7 @@ bool Ghpsdr3Device::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, qu
 			if (serverInfo.isValid && !serverInfo.isSlave)
 				return SendFrequencyCmd(_value.toFloat());
 			return false;
-		case DeviceDemodMode:		//RW quint16 enum DEMODMODE
+		case DeviceDemodMode:		//RW quint16 enum DeviceInterface::DEMODMODE
 			if (serverInfo.isValid && !serverInfo.isSlave)
 				return true;
 			return false;
@@ -633,19 +633,19 @@ void Ghpsdr3Device::TCPSocketNewData()
 					//Map demo mode to Pebble
 					gDemodMode gdm = (gDemodMode)rx.cap(3).toInt();
 					switch (gdm) {
-						case LSB: serverInfo.demodMode = DEMODMODE::dmLSB; break;
-						case USB: serverInfo.demodMode = DEMODMODE::dmUSB; break;
-						case DSB: serverInfo.demodMode = DEMODMODE::dmDSB; break;
-						case CWL: serverInfo.demodMode = DEMODMODE::dmCWL; break;
-						case CWH: serverInfo.demodMode = DEMODMODE::dmCWU; break;
-						case FM: serverInfo.demodMode = DEMODMODE::dmFMN; break; //Check
-						case AM: serverInfo.demodMode = DEMODMODE::dmAM; break;
-						case DIGU: serverInfo.demodMode = DEMODMODE::dmDIGU; break;
-						case SPEC: serverInfo.demodMode = DEMODMODE::dmNONE; break;
-						case DIGL: serverInfo.demodMode = DEMODMODE::dmDIGL; break;
-						case SAM: serverInfo.demodMode = DEMODMODE::dmSAM; break;
-						case DRM: serverInfo.demodMode = DEMODMODE::dmNONE; break; //Missing
-						default: serverInfo.demodMode = DEMODMODE::dmAM; break;
+						case LSB: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmLSB; break;
+						case USB: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmUSB; break;
+						case DSB: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmDSB; break;
+						case CWL: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmCWL; break;
+						case CWH: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmCWU; break;
+						case FM: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmFMN; break; //Check
+						case AM: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmAM; break;
+						case DIGU: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmDIGU; break;
+						case SPEC: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmNONE; break;
+						case DIGL: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmDIGL; break;
+						case SAM: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmSAM; break;
+						case DRM: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmNONE; break; //Missing
+						default: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmAM; break;
 
 					}
 

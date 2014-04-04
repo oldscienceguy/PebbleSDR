@@ -52,8 +52,8 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	ui.settingsButton->setMenu(settingsMenu);
 #endif
 
-    ui.filterBox->addItems(Demod::demodInfo[dmAM].filters); //Default
-    ui.filterBox->setCurrentIndex(Demod::demodInfo[dmAM].defaultFilter);
+	ui.filterBox->addItems(Demod::demodInfo[DeviceInterface::dmAM].filters); //Default
+	ui.filterBox->setCurrentIndex(Demod::demodInfo[DeviceInterface::dmAM].defaultFilter);
 
     QVariant v;
     foreach (PluginInfo p, receiver->getModemPluginInfo()) {
@@ -447,7 +447,7 @@ void ReceiverWidget::SetMessage(QStringList s)
 {
 	ui.spectrumWidget->SetMessage(s);
 }
-void ReceiverWidget::SetMode(DEMODMODE m)
+void ReceiverWidget::SetMode(DeviceInterface::DEMODMODE m)
 {
 	QString text = Demod::ModeToString(m);
 	int i = ui.modeBox->findText(text);
@@ -457,7 +457,7 @@ void ReceiverWidget::SetMode(DEMODMODE m)
 		modeSelectionChanged(text);
 	}
 }
-DEMODMODE ReceiverWidget::GetMode()
+DeviceInterface::DEMODMODE ReceiverWidget::GetMode()
 {
 	return mode;
 }
@@ -526,22 +526,22 @@ void ReceiverWidget::powerToggled(bool on)
 			frequency=sdr->Get(DeviceInterface::StartupFrequency).toDouble();
 			SetFrequency(frequency);
 			//This triggers indirect frequency set, so make sure we set widget first
-			SetMode((DEMODMODE)sdr->Get(DeviceInterface::StartupDemodMode).toInt());
+			SetMode((DeviceInterface::DEMODMODE)sdr->Get(DeviceInterface::StartupDemodMode).toInt());
 		}
 		else if (startupType == DeviceInterface::SETFREQ) {
 			frequency = sdr->Get(DeviceInterface::UserFrequency).toDouble();
 			SetFrequency(frequency);
-			SetMode((DEMODMODE)sdr->Get(DeviceInterface::LastDemodMode).toInt());
+			SetMode((DeviceInterface::DEMODMODE)sdr->Get(DeviceInterface::LastDemodMode).toInt());
 		}
 		else if (startupType == DeviceInterface::LASTFREQ) {
 			frequency = sdr->Get(DeviceInterface::LastFrequency).toDouble();
 			SetFrequency(frequency);
-			SetMode((DEMODMODE)sdr->Get(DeviceInterface::LastDemodMode).toInt());
+			SetMode((DeviceInterface::DEMODMODE)sdr->Get(DeviceInterface::LastDemodMode).toInt());
 		}
 		else {
 			frequency = 10000000;
 			SetFrequency(frequency);
-			SetMode(dmAM);
+			SetMode(DeviceInterface::dmAM);
 		}
 
 
@@ -678,17 +678,17 @@ void ReceiverWidget::filterSelectionChanged(QString f)
 	int lo=0,hi=0;
 	switch (mode)
 	{
-	case dmLSB:
+	case DeviceInterface::dmLSB:
 		lo=-filter;
         hi = 0;
 		break;
-	case dmUSB:
+	case DeviceInterface::dmUSB:
         lo=0;
 		hi=filter;
 		break;
-	case dmAM:
-	case dmSAM:
-	case dmDSB:
+	case DeviceInterface::dmAM:
+	case DeviceInterface::dmSAM:
+	case DeviceInterface::dmDSB:
 		lo=-filter/2;
 		hi=filter/2;
 		break;
@@ -709,34 +709,34 @@ void ReceiverWidget::filterSelectionChanged(QString f)
      * So we take the filter width and add 1/2 it to the modeOffset and 1/2 to the filter itself
      *
     */
-    case dmCWU:
+	case DeviceInterface::dmCWU:
         //modeOffset = -1000 (so we can use it directly in other places without comparing cwu and cwl)
         //We want 500hz filter to run from 750 to 1250 so modeOffset is right in the middle
         lo = -modeOffset - (filter/2); // --1000 - 250 = 750
         hi = -modeOffset + (filter/2); // --1000 + 250 = 1250
 		break;
-	case dmCWL:
+	case DeviceInterface::dmCWL:
         //modeOffset = +1000 (default)
         //We want 500hz filter to run from -1250 to -750 so modeOffset is right in the middle
         lo = -modeOffset - (filter/2); // - +1000 - 250 = -1250
         hi = -modeOffset + (filter/2); // +1000 + 250 = -750
         break;
     //Same as CW but with no offset tone, drop if not needed
-	case dmDIGU:
+	case DeviceInterface::dmDIGU:
         lo=0;
 		hi=filter;
 		break;
-	case dmDIGL:
+	case DeviceInterface::dmDIGL:
 		lo=-filter;
         hi= 0;
 		break;
-    case dmFMM:
-    case dmFMS:
-	case dmFMN:
+	case DeviceInterface::dmFMM:
+	case DeviceInterface::dmFMS:
+	case DeviceInterface::dmFMN:
 		lo=-filter/2;
 		hi= filter/2;
 		break;
-	case dmNONE:
+	case DeviceInterface::dmNONE:
 		break;
 	}
 
@@ -804,11 +804,11 @@ void ReceiverWidget::modeSelectionChanged(QString m)
 	switch (mode)
 	{
 	//Todo: Work on this, still not accurately reflecting click
-	case dmCWU:
+	case DeviceInterface::dmCWU:
         //Subtract modeOffset from actual freq so we hear upper tone
         modeOffset = -global->settings->modeOffset; //Same as CW decoder
 		break;
-	case dmCWL:
+	case DeviceInterface::dmCWL:
         //Add modeOffset to actual tuned freq so we hear lower tone
         modeOffset = global->settings->modeOffset;
 		break;
@@ -921,7 +921,7 @@ void ReceiverWidget::updateSlaveInfo()
 	double f = sdr->Get(DeviceInterface::DeviceFrequency).toDouble();
 	SetFrequency(f);
 
-	DEMODMODE dm = (DEMODMODE)sdr->Get(DeviceInterface::DeviceDemodMode).toInt();
+	DeviceInterface::DEMODMODE dm = (DeviceInterface::DEMODMODE)sdr->Get(DeviceInterface::DeviceDemodMode).toInt();
 	SetMode(dm);
 
 	receiver->SetWindowTitle();
@@ -1067,7 +1067,7 @@ void ReceiverWidget::bandChanged(int s)
     //If no specific tune freq for band select, use low
     if (freq == 0)
         freq = bands[bandIndex].low;
-    DEMODMODE mode = bands[bandIndex].mode;
+	DeviceInterface::DEMODMODE mode = bands[bandIndex].mode;
 
     //Make sure we're in LO mode
     setLoMode(true);

@@ -366,7 +366,7 @@ private:
 		bool isSlave;
 		quint16 serverNum; //Not sure this is correct
 		quint32 frequency;
-		DEMODMODE demodMode; //Pebble demod mode, mapped to gDemodMode
+		DeviceInterface::DEMODMODE demodMode; //Pebble demod mode, mapped to gDemodMode
 		quint16 zoom;
 		qint16 lowFilter;
 		qint16 highFilter;
