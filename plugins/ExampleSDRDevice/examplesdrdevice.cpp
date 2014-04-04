@@ -20,36 +20,55 @@ bool ExampleSDRDevice::Initialize(cbProcessIQData _callback,
 	return true;
 }
 
-bool ExampleSDRDevice::Connect()
+
+bool ExampleSDRDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _arg)
 {
-	return true;
-}
+	switch (_cmd) {
+		case CmdConnect:
+			//Device specific code follows
+			return true;
 
-bool ExampleSDRDevice::Disconnect()
-{
-	return true;
-}
+		case CmdDisconnect:
+			//Device specific code follows
+			return true;
 
-void ExampleSDRDevice::Start()
-{
+		case CmdStart:
+			//Device specific code follows
+			return true;
 
-}
+		case CmdStop:
+			//Device specific code follows
+			return true;
 
-void ExampleSDRDevice::Stop()
-{
+		case CmdReadSettings:
+			DeviceInterfaceBase::ReadSettings();
+			//Device specific settings follow
+			return true;
 
-}
+		case CmdWriteSettings:
+			DeviceInterfaceBase::WriteSettings();
+			//Device specific settings follow
+			return true;
 
-void ExampleSDRDevice::ReadSettings()
-{
-	DeviceInterfaceBase::ReadSettings();
-	//Device specific settings follow
-}
+		case CmdDisplayOptionUi: {
+			//Add ui header file include
+			//Add private uiOptions
 
-void ExampleSDRDevice::WriteSettings()
-{
-	DeviceInterfaceBase::WriteSettings();
-	//Device specific settings follow
+			//Arg is QWidget *parent
+			//Use QVariant::fromValue() to pass, and value<type passed>() to get back
+			QWidget *parent = _arg.value<QWidget*>();
+			if (optionUi != NULL)
+				delete optionUi;
+
+			//Change .h and this to correct class name for ui
+			optionUi = new Ui::ExampleSdrOptions();
+			optionUi->setupUi(parent);
+			parent->setVisible(true);
+			return true;
+		}
+		default:
+			return false;
+	}
 }
 
 QVariant ExampleSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
@@ -81,18 +100,6 @@ bool ExampleSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value,
 		default:
 			return DeviceInterfaceBase::Set(_key, _value, _option);
 	}
-}
-
-//Add ui header file include
-//Add private uiOptions
-void ExampleSDRDevice::SetupOptionUi(QWidget *parent)
-{
-	if (optionUi != NULL)
-		delete optionUi;
-	//Change .h and this to correct class name for ui
-	optionUi = new Ui::ExampleSdrOptions();
-	optionUi->setupUi(parent);
-	parent->setVisible(true);
 }
 
 void ExampleSDRDevice::producerWorker(cbProducerConsumerEvents _event)

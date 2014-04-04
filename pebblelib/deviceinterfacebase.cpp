@@ -1,4 +1,5 @@
 #include "deviceinterfacebase.h"
+#include <QWidget>
 
 DeviceInterfaceBase::DeviceInterfaceBase()
 {
@@ -98,10 +99,6 @@ void DeviceInterfaceBase::SetupOptionUi(QWidget *parent)
 bool DeviceInterfaceBase::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _arg)
 {
 	switch (_cmd) {
-		case CmdInitProcessIQDataCallback:		//Arg is callback
-		case CmdInitProcessBandscopeDataCallback:	//Arg is callback
-		case CmdInitProcessAudioDataCallback:		//Arg is callback
-		case CmdInitOptionUi:						//Arg is QWidget *parent
 		case CmdConnect:
 			//Transition
 			return this->Connect();
@@ -118,6 +115,10 @@ bool DeviceInterfaceBase::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVari
 			return true;
 		case CmdWriteSettings:
 			this->WriteSettings();
+			return true;
+		case CmdDisplayOptionUi:						//Arg is QWidget *parent
+			//Use QVariant::fromValue() to pass, and value<type passed>() to get back
+			this->SetupOptionUi(_arg.value<QWidget*>());
 			return true;
 		default:
 			return false;

@@ -28,20 +28,6 @@ public:
 							cbProcessBandscopeData _callbackBandscope,
 							cbProcessAudioData _callbackAudio,
 							quint16 _framesPerBuffer);
-	virtual bool Connect();
-	virtual bool Disconnect();
-	virtual void Start();
-	virtual void Stop();
-
-	//Display device option widget in settings dialog
-	virtual void SetupOptionUi(QWidget *parent);
-
-	virtual void ReadSettings();
-	virtual void WriteSettings();
-
-	cbProcessIQData ProcessIQData;
-	cbProcessBandscopeData ProcessBandscopeData;
-	cbProcessAudioData ProcessAudioData;
 
 	virtual bool Command(STANDARD_COMMANDS _cmd, QVariant _arg);
 
@@ -50,7 +36,23 @@ public:
 	virtual bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option = 0);
 
 protected:
+	//Used to be in public DeviceInterface, made private as a transition so we don't have to immediately re-write all the plugins
+	virtual bool Connect();
+	virtual bool Disconnect();
+	virtual void Start();
+	virtual void Stop();
+	virtual void ReadSettings();
+	virtual void WriteSettings();
+	//Display device option widget in settings dialog
+	virtual void SetupOptionUi(QWidget *parent);
+
+
 	virtual void InitSettings(QString fname);
+
+	cbProcessIQData ProcessIQData;
+	cbProcessBandscopeData ProcessBandscopeData;
+	cbProcessAudioData ProcessAudioData;
+
 
 	//Todo: Flag which of these is just a convenience for Pebble, vs required for the interface
 	quint16 framesPerBuffer;

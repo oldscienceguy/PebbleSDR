@@ -36,7 +36,6 @@ typedef std::function<void(quint8 *, quint16)> cbProcessBandscopeData;
 //ProcessAudioData callback: Call with CPX buffer with left/right audio values and number of samples
 typedef std::function<void(CPX *, quint16)> cbProcessAudioData;
 
-
 class PEBBLELIBSHARED_EXPORT DeviceInterface
 {
 public:
@@ -97,16 +96,14 @@ public:
 	};
 
 	enum STANDARD_COMMANDS {
-		CmdInitProcessIQDataCallback = 0,		//Arg is callback
-		CmdInitProcessBandscopeDataCallback,	//Arg is callback
-		CmdInitProcessAudioDataCallback,		//Arg is callback
-		CmdInitOptionUi,						//Arg is QWidget *parent
 		CmdConnect,
 		CmdDisconnect,
 		CmdStart,
 		CmdStop,
 		CmdReadSettings,
 		CmdWriteSettings,
+		//Display device option widget in settings dialog
+		CmdDisplayOptionUi,						//Arg is QWidget *parent
 	};
 
 	enum DEMODMODE {
@@ -153,9 +150,6 @@ public:
 							cbProcessBandscopeData _callbackBandscope,
 							cbProcessAudioData _callbackAudio,
 							quint16 _framesPerBuffer) = 0;
-
-    //Display device option widget in settings dialog
-    virtual void SetupOptionUi(QWidget *parent) = 0;
 
 	virtual bool Command(STANDARD_COMMANDS _cmd, QVariant _arg) = 0;
 

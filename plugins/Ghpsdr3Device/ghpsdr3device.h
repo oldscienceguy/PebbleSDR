@@ -251,16 +251,8 @@ public:
 					cbProcessBandscopeData _callbackBandscope,
 					cbProcessAudioData _callbackAudio,
 					quint16 _framesPerBuffer);
-	bool Connect();
-	bool Disconnect();
-	void Start();
-	void Stop();
-	void ReadSettings();
-	void WriteSettings();
 	QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
 	bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option = 0);
-	//Display device option widget in settings dialog
-	void SetupOptionUi(QWidget *parent);
 
 signals:
 	void CheckNewData();
@@ -273,6 +265,15 @@ private slots:
 	//void UDPSocketNewData();
 
 private:
+	bool Connect();
+	bool Disconnect();
+	void Start();
+	void Stop();
+	void ReadSettings();
+	void WriteSettings();
+	//Display device option widget in settings dialog
+	void SetupOptionUi(QWidget *parent);
+
 	static const quint16 SEND_BUFFER_SIZE = 64;
 	static const quint16 AUDIO_PACKET_SIZE = 2000; //# 8bit samples we get from server
 	static const quint16 AUDIO_OUTPUT_SIZE = 512; //#audio samples to sent to output at a time

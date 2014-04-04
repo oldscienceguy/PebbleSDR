@@ -41,18 +41,28 @@ public:
 					cbProcessBandscopeData _callbackBandscope,
 					cbProcessAudioData _callbackAudio,
 					quint16 _framesPerBuffer);
+	QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
+	bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option = 0);
+
+private slots:
+		void selectAutomatic(bool b);
+		void selectInput0(bool b);
+		void selectInput1(bool b);
+		void selectInput2(bool b);
+		void selectInput3(bool b);
+		void serialNumberChanged(int s);
+		void fifiUseABPFChanged(bool b);
+
+private:
 	bool Connect();
 	bool Disconnect();
 	void Start();
 	void Stop();
 	void ReadSettings();
 	void WriteSettings();
-	QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
-	bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option = 0);
 	//Display device option widget in settings dialog
 	void SetupOptionUi(QWidget *parent);
 
-protected:
 	//Device specific
 	bool Version(short *major, short *minor);
 	bool RestartSoftRock();
@@ -92,16 +102,6 @@ protected:
 	bool FiFiReadPreselectorMode(quint32 *mode);
 	bool FiFiWritePreselctorMode(quint32 mode);
 
-private slots:
-		void selectAutomatic(bool b);
-		void selectInput0(bool b);
-		void selectInput1(bool b);
-		void selectInput2(bool b);
-		void selectInput3(bool b);
-		void serialNumberChanged(int s);
-		void fifiUseABPFChanged(bool b);
-
-private:
 	void InitSettings(QString fname);
 
 	void producerWorker(cbProducerConsumerEvents _event);

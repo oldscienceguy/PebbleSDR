@@ -193,7 +193,8 @@ void SdrOptions::UpdateOptions()
 	//We're calling a virtual function in a base class method and expect it to call the over-ridden method in derived class
 	//This only works because ShowSdrOptions() is being called via a pointer to the derived class
 	//Some other method that's called from the base class could not do this
-	di->SetupOptionUi(sd->sdrSpecific);
+	//di->SetupOptionUi(sd->sdrSpecific);
+	di->Command(DeviceInterface::CmdDisplayOptionUi,QVariant::fromValue(sd->sdrSpecific));
 
 }
 

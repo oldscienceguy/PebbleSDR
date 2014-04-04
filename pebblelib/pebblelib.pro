@@ -9,6 +9,7 @@ include(../application/pebbleqt.pri)
 
 QT -= gui
 QT += multimedia
+QT += widgets #Needed for QWidget conversion
 
 TARGET = pebblelib
 VERSION = 1.0.0

@@ -130,16 +130,8 @@ public:
 					cbProcessBandscopeData _callbackBandscope,
 					cbProcessAudioData _callbackAudio,
 					quint16 _framesPerBuffer);
-	bool Connect();
-	bool Disconnect();
-	void Start();
-	void Stop();
-	void ReadSettings();
-	void WriteSettings();
 	QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
 	bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option = 0);
-	//Display device option widget in settings dialog
-	void SetupOptionUi(QWidget *parent);
 
 	static void UnpackHeader(quint8 byte0, quint8 byte1, ControlHeader *unpacked);
 	static void DoubleToBuf(unsigned char *buf, double value);
@@ -160,6 +152,15 @@ private slots:
 
 
 private:
+	bool Connect();
+	bool Disconnect();
+	void Start();
+	void Stop();
+	void ReadSettings();
+	void WriteSettings();
+	//Display device option widget in settings dialog
+	void SetupOptionUi(QWidget *parent);
+
 	enum SDRDEVICE {SDR_IQ =0, SDR_IP, AFEDRI_USB};
 
 	void producerWorker(cbProducerConsumerEvents _event);

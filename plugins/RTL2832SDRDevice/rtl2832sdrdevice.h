@@ -58,27 +58,9 @@ public:
 					cbProcessBandscopeData _callbackBandscope,
 					cbProcessAudioData _callbackAudio,
 					quint16 _framesPerBuffer);
-	bool Connect();
-    bool Disconnect();
-    void Start();
-    void Stop();
-
-    void ReadSettings();
-    void WriteSettings();
-
-    double GetStartupFrequency();
-    double GetHighLimit();
-    double GetLowLimit();
 
 	QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
 	bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option = 0);
-
-    //Display device option widget in settings dialog
-    void SetupOptionUi(QWidget *parent);
-
-protected:
-    void producerWorker(cbProducerConsumerEvents _event);
-    void consumerWorker(cbProducerConsumerEvents _event);
 
 signals:
     void reset(); //When no recourse, signal this to restart
@@ -102,7 +84,23 @@ private slots:
     void OffsetModeChanged(bool _selected);
 
 private:
-    enum PEBBLE_DEVICES {RTL_USB = 0,RTL_TCP=1};
+	bool Connect();
+	bool Disconnect();
+	void Start();
+	void Stop();
+	void ReadSettings();
+	void WriteSettings();
+	//Display device option widget in settings dialog
+	void SetupOptionUi(QWidget *parent);
+
+	void producerWorker(cbProducerConsumerEvents _event);
+	void consumerWorker(cbProducerConsumerEvents _event);
+
+	double GetStartupFrequency();
+	double GetHighLimit();
+	double GetLowLimit();
+
+	enum PEBBLE_DEVICES {RTL_USB = 0,RTL_TCP=1};
     enum SAMPLING_MODES {NORMAL=0, DIRECT_I=1, DIRECT_Q=2};
 
     //This comes from rtl-sdr.h in library, update if new devices are supported
