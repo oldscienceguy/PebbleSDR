@@ -41,8 +41,8 @@ SdrServer::SdrServer(int &argc, char **argv) : QCoreApplication(argc,argv)
 SdrServer::~SdrServer()
 {
     if (sdr != NULL) {
-        sdr->Stop();
-        sdr->Disconnect();
+		sdr->Command(DeviceInterface::CmdStop,0);
+		sdr->Command(DeviceInterface::CmdDisconnect,0);
     }
 }
 
@@ -65,23 +65,23 @@ void SdrServer::newConnection()
     connect(socket,SIGNAL(readyRead()),this,SLOT(newData()));
     connect(socket,SIGNAL(disconnected()),this,SLOT(closeConnection()));
 
-    sdr->ReadSettings(); //Gets current settings or defaults if first use
+	sdr->Command(DeviceInterface::CmdReadSettings,0); //Gets current settings or defaults if first use
 
 	sdr->Initialize(std::bind(&RtlTcpProtocol::ProcessIQData, protocol, _1, _2),NULL,NULL,2048);
 
-    if (!sdr->Connect()) {
+	if (!sdr->Command(DeviceInterface::CmdConnect,0)) {
         qDebug()<<"Could not connect to device";
         return;
     }
-    sdr->Start();
+	sdr->Command(DeviceInterface::CmdStart,0);
 
 }
 
 void SdrServer::closeConnection()
 {
     qDebug()<<"Connection closed";
-    sdr->Stop();
-    sdr->Disconnect();
+	sdr->Command(DeviceInterface::CmdStop,0);
+	sdr->Command(DeviceInterface::CmdDisconnect,0);
     protocol->Reset();
 
 }

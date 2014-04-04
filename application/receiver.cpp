@@ -103,7 +103,7 @@ bool Receiver::On()
     //std::function<void(CPX *, quint16)> cb = std::bind(&Receiver::ProcessIQData, _receiver, std::placeholders::_1, std::placeholders::_2);
     //bind(Method ptr, object, arg1, ... argn)
 
-    sdr->ReadSettings(); //Always start with most current
+	sdr->Command(DeviceInterface::CmdReadSettings,0); //Always start with most current
 	if (!sdr->Initialize(std::bind(&Receiver::ProcessIQData, this, _1, _2),
 						 std::bind(&Receiver::ProcessBandscopeData, this, _1, _2),
 						 std::bind(&Receiver::ProcessAudioData, this, _1, _2),
@@ -112,7 +112,7 @@ bool Receiver::On()
 		return false;
 	}
 
-	if (!sdr->Connect()){
+	if (!sdr->Command(DeviceInterface::CmdConnect,0)){
         QMessageBox::information(NULL,"Pebble","SDR device is not connected");
 		Off();
 		return false;
@@ -236,7 +236,7 @@ bool Receiver::On()
 
 	//This should always be last because it starts samples flowing through the processBlocks
 	audioOutput->StartOutput(sdr->Get(DeviceInterface::OutputDeviceName).toString(), audioOutRate);
-	sdr->Start();
+	sdr->Command(DeviceInterface::CmdStart,0);
 
     //Don't set title until we connect and start.
     //Some drivers handle multiple devices (RTL2832) and we need connection data
@@ -283,7 +283,7 @@ bool Receiver::Off()
 
 	//Stop incoming samples first
     if (sdr != NULL) {
-        sdr->Stop();
+		sdr->Command(DeviceInterface::CmdStop,0);
     }
 	if (audioOutput != NULL)
 		audioOutput->Stop();
@@ -294,9 +294,9 @@ bool Receiver::Off()
 	if (sdr != NULL){
         //Save any run time settings
 		sdr->Set(DeviceInterface::LastFrequency,frequency);
-		sdr->WriteSettings(); //Always save last mode, last freq, etc
+		sdr->Command(DeviceInterface::CmdWriteSettings,0); //Always save last mode, last freq, etc
 
-		sdr->Disconnect();
+		sdr->Command(DeviceInterface::CmdDisconnect,0);
         sdr = NULL;
 	}
 	if (demod != NULL) {

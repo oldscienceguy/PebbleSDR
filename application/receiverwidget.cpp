@@ -174,7 +174,7 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 			p.type == PluginInfo::DEVICE_PLUGIN) {
                 cur = sdrSelector->count()-1;
 				sdr = p.deviceInterface;
-				sdr->ReadSettings();
+				sdr->Command(DeviceInterface::CmdReadSettings,0);
 				global->sdr = sdr;
         }
     }

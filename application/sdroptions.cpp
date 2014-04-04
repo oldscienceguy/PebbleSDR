@@ -63,7 +63,7 @@ void SdrOptions::ShowSdrOptions(DeviceInterface *_di, bool b)
 		connect(sd->deviceSelection,SIGNAL(currentIndexChanged(int)),this,SLOT(DeviceSelectionChanged(int)));
 
 		//Read current settings now that we have correct deviceNumber
-		di->ReadSettings();
+		di->Command(DeviceInterface::CmdReadSettings,0);
 
 		sd->startupBox->addItem("Last Frequency",DeviceInterface::LASTFREQ);
 		sd->startupBox->addItem("Set Frequency", DeviceInterface::SETFREQ);
@@ -208,7 +208,7 @@ void SdrOptions::DeviceSelectionChanged(int i) {
 	//Set device number
 	di->Set(DeviceInterface::DeviceNumber, i); //Which ini file to read from
 	//Read settings, ReadSettings will switch on deviceNumber
-	di->ReadSettings();
+	di->Command(DeviceInterface::CmdReadSettings,0);
 	//ReadSettings will read in last device number and overwrite our change, so reset it again
 	di->Set(DeviceInterface::DeviceNumber, i); //Which ini file to read from
 	//Update sdr specific section
@@ -225,21 +225,21 @@ void SdrOptions::SampleRateChanged(int i)
 {
 	int cur = sd->sampleRateBox->currentIndex();
 	di->Set(DeviceInterface::DeviceSampleRate, sd->sampleRateBox->itemText(cur).toInt());
-	di->WriteSettings();
+	di->Command(DeviceInterface::CmdWriteSettings,0);
 }
 
 void SdrOptions::InputChanged(int i)
 {
 	int cur = sd->sourceBox->currentIndex();
 	di->Set(DeviceInterface::InputDeviceName, sd->sourceBox->itemText(cur));
-	di->WriteSettings();
+	di->Command(DeviceInterface::CmdWriteSettings,0);
 }
 
 void SdrOptions::OutputChanged(int i)
 {
 	int cur = sd->outputBox->currentIndex();
 	di->Set(DeviceInterface::OutputDeviceName, sd->outputBox->itemText(cur));
-	di->WriteSettings();
+	di->Command(DeviceInterface::CmdWriteSettings,0);
 }
 
 void SdrOptions::StartupChanged(int i)
@@ -252,27 +252,27 @@ void SdrOptions::StartupChanged(int i)
 	else {
 		sd->startupEdit->setEnabled(false);
 	}
-	di->WriteSettings();
+	di->Command(DeviceInterface::CmdWriteSettings,0);
 }
 
 void SdrOptions::StartupFrequencyChanged()
 {
 	di->Set(DeviceInterface::UserFrequency, sd->startupEdit->text().toDouble());
-	di->WriteSettings();
+	di->Command(DeviceInterface::CmdWriteSettings,0);
 }
 
 //IQ gain can be changed in real time, without saving
 void SdrOptions::IQGainChanged(double i)
 {
 	di->Set(DeviceInterface::IQGain, i);
-	di->WriteSettings();
+	di->Command(DeviceInterface::CmdWriteSettings,0);
 }
 
 //IQ order can be changed in real time, without saving
 void SdrOptions::IQOrderChanged(int i)
 {
 	di->Set(DeviceInterface::IQOrder, sd->IQSettings->itemData(i).toInt());
-	di->WriteSettings();
+	di->Command(DeviceInterface::CmdWriteSettings,0);
 }
 
 void SdrOptions::BalancePhaseChanged(int v)
@@ -285,7 +285,7 @@ void SdrOptions::BalancePhaseChanged(int v)
 	if (!global->receiver->GetPowerOn())
 		return;
 	global->receiver->GetIQBalance()->setPhaseFactor(newValue);
-	di->WriteSettings();
+	di->Command(DeviceInterface::CmdWriteSettings,0);
 }
 
 void SdrOptions::BalanceGainChanged(int v)
@@ -294,7 +294,7 @@ void SdrOptions::BalanceGainChanged(int v)
 	double newValue = v/1000.0;
 	sd->iqBalanceGainLabel->setText("Gain: " + QString::number(newValue));
 	di->Set(DeviceInterface::IQBalanceGain, newValue);
-	di->WriteSettings();
+	di->Command(DeviceInterface::CmdWriteSettings,0);
 	//Update in realtime
 	if (!global->receiver->GetPowerOn())
 		return;
@@ -304,7 +304,7 @@ void SdrOptions::BalanceGainChanged(int v)
 void SdrOptions::BalanceEnabledChanged(bool b)
 {
 	di->Set(DeviceInterface::IQBalanceEnabled, b);
-	di->WriteSettings();
+	di->Command(DeviceInterface::CmdWriteSettings,0);
 	if (!global->receiver->GetPowerOn())
 		return;
 	global->receiver->GetIQBalance()->setEnabled(b);

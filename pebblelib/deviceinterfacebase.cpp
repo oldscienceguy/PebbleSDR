@@ -95,6 +95,37 @@ void DeviceInterfaceBase::SetupOptionUi(QWidget *parent)
 	return;
 }
 
+bool DeviceInterfaceBase::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _arg)
+{
+	switch (_cmd) {
+		case CmdInitProcessIQDataCallback:		//Arg is callback
+		case CmdInitProcessBandscopeDataCallback:	//Arg is callback
+		case CmdInitProcessAudioDataCallback:		//Arg is callback
+		case CmdInitOptionUi:						//Arg is QWidget *parent
+		case CmdConnect:
+			//Transition
+			return this->Connect();
+		case CmdDisconnect:
+			return this->Disconnect();
+		case CmdStart:
+			this->Start();
+			return true;
+		case CmdStop:
+			this->Stop();
+			return true;
+		case CmdReadSettings:
+			this->ReadSettings();
+			return true;
+		case CmdWriteSettings:
+			this->WriteSettings();
+			return true;
+		default:
+			return false;
+	}
+
+}
+
+
 QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, quint16 _option) {
 	Q_UNUSED(_option);
 	switch (_key) {

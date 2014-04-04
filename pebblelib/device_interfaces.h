@@ -153,16 +153,9 @@ public:
 							cbProcessBandscopeData _callbackBandscope,
 							cbProcessAudioData _callbackAudio,
 							quint16 _framesPerBuffer) = 0;
-    virtual bool Connect() = 0;
-    virtual bool Disconnect() = 0;
-    virtual void Start() = 0;
-    virtual void Stop() = 0;
 
     //Display device option widget in settings dialog
     virtual void SetupOptionUi(QWidget *parent) = 0;
-
-    virtual void ReadSettings() = 0;
-    virtual void WriteSettings() = 0;
 
 	virtual bool Command(STANDARD_COMMANDS _cmd, QVariant _arg) = 0;
 
