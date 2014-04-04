@@ -150,6 +150,7 @@ bool WavFile::OpenRead(QString fname)
 
 bool WavFile::OpenWrite(QString fname, int sampleRate, quint32 _loFreq, quint8 _mode, quint8 spare)
 {
+	Q_UNUSED(spare);
     //qDebug()<<fname;
 
     wavFile = new QFile(fname);

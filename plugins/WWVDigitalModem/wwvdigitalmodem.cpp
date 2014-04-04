@@ -361,6 +361,7 @@ WWVDigitalModem::~WWVDigitalModem()
 
 void WWVDigitalModem::SetDemodMode(DeviceInterface::DEMODMODE _demodMode)
 {
+	Q_UNUSED(_demodMode);
 }
 
 CPX *WWVDigitalModem::ProcessBlock(CPX *in)
@@ -442,6 +443,7 @@ void WWVDigitalModem::Process100Hz(CPX in)
 
 void WWVDigitalModem::Process1000Hz(CPX in)
 {
+	Q_UNUSED(in);
     /*
      * Baseband sync demodulation. The 1000/1200 sync signals are
      * extracted using a 600-Hz IIR bandpass filter. This removes

@@ -348,6 +348,7 @@ void Morse::OutputData(const char* d)
 }
 void Morse::OutputData(const char c)
 {
+	Q_UNUSED(c);
     if (dataUi == NULL)
         return;
     //Remove
@@ -952,7 +953,7 @@ void Morse::outputString(const char *outStr) {
 
         //Output character(s)
         int i = 0;
-        while (outputBufIndex < sizeof(outputBuf) &&
+		while ((unsigned long)outputBufIndex < sizeof(outputBuf) &&
                outStr[i] != 0x00) {
             c = outStr[i++];
             outputBuf[outputBufIndex++] = useLowercase ? tolower(c) : c;

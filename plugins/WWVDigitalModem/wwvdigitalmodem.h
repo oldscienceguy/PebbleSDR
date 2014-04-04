@@ -32,7 +32,7 @@ private:
     quint16 sampleRate;
     quint16 detectedSignalFrequency; //Signal we're looking for
     float msPerSample;
-    quint16 phaseShiftSamples; //Num sample to shift phase by 90 deg
+	//quint16 phaseShiftSamples; //Num sample to shift phase by 90 deg
 
     quint16 ncoPtr; //Steps through sintab to output desired NCO freq
     quint16 delayPtr;	//Circular buffer ptr to delay line

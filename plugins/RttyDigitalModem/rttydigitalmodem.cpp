@@ -14,6 +14,7 @@ void RttyDigitalModem::SetSampleRate(int _sampleRate, int _sampleCount)
 
 void RttyDigitalModem::SetDemodMode(DeviceInterface::DEMODMODE _demodMode)
 {
+	Q_UNUSED(_demodMode);
     //qDebug()<<"Demod mode = "<<m; //Demod::ModeToString(m);
 }
 
@@ -24,6 +25,7 @@ CPX *RttyDigitalModem::ProcessBlock(CPX *in)
 
 void RttyDigitalModem::SetupDataUi(QWidget *parent)
 {
+	Q_UNUSED(parent);
     return;
 #if 0
     if (parent == NULL) {

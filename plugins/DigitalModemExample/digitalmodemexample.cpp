@@ -17,6 +17,7 @@ void DigitalModemExample::SetSampleRate(int _sampleRate, int _sampleCount)
 
 void DigitalModemExample::SetDemodMode(DeviceInterface::DEMODMODE _demodMode)
 {
+	Q_UNUSED(_demodMode);
 }
 
 CPX *DigitalModemExample::ProcessBlock(CPX *in)

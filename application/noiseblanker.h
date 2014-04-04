@@ -25,6 +25,6 @@ private:
 	CPX nb2AverageCPX;
 	int nbSpikeCount;
 	int nbSpike; //# samples we consider to be a spike, typically 7
-	int nbThreshold; //Adjustable, typically 3.3;
+	double nbThreshold; //Adjustable, typically 3.3;
 
 };

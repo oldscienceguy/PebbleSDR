@@ -33,6 +33,8 @@
 
 #include "hidapi.h"
 
+#define Q_UNUSED(x) (void)x;
+
 /* Barrier implementation because Mac OSX doesn't have pthread_barrier.
    It also doesn't have clock_gettime(). So much for POSIX and SUSv2.
    This implementation came from Brent Priddy and was posted on
@@ -47,6 +49,7 @@ typedef struct pthread_barrier {
 
 static int pthread_barrier_init(pthread_barrier_t *barrier, const pthread_barrierattr_t *attr, unsigned int count)
 {
+	Q_UNUSED(attr);
 	if(count == 0) {
 		errno = EINVAL;
 		return -1;
@@ -252,7 +255,7 @@ static int get_string_property(IOHIDDeviceRef device, CFStringRef prop, wchar_t 
 			len * sizeof(wchar_t),
 			&used_buf_len);
 
-		if (chars_copied == len)
+		if ((unsigned long)chars_copied == len)
 			buf[len] = 0; /* len is decremented above */
 		else
 			buf[chars_copied] = 0;
@@ -292,7 +295,7 @@ static int get_string_property_utf8(IOHIDDeviceRef device, CFStringRef prop, cha
 			len,
 			&used_buf_len);
 
-		if (used_buf_len == len)
+		if ((unsigned long)used_buf_len == len)
 			buf[len] = 0; /* len is decremented above */
 		else
 			buf[used_buf_len] = 0;
@@ -550,6 +553,8 @@ hid_device * HID_API_EXPORT hid_open(unsigned short vendor_id, unsigned short pr
 static void hid_device_removal_callback(void *context, IOReturn result,
                                         void *sender)
 {
+	Q_UNUSED(result);
+	Q_UNUSED(sender);
 	/* Stop the Run Loop for this device. */
 	hid_device *d = context;
 
@@ -564,6 +569,10 @@ static void hid_report_callback(void *context, IOReturn result, void *sender,
                          IOHIDReportType report_type, uint32_t report_id,
                          uint8_t *report, CFIndex report_length)
 {
+	Q_UNUSED(result);
+	Q_UNUSED(sender);
+	Q_UNUSED(report_id);
+	Q_UNUSED(report_type);
 	struct input_report *rpt;
 	hid_device *dev = context;
 
@@ -1028,6 +1037,10 @@ int HID_API_EXPORT_CALL hid_get_serial_number_string(hid_device *dev, wchar_t *s
 
 int HID_API_EXPORT_CALL hid_get_indexed_string(hid_device *dev, int string_index, wchar_t *string, size_t maxlen)
 {
+	Q_UNUSED(dev);
+	Q_UNUSED(string_index);
+	Q_UNUSED(string);
+	Q_UNUSED(maxlen);
 	/* TODO: */
 
 	return 0;
@@ -1036,6 +1049,7 @@ int HID_API_EXPORT_CALL hid_get_indexed_string(hid_device *dev, int string_index
 
 HID_API_EXPORT const wchar_t * HID_API_CALL  hid_error(hid_device *dev)
 {
+	Q_UNUSED(dev);
 	/* TODO: */
 
 	return NULL;

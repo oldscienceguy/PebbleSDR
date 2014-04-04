@@ -270,6 +270,9 @@ int SoundCard::streamCallback(
     PaStreamCallbackFlags statusFlags,
     void *userData )
 {
+	Q_UNUSED(output);
+	Q_UNUSED(timeInfo);
+
 	//Soundcard object is passed in userData, get it so we can access member functions
 	SoundCard *sc = (SoundCard*)userData;
 

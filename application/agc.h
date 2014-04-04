@@ -29,40 +29,40 @@ private:
 	DelayLine *agcDelay;
 
 	//These values are used to configure agc for different modes, they are not used directly
-	float modeHangTimeMs;
-	float modeFastHangTimeMs;
-	float modeDecayTimeMs;
-	float modeAttackTimeMs;
-	float modeHangWeight;
+	//float modeHangTimeMs;
+	//float modeFastHangTimeMs;
+	//float modeDecayTimeMs;
+	//float modeAttackTimeMs;
+	//float modeHangWeight;
 
-	float gainNow;
-	float gainPrev;
-	float gainLimit;
+	//float gainNow;
+	//float gainPrev;
+	//float gainLimit;
 	//Gain limits
-	float gainFix;
-	float gainTop;
-	float gainBottom;
+	//float gainFix;
+	//float gainTop;
+	//float gainBottom;
 
-	float hangThreshold;
+	//float hangThreshold;
 	//Times are all normalized to number of samples
-	int hangSamples;
-	int fastHangSamples;
-	int hangCount;
+	//int hangSamples;
+	//int fastHangSamples;
+	//int hangCount;
 
-	int attackSamples;
-	float attackWeightNew;
-	float attackWeightLast;
-	float fastAttackWeightNew;
-	float fastAttackWeightLast;
+	//int attackSamples;
+	//float attackWeightNew;
+	//float attackWeightLast;
+	//float fastAttackWeightNew;
+	//float fastAttackWeightLast;
 
-	int decaySamples;
-	float decayWeightNew;
-	float decayWeightLast;
-	float fastDecayWeightNew;
-	float fastDecayWeightLast;
+	//int decaySamples;
+	//float decayWeightNew;
+	//float decayWeightLast;
+	//float fastDecayWeightNew;
+	//float fastDecayWeightLast;
 
-	int delayTime;
-	int fastDelayTime;
+	//int delayTime;
+	//int fastDelayTime;
 
     //CuteSDR implementation
     int thresholdFromUi;
@@ -73,7 +73,7 @@ private:
     bool m_UseHang;
     int m_Threshold;
     int m_ManualGain;
-    int m_Slope;
+	//int m_Slope;
     int m_Decay;
     double m_SampleRate;
 
@@ -95,7 +95,7 @@ private:
 
     int m_SigDelayPtr;
     int m_MagBufPos;
-    int m_DelaySize;
+	//int m_DelaySize;
     int m_DelaySamples;
     int m_WindowSamples;
     int m_HangTime;

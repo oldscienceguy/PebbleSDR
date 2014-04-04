@@ -835,7 +835,6 @@
      </layout>
      <zorder>timeDomainGroup</zorder>
      <zorder>spinBoxNoise</zorder>
-     <zorder>horizontalSpacer_3</zorder>
     </widget>
    </item>
    <item>

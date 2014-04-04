@@ -106,7 +106,7 @@ void BargraphMeter::drawLabels()
     //Evenly split ticks
     //numTicks are the visible ticks, each with a potential label
     quint16 tickInc = plotWidth / (numTicks+1);
-    quint16 tickPix = plotHeight * 0.20;
+	//quint16 tickPix = plotHeight * 0.20;
 
     QFont overlayFont("Arial");
     overlayFont.setPointSize(7);
