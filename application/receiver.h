@@ -144,6 +144,7 @@ private:
     CPX *audioBuf; //Used for final audio output processing
     quint16 sampleBufLen;
 
+	double *dbSpectrumBuf; //Used when spectrum is set by remote
 
 
     //Use CuteSDR decimation filters for downsampling

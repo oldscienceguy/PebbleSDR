@@ -20,15 +20,6 @@ Ghpsdr3Device::Ghpsdr3Device():DeviceInterfaceBase()
 	tcpSocket = NULL;
 	servers = NULL;
 
-	//Testing
-	//deviceAddress = QHostAddress("74.85.89.174");
-	//deviceAddress = QHostAddress("71.47.206.230");
-	//deviceAddress = QHostAddress("79.255.247.138");
-	//deviceAddress = QHostAddress("84.175.15.210");
-	//devicePort = 8000; //8000 + Receiver #
-	//Servers *servers = new Servers();
-	//servers->show();
-
 }
 
 Ghpsdr3Device::~Ghpsdr3Device()
@@ -63,6 +54,8 @@ bool Ghpsdr3Device::Initialize(cbProcessIQData _callback,
 		connect(tcpSocket,&QTcpSocket::readyRead, this, &Ghpsdr3Device::TCPSocketNewData);
 		connect(this,SIGNAL(CheckNewData()), this, SLOT(TCPSocketNewData()));
 	}
+
+	connect(&spectrumTimer, SIGNAL(timeout()), this, SLOT(RequestSpectrum()));
 
 	serverInfo.isValid = false;
 	return true;
@@ -145,12 +138,17 @@ void Ghpsdr3Device::Start()
 	QString buf = "startaudiostream 512 8000 1 0";
 	SendTcpCmd(buf);
 
+	//spectrumTimer.start(100); //10 updates per second
+	//Assume server supports protocol 3
+	SendTcpCmd("setfps 2048 10"); //Testing
 }
 
 void Ghpsdr3Device::Stop()
 {
 	if (!running)
 		return;
+	spectrumTimer.stop();
+
 	running = false;
 	producerConsumer.Stop();
 	SendTcpCmd("stopaudiostream");
@@ -262,6 +260,11 @@ bool Ghpsdr3Device::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, qu
 		default:
 			return DeviceInterfaceBase::Set(_key, _value, _option);
 	}
+}
+
+void Ghpsdr3Device::RequestSpectrum()
+{
+	SendTcpCmd("getSpectrum " + QString::number(SPECTRUM_PACKET_SIZE));
 }
 
 void Ghpsdr3Device::RequestInfo()
@@ -404,6 +407,8 @@ void Ghpsdr3Device::TCPSocketNewData()
 
 	qint64 bytesRead;
 	quint16 bytesToCompleteAudioBuffer;
+	quint16 bytesToCompleteSpectrumBuffer;
+
 	quint64 bytesAvailable = tcpSocket->bytesAvailable();
 	if (bytesAvailable <= 0) {
 		mutex.unlock();
@@ -434,7 +439,7 @@ void Ghpsdr3Device::TCPSocketNewData()
 				//We need to mask high order bits in first byte
 				switch (dspCommonHeader.packetType & 0x0f) {
 					case SpectrumData:
-						qDebug()<<"Unexpected spectrum data";
+						tcpReadState = READ_SPECTRUM_HEADER;
 						break;
 					case AudioData:
 						//Get size of data
@@ -541,6 +546,7 @@ void Ghpsdr3Device::TCPSocketNewData()
 				//qDebug()<<"READ_SPECTRUM_HEADER";
 				if (bytesAvailable < spectrumHeaderSize) {
 					qDebug()<<"Waiting for enough data for spectrum header";
+					mutex.unlock();
 					return; //Wait for more data
 				}
 				bytesRead = tcpSocket->read((char*)&dspSpectrumHeader,spectrumHeaderSize);
@@ -555,6 +561,13 @@ void Ghpsdr3Device::TCPSocketNewData()
 				//Use QT's qFromBigEndian aToBitEndian and qFromLittleEndian and qToLittleEndian instead of nthl()
 				//Convert to LittleEndian format we can use
 				dspSpectrumHeader.bufLen = qFromBigEndian(dspSpectrumHeader.bufLen);
+				dspSpectrumHeader.meter = qFromBigEndian(dspSpectrumHeader.meter);
+				dspSpectrumHeader.subRxMeter = qFromBigEndian(dspSpectrumHeader.subRxMeter);
+				dspSpectrumHeader.sampleRate = qFromBigEndian(dspSpectrumHeader.sampleRate);
+				dspSpectrumHeader.loOffset = qFromBigEndian(dspSpectrumHeader.loOffset);
+				//qDebug()<<dspSpectrumHeader.loOffset;
+				//qDebug()<<dspSpectrumHeader.bufLen<<" "<<dspSpectrumHeader.meter<<" "<<dspSpectrumHeader.sampleRate;
+
 				if (dspSpectrumHeader.bufLen != SPECTRUM_PACKET_SIZE) {
 					//We're out of sync
 					qDebug()<<"Invalid spectrum buffer length";
@@ -565,6 +578,29 @@ void Ghpsdr3Device::TCPSocketNewData()
 				break;
 
 			case READ_SPECTRUM_BUFFER:
+				//qDebug()<<"READ_SPECTRUM_BUFFER "<<bytesAvailable;
+				//Process whatever bytes we have, even if not a full buffer
+				bytesToCompleteSpectrumBuffer = dspSpectrumHeader.bufLen - spectrumBufferIndex;
+				if (bytesAvailable > bytesToCompleteSpectrumBuffer)
+					bytesRead = tcpSocket->read((char*)&spectrumBuffer[spectrumBufferIndex],bytesToCompleteSpectrumBuffer);
+				else
+					bytesRead = tcpSocket->read((char*)&spectrumBuffer[spectrumBufferIndex],bytesAvailable);
+
+				if (bytesRead < 0) {
+					qDebug()<<"Error in tcpSocketRead";
+					mutex.unlock();
+					return;
+				}
+				bytesAvailable -= bytesRead;
+				//Process spectrum data
+				//If we have a full spectrumBuffer, update client
+				spectrumBufferIndex += bytesRead;
+				if (spectrumBufferIndex >= dspSpectrumHeader.bufLen) {
+					ProcessBandscopeData(spectrumBuffer,dspSpectrumHeader.bufLen);
+					spectrumBufferIndex = 0;
+					tcpReadState = READ_HEADER_TYPE; //Start over and look for next header
+				}
+
 				break;
 
 			case READ_ANSWER:

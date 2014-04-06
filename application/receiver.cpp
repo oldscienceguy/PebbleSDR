@@ -5,6 +5,7 @@
 #include "qmessagebox.h"
 #include "signalprocessing.h"
 #include "testbench.h"
+#include "db.h"
 
 /*
 Core receiver logic, coordinates soundcard, fft, demod, etc
@@ -76,6 +77,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	workingBuf = NULL;
 	sampleBuf = NULL;
 	audioBuf = NULL;
+	dbSpectrumBuf = NULL;
 
 	sdrOptions = new SdrOptions();
 
@@ -199,6 +201,7 @@ bool Receiver::On()
     sampleBuf = CPXBuf::malloc(framesPerBuffer);
     audioBuf = CPXBuf::malloc(framesPerBuffer);
     sampleBufLen = 0;
+	dbSpectrumBuf = new double(framesPerBuffer);
 
     presets = new Presets(receiverWidget);
 
@@ -363,6 +366,10 @@ bool Receiver::Off()
         delete audioBuf;
         audioBuf = NULL;
     }
+	if (dbSpectrumBuf != NULL) {
+		delete dbSpectrumBuf;
+		dbSpectrumBuf = NULL;
+	}
     return true;
 }
 void Receiver::Close()
@@ -818,9 +825,20 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 	ProcessAudioData(audioBuf,numResamp);
 }
 
+//Should be ProcessSpectrumData, using it for now
+//Will expect values from 0 to 255 equivalent to -255db to 0db
+//But smallest expected value would be -120db
 void Receiver::ProcessBandscopeData(quint8 *in, quint16 numPoints)
 {
+	if (numPoints > framesPerBuffer)
+		numPoints = framesPerBuffer;
 
+	for (int i=0; i<numPoints; i++) {
+		//Pebble db is factored by 10, so -10.0 = -100db, -4.0 = -40db etc
+		//I'm not sure why :-)
+		dbSpectrumBuf[i] = -in[i] / 10.0;
+	}
+	signalSpectrum->SetSpectrum(dbSpectrumBuf);
 }
 
 //Called by devices and other call backs to output audio data

@@ -226,6 +226,8 @@ private:
 	double m_PulseTimer;
 
 	CFft m_Fft;
+	double spectrumBuf[TEST_FFTSIZE];
+
 	QFile m_File;
     //CWFmMod* m_pWFmMod;
 

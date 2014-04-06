@@ -698,7 +698,7 @@ void CTestBench::DisplayData(int length, TYPECPX* pBuf, double samplerate, int p
 				if(++m_DisplaySkipCounter >= m_DisplaySkipValue )
 				{
 					m_DisplaySkipCounter = 0;
-                    m_Fft.FFTSpectrum(m_FftInBuf,NULL, TEST_FFTSIZE);
+					m_Fft.FFTSpectrum(m_FftInBuf,spectrumBuf, TEST_FFTSIZE);
                     emit NewFftData();
 				}
 			}
@@ -760,7 +760,7 @@ void CTestBench::DisplayData(int length, TYPEREAL* pBuf, double samplerate, int 
 				if(++m_DisplaySkipCounter >= m_DisplaySkipValue )
 				{
 					m_DisplaySkipCounter = 0;
-                    m_Fft.FFTSpectrum(m_FftInBuf, NULL, TEST_FFTSIZE);
+					m_Fft.FFTSpectrum(m_FftInBuf, spectrumBuf, TEST_FFTSIZE);
 
 					emit NewFftData();
 				}
@@ -820,7 +820,7 @@ void CTestBench::DisplayData(int length, TYPEMONO16* pBuf, double samplerate, in
 				if(++m_DisplaySkipCounter >= m_DisplaySkipValue )
 				{
 					m_DisplaySkipCounter = 0;
-                    m_Fft.FFTSpectrum(m_FftInBuf, NULL, TEST_FFTSIZE);
+					m_Fft.FFTSpectrum(m_FftInBuf, spectrumBuf, TEST_FFTSIZE);
 
 					emit NewFftData();
 				}
@@ -880,7 +880,7 @@ void CTestBench::DisplayData(int length, TYPESTEREO16* pBuf, double samplerate, 
 				if(++m_DisplaySkipCounter >= m_DisplaySkipValue )
 				{
 					m_DisplaySkipCounter = 0;
-                    m_Fft.FFTSpectrum(m_FftInBuf, NULL, TEST_FFTSIZE);
+					m_Fft.FFTSpectrum(m_FftInBuf, spectrumBuf, TEST_FFTSIZE);
 
 					emit NewFftData();
 				}
@@ -1126,7 +1126,7 @@ QPoint LineBuf[TB_MAX_SCREENSIZE];
 
 	if(m_CurrentDataIsCpx)
 	{
-        m_Fft.MapFFTToScreen( h, w,
+		m_Fft.MapFFTToScreen( spectrumBuf, h, w,
 							m_MaxdB,
 							m_MindB,
 							-m_Span/2,
@@ -1135,7 +1135,7 @@ QPoint LineBuf[TB_MAX_SCREENSIZE];
 	}
 	else
 	{
-        m_Fft.MapFFTToScreen( h, w,
+		m_Fft.MapFFTToScreen( spectrumBuf, h, w,
 							m_MaxdB,
 							m_MindB,
 							0.0,

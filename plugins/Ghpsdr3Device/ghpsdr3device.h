@@ -10,6 +10,7 @@
 #include <QHostAddress>
 #include <QTcpSocket>
 //#include <QUdpSocket>
+#include <QTimer>
 #include "alawcompression.h"
 #include "servers.h"
 
@@ -264,6 +265,8 @@ private slots:
 	void TCPSocketNewData();
 	//void UDPSocketNewData();
 
+	void RequestSpectrum();
+
 private:
 	bool Connect();
 	bool Disconnect();
@@ -339,8 +342,15 @@ private:
 	struct DspSpectrumHeader {
 		packStart
 		//3 byte commonHeader plus
+		//3-4
 		quint16 bufLen; //BigEndian, use qFromBigEndian() to platform quint16
-		quint8 reserved[10]; //Size is 15 bytes, not sure what for
+		//5-6
+		qint16 meter;
+		//7-8
+		qint16 subRxMeter;
+		//9-12 Sample rate in ASCII characters
+		quint32 sampleRate;
+		quint16 loOffset;
 		packEnd
 	}packStruct;
 
@@ -406,6 +416,8 @@ private:
 	ALawCompression alaw;
 
 	Servers *servers;
+
+	QTimer spectrumTimer;
 
 	bool SendFrequencyCmd(double f);
 	bool SendModeCmd(gDemodMode m);

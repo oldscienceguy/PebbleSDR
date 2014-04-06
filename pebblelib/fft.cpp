@@ -2,6 +2,7 @@
 #include "gpl.h"
 #include "fft.h"
 #include "db.h"
+#include <QDebug>
 
 FFT::FFT() :
     useIntegerFFT(false)
@@ -239,6 +240,8 @@ void FFT::CalcPowerAverages(CPX* in, double *out, int size)
         //Average buffer = sum buffer / average counter
         FFTPwrAvgBuf[i] = FFTPwrSumBuf[i]/(double)averageCnt;
 
+		//Convert to db
+		//Result is db/10.0 for some reason.  So -10 is really 100 db and -9.5 is really -95db
         FFTAvgBuf[i] = log10( FFTPwrAvgBuf[i] + K_C) + K_B;
 
         //Skip copying to out if null
@@ -272,19 +275,22 @@ void FFT::CalcPowerAverages(CPX* in, double *out, int size)
 //		MindB = FFT dB level  corresponding to output value == MaxHeight
 //			must be >= to K_MINDB
 //////////////////////////////////////////////////////////////////////
-bool FFT::MapFFTToScreen(qint32 maxHeight,
-                                qint32 maxWidth,
-                                double maxdB,
-                                double mindB,
-                                qint32 startFreq,
-                                qint32 stopFreq,
-                                qint32* outBuf )
+bool FFT::MapFFTToScreen(
+		double *inBuf,
+		qint32 maxHeight,
+		qint32 maxWidth,
+		double maxdB,
+		double mindB,
+		qint32 startFreq,
+		qint32 stopFreq,
+		qint32* outBuf )
 {
 
     if (!fftParamsSet)
         return false;
 
-    double *inBuf = FFTAvgBuf;
+	//Passed as arg so we can use with remote dsp servers
+	//double *inBuf = FFTAvgBuf;
 
     qint32 i;
     qint32 y;
@@ -355,9 +361,9 @@ bool FFT::MapFFTToScreen(qint32 maxHeight,
         for( i=binLow; i<=binHigh; i++ )
         {
             if(invert)
-                y = (qint32)((double)maxHeight * dBGainFactor * (inBuf[(m-i)] - dBmaxOffset));
+				y = (qint32)((double)maxHeight * dBGainFactor * (inBuf[(m-i)] - dBmaxOffset));
             else
-                y = (qint32)((double)maxHeight * dBGainFactor * (inBuf[i] - dBmaxOffset));
+				y = (qint32)((double)maxHeight * dBGainFactor * (inBuf[i] - dBmaxOffset));
             if(y < 0)
                 y = 0;
             if(y > maxHeight)
@@ -386,9 +392,9 @@ bool FFT::MapFFTToScreen(qint32 maxHeight,
         for( x=0; x<lastPlotWidth; x++ ) {
             i = plotTranslateTable[x];	//get plot to fft bin coordinate transform
             if(invert)
-                y = (qint32)((double)maxHeight * dBGainFactor * (inBuf[(m-i)] - dBmaxOffset));
+				y = (qint32)((double)maxHeight * dBGainFactor * (inBuf[(m-i)] - dBmaxOffset));
             else
-                y = (qint32)((double)maxHeight * dBGainFactor * (inBuf[i] - dBmaxOffset));
+				y = (qint32)((double)maxHeight * dBGainFactor * (inBuf[i] - dBmaxOffset));
             if(y<0)
                 y = 0;
             if(y > maxHeight)

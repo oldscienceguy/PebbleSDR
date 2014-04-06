@@ -52,7 +52,7 @@ public:
     void CalcPowerAverages(CPX* in, double *out, int size);
 	void SetMovingAvgLimit(quint32 ave);
 
-    bool MapFFTToScreen(qint32 maxHeight, qint32 maxWidth,
+	bool MapFFTToScreen(double *inBuf, qint32 maxHeight, qint32 maxWidth,
                                     double maxdB, double mindB,
                                     qint32 startFreq, qint32 stopFreq,
                                     qint32* outBuf );

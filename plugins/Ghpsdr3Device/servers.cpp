@@ -11,8 +11,9 @@
 #include "ui_servers.h"
 #include "ghpsdr3device.h"
 
-Servers::Servers(Ghpsdr3Device *_sdr, QWidget *parent) :  QObject()
+Servers::Servers(Ghpsdr3Device *_sdr, QWidget *_parent) :  QObject()
 {
+	parent = _parent;
 	ui = new Ui::Servers;
 	ui->setupUi(parent);
 
@@ -123,5 +124,8 @@ void Servers::lineClicked(QTreeWidgetItem *item,int col)
 
 void Servers::TimerFired()
 {
+	if (!parent->isVisible())
+		return;
+
 	refreshList();
 }

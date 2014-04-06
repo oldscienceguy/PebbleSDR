@@ -21,7 +21,7 @@ class Servers : public QObject
     Q_OBJECT
 
 public:
-	explicit Servers(Ghpsdr3Device *_sdr, QWidget *parent = 0 );
+	explicit Servers(Ghpsdr3Device *_sdr, QWidget *_parent = 0 );
 
     ~Servers();
     void refreshList();
@@ -48,6 +48,7 @@ private:
 
 	Ghpsdr3Device *sdr;
 
+	QWidget *parent;
     Ui::Servers *ui;
 	QNetworkAccessManager* nam;
 

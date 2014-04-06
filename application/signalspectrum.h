@@ -25,6 +25,10 @@ public:
     void MakeSpectrum(FFT *fft, CPX *in, double *out, int size); //Use if we just have CPX samples
     void MakeSpectrum(FFTfftw *fft, double *out); //Used if we already have FFT
 
+	//Used when we already have spectrum, typically from dsp server or device
+	//Just copies spectrum into unprocessed
+	void SetSpectrum(double *in);
+
     bool MapFFTToScreen(qint32 maxHeight, qint32 maxWidth,
                                     double maxdB, double mindB,
                                     qint32 startFreq, qint32 stopFreq,
@@ -33,7 +37,7 @@ public:
     bool MapFFTZoomedToScreen(qint32 maxHeight, qint32 maxWidth, double maxdB, double mindB, double zoom, int modeOffset, qint32 *outBuf);
 
     int BinCount() {return fftSize;}
-    double *Unprocessed() {return unprocessed;}
+	double *GetUnprocessed() {return unprocessed;}
     void Zoomed(CPX *in, int size);
     CPX *RawIQ() {return rawIQ;}
 

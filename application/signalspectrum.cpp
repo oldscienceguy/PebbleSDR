@@ -185,7 +185,15 @@ void SignalSpectrum::MakeSpectrum(FFTfftw *fft, double *sOut)
             //We could auto-adjust display rate when we get here
             displayUpdateOverrun++;
         }
-    }
+	}
+}
+
+void SignalSpectrum::SetSpectrum(double *in)
+{
+	for (int i=0; i< fftSize ;i++) {
+		unprocessed[i] = in[i];
+	}
+	emit newFftData();
 }
 
 //UpdatesPerSecond 1(min) to 50(max)
@@ -220,7 +228,7 @@ bool SignalSpectrum::MapFFTToScreen(qint32 maxHeight,
                                 qint32* outBuf )
 {
     if (fftUnprocessed!=NULL)
-        return fftUnprocessed->MapFFTToScreen(maxHeight,maxWidth,maxdB,mindB,startFreq,stopFreq,outBuf);
+		return fftUnprocessed->MapFFTToScreen(unprocessed, maxHeight,maxWidth,maxdB,mindB,startFreq,stopFreq,outBuf);
     else
         return false;
 }
@@ -239,7 +247,7 @@ bool SignalSpectrum::MapFFTZoomedToScreen(qint32 maxHeight,
     quint16 span = zoomedSampleRate * zoom;
 
     if (fftZoomed!=NULL)
-        return fftZoomed->MapFFTToScreen(maxHeight,maxWidth,maxdB,mindB, -span/2 - modeOffset, span/2 - modeOffset, outBuf);
+		return fftZoomed->MapFFTToScreen(zoomed,maxHeight,maxWidth,maxdB,mindB, -span/2 - modeOffset, span/2 - modeOffset, outBuf);
     else
         return false;
 }
