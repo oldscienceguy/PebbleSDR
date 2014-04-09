@@ -85,8 +85,8 @@ CTestBench::CTestBench(QWidget *parent) :
 	m_Size = QSize(0,0);
 	m_Rect = QRect(0,0,100,100);
 
-    m_MaxdB = global->maxDb;
-    m_MindB = global->minDb;
+	m_MaxdB = global->db.maxDb;
+	m_MindB = global->db.minDb;
 	m_dBStepSize = 10;
 	m_FreqUnits = 1;
 	m_CenterFreq = 0;

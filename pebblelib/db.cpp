@@ -1,14 +1,50 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include "db.h"
+#include <QDebug>
+
+/*
+ * We need to match dB calculations to the output of an FFT to be precise
+ * If our dB range is -120dB to 0dB, then that must match to smallest FFT output to largest FFT output
+ * Smallest FFT output = -120dB and largest FFT output = 0dB
+ *
+ * We also have to consider the FFT input range. -32767 to +32767 or -1.0 to +1.0
+ * Finally, the output of a Complex FFT vs a Real FFT are different
+ *
+ * For Pebble, we use double values (-1.0 to +1.0) and a Complex FFT
+ *
+ * A pure input sin wave (asin(wt)) will produce (Complex) FFT values of (FFT_SIZE * Amplitude / 2 )^2
+ * A pure input sin wave Asin(wt) will produce (Real) FFT values of (FFT_SIZE * Amplitude / 4 )^2
+ * Where Amplitude varies from min to max sample range
+ *
+ * If FFT_SIZE = 2048, and Amplitude varies from -1.0 to +1.0
+ * Then the peak FFT power value will be (2048 * 1.0 / 2.0)^2 or 1024^2 or 1048576
+ *
+ * Using db = 10 * log10(power) and substituting formulas back
+ * maxDB (0dB) = 10 * log10(FFT_SIZE * MAX_AMPLITUDE / 2) ^2
+ * We need some adjustments to make this formula balance, so we add a power adjustment (pwrOffset) and a dB adjustment (dbOffset)
+ * maxDB (0dB) = 10 * log10((FFT_SIZE * MAX_AMPLITUDE / 2) + pwrOffset) ^2 + dbOffset
+ * Solving forumla for pwrOffset = 0 we get
+ * dbOffset = maxDB - 20 * log10(FFT_SIZE * MAX_AMPLITUDE / 2) or -60.205 for Pebble
+ * Then solving for pwrOffset using dbOffset we get
+ * pwrOffset = 10^((minDB - dbOffset) / 10)
+ *
+ * To calculate FFT normalized dB
+ * dB = 10 * log10(samplePower + pwrOffset) + dbOffset
+ *
+*/
 
 DB::DB()
 {
+	//Same as SpectraVue & CuteSDR;
+	maxDb = 0;
+	minDb = -120.0;
+	//Hard wired for FFT 2048 for testing
+	dbOffset = maxDb - 20 * log10(2048 * 1.0 / 2.0);
+	pwrOffset = pow(10, (minDb - dbOffset) / 10.0);
+	//qDebug()<<dbOffset<<" "<<pwrOffset;
 }
 
-//Same as SpectraVue & CuteSDR;
-const double DB::minDb = -120.0;
-const double DB::maxDb = 0.0;
 
 //Returns the total power in the sample buffer, using Lynn formula
 double DB::totalPower(CPX *in, int bsize)
@@ -39,6 +75,7 @@ db tutorial from Steven Smith
 0db = power changed by 10^0 = 1
 */
 //Power same as cpx.mag()
+
 //Convert Power to Db
 double DB::powerToDb(double p)
 {
@@ -49,16 +86,18 @@ double DB::powerToDb(double p)
     //Std equation for decibles is A(db) = 10 * log10(P2/P1) where P1 is measured power and P2 is compared power
     //Voltage = 20 * log10(V2/V1)
     //  + ALMOSTZERO avoid problem if p==0 but does not impact result
-    return  qBound(DB::minDb, 10.0 * log10(p + ALMOSTZERO), DB::maxDb);
+	return  qBound(minDb, 10.0 * log10(p + pwrOffset + ALMOSTZERO) + dbOffset, maxDb);
 }
+
 double DB::dbToPower(double db)
 {
     return pow(10, db/10.0);
 }
+
 //Steven Smith pg 264
 double DB::amplitudeToDb(double a)
 {
-    return qBound(DB::minDb, 20.0 * log10(a + ALMOSTZERO), DB::maxDb);
+	return qBound(minDb, 20.0 * log10(a + ALMOSTZERO), maxDb);
 }
 //Steven Smith pg 264
 double DB::dbToAmplitude(double db)
@@ -84,7 +123,7 @@ double DB::watts_2_dBm(double watts)
 {
     if (watts < 10.0e-32)
         watts = 10.0e-32;
-    return qBound(DB::minDb, (10.0 * log10(watts)) + 30.0, DB::maxDb);
+	return qBound(minDb, (10.0 * log10(watts)) + 30.0, maxDb);
 }
 
 double DB::dBm_2_RMSVolts(double dBm, double impedance)

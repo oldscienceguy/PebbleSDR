@@ -82,9 +82,9 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     connect(ui.bandCombo,SIGNAL(currentIndexChanged(int)),this,SLOT(bandChanged(int)));
     connect(ui.stationCombo,SIGNAL(currentIndexChanged(int)),this,SLOT(stationChanged(int)));
 
-    ui.squelchSlider->setMinimum(global->minDb);
-    ui.squelchSlider->setMaximum(global->maxDb);
-    ui.squelchSlider->setValue(global->minDb);
+	ui.squelchSlider->setMinimum(global->db.minDb);
+	ui.squelchSlider->setMaximum(global->db.maxDb);
+	ui.squelchSlider->setValue(global->db.minDb);
     connect(ui.squelchSlider,SIGNAL(valueChanged(int)),this,SLOT(squelchSliderChanged(int)));
 
     currentBandIndex = -1;
@@ -490,8 +490,8 @@ void ReceiverWidget::powerToggled(bool on)
 		receiver->SetGain(30);
 
 		//Setup Squelch
-		ui.squelchSlider->setValue(global->minDb);
-		receiver->SetSquelch(global->minDb);
+		ui.squelchSlider->setValue(global->db.minDb);
+		receiver->SetSquelch(global->db.minDb);
 
 		//Set default AGC mode
 		agcBoxChanged(AGC::FAST);

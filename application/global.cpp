@@ -25,9 +25,6 @@ Global::Global()
     sprintf(revision,"Build: %s %s",PEBBLE_VERSION, PEBBLE_DATE);
     //qDebug(revision);
 
-    //Used everywhere we need to display or measure db.  Look out for any hard coded -120, -130 constants
-    minDb = -120; //Same as SpectraVue & CuteSDR
-    maxDb = 0;
     sdr = NULL;
     perform.InitPerformance();
 }

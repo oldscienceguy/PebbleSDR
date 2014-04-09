@@ -105,10 +105,6 @@ private:
     CPX m_SigDelayBuf[MAX_DELAY_BUF];
     double m_MagBuf[MAX_DELAY_BUF];
 
-
-
-
-
 	//Utility function, used in many calculations exp(x) = e^x
 	inline float eVal(float x) {return exp(-1000.0 / (x * sampleRate));}
 };

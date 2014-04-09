@@ -10,6 +10,7 @@
 #include "QFile"
 #include <QSize>
 #include <QMainWindow>
+#include "db.h"
 #include "perform.h"
 
 class Receiver;
@@ -28,13 +29,11 @@ public:
     DeviceInterface *sdr;
     char *revision;
     Settings *settings;
-    double minDb; //Smallest db we'll return from FFT
-    double maxDb;
     Perform perform;
     CTestBench* testBench;
     QSize defaultWindowSize;
     QMainWindow *mainWindow;
-
+	DB db;
 
 private:
 	QFile *file;

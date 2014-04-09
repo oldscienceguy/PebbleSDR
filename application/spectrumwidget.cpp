@@ -29,7 +29,7 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 
     //Starting plot range
     plotMaxDb = -50; //!! Same as CuteSDR Save in settings
-    plotMinDb = global->minDb;
+	plotMinDb = global->db.minDb;
     ui.maxDbBox->setMinimum(plotMinDb);
     ui.maxDbBox->setMaximum(-10);
     ui.maxDbBox->setValue(plotMaxDb);
@@ -44,7 +44,7 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 
 	fMixer = 0;
 
-    dbRange = abs(global->maxDb - global->minDb);
+	dbRange = abs(global->db.maxDb - global->db.minDb);
 
     //Spectrum power is converted to 8bit int for display
     //This array maps the colors for each power level
@@ -769,8 +769,8 @@ void SpectrumWidget::newFftData()
     }
 
     //SpectrumGain of 1
-    qint16 maxDbDisplayed = global->maxDb;
-    qint16 minDbDisplayed = global->minDb;
+	qint16 maxDbDisplayed = global->db.maxDb;
+	qint16 minDbDisplayed = global->db.minDb;
     //Apply offset and gain options from UI
     minDbDisplayed = plotMinDb; //minDbDisplayed - spectrumOffset;
     maxDbDisplayed = plotMaxDb; //minDbDisplayed - (minDbDisplayed / spectrumGain);

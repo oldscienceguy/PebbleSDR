@@ -4,9 +4,8 @@
 #include "gpl.h"
 
 #include "cpx.h"
+#include "db.h"
 #include "QMutex"
-
-
 
 //New base class for multiple FFT variations
 //This will eventually let us switch usage or at least document the various options
@@ -22,8 +21,6 @@ public:
     quint32 maxFFTSize;
     quint32 minFFTSize;
     double ampMax;	//maximum sin wave Pk for 16 bit input data
-    double maxDb;			//specifies total range of FFT
-    double minDb;
     double overLimit;	//limit for detecting over ranging inputs
 
     //Keep separate from constructor so we can change on the fly eventually
@@ -90,15 +87,12 @@ protected:
     double* FFTPwrAvgBuf;
     double* FFTAvgBuf;
     double* FFTPwrSumBuf;
-    double K_C;
-    double K_B;
     double dBCompensation;
 
     //This should replace m_mutex in fftcute
     QMutex fftMutex; //Used to sync threads calling FFT and display calling Screen mapping
 
-
-
+	DB db;
 };
 
 #endif // FFT_H

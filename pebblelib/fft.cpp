@@ -9,10 +9,6 @@ FFT::FFT() :
 {
     maxFFTSize = 65536;
     minFFTSize = 512;
-    //maxDb = 0.0;			//specifies total range of FFT
-    maxDb = DB::maxDb;
-    //minDb = -220.0;
-    minDb = DB::minDb;
     if (useIntegerFFT) {
         ampMax = 32767.0;	//maximum sin wave Pk for 16 bit input data
         overLimit = 32000.0;	//limit for detecting over ranging inputs
@@ -30,7 +26,7 @@ FFT::FFT() :
     fftParamsSet = false; //Only set to true in FFT::FFTParams(...)
 
     invert = false;
-    dBCompensation = maxDb;
+	dBCompensation = db.maxDb;
 
 
     plotTranslateTable = NULL;
@@ -62,20 +58,6 @@ FFT::~FFT()
         delete FFTPwrSumBuf;
 }
 
-//////////////////////////////////////////////////////////////////////
-// A pure input sin wave ... Asin(wt)... will produce an fft output
-//   peak of (N*A/1)^2  where N is FFT_SIZE.
-//		Kx = 2 for complex, 4 for real FFT
-// To convert to a Power dB range:
-//   PdBmax = 10*log10( (N*A/Kx)^2 + K_C ) + K_B
-//   PdBmin = 10*log10( 0 + K_C ) + K_B
-//  if (N*A/Kx)^2 >> K_C
-//  Then K_B = PdBmax - 20*log10( N*A/Kx )
-//       K_C = 10 ^ ( (PdBmin-K_B)/10 )
-//  for power range of 0 to 100 dB with input(A) of 32767 and N=262144
-//			K_B = -86.63833  and K_C = 4.6114145e8
-///////////////////////////////////////////////////////////////////////
-
 void FFT::FFTParams(quint32 _size, bool _invert, double _dBCompensation, double _sampleRate)
 {
     if (_size == 0)
@@ -96,10 +78,6 @@ void FFT::FFTParams(quint32 _size, bool _invert, double _dBCompensation, double 
     workingBuf = CPXBuf::malloc(fftSize);
     overlap = CPXBuf::malloc(fftSize);
     CPXBuf::clear(overlap, fftSize);
-
-    //Init K_B and K_C constants for power conversion
-    K_B = dBCompensation - 20 * log10( (double)fftSize * ampMax/2.0 );
-    K_C = pow( 10.0, (minDb - K_B)/10.0 );
 
     if (FFTPwrAvgBuf != NULL)
         delete FFTPwrAvgBuf;
@@ -164,13 +142,13 @@ void FFT::FreqDomainToMagnitude(CPX * freqBuf, int size, double baseline, double
     // FFT output index 0 to N/2-1 - frequency output 0 to +Fs/2 Hz  ( 0 Hz DC term )
     //This puts 0 to size/2 into size/2 to size-1 position
     for (int i=0, j=size/2; i<size/2; i++,j++) {
-        fbr[j] = DB::amplitudeToDb(freqBuf[i].mag() + baseline) + correction;
+		fbr[j] = db.amplitudeToDb(freqBuf[i].mag() + baseline) + correction;
     }
     // FFT output index N/2 to N-1 - frequency output -Fs/2 to 0
     // This puts size/2 to size-1 into 0 to size/2
     //Works correctly with Ooura FFT
     for (int i=size/2, j=0; i<size; i++,j++) {
-        fbr[j] = DB::amplitudeToDb(freqBuf[i].mag() + baseline) + correction;
+		fbr[j] = db.amplitudeToDb(freqBuf[i].mag() + baseline) + correction;
     }
 }
 
@@ -237,7 +215,8 @@ void FFT::CalcPowerAverages(CPX* in, double *out, int size)
         FFTPwrAvgBuf[i] = FFTPwrSumBuf[i]/(double)averageCnt;
 
 		//Convert to db
-		FFTAvgBuf[i] = 10 * log10( FFTPwrAvgBuf[i] + K_C) + K_B;
+		//FFTAvgBuf[i] = 10 * log10( FFTPwrAvgBuf[i] + K_C) + K_B;
+		FFTAvgBuf[i] = db.powerToDb(FFTPwrAvgBuf[i]);
 
         //Skip copying to out if null
         if (out != NULL)

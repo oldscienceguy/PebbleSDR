@@ -5,9 +5,9 @@
 SignalStrength::SignalStrength(int sr, int ns):
 	SignalProcessing(sr,ns)
 {
-    instValue = global->minDb;
-    avgValue = global->minDb;
-    extValue = global->minDb;
+	instValue = global->db.minDb;
+	avgValue = global->db.minDb;
+	extValue = global->db.minDb;
 	//Todo: This should be adj per receiver and user should be able to calibrate with known signal
 	//SRV9 -40
 	//SREnsemble 
@@ -72,15 +72,13 @@ CPX * SignalStrength::ProcessBlock(CPX *in, int downConvertLen, int squelch)
 
 	//Same as TotalPower, except here we modify out if below squelch
     float pwr = 0.0;
-    float db = 0.0;
 	//double squelchWatts = dBm_2_Watts(squelch);
 	//sum(re^2 + im^2)
     for (int i = 0; i < downConvertLen; i++) {
 		//Total power of this sample pair
-        pwr = DB::cpxToWatts(in[i]); //Power in watts
-        db = DB::powerToDb(pwr); //Watts to db
+		pwr = global->db.cpxToWatts(in[i]); //Power in watts
         //Verified 8/13 comparing testbench gen output at all db levels
-        instValue = db;
+		instValue = global->db.powerToDb(pwr); //Watts to db
         //Weighted average 90/10
         avgValue = 0.99 * avgValue + 0.01 * instValue;
 
@@ -99,15 +97,15 @@ CPX * SignalStrength::ProcessBlock(CPX *in, int downConvertLen, int squelch)
 }
 float SignalStrength::instFValue() {
     float temp = instValue + correction;
-    temp = temp > global->maxDb ? global->maxDb : temp;
-    temp = temp < global->minDb ? global->minDb : temp;
+	temp = temp > global->db.maxDb ? global->db.maxDb : temp;
+	temp = temp < global->db.minDb ? global->db.minDb : temp;
     return temp;
 }
 
 float SignalStrength::avgFValue() {
     float temp = avgValue + correction;
-    temp = temp > global->maxDb ? global->maxDb : temp;
-    temp = temp < global->minDb ? global->minDb : temp;
+	temp = temp > global->db.maxDb ? global->db.maxDb : temp;
+	temp = temp < global->db.minDb ? global->db.minDb : temp;
     return temp;
 }
 

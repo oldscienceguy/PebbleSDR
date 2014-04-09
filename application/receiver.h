@@ -146,7 +146,6 @@ private:
 
 	double *dbSpectrumBuf; //Used when spectrum is set by remote
 
-
     //Use CuteSDR decimation filters for downsampling
     CDecimateBy2 *decimate1;
     int decimate2SampleRate;
