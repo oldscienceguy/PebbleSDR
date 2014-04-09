@@ -74,9 +74,6 @@ FFT::~FFT()
 //       K_C = 10 ^ ( (PdBmin-K_B)/10 )
 //  for power range of 0 to 100 dB with input(A) of 32767 and N=262144
 //			K_B = -86.63833  and K_C = 4.6114145e8
-// To eliminate the multiply by 10, divide by 10 so for an output
-//		range of 0 to -120dB the stored value is 0.0 to -12.0
-//   so final constant K_B = -8.663833
 ///////////////////////////////////////////////////////////////////////
 
 void FFT::FFTParams(quint32 _size, bool _invert, double _dBCompensation, double _sampleRate)
@@ -103,7 +100,6 @@ void FFT::FFTParams(quint32 _size, bool _invert, double _dBCompensation, double 
     //Init K_B and K_C constants for power conversion
     K_B = dBCompensation - 20 * log10( (double)fftSize * ampMax/2.0 );
     K_C = pow( 10.0, (minDb - K_B)/10.0 );
-    K_B = K_B/10.0;
 
     if (FFTPwrAvgBuf != NULL)
         delete FFTPwrAvgBuf;
@@ -241,13 +237,11 @@ void FFT::CalcPowerAverages(CPX* in, double *out, int size)
         FFTPwrAvgBuf[i] = FFTPwrSumBuf[i]/(double)averageCnt;
 
 		//Convert to db
-		//Result is db/10.0 for some reason.  So -10 is really 100 db and -9.5 is really -95db
-        FFTAvgBuf[i] = log10( FFTPwrAvgBuf[i] + K_C) + K_B;
+		FFTAvgBuf[i] = 10 * log10( FFTPwrAvgBuf[i] + K_C) + K_B;
 
         //Skip copying to out if null
         if (out != NULL)
             out[i] = FFTAvgBuf[i];
-
     }
 
 }
@@ -299,8 +293,10 @@ bool FFT::MapFFTToScreen(
     qint32 ymax = -10000;
     qint32 xprev = -1;
     const qint32 binMax = fftSize -1;
-    double dBmaxOffset = maxdB/10.0;
-    double dBGainFactor = -10.0/(maxdB-mindB);
+	//dBmaxOffset is used to adjust inbound db up/down by fixed offset which can be set by user in Spectrum
+	double dBmaxOffset = maxdB;
+	//dbGainFactor is used to scale min/max db values so they fit in N vertical pixels
+	double dBGainFactor = -1/(maxdB-mindB);
 
     //qDebug()<<"maxoffset dbgaindfact "<<dBmaxOffset << dBGainFactor;
 

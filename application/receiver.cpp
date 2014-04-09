@@ -834,9 +834,7 @@ void Receiver::ProcessBandscopeData(quint8 *in, quint16 numPoints)
 		numPoints = framesPerBuffer;
 
 	for (int i=0; i<numPoints; i++) {
-		//Pebble db is factored by 10, so -10.0 = -100db, -4.0 = -40db etc
-		//I'm not sure why :-)
-		dbSpectrumBuf[i] = -in[i] / 10.0;
+		dbSpectrumBuf[i] = -in[i] * 1.0;
 	}
 	signalSpectrum->SetSpectrum(dbSpectrumBuf);
 }
