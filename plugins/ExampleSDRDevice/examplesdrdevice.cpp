@@ -25,18 +25,22 @@ bool ExampleSDRDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant
 {
 	switch (_cmd) {
 		case CmdConnect:
+			DeviceInterfaceBase::Connect();
 			//Device specific code follows
 			return true;
 
 		case CmdDisconnect:
+			DeviceInterfaceBase::Disconnect();
 			//Device specific code follows
 			return true;
 
 		case CmdStart:
+			DeviceInterfaceBase::Start();
 			//Device specific code follows
 			return true;
 
 		case CmdStop:
+			DeviceInterfaceBase::Stop();
 			//Device specific code follows
 			return true;
 
