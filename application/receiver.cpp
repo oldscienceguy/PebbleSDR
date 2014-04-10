@@ -201,7 +201,7 @@ bool Receiver::On()
     sampleBuf = CPXBuf::malloc(framesPerBuffer);
     audioBuf = CPXBuf::malloc(framesPerBuffer);
     sampleBufLen = 0;
-	dbSpectrumBuf = new double(framesPerBuffer);
+	dbSpectrumBuf = new double[framesPerBuffer];
 
     presets = new Presets(receiverWidget);
 
@@ -367,7 +367,7 @@ bool Receiver::Off()
         audioBuf = NULL;
     }
 	if (dbSpectrumBuf != NULL) {
-		delete dbSpectrumBuf;
+		delete [] dbSpectrumBuf;
 		dbSpectrumBuf = NULL;
 	}
     return true;
@@ -830,6 +830,9 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 //But smallest expected value would be -120db
 void Receiver::ProcessBandscopeData(quint8 *in, quint16 numPoints)
 {
+	if (sdr == NULL || !powerOn)
+		return;
+
 	if (numPoints > framesPerBuffer)
 		numPoints = framesPerBuffer;
 
