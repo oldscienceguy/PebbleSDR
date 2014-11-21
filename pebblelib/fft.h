@@ -15,6 +15,8 @@ class PEBBLELIBSHARED_EXPORT FFT
 public:
     FFT();
     virtual ~FFT();
+	static FFT* Factory(); //Returns instance based on USE_FFT, USE_FFTCUTE, etc
+
     const bool useIntegerFFT; //Used as we switch cuteSDR code to +/-1
 
     //Move defines to public constants

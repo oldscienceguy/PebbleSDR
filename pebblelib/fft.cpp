@@ -4,6 +4,11 @@
 #include "db.h"
 #include <QDebug>
 
+//Forward declarations of supported subclasses in Factory
+#include "fftw.h"
+#include "fftcute.h"
+#include "fftooura.h"
+
 FFT::FFT() :
     useIntegerFFT(false)
 {
@@ -56,6 +61,24 @@ FFT::~FFT()
         delete FFTAvgBuf;
     if (FFTPwrSumBuf != NULL)
         delete FFTPwrSumBuf;
+}
+
+FFT* FFT::Factory()
+{
+#ifdef USE_FFTW
+	qDebug()<<"Using FFTW";
+	return new FFTfftw();
+#endif
+#ifdef USE_FFTCUTE
+	qDebug()<<"Using FFT CUTE";
+	return new CFft();
+#endif
+#ifdef USE_FFTOOURA
+	qDebug()<<"Using FFT Ooura";
+	return new FFTOoura();
+#endif
+	qDebug()<<"Error in FFT configuration";
+	return NULL;
 }
 
 void FFT::FFTParams(quint32 _size, bool _invert, double _dBCompensation, double _sampleRate)
