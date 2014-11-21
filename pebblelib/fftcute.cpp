@@ -198,9 +198,10 @@ void CFft::FFTForward(CPX * in, CPX * out, int size)
         if( in[i].re > overLimit )	//flag overload if within OVLimit of max
             fftInputOverload = true;
         dtmp1 = m_pWindowTbl[i];
-        //CuteSDR swapped I/Q here, but order is correct in Pebble
-        workingBuf[i].re = dtmp1 * (in[i].re); //window the I data
-        workingBuf[i].im = dtmp1 * (in[i].im); //window the Q data
+		//CuteSDR swapped I/Q here
+		//11/14 Spectrum is reversed compared to FFTW, so IQ swap is necessary
+		workingBuf[i].im = dtmp1 * (in[i].re); //window the I data
+		workingBuf[i].re = dtmp1 * (in[i].im); //window the Q data
     }
 
     bitrv2(fftSize*2, m_pWorkArea + 2, (TYPEREAL*)workingBuf);

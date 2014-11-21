@@ -72,7 +72,15 @@ void FFTOoura::FFTForward(CPX *in, CPX *out, int size)
     if (!fftParamsSet)
         return;
 
-    CPXBuf::copy(workingBuf,in, size);  //In-place functions, use workingBuf to keep other buffers intact
+	for(int i=0; i<size; i++)
+	{
+		if( in[i].re > overLimit )	//flag overload if within OVLimit of max
+			fftInputOverload = true;
+		//CuteSDR swapped I/Q here
+		//11/14 Spectrum is reversed compared to FFTW, so IQ swap is necessary
+		workingBuf[i].im = in[i].re;
+		workingBuf[i].re = in[i].im;
+	}
 
     //Size is 2x fftSize because offt works on double[] re-im-re-im et
     cdft(2*size, +1, (double*)workingBuf, offtWorkArea, offtSinCosTable);
