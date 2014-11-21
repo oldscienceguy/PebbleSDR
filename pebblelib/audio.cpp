@@ -5,8 +5,6 @@
 #include "audioqt.h"
 #include "QDebug"
 
-bool Audio::useQtAudio = false;
-
 Audio::Audio(QObject *parent) : QObject(parent)
 {
 }
@@ -17,30 +15,38 @@ Audio::~Audio()
 
 Audio *Audio::Factory(cbProcessIQData cb, int framesPerBuffer)
 {
-	if (Audio::useQtAudio) {
-		qDebug()<<"Using QTAudio";
-		return new AudioQT(cb, framesPerBuffer);
-	} else {
-		qDebug()<<"Using PortAudio";
-		return new SoundCard(cb, framesPerBuffer);
-	}
-
+#ifdef USE_QT_AUDIO
+	qDebug()<<"Using QTAudio";
+	return new AudioQT(cb, framesPerBuffer);
+#endif
+#ifdef USE_PORT_AUDIO
+	qDebug()<<"Using PortAudio";
+	return new SoundCard(cb, framesPerBuffer);
+#endif
+	qDebug()<<"Unknown audio configuration";
+	return NULL;
 }
 
 
 QStringList Audio::InputDeviceList()
 {
-    if (Audio::useQtAudio){
-        return AudioQT::InputDeviceList();
-    } else {
-        return SoundCard::InputDeviceList();
-    }
-
+#ifdef USE_QT_AUDIO
+		return AudioQT::InputDeviceList();
+#endif
+#ifdef USE_PORT_AUDIO
+		return SoundCard::InputDeviceList();
+#endif
+	qDebug()<<"Unknown audio configuration";
+	return QStringList();
 }
 QStringList Audio::OutputDeviceList()
 {
-    if (Audio::useQtAudio)
-        return AudioQT::OutputDeviceList();
-    else
-        return SoundCard::OutputDeviceList();
+#ifdef USE_QT_AUDIO
+		return AudioQT::OutputDeviceList();
+#endif
+#ifdef USE_PORT_AUDIO
+		return SoundCard::OutputDeviceList();
+#endif
+	qDebug()<<"Unknown audio configuration";
+	return QStringList();
 }

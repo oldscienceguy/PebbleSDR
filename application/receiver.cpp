@@ -41,10 +41,6 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
     dir.mkdir("PebbleRecordings");
     recordingPath += "PebbleRecordings/";
 
-    //Testing 1 place to switch between PortAudio and QTAudio
-    //WARNING: When you change this, delete pebble.ini or manually reset all settings because input/output names may change
-    Audio::useQtAudio = false; //Read from setting TBD
-
 	//ReceiverWidget link back
 	receiverWidget->SetReceiver(this);
 	QStringList welcome;

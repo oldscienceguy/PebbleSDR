@@ -47,8 +47,6 @@ public:
 	qint16 Float2Int(float sample) {return sample * 32767;}
 	quint16 Float2UInt(float sample) {return sample * 65535;}
 
-    static bool useQtAudio;
-
 signals:
 
 public slots:
