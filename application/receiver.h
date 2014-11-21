@@ -27,6 +27,7 @@
 #include "filters/fractresampler.h"
 #include "devices/wavfile.h"
 #include "sdroptions.h"
+#include "fft.h"
 
 #include "plugins.h"
 
@@ -97,7 +98,7 @@ private:
     };
 
 
-    FFTfftw *fft;
+	FFT *fft;
 	int fftSize;
 	bool useFreqDomainChain;
 
