@@ -20,10 +20,10 @@ SignalSpectrum::SignalSpectrum(int sr, quint32 zsr, int ns, Settings *set):
 	//Output buffers
 	rawIQ = CPXBuf::malloc(numSamples);
 
-    fftUnprocessed = new FFTfftw();
+	fftUnprocessed = FFT::Factory();
     unprocessed = new double[fftSize];
 
-    fftZoomed = new FFTfftw();
+	fftZoomed = FFT::Factory();
     zoomed = new double[fftSize];
 
     tmp_cpx = CPXBuf::malloc(fftSize);
@@ -159,7 +159,7 @@ void SignalSpectrum::MakeSpectrum(FFT *fft, CPX *in, double *sOut, int size)
     //mutex.unlock();
 }
 
-void SignalSpectrum::MakeSpectrum(FFTfftw *fft, double *sOut)
+void SignalSpectrum::MakeSpectrum(FFT *fft, double *sOut)
 {
     //Only make spectrum often enough to match spectrum update rate, otherwise we just throw it away
     if (++skipFftsCounter >= skipFfts) {
