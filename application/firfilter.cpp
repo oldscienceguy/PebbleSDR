@@ -88,9 +88,9 @@ FIRFilter::FIRFilter(int sr, int ns, bool _useFFT, int _numTaps, int _delay):
 		//to avoid circular convolution.
 		//Circular convolution appears as a ghost signal that does not show up in the spectrum at the
 		//mirror frequency of a signal in the lower part of the spectrum
-        fftFIR = new FFTfftw();
+		fftFIR = FFT::Factory();
         fftFIR->FFTParams(numSamplesX2, +1, 0, sr);
-        fftSamples = new FFTfftw();
+		fftSamples = FFT::Factory();
         fftSamples->FFTParams(numSamplesX2, +1, 0, sr);
 
         window = new double[numSamples];
@@ -140,7 +140,7 @@ void FIRFilter::setEnabled(bool b)
 	enabled = b;
 }
 //If DoFFTForward has already been called, use this to remain in frequency domain
-void FIRFilter::Convolution(FFTfftw *fft)
+void FIRFilter::Convolution(FFT *fft)
 {
 	//Do Convolution
     CPXBuf::mult(fft->getFreqDomain(),fft->getFreqDomain(),fftFIR->getFreqDomain(), fft->getFFTSize());
@@ -162,7 +162,7 @@ CPX * FIRFilter::ProcessBlock(CPX *in)
 		this->Convolution(fftSamples);
 		//freqDomain is now filtered in freq domain
 		//And return to time domain
-        fftSamples->FFTInverse(NULL, NULL, fftSamples->getFFTSize());
+		fftSamples->FFTInverse(NULL, NULL, fftSamples->getFFTSize());
 		//tmp1 is time domain
 		//Do Overlap-Add to reduce from 2X numSamples to numSamples
 		fftSamples->OverlapAdd(out,numSamples);

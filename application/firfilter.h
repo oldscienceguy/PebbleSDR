@@ -3,7 +3,7 @@
 #include "gpl.h"
 #include "signalprocessing.h"
 #include <QMutex>
-#include "fftw.h"
+#include "fft.h"
 
 class FIRFilter :
 	public SignalProcessing
@@ -16,7 +16,7 @@ public:
 	~FIRFilter(void);
 	//Apply the filter, results in out
 	CPX * ProcessBlock(CPX *in);
-    void Convolution(FFTfftw *fft);
+	void Convolution(FFT *fft);
 
 	//Create coefficients for filter
 	void setEnabled(bool b);
@@ -60,8 +60,8 @@ private:
     double *window;
 
 	//FFT versions
-    FFTfftw *fftFIR;
-    FFTfftw *fftSamples;
+	FFT *fftFIR;
+	FFT *fftSamples;
 
 	void FFTSetBandPass(float lo, float hi,WINDOWTYPE wtype);
 	void FFTSetLowPass(float cutoff, WINDOWTYPE wtype);
