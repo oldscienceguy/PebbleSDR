@@ -8,6 +8,7 @@
 #include "fftw.h"
 #include "fftcute.h"
 #include "fftooura.h"
+#include "fftaccelerate.h"
 
 FFT::FFT() :
     useIntegerFFT(false)
@@ -77,6 +78,11 @@ FFT* FFT::Factory()
 	qDebug()<<"Using FFT Ooura";
 	return new FFTOoura();
 #endif
+#ifdef USE_FFTACCELERATE
+	qDebug()<<"Using FFT Accelerate";
+	return new FFTAccelerate();
+#endif
+
 	qDebug()<<"Error in FFT configuration";
 	return NULL;
 }

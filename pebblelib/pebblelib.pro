@@ -82,6 +82,8 @@ macx {
     LIBS += -framework CoreAudio
     LIBS += -framework AudioToolbox
     LIBS += -framework AudioUnit
+    #Only include if USE_FFTACCELERATE is defined
+    LIBS += -framework Accelerate
 
 }
 
