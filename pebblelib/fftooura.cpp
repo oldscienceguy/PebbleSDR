@@ -34,6 +34,7 @@ Appendix :
 
 #include "fftooura.h"
 #include <math.h>
+#include "qdebug.h"
 
 /*
  * Spectrum Folding Example for ooura FFT
@@ -62,7 +63,7 @@ void FFTOoura::FFTParams( quint32 _size, bool _invert, double _dBCompensation, d
     FFT::FFTParams(_size, _invert, _dBCompensation, _sampleRate);
 
     //These are inplace transforms,ie out = in, of 1 dimensional data (dft_1d)
-    offtWorkArea = new int[fftSize]; //Work buffer for bit reversal, size at least 2+sqrt(n)
+	offtWorkArea = new int[fftSize]; //Work buffer for bit reversal, size at least 2+sqrt(n)
     offtWorkArea[0] = 0; //Initializes w with sine/cosine values.  Only do this once
     offtSinCosTable = new double[fftSize * 5 / 4]; //sine/cosine table.  Check size
 }
@@ -72,25 +73,32 @@ void FFTOoura::FFTForward(CPX *in, CPX *out, int size)
     if (!fftParamsSet)
         return;
 
-	for(int i=0; i<size; i++)
-	{
-		if( in[i].re > overLimit )	//flag overload if within OVLimit of max
-			fftInputOverload = true;
-		//CuteSDR swapped I/Q here
-		//11/14 Spectrum is reversed compared to FFTW, so IQ swap is necessary
-		workingBuf[i].im = in[i].re;
-		workingBuf[i].re = in[i].im;
+	if (in!=NULL) {
+		if (size < fftSize)
+			//Make sure that buffer which does not have samples is zero'd out
+			//We can pad samples in the time domain because it does not impact frequency results in FFT
+			CPXBuf::clear(timeDomain,fftSize);
+		for(int i=0; i<size; i++)
+		{
+			if( in[i].re > overLimit )	//flag overload if within OVLimit of max
+				fftInputOverload = true;
+			//CuteSDR swapped I/Q here
+			//11/14 Spectrum is reversed compared to FFTW, so IQ swap is necessary
+			timeDomain[i].im = in[i].re;
+			timeDomain[i].re = in[i].im;
+		}
 	}
+	//Ooura is inplace, so copy to working dir so timedomain is intact
+	CPXBuf::copy(workingBuf,timeDomain,fftSize);
 
-    //Size is 2x fftSize because offt works on double[] re-im-re-im et
-    cdft(2*size, +1, (double*)workingBuf, offtWorkArea, offtSinCosTable);
+	//Size is 2x fftSize because offt works on double[] re-im-re-im etc
+	cdft(2*fftSize, +1, (double*)workingBuf, offtWorkArea, offtSinCosTable);
 
-    CPXBuf::copy(freqDomain,workingBuf,size) ;
+	CPXBuf::copy(freqDomain,workingBuf,fftSize) ;
 
     //If out == NULL, just leave result in freqDomain buffer and let caller get it
     if (out != NULL)
         CPXBuf::copy(out, freqDomain, fftSize);
-
 
 }
 
@@ -114,6 +122,7 @@ void FFTOoura::FFTSpectrum(CPX *in, double *out, int size)
     CalcPowerAverages(freqDomain, out, size);
 }
 
+//Not used
 void FFTOoura::FFTMagnForward(CPX * in,int size,double baseline,double correction,double *fbr)
 {
     if (!fftParamsSet)
@@ -131,7 +140,7 @@ void FFTOoura::FFTMagnForward(CPX * in,int size,double baseline,double correctio
     CPXBuf::copy(workingBuf, in, size);
 
     //Size is 2x fftSize because offt works on double[] re-im-re-im et
-    cdft(2*size, +1, (double*)workingBuf, offtWorkArea, offtSinCosTable);
+	cdft(2*fftSize, +1, (double*)workingBuf, offtWorkArea, offtSinCosTable);
 
     //See fftooura for spectrum folding model, cuteSDR uses same
     // FFT output index N/2 to N-1 is frequency output -Fs/2 to 0hz (negative frequencies)
@@ -154,17 +163,25 @@ void FFTOoura::FFTInverse(CPX *in, CPX *out, int size)
     if (!fftParamsSet)
         return;
 
-    CPXBuf::copy(workingBuf,in, size);  //In-place functions, use workingBuf to keep other buffers intact
+	//If in==NULL, use whatever is in freqDomain buffer
+	if (in != NULL) {
+		if (size < fftSize)
+			//Make sure that buffer which does not have samples is zero'd out
+			CPXBuf::clear(freqDomain,fftSize);
+
+		CPXBuf::copy(freqDomain,in, size);  //In-place functions, use workingBuf to keep other buffers intact
+	}
+
+	//Ooura is inplace, so copy to working dir so freqdomain is intact
+	CPXBuf::copy(workingBuf,freqDomain,fftSize);
 
     //Size is 2x fftSize because offt works on double[] re-im-re-im et
-    cdft(2*size, -1, (double*)workingBuf, offtWorkArea, offtSinCosTable);
+	cdft(2*fftSize, -1, (double*)workingBuf, offtWorkArea, offtSinCosTable);
 
     CPXBuf::copy(timeDomain, workingBuf, fftSize);
 
     if (out != NULL)
         CPXBuf::copy(out, timeDomain, fftSize);
-
-
 }
 
 
