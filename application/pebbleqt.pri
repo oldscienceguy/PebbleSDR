@@ -37,16 +37,17 @@ macx {
 	}
 
         #FFT library choices are FFTW, FFTCUTE, FFTOOURA
-        DEFINES += USE_FFTW
+        #DEFINES += USE_FFTW
         #DEFINES += USE_FFTCUTE
         #DEFINES += USE_FFTOOURA
+        DEFINES += USE_FFTACCELERATE
 
         #Audio library choices are PORTAUDIO, QTAUDIO
         #WARNING: When you change this, delete pebble.ini or manually reset all settings because input/output names may change
         #Also make sure audio.cpp is re-compiled
         #Mutually exclusive, uncomment only one
-        #DEFINES += USE_QT_AUDIO
-        DEFINES += USE_PORT_AUDIO
+        DEFINES += USE_QT_AUDIO
+        #DEFINES += USE_PORT_AUDIO
 
 }
 win32 {
@@ -66,8 +67,8 @@ win32 {
                 LIB_DIR = LibMacRelease
         }
         #FFT library choices are FFTW, FFTCUTE, FFTOOURA
-        DEFINES += USE_FFTW
-        #DEFINES += USE_FFTCUTE
+        #DEFINES += USE_FFTW
+        DEFINES += USE_FFTCUTE
         #DEFINES += USE_FFTOOURA
 
         #Audio library choices are PORTAUDIO, QTAUDIO
