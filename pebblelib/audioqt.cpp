@@ -82,10 +82,12 @@ void AudioQT::ProcessInputData()
     //Number of CPX samples
     int frameCount = bytesRead / floatSize / 2;
     float I,Q;
+	//QT Audio produces higher sample values than portAudio
+	float gain = 0.06;
     for (int i=0,j=0;i<frameCount;i++,j+=2)
     {
-        I = inStreamBuffer[j];
-        Q = inStreamBuffer[j+1];
+		I = inStreamBuffer[j] * gain;
+		Q = inStreamBuffer[j+1] * gain;
         //qDebug()<<I<<"/"<<Q;
         cpxInBuffer[i]=CPX(I,Q);
     }
