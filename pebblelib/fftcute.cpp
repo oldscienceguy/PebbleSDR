@@ -85,7 +85,7 @@ double WindowGain;
 #endif
 #if 1
 		WindowGain = 2.0;
-        for(i=0; i<fftSize; i++)	//Hann
+		for(i=0; i<fftSize; i++)	//Hann
             m_pWindowTbl[i] = WindowGain*(.5  - .5 *cos( (TWOPI*i)/(fftSize-1) ));
 #endif
 #if 0
@@ -193,21 +193,31 @@ void CFft::FFTForward(CPX * in, CPX * out, int size)
     fftMutex.lock();
 
     double dtmp1;
-    for(i=0; i<size; i++)
-    {
-        if( in[i].re > overLimit )	//flag overload if within OVLimit of max
-            fftInputOverload = true;
-        dtmp1 = m_pWindowTbl[i];
-		//CuteSDR swapped I/Q here
-		//11/14 Spectrum is reversed compared to FFTW, so IQ swap is necessary
-		workingBuf[i].im = dtmp1 * (in[i].re); //window the I data
-		workingBuf[i].re = dtmp1 * (in[i].im); //window the Q data
-    }
+	if (in != NULL) {
+		if (size < fftSize)
+			//Make sure that buffer which does not have samples is zero'd out
+			//We can pad samples in the time domain because it does not impact frequency results in FFT
+			CPXBuf::clear(timeDomain,fftSize);
+
+		for(i=0; i<size; i++)
+		{
+			if( in[i].re > overLimit )	//flag overload if within OVLimit of max
+				fftInputOverload = true;
+			//dtmp1 = m_pWindowTbl[i];
+			dtmp1 = 1; //Bug with windowTbl causing problems with missing samples
+			//CuteSDR swapped I/Q here
+			//11/14 Spectrum is reversed compared to FFTW, so IQ swap is necessary
+			timeDomain[i].im = dtmp1 * (in[i].re); //window the I data
+			timeDomain[i].re = dtmp1 * (in[i].im); //window the Q data
+		}
+	}
+	//Ooura is inplace, so copy to working dir so timedomain is intact
+	CPXBuf::copy(workingBuf,timeDomain,fftSize);
 
     bitrv2(fftSize*2, m_pWorkArea + 2, (TYPEREAL*)workingBuf);
     CpxFFT(fftSize*2, (TYPEREAL*)workingBuf, m_pSinCosTbl);
 
-    CPXBuf::copy(freqDomain,workingBuf,size) ;
+	CPXBuf::copy(freqDomain,workingBuf,fftSize) ;
 
     //If out == NULL, just leave result in freqDomain buffer and let caller get it
     if (out != NULL)
@@ -265,10 +275,21 @@ void CFft::FFTInverse(CPX * in, CPX * out, int size)
     if (!fftParamsSet)
         return;
 
-    CPXBuf::copy(workingBuf,in, size);  //In-place functions, use workingBuf to keep other buffers intact
+	//If in==NULL, use whatever is in freqDomain buffer
+	if (in != NULL) {
+		if (size < fftSize)
+			//Make sure that buffer which does not have samples is zero'd out
+			CPXBuf::clear(freqDomain,fftSize);
+
+		CPXBuf::copy(freqDomain,in, size);  //In-place functions, use workingBuf to keep other buffers intact
+
+	}
+	//Ooura is inplace, so copy to working dir so freqdomain is intact
+	CPXBuf::copy(workingBuf,freqDomain,fftSize);
 
     bitrv2conj(fftSize*2, m_pWorkArea + 2, (TYPEREAL*)workingBuf);
-    cftbsub(fftSize*2, (TYPEREAL*)workingBuf, m_pSinCosTbl);
+	cftbsub(fftSize*2, (TYPEREAL*)workingBuf, m_pSinCosTbl);
+
     //in and out are same buffer so we need to copy to freqDomain buffer to be consistent
     CPXBuf::copy(timeDomain, workingBuf, fftSize);
 
