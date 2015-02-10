@@ -47,7 +47,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 
 	welcome <<
         global->revision <<
-        "Copyright 2010, 2011, 2012, 2013 Richard Landsman N1DDY (pebblesdr@gmail.com)" <<
+		"Copyright 2010, 2011, 2012, 2013, 2014, 2015 Richard Landsman N1DDY (pebblesdr@gmail.com)" <<
         "See PebbleGPL.txt for GPL license details";
 
 	receiverWidget->SetMessage( welcome);
