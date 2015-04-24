@@ -7,6 +7,7 @@
 #include <QKeyEvent>
 #include <QWindow>
 #include "device_interfaces.h"
+#include "cmath" //For std::abs() that supports float.  Include last so it overrides abs(int)
 
 class Receiver;
 
@@ -44,7 +45,7 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 
 	fMixer = 0;
 
-	dbRange = abs(global->db.maxDb - global->db.minDb);
+	dbRange = std::abs(global->db.maxDb - global->db.minDb);
 
     //Spectrum power is converted to 8bit int for display
     //This array maps the colors for each power level

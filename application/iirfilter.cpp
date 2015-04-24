@@ -4,6 +4,7 @@
 #include <string.h>
 #include <QtDebug>
 #include <limits>
+#include "cmath" //For std::abs() that supports float.  Include last so it overrides abs(int)
 
 void IIRFilter::locatePolesAndZeros(){
     // determines poles and zeros of IIR filter
@@ -58,9 +59,9 @@ void IIRFilter::locatePolesAndZeros(){
       }
       int m = 2*(n2 - k) + 1;
       pReal[m + ir]     = r;
-      pImag[m + ir]     = abs(i);
+	  pImag[m + ir]     = std::abs(i);
       pReal[m + ir + 1] = r;
-      pImag[m + ir + 1] = - abs(i);
+	  pImag[m + ir + 1] = - std::abs(i);
     }
     if (odd(n)) {
       if (prototype == BUTTERWORTH) r = (1.0 - tansqw1)/(1.0 + 2.0*tanw1+tansqw1);
@@ -104,7 +105,7 @@ void IIRFilter::locatePolesAndZeros(){
           int m = 1 + 2*m1;
           aR = pReal[m];
           aI = pImag[m];
-          if (abs(aI) < 0.0001) {
+		  if (std::abs(aI) < 0.0001) {
             h1 = 0.5*aa*(1.0 + aR);
             h2 = sqr(h1) - aR;
             if (h2 > 0.0) {
@@ -116,7 +117,7 @@ void IIRFilter::locatePolesAndZeros(){
             else {
               p1R = h1;
               p2R = h1;
-              p1I = sqrt(abs(h2));
+			  p1I = sqrt(std::abs(h2));
               p2I = -p1I;
             }
           }
@@ -125,7 +126,7 @@ void IIRFilter::locatePolesAndZeros(){
             double fI = aa*0.5*aI;
             double gR = sqr(fR) - sqr(fI) - aR;
             double gI = 2*fR*fI - aI;
-            double sR = sqrt(0.5*abs(gR + sqrt(sqr(gR) + sqr(gI))));
+			double sR = sqrt(0.5*std::abs(gR + sqrt(sqr(gR) + sqr(gI))));
             double sI = gI/(2.0*sR);
             p1R = fR + sR;
             p1I = fI + sI;
@@ -145,8 +146,8 @@ void IIRFilter::locatePolesAndZeros(){
           int m = 2*k - 1;
           pReal[m]   =   pReal[k];
           pReal[m+1] =   pReal[k];
-          pImag[m]   =   abs(pImag[k]);
-          pImag[m+1] = - abs(pImag[k]);
+		  pImag[m]   =   std::abs(pImag[k]);
+		  pImag[m+1] = - std::abs(pImag[k]);
         }
         break;
       default:

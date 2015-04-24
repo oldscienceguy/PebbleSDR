@@ -1,6 +1,7 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include "firfilter.h"
+#include "cmath" //For std::abs() that supports float.  Include last so it overrides abs(int)
 
 /*
 The best explanation I found for how FIR filters work was "Digital Filters, 3rd Edition" by R.W. Hamming
@@ -255,8 +256,8 @@ void FIRFilter::SetBandPass2(float lo, float hi, WINDOWTYPE w)
 	float tmp;
 	if (lo < 0 && hi < 0) {
 		// -3000 to -50 becomes 50 to 3000
-		tmp = abs(hi);
-		hi = abs(lo);
+		tmp = std::abs(hi);
+		hi = std::abs(lo);
 		lo = tmp;
 	} else if (lo < 0 && hi >= 0) {
 		// -3000 to + 3000 becomes 0 to 3000
@@ -301,8 +302,8 @@ void FIRFilter::SetBandPass(float lo, float hi, WINDOWTYPE w)
 	float tmp;
 	if (lo < 0 && hi < 0) {
 		// -3000 to -50 becomes 50 to 3000
-		tmp = abs(hi);
-		hi = abs(lo);
+		tmp = std::abs(hi);
+		hi = std::abs(lo);
 		lo = tmp;
 	} else if (lo < 0 && hi >= 0) {
 		// -3000 to + 3000 becomes 0 to 3000
@@ -351,7 +352,7 @@ void FIRFilter::SetLowPass(float cutoff, WINDOWTYPE w)
 
 	MakeWindow(w, length, window);
 
-	cutoff = abs(cutoff); //No negative freq in this algorithm
+	cutoff = std::abs(cutoff); //No negative freq in this algorithm
 
 	lpCutoff = 0;
 	hpCutoff = cutoff;
@@ -409,7 +410,7 @@ void FIRFilter::SetHighPass(float cutoff, WINDOWTYPE w)
 	}
 	MakeWindow(w, numTaps, window);
 
-	cutoff = abs(cutoff); //Negative freq not supported in this algorithm
+	cutoff = std::abs(cutoff); //Negative freq not supported in this algorithm
 	//Create low pass taps
 	SetLowPass(cutoff,w);
 	lpCutoff = cutoff;
