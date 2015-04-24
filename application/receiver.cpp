@@ -239,7 +239,7 @@ bool Receiver::On()
 
     //Don't set title until we connect and start.
     //Some drivers handle multiple devices (RTL2832) and we need connection data
-    QTimer::singleShot(200,this,SLOT(SetWindowTitle()));
+	QTimer::singleShot(200,this,SLOT(SetWindowTitle()));
 	return true;
 }
 
@@ -247,7 +247,8 @@ void Receiver::SetWindowTitle()
 {
     if (sdr == NULL)
         return;
-	QString devName = sdr->Get(DeviceInterface::DeviceName).toString();
+	qint16 number = sdr->Get(DeviceInterface::DeviceNumber).toInt();
+	QString devName = sdr->Get(DeviceInterface::DeviceName,number).toString();
     //In some cases, unknown, activeWindow() can return NULL
     QWidget *win = QApplication::activeWindow();
     if (win != NULL)
