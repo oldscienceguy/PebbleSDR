@@ -51,7 +51,6 @@ private slots:
 		void selectInput2(bool b);
 		void selectInput3(bool b);
 		void serialNumberChanged(int s);
-		void fifiUseABPFChanged(bool b);
 
 private:
 	bool Connect();
@@ -96,10 +95,13 @@ private:
 	bool PTT();
 	bool GetCWLevel();
 
-	void FiFiGetSvn();
-	bool FiFiVersion(quint32 *fifiVersion);
+	bool FiFiGetSVNNumber(quint32 *fifiSVN);
+	bool FiFiVersion(QString *fifiVersion);
 	bool FiFiReadPreselector(int preselNum, double *freq1, double *freq2, quint32 *pattern);
 	bool FiFiReadPreselectorMode(quint32 *mode);
+	bool FiFi3rdHarmonic(quint32 *fifi3rdHarmonic);
+	bool Fifi5thHarmonic(quint32 *fifi5thHarmonic);
+
 	bool FiFiWritePreselctorMode(quint32 mode);
 
 	void InitSettings(QString fname);

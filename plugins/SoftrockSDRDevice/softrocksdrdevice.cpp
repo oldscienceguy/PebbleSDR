@@ -198,7 +198,8 @@ void SoftrockSDRDevice::ReadSettings()
 			//si570 / 4.0
 			startupFrequency = 10000000;
 			lowFrequency = 200000;
-			highFrequency = 30000000;
+			//highFrequency = 30000000;
+			highFrequency = 150000000; //Test
 			startupDemodMode = dmAM;
 			//FiFi runs hot, even at lowest device setting, reduce gain
 			iqGain = 0.25;
@@ -571,25 +572,82 @@ bool SoftrockSDRDevice::GetCWLevel()
 }
 //FiFi Specific
 //0xAB Fifi Read Request
-//Value 0, Index 0 = version
-bool SoftrockSDRDevice::FiFiVersion(quint32 *fifiVersion)
+
+// Case 0 Return the SVN build number
+// http://o28.sischa.net/fifisdr/trac/browser/trunk/Software/LPC/fifisdr/fifisdr/src/softrock.c use translate.google.com
+
+bool SoftrockSDRDevice::FiFiGetSVNNumber(quint32 *fifiSVN)
 {
-	quint32 version;
+	quint32 svn;
+
 	int value = 0;
 	int index = 0;
-	int result = usbCtrlMsgIn(0xAB, value, index, (unsigned char*)&version, sizeof(version));
+	int result = usbCtrlMsgIn(0xAB, value, index, (unsigned char*)&svn, sizeof(svn));
 	if (result != 0 ) {
-		*fifiVersion = version;
+		*fifiSVN = svn;
 		return true;
 	} else {
-		*fifiVersion = 0;
+		*fifiSVN = 0;
+		return false;
+	}
+
+	return true;
+}
+
+//Case 1 return firmware version string
+//Value 0, Index 1 = version
+bool SoftrockSDRDevice::FiFiVersion(QString *fifiVersion)
+{
+	unsigned char version[256];
+	int value = 0;
+	int index = 1;
+	int length = usbCtrlMsgIn(0xAB, value, index, version, sizeof(version));
+	if (length > 0 ) {
+		*fifiVersion = QString((char *)version);
+		return true;
+	} else {
+		*fifiVersion = QString();
 		return false;
 	}
 
 }
 
-//OxAC Fifi Write Request
+/* Receiving at harmonics of the LO frequency.
+* If the LO should be set to a frequency> = one of the thresholds,
+* He will statdessen to one-third or one FÃŒnftel the required
+* Set frequency. For application, but towards the hÃ¶here virtual frequency
+* Reported.
+*/
+//Case 3 return 3rd harmonic
+bool SoftrockSDRDevice::FiFi3rdHarmonic(quint32 * fifi3rdHarmonic)
+{
+	*fifi3rdHarmonic = 0;
+	return true;
+}
 
+//Case 4 not used
+
+//Case 5 return 5th harmonic
+bool SoftrockSDRDevice::Fifi5thHarmonic(quint32 *fifi5thHarmonic)
+{
+	*fifi5thHarmonic = 0;
+	return true;
+}
+
+//Case 6 return preselector mode
+bool SoftrockSDRDevice::FiFiReadPreselectorMode (quint32 *mode)
+{
+	quint32 preselMode;
+	int result = usbCtrlMsgIn(0xAB, 0, 6  , (unsigned char*)&preselMode, sizeof(preselMode));
+	if (result != 0) {
+		*mode = preselMode;
+		return true;
+	} else {
+		return false;
+	}
+}
+
+//Case 7 return preselector values
 //index == preselector number to read (0-15)
 bool SoftrockSDRDevice::FiFiReadPreselector(int preselNum, double* freq1, double *freq2, quint32 *pattern)
 {
@@ -605,23 +663,111 @@ bool SoftrockSDRDevice::FiFiReadPreselector(int preselNum, double* freq1, double
 	return false;
 }
 
-bool SoftrockSDRDevice::FiFiReadPreselectorMode (quint32 *mode)
-{
-	quint32 preselMode;
-	int result = usbCtrlMsgIn(0xAB, 0, 6  , (unsigned char*)&preselMode, sizeof(preselMode));
-	if (result != 0) {
-		*mode = preselMode;
-		return true;
-	} else {
-		return false;
-	}
-}
+//Case 10 return real SI570 registers
+//Case 11 return Virtual VCO factor
+//Case 12 return factory starup ??
+//Case 13 not used
 
-//See params.h in Fifi LPC source
+//Case 14 return demodulator volume
+
+//Case 15 return demodulator mode
+
+//Case 16 return demodulator bandwidth
+
+//Case 17 return S-Meter
+
+//Case 18 return FM Center
+
+//Case 19 Return preamp (ADC 0/-6 dB) volume
+
+//Case 20 return squelch control
+
+//Case 21 return AGC mode
+
+//Case 0xFFFF return debug info
+
+
+//OxAC Fifi Write Request
+
+
+
+/*
+Batch file for setting Fifi default values.  http://o28.sischa.net/fifisdr/trac/wiki/Frequenzabgleich
+
+ECHO BATCH-Programmierung mittels ROCKPROG0
+
+REM Preselektor-Betriebsart: 4 Ausg‰nge
+REM Preselector mode: 4 outputs ‰ length
+rockprog0 -w --presel --mode=1
+
+REM Umschaltgrenzen der Tiefp‰sse auf FiFi-Preselektor
+REM Switching threshold of ??? on FiFi preselector
+rockprog0 -w --presel --index=0 --freq-from=0     --freq-to=0.123 --pattern=1
+rockprog0 -w --presel --index=1 --freq-from=0.123 --freq-to=0.307 --pattern=7
+rockprog0 -w --presel --index=2 --freq-from=0.307 --freq-to=0.768 --pattern=0
+rockprog0 -w --presel --index=3 --freq-from=0.768 --freq-to=1.92  --pattern=2
+rockprog0 -w --presel --index=4 --freq-from=1.92  --freq-to=4.8   --pattern=6
+rockprog0 -w --presel --index=5 --freq-from=4.8   --freq-to=12    --pattern=5
+rockprog0 -w --presel --index=6 --freq-from=12    --freq-to=30    --pattern=3
+rockprog0 -w --presel --index=7 --freq-from=30    --freq-to=75    --pattern=4
+rockprog0 -w --presel --index=8 --freq-from=75    --freq-to=150   --pattern=12
+
+REM ‹brige Tabellen-Eintr‰ge lˆschen
+REM Rest of table entries are not used
+rockprog0 -w --presel --index=9  --freq-from=0 --freq-to=0 --pattern=0
+rockprog0 -w --presel --index=10 --freq-from=0 --freq-to=0 --pattern=0
+rockprog0 -w --presel --index=11 --freq-from=0 --freq-to=0 --pattern=0
+rockprog0 -w --presel --index=12 --freq-from=0 --freq-to=0 --pattern=0
+rockprog0 -w --presel --index=13 --freq-from=0 --freq-to=0 --pattern=0
+rockprog0 -w --presel --index=14 --freq-from=0 --freq-to=0 --pattern=0
+
+REM Standardwert f¸r Preselektor-Ausg‰nge
+REM PRESELEKTOR-TABELLE WIRD NUR GESCHRIEBEN, WENN AM SCHLUSS INDEX 15 BENUTZT WIRD!
+REM Default value for preselector Ed ‰ length
+REM Preselector CHART IS ONLY WRITTEN WHEN AT INDEX 15 USED AT THE END!
+
+rockprog0 -w --presel --index=15 --freq-from=0.0 --freq-to=500 --pattern=0
+
+REM Schaltgrenzen f¸r 3. und 5. Oberwelle des LO
+REM Switching limits for 3rd and 5th harmonic of the LO
+rockprog0 -w --3rd --freq=35.0
+rockprog0 -w --5th --freq=85.0
+
+REM Offset zwischen LO und RF wird in Standard-Firmware nicht gebraucht
+REM Offset between LO and RF is not used in standard firmware
+rockprog0 -w --offset --subtract=0
+
+REM Automatische Frequenzkorrektur
+REM Automatic frequency correction
+rockprog0 -w --autotune
+
+ECHO BATCH-Programmierung beendet
+
+*/
+
 // Mode 0 = Use SoftRock ABPF compatibility 4 outputs
 // Mode 1 = Use FiFi Preselector.  16 bands 8 outputs
 // Mode 2 = 16 bands, 3 outputs, 1 UART serial output frequency
 // Mode 3 =
+
+//See params.h in Fifi LPC source and use translate.google.com to get the following
+/* Preselector.
+* There are different modes possible:
+* 0 = ABPF, adjustable About PE0FKO or compatible software.
+* Four high-active digital AusgÃ € length.
+*
+* 1 = 16 separate BÃ € Direction with start and stop frequencies. For each band one
+* Be set * combination of eight control pins (FiFi SDR 0.1 / 0.2 only four).
+* AuÃ ?? OUTSIDE the BÃ € Direction are all AusgÃ € nge low.
+*
+* 2 = Same as (1) but only three digital AusgÃ € length (still 16 BÃ € Direction!), And ZuSa € USEFUL
+* Serial output frequency About UART.
+*
+* 3 = Same as (1), but there are only three AusgÃ € nge FOR the eight BÃ € Direction of
+* FiFi preselector used.
+* The pin X6.8 is used as PTT (PTT active -> X6.8 = low).
+* Pin X6.8 of the FiFi SDR corresponds Pin SV1.12 at the FiFi preselector.
+*/
 bool SoftrockSDRDevice::FiFiWritePreselctorMode (quint32 mode)
 {
 	int result = usbCtrlMsgOut(0xAC,0, 6, (unsigned char*) &mode, sizeof(mode));
@@ -631,16 +777,7 @@ bool SoftrockSDRDevice::FiFiWritePreselctorMode (quint32 mode)
 }
 
 //See softrock.c in LPCUSB directory of FiFi source for all commands
-/*
-case 3: 3rd harmonic
-case 5: 5th harmnonic
-case 6: Preselector mode (0 - 3)
-case 7: Preselector freq range and pattern
-case 11: Virtual VCO factor
-case 13: Set audio level (volume control)
-case 19: Preamp (ADC 0/-6 dB)
 
-*/
 
 //Converts 11.21 Mhz.Khz freq we get from Softrock to Hz.
 double SoftrockSDRDevice::SRFreq2Freq(qint32 iFreq)
@@ -726,14 +863,6 @@ void SoftrockSDRDevice::serialNumberChanged(int s)
 		return;
 	SetSerialNumber(s);
 }
-void SoftrockSDRDevice::fifiUseABPFChanged(bool b)
-{
-	useABPF = b;
-	if (b)
-		FiFiWritePreselctorMode(0);
-	else
-		FiFiWritePreselctorMode(1);
-}
 
 void SoftrockSDRDevice::SetupOptionUi(QWidget *parent)
 {
@@ -779,13 +908,11 @@ void SoftrockSDRDevice::SetupOptionUi(QWidget *parent)
 	connect(optionUi->filter2Button,SIGNAL(clicked(bool)),this,SLOT(selectInput2(bool)));
 	connect(optionUi->filter3Button,SIGNAL(clicked(bool)),this,SLOT(selectInput3(bool)));
 	connect(optionUi->serialBox,SIGNAL(currentIndexChanged(int)),this,SLOT(serialNumberChanged(int)));
-	connect(optionUi->fifiUseABPF,SIGNAL(toggled(bool)),this,SLOT(fifiUseABPFChanged(bool)));
 
 	//Enable/disable for different softrock-ish devices
 	if (deviceNumber == FiFi) {
 		optionUi->fifiVersionLabel->setVisible(true);
 		optionUi->fifiHelp->setVisible(true);
-		optionUi->fifiUseABPF->setVisible(true);
 
 		optionUi->serialLabel->setVisible(false);
 		optionUi->automaticButton->setVisible(false);
@@ -796,7 +923,6 @@ void SoftrockSDRDevice::SetupOptionUi(QWidget *parent)
 	} else {
 		optionUi->fifiVersionLabel->setVisible(false);
 		optionUi->fifiHelp->setVisible(false);
-		optionUi->fifiUseABPF->setVisible(false);
 
 		optionUi->serialLabel->setVisible(true);
 		optionUi->filter0Button->setVisible(true);
@@ -808,18 +934,26 @@ void SoftrockSDRDevice::SetupOptionUi(QWidget *parent)
 	//This can only be displayed when power is on
 	if (connected) {
 		if (deviceNumber == FiFi) {
-			quint32 fifiVersion;
-			if (FiFiVersion(&fifiVersion) )
-				optionUi->fifiVersionLabel->setText(QString().sprintf("FiFi version: %d",fifiVersion));
-			else
+			quint32 fifiSVN;
+			QString version;
+			QString label;
+			if (FiFiGetSVNNumber(&fifiSVN) ) {
+				if (FiFiVersion(&version)) {
+					//Version 2 (192k) will return "fifisdr2" which we can check
+					QTextStream(&label) << "Fifi SW Version: "<<version<<" SVN: "<<fifiSVN;
+					optionUi->fifiVersionLabel->setText(label);
+				} else {
+					QTextStream(&label) << "Fifi SVN: "<<fifiSVN;
+					optionUi->fifiVersionLabel->setText(label);
+				}
+			} else {
 				optionUi->fifiVersionLabel->setText("Error connecting with FiFi");
+			}
 
 			quint32 mode;
 			if (FiFiReadPreselectorMode(&mode)) {
-				optionUi->fifiUseABPF->setChecked(mode == 0);
-				//qDebug()<<"FiFi preselector mode "<<mode;
+				qDebug()<<"FiFi preselector mode "<<mode;
 			}
-
 			double freq1,freq2;
 			quint32 pattern;
 			for (int i = 0; i<16; i++) {

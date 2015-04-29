@@ -313,25 +313,7 @@
     </font>
    </property>
    <property name="text">
-    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;FiFi Mac: Check &amp;quot;Audio Midi Setup&amp;quot; app if sample rate doesn't change&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="fifiUseABPF">
-   <property name="geometry">
-    <rect>
-     <x>5</x>
-     <y>109</y>
-     <width>124</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>10</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>Use SoftRock ABPF</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;FiFi: Use rockprog for options not exposed in this dialog&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
  </widget>
