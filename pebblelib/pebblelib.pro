@@ -110,7 +110,8 @@ SOURCES += pebblelib.cpp \
     audioqt.cpp \
     soundcard.cpp \
     alawcompression.cpp \
-    fftaccelerate.cpp
+    fftaccelerate.cpp \
+    medianfilter.cpp
 
 HEADERS += pebblelib.h\
     pebblelib_global.h \
@@ -136,5 +137,6 @@ HEADERS += pebblelib.h\
     audioqt.h \
     soundcard.h \
     alawcompression.h \
-    fftaccelerate.h
+    fftaccelerate.h \
+    medianfilter.h
 
