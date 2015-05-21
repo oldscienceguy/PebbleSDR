@@ -45,6 +45,7 @@ private:
 
 	pair *pNewData; //Pointer to oldest pair, increments in ring buffer order
 	pair *pMedian;
+	bool isPMedianValid;
 
 
 };
@@ -83,6 +84,7 @@ MedianFilter<templateType>::MedianFilter(quint16 _filterSize)
 	isValidCounter = 0;
 
 	lastNewData = NAN;
+	isPMedianValid = false;
 }
 
 template <class templateType>
@@ -103,6 +105,7 @@ templateType MedianFilter<templateType>::filter(templateType newData)
 	pair *pPrev;
 	pair *pCur;
 	pair *oldDataPoint;
+	quint16 numChecked = 0;
 
 	if (!isValid && ++isValidCounter == filterSize)
 		isValid = true;
@@ -141,6 +144,8 @@ templateType MedianFilter<templateType>::filter(templateType newData)
 	 */
 	//Median initially points to first in chain
 	pMedian = &head;
+	isPMedianValid = false; //Will be set to true if we reach midpoint during our insert
+
 	pPrev = NULL;
 	//Points to pointer to first (largest) newData in chain
 	pCur = &head;
@@ -159,6 +164,7 @@ templateType MedianFilter<templateType>::filter(templateType newData)
 
 	//iterate through the chain, normal loop exit via break
 	for(int i=0; i<filterSize; i++ ) {
+		numChecked++;
 		//Handle odd-numbered item in chain
 		if( pCur->point == pNewData )
 			//Chain out the old node
@@ -175,6 +181,11 @@ templateType MedianFilter<templateType>::filter(templateType newData)
 			//So pPrev -> pNewData -> pPrev.point
 			break; //Don't need to process rest of list
 		}
+
+		pMedian = pMedian->point; //Step pointer
+		//Have we reached mid point yet?
+		if (numChecked > filterSize / 2)
+			isPMedianValid == true;
 
 		//Are we at end of linked list?
 		if ( pCur == &tail )
@@ -197,14 +208,18 @@ templateType MedianFilter<templateType>::median()
 
 	if (evenFilterSize) {
 		//Average 2 center nodes
-		for (int i=0; i<(filterSize / 2) -1 ; i++)
-			pMedian = pMedian->point;
+		if (!isPMedianValid)
+			//We only have to iterate if the last insert didn't process and least half nodes
+			for (int i=0; i<(filterSize / 2) -1 ; i++)
+				pMedian = pMedian->point;
 		//pMedian points to the first of the 2 nodes to be averaged
 		return (pMedian->value + pMedian->point->value) / 2;
 	} else {
 		//Just return center node
-		for (int i=0; i<filterSize / 2 ; i++)
-			pMedian = pMedian->point;
+		if (!isPMedianValid)
+			//We only have to iterate if the last insert didn't process and least half nodes
+			for (int i=0; i<filterSize / 2 ; i++)
+				pMedian = pMedian->point;
 		return pMedian->value;
 	}
 }
@@ -216,7 +231,8 @@ void MedianFilter<templateType>::test()
 	templateType maxValue;
 	templateType minValue;
 	//Test Complex values
-	maxValue = 1; minValue = -1;
+	//maxValue = 1; minValue = -1;
+	maxValue = 100; minValue = 0;
 	for (int i=0; i<filterSize; i++) {
 		//Will generate templateType relevant data in the range of minValue to maxValu
 		v = maxValue + (rand() / ( RAND_MAX / (minValue - maxValue) ) );
