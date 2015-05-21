@@ -17,6 +17,7 @@ public:
 	~MedianFilter();
 
 	qint16 filter(qint16 datum);
+	qint16 median();
 
 	void test();
 	void dump();
@@ -27,13 +28,17 @@ private:
 	  qint16  value; //Values to sort
 	};
 	quint16 filterSize;
-	const qint16 STOPPER = 0;  //Smaller than any datum
+	bool evenFilterSize; //Used for special handling for even sized filters
+	bool isValid; //Results are valid if we've processed at least filterSize samples
+	quint16 isValidCounter; //Counts # entries up to filterSize
+	qint16 lastNewData; //Last value inserted, used by median() if !isValid
 
 	pair *buffer; //Ring buffer of nwidth pairs in time order, links maintain sorted order
-	pair *datpoint; //Pointer to oldest pair
-	pair small; //Chain stopper
-	pair big; //Pointer to head (largest) of linked list.
-	pair *median;
+	pair head; //Head (largest) of linked list.  Fixed node, not in buffer
+	pair tail; //Smallest item.  Fixed node, not it buffer
+
+	pair *pNewData; //Pointer to oldest pair, increments in ring buffer order
+	pair *pMedian;
 
 
 };
