@@ -60,17 +60,17 @@ MedianFilter<templateType>::MedianFilter(quint16 _filterSize)
 	//Initialize linked list
 	for (int i=0; i<filterSize; i++) {
 		buffer[i].point = NULL;
-		buffer[i].value = 0;
+		buffer[i].value = NAN; //We don't want an actual value to interfere with sort while buffer is populated
 	}
 
 	//head is initialized to location where first value is stored
 	pNewData = buffer;
 
 	head.point = &tail; //Smallest
-	head.value = 0;
+	head.value = NAN;
 
 	tail.point = NULL;
-	tail.value = 0;
+	tail.value = NAN;
 
 	//Special handling for even sized filters since there is no precise point where exactly half are bigger and half are smaller
 	//Defined handling for this is to take the average of the 2 possible median points
@@ -82,7 +82,7 @@ MedianFilter<templateType>::MedianFilter(quint16 _filterSize)
 	isValid = false;
 	isValidCounter = 0;
 
-	lastNewData = 0;
+	lastNewData = NAN;
 }
 
 template <class templateType>
@@ -165,7 +165,9 @@ templateType MedianFilter<templateType>::filter(templateType newData)
 			pCur->point = oldDataPoint;
 
 		//If newData is >= scanned value, then chain in and we're done with insert
-		if( (newData >= pCur->value) ) {
+		//Special case for buffer elements that are being populated for the first time
+		//These are initialized with NAN which can be tested by isnan()
+		if( isnan(pCur->value) || newData >= pCur->value) {
 			//The new data node points to what the previous node pointed to
 			pNewData->point = pPrev->point;
 			//And the previous node points to the new data node
@@ -211,9 +213,13 @@ template <class templateType>
 void MedianFilter<templateType>::test()
 {
 	templateType v;
+	templateType maxValue;
+	templateType minValue;
+	//Test Complex values
+	maxValue = 1; minValue = -1;
 	for (int i=0; i<filterSize; i++) {
-		//Todo: Floating point, -1.0 to 1.0
-		v = rand() % 100;
+		//Will generate templateType relevant data in the range of minValue to maxValu
+		v = maxValue + (rand() / ( RAND_MAX / (minValue - maxValue) ) );
 		filter(v);
 		dump();
 	}
