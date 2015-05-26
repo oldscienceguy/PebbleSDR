@@ -26,6 +26,7 @@ SUBDIRS =   pebblelib \
             plugins/ElektorDevice \
             plugins/RFSpaceDevice \
             plugins/Ghpsdr3Device \
+            plugins/SDRPlayDevice \
             SdrGarage
 
 # build must be last:
