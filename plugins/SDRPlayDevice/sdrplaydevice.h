@@ -34,7 +34,18 @@ public:
 private:
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
+	//Work buffer for consumer to convert device format data to CPX Pebble format data
+	CPX *consumerBuffer;
+	short *producerIBuf;
+	short *producerQBuf;
+	quint16 producerIndex;
+
 	Ui::SDRPlayOptions *optionUi;
 
+	//SDRPlay data
+	int samplesPerPacket; //Returned by init
+
+
+	bool errorCheck(mir_sdr_ErrT err);
 };
 #endif // SDRPLAYDEVICE_H
