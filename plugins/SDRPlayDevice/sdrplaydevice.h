@@ -1,13 +1,16 @@
-#ifndef EXAMPLESDRDEVICE_H
-#define EXAMPLESDRDEVICE_H
+#ifndef SDRPLAYDEVICE_H
+#define SDRPLAYDEVICE_H
 
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include <QObject>
 #include "deviceinterfacebase.h"
 #include "ui_sdrplayoptions.h"
+#include "MiricsAPI/mir_sdr.h"
+#include <QLibrary>
 
-class ExampleSDRDevice : public QObject, public DeviceInterfaceBase
+
+class SDRPlayDevice : public QObject, public DeviceInterfaceBase
 {
 	Q_OBJECT
 
@@ -18,8 +21,8 @@ class ExampleSDRDevice : public QObject, public DeviceInterfaceBase
 	Q_INTERFACES(DeviceInterface)
 
 public:
-	ExampleSDRDevice();
-	~ExampleSDRDevice();
+	SDRPlayDevice();
+	~SDRPlayDevice();
 
 	//Required
 	bool Initialize(cbProcessIQData _callback,
@@ -33,8 +36,10 @@ public:
 private:
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
-	Ui::ExampleSdrOptions *optionUi;
+	Ui::SDRPlayOptions *optionUi;
+
+	QLibrary *api;
 
 
 };
-#endif // EXAMPLESDRDEVICE_H
+#endif // SDRPLAYDEVICE_H

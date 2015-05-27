@@ -1,17 +1,32 @@
 #include "sdrplaydevice.h"
+#include <dlfcn.h> //For dlopen() declarations
 
-ExampleSDRDevice::ExampleSDRDevice():DeviceInterfaceBase()
+SDRPlayDevice::SDRPlayDevice():DeviceInterfaceBase()
 {
-	InitSettings("ExampleSDR");
+	InitSettings("SDRPlay");
 	optionUi = NULL;
+
+#if 1
+	//Explict path to libmir_sdr.so which is installed in applications frameworks sub directory
+	QString path = QCoreApplication::applicationDirPath ();
+#ifdef Q_OS_MAC
+	//Pebble.app/contents/macos = 25
+	path.chop(5); //macos
+	path += "Frameworks/libmir_sdr"; //We need suffix since this is not a normal mac library suffix
+#endif
+	api = new QLibrary(path);
+	//void *dll = dlopen(path.toUtf8(), RTLD_LAZY);
+#endif
+	float v;
+	//mir_sdr_ApiVersion(&v);
 }
 
-ExampleSDRDevice::~ExampleSDRDevice()
+SDRPlayDevice::~SDRPlayDevice()
 {
 
 }
 
-bool ExampleSDRDevice::Initialize(cbProcessIQData _callback,
+bool SDRPlayDevice::Initialize(cbProcessIQData _callback,
 								  cbProcessBandscopeData _callbackBandscope,
 								  cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
@@ -21,7 +36,7 @@ bool ExampleSDRDevice::Initialize(cbProcessIQData _callback,
 }
 
 
-bool ExampleSDRDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _arg)
+bool SDRPlayDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _arg)
 {
 	switch (_cmd) {
 		case CmdConnect:
@@ -65,7 +80,7 @@ bool ExampleSDRDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant
 				delete optionUi;
 
 			//Change .h and this to correct class name for ui
-			optionUi = new Ui::ExampleSdrOptions();
+			optionUi = new Ui::SDRPlayOptions();
 			optionUi->setupUi(parent);
 			parent->setVisible(true);
 			return true;
@@ -75,25 +90,25 @@ bool ExampleSDRDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant
 	}
 }
 
-QVariant ExampleSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
+QVariant SDRPlayDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 {
 	Q_UNUSED(_option);
 
 	switch (_key) {
 		case PluginName:
-			return "Example Device";
+			return "SDRPlay";
 			break;
 		case PluginDescription:
-			return "Template for Devices";
+			return "SDRPlay (Mirics chips)";
 			break;
 		case DeviceName:
-			return "ExampleDevice";
+			return "SDRPlay";
 		default:
 			return DeviceInterfaceBase::Get(_key, _option);
 	}
 }
 
-bool ExampleSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, quint16 _option)
+bool SDRPlayDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, quint16 _option)
 {
 	Q_UNUSED(_option);
 
@@ -106,12 +121,12 @@ bool ExampleSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value,
 	}
 }
 
-void ExampleSDRDevice::producerWorker(cbProducerConsumerEvents _event)
+void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 {
 	Q_UNUSED(_event);
 }
 
-void ExampleSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
+void SDRPlayDevice::consumerWorker(cbProducerConsumerEvents _event)
 {
 	Q_UNUSED(_event);
 }
