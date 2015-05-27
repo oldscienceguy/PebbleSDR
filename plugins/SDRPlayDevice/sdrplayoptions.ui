@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ExampleSdrOptions</class>
- <widget class="QWidget" name="ExampleSdrOptions">
+ <class>SDRPlayOptions</class>
+ <widget class="QWidget" name="SDRPlayOptions">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -28,7 +28,7 @@
     </font>
    </property>
    <property name="text">
-    <string>Example SDR Options</string>
+    <string>SDRPlay Options</string>
    </property>
   </widget>
  </widget>
