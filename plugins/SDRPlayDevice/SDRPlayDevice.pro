@@ -49,6 +49,10 @@ fix_mirlib.path = $${INSTALL_DIR}/Pebble.app/Contents/Frameworks
 fix_mirlib.commands += install_name_tool -change /usr/local/lib/libusb-1.0.0.dylib @rpath/libusb-1.0.0.dylib $${INSTALL_DIR}/Pebble.app/Contents/Frameworks/libmir_sdr.so
 INSTALLS += fix_mirlib
 
+fix_sdrplay.path = $${DESTDIR}
+fix_sdrplay.commands += install_name_tool -change libmir_sdr.so @rpath/libmir_sdr.so $${DESTDIR}/libSDRPlayDevice.dylib
+INSTALLS += fix_sdrplay
+
 OTHER_FILES += \
         fix_plugin_libraries.pri
 

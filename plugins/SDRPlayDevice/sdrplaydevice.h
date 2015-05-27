@@ -7,8 +7,6 @@
 #include "deviceinterfacebase.h"
 #include "ui_sdrplayoptions.h"
 #include "MiricsAPI/mir_sdr.h"
-#include <QLibrary>
-
 
 class SDRPlayDevice : public QObject, public DeviceInterfaceBase
 {
@@ -37,9 +35,6 @@ private:
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
 	Ui::SDRPlayOptions *optionUi;
-
-	QLibrary *api;
-
 
 };
 #endif // SDRPLAYDEVICE_H
