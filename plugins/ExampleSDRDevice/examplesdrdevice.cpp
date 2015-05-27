@@ -17,6 +17,24 @@ bool ExampleSDRDevice::Initialize(cbProcessIQData _callback,
 {
 	DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
 	numProducerBuffers = 50;
+#if 1
+	//Remove if producer/consumer buffers are not used
+	//This is set so we always get framesPerBuffer samples (factor in any necessary decimation)
+	//ProducerConsumer allocates as array of bytes, so factor in size of sample data
+	quint16 sampleDataSize = sizeof(double);
+	readBufferSize = framesPerBuffer * sampleDataSize * 2; //2 samples per frame (I/Q)
+
+	producerConsumer.Initialize(std::bind(&ExampleSDRDevice::producerWorker, this, std::placeholders::_1),
+		std::bind(&ExampleSDRDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, readBufferSize);
+	//Must be called after Initialize
+	producerConsumer.SetProducerInterval(sampleRate,readBufferSize);
+	producerConsumer.SetConsumerInterval(sampleRate,readBufferSize);
+
+	//Start this immediately, before connect, so we don't miss any data
+	producerConsumer.Start(true,true);
+
+#endif
+
 	return true;
 }
 
@@ -88,6 +106,8 @@ QVariant ExampleSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 			break;
 		case DeviceName:
 			return "ExampleDevice";
+		case DeviceType:
+			return AUDIO_IQ_DEVICE;
 		default:
 			return DeviceInterfaceBase::Get(_key, _option);
 	}
@@ -108,10 +128,52 @@ bool ExampleSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value,
 
 void ExampleSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 {
-	Q_UNUSED(_event);
+	unsigned char *producerFreeBufPtr;
+
+	switch (_event) {
+		case cbProducerConsumerEvents::Start:
+			break;
+		case cbProducerConsumerEvents::Run:
+			if ((producerFreeBufPtr = producerConsumer.AcquireFreeBuffer()) == NULL)
+				return;
+			//Get data from device and put into producerFreeBufPtr
+
+			producerConsumer.ReleaseFilledBuffer();
+			return;
+
+			break;
+		case cbProducerConsumerEvents::Stop:
+			break;
+	}
 }
 
 void ExampleSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 {
-	Q_UNUSED(_event);
+	unsigned char *consumerFilledBufferPtr;
+
+	switch (_event) {
+		case cbProducerConsumerEvents::Start:
+			break;
+		case cbProducerConsumerEvents::Run:
+			//We always want to consume everything we have, producer will eventually block if we're not consuming fast enough
+			while (producerConsumer.GetNumFilledBufs() > 0) {
+				//Wait for data to be available from producer
+				if ((consumerFilledBufferPtr = producerConsumer.AcquireFilledBuffer()) == NULL) {
+					//qDebug()<<"No filled buffer available";
+					return;
+				}
+
+				//Process data in filled buffer and convert to Pebble format in consumerBuffer
+
+				//perform.StartPerformance("ProcessIQ");
+				ProcessIQData(consumerBuffer->Ptr(),framesPerBuffer);
+				//perform.StopPerformance(1000);
+				//We don't release a free buffer until ProcessIQData returns because that would also allow inBuffer to be reused
+				producerConsumer.ReleaseFreeBuffer();
+
+			}
+			break;
+		case cbProducerConsumerEvents::Stop:
+			break;
+	}
 }

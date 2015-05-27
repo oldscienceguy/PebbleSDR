@@ -33,6 +33,10 @@ public:
 private:
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
+
+	//Work buffer for consumer to convert device format data to CPX Pebble format data
+	CPXBuf *consumerBuffer;
+
 	Ui::ExampleSdrOptions *optionUi;
 
 
