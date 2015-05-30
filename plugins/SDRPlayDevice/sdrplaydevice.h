@@ -8,6 +8,15 @@
 #include "ui_sdrplayoptions.h"
 #include "MiricsAPI/mir_sdr.h"
 
+/*
+ * Used the SDRPlay / Mirics libmir_sdr.so API library
+ * Alternative open source libraries can be found at
+ * git://git.osmocom.org/libmirisdr
+ * https://code.google.com/p/libmirisdr-2/
+ *
+ * Use the mirics api evaluation tool which is installed with Window API download from SDRPlay for experiments
+ */
+
 class SDRPlayDevice : public QObject, public DeviceInterfaceBase
 {
 	Q_OBJECT
@@ -30,8 +39,31 @@ public:
 	bool Command(STANDARD_COMMANDS _cmd, QVariant _arg);
 	QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
 	bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option = 0);
+	void ReadSettings();
+	void WriteSettings();
+	//Display device option widget in settings dialog
+	void SetupOptionUi(QWidget *parent);
+
+private slots:
+	void dcCorrectionChanged(int _item);
+	void tunerGainReductionChanged(int _value);
 
 private:
+	struct band {
+		double low;
+		double high;
+	};
+	//SetRF only works if frequency is within one of these bands
+	//Otherwise we have to uninit and re-init within the band
+	const band band0 = {0, 0}; //Special case for initialization
+	const band band1 = {100000, 60000000};
+	const band band2 = {60000000, 120000000};
+	const band band3 = {120000000, 245000000};
+	const band band4 = {245000000, 380000000};
+	const band band5 = {430000000, 1000000000};
+	const band band6 = {1000000000, 2000000000};
+	band currentBand;
+
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
 	//Work buffer for consumer to convert device format data to CPX Pebble format data
@@ -43,9 +75,17 @@ private:
 	Ui::SDRPlayOptions *optionUi;
 
 	//SDRPlay data
+	double sampleRateMhz;
 	int samplesPerPacket; //Returned by init
+	int tunerGainReduction;
+	int dcCorrectionMode;
 
+	mir_sdr_Bw_MHzT bandwidthMhz;
+	mir_sdr_If_kHzT IFKhz;
 
 	bool errorCheck(mir_sdr_ErrT err);
+	bool setGainReduction(int gRdb, int abs, int syncUpdate);
+	bool setFrequency(double newFrequency);
+	bool setDcMode(int _dcCorrectionMode, int _speedUp);
 };
 #endif // SDRPLAYDEVICE_H

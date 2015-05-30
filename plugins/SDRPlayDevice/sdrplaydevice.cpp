@@ -4,13 +4,19 @@ SDRPlayDevice::SDRPlayDevice():DeviceInterfaceBase()
 {
 	InitSettings("SDRPlay");
 	optionUi = NULL;
-
+	producerIBuf = producerQBuf = NULL;
+	consumerBuffer = NULL;
 	samplesPerPacket = 0;
 }
 
 SDRPlayDevice::~SDRPlayDevice()
 {
-
+	if (producerIBuf != NULL)
+		delete[] producerIBuf;
+	if (producerQBuf != NULL)
+		delete[] producerQBuf;
+	if (consumerBuffer != NULL)
+		delete consumerBuffer;
 }
 
 bool SDRPlayDevice::Initialize(cbProcessIQData _callback,
@@ -89,13 +95,12 @@ bool SDRPlayDevice::errorCheck(mir_sdr_ErrT err)
 
 bool SDRPlayDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _arg)
 {
-	//From API doc, DAB appropriate
-	int gainReduction = 40; //Initial 40db from example
-	double sampleRateMhz = 1.536; //sampleRate / 1000000.0; //Sample rate in Mhz, NOT Hz
-	double centerFreqMhz = 10.0; //WWV @ 10Mhz
+	//
+	//sampleRateMhz must be >= bandwidth
+	sampleRateMhz = sampleRate / 1000000.0; //Sample rate in Mhz, NOT Hz
 	//Receiver bandwidth, sampleRate must be >=
-	mir_sdr_Bw_MHzT bandwidthMhz = mir_sdr_BW_1_536;
-	mir_sdr_If_kHzT ifKhz = mir_sdr_IF_Zero;
+	bandwidthMhz = mir_sdr_BW_1_536;
+	IFKhz = mir_sdr_IF_Zero;
 	switch (_cmd) {
 		case CmdConnect:
 			DeviceInterfaceBase::Connect();
@@ -106,9 +111,12 @@ bool SDRPlayDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _a
 				return false;
 			qDebug()<<"SDRPLay Version: "<<ver;
 
-			if (!errorCheck(mir_sdr_Init(gainReduction, sampleRateMhz, centerFreqMhz, bandwidthMhz ,ifKhz , &samplesPerPacket)))
-					return false;
+			currentBand = band0; //Initial value to force band search on first frequency check
 
+			//setFrequency does an init if currentBand == band0.
+			//Will fail if SDRPlay is not connected
+			if (!setFrequency(10000000)) //Test, get startup freq to fix
+				return false;
 			connected = true;
 			return true;
 
@@ -137,30 +145,19 @@ bool SDRPlayDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _a
 
 		case CmdReadSettings:
 			DeviceInterfaceBase::ReadSettings();
-			//Device specific settings follow
+			ReadSettings();
 			return true;
 
 		case CmdWriteSettings:
 			DeviceInterfaceBase::WriteSettings();
-			//Device specific settings follow
+			WriteSettings();
 			return true;
 
-		case CmdDisplayOptionUi: {
-			//Add ui header file include
-			//Add private uiOptions
-
-			//Arg is QWidget *parent
+		case CmdDisplayOptionUi:						//Arg is QWidget *parent
 			//Use QVariant::fromValue() to pass, and value<type passed>() to get back
-			QWidget *parent = _arg.value<QWidget*>();
-			if (optionUi != NULL)
-				delete optionUi;
-
-			//Change .h and this to correct class name for ui
-			optionUi = new Ui::SDRPlayOptions();
-			optionUi->setupUi(parent);
-			parent->setVisible(true);
+			this->SetupOptionUi(_arg.value<QWidget*>());
 			return true;
-		}
+
 		default:
 			return false;
 	}
@@ -194,7 +191,10 @@ QVariant SDRPlayDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 			sl<<"8000000";
 			return sl;
 			break;
-
+		case HighFrequency:
+			return 2000000000;
+		case LowFrequency:
+			return 100000;
 		default:
 			return DeviceInterfaceBase::Get(_key, _option);
 	}
@@ -203,15 +203,149 @@ QVariant SDRPlayDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 bool SDRPlayDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, quint16 _option)
 {
 	Q_UNUSED(_option);
-
 	switch (_key) {
 		case DeviceFrequency:
-			return true; //Must be handled by device
+			return setFrequency(_value.toDouble());
 
 		default:
 			return DeviceInterfaceBase::Set(_key, _value, _option);
 	}
 }
+
+void SDRPlayDevice::ReadSettings()
+{
+	DeviceInterfaceBase::ReadSettings();
+	dcCorrectionMode = qSettings->value("dcCorrectionMode",0).toInt(); //0 = off
+	tunerGainReduction = qSettings->value("tunerGainReduction",60).toInt(); //60db
+
+}
+
+void SDRPlayDevice::WriteSettings()
+{
+	DeviceInterfaceBase::WriteSettings();
+	qSettings->setValue("dcCorrectionMode",dcCorrectionMode);
+	qSettings->setValue("tunerGainReduction",tunerGainReduction);
+
+}
+
+void SDRPlayDevice::SetupOptionUi(QWidget *parent)
+{
+	//Arg is QWidget *parent
+	if (optionUi != NULL)
+		delete optionUi;
+
+	//Change .h and this to correct class name for ui
+	optionUi = new Ui::SDRPlayOptions();
+	optionUi->setupUi(parent);
+	parent->setVisible(true);
+
+	//Set combo boxes
+	optionUi->IFMode->addItem("Zero",mir_sdr_IF_Zero);
+	optionUi->IFMode->addItem("450 Khz",mir_sdr_IF_0_450);
+	optionUi->IFMode->addItem("1620 Khz",mir_sdr_IF_1_620);
+	optionUi->IFMode->addItem("2048 Khz",mir_sdr_IF_2_048);
+
+	optionUi->IFBw->addItem("0.200 Mhz",mir_sdr_BW_0_200);
+	optionUi->IFBw->addItem("0.300 Mhz",mir_sdr_BW_0_300);
+	optionUi->IFBw->addItem("0.600 Mhz",mir_sdr_BW_0_600);
+	optionUi->IFBw->addItem("1.536 Mhz",mir_sdr_BW_1_536);
+	optionUi->IFBw->addItem("5.000 Mhz",mir_sdr_BW_5_000);
+	optionUi->IFBw->addItem("6.000 Mhz",mir_sdr_BW_6_000);
+	optionUi->IFBw->addItem("7.000 Mhz",mir_sdr_BW_7_000);
+	optionUi->IFBw->addItem("8.000 Mhz",mir_sdr_BW_8_000);
+
+	optionUi->dcCorrection->addItem("Off", 0);
+	optionUi->dcCorrection->addItem("One Shot", 4);
+	optionUi->dcCorrection->addItem("Continuous", 5);
+	int cur = optionUi->dcCorrection->findData(dcCorrectionMode);
+	optionUi->dcCorrection->setCurrentIndex(cur);
+	connect(optionUi->dcCorrection,SIGNAL(currentIndexChanged(int)),this,SLOT(dcCorrectionChanged(int)));
+
+	optionUi->tunerGainReduction->setValue(tunerGainReduction);
+	connect(optionUi->tunerGainReduction, SIGNAL(valueChanged(int)), this, SLOT(tunerGainReductionChanged(int)));
+
+}
+
+void SDRPlayDevice::dcCorrectionChanged(int _item)
+{
+	int cur = _item;
+	dcCorrectionMode = optionUi->dcCorrection->itemData(cur).toUInt();
+	setDcMode(dcCorrectionMode, 1);
+	WriteSettings();
+}
+
+void SDRPlayDevice::tunerGainReductionChanged(int _value)
+{
+	tunerGainReduction = _value;
+	setGainReduction(tunerGainReduction, 1, 0);
+	WriteSettings();
+}
+
+//gRdb = gain reduction in db
+//abs = 0 Offset from current gr, abs = 1 Absolute
+//syncUpdate = 0 Immedate, syncUpdate = 1 synchronous
+bool SDRPlayDevice::setGainReduction(int gRdb, int abs, int syncUpdate)
+{
+	return (errorCheck(mir_sdr_SetGr(gRdb, abs, syncUpdate)));
+}
+
+bool SDRPlayDevice::setDcMode(int _dcCorrectionMode, int _speedUp)
+{
+	dcCorrectionMode = _dcCorrectionMode;
+	return errorCheck(mir_sdr_SetDcMode(dcCorrectionMode, _speedUp)); //Speed up disabled (what is speed up?)
+
+}
+
+bool SDRPlayDevice::setFrequency(double newFrequency)
+{
+	band newBand;
+	quint16 setRFMode = 1; //0=apply freq as offset, 1=apply freq absolute
+	quint16 syncUpdate = 0; //0=apply freq change immediately, 1=apply synchronously
+
+	//If the new frequency is outside the current band, then we have to uninit and reinit in the new band
+	if (newFrequency < currentBand.low || newFrequency > currentBand.high) {
+		//Find new band
+		if (newFrequency >= band1.low && newFrequency <= band1.high)
+			newBand = band1;
+		else if (newFrequency >= band2.low && newFrequency <= band2.high)
+			newBand = band2;
+		else if (newFrequency >= band3.low && newFrequency <= band3.high)
+			newBand = band3;
+		else if (newFrequency >= band4.low && newFrequency <= band4.high)
+			newBand = band4;
+		else if (newFrequency >= band5.low && newFrequency <= band5.high)
+			newBand = band5;
+		else if (newFrequency >= band6.low && newFrequency <= band6.high)
+			newBand = band6;
+		else {
+			qDebug()<<"Frequency outside of bands";
+			return false;
+		}
+		//1st time through we haven't done init yet
+		if (currentBand.low > 0 && !errorCheck(mir_sdr_Uninit()))
+			return false;
+
+		//Re-init with new band
+		//Init takes freq in mhz
+		if (!errorCheck(mir_sdr_Init(tunerGainReduction, sampleRateMhz, newFrequency / 1000000.0, bandwidthMhz ,IFKhz , &samplesPerPacket)))
+			return false;
+		currentBand = newBand;
+
+	} else {
+		//SetRf takes freq in hz
+		if (!errorCheck(mir_sdr_SetRf(newFrequency,setRFMode,syncUpdate))) {
+			//Sometimes we get an error that previous update timed out, reset and try again
+			mir_sdr_ResetUpdateFlags(false,true,false);
+			if (!errorCheck(mir_sdr_SetRf(newFrequency,setRFMode,syncUpdate)))
+				return false;
+		}
+	}
+	deviceFrequency = newFrequency;
+	lastFreq = deviceFrequency;
+	return true;
+
+}
+
 
 void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 {
@@ -238,6 +372,11 @@ void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 				if (!errorCheck(mir_sdr_ReadPacket(&producerIBuf[producerIndex], &producerQBuf[producerIndex], &firstSampleNumber, &gainReductionChanged,
 					&rfFreqChanged, &sampleFreqChanged))) {
 					return; //Handle error
+				}
+				if (rfFreqChanged) {
+					//If center freq changed since last packet, throw this one away and get next one
+					//Should make frequency changes instant, regardless of packet size
+					continue;
 				}
 				producerIndex += samplesPerPacket;
 				if (producerIndex >= framesPerBuffer) {
