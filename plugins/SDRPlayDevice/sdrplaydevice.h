@@ -47,6 +47,7 @@ public:
 private slots:
 	void dcCorrectionChanged(int _item);
 	void tunerGainReductionChanged(int _value);
+	void IFBandwidthChanged(int _item);
 
 private:
 	struct band {
@@ -80,12 +81,13 @@ private:
 	int tunerGainReduction;
 	int dcCorrectionMode;
 
-	mir_sdr_Bw_MHzT bandwidthMhz;
+	mir_sdr_Bw_MHzT bandwidthKhz;
 	mir_sdr_If_kHzT IFKhz;
 
 	bool errorCheck(mir_sdr_ErrT err);
 	bool setGainReduction(int gRdb, int abs, int syncUpdate);
 	bool setFrequency(double newFrequency);
 	bool setDcMode(int _dcCorrectionMode, int _speedUp);
+	bool reinitMirics(double newFrequency);
 };
 #endif // SDRPLAYDEVICE_H
