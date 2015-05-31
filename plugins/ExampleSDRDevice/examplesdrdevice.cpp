@@ -129,7 +129,11 @@ bool ExampleSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value,
 void ExampleSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 {
 	unsigned char *producerFreeBufPtr;
-
+#if 0
+	//For verifying device data format min/max so we can normalize later
+	static short maxSample = 0;
+	static short minSample = 0;
+#endif
 	switch (_event) {
 		case cbProducerConsumerEvents::Start:
 			break;
@@ -137,6 +141,25 @@ void ExampleSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 			if ((producerFreeBufPtr = producerConsumer.AcquireFreeBuffer()) == NULL)
 				return;
 			//Get data from device and put into producerFreeBufPtr
+#if 0
+			//For testing device sample format
+			if (producerIBuf[i] > maxSample) {
+				maxSample = producerIBuf[i];
+				qDebug()<<"New Max sample "<<maxSample;
+			}
+			if (producerQBuf[i] > maxSample) {
+				maxSample = producerQBuf[i];
+				qDebug()<<"New Max sample "<<maxSample;
+			}
+			if (producerIBuf[i] < minSample) {
+				minSample = producerIBuf[i];
+				qDebug()<<"New Min sample "<<minSample;
+			}
+			if (producerQBuf[i] < minSample) {
+				minSample = producerQBuf[i];
+				qDebug()<<"New Min sample "<<minSample;
+			}
+#endif
 
 			producerConsumer.ReleaseFilledBuffer();
 			return;
