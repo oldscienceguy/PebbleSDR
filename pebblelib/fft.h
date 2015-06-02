@@ -59,6 +59,8 @@ public:
     int getFFTSize() {return fftSize;}
     CPX *getFreqDomain() {return freqDomain;}
     CPX *getTimeDomain() {return timeDomain;}
+	//Fractional bin width in hz
+	double getBinWidth() {return sampleRate / fftSize;}
 
 protected:
     //Utility
