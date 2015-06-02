@@ -31,6 +31,12 @@ public:
     int modeOffset; //tone offset for CW
 	bool useTestBench;
 
+	//Window size and positioning
+	qint16 windowWidth;
+	qint16 windowHeight;
+	qint16 windowXPos;
+	qint16 windowYPos;
+
     //Fonts for consisten UI
     QFont smFont;
     QFont medFont;

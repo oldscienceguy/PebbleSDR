@@ -44,6 +44,15 @@ void Settings::ReadSettings()
 	//Read settings from ini file or set defaults
 	//Todo: Make strings constants
 	//If we don' specify a group, "General" is assumed
+	//Restore efault or last window size and position
+	QRect pos = qApp->screens()[0]->geometry();
+	//Default position is upper right corner of screen
+	windowHeight = qSettings->value("windowHeight", -1).toInt();
+	windowWidth = qSettings->value("windowWidth", -1).toInt();
+	//bump tight to right
+	windowXPos = qSettings->value("windowXPos",pos.right() - global->mainWindow->width()).toInt();
+	windowYPos = qSettings->value("windowYPos", 0).toInt();
+
     sdrDeviceFilename = qSettings->value("sdrDeviceFilename", "SR_V9").toString();
     sdrDeviceNumber = qSettings->value("sdrDeviceNumber",0).toUInt();
 
@@ -83,6 +92,16 @@ void Settings::ReadSettings()
 //Save to disk
 void Settings::WriteSettings()
 {
+	//Get the current window size and position so we can save it
+	windowHeight = global->mainWindow->height();
+	windowWidth = global->mainWindow->width();
+	windowXPos = global->mainWindow->x();
+	windowYPos = global->mainWindow->y();
+	qSettings->setValue("windowHeight",windowHeight);
+	qSettings->setValue("windowWidth",windowWidth);
+	qSettings->setValue("windowXPos",windowXPos);
+	qSettings->setValue("windowYPos",windowYPos);
+
     //No UI Settings, only in file
     qSettings->setValue("sdrDeviceFilename",sdrDeviceFilename);
     qSettings->setValue("sdrDeviceNumber",sdrDeviceNumber);

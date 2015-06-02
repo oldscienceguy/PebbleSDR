@@ -22,15 +22,13 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
     mainWindow = main;
     receiverWidget = rw;
 
-    //Get dim of primary screen
-    QRect pos = qApp->screens()[0]->geometry();
-    pos.setX(pos.right() - main->width()); //bump tight to right
-    pos.setY(0); //Top
-    pos.setWidth(-1);
-    pos.setHeight(-1);
-    mainWindow->setGeometry(pos );
+	QRect pos;
+	pos.setX(settings->windowXPos);
+	pos.setY(settings->windowYPos);
+	pos.setWidth(settings->windowWidth);
+	pos.setHeight(settings->windowHeight);
+	mainWindow->setGeometry(pos);
 
-    //Move to constructor
     recordingPath = QCoreApplication::applicationDirPath();
 #ifdef Q_OS_MAC
         //Pebble.app/contents/macos = 25
