@@ -35,8 +35,7 @@ LIBS += -L$${PWD}/../../pebblelib/$${LIB_DIR} -lpebblelib
 LIBS += -L$${PWD}/../../plugins/SDRPlayDevice/MiricsAPI/ -lmir_sdr
 
 
-#libusb is copied into Frameworks directory in pebbleqt.pro, but do it here to be sure
-copy_files.files += /opt/local/lib/libusb-1.0.0.dylib
+#libusb is copied into Frameworks directory in pebbleqt.pro
 copy_files.files += $${PWD}/../../plugins/SDRPlayDevice/MiricsAPI/libmir_sdr.so
 copy_files.path = $${INSTALL_DIR}/Pebble.app/Contents/Frameworks
 INSTALLS += copy_files

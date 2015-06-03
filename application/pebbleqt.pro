@@ -20,6 +20,12 @@ QT += widgets core gui
 #V 1.1.0 4/25/11
 #V 1.2.2 10/30/12
 
+#Download and install libusb drivers from libusb.info
+# ./configure
+# make
+# sudo make install
+# files are in usr/local/lib
+
 #Download PortAudio from portaudio.com , open terminal
 #Get latest SVN and make sure configure.in has 10.8 and 10.9 switch statment
 # autoreconf -if
@@ -115,7 +121,9 @@ macx {
         plib.files += $${PWD}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
         #Copy all plugin dependencies (Check all the .pro files to make sure)
         plib.files += /usr/local/lib/librtlsdr.0.dylib
-        plib.files += /opt/local/lib/libusb-1.0.0.dylib
+        #plib.files += /opt/local/lib/libusb-1.0.0.dylib
+        #installed to usr/local/lib by make install in libusb source directory
+        plib.files += /usr/local/lib/libusb-1.0.0.dylib
         plib.path = $${DESTDIR}/Pebble.app/Contents/Frameworks
         INSTALLS += plib
 
