@@ -46,7 +46,7 @@ public:
 
 private slots:
 	void dcCorrectionChanged(int _item);
-	void tunerGainReductionChanged(int _value);
+	void totalGainReductionChanged(int _value);
 	void IFBandwidthChanged(int _item);
 
 private:
@@ -69,6 +69,7 @@ private:
 	void consumerWorker(cbProducerConsumerEvents _event);
 	//Work buffer for consumer to convert device format data to CPX Pebble format data
 	CPX *consumerBuffer;
+	CPX *producerBuffer;
 	short *producerIBuf;
 	short *producerQBuf;
 	quint16 producerIndex;
@@ -78,7 +79,12 @@ private:
 	//SDRPlay data
 	double sampleRateMhz;
 	int samplesPerPacket; //Returned by init
-	int tunerGainReduction;
+	//totalGainReduction = baseband gain reduction + lna gain reduction + mixer gain reduction
+	//Tables in API doc show what the details are for every totalGainReduction
+	//For example totalGainReduction = 6 breaks down as follows for the 100kHz – 60MHz band
+	//gRdB	| Baseband Gain Reduction | LNA Gain Reduction | Mixer Gain Reduction |
+	//70	=	46					+		24				+		0
+	int totalGainReduction; //Todo: Set this per band
 	int dcCorrectionMode;
 
 	mir_sdr_Bw_MHzT bandwidthKhz;
@@ -89,5 +95,7 @@ private:
 	bool setFrequency(double newFrequency);
 	bool setDcMode(int _dcCorrectionMode, int _speedUp);
 	bool reinitMirics(double newFrequency);
+
+	QMutex initInProgress; //Used during init to pause producer/consumer loop until init is completed
 };
 #endif // SDRPLAYDEVICE_H

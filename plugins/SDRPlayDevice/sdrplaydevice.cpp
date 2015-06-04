@@ -6,6 +6,7 @@ SDRPlayDevice::SDRPlayDevice():DeviceInterfaceBase()
 	optionUi = NULL;
 	producerIBuf = producerQBuf = NULL;
 	consumerBuffer = NULL;
+	producerBuffer = NULL;
 	samplesPerPacket = 0;
 
 }
@@ -18,6 +19,8 @@ SDRPlayDevice::~SDRPlayDevice()
 		delete[] producerQBuf;
 	if (consumerBuffer != NULL)
 		delete consumerBuffer;
+	if (producerBuffer != NULL)
+		delete producerBuffer;
 }
 
 bool SDRPlayDevice::Initialize(cbProcessIQData _callback,
@@ -30,14 +33,15 @@ bool SDRPlayDevice::Initialize(cbProcessIQData _callback,
 	//Remove if producer/consumer buffers are not used
 	//This is set so we always get framesPerBuffer samples (factor in any necessary decimation)
 	//ProducerConsumer allocates as array of bytes, so factor in size of sample data
-	quint16 sampleDataSize = sizeof(short); //SDRPlay returns shorts
-	readBufferSize = framesPerBuffer * sampleDataSize * 2; //2 samples per frame (I/Q)
+	quint16 sampleDataSize = sizeof(CPX);
+	readBufferSize = framesPerBuffer * sampleDataSize;
 
 	producerIBuf = new short[framesPerBuffer * 2]; //2X what we need so we have overflow space
 	producerQBuf = new short[framesPerBuffer * 2];
 	producerIndex = 0;
 
 	consumerBuffer = CPXBuf::malloc(framesPerBuffer);
+	producerBuffer = CPXBuf::malloc(framesPerBuffer * 2);
 
 	producerConsumer.Initialize(std::bind(&SDRPlayDevice::producerWorker, this, std::placeholders::_1),
 		std::bind(&SDRPlayDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, readBufferSize);
@@ -111,11 +115,11 @@ bool SDRPlayDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _a
 
 			currentBand = band0; //Initial value to force band search on first frequency check
 
-			//setFrequency does an init if currentBand == band0.
 			//Will fail if SDRPlay is not connected
-			if (!setFrequency(10000000)) //Test, get startup freq to fix
+			if (!reinitMirics(deviceFrequency))
 				return false;
 			connected = true;
+			running = false;
 			return true;
 
 		case CmdDisconnect:
@@ -179,20 +183,10 @@ QVariant SDRPlayDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 			return IQ_DEVICE;
 		case DeviceSampleRates:
 			//These correspond to SDRPlay IF Bandwidth options
-			sl<<"200000";
-			sl<<"300000";
-			sl<<"600000";
-			sl<<"1536000";
-			sl<<"5000000";
-			sl<<"6000000";
-			sl<<"7000000";
-			sl<<"8000000";
+			//sl<<"200000"<<"300000"<<"600000"<<"1536000"<<"5000000"<<"6000000"<<"7000000"<<"8000000";
+			sl<<"2000000"<<"4000000"<<"6000000"<<"8000000";
 			return sl;
 			break;
-		case HighFrequency:
-			return 2000000000;
-		case LowFrequency:
-			return 100000;
 		default:
 			return DeviceInterfaceBase::Get(_key, _option);
 	}
@@ -212,10 +206,16 @@ bool SDRPlayDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, qu
 
 void SDRPlayDevice::ReadSettings()
 {
+	//DeviceInterfaceBase takes care of reading and writing these values
+	lowFrequency = 100000;
+	highFrequency = 2000000000;
+	deviceFrequency = lastFreq = 10000000;
+	sampleRate = 2000000;
+
 	DeviceInterfaceBase::ReadSettings();
 	dcCorrectionMode = qSettings->value("dcCorrectionMode",0).toInt(); //0 = off
-	tunerGainReduction = qSettings->value("tunerGainReduction",60).toInt(); //60db
-	bandwidthKhz = (mir_sdr_Bw_MHzT) qSettings->value("bandwidthMhz",mir_sdr_BW_1_536).toInt();
+	totalGainReduction = qSettings->value("totalGainReduction",60).toInt(); //60db
+	bandwidthKhz = (mir_sdr_Bw_MHzT) qSettings->value("bandwidthKhz",mir_sdr_BW_1_536).toInt();
 	//bandwidth can not be > sampleRate
 	if (bandwidthKhz > (sampleRate / 1000))
 		bandwidthKhz = (mir_sdr_Bw_MHzT) (sampleRate / 1000);
@@ -227,8 +227,8 @@ void SDRPlayDevice::WriteSettings()
 {
 	DeviceInterfaceBase::WriteSettings();
 	qSettings->setValue("dcCorrectionMode",dcCorrectionMode);
-	qSettings->setValue("tunerGainReduction",tunerGainReduction);
-	qSettings->setValue("bandwidthMhz",bandwidthKhz);
+	qSettings->setValue("totalGainReduction",totalGainReduction);
+	qSettings->setValue("bandwidthKhz",bandwidthKhz);
 	qSettings->setValue("IFKhz",IFKhz);
 
 }
@@ -276,8 +276,8 @@ void SDRPlayDevice::SetupOptionUi(QWidget *parent)
 	optionUi->dcCorrection->setCurrentIndex(cur);
 	connect(optionUi->dcCorrection,SIGNAL(currentIndexChanged(int)),this,SLOT(dcCorrectionChanged(int)));
 
-	optionUi->tunerGainReduction->setValue(tunerGainReduction);
-	connect(optionUi->tunerGainReduction, SIGNAL(valueChanged(int)), this, SLOT(tunerGainReductionChanged(int)));
+	optionUi->totalGainReduction->setValue(totalGainReduction);
+	connect(optionUi->totalGainReduction, SIGNAL(valueChanged(int)), this, SLOT(totalGainReductionChanged(int)));
 
 }
 
@@ -289,10 +289,10 @@ void SDRPlayDevice::dcCorrectionChanged(int _item)
 	WriteSettings();
 }
 
-void SDRPlayDevice::tunerGainReductionChanged(int _value)
+void SDRPlayDevice::totalGainReductionChanged(int _value)
 {
-	tunerGainReduction = _value;
-	setGainReduction(tunerGainReduction, 1, 0);
+	totalGainReduction = _value;
+	setGainReduction(totalGainReduction, 1, 0);
 	WriteSettings();
 }
 
@@ -308,15 +308,22 @@ void SDRPlayDevice::IFBandwidthChanged(int _item)
 //Used initially and any time frequency changes to a new band
 bool SDRPlayDevice::reinitMirics(double newFrequency)
 {
+	initInProgress.lock(); //Pause producer/consumer
 	if (running) {
 		//Unitinialize first
-		if (!errorCheck(mir_sdr_Uninit()))
+		if (!errorCheck(mir_sdr_Uninit())) {
+			initInProgress.unlock();
 			return false;
+		}
 	}
-	if (!errorCheck(mir_sdr_Init(tunerGainReduction, sampleRateMhz, newFrequency / 1000000.0, bandwidthKhz ,IFKhz , &samplesPerPacket)))
+	if (!errorCheck(mir_sdr_Init(totalGainReduction, sampleRateMhz, newFrequency / 1000000.0, bandwidthKhz ,IFKhz , &samplesPerPacket))) {
+		initInProgress.unlock();
 		return false;
+	}
 	//Whenever we initialize, we also need to reset key values
 	setDcMode(dcCorrectionMode, 1);
+
+	initInProgress.unlock(); //re-start producer/consumer
 	return true;
 }
 
@@ -339,10 +346,15 @@ bool SDRPlayDevice::setDcMode(int _dcCorrectionMode, int _speedUp)
 
 bool SDRPlayDevice::setFrequency(double newFrequency)
 {
+	if (deviceFrequency == newFrequency || newFrequency == 0)
+		return true;
+
 	band newBand;
 	quint16 setRFMode = 1; //0=apply freq as offset, 1=apply freq absolute
 	quint16 syncUpdate = 0; //0=apply freq change immediately, 1=apply synchronously
 
+#if 1
+	//Bug?  With Mac API, I can't change freq within a band like 245-380 with absolute
 	//If the new frequency is outside the current band, then we have to uninit and reinit in the new band
 	if (newFrequency < currentBand.low || newFrequency > currentBand.high) {
 		//Find new band
@@ -364,7 +376,7 @@ bool SDRPlayDevice::setFrequency(double newFrequency)
 		}
 		//Re-init with new band
 		//Init takes freq in mhz
-		if (!reinitMirics(newFrequency / 1000000.0))
+		if (!reinitMirics(newFrequency))
 			return false;
 		currentBand = newBand;
 
@@ -377,6 +389,20 @@ bool SDRPlayDevice::setFrequency(double newFrequency)
 				return false;
 		}
 	}
+#else
+	//Try offset logic from osmosdr
+	//Higher freq = positive offset
+	double delta = newFrequency - deviceFrequency;
+	if (fabs(delta) < 10000.0) {
+		if (!errorCheck(mir_sdr_SetRf(delta,0,syncUpdate)))
+			return false;
+
+	} else {
+		if (!reinitMirics(newFrequency / 1000000.0))
+			return false;
+	}
+
+#endif
 	deviceFrequency = newFrequency;
 	lastFreq = deviceFrequency;
 	return true;
@@ -392,13 +418,14 @@ void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 	int rfFreqChanged;
 	int sampleFreqChanged;
 
-	short *producerFreeBufPtr; //Treat as array of shorts
+	CPX *producerFreeBufPtr; //Treat as array of CPX
 
 #if 0
 	static short maxSample = 0;
 	static short minSample = 0;
 #endif
 
+	static quint32 lastSampleNumber = 0;
 	switch (_event) {
 		case cbProducerConsumerEvents::Start:
 			break;
@@ -410,63 +437,85 @@ void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 			//Returns one packet (samplesPerPacket) of data int I and Q buffers
 			//We want to read enough data to fill producerIbuf and producerQbuf with framesPerBuffer
 			while(running) {
+				//If init is in progress (locked), wait for it to complete
+				initInProgress.lock();
+
 				//Read all the I's into 1st part of buffer, and Q's into 2nd part
-				if (!errorCheck(mir_sdr_ReadPacket(&producerIBuf[producerIndex], &producerQBuf[producerIndex], &firstSampleNumber, &gainReductionChanged,
+				if (!errorCheck(mir_sdr_ReadPacket(producerIBuf, producerQBuf, &firstSampleNumber, &gainReductionChanged,
 					&rfFreqChanged, &sampleFreqChanged))) {
+					initInProgress.unlock();
 					return; //Handle error
 				}
+				initInProgress.unlock();
+
+				if (lastSampleNumber != 0 && firstSampleNumber > lastSampleNumber &&
+						firstSampleNumber != lastSampleNumber + samplesPerPacket) {
+					qDebug()<<"Lost samples "<< lastSampleNumber<<" "<<firstSampleNumber<<" "<<samplesPerPacket;
+				}
+				lastSampleNumber = firstSampleNumber;
+#if 0
 				if (rfFreqChanged) {
 					//If center freq changed since last packet, throw this one away and get next one
 					//Should make frequency changes instant, regardless of packet size
 					continue;
 				}
+#endif
+				//Save in producerBuffer (sized to handle overflow
 				//Make sure samplesPerPacket is initialized before producer starts
-				producerIndex += samplesPerPacket;
-				if (producerIndex >= framesPerBuffer) {
-					if ((producerFreeBufPtr = (short *)producerConsumer.AcquireFreeBuffer()) == NULL) {
-						qDebug()<<"No free buffers available.  producerIndex = "<<producerIndex <<
-								  "samplesPerPacket = "<<samplesPerPacket;
+				for (int i=0; i<samplesPerPacket; i++) {
+					producerBuffer[producerIndex].re = producerIBuf[i];
+					producerBuffer[producerIndex].im = producerQBuf[i];
+					producerIndex++;
+
+					if (producerIndex >= framesPerBuffer) {
+						if ((producerFreeBufPtr = (CPX *)producerConsumer.AcquireFreeBuffer()) == NULL) {
+							qDebug()<<"No free buffers available.  producerIndex = "<<producerIndex <<
+									  "samplesPerPacket = "<<samplesPerPacket;
+							producerIndex = 0;
+							return;
+						}
+
+						for (int j=0; j<framesPerBuffer; j++) {
+							producerFreeBufPtr[j] = producerBuffer[j];
+
+	#if 0
+							//For testing device sample format
+							//maxSample = 32764
+							//minSample = -32768
+							if (producerIBuf[j] > maxSample) {
+								maxSample = producerIBuf[j];
+								qDebug()<<"New Max sample "<<maxSample;
+							}
+							if (producerQBuf[j] > maxSample) {
+								maxSample = producerQBuf[j];
+								qDebug()<<"New Max sample "<<maxSample;
+							}
+							if (producerIBuf[j] < minSample) {
+								minSample = producerIBuf[j];
+								qDebug()<<"New Min sample "<<minSample;
+							}
+							if (producerQBuf[j] < minSample) {
+								minSample = producerQBuf[j];
+								qDebug()<<"New Min sample "<<minSample;
+							}
+	#endif
+
+						}
+						//Process any remaining samples in packet if any
 						producerIndex = 0;
+						//Continue with i from outer for(int i=0;;)
+						for (++i; i< samplesPerPacket; i++) {
+							producerBuffer[producerIndex].re = producerIBuf[i];
+							producerBuffer[producerIndex].im = producerQBuf[i];
+							producerIndex++;
+						}
+
+						producerConsumer.ReleaseFilledBuffer();
+						//qDebug()<<"Released filled buffer";
 						return;
 					}
-					for (int i=0, j=0; i<framesPerBuffer; i++, j+=2) {
-						//Store in alternating I/Q
-						producerFreeBufPtr[j] = producerIBuf[i];
-						producerFreeBufPtr[j+1] = producerQBuf[i];
-
-#if 0
-						//For testing device sample format
-						//maxSample = 32764
-						//minSample = -32768
-						if (producerIBuf[i] > maxSample) {
-							maxSample = producerIBuf[i];
-							qDebug()<<"New Max sample "<<maxSample;
-						}
-						if (producerQBuf[i] > maxSample) {
-							maxSample = producerQBuf[i];
-							qDebug()<<"New Max sample "<<maxSample;
-						}
-						if (producerIBuf[i] < minSample) {
-							minSample = producerIBuf[i];
-							qDebug()<<"New Min sample "<<minSample;
-						}
-						if (producerQBuf[i] < minSample) {
-							minSample = producerQBuf[i];
-							qDebug()<<"New Min sample "<<minSample;
-						}
-#endif
-
-					}
-					//Start new buffer, but producerIndex is not even multiple of framesPerBuffer
-					//ie if samplesPerPacket = 252, then we will have some samples left over
-					//after we process a frame.
-					//So don't set to 0, just decrement what we handled
-					producerIndex -= framesPerBuffer;
-					producerConsumer.ReleaseFilledBuffer();
-					//qDebug()<<"Released filled buffer";
-					return;
-				}
-			}
+				} //for(;i<samplesPerPacket;)
+			} //while(running)
 			return;
 
 			break;
@@ -477,12 +526,11 @@ void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 
 void SDRPlayDevice::consumerWorker(cbProducerConsumerEvents _event)
 {
-	short *consumerFilledBufferPtr;
-	double re;
-	double im;
+	CPX *consumerFilledBufferPtr;
 	//NOTE: API doc says data is returned in 16bit integer shorts
 	//Actual min/max samples in producerWorker confirms this, we get min of -32556 and max of 32764
 	//There is some confusion in other open source code which normalizes using 12bit min/max or 1/4096
+	//double normalizeIQ = 1.0 / 4096.0;
 	double normalizeIQ = 1.0 / 32767.0;
 
 	switch (_event) {
@@ -495,21 +543,18 @@ void SDRPlayDevice::consumerWorker(cbProducerConsumerEvents _event)
 			//We always want to consume everything we have, producer will eventually block if we're not consuming fast enough
 			while (running && producerConsumer.GetNumFilledBufs() > 0) {
 				//Wait for data to be available from producer
-				if ((consumerFilledBufferPtr = (short *)producerConsumer.AcquireFilledBuffer()) == NULL) {
+				if ((consumerFilledBufferPtr = (CPX *)producerConsumer.AcquireFilledBuffer()) == NULL) {
 					//qDebug()<<"No filled buffer available";
 					return;
 				}
 
 				//Process data in filled buffer and convert to Pebble format in consumerBuffer
 				//Filled buffers always have framesPerBuffer I/Q samples
-				for (int i=0,j=0; i<framesPerBuffer; i++, j+=2) {
+				for (int i=0; i<framesPerBuffer; i++) {
 					//Fill consumerBuffer with normalized -1 to +1 data
 					//SDRPlay swaps I/Q from norm, reverse here
-					re = consumerFilledBufferPtr[j] * normalizeIQ;
-					consumerBuffer[i].im = re;
-					im = consumerFilledBufferPtr[j+1] * normalizeIQ;
-					consumerBuffer[i].re = im;
-					//qDebug()<<re<<" "<<im;
+					consumerBuffer[i].re = consumerFilledBufferPtr[i].im * normalizeIQ;
+					consumerBuffer[i].im = consumerFilledBufferPtr[i].re * normalizeIQ;
 				}
 
 				//perform.StartPerformance("ProcessIQ");
