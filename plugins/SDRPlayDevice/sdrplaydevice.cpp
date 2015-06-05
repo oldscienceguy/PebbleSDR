@@ -182,9 +182,7 @@ QVariant SDRPlayDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 		case DeviceType:
 			return IQ_DEVICE;
 		case DeviceSampleRates:
-			//These correspond to SDRPlay IF Bandwidth options
-			//sl<<"200000"<<"300000"<<"600000"<<"1536000"<<"5000000"<<"6000000"<<"7000000"<<"8000000";
-			sl<<"2000000"<<"4000000"<<"6000000"<<"8000000";
+			//Don't return any sample rates to sdrOptions UI, we handle it all in device UI
 			return sl;
 			break;
 		default:
@@ -231,10 +229,14 @@ void SDRPlayDevice::WriteSettings()
 	qSettings->setValue("bandwidthKhz",bandwidthKhz);
 	qSettings->setValue("IFKhz",IFKhz);
 
+	//Overwrite sampleRate, fragile code that depends on definitions in deviceInterfaceBase.cpp
+	qSettings->setValue("SampleRate",sampleRate);
 }
 
 void SDRPlayDevice::SetupOptionUi(QWidget *parent)
 {
+	int cur;
+
 	//Arg is QWidget *parent
 	if (optionUi != NULL)
 		delete optionUi;
@@ -245,28 +247,19 @@ void SDRPlayDevice::SetupOptionUi(QWidget *parent)
 	parent->setVisible(true);
 
 	//Set combo boxes
-	optionUi->IFMode->addItem("Zero",mir_sdr_IF_Zero);
-	optionUi->IFMode->addItem("450 Khz",mir_sdr_IF_0_450);
-	optionUi->IFMode->addItem("1620 Khz",mir_sdr_IF_1_620);
-	optionUi->IFMode->addItem("2048 Khz",mir_sdr_IF_2_048);
+	optionUi->sampleRate->addItem("1Mhz",1000000);
+	optionUi->sampleRate->addItem("2Mhz",2000000);
+	optionUi->sampleRate->addItem("3Mhz",3000000);
+	optionUi->sampleRate->addItem("4Mhz",4000000);
+	optionUi->sampleRate->addItem("5Mhz",5000000);
+	optionUi->sampleRate->addItem("6Mhz",6000000);
+	optionUi->sampleRate->addItem("7Mhz",7000000);
+	optionUi->sampleRate->addItem("8Mhz",8000000);
+	cur = optionUi->sampleRate->findData(sampleRate);
+	optionUi->sampleRate->setCurrentIndex(cur);
+	connect(optionUi->sampleRate,SIGNAL(currentIndexChanged(int)),this,SLOT(sampleRateChanged(int)));
 
-	optionUi->IFBw->addItem("0.200 Mhz",mir_sdr_BW_0_200);
-	optionUi->IFBw->addItem("0.300 Mhz",mir_sdr_BW_0_300);
-	optionUi->IFBw->addItem("0.600 Mhz",mir_sdr_BW_0_600);
-	//Todo: Update whenever sample rate changes
-	//Only allow BW selections that are <= sampleRate
-	if (sampleRateMhz >= 1.536)
-		optionUi->IFBw->addItem("1.536 Mhz",mir_sdr_BW_1_536);
-	if (sampleRateMhz >= 5.000)
-		optionUi->IFBw->addItem("5.000 Mhz",mir_sdr_BW_5_000);
-	if (sampleRateMhz >= 6.000)
-		optionUi->IFBw->addItem("6.000 Mhz",mir_sdr_BW_6_000);
-	if (sampleRateMhz >= 7.000)
-		optionUi->IFBw->addItem("7.000 Mhz",mir_sdr_BW_7_000);
-	if (sampleRateMhz >= 8.000)
-		optionUi->IFBw->addItem("8.000 Mhz",mir_sdr_BW_8_000);
-	int cur = optionUi->IFBw->findData(bandwidthKhz);
-	optionUi->IFBw->setCurrentIndex(cur);
+	matchBandwidthToSampleRate();
 	connect(optionUi->IFBw,SIGNAL(currentIndexChanged(int)),this,SLOT(IFBandwidthChanged(int)));
 
 	optionUi->dcCorrection->addItem("Off", 0);
@@ -302,6 +295,40 @@ void SDRPlayDevice::IFBandwidthChanged(int _item)
 	bandwidthKhz = (mir_sdr_Bw_MHzT)optionUi->IFBw->itemData(cur).toUInt();
 	WriteSettings();
 	reinitMirics(deviceFrequency);
+}
+
+void SDRPlayDevice::sampleRateChanged(int _item)
+{
+	sampleRate = (quint32)optionUi->sampleRate->itemData(_item).toUInt();
+	WriteSettings();
+	//Update dependent bandwidth options
+	matchBandwidthToSampleRate();
+}
+
+void SDRPlayDevice::matchBandwidthToSampleRate()
+{
+	optionUi->IFBw->blockSignals(true);
+	optionUi->IFBw->clear();
+
+	optionUi->IFBw->addItem("0.200 Mhz",mir_sdr_BW_0_200);
+	optionUi->IFBw->addItem("0.300 Mhz",mir_sdr_BW_0_300);
+	optionUi->IFBw->addItem("0.600 Mhz",mir_sdr_BW_0_600);
+	//Only allow BW selections that are <= sampleRate
+	if (sampleRate >= 1536000)
+		optionUi->IFBw->addItem("1.536 Mhz",mir_sdr_BW_1_536);
+	if (sampleRate >= 5000000)
+		optionUi->IFBw->addItem("5.000 Mhz",mir_sdr_BW_5_000);
+	if (sampleRate >= 6000000)
+		optionUi->IFBw->addItem("6.000 Mhz",mir_sdr_BW_6_000);
+	if (sampleRate >= 7000000)
+		optionUi->IFBw->addItem("7.000 Mhz",mir_sdr_BW_7_000);
+	if (sampleRate >= 8000000)
+		optionUi->IFBw->addItem("8.000 Mhz",mir_sdr_BW_8_000);
+
+	int cur = optionUi->IFBw->findData(bandwidthKhz);
+	optionUi->IFBw->setCurrentIndex(cur);
+
+	optionUi->IFBw->blockSignals(false);
 }
 
 //Initializes the mirics chips set

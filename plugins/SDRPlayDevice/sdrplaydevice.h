@@ -48,6 +48,7 @@ private slots:
 	void dcCorrectionChanged(int _item);
 	void totalGainReductionChanged(int _value);
 	void IFBandwidthChanged(int _item);
+	void sampleRateChanged(int _item);
 
 private:
 	struct band {
@@ -97,5 +98,6 @@ private:
 	bool reinitMirics(double newFrequency);
 
 	QMutex initInProgress; //Used during init to pause producer/consumer loop until init is completed
+	void matchBandwidthToSampleRate();
 };
 #endif // SDRPLAYDEVICE_H
