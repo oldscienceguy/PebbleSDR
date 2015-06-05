@@ -179,16 +179,24 @@ void SdrOptions::UpdateOptions()
 
 	int sr;
 	QStringList sampleRates = di->Get(DeviceInterface::DeviceSampleRates).toStringList();
-	sd->sampleRateBox->blockSignals(true);
-	sd->sampleRateBox->clear();
-	for (int i=0; i<sampleRates.count(); i++) {
-		sr = sampleRates[i].toInt();
-		sd->sampleRateBox->addItem(sampleRates[i],sr);
-		if (di->Get(DeviceInterface::DeviceSampleRate).toUInt() == sr)
-			sd->sampleRateBox->setCurrentIndex(i);
-	}
-	sd->sampleRateBox->blockSignals(false);
+	if (sampleRates.isEmpty()) {
+		//Device handles sample rate selection
+		sd->sampleRateBox->hide();
+		sd->sampleRateLabel->hide();
+	} else {
+		sd->sampleRateBox->show();
+		sd->sampleRateLabel->show();
 
+		sd->sampleRateBox->blockSignals(true);
+		sd->sampleRateBox->clear();
+		for (int i=0; i<sampleRates.count(); i++) {
+			sr = sampleRates[i].toInt();
+			sd->sampleRateBox->addItem(sampleRates[i],sr);
+			if (di->Get(DeviceInterface::DeviceSampleRate).toUInt() == sr)
+				sd->sampleRateBox->setCurrentIndex(i);
+		}
+		sd->sampleRateBox->blockSignals(false);
+	}
 	//Careful here: Fragile coding practice
 	//We're calling a virtual function in a base class method and expect it to call the over-ridden method in derived class
 	//This only works because ShowSdrOptions() is being called via a pointer to the derived class

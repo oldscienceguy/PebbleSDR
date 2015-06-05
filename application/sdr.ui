@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>513</width>
+    <width>514</width>
     <height>309</height>
    </rect>
   </property>
@@ -306,7 +306,7 @@
        </widget>
       </item>
       <item row="3" column="4">
-       <widget class="QLabel" name="label_10">
+       <widget class="QLabel" name="sampleRateLabel">
         <property name="minimumSize">
          <size>
           <width>0</width>
@@ -430,8 +430,6 @@
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <zorder>frame</zorder>
-     <zorder>frame</zorder>
     </widget>
    </item>
    <item>
