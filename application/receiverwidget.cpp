@@ -1064,9 +1064,9 @@ void ReceiverWidget::bandChanged(int s)
 
     int bandIndex = ui.bandCombo->itemData(s).toInt();
     double freq = bands[bandIndex].tune;
-    //If no specific tune freq for band select, use low
+	//If no specific tune freq for band select, set to middle
     if (freq == 0)
-        freq = bands[bandIndex].low;
+		freq = bands[bandIndex].low + ((bands[bandIndex].high - bands[bandIndex].low) / 2.0);
 	DeviceInterface::DEMODMODE mode = bands[bandIndex].mode;
 
     //Make sure we're in LO mode
