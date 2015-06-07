@@ -113,8 +113,8 @@ private:
 
     //Grid display, will change depending on plotArea size
     static const int maxHDivs = 50;
-    int horizDivs; //Must be even number to split right around center
-    int vertDivs;
+	int numXDivs; //Must be even number to split right around center
+	int numYDivs;
 
     int modeOffset;
 

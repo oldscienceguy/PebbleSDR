@@ -32,9 +32,10 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 	//CuteSDR defaults to -50
 	plotMaxDb = global->settings->fullScaleDb;
 	plotMinDb = DB::minDb;
-	ui.maxDbBox->setMinimum(DB::minDb);
+	ui.maxDbBox->setMinimum(-50); //Makes no sense to set to anything below this or no useful information
 	ui.maxDbBox->setMaximum(DB::maxDb);
     ui.maxDbBox->setValue(plotMaxDb);
+	ui.maxDbBox->setSingleStep(10);
     connect(ui.maxDbBox,SIGNAL(valueChanged(int)),this,SLOT(maxDbChanged(int)));
 
 	spectrumMode=SignalSpectrum::SPECTRUM;
@@ -960,7 +961,7 @@ void SpectrumWidget::DrawScale(QPainter *labelPainter, double centerFreq, bool i
 
     //Draw the frequency scale
     float pixPerHdiv;
-    pixPerHdiv = (float)plotLabel.width() / (float)horizDivs;
+	pixPerHdiv = (float)plotLabel.width() / (float)numXDivs;
     int x,y;
     QRect rect;
     int plotLabelHeight = plotLabel.height();
@@ -971,17 +972,17 @@ void SpectrumWidget::DrawScale(QPainter *labelPainter, double centerFreq, bool i
     //100,000 sps * 1.00 / 10 = 10,000 hz per division
     //100,000 sps * 0.10 / 10 = 1000 hz per division
     //Bug with 16bit at 2msps rate
-    quint32 hzPerhDiv = sampleRate / horizDivs;
+	quint32 hzPerhDiv = sampleRate / numXDivs;
     if (isZoomed) {
         if (!useZoomSpectrum)
-            hzPerhDiv = sampleRate * zoom / horizDivs;
+			hzPerhDiv = sampleRate * zoom / numXDivs;
         else
-            hzPerhDiv = signalSpectrum->getZoomedSampleRate() * zoom / horizDivs;
+			hzPerhDiv = signalSpectrum->getZoomedSampleRate() * zoom / numXDivs;
     }
 
     //horizDivs must be even number so middle is 0
     //So for 10 divs we start out with [0] at low and [9] at high
-    int center = horizDivs / 2;
+	int center = numXDivs / 2;
     horizLabels[center] = QString::number(centerFreq/1000,'f',0)+"k";
     int tick,left,right;
     for (int i=0; i <= center; i++) {
@@ -1004,14 +1005,14 @@ void SpectrumWidget::DrawScale(QPainter *labelPainter, double centerFreq, bool i
 
     labelPainter->setPen(QPen(Qt::cyan,1,Qt::SolidLine));
 
-    for( int i=0; i <= horizDivs; i++) {
+	for( int i=0; i <= numXDivs; i++) {
         if (i==0) {
             //Left justify
             x = (int)( (float) i * pixPerHdiv);
             rect.setRect(x ,0, (int)pixPerHdiv, plotLabelHeight);
             labelPainter->drawText(rect, Qt::AlignLeft|Qt::AlignVCenter, horizLabels[i]);
 
-        } else if (i == horizDivs) {
+		} else if (i == numXDivs) {
             //Right justify
             x = (int)( (float)i*pixPerHdiv - pixPerHdiv);
             rect.setRect(x ,0, (int)pixPerHdiv, plotLabelHeight);
@@ -1038,9 +1039,11 @@ void SpectrumWidget::DrawOverlay(bool isZoomed)
 
     QPainter *painter = new QPainter();
     QPainter *labelPainter = new QPainter();
+
     int overlayWidth;
     int overlayHeight;
     QRect plotFr;
+	quint16 dbLabelInterval;
 
     if (!isZoomed) {
         if (plotOverlay.isNull())
@@ -1052,7 +1055,7 @@ void SpectrumWidget::DrawOverlay(bool isZoomed)
         overlayHeight = plotOverlay.height();
         plotFr = ui.plotFrame->geometry(); //relative to parent
         painter->begin(&plotOverlay);  //Because we use pointer, automatic with instance
-        labelPainter->begin(&plotLabel);
+		labelPainter->begin(&plotLabel);
 
     } else {
         if (zoomPlotOverlay.isNull())
@@ -1067,28 +1070,33 @@ void SpectrumWidget::DrawOverlay(bool isZoomed)
         labelPainter->begin(&zoomPlotLabel);
     }
 
-
-    horizDivs = (overlayWidth / 100) * 2; //x2 to make sure always even number
-    if (overlayHeight < 60) {
-        vertDivs = overlayHeight / 5; //pix per div
-    } else {
-        vertDivs = overlayHeight / 10; //pix per div
-    }
+	numXDivs = (overlayWidth / 100) * 2; //x2 to make sure always even number
+	if (overlayHeight < 100) {
+		dbLabelInterval = 20; //20db each div
+	} else {
+		dbLabelInterval = 10; //10db each div
+	}
+	numYDivs = (plotMaxDb - plotMinDb) / dbLabelInterval; //Range / db per div
 
     int x,y;
     float pixPerHdiv;
-    pixPerHdiv = (float)overlayWidth / (float)horizDivs;
+	pixPerHdiv = (float)overlayWidth / (float)numXDivs;
 
     float pixPerVdiv;
-    pixPerVdiv = (float)overlayHeight / (float)vertDivs;
+	pixPerVdiv = (float)overlayHeight / (float)numYDivs;
+
+	QFont overlayFont("Arial");
+	overlayFont.setPointSize(10);
+	overlayFont.setWeight(QFont::Normal);
+	painter->setFont(overlayFont);
 
     if (spectrumMode == SignalSpectrum::SPECTRUM) {
-        //draw vertical grids
+		//draw X grids
         //y = overlayHeight - overlayHeight/vertDivs;
-        for( int i = 1; i < horizDivs; i++)
+		for( int i = 1; i < numXDivs; i++)
         {
             x = (int)( (float)i*pixPerHdiv );
-            if(i==horizDivs/2)
+			if(i==numXDivs/2)
                 painter->setPen(QPen(Qt::red, 1,Qt::DotLine));
             else
                 painter->setPen(QPen(Qt::white, 1,Qt::DotLine));
@@ -1096,13 +1104,22 @@ void SpectrumWidget::DrawOverlay(bool isZoomed)
             //painter.drawLine(x, overlayHeight-5, x , overlayHeight);
         }
 
-        //draw horizontal grids
-        painter->setPen(QPen(Qt::white, 1,Qt::DotLine));
-        for( int i = 1; i<vertDivs; i++)
+		//draw Y grids
+		painter->setPen(QPen(Qt::white, 1,Qt::DotLine));
+		for( int i = 1; i<numYDivs; i++)
         {
             y = (int)( (float)i*pixPerVdiv );
             painter->drawLine(0, y, overlayWidth, y);
         }
+		//draw Y scale
+		painter->setPen(QPen(Qt::white));
+
+		for (int i=1; i<numYDivs; i++) {
+			y = (int)( (float)i*pixPerVdiv );
+			//Draw slightly above line (y) for visibility
+			//Start with plotMaxDB (neg value) and work to minDB
+			painter->drawText(0, y-2, "-"+QString::number(abs(plotMaxDb) + (i * dbLabelInterval)));
+		}
 
         DrawCursor(painter, plotFr, isZoomed, Qt::white);
         DrawCursor(labelPainter, plotFr, isZoomed, Qt::white); //Continues into label area
