@@ -10,7 +10,6 @@
 #include "QFile"
 #include <QSize>
 #include <QMainWindow>
-#include "db.h"
 #include "perform.h"
 
 class Receiver;
@@ -33,7 +32,6 @@ public:
     CTestBench* testBench;
     QSize defaultWindowSize;
     QMainWindow *mainWindow;
-	DB db;
 
 private:
 	QFile *file;

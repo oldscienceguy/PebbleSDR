@@ -42,12 +42,12 @@ void SMeterWidget::SetSignalSpectrum(SignalSpectrum *s)
         connect(s,SIGNAL(newFftData()),this,SLOT(updateMeter()));
         //We're going to adj max so we get even dist across scale
         //If we assume 18db per tic (3 s-units), then range should be evenly divisible by 18
-		int dbRange = global->db.maxDb - global->db.minDb;
+		int dbRange = DB::maxDb - DB::minDb;
         dbRange = (dbRange / 18) * 18; //Now even multiple
-		ui.barGraph->setMax(global->db.minDb + dbRange);
+		ui.barGraph->setMax(DB::minDb + dbRange);
         //Scale starts at S1, not S0 so add 6db to min
-		ui.barGraph->setMin(global->db.minDb - 6);
-		ui.barGraph->setValue(global->db.minDb);
+		ui.barGraph->setMin(DB::minDb - 6);
+		ui.barGraph->setValue(DB::minDb);
         ui.barGraph->setColor(Qt::cyan); //!!Make multi color? or set threshold to show red > s9
         QStringList labels;
         //S1 is left most and not labeled

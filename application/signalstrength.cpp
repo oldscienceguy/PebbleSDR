@@ -5,9 +5,9 @@
 SignalStrength::SignalStrength(int sr, int ns):
 	SignalProcessing(sr,ns)
 {
-	instValue = global->db.minDb;
-	avgValue = global->db.minDb;
-	extValue = global->db.minDb;
+	instValue = DB::minDb;
+	avgValue = DB::minDb;
+	extValue = DB::minDb;
 	//Todo: This should be adj per receiver and user should be able to calibrate with known signal
 	//SRV9 -40
 	//SREnsemble 
@@ -76,9 +76,9 @@ CPX * SignalStrength::ProcessBlock(CPX *in, int downConvertLen, int squelch)
 	//sum(re^2 + im^2)
     for (int i = 0; i < downConvertLen; i++) {
 		//Total power of this sample pair
-		pwr = global->db.cpxToWatts(in[i]); //Power in watts
+		pwr = DB::cpxToWatts(in[i]); //Power in watts
         //Verified 8/13 comparing testbench gen output at all db levels
-		instValue = global->db.powerToDb(pwr); //Watts to db
+		instValue = DB::powerToDb(pwr); //Watts to db
         //Weighted average 90/10
         avgValue = 0.99 * avgValue + 0.01 * instValue;
 
@@ -97,15 +97,15 @@ CPX * SignalStrength::ProcessBlock(CPX *in, int downConvertLen, int squelch)
 }
 float SignalStrength::instFValue() {
     float temp = instValue + correction;
-	temp = temp > global->db.maxDb ? global->db.maxDb : temp;
-	temp = temp < global->db.minDb ? global->db.minDb : temp;
+	temp = temp > DB::maxDb ? DB::maxDb : temp;
+	temp = temp < DB::minDb ? DB::minDb : temp;
     return temp;
 }
 
 float SignalStrength::avgFValue() {
     float temp = avgValue + correction;
-	temp = temp > global->db.maxDb ? global->db.maxDb : temp;
-	temp = temp < global->db.minDb ? global->db.minDb : temp;
+	temp = temp > DB::maxDb ? DB::maxDb : temp;
+	temp = temp < DB::minDb ? DB::minDb : temp;
     return temp;
 }
 
