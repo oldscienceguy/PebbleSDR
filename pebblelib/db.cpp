@@ -78,15 +78,15 @@ db tutorial from Steven Smith
 //Power same as cpx.mag()
 
 //Convert Power to Db
-double DB::powerToDb(double p)
+double DB::powerToDbAdjusted(double power)
 {
     //For our purposes -127db is the lowest we'll ever see.  Handle special case of 0 directly
-    if (p==0)
+	if (power==0)
 		return DB::minDb;
 
     //Voltage = 20 * log10(V2/V1)
     //  + ALMOSTZERO avoid problem if p==0 but does not impact result
-	return  qBound(DB::minDb, 10.0 * log10(p + DB::pwrOffset + ALMOSTZERO) + DB::dbOffset, DB::maxDb);
+	return  qBound(DB::minDb, DB::powerToDb(power + DB::pwrOffset + ALMOSTZERO) + DB::dbOffset, DB::maxDb);
 }
 
 //Std equation for decibles is A(db) = 10 * log10(P2/P1) where P1 is measured power and P2 is compared power
@@ -95,13 +95,20 @@ double DB::powerRatioToDb(double measuredPower, double comparedPower)
 	return 10.0 * log10(comparedPower / measuredPower);
 }
 
+
 // Positive db returns power = 1.0 and up
 // Zero db return power = 1.0 (1:1 ratio)
 // Negative db returns power = 0.0 to 1.0
 double DB::dbToPower(double db)
 {
 	//Note pow(10, db/10.0) is the same as antilog(db/10.0) which is shown in some texts.
-    return pow(10, db/10.0);
+	return pow(10, db/10.0);
+}
+
+// d = powerToDb(x) followed by dbToPower(d) should return same x
+double DB::powerToDb(double power)
+{
+	return 10 * log10(power);
 }
 
 //Steven Smith pg 264

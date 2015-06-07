@@ -23,9 +23,10 @@ public:
 	static double rmsVolts_2_dBm(double volts, double impedance);
 
     //db conversion functions from Steven Smith book
-	static double powerToDb(double p);
+	static double powerToDbAdjusted(double power);
 	static double powerRatioToDb(double measuredPower, double comparedPower);
 	static double dbToPower(double db);
+	static double powerToDb(double power);
 
 	static double amplitudeToDb(double a);
 	static double dbToAmplitude(double db);

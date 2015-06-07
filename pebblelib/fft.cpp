@@ -245,7 +245,7 @@ void FFT::CalcPowerAverages(CPX* in, double *out, int size)
 
 		//Convert to db
 		//FFTAvgBuf[i] = 10 * log10( FFTPwrAvgBuf[i] + K_C) + K_B;
-		FFTAvgBuf[i] = DB::powerToDb(FFTPwrAvgBuf[i]);
+		FFTAvgBuf[i] = DB::powerToDbAdjusted(FFTPwrAvgBuf[i]);
 
         //Skip copying to out if null
         if (out != NULL)
