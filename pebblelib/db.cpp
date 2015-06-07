@@ -34,15 +34,16 @@
  *
 */
 
+//Init static class variables
+double DB::maxDb = 0;
+//Same as SpectraVue & CuteSDR;
+double DB::minDb = -120.0;
+//Hard wired for FFT 2048 for testing
+double DB::dbOffset = DB::maxDb - 20 * log10(2048 * 1.0 / 2.0);
+double DB::pwrOffset = pow(10, (DB::minDb - DB::dbOffset) / 10.0);
+
 DB::DB()
 {
-	//Same as SpectraVue & CuteSDR;
-	maxDb = 0;
-	minDb = -120.0;
-	//Hard wired for FFT 2048 for testing
-	dbOffset = maxDb - 20 * log10(2048 * 1.0 / 2.0);
-	pwrOffset = pow(10, (minDb - dbOffset) / 10.0);
-	//qDebug()<<dbOffset<<" "<<pwrOffset;
 }
 
 
@@ -81,23 +82,32 @@ double DB::powerToDb(double p)
 {
     //For our purposes -127db is the lowest we'll ever see.  Handle special case of 0 directly
     if (p==0)
-        return minDb;
+		return DB::minDb;
 
-    //Std equation for decibles is A(db) = 10 * log10(P2/P1) where P1 is measured power and P2 is compared power
     //Voltage = 20 * log10(V2/V1)
     //  + ALMOSTZERO avoid problem if p==0 but does not impact result
-	return  qBound(minDb, 10.0 * log10(p + pwrOffset + ALMOSTZERO) + dbOffset, maxDb);
+	return  qBound(DB::minDb, 10.0 * log10(p + DB::pwrOffset + ALMOSTZERO) + DB::dbOffset, DB::maxDb);
 }
 
+//Std equation for decibles is A(db) = 10 * log10(P2/P1) where P1 is measured power and P2 is compared power
+double DB::powerRatioToDb(double measuredPower, double comparedPower)
+{
+	return 10.0 * log10(comparedPower / measuredPower);
+}
+
+// Positive db returns power = 1.0 and up
+// Zero db return power = 1.0 (1:1 ratio)
+// Negative db returns power = 0.0 to 1.0
 double DB::dbToPower(double db)
 {
+	//Note pow(10, db/10.0) is the same as antilog(db/10.0) which is shown in some texts.
     return pow(10, db/10.0);
 }
 
 //Steven Smith pg 264
 double DB::amplitudeToDb(double a)
 {
-	return qBound(minDb, 20.0 * log10(a + ALMOSTZERO), maxDb);
+	return qBound(DB::minDb, 20.0 * log10(a + ALMOSTZERO), DB::maxDb);
 }
 //Steven Smith pg 264
 double DB::dbToAmplitude(double db)
@@ -123,7 +133,7 @@ double DB::watts_2_dBm(double watts)
 {
     if (watts < 10.0e-32)
         watts = 10.0e-32;
-	return qBound(minDb, (10.0 * log10(watts)) + 30.0, maxDb);
+	return qBound(DB::minDb, (10.0 * log10(watts)) + 30.0, DB::maxDb);
 }
 
 double DB::dBm_2_RMSVolts(double dBm, double impedance)

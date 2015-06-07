@@ -96,7 +96,6 @@ protected:
     //This should replace m_mutex in fftcute
     QMutex fftMutex; //Used to sync threads calling FFT and display calling Screen mapping
 
-	DB db;
 };
 
 #endif // FFT_H

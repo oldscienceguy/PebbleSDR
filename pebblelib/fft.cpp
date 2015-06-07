@@ -32,7 +32,7 @@ FFT::FFT() :
     fftParamsSet = false; //Only set to true in FFT::FFTParams(...)
 
     invert = false;
-	dBCompensation = db.maxDb;
+	dBCompensation = DB::maxDb;
 
 
     plotTranslateTable = NULL;
@@ -171,13 +171,13 @@ void FFT::FreqDomainToMagnitude(CPX * freqBuf, int size, double baseline, double
     // FFT output index 0 to N/2-1 - frequency output 0 to +Fs/2 Hz  ( 0 Hz DC term )
     //This puts 0 to size/2 into size/2 to size-1 position
     for (int i=0, j=size/2; i<size/2; i++,j++) {
-		fbr[j] = db.amplitudeToDb(freqBuf[i].mag() + baseline) + correction;
+		fbr[j] = DB::amplitudeToDb(freqBuf[i].mag() + baseline) + correction;
     }
     // FFT output index N/2 to N-1 - frequency output -Fs/2 to 0
     // This puts size/2 to size-1 into 0 to size/2
     //Works correctly with Ooura FFT
     for (int i=size/2, j=0; i<size; i++,j++) {
-		fbr[j] = db.amplitudeToDb(freqBuf[i].mag() + baseline) + correction;
+		fbr[j] = DB::amplitudeToDb(freqBuf[i].mag() + baseline) + correction;
     }
 }
 
@@ -245,7 +245,7 @@ void FFT::CalcPowerAverages(CPX* in, double *out, int size)
 
 		//Convert to db
 		//FFTAvgBuf[i] = 10 * log10( FFTPwrAvgBuf[i] + K_C) + K_B;
-		FFTAvgBuf[i] = db.powerToDb(FFTPwrAvgBuf[i]);
+		FFTAvgBuf[i] = DB::powerToDb(FFTPwrAvgBuf[i]);
 
         //Skip copying to out if null
         if (out != NULL)
