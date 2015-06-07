@@ -66,6 +66,8 @@ void Settings::ReadSettings()
 	upDownIncrement = qSettings->value("UpDownIncrement",100).toInt();
     modeOffset = qSettings->value("ModeOffset",1000).toInt(); //CW tone
 
+	fullScaleDb = qSettings->value("FullScaleDb",-50).toInt();
+
 	useTestBench = qSettings->value("TestBench",false).toBool();
 	qSettings->beginGroup(tr("Testbench"));
 	global->testBench->m_SweepStartFrequency = qSettings->value(tr("SweepStartFrequency"),0.0).toDouble();
@@ -113,6 +115,8 @@ void Settings::WriteSettings()
 	qSettings->setValue("LeftRightIncrement",leftRightIncrement);
 	qSettings->setValue("UpDownIncrement",upDownIncrement);
     qSettings->setValue("ModeOffset",modeOffset);
+	qSettings->setValue("FullScaleDb",fullScaleDb);
+
 	qSettings->setValue("TestBench",useTestBench);
 	qSettings->beginGroup(tr("Testbench"));
 

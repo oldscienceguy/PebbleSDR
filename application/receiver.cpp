@@ -12,10 +12,8 @@ Core receiver logic, coordinates soundcard, fft, demod, etc
 */
 Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 {
-
 	//Read ini file or set defaults if no ini file exists
-	settings = new Settings();
-    global->settings = settings;
+	settings = global->settings;
 
     plugins = new Plugins(this,settings);
 

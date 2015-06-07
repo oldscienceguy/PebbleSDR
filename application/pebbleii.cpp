@@ -15,7 +15,8 @@ PebbleII::PebbleII(QWidget *parent, Qt::WindowFlags flags)
     global->testBench = new CTestBench();
     global->testBench->Init();
 
-    global->mainWindow = this;
+	global->mainWindow = this; //mainWindow is used in Settings()
+	global->settings = new Settings(); //We need these early in startup
 
     ui.setupUi(this);
 	receiver = new Receiver(ui.receiverUI, this);

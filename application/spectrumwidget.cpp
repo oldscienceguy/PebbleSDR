@@ -29,7 +29,8 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
     connect(ui.displayBox,SIGNAL(currentIndexChanged(int)),this,SLOT(displayChanged(int)));
 
     //Starting plot range
-    plotMaxDb = -50; //!! Same as CuteSDR Save in settings
+	//CuteSDR defaults to -50
+	plotMaxDb = global->settings->fullScaleDb;
 	plotMinDb = DB::minDb;
 	ui.maxDbBox->setMinimum(DB::minDb);
 	ui.maxDbBox->setMaximum(DB::maxDb);
@@ -676,6 +677,8 @@ void SpectrumWidget::displayChanged(int s)
 void SpectrumWidget::maxDbChanged(int s)
 {
     plotMaxDb = ui.maxDbBox->value();
+	global->settings->fullScaleDb = plotMaxDb;
+	global->settings->WriteSettings(); //save
     update();
 }
 
