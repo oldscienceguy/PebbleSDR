@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>523</width>
+    <width>524</width>
     <height>94</height>
    </rect>
   </property>
@@ -251,7 +251,7 @@
             </font>
            </property>
            <property name="prefix">
-            <string>Max dB: </string>
+            <string>FS dB: </string>
            </property>
            <property name="minimum">
             <number>-140</number>
