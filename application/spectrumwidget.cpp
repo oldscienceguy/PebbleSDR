@@ -802,18 +802,51 @@ void SpectrumWidget::newFftData()
             endFreq, //sampleRate/2, //High frequency
             fftMap );
 
-        for (int i=0; i< plotArea.width(); i++)
+		//Define a line or a polygon (if filled) that represents the spectrum power levels
+		quint16 numPoints = 0;
+		//Start at lower left corner (upper left is (0,0) in Qt coordinate system
+		LineBuf[numPoints].setX(0);
+		LineBuf[numPoints].setY(plotHeight);
+		numPoints++;
+		for (int i=1; i< plotArea.width(); i++)
         {
-            LineBuf[i].setX(i);
-            LineBuf[i].setY(fftMap[i]);
+			LineBuf[numPoints].setX(i);
+			LineBuf[numPoints].setY(fftMap[i]);
+			numPoints++;
             //Keep track of peak values for optional display
             //if(fftbuf[i] < m_FftPkBuf[i])
             //    m_FftPkBuf[i] = fftMap[i];
         }
         plotPainter.setPen( Qt::green );
-        //Just connect the dots in LineBuf!
-        plotPainter.drawPolyline(LineBuf, plotWidth);
+		//Add points to complete the polygon
+		LineBuf[numPoints].setX(plotWidth);
+		LineBuf[numPoints].setY(plotHeight);
 
+		numPoints++;
+		//Connect back to origin
+		LineBuf[numPoints].setX(0);
+		LineBuf[numPoints].setY(plotHeight);
+
+#if 0
+		//Just draw the spectrum line, no fill
+		plotPainter.drawPolyline(LineBuf, numPoints);
+#else
+		//Draw the filled polygon.  Note this may take slightly more CPUs
+		QLinearGradient gradient;
+		//Relative to bounding rectanble of polygon since polygon changes every update
+		//Upper right (0,0) and Lower left (1,1)
+		gradient.setCoordinateMode(QGradient::ObjectBoundingMode);
+		gradient.setStart(0.5, 0); //Midway top
+		//Semi-transparent green.  Solid green Pen will show spectrum line
+		gradient.setColorAt(0.20,QColor(0, 200, 0, 127));
+		//Semi-transparent white, alpha = 127  alpha = 0 is fully transparenet, 255 is fully opaque
+		gradient.setColorAt(1.0, QColor(255, 255, 255, 127));
+		gradient.setFinalStop(0.5,1); //Midway bottom
+		QBrush tmpBrush = QBrush(gradient);
+		plotPainter.setBrush(tmpBrush);
+		plotPainter.drawPolygon(LineBuf,numPoints);
+
+#endif
         if (zoom != 1) {
             plotWidth = zoomPlotArea.width();
             plotHeight = zoomPlotArea.height();

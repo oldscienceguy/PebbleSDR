@@ -102,7 +102,7 @@ private:
     QPixmap zoomPlotOverlay;
     QPixmap zoomPlotLabel;
 
-    QPoint LineBuf[2048]; //!!Todo: This should be configured to max #pixels in plot area for full screen
+	QPoint LineBuf[4096]; //Enough for a huge monitor
 
     int dbRange;
 
