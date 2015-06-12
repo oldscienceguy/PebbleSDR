@@ -49,6 +49,9 @@ private slots:
 	void totalGainReductionChanged(int _value);
 	void IFBandwidthChanged(int _item);
 	void sampleRateChanged(int _item);
+	void agcEnabledChanged(bool _b);
+	void dbFSChanged(int _value);
+	void IFModeChanged(int _item);
 
 private:
 	struct band {
@@ -87,6 +90,14 @@ private:
 	//70	=	46					+		24				+		0
 	int totalGainReduction; //Todo: Set this per band
 	int dcCorrectionMode;
+	bool agcEnabled;
+	qint16 dbFS;
+	//Calculated AGC target window based on dbFS
+	double agcPwrSetpointHigh;
+	double agcPwrSetpointLow;
+	double agcPwrSetpoint;
+	bool pendingGainReduction;
+	QWidget *optionParent;
 
 	mir_sdr_Bw_MHzT bandwidthKhz;
 	mir_sdr_If_kHzT IFKhz;
@@ -98,6 +109,8 @@ private:
 	bool reinitMirics(double newFrequency);
 
 	QMutex initInProgress; //Used during init to pause producer/consumer loop until init is completed
-	void matchBandwidthToSampleRate();
+	void matchBandwidthToSampleRate(bool preserveBandwidth);
+
+	void matchIFModeToSRAndBW();
 };
 #endif // SDRPLAYDEVICE_H

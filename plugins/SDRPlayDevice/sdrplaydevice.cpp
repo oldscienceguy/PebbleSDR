@@ -1,4 +1,5 @@
 #include "sdrplaydevice.h"
+#include "db.h"
 
 SDRPlayDevice::SDRPlayDevice():DeviceInterfaceBase()
 {
@@ -120,6 +121,9 @@ bool SDRPlayDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _a
 				return false;
 			connected = true;
 			running = false;
+			optionParent = NULL;
+
+			dbFSChanged(dbFS); //Init all the AGC values
 			return true;
 
 		case CmdDisconnect:
@@ -214,11 +218,12 @@ void SDRPlayDevice::ReadSettings()
 	dcCorrectionMode = qSettings->value("dcCorrectionMode",0).toInt(); //0 = off
 	totalGainReduction = qSettings->value("totalGainReduction",60).toInt(); //60db
 	bandwidthKhz = (mir_sdr_Bw_MHzT) qSettings->value("bandwidthKhz",mir_sdr_BW_1_536).toInt();
-	//bandwidth can not be > sampleRate
-	if (bandwidthKhz > (sampleRate / 1000))
-		bandwidthKhz = (mir_sdr_Bw_MHzT) (sampleRate / 1000);
+	//bandwidth can not be > sampleRate which is a problem is ini is manually edited
 
 	IFKhz = (mir_sdr_If_kHzT) qSettings->value("IFKhz",mir_sdr_IF_Zero).toInt();
+
+	agcEnabled = qSettings->value("agcEnabled",true).toBool();
+	dbFS = qSettings->value("dbFS",-15).toInt();
 }
 
 void SDRPlayDevice::WriteSettings()
@@ -228,6 +233,8 @@ void SDRPlayDevice::WriteSettings()
 	qSettings->setValue("totalGainReduction",totalGainReduction);
 	qSettings->setValue("bandwidthKhz",bandwidthKhz);
 	qSettings->setValue("IFKhz",IFKhz);
+	qSettings->setValue("agcEnabled",agcEnabled);
+	qSettings->setValue("dbFS",dbFS);
 
 	//Overwrite sampleRate, fragile code that depends on definitions in deviceInterfaceBase.cpp
 	qSettings->setValue("SampleRate",sampleRate);
@@ -238,8 +245,12 @@ void SDRPlayDevice::SetupOptionUi(QWidget *parent)
 	int cur;
 
 	//Arg is QWidget *parent
-	if (optionUi != NULL)
+	if (optionUi != NULL) {
 		delete optionUi;
+		optionUi = NULL;
+	}
+
+	optionParent = parent;
 
 	//Change .h and this to correct class name for ui
 	optionUi = new Ui::SDRPlayOptions();
@@ -255,12 +266,18 @@ void SDRPlayDevice::SetupOptionUi(QWidget *parent)
 	optionUi->sampleRate->addItem("6Mhz",6000000);
 	optionUi->sampleRate->addItem("7Mhz",7000000);
 	optionUi->sampleRate->addItem("8Mhz",8000000);
+	optionUi->sampleRate->addItem("9Mhz",9000000);
+	optionUi->sampleRate->addItem("10Mhz",10000000);
 	cur = optionUi->sampleRate->findData(sampleRate);
 	optionUi->sampleRate->setCurrentIndex(cur);
 	connect(optionUi->sampleRate,SIGNAL(currentIndexChanged(int)),this,SLOT(sampleRateChanged(int)));
 
-	matchBandwidthToSampleRate();
+	matchBandwidthToSampleRate(true);
 	connect(optionUi->IFBw,SIGNAL(currentIndexChanged(int)),this,SLOT(IFBandwidthChanged(int)));
+
+	matchIFModeToSRAndBW();
+	connect(optionUi->IFMode,SIGNAL(currentIndexChanged(int)),this,SLOT(IFModeChanged(int)));
+
 
 	optionUi->dcCorrection->addItem("Off", 0);
 	optionUi->dcCorrection->addItem("One Shot", 4);
@@ -271,6 +288,14 @@ void SDRPlayDevice::SetupOptionUi(QWidget *parent)
 
 	optionUi->totalGainReduction->setValue(totalGainReduction);
 	connect(optionUi->totalGainReduction, SIGNAL(valueChanged(int)), this, SLOT(totalGainReductionChanged(int)));
+
+	optionUi->agcEnabled->setChecked(agcEnabled);
+	connect(optionUi->agcEnabled,SIGNAL(clicked(bool)),this,SLOT(agcEnabledChanged(bool)));
+
+	optionUi->dbFS->setMaximum(0);
+	optionUi->dbFS->setMinimum(-50);
+	optionUi->dbFS->setValue(dbFS);
+	connect(optionUi->dbFS,SIGNAL(valueChanged(int)),this,SLOT(dbFSChanged(int)));
 
 }
 
@@ -284,8 +309,10 @@ void SDRPlayDevice::dcCorrectionChanged(int _item)
 
 void SDRPlayDevice::totalGainReductionChanged(int _value)
 {
-	totalGainReduction = _value;
-	setGainReduction(totalGainReduction, 1, 0);
+	if (agcEnabled)
+		return; //AGC managing
+
+	setGainReduction(_value, 1, 0);
 	WriteSettings();
 }
 
@@ -293,6 +320,7 @@ void SDRPlayDevice::IFBandwidthChanged(int _item)
 {
 	int cur = _item;
 	bandwidthKhz = (mir_sdr_Bw_MHzT)optionUi->IFBw->itemData(cur).toUInt();
+	matchIFModeToSRAndBW();
 	WriteSettings();
 	reinitMirics(deviceFrequency);
 }
@@ -300,13 +328,90 @@ void SDRPlayDevice::IFBandwidthChanged(int _item)
 void SDRPlayDevice::sampleRateChanged(int _item)
 {
 	sampleRate = (quint32)optionUi->sampleRate->itemData(_item).toUInt();
-	WriteSettings();
 	//Update dependent bandwidth options
-	matchBandwidthToSampleRate();
+	matchBandwidthToSampleRate(false);
+	matchIFModeToSRAndBW();
+	WriteSettings();
 }
 
-void SDRPlayDevice::matchBandwidthToSampleRate()
+void SDRPlayDevice::agcEnabledChanged(bool _b)
 {
+	agcEnabled = _b;
+}
+
+void SDRPlayDevice::dbFSChanged(int _value)
+{
+	//We get value from - to zero from UI
+	dbFS = _value;
+	//Convert dBfs to power
+	//pow(10, db/10.0); //From numerous references in DB class
+	agcPwrSetpoint = DB::dbToPower(dbFS);
+	//Mirics AGC note
+	//power = Antilog(dbFS/10)
+	//Antilog = log(n)^10
+	//double dbFSPower = pow(10, log10(dbFS/10); //reduces to just dbFS/10
+
+	//Define agc window
+	agcPwrSetpointHigh = DB::dbToPower(dbFS + 2);
+	agcPwrSetpointLow = DB::dbToPower(dbFS - 2);
+}
+
+void SDRPlayDevice::IFModeChanged(int _item)
+{
+	//We know that IF is valid for SR because we limit the choices whenever SR or BW is changed
+	IFKhz = (mir_sdr_If_kHzT)optionUi->IFMode->itemData(_item).toUInt();
+	WriteSettings();
+	reinitMirics(deviceFrequency);  //IF mode only changed by init()
+}
+
+//Called with SR or BW changes to make sure IF mode options are within range
+void SDRPlayDevice::matchIFModeToSRAndBW()
+{
+	mir_sdr_If_kHzT newMode;
+	quint32 sampleRateKhz = sampleRate / 1000;
+
+	optionUi->IFMode->blockSignals(true);
+	optionUi->IFMode->clear();
+	optionUi->IFMode->addItem("IF Zero",mir_sdr_IF_Zero);
+	//Make sure SR and Bandwidth are sufficient (not in API spec, discovered by mir_sdr_api log
+	//Min sample rate = bandwidth + (2 * IF mode)
+	//9.096 = 5.000 + 2 * 2.048
+
+	newMode = IFKhz;
+	if (sampleRateKhz < bandwidthKhz + 2 * mir_sdr_IF_0_450) {
+		newMode = mir_sdr_IF_Zero;
+	} else if (sampleRateKhz >= bandwidthKhz + 2 * mir_sdr_IF_0_450 &&
+			   sampleRateKhz < bandwidthKhz + 2 * mir_sdr_IF_1_620) {
+		optionUi->IFMode->addItem("IF 450",mir_sdr_IF_0_450);
+		if (IFKhz > mir_sdr_IF_0_450)
+			newMode = mir_sdr_IF_0_450; //Lower IF
+	} else if (sampleRateKhz >= bandwidthKhz + 2 * mir_sdr_IF_1_620 &&
+			   sampleRateKhz < bandwidthKhz + 2 * mir_sdr_IF_2_048) {
+		optionUi->IFMode->addItem("IF 450",mir_sdr_IF_0_450);
+		optionUi->IFMode->addItem("IF 1.620",mir_sdr_IF_1_620);
+		if (IFKhz > mir_sdr_IF_1_620)
+			newMode = mir_sdr_IF_1_620;
+	} else if (sampleRateKhz >= bandwidthKhz + 2 * mir_sdr_IF_2_048) {
+		optionUi->IFMode->addItem("IF 450",mir_sdr_IF_0_450);
+		optionUi->IFMode->addItem("IF 1.620",mir_sdr_IF_1_620);
+		optionUi->IFMode->addItem("IF 2.048",mir_sdr_IF_2_048);
+		//All IF modes are valid, so don't constrain
+	}
+	IFKhz = newMode;
+	int cur = optionUi->IFMode->findData(IFKhz);
+	optionUi->IFMode->setCurrentIndex(cur);
+
+	optionUi->IFMode->blockSignals(false);
+
+}
+
+//Called when SR changes to make sure BW options are within range
+//If called when SR changes in UI, then reset bw (preserveBandwidth == false)
+//If called when setting up UI, then just check to make sure bw is within range (preserveBandwidth = true)
+void SDRPlayDevice::matchBandwidthToSampleRate(bool preserveBandwidth)
+{
+	mir_sdr_Bw_MHzT newBandwidth;
+
 	optionUi->IFBw->blockSignals(true);
 	optionUi->IFBw->clear();
 
@@ -314,17 +419,73 @@ void SDRPlayDevice::matchBandwidthToSampleRate()
 	optionUi->IFBw->addItem("0.300 Mhz",mir_sdr_BW_0_300);
 	optionUi->IFBw->addItem("0.600 Mhz",mir_sdr_BW_0_600);
 	//Only allow BW selections that are <= sampleRate
-	if (sampleRate >= 1536000)
+	newBandwidth = bandwidthKhz;
+	if (sampleRate < 1536000) {
+		newBandwidth = mir_sdr_BW_0_600;
+	}
+	if (sampleRate >= 1536000 && sampleRate < 5000000) {
 		optionUi->IFBw->addItem("1.536 Mhz",mir_sdr_BW_1_536);
-	if (sampleRate >= 5000000)
+		if (!preserveBandwidth) {
+			//Always set new bw to max for SR when SR changes
+			newBandwidth = mir_sdr_BW_1_536;
+		} else if (bandwidthKhz > mir_sdr_BW_1_536) {
+			//else only reset if out of range
+			newBandwidth = mir_sdr_BW_1_536;
+		}
+	}
+	if (sampleRate >= 5000000 && sampleRate < 6000000) {
+		optionUi->IFBw->addItem("1.536 Mhz",mir_sdr_BW_1_536);
 		optionUi->IFBw->addItem("5.000 Mhz",mir_sdr_BW_5_000);
-	if (sampleRate >= 6000000)
+		if (!preserveBandwidth) {
+			//Always set new bw to max for SR when SR changes
+			newBandwidth = mir_sdr_BW_5_000;
+		} else if (bandwidthKhz > mir_sdr_BW_5_000) {
+			//else only reset if out of range
+			newBandwidth = mir_sdr_BW_5_000;
+		}
+	}
+	if (sampleRate >= 6000000 && sampleRate < 7000000) {
+		optionUi->IFBw->addItem("1.536 Mhz",mir_sdr_BW_1_536);
+		optionUi->IFBw->addItem("5.000 Mhz",mir_sdr_BW_5_000);
 		optionUi->IFBw->addItem("6.000 Mhz",mir_sdr_BW_6_000);
-	if (sampleRate >= 7000000)
+		if (!preserveBandwidth) {
+			//Always set new bw to max for SR when SR changes
+			newBandwidth = mir_sdr_BW_6_000;
+		} else if (bandwidthKhz > mir_sdr_BW_6_000) {
+			//else only reset if out of range
+			newBandwidth = mir_sdr_BW_6_000;
+		}
+	}
+	if (sampleRate >= 7000000 && sampleRate < 8000000) {
+		optionUi->IFBw->addItem("1.536 Mhz",mir_sdr_BW_1_536);
+		optionUi->IFBw->addItem("5.000 Mhz",mir_sdr_BW_5_000);
+		optionUi->IFBw->addItem("6.000 Mhz",mir_sdr_BW_6_000);
 		optionUi->IFBw->addItem("7.000 Mhz",mir_sdr_BW_7_000);
-	if (sampleRate >= 8000000)
+		if (!preserveBandwidth) {
+			//Always set new bw to max for SR when SR changes
+			newBandwidth = mir_sdr_BW_7_000;
+		} else if (bandwidthKhz > mir_sdr_BW_7_000) {
+			//else only reset if out of range
+			newBandwidth = mir_sdr_BW_7_000;
+		}
+	}
+	if (sampleRate >= 8000000) {
+		optionUi->IFBw->addItem("1.536 Mhz",mir_sdr_BW_1_536);
+		optionUi->IFBw->addItem("5.000 Mhz",mir_sdr_BW_5_000);
+		optionUi->IFBw->addItem("6.000 Mhz",mir_sdr_BW_6_000);
+		optionUi->IFBw->addItem("7.000 Mhz",mir_sdr_BW_7_000);
 		optionUi->IFBw->addItem("8.000 Mhz",mir_sdr_BW_8_000);
+		if (!preserveBandwidth) {
+			//Always set new bw to max for SR when SR changes
+			newBandwidth = mir_sdr_BW_8_000;
+		} else if (bandwidthKhz > mir_sdr_BW_8_000) {
+			//else only reset if out of range
+			newBandwidth = mir_sdr_BW_8_000;
+		}
+	}
+	bandwidthKhz = newBandwidth;
 
+	//We know bw is within range because of checks above
 	int cur = optionUi->IFBw->findData(bandwidthKhz);
 	optionUi->IFBw->setCurrentIndex(cur);
 
@@ -354,12 +515,29 @@ bool SDRPlayDevice::reinitMirics(double newFrequency)
 	return true;
 }
 
-//gRdb = gain reduction in db
+//gRdb = gain reduction in db (0 to 102 depending on band)
 //abs = 0 Offset from current gr, abs = 1 Absolute
 //syncUpdate = 0 Immedate, syncUpdate = 1 synchronous
 bool SDRPlayDevice::setGainReduction(int gRdb, int abs, int syncUpdate)
 {
-	return (errorCheck(mir_sdr_SetGr(gRdb, abs, syncUpdate)));
+	if (abs == 1)
+		//Abs
+		totalGainReduction = gRdb;
+	else
+		//Offset
+		totalGainReduction += gRdb;
+
+	if (errorCheck(mir_sdr_SetGr(gRdb, abs, syncUpdate))) {
+		pendingGainReduction = true;
+		//Update UI with new AGC values
+		if (running && agcEnabled && optionParent != NULL && optionParent->isVisible()) {
+			optionUi->totalGainReduction->setValue(totalGainReduction);
+		}
+
+		return true;
+	} else {
+		return false;
+	}
 }
 
 bool SDRPlayDevice::setDcMode(int _dcCorrectionMode, int _speedUp)
@@ -480,6 +658,10 @@ void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 					qDebug()<<"Lost samples "<< lastSampleNumber<<" "<<firstSampleNumber<<" "<<samplesPerPacket;
 				}
 				lastSampleNumber = firstSampleNumber;
+
+				if (gainReductionChanged) {
+					pendingGainReduction = false;
+				}
 #if 0
 				if (rfFreqChanged) {
 					//If center freq changed since last packet, throw this one away and get next one
@@ -502,30 +684,55 @@ void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 							return;
 						}
 
+						double totalPwrInPacket = 0;
+						double avgPwrInPacket = 0;
+						double normalizedI = 0;
+						double normalizedQ = 0;
 						for (int j=0; j<framesPerBuffer; j++) {
 							producerFreeBufPtr[j] = producerBuffer[j];
 
+							//Calculate average power in packet
+							//Note I/Q ranges +/- 32767 since we normalize in consumer
+							//I^2 + Q^2
+							normalizedI = producerBuffer[j].re / 32768.0;
+							normalizedQ = producerBuffer[j].im / 32768.0;
+							totalPwrInPacket += normalizedI * normalizedI + normalizedQ * normalizedQ;
 	#if 0
 							//For testing device sample format
 							//maxSample = 32764
 							//minSample = -32768
-							if (producerIBuf[j] > maxSample) {
-								maxSample = producerIBuf[j];
+							if (producerBuffer[j].re > maxSample) {
+								maxSample = producerBuffer[j].re;
 								qDebug()<<"New Max sample "<<maxSample;
 							}
-							if (producerQBuf[j] > maxSample) {
-								maxSample = producerQBuf[j];
+							if (producerBuffer[j].im > maxSample) {
+								maxSample = producerBuffer[j].im;
 								qDebug()<<"New Max sample "<<maxSample;
 							}
-							if (producerIBuf[j] < minSample) {
-								minSample = producerIBuf[j];
+							if (producerBuffer[j].re < minSample) {
+								minSample = producerBuffer[j].re;
 								qDebug()<<"New Min sample "<<minSample;
 							}
-							if (producerQBuf[j] < minSample) {
-								minSample = producerQBuf[j];
+							if (producerBuffer[j].im < minSample) {
+								minSample = producerBuffer[j].im;
 								qDebug()<<"New Min sample "<<minSample;
 							}
 	#endif
+
+						}
+						//AGC Logic
+						if (agcEnabled && !pendingGainReduction) {
+							avgPwrInPacket = totalPwrInPacket / framesPerBuffer;
+							if (avgPwrInPacket < agcPwrSetpointLow || avgPwrInPacket > agcPwrSetpointHigh) {
+								//Adjust gain reduction to get measured power into setpoint range
+								int newGainReduction = DB::powerRatioToDb(agcPwrSetpoint, avgPwrInPacket);
+								qDebug()<<"AGC low: "<<agcPwrSetpointLow<<
+										  "AGC high: "<<agcPwrSetpointHigh<<
+										  "AGC Avg: "<<avgPwrInPacket<<
+										  "AGC GR: "<<newGainReduction;
+								//Set in offset mode, driver keeps track of what prev setting was and will reduce GR accordingly
+								setGainReduction(newGainReduction,0,0);
+							}
 
 						}
 						//Process any remaining samples in packet if any

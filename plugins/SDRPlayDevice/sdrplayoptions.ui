@@ -6,174 +6,18 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>498</width>
+    <width>391</width>
     <height>155</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
-  <widget class="QComboBox" name="lnaGainReductionThreshold">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>35</y>
-     <width>104</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="maximumSize">
-    <size>
-     <width>16777215</width>
-     <height>16777215</height>
-    </size>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>10</pointsize>
-    </font>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>15</y>
-     <width>132</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>10</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>Gain Reduction Threshold</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_2">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>0</y>
-     <width>107</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>10</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>LNA (60 - 2000Mhz)</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_4">
-   <property name="geometry">
-    <rect>
-     <x>274</x>
-     <y>15</y>
-     <width>59</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>10</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>IF Mode</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_5">
-   <property name="geometry">
-    <rect>
-     <x>274</x>
-     <y>50</y>
-     <width>59</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>10</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>IF BW</string>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="IFMode">
-   <property name="geometry">
-    <rect>
-     <x>275</x>
-     <y>35</y>
-     <width>78</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>10</pointsize>
-    </font>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="IFBw">
-   <property name="geometry">
-    <rect>
-     <x>275</x>
-     <y>65</y>
-     <width>79</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>10</pointsize>
-    </font>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_8">
-   <property name="geometry">
-    <rect>
-     <x>151</x>
-     <y>15</y>
-     <width>106</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>10</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>Freq Correction ppm</string>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="freqCorrectionPpm">
-   <property name="geometry">
-    <rect>
-     <x>150</x>
-     <y>35</y>
-     <width>104</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>10</pointsize>
-    </font>
-   </property>
-  </widget>
   <widget class="QPushButton" name="setDefaults">
    <property name="geometry">
     <rect>
-     <x>274</x>
-     <y>126</y>
+     <x>261</x>
+     <y>130</y>
      <width>82</width>
      <height>16</height>
     </rect>
@@ -187,49 +31,13 @@
     <string>Set Defaults</string>
    </property>
   </widget>
-  <widget class="QLabel" name="label_3">
-   <property name="geometry">
-    <rect>
-     <x>150</x>
-     <y>0</y>
-     <width>59</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>10</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>Mixer</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_9">
-   <property name="geometry">
-    <rect>
-     <x>275</x>
-     <y>0</y>
-     <width>59</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>10</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>IF Amplifier</string>
-   </property>
-  </widget>
   <widget class="QGroupBox" name="groupBox">
    <property name="geometry">
     <rect>
-     <x>8</x>
-     <y>63</y>
-     <width>233</width>
-     <height>88</height>
+     <x>255</x>
+     <y>4</y>
+     <width>125</width>
+     <height>106</height>
     </rect>
    </property>
    <property name="font">
@@ -238,49 +46,13 @@
     </font>
    </property>
    <property name="title">
-    <string>Tuner</string>
+    <string>Other</string>
    </property>
-   <widget class="QLabel" name="label_7">
-    <property name="geometry">
-     <rect>
-      <x>11</x>
-      <y>20</y>
-      <width>108</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>10</pointsize>
-     </font>
-    </property>
-    <property name="text">
-     <string>Total Gain Reduction</string>
-    </property>
-   </widget>
-   <widget class="QCheckBox" name="agcEnabled">
-    <property name="geometry">
-     <rect>
-      <x>7</x>
-      <y>59</y>
-      <width>89</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>10</pointsize>
-     </font>
-    </property>
-    <property name="text">
-     <string>AGC Enabled</string>
-    </property>
-   </widget>
    <widget class="QLabel" name="label_6">
     <property name="geometry">
      <rect>
-      <x>130</x>
-      <y>20</y>
+      <x>6</x>
+      <y>22</y>
       <width>77</width>
       <height>16</height>
      </rect>
@@ -297,18 +69,138 @@
    <widget class="QComboBox" name="dcCorrection">
     <property name="geometry">
      <rect>
-      <x>125</x>
+      <x>5</x>
       <y>40</y>
       <width>104</width>
       <height>16</height>
      </rect>
     </property>
    </widget>
-   <widget class="QSpinBox" name="totalGainReduction">
+   <widget class="QLabel" name="label_8">
+    <property name="geometry">
+     <rect>
+      <x>5</x>
+      <y>56</y>
+      <width>106</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Freq Correction ppm</string>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="freqCorrectionPpm">
+    <property name="geometry">
+     <rect>
+      <x>5</x>
+      <y>74</y>
+      <width>104</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="groupBox_2">
+   <property name="geometry">
+    <rect>
+     <x>128</x>
+     <y>4</y>
+     <width>120</width>
+     <height>147</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="title">
+    <string>Gain</string>
+   </property>
+   <widget class="QCheckBox" name="agcEnabled">
     <property name="geometry">
      <rect>
       <x>9</x>
-      <y>35</y>
+      <y>20</y>
+      <width>89</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>AGC Enabled</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_11">
+    <property name="geometry">
+     <rect>
+      <x>12</x>
+      <y>70</y>
+      <width>77</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>db Full Scale</string>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="dbFS">
+    <property name="geometry">
+     <rect>
+      <x>11</x>
+      <y>85</y>
+      <width>47</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_7">
+    <property name="geometry">
+     <rect>
+      <x>11</x>
+      <y>40</y>
+      <width>108</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Total dB Reduction</string>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="totalGainReduction">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>55</y>
       <width>47</width>
       <height>16</height>
      </rect>
@@ -318,38 +210,117 @@
     </property>
    </widget>
   </widget>
-  <widget class="QComboBox" name="sampleRate">
+  <widget class="QGroupBox" name="groupBox_3">
    <property name="geometry">
     <rect>
-     <x>370</x>
-     <y>35</y>
-     <width>86</width>
-     <height>16</height>
+     <x>9</x>
+     <y>2</y>
+     <width>106</width>
+     <height>148</height>
     </rect>
    </property>
-   <property name="font">
-    <font>
-     <pointsize>10</pointsize>
-    </font>
+   <property name="title">
+    <string>IF</string>
    </property>
-  </widget>
-  <widget class="QLabel" name="label_10">
-   <property name="geometry">
-    <rect>
-     <x>370</x>
-     <y>14</y>
-     <width>69</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>10</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>Sample Rate</string>
-   </property>
+   <widget class="QLabel" name="label_10">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>20</y>
+      <width>69</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Sample Rate</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_4">
+    <property name="geometry">
+     <rect>
+      <x>9</x>
+      <y>85</y>
+      <width>59</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>IF Mode</string>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="IFMode">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>105</y>
+      <width>78</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="sampleRate">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>37</y>
+      <width>68</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="IFBw">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>70</y>
+      <width>79</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_5">
+    <property name="geometry">
+     <rect>
+      <x>7</x>
+      <y>52</y>
+      <width>59</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>IF BW</string>
+    </property>
+   </widget>
   </widget>
  </widget>
  <resources/>
