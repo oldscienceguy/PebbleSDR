@@ -229,6 +229,7 @@ void SDRPlayDevice::WriteSettings()
 
 	//Overwrite sampleRate, fragile code that depends on definitions in deviceInterfaceBase.cpp
 	qSettings->setValue("SampleRate",sampleRate);
+	qSettings->sync();
 }
 
 void SDRPlayDevice::SetupOptionUi(QWidget *parent)
