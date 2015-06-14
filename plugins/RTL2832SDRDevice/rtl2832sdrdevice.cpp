@@ -75,9 +75,6 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback,
     //rtlSampleRate = 2.048e6; //We can keep up with Spectrum
     //rtlSampleRate = 1.024e6;
 
-    //sampleRate must <= to rtlSampleRate, find closest /2 match
-    sampleRate = (sampleRate <= rtlSampleRate) ? sampleRate : sampleRate/2;
-
     /*
     //Find whole number decimate rate less than 2048000
     rtlDecimate = 1;
@@ -111,8 +108,8 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback,
     producerConsumer.Initialize(std::bind(&RTL2832SDRDevice::producerWorker, this, std::placeholders::_1),
 		std::bind(&RTL2832SDRDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, framesPerBuffer * sizeof(CPX));
 	//Must be called after Initialize
-	producerConsumer.SetProducerInterval(rtlSampleRate,readBufferSize);
-	producerConsumer.SetConsumerInterval(rtlSampleRate,readBufferSize);
+	producerConsumer.SetProducerInterval(sampleRate,readBufferSize);
+	producerConsumer.SetConsumerInterval(sampleRate,readBufferSize);
 
     readBufferIndex = 0;
 
@@ -352,7 +349,7 @@ void RTL2832SDRDevice::Start()
     //These have to be executed after we've done USB or TCP specific setup
     //Handles both USB and TCP
     SetRtlSampleMode(rtlSampleMode);
-    SetRtlSampleRate(rtlSampleRate);
+	SetRtlSampleRate(sampleRate);
     SetRtlAgcMode(rtlAgcMode);
     GetRtlValidTunerGains();
     SetRtlTunerMode(rtlTunerGainMode);
@@ -554,7 +551,6 @@ void RTL2832SDRDevice::ReadSettings()
 	rtlTunerGain = qSettings->value("RtlGain",15).toInt();
 	rtlServerIP = QHostAddress(qSettings->value("IPAddr","127.0.0.1").toString());
 	rtlServerPort = qSettings->value("Port","1234").toInt();
-	rtlSampleRate = qSettings->value("RtlSampleRate",2048000).toUInt();
 	rtlTunerGainMode = qSettings->value("RtlGainMode",GAIN_MODE_AUTO).toUInt();
 	rtlFreqencyCorrection = qSettings->value("RtlFrequencyCorrection",0).toInt();
 	rtlSampleMode = (SAMPLING_MODES)qSettings->value("RtlSampleMode",NORMAL).toInt();
@@ -574,12 +570,15 @@ void RTL2832SDRDevice::WriteSettings()
 	qSettings->setValue("RtlGain",rtlTunerGain);
 	qSettings->setValue("IPAddr",rtlServerIP.toString());
 	qSettings->setValue("Port",rtlServerPort);
-	qSettings->setValue("RtlSampleRate",rtlSampleRate);
 	qSettings->setValue("RtlGainMode",rtlTunerGainMode);
 	qSettings->setValue("RtlFrequencyCorrection",rtlFreqencyCorrection);
 	qSettings->setValue("RtlSampleMode",rtlSampleMode);
 	qSettings->setValue("RtlAgcMode",rtlAgcMode);
 	qSettings->setValue("RtlOffsetMode",rtlOffsetMode);
+
+	//Overwrite sampleRate, fragile code that depends on definitions in deviceInterfaceBase.cpp
+	qSettings->setValue("SampleRate",sampleRate);
+
 	qSettings->sync();
 
 }
@@ -694,7 +693,8 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 			return DeviceInterface::IQ_DEVICE;
 			break;
 		case DeviceSampleRates:
-			return QStringList()<<"64000"<<"128000"<<"256000"<<"512000"<<"1024000"<<"2048000";
+			//Don't return any sample rates to sdrOptions UI, we handle it all in device UI
+			return QStringList();
 			break;
 		case HighFrequency:
 			return GetHighLimit();
@@ -724,7 +724,7 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 			break;
 		//Custom keys
 		case K_RTLSampleRate:
-			return rtlSampleRate;
+			return sampleRate;
 		case K_RTLTunerGainMode:
 			return rtlTunerGainMode;
 		case K_RTLTunerGain:
@@ -832,14 +832,12 @@ void RTL2832SDRDevice::SetupOptionUi(QWidget *parent)
         optionUi->tcpFrame->setVisible(false);
     }
     //Common UI
-    //Even though we can support additional rates, need to keep in sync with Pebble sampleRate options
-    //So we keep decimate by 2 logic intact
     //optionUi->sampleRateSelector->addItem("250 ksps",(quint32)250000);
     optionUi->sampleRateSelector->addItem("1024 msps",(quint32)1024000);
     //optionUi->sampleRateSelector->addItem("1920 msps",(quint32)1920000);
     optionUi->sampleRateSelector->addItem("2048 msps",(quint32)2048000);
     //optionUi->sampleRateSelector->addItem("2400 msps",(quint32)2400000);
-    int cur = optionUi->sampleRateSelector->findData(rtlSampleRate);
+	int cur = optionUi->sampleRateSelector->findData(sampleRate);
     optionUi->sampleRateSelector->setCurrentIndex(cur);
     connect(optionUi->sampleRateSelector,SIGNAL(currentIndexChanged(int)),this,SLOT(SampleRateChanged(int)));
 
@@ -897,9 +895,7 @@ void RTL2832SDRDevice::IPPortChanged()
 
 void RTL2832SDRDevice::SampleRateChanged(int _index)
 {
-    Q_UNUSED(_index);
-    int cur = optionUi->sampleRateSelector->currentIndex();
-    rtlSampleRate = optionUi->sampleRateSelector->itemData(cur).toUInt();
+	sampleRate = optionUi->sampleRateSelector->itemData(_index).toUInt();
     WriteSettings();
 }
 

@@ -178,7 +178,6 @@ private:
     quint16 rtlTunerGainMode;
     qint16 rtlTunerGain; //in 10ths of a db
     //qint16 rtlIfGain; //Not used
-    quint32 rtlSampleRate;
 
     QTcpSocket *rtlTcpSocket;
     QMutex rtlTcpSocketMutex; //Control access to rtltcpSocket across thread
