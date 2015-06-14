@@ -426,3 +426,86 @@ void DeviceInterfaceBase::InitSettings(QString fname)
 	qSettings = new QSettings(path + "/PebbleData/" + fname +".ini",QSettings::IniFormat);
 
 }
+
+
+//-1.0 to + 1.0
+void DeviceInterfaceBase::normalizeIQ(CPX *cpx, double I, double Q)
+{
+	double tmp;
+	//Normalize and apply gain
+	cpx->re = I * iqGain;
+	cpx->im = Q * iqGain;
+
+	//Configure IQ order if not default
+	switch(iqOrder) {
+		case DeviceInterface::IQ:
+			//No change, this is the default order
+			break;
+		case DeviceInterface::QI:
+			tmp = cpx->re;
+			cpx->re = cpx->im;
+			cpx->im = tmp;
+			break;
+		case DeviceInterface::IONLY:
+			cpx->im = cpx->re;
+			break;
+		case DeviceInterface::QONLY:
+			cpx->re = cpx->im;
+			break;
+	}
+}
+
+// - 32767 to + 32767 samples
+void DeviceInterfaceBase::normalizeIQ(CPX *cpx, qint16 I, qint16 Q)
+{
+	double tmp;
+	//Normalize and apply gain
+	cpx->re = (I / 32768.0) * iqGain;
+	cpx->im = (Q / 32768.0) * iqGain;
+
+	//Configure IQ order if not default
+	switch(iqOrder) {
+		case DeviceInterface::IQ:
+			//No change, this is the default order
+			break;
+		case DeviceInterface::QI:
+			tmp = cpx->re;
+			cpx->re = cpx->im;
+			cpx->im = tmp;
+			break;
+		case DeviceInterface::IONLY:
+			cpx->im = cpx->re;
+			break;
+		case DeviceInterface::QONLY:
+			cpx->re = cpx->im;
+			break;
+	}
+
+}
+
+//0 to 255 samples
+void DeviceInterfaceBase::normalizeIQ(CPX *cpx, quint8 I, quint8 Q)
+{
+	double tmp;
+	//Normalize and apply gain
+	cpx->re = ((I - 255) / 255.0) * iqGain;
+	cpx->im = ((Q - 255) / 255.0) * iqGain;
+
+	//Configure IQ order if not default
+	switch(iqOrder) {
+		case DeviceInterface::IQ:
+			//No change, this is the default order
+			break;
+		case DeviceInterface::QI:
+			tmp = cpx->re;
+			cpx->re = cpx->im;
+			cpx->im = tmp;
+			break;
+		case DeviceInterface::IONLY:
+			cpx->im = cpx->re;
+			break;
+		case DeviceInterface::QONLY:
+			cpx->re = cpx->im;
+			break;
+	}
+}
