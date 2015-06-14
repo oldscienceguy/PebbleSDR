@@ -488,8 +488,8 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, quint8 I, quint8 Q)
 {
 	double tmp;
 	//Normalize and apply gain
-	cpx->re = ((I - 255) / 255.0) * iqGain;
-	cpx->im = ((Q - 255) / 255.0) * iqGain;
+	cpx->re = ((I - 127) / 128.0) * iqGain;
+	cpx->im = ((Q - 127) / 128.0) * iqGain;
 
 	//Configure IQ order if not default
 	switch(iqOrder) {
