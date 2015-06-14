@@ -170,7 +170,7 @@ private:
 
     SAMPLING_MODES rtlSampleMode;
 
-    CPXBuf *inBuffer;
+	quint8 *inBuffer;
 
     RTLSDR_TUNERS rtlTunerType;
     int rtlTunerGainCount;
@@ -179,7 +179,6 @@ private:
     qint16 rtlTunerGain; //in 10ths of a db
     //qint16 rtlIfGain; //Not used
     quint32 rtlSampleRate;
-    quint16 rtlDecimate;
 
     QTcpSocket *rtlTcpSocket;
     QMutex rtlTcpSocketMutex; //Control access to rtltcpSocket across thread
@@ -204,7 +203,8 @@ private:
 
     //These are used in the TCP worker thread and created in that thread to prevent QTcpSocket errors
     QTcpSocket *tcpThreadSocket;
-    char *producerFreeBufPtr;
+	CPX *producerFreeBufPtr;
+	CPX *consumerFilledBufferPtr;
 };
 
 #endif // RTL2832SDRDEVICE_H
