@@ -71,12 +71,12 @@ private:
 
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
-	//Work buffer for consumer to convert device format data to CPX Pebble format data
-	CPX *consumerBuffer;
-	CPX *producerBuffer;
-	short *producerIBuf;
-	short *producerQBuf;
+
+	short *packetIBuf;
+	short *packetQBuf;
 	quint16 producerIndex;
+	CPX *producerFreeBufPtr; //Treat as array of CPX
+	double totalPwrInPacket;
 
 	Ui::SDRPlayOptions *optionUi;
 

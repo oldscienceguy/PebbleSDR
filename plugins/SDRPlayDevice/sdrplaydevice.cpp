@@ -5,23 +5,17 @@ SDRPlayDevice::SDRPlayDevice():DeviceInterfaceBase()
 {
 	InitSettings("SDRPlay");
 	optionUi = NULL;
-	producerIBuf = producerQBuf = NULL;
-	consumerBuffer = NULL;
-	producerBuffer = NULL;
+	packetIBuf = packetQBuf = NULL;
 	samplesPerPacket = 0;
 
 }
 
 SDRPlayDevice::~SDRPlayDevice()
 {
-	if (producerIBuf != NULL)
-		delete[] producerIBuf;
-	if (producerQBuf != NULL)
-		delete[] producerQBuf;
-	if (consumerBuffer != NULL)
-		delete consumerBuffer;
-	if (producerBuffer != NULL)
-		delete producerBuffer;
+	if (packetIBuf != NULL)
+		delete[] packetIBuf;
+	if (packetQBuf != NULL)
+		delete[] packetQBuf;
 }
 
 bool SDRPlayDevice::Initialize(cbProcessIQData _callback,
@@ -37,12 +31,9 @@ bool SDRPlayDevice::Initialize(cbProcessIQData _callback,
 	quint16 sampleDataSize = sizeof(CPX);
 	readBufferSize = framesPerBuffer * sampleDataSize;
 
-	producerIBuf = new short[framesPerBuffer * 2]; //2X what we need so we have overflow space
-	producerQBuf = new short[framesPerBuffer * 2];
+	packetIBuf = new short[framesPerBuffer * 2]; //2X what we need so we have overflow space
+	packetQBuf = new short[framesPerBuffer * 2];
 	producerIndex = 0;
-
-	consumerBuffer = CPXBuf::malloc(framesPerBuffer);
-	producerBuffer = CPXBuf::malloc(framesPerBuffer * 2);
 
 	producerConsumer.Initialize(std::bind(&SDRPlayDevice::producerWorker, this, std::placeholders::_1),
 		std::bind(&SDRPlayDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, readBufferSize);
@@ -54,7 +45,7 @@ bool SDRPlayDevice::Initialize(cbProcessIQData _callback,
 
 	//Other constructor like init
 	sampleRateMhz = sampleRate / 1000000.0; //Sample rate in Mhz, NOT Hz
-
+	producerFreeBufPtr = NULL;
 	return true;
 }
 
@@ -623,8 +614,6 @@ void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 	int rfFreqChanged;
 	int sampleFreqChanged;
 
-	CPX *producerFreeBufPtr; //Treat as array of CPX
-
 #if 0
 	static short maxSample = 0;
 	static short minSample = 0;
@@ -646,7 +635,7 @@ void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 				initInProgress.lock();
 
 				//Read all the I's into 1st part of buffer, and Q's into 2nd part
-				if (!errorCheck(mir_sdr_ReadPacket(producerIBuf, producerQBuf, &firstSampleNumber, &gainReductionChanged,
+				if (!errorCheck(mir_sdr_ReadPacket(packetIBuf, packetQBuf, &firstSampleNumber, &gainReductionChanged,
 					&rfFreqChanged, &sampleFreqChanged))) {
 					initInProgress.unlock();
 					return; //Handle error
@@ -672,54 +661,24 @@ void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 				//Save in producerBuffer (sized to handle overflow
 				//Make sure samplesPerPacket is initialized before producer starts
 				for (int i=0; i<samplesPerPacket; i++) {
-					producerBuffer[producerIndex].re = producerIBuf[i];
-					producerBuffer[producerIndex].im = producerQBuf[i];
-					producerIndex++;
-
-					if (producerIndex >= framesPerBuffer) {
+					if (producerFreeBufPtr == NULL) {
 						if ((producerFreeBufPtr = (CPX *)producerConsumer.AcquireFreeBuffer()) == NULL) {
 							qDebug()<<"No free buffers available.  producerIndex = "<<producerIndex <<
 									  "samplesPerPacket = "<<samplesPerPacket;
-							producerIndex = 0;
 							return;
 						}
+						producerIndex = 0;
+						totalPwrInPacket = 0;
+					}
 
-						double totalPwrInPacket = 0;
+					normalizeIQ(&producerFreeBufPtr[producerIndex], packetIBuf[i], packetQBuf[i]);
+					//I^2 + Q^2
+					totalPwrInPacket += producerFreeBufPtr[producerIndex].sqrMag();
+					producerIndex++;
+
+					if (producerIndex >= framesPerBuffer) {
+
 						double avgPwrInPacket = 0;
-						double normalizedI = 0;
-						double normalizedQ = 0;
-						for (int j=0; j<framesPerBuffer; j++) {
-							producerFreeBufPtr[j] = producerBuffer[j];
-
-							//Calculate average power in packet
-							//Note I/Q ranges +/- 32767 since we normalize in consumer
-							//I^2 + Q^2
-							normalizedI = producerBuffer[j].re / 32768.0;
-							normalizedQ = producerBuffer[j].im / 32768.0;
-							totalPwrInPacket += normalizedI * normalizedI + normalizedQ * normalizedQ;
-	#if 0
-							//For testing device sample format
-							//maxSample = 32764
-							//minSample = -32768
-							if (producerBuffer[j].re > maxSample) {
-								maxSample = producerBuffer[j].re;
-								qDebug()<<"New Max sample "<<maxSample;
-							}
-							if (producerBuffer[j].im > maxSample) {
-								maxSample = producerBuffer[j].im;
-								qDebug()<<"New Max sample "<<maxSample;
-							}
-							if (producerBuffer[j].re < minSample) {
-								minSample = producerBuffer[j].re;
-								qDebug()<<"New Min sample "<<minSample;
-							}
-							if (producerBuffer[j].im < minSample) {
-								minSample = producerBuffer[j].im;
-								qDebug()<<"New Min sample "<<minSample;
-							}
-	#endif
-
-						}
 						//AGC Logic
 						if (agcEnabled && !pendingGainReduction) {
 							avgPwrInPacket = totalPwrInPacket / framesPerBuffer;
@@ -737,16 +696,9 @@ void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 						}
 						//Process any remaining samples in packet if any
 						producerIndex = 0;
-						//Continue with i from outer for(int i=0;;)
-						for (++i; i< samplesPerPacket; i++) {
-							producerBuffer[producerIndex].re = producerIBuf[i];
-							producerBuffer[producerIndex].im = producerQBuf[i];
-							producerIndex++;
-						}
-
+						totalPwrInPacket = 0;
+						producerFreeBufPtr = NULL;
 						producerConsumer.ReleaseFilledBuffer();
-						//qDebug()<<"Released filled buffer";
-						return;
 					}
 				} //for(;i<samplesPerPacket;)
 			} //while(running)
@@ -761,11 +713,6 @@ void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 void SDRPlayDevice::consumerWorker(cbProducerConsumerEvents _event)
 {
 	CPX *consumerFilledBufferPtr;
-	//NOTE: API doc says data is returned in 16bit integer shorts
-	//Actual min/max samples in producerWorker confirms this, we get min of -32556 and max of 32764
-	//There is some confusion in other open source code which normalizes using 12bit min/max or 1/4096
-	//double normalizeIQ = 1.0 / 4096.0;
-	double normalizeIQ = 1.0 / 32767.0;
 
 	switch (_event) {
 		case cbProducerConsumerEvents::Start:
@@ -782,17 +729,8 @@ void SDRPlayDevice::consumerWorker(cbProducerConsumerEvents _event)
 					return;
 				}
 
-				//Process data in filled buffer and convert to Pebble format in consumerBuffer
-				//Filled buffers always have framesPerBuffer I/Q samples
-				for (int i=0; i<framesPerBuffer; i++) {
-					//Fill consumerBuffer with normalized -1 to +1 data
-					//SDRPlay swaps I/Q from norm, reverse here
-					consumerBuffer[i].re = consumerFilledBufferPtr[i].im * normalizeIQ;
-					consumerBuffer[i].im = consumerFilledBufferPtr[i].re * normalizeIQ;
-				}
-
 				//perform.StartPerformance("ProcessIQ");
-				ProcessIQData(consumerBuffer,framesPerBuffer);
+				ProcessIQData(consumerFilledBufferPtr,framesPerBuffer);
 				//perform.StopPerformance(1000);
 				//We don't release a free buffer until ProcessIQData returns because that would also allow inBuffer to be reused
 				producerConsumer.ReleaseFreeBuffer();
