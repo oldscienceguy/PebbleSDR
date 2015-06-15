@@ -6,11 +6,15 @@
 #RTL2832 original source code: git clone git://git.osmocom.org/rtl-sdr.git
 #Make sure you do this on any new system or plugin won't build
 # install macports (easiest way to get libusb) www.macports.org
+# port selfupdate if previously installed to get latest
 # sudo port install libusb
 # autoreconf -i
+# if autoreconf is not found, use: sudo port install automake autoconf libtool
 # ./configure
 # make
 # sudo make install
+# Note: make uninstall if previous version
+# Note: if ./configure shows error with undefined LIBUSB, sudo port install pkgconfig, and start over with autoreconf
 
 #Project common
 include(../../application/pebbleqt.pri)
