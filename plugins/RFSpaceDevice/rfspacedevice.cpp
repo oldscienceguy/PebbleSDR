@@ -77,7 +77,7 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback,
 	DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
 	numProducerBuffers = 50;
 	producerConsumer.Initialize(std::bind(&RFSpaceDevice::producerWorker, this, std::placeholders::_1),
-		std::bind(&RFSpaceDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, dataBlockSize);
+		std::bind(&RFSpaceDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, framesPerBuffer * sizeof(CPX));
 
 	usbUtil = new USBUtil(USBUtil::FTDI_D2XX);
 	ad6620 = new AD6620(usbUtil);
@@ -87,11 +87,11 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback,
 
 	if (deviceNumber == SDR_IQ) {
 		//SR * 2 bytes for I * 2 bytes for Q .  dataBlockSize is 8192
-		producerConsumer.SetProducerInterval(sampleRate,8192 / 4);
-		producerConsumer.SetConsumerInterval(sampleRate,dataBlockSize / 4);
+		producerConsumer.SetProducerInterval(sampleRate,framesPerBuffer);
+		producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
 	} else if(deviceNumber == SDR_IP) {
 		//Get get UDP datagrams of 1024 bytes, 4bytes per CPX or 256 CPX samples
-		producerConsumer.SetProducerInterval(sampleRate,1024 / 4);
+		producerConsumer.SetProducerInterval(sampleRate,udpBlockSize / 4);
 		//Consumer only has to run once every 2048 CPX samples
 		producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
 	} else if (deviceNumber == AFEDRI_USB) {
@@ -150,7 +150,7 @@ bool RFSpaceDevice::Connect()
 
 		if (!usbUtil->IsUSBLoaded()) {
 			if (!usbUtil->LoadUsb()) {
-				QMessageBox::information(NULL,"Pebble","USB not loaded.  Elektor communication is disabled.");
+				QMessageBox::information(NULL,"Pebble","USB not loaded.  Device communication is disabled.");
 				return false;
 			}
 		}
@@ -382,7 +382,7 @@ QVariant RFSpaceDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 			else
 				return QStringList();
 		case DeviceType:
-			if (deviceNumber == SDR_IP || SDR_IQ)
+			if (deviceNumber == SDR_IP || deviceNumber == SDR_IQ)
 				return DeviceInterfaceBase::IQ_DEVICE;
 			else if(deviceNumber == AFEDRI_USB)
 				return DeviceInterfaceBase::AUDIO_IQ_DEVICE;
@@ -677,19 +677,22 @@ void RFSpaceDevice::DoUSBProducer()
 	//When length==0 it means to read 8192 bytes
 	//Largest value in a 13bit field is 8191 and we need length of 8192
 	if (header.type == TargetHeaderTypes::TargetDataItem0 && header.length==0) {
-		if (bytesAvailable < 8192)
+		if (bytesAvailable < dataBlockSize)
 			return;
 		header.gotHeader = false; //ready for new header
-		char *producerFreeBufPtr;
-		if ((producerFreeBufPtr = (char *)producerConsumer.AcquireFreeBuffer()) == NULL) {
+		if ((producerFreeBufPtr = (CPX *)producerConsumer.AcquireFreeBuffer()) == NULL) {
 			//We have to read data and throw away or we'll get out of sync
-			usbUtil->Read(usbReadBuf, 8192);
+			usbUtil->Read(usbReadBuf, dataBlockSize);
 			return;
 		}
-		if (!usbUtil->Read(producerFreeBufPtr, 8192)) {
+		if (!usbUtil->Read(usbReadBuf, dataBlockSize)) {
 			//Lost data
 			producerConsumer.ReleaseFreeBuffer(); //Put back what we acquired
 			return;
+		}
+		for (int i=0, j=0; i<framesPerBuffer; i++, j+=4) {
+			//IQ appear to be reversed
+			normalizeIQ(&producerFreeBufPtr[i], (qint16)usbReadBuf[j+2], (qint16)usbReadBuf[j]);
 		}
 		//Increment the number of data buffers that are filled so consumer thread can access
 		producerConsumer.ReleaseFilledBuffer();
@@ -720,73 +723,29 @@ void RFSpaceDevice::consumerWorker(cbProducerConsumerEvents _event)
 		case cbProducerConsumerEvents::Stop:
 			break;
 		case cbProducerConsumerEvents::Run:
-			DoConsumer();
+			//Wait for data to be available from producer
+			while (producerConsumer.GetNumFilledBufs() > 0) {
+				//qDebug()<<producerConsumer.GetNumFilledBufs()<<" "<<producerConsumer.GetNumFreeBufs();
+				if ((consumerFilledBufPtr = (CPX *)producerConsumer.AcquireFilledBuffer()) == NULL)
+					return;
+				//Not sure if this is required for SDR-IQ, but it is for SDR-14
+				//SendAck();
+
+				//ProcessIQ has a max of about 2800us with 2m sample rate from sdr-ip
+				//But ramps to 200,000us with sdr-iq!
+				//Why?  Wierd samples in sdr-iq causing some error loop?
+				//Lower time/slice
+				//perform.StartPerformance("ProcessIQ");
+				ProcessIQData(consumerFilledBufPtr,inBufferSize);
+				//perform.StopPerformance(100);
+
+				//Update lastDataBuf & release dataBuf
+				producerConsumer.ReleaseFreeBuffer();
+			}
+
 			break;
 	}
 }
-void RFSpaceDevice::DoConsumer()
-{
-	float I,Q;
-	//Wait for data to be available from producer
-	short *consumerFilledBufPtr; //Treat producerConsumer buffer as an array of short
-	while (producerConsumer.GetNumFilledBufs() > 0) {
-		//qDebug()<<producerConsumer.GetNumFilledBufs()<<" "<<producerConsumer.GetNumFreeBufs();
-		if ((consumerFilledBufPtr = (short *)producerConsumer.AcquireFilledBuffer()) == NULL)
-			return;
-
-		for (int i=0,j=0; i<inBufferSize; i++, j+=2)
-		{
-			/*
-			After a couple of days of banging my head trying to figure why I couldn't get anything but static,
-			I figured out how to interpret the data coming back from the SDR-IQ.
-			I tried converting LSB/MSB to an integer (0-65535) and normalizing to -32767 to +32767
-				I = (SHORT)(readBuf[j] + (readBuf[j + 1] * 0x100));
-				I -= 32767.0;
-			I tried bit shifting and cast to signed
-				I = (short)(readBuf[j] | (readBuf[j + 1] <<8))
-			And several other crazy (with hindsight) interpretations
-			Finally this worked: csst address in buffer as (short *)
-			Update: Reading the AD6620 data sheet, I see that the data is a 16bit integer in 2's compliment form
-			Better late than never!
-			*/
-			//producerBuffer is an array of bytes that we need to treat as array of shorts
-			I = consumerFilledBufPtr[j];
-			//Convert to float: div by 32767 for -1 to 1,
-			I /= (32767.0);
-			//SoundCard levels approx 0.02 at 50% mic
-
-			//maxI = I>maxI ? I : maxI;
-			//minI = I<minI ? I : minI;
-
-
-			Q = consumerFilledBufPtr[j+1];
-			Q /= (32767.0);
-
-			//IQ appear to be reversed
-			inBuffer[i].re =  Q;
-			inBuffer[i].im =  I;
-			//qDebug() << QString::number(I) << ":" << QString::number(Q);
-			//qDebug() << minI << "-" << maxI;
-
-		}
-
-		//Not sure if this is required for SDR-IQ, but it is for SDR-14
-		//SendAck();
-
-		//ProcessIQ has a max of about 2800us with 2m sample rate from sdr-ip
-		//But ramps to 200,000us with sdr-iq!
-		//Why?  Wierd samples in sdr-iq causing some error loop?
-		//Lower time/slice
-		//perform.StartPerformance("ProcessIQ");
-		ProcessIQData(inBuffer,inBufferSize);
-		//perform.StopPerformance(100);
-
-		//Update lastDataBuf & release dataBuf
-		producerConsumer.ReleaseFreeBuffer();
-	}
-}
-
-
 
 //Dialog Stuff
 void RFSpaceDevice::rfGainChanged(int i)
@@ -892,17 +851,21 @@ void RFSpaceDevice::UDPSocketNewData()
 		if (readBufferIndex == 0) {
 			//qDebug()<<producerConsumer.GetNumFreeBufs();
 			//Starting a new producer buffer
-			if ((producerFreeBufPtr = (char *)producerConsumer.AcquireFreeBuffer()) == NULL)
+			if ((producerFreeBufPtr = (CPX *)producerConsumer.AcquireFreeBuffer()) == NULL)
 				return;
 		}
 
 		//USB gets 2048 I and 2048 Q samples at a time, or 8192 bytes
 		//We need to build over 8 datagrams
-		memcpy(&producerFreeBufPtr[readBufferIndex], &udpReadBuf[4], 1024); //256 I/Q samples
-		readBufferIndex += 1024;
+		memcpy(&readBuf[readBufferIndex], &udpReadBuf[4], udpBlockSize); //256 I/Q samples
+		readBufferIndex += udpBlockSize;
 
-		if (readBufferIndex == 8192) {
+		if (readBufferIndex == dataBlockSize) {
 			readBufferIndex = 0;
+			for (int i=0, j=0; i<framesPerBuffer; i++, j+=4) {
+				//Reverse IQ order
+				normalizeIQ(&producerFreeBufPtr[i],readBuf[j+2],readBuf[j]);
+			}
 			//Increment the number of data buffers that are filled so consumer thread can access
 			producerConsumer.ReleaseFilledBuffer();
 		}

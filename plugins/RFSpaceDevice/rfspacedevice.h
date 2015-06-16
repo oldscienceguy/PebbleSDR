@@ -120,7 +120,8 @@ public:
 	//Data blocks are fixed at 8192 bytes by SDR-IQ
 	//4096 samples at 2 bytes (short) per sample
 	static const quint16 samplesPerDataBlock = 4096; //shorts
-	static const quint16 dataBlockSize = samplesPerDataBlock * 2;
+	static const quint16 dataBlockSize = samplesPerDataBlock * sizeof(qint16);
+	static const quint16 udpBlockSize = 1024;
 
 	RFSpaceDevice();
 	~RFSpaceDevice();
@@ -238,7 +239,8 @@ private:
 	quint16 deviceDiscoveredPort;
 
 	quint16 readBufferIndex; //Used to track whether we have full buffer or not, 0 to readBufferSize-1
-	char *producerFreeBufPtr;
+	CPX *producerFreeBufPtr;
+	CPX *consumerFilledBufPtr;
 
 	AFEDRI *afedri; //USB HID protocol and special features
 
@@ -248,7 +250,6 @@ private:
 	bool SetSampleRate();
 	bool SetUDPAddressAndPort(QHostAddress address, quint16 port);
 	bool SendAck();
-	void DoConsumer();
 	void DoUSBProducer();
 	void DoUDPProducer();
 	bool SetADSampleRate();
