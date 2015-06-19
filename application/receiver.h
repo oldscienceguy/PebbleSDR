@@ -7,7 +7,7 @@
 #include <QtCore/QVariant>
 #include <QMutex>
 #include "audio.h"
-#include "soundcard.h"
+#include "audiopa.h"
 #include "cpx.h"
 #include "demod.h"
 #include "mixer.h"

@@ -108,10 +108,9 @@ SOURCES += pebblelib.cpp \
     deviceinterfacebase.cpp \
     audio.cpp \
     audioqt.cpp \
-    soundcard.cpp \
     alawcompression.cpp \
     fftaccelerate.cpp \
-    medianfilter.cpp
+    audiopa.cpp
 
 HEADERS += pebblelib.h\
     pebblelib_global.h \
@@ -135,8 +134,8 @@ HEADERS += pebblelib.h\
     hidapi.h \
     audio.h \
     audioqt.h \
-    soundcard.h \
     alawcompression.h \
     fftaccelerate.h \
-    medianfilter.h
+    medianfilter.h \
+    audiopa.h
 

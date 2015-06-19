@@ -1,7 +1,7 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include "audio.h"
-#include "soundcard.h"
+#include "audiopa.h"
 #include "audioqt.h"
 #include "QDebug"
 
