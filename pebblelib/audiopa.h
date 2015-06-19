@@ -8,11 +8,11 @@ using namespace std;
 
 class Receiver; //Forward declaration since soundcard and receiver are dependent on each other
 
-class SoundCard:public Audio
+class AudioPA:public Audio
 {
 public:
-	SoundCard(cbProcessIQData cb, int fpb);
-	~SoundCard(void);
+	AudioPA(cbProcessIQData cb, int fpb);
+	~AudioPA(void);
 	//Virtual functions
 	//We may get input from some other source, if so inputSampleRate = 0
     int StartInput(QString inputDeviceName, int inputSampleRate);

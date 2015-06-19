@@ -10,7 +10,7 @@
     Files should be re-created and problem goes away.
 
 */
-SoundCard::SoundCard(cbProcessIQData cb, int fpb):Audio()
+AudioPA::AudioPA(cbProcessIQData cb, int fpb):Audio()
 {
 	ProcessIQData = cb;
 
@@ -27,13 +27,13 @@ SoundCard::SoundCard(cbProcessIQData cb, int fpb):Audio()
 	error = Pa_Initialize();
 }
 
-SoundCard::~SoundCard(void)
+AudioPA::~AudioPA(void)
 {
 	Stop();
 	Pa_Terminate();
 }
 
-int SoundCard::StartInput(QString inputDeviceName, int _inputSampleRate)
+int AudioPA::StartInput(QString inputDeviceName, int _inputSampleRate)
 {
     inputSampleRate = _inputSampleRate;
     inBufferUnderflowCount = 0;
@@ -56,7 +56,7 @@ int SoundCard::StartInput(QString inputDeviceName, int _inputSampleRate)
     error = Pa_IsFormatSupported(inParam,NULL,inputSampleRate);
     if (!error) {
         error = Pa_OpenStream(&inStream,inParam,NULL,
-            inputSampleRate,framesPerBuffer,paNoFlag,&SoundCard::streamCallback,this );
+			inputSampleRate,framesPerBuffer,paNoFlag,&AudioPA::streamCallback,this );
         error = Pa_StartStream(inStream);
 	} else {
 		qDebug()<<"Error starting audio input stream";
@@ -65,7 +65,7 @@ int SoundCard::StartInput(QString inputDeviceName, int _inputSampleRate)
     return 0;
 }
 
-int SoundCard::StartOutput(QString outputDeviceName, int _outputSampleRate)
+int AudioPA::StartOutput(QString outputDeviceName, int _outputSampleRate)
 {
 	outputSampleRate = _outputSampleRate;
 
@@ -119,7 +119,7 @@ int SoundCard::StartOutput(QString outputDeviceName, int _outputSampleRate)
 	return 0;
 }
 
-int SoundCard::Stop()
+int AudioPA::Stop()
 {
 	if (inStream)
 	{
@@ -135,13 +135,13 @@ int SoundCard::Stop()
 	outStream = NULL;
 	return 0;
 }
-int SoundCard::Flush()
+int AudioPA::Flush()
 {
 	if (inStream)
 		error = Pa_AbortStream(inStream);
 	return 0;
 }
-int SoundCard::Pause()
+int AudioPA::Pause()
 {
 	if (inStream)
 		error = Pa_StopStream(inStream);
@@ -149,7 +149,7 @@ int SoundCard::Pause()
 		error = Pa_StopStream(outStream);
 	return 0;
 }
-int SoundCard::Restart()
+int AudioPA::Restart()
 {
 	if (inStream)
 		error = Pa_StartStream(inStream);
@@ -157,14 +157,14 @@ int SoundCard::Restart()
 		error = Pa_StartStream(outStream);
 	return 0;
 }
-int SoundCard::DefaultInputDevice()
+int AudioPA::DefaultInputDevice()
 {
 	Pa_Initialize();
 	int r = Pa_GetDefaultInputDevice();
 	Pa_Terminate();
 	return r;
 }
-int SoundCard::DefaultOutputDevice()
+int AudioPA::DefaultOutputDevice()
 {
 	Pa_Initialize();
 	int r = Pa_GetDefaultOutputDevice();
@@ -172,7 +172,7 @@ int SoundCard::DefaultOutputDevice()
 	return r;
 }
 
-int SoundCard::FindDeviceByName(QString name, bool inputDevice)
+int AudioPA::FindDeviceByName(QString name, bool inputDevice)
 {
     QString di;
     int apiCnt = Pa_GetHostApiCount();
@@ -198,16 +198,16 @@ int SoundCard::FindDeviceByName(QString name, bool inputDevice)
 //Returns a device list for UI
 //paDeviceIndex is returned in 1st 2 char, strip for UI
 //Todo: Write .txt file with all device info to help with debugging
-QStringList SoundCard::InputDeviceList()
+QStringList AudioPA::InputDeviceList()
 {
     return DeviceList(true);
 }
-QStringList SoundCard::OutputDeviceList()
+QStringList AudioPA::OutputDeviceList()
 {
     return DeviceList(false);
 }
 
-QStringList SoundCard::DeviceList(bool typeInput)
+QStringList AudioPA::DeviceList(bool typeInput)
 {
 	//This static method may get called before constructor
 	//So we have to make sure Pa_Initialize is called, make sure we have matching Pa_Terminate()
@@ -255,7 +255,7 @@ QStringList SoundCard::DeviceList(bool typeInput)
 	Pa_Terminate();
 	return devList;
 }
-void SoundCard::ClearCounts()
+void AudioPA::ClearCounts()
 {
 	inBufferOverflowCount = 0;
 	inBufferUnderflowCount = 0;
@@ -263,7 +263,7 @@ void SoundCard::ClearCounts()
 	outBufferUnderflowCount = 0;
 }
 //Left and Right channel samples are interleaved
-int SoundCard::streamCallback(
+int AudioPA::streamCallback(
     const void *input, void *output,
     unsigned long frameCount,
     const PaStreamCallbackTimeInfo* timeInfo,
@@ -274,7 +274,7 @@ int SoundCard::streamCallback(
 	Q_UNUSED(timeInfo);
 
 	//Soundcard object is passed in userData, get it so we can access member functions
-	SoundCard *sc = (SoundCard*)userData;
+	AudioPA *sc = (AudioPA*)userData;
 
 	//Check for buffer overrun, which means we're getting data faster than we can process it
 	if (statusFlags & paInputUnderflow) {
@@ -316,7 +316,7 @@ int SoundCard::streamCallback(
 	return paContinue;
 }
 //Final call from receiver ProcessIQData to send audio out
-void SoundCard::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
+void AudioPA::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
 {
 	float *outPtr;
 	outPtr = outStreamBuffer;

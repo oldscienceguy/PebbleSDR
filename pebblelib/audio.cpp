@@ -21,7 +21,7 @@ Audio *Audio::Factory(cbProcessIQData cb, int framesPerBuffer)
 #endif
 #ifdef USE_PORT_AUDIO
 	qDebug()<<"Using PortAudio";
-	return new SoundCard(cb, framesPerBuffer);
+	return new AudioPA(cb, framesPerBuffer);
 #endif
 	qDebug()<<"Unknown audio configuration";
 	return NULL;
@@ -34,7 +34,7 @@ QStringList Audio::InputDeviceList()
 		return AudioQT::InputDeviceList();
 #endif
 #ifdef USE_PORT_AUDIO
-		return SoundCard::InputDeviceList();
+		return AudioPA::InputDeviceList();
 #endif
 	qDebug()<<"Unknown audio configuration";
 	return QStringList();
@@ -45,7 +45,7 @@ QStringList Audio::OutputDeviceList()
 		return AudioQT::OutputDeviceList();
 #endif
 #ifdef USE_PORT_AUDIO
-		return SoundCard::OutputDeviceList();
+		return AudioPA::OutputDeviceList();
 #endif
 	qDebug()<<"Unknown audio configuration";
 	return QStringList();
