@@ -7,8 +7,8 @@ DeviceInterfaceBase::DeviceInterfaceBase()
 	//These are common settings for every device, variables are defined in DeviceInterface
 	startupType = DEFAULTFREQ;
 	userFrequency = 10000000;
-	inputDeviceName = "NA";
-	outputDeviceName = "NA";
+	inputDeviceName = QString();
+	outputDeviceName = QString();
 	sampleRate = 48000;
 	iqGain = 1.0;
 	iqOrder = IQ;
@@ -374,11 +374,30 @@ bool DeviceInterfaceBase::Set(STANDARD_KEYS _key, QVariant _value, quint16 _opti
 //Set defaults first, then call ReadSettings to handle initial ini file creation
 void DeviceInterfaceBase::ReadSettings()
 {
+	//Set up defaults, specific devices can override by setting inputDeviceName and outputDeviceName before calling ReadSettings()
+	if (outputDeviceName.isEmpty()) {
+#ifdef USE_QT_AUDIO
+		outputDeviceName = "Built-in Output";
+#endif
+#ifdef USE_PORT_AUDIO
+		outputDeviceName = "Built-in Output"; //Verify
+#endif
+
+	}
+	if (inputDeviceName.isEmpty()) {
+#ifdef USE_QT_AUDIO
+		inputDeviceName = "Built-in Microphone";
+#endif
+#ifdef USE_PORT_AUDIO
+		outputDeviceName = "Built-in Microphone"; //Verify
+#endif
+
+	}
 	//These are common settings for every device, variables are defined in DeviceInterface
 	startupType = (STARTUP_TYPE)qSettings->value("StartupType", startupType).toInt();
 	userFrequency = qSettings->value("StartupFreq", userFrequency).toDouble();
 	//Allow the device to specify a fixed inputDeviceName, see rfspacedevice for example
-	inputDeviceName = qSettings->value("InputDeviceName", this->Get(DeviceInterface::InputDeviceName)).toString();
+	inputDeviceName = qSettings->value("InputDeviceName", inputDeviceName).toString();
 	outputDeviceName = qSettings->value("OutputDeviceName", outputDeviceName).toString();
 	sampleRate = qSettings->value("SampleRate", sampleRate).toInt();
 	iqGain = qSettings->value("IQGain",iqGain).toDouble();

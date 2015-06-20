@@ -280,14 +280,16 @@ void RFSpaceDevice::Stop()
 
 void RFSpaceDevice::ReadSettings()
 {
-	if (deviceNumber == SDR_IQ)
+	if (deviceNumber == SDR_IQ) {
 		qSettings = sdriqSettings;
-	else if (deviceNumber == SDR_IP)
+	} else if (deviceNumber == SDR_IP) {
 		qSettings = sdripSettings;
-	else if (deviceNumber == AFEDRI_USB)
+	} else if (deviceNumber == AFEDRI_USB) {
 		qSettings = afedri_usbSettings;
-	else
+		inputDeviceName = "AFEDRI-SDR-Net Audio"; //Default if not overridden by user in dialog
+	} else {
 		return;
+	}
 
 	lowFrequency = 150000;
 	highFrequency = 33000000;
@@ -388,12 +390,6 @@ QVariant RFSpaceDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 				return DeviceInterfaceBase::AUDIO_IQ_DEVICE;
 			else
 				return DeviceInterfaceBase::AUDIO_IQ_DEVICE;
-
-		case InputDeviceName:
-			if (deviceNumber == AFEDRI_USB)
-				return "AFEDRI-SDR-Net Audio";
-			else
-				return inputDeviceName;
 
 		case DeviceSampleRate: {
 			return sampleRate;
