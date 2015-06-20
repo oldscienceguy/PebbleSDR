@@ -611,51 +611,6 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
     if (isRecording)
         recordingFile.WriteSamples(in,numSamples);
 
-	float tmp;
-    //Configure IQ order if not default
-	DeviceInterface::IQORDER iqOrder = (DeviceInterface::IQORDER)sdr->Get(DeviceInterface::IQOrder).toInt();
-	if (iqOrder != DeviceInterface::IQ)
-        for (int i=0;i<framesPerBuffer;i++)
-        {
-			switch(iqOrder)
-            {
-			case DeviceInterface::IQ:
-                    //No change, this is the default order
-                    break;
-			case DeviceInterface::QI:
-                    tmp = in[i].im;
-                    in[i].im = in[i].re;
-                    in[i].re = tmp;
-                    break;
-			case DeviceInterface::IONLY:
-                    in[i].im = in[i].re;
-                    break;
-			case DeviceInterface::QONLY:
-                    in[i].re = in[i].im;
-                    break;
-            }
-        }
-
-	//Spectrum wide processing
-
-#if(0)
-	//Add a configurable delay so we can force port audio buffer overflow for testing
-	Sleep(100); //ms delay
-#endif
-	//Handy way to test filters. Spectrum display will show filter response since we're doing
-	//this as first step.
-	//Disable postMixerDecimate before testing
-	//nextStep = lpFilter->ProcessBlock(nextStep);
-
-	//Used to check gain/loss across steps
-	//float pre = SignalProcessing::totalPower(nextStep,framesPerBuffer);
-
-	//Normalize device gain
-	//Note that we DO modify IN buffer in this step
-	sdrGain = sdr->Get(DeviceInterface::IQGain).toDouble(); //Allow sdr to change gain while running
-    if (sdrGain != 1)
-		CPXBuf::scale(in,in,sdrGain,framesPerBuffer);
-
 	CPX *nextStep = in;
 
     global->testBench->DisplayData(numSamples,nextStep,sampleRate,testBenchRawIQ);
