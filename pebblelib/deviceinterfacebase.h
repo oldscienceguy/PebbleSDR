@@ -49,6 +49,7 @@ protected:
 
 	virtual void InitSettings(QString fname);
 
+	void AudioProducer(float *samples, quint16 numSamples);
 	cbProcessIQData ProcessIQData;
 	cbProcessBandscopeData ProcessBandscopeData;
 	cbProcessAudioData ProcessAudioData;
@@ -95,9 +96,10 @@ protected:
 
 	Audio *audioInput;
 	quint16 audioOutputSampleRate;
+	CPX *audioInputBuffer;
 
 	//Moved responsibility from receiver.cpp ProcessIQ to device
-	void normalizeIQ(CPX *cpx, double I, double Q);
+	void normalizeIQ(CPX *cpx, float I, float Q);
 	void normalizeIQ(CPX *cpx, qint16 I, qint16 Q); //-32767 to +32767 samples like SDRPlay
 	void normalizeIQ(CPX *cpx, quint8 I, quint8 Q); //0 to 255 samples like rtl2832
 

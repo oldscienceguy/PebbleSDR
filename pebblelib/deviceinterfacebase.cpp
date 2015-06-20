@@ -30,6 +30,7 @@ DeviceInterfaceBase::DeviceInterfaceBase()
 	ProcessBandscopeData = NULL;
 	ProcessAudioData = NULL;
 	audioOutputSampleRate = 11025;
+	audioInputBuffer = NULL;
 }
 
 //Implement pure virtual destructor from interface, otherwise we don't link
@@ -40,7 +41,10 @@ DeviceInterface::~DeviceInterface()
 
 DeviceInterfaceBase::~DeviceInterfaceBase()
 {
-
+	if (audioInputBuffer != NULL) {
+		delete audioInputBuffer;
+		audioInputBuffer = NULL;
+	}
 }
 
 bool DeviceInterfaceBase::Initialize(cbProcessIQData _callback,
@@ -54,9 +58,12 @@ bool DeviceInterfaceBase::Initialize(cbProcessIQData _callback,
 	framesPerBuffer = _framesPerBuffer;
 	connected = false;
 
+	using namespace std::placeholders;
 	if (Get(DeviceInterface::DeviceType).toInt() == AUDIO_IQ_DEVICE) {
-		audioInput = Audio::Factory(_callback, _framesPerBuffer);
+		audioInput = Audio::Factory(std::bind(&DeviceInterfaceBase::AudioProducer, this, _1, _2), framesPerBuffer);
 	}
+
+	audioInputBuffer = CPXBuf::malloc(framesPerBuffer);
 
 	return true;
 }
@@ -370,7 +377,8 @@ void DeviceInterfaceBase::ReadSettings()
 	//These are common settings for every device, variables are defined in DeviceInterface
 	startupType = (STARTUP_TYPE)qSettings->value("StartupType", startupType).toInt();
 	userFrequency = qSettings->value("StartupFreq", userFrequency).toDouble();
-	inputDeviceName = qSettings->value("InputDeviceName", inputDeviceName).toString();
+	//Allow the device to specify a fixed inputDeviceName, see rfspacedevice for example
+	inputDeviceName = qSettings->value("InputDeviceName", this->Get(DeviceInterface::InputDeviceName)).toString();
 	outputDeviceName = qSettings->value("OutputDeviceName", outputDeviceName).toString();
 	sampleRate = qSettings->value("SampleRate", sampleRate).toInt();
 	iqGain = qSettings->value("IQGain",iqGain).toDouble();
@@ -429,7 +437,7 @@ void DeviceInterfaceBase::InitSettings(QString fname)
 
 
 //-1.0 to + 1.0
-void DeviceInterfaceBase::normalizeIQ(CPX *cpx, double I, double Q)
+void DeviceInterfaceBase::normalizeIQ(CPX *cpx, float I, float Q)
 {
 	double tmp;
 	//Normalize and apply gain
@@ -508,4 +516,19 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, quint8 I, quint8 Q)
 			cpx->re = cpx->im;
 			break;
 	}
+}
+
+//Called by audio devices when new samples are available
+//Samples are paired I and Q
+//numSamples is total number of samples I + Q
+void DeviceInterfaceBase::AudioProducer(float *samples, quint16 numSamples)
+{
+	if (numSamples / 2 != framesPerBuffer) {
+		qDebug()<<"Invalid number of audio samples";
+		return;
+	}
+	for (int i=0, j=0; i<framesPerBuffer; i++, j+=2) {
+		normalizeIQ( &audioInputBuffer[i], samples[j], samples[j+1]);
+	}
+	ProcessIQData(audioInputBuffer, framesPerBuffer);
 }
