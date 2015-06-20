@@ -291,7 +291,7 @@ void RFSpaceDevice::ReadSettings()
 
 	lowFrequency = 150000;
 	highFrequency = 33000000;
-	iqGain = 0.5;
+	iqGain = 1.0;
 	DeviceInterfaceBase::ReadSettings();
 	//Device specific settings follow
 	sRFGain = qSettings->value("RFGain",0).toInt();
@@ -388,6 +388,13 @@ QVariant RFSpaceDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 				return DeviceInterfaceBase::AUDIO_IQ_DEVICE;
 			else
 				return DeviceInterfaceBase::AUDIO_IQ_DEVICE;
+
+		case InputDeviceName:
+			if (deviceNumber == AFEDRI_USB)
+				return "AFEDRI-SDR-Net Audio";
+			else
+				return inputDeviceName;
+
 		case DeviceSampleRate: {
 			return sampleRate;
 			//Note, actual sample rate for SDR_IQ is tied to bandwidth
@@ -463,17 +470,22 @@ void RFSpaceDevice::SetupOptionUi(QWidget *parent)
 	optionUi->serialNumberLabel->setFont(medFont);
 #endif
 
-	optionUi->rfGainBox->addItem("  0db");
-	optionUi->rfGainBox->addItem("-10db");
-	optionUi->rfGainBox->addItem("-20db");
-	optionUi->rfGainBox->addItem("-30db");
+	int cur;
+	optionUi->rfGainBox->addItem("  0db",0);
+	optionUi->rfGainBox->addItem("-10db",-10);
+	optionUi->rfGainBox->addItem("-20db",-20);
+	optionUi->rfGainBox->addItem("-30db",-30);
+	cur = optionUi->rfGainBox->findData(sRFGain);
+	optionUi->rfGainBox->setCurrentIndex(cur);
 	connect(optionUi->rfGainBox,SIGNAL(currentIndexChanged(int)),this,SLOT(rfGainChanged(int)));
 
-	optionUi->ifGainBox->addItem("  0db");
-	optionUi->ifGainBox->addItem(" +6db");
-	optionUi->ifGainBox->addItem("+12db");
-	optionUi->ifGainBox->addItem("+18db");
-	optionUi->ifGainBox->addItem("+24db");
+	optionUi->ifGainBox->addItem("  0db",0);
+	optionUi->ifGainBox->addItem(" +6db",6);
+	optionUi->ifGainBox->addItem("+12db",12);
+	optionUi->ifGainBox->addItem("+18db",18);
+	optionUi->ifGainBox->addItem("+24db",24);
+	cur = optionUi->ifGainBox->findData(sIFGain);
+	optionUi->ifGainBox->setCurrentIndex(cur);
 	connect(optionUi->ifGainBox,SIGNAL(currentIndexChanged(int)),this,SLOT(ifGainChanged(int)));
 
 	if (deviceNumber == SDR_IQ || deviceNumber == AFEDRI_USB) {
@@ -750,14 +762,16 @@ void RFSpaceDevice::consumerWorker(cbProducerConsumerEvents _event)
 //Dialog Stuff
 void RFSpaceDevice::rfGainChanged(int i)
 {
-	rfGain = i * -10;
+	Q_UNUSED(i);
+	rfGain = optionUi->rfGainBox->currentData().toInt();
 	sRFGain = rfGain;
 	SetRFGain(rfGain);
 	WriteSettings();
 }
 void RFSpaceDevice::ifGainChanged(int i)
 {
-	ifGain = i * 6;
+	Q_UNUSED(i);
+	ifGain = optionUi->ifGainBox->currentData().toInt();
 	sIFGain = ifGain;
 	SetIFGain(ifGain);
 	WriteSettings();
@@ -1060,7 +1074,7 @@ bool RFSpaceDevice::SetRFGain(qint8 gain)
 	} else if (deviceNumber == SDR_IQ) {
 		return SendUsbCommand(writeBuf,sizeof(writeBuf));
 	} else  if (deviceNumber == AFEDRI_USB)
-		return true;
+		return true; //Needs afedri.cpp support
 	return false;
 }
 //This is not documented in Interface spec, but used in activeX examples
@@ -1075,7 +1089,7 @@ bool RFSpaceDevice::SetIFGain(qint8 gain)
 	} else if (deviceNumber == SDR_IQ) {
 		return SendUsbCommand(writeBuf,sizeof(writeBuf));
 	} else  if (deviceNumber == AFEDRI_USB)
-		return true;
+		return true; //Needs afedri.cpp support
 	return false;
 }
 
@@ -1175,7 +1189,7 @@ bool RFSpaceDevice::RequestTargetName()
 	} else if (deviceNumber == SDR_IQ) {
 		return SendUsbCommand(writeBuf,sizeof(writeBuf));
 	} else  if (deviceNumber == AFEDRI_USB)
-		return true;
+		return true; //Needs afedri.cpp support
 	return false;
 }
 //Same pattern as TargetName
