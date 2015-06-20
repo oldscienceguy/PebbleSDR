@@ -27,6 +27,9 @@
 class CPX;
 
 //using std::placeholders;
+//Used by audio devices to call back to device with new sample data
+typedef std::function<void(float *, quint16)> cbAudioProducer;
+
 //ProcessIQData callback: Call with CPX buffer of I/Q unprocessed samples and number of samples
 typedef std::function<void(CPX *, quint16)> cbProcessIQData;
 
