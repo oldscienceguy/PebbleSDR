@@ -11,7 +11,7 @@ class Receiver; //Forward declaration since soundcard and receiver are dependent
 class AudioPA:public Audio
 {
 public:
-	AudioPA(cbProcessIQData cb, int fpb);
+	AudioPA(cbAudioProducer cb, int fpb);
 	~AudioPA(void);
 	//Virtual functions
 	//We may get input from some other source, if so inputSampleRate = 0
@@ -44,13 +44,10 @@ private:
 	float *outStreamBuffer; 
 	PaSampleFormat sampleFormat;
 	PaError error;
-	static int streamCallback(
-		const void *input, void *output,
-		unsigned long frameCount,
+	static int streamCallback(const void *input, void *output,
+		unsigned long numSamples,
 		const PaStreamCallbackTimeInfo* timeInfo,
 		PaStreamCallbackFlags statusFlags,
 		void *userData );
-	CPX *inBuffer;
-	CPX *outBuffer;
-
+	static QMutex mutex;
 };

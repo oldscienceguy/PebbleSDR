@@ -11,7 +11,7 @@
 class AudioQT : public Audio
 {
 public:
-	AudioQT(cbProcessIQData cb, int fpb);
+	AudioQT(cbAudioProducer cb, int fpb);
     ~AudioQT();
 
 	//Virtual functions
@@ -45,8 +45,9 @@ private:
 
     float *inStreamBuffer;
     float *outStreamBuffer;
-    CPX *cpxInBuffer;
     CPX *cpxOutBuffer;
+
+	QMutex mutex;
 
 	void DumpDeviceInfo(QAudioDeviceInfo device);
 

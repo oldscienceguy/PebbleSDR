@@ -2,6 +2,8 @@
 #include "gpl.h"
 #include "audiopa.h"
 
+QMutex AudioPA::mutex;
+
 /*
   Notes:
   7/14/12: Mac coreaudiod went into high CPU spin, 25% instead of normal 2.5%.
@@ -10,17 +12,14 @@
     Files should be re-created and problem goes away.
 
 */
-AudioPA::AudioPA(cbProcessIQData cb, int fpb):Audio()
+AudioPA::AudioPA(cbAudioProducer cb, int fpb):Audio()
 {
-	ProcessIQData = cb;
+	AudioProducer = cb;
 
 	//Float32 format returns values between -1 and +1
 	sampleFormat = paFloat32;
 	//Todo: These can be removed I think, we're now setting them in Start() where we have SDR context
 	framesPerBuffer = fpb;
-	//Deliver samples to this buffer
-	inBuffer = CPXBuf::malloc(framesPerBuffer);
-	outBuffer = CPXBuf::malloc(framesPerBuffer);
 	outStreamBuffer = new float[framesPerBuffer * 2];
 	inStream=NULL;
 	outStream=NULL;
@@ -265,11 +264,12 @@ void AudioPA::ClearCounts()
 //Left and Right channel samples are interleaved
 int AudioPA::streamCallback(
     const void *input, void *output,
-    unsigned long frameCount,
+	unsigned long numSamples,
     const PaStreamCallbackTimeInfo* timeInfo,
     PaStreamCallbackFlags statusFlags,
     void *userData )
 {
+	Q_UNUSED(input);
 	Q_UNUSED(output);
 	Q_UNUSED(timeInfo);
 
@@ -289,30 +289,9 @@ int AudioPA::streamCallback(
 	if (statusFlags & paOutputOverflow){
 		sc->outBufferOverflowCount++;
 	}
-	float *inPtr = (float*)input;
-
-	float I,Q;
-
-	//Testing to see how microphone level and microphone booster affect sound levels
-	//This could be captured in a troubleshooting page if there are sound card variations
-	/*
-		Level/Boost	50%		100%	+10db	+20db	+30db
-		maxI & maxQ	0.015	0.022	0.080	0.120	0.680
-	*/
-	//float maxI = 0;
-	//float maxQ = 0;
-	//Put interleaved float samples into CPX buffer
-	for (unsigned i=0;i<frameCount;i++)
-	{
-		I = *inPtr++;
-		//maxI = I>maxI ? I : maxI;
-		Q = *inPtr++;
-		//maxQ = Q>maxQ ? Q : maxQ;
-		sc->inBuffer[i]=CPX(I,Q);
-	}
-    //ProcessIQData handles all receive chain and ouput
-	sc->ProcessIQData(sc->inBuffer,frameCount);
-
+	mutex.lock();
+	sc->AudioProducer((float*)input, numSamples);
+	mutex.unlock();
 	return paContinue;
 }
 //Final call from receiver ProcessIQData to send audio out

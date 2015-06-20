@@ -13,7 +13,7 @@ Audio::~Audio()
 {
 }
 
-Audio *Audio::Factory(cbProcessIQData cb, int framesPerBuffer)
+Audio *Audio::Factory(cbAudioProducer cb, quint16 framesPerBuffer)
 {
 #ifdef USE_QT_AUDIO
 	qDebug()<<"Using QTAudio";

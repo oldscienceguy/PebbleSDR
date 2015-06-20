@@ -3,9 +3,9 @@
 #include "audioqt.h"
 #include <QDebug>
 
-AudioQT::AudioQT(cbProcessIQData cb, int fpb):Audio()
+AudioQT::AudioQT(cbAudioProducer cb, int fpb):Audio()
 {
-	ProcessIQData = cb;
+	AudioProducer = cb;
 
 	framesPerBuffer = fpb;
 
@@ -14,7 +14,6 @@ AudioQT::AudioQT(cbProcessIQData cb, int fpb):Audio()
 
     qaAudioOutput = NULL;
     qaAudioInput = NULL;
-    cpxInBuffer = new CPX[framesPerBuffer];
     cpxOutBuffer = new CPX[framesPerBuffer];
     outStreamBuffer = new float[framesPerBuffer * 2]; //Max we'll ever see
     inStreamBuffer = new float[framesPerBuffer * 2 * 2]; //Max we'll ever see
@@ -51,7 +50,7 @@ int AudioQT::StartInput(QString inputDeviceName, int _inputSampleRate)
     qaAudioInput = new QAudioInput(qaInputDevice, qaFormat, this);
 
     //Want to get called back whenever there's a buffer full of data
-    int notifyInterval = (float)framesPerBuffer / ((float)inputSampleRate * 1.5)* 1000.0;
+	int notifyInterval = (float)framesPerBuffer / ((float)inputSampleRate * 1.5)* 1000.0;
     qaAudioInput->setNotifyInterval(notifyInterval);  //Experiment with this, has to be fast enough to keep up with sample rate
     //Set up our call back
     //connect(qaAudioInput,SIGNAL(notify()),this,SLOT(ProcessInputData()));
@@ -60,7 +59,7 @@ int AudioQT::StartInput(QString inputDeviceName, int _inputSampleRate)
     //This sets the max # of samples and is in units of sampleformat
     //So 2048 float samples will return 8192 bytes
     qaAudioInput->setBufferSize(framesPerBuffer*2*2); //2x Extra room
-    qaAudioInput->setVolume(20); //Default is 1
+	qaAudioInput->setVolume(5); //Default is 1
     //We should start seeing callbacks after start
     inputDataSource = qaAudioInput->start();
 
@@ -74,25 +73,18 @@ void AudioQT::ProcessInputData()
     if (bytesAvailable < bytesPerBuffer)
         return;
     //qDebug()<<"ProcessInputData "<<bytesAvailable;
-    qint64 bytesRead = inputDataSource->read((char*)inStreamBuffer,bytesPerBuffer);
-    if (bytesRead != bytesPerBuffer)
+
+	mutex.lock(); //Make sure inSteamBuffer doesn't get trashed if we take too long
+	qint64 bytesRead = inputDataSource->read((char*)inStreamBuffer,bytesPerBuffer);
+	if (bytesRead != bytesPerBuffer) {
         qDebug()<<"AudioQt bytesRead != bytesPerBuffer";
-    //qDebug()<<"Num Read "<<numRead;
-    int floatSize = sizeof(float);
-    //Number of CPX samples
-    int frameCount = bytesRead / floatSize / 2;
-    float I,Q;
-	//QT Audio produces higher sample values than portAudio
-	float gain = 0.06;
-    for (int i=0,j=0;i<frameCount;i++,j+=2)
-    {
-		I = inStreamBuffer[j] * gain;
-		Q = inStreamBuffer[j+1] * gain;
-        //qDebug()<<I<<"/"<<Q;
-        cpxInBuffer[i]=CPX(I,Q);
-    }
-    //ProcessBlock handles all receive chain and ouput
-	ProcessIQData(cpxInBuffer,frameCount);
+		mutex.unlock();
+		return;
+	}
+	//If audio input is too high, adjust volume in StartInput
+	AudioProducer(inStreamBuffer, bytesRead / sizeof(float));
+	mutex.unlock();
+
 }
 
 int AudioQT::StartOutput(QString outputDeviceName, int _outputSampleRate)
