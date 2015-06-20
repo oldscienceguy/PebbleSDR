@@ -2,7 +2,6 @@
 #include "gpl.h"
 #include "global.h"
 #include "settings.h"
-#include "audiopa.h"
 #include "demod.h" //For DeviceInterface::DEMODMODE
 #include "receiver.h"
 #include "testbench.h"
