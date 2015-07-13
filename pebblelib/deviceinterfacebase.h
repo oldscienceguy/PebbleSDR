@@ -69,7 +69,9 @@ protected:
 	QString outputDeviceName;
 	quint32 sampleRate;
 
-	double iqGain; //Normalize device so incoming IQ levels are consistent
+	double userIQGain; //Normalize device so incoming IQ levels are consistent
+	double normalizeIQGain; //Per device to normalize device levels at userGain == 1
+
 	IQORDER iqOrder;
 	//Image rejection (iqbalance) factors for this device
 	double iqBalanceGain;

@@ -10,7 +10,7 @@ DeviceInterfaceBase::DeviceInterfaceBase()
 	inputDeviceName = QString();
 	outputDeviceName = QString();
 	sampleRate = 48000;
-	iqGain = 1.0;
+	userIQGain = 1.0;
 	iqOrder = IQ;
 	iqBalanceGain = 1.0;
 	iqBalancePhase = 0;
@@ -31,6 +31,8 @@ DeviceInterfaceBase::DeviceInterfaceBase()
 	ProcessAudioData = NULL;
 	audioOutputSampleRate = 11025;
 	audioInputBuffer = NULL;
+	//Set normalizeIQ gain by injecting known signal db into device and matching spectrum display
+	normalizeIQGain = 1.0; //Will be overridden by specific devices if needed
 }
 
 //Implement pure virtual destructor from interface, otherwise we don't link
@@ -182,7 +184,7 @@ QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, quint16 _option) {
 			return 0;
 			break;
 		case IQGain:
-			return iqGain;
+			return userIQGain;
 			break;
 		case StartupType:
 			return startupType;
@@ -302,7 +304,7 @@ bool DeviceInterfaceBase::Set(STANDARD_KEYS _key, QVariant _value, quint16 _opti
 		case FrequencyCorrection:
 			break;
 		case IQGain:
-			iqGain = _value.toDouble();
+			userIQGain = _value.toDouble();
 			break;
 		case StartupType:
 			startupType = (STARTUP_TYPE)_value.toInt();
@@ -400,7 +402,7 @@ void DeviceInterfaceBase::ReadSettings()
 	inputDeviceName = qSettings->value("InputDeviceName", inputDeviceName).toString();
 	outputDeviceName = qSettings->value("OutputDeviceName", outputDeviceName).toString();
 	sampleRate = qSettings->value("SampleRate", sampleRate).toInt();
-	iqGain = qSettings->value("IQGain",iqGain).toDouble();
+	userIQGain = qSettings->value("IQGain",userIQGain).toDouble();
 	iqOrder = (IQORDER)qSettings->value("IQOrder", iqOrder).toInt();
 	iqBalanceGain = qSettings->value("IQBalanceGain",iqBalanceGain).toDouble();
 	iqBalancePhase = qSettings->value("IQBalancePhase",iqBalancePhase).toDouble();
@@ -422,7 +424,7 @@ void DeviceInterfaceBase::WriteSettings()
 	qSettings->setValue("InputDeviceName", inputDeviceName);
 	qSettings->setValue("OutputDeviceName", outputDeviceName);
 	qSettings->setValue("SampleRate",sampleRate);
-	qSettings->setValue("IQGain",iqGain);
+	qSettings->setValue("IQGain",userIQGain);
 	qSettings->setValue("IQOrder", iqOrder);
 	qSettings->setValue("IQBalanceGain", iqBalanceGain);
 	qSettings->setValue("IQBalancePhase", iqBalancePhase);
@@ -460,8 +462,8 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, float I, float Q)
 {
 	double tmp;
 	//Normalize and apply gain
-	cpx->re = I * iqGain;
-	cpx->im = Q * iqGain;
+	cpx->re = I * userIQGain * normalizeIQGain;
+	cpx->im = Q * userIQGain * normalizeIQGain;
 
 	//Configure IQ order if not default
 	switch(iqOrder) {
@@ -487,8 +489,8 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, qint16 I, qint16 Q)
 {
 	double tmp;
 	//Normalize and apply gain
-	cpx->re = (I / 32768.0) * iqGain;
-	cpx->im = (Q / 32768.0) * iqGain;
+	cpx->re = (I / 32768.0) * userIQGain * normalizeIQGain;
+	cpx->im = (Q / 32768.0) * userIQGain * normalizeIQGain;
 
 	//Configure IQ order if not default
 	switch(iqOrder) {
@@ -515,8 +517,8 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, quint8 I, quint8 Q)
 {
 	double tmp;
 	//Normalize and apply gain
-	cpx->re = ((I - 127) / 128.0) * iqGain;
-	cpx->im = ((Q - 127) / 128.0) * iqGain;
+	cpx->re = ((I - 127) / 128.0) * userIQGain * normalizeIQGain;
+	cpx->im = ((Q - 127) / 128.0) * userIQGain * normalizeIQGain;
 
 	//Configure IQ order if not default
 	switch(iqOrder) {
