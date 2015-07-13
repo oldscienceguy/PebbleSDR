@@ -160,7 +160,6 @@ void SoftrockSDRDevice::ReadSettings()
 			lowFrequency = 1000000;
 			highFrequency = 40000000;
 			startupDemodMode = dmAM;
-			iqGain = 1.0;
 			break;
 		case SR_ENSEMBLE_2M:
 			//si570 / 0.8 = 5000000 to 200000000
@@ -168,7 +167,6 @@ void SoftrockSDRDevice::ReadSettings()
 			lowFrequency = 100000000;
 			highFrequency = 175000000;
 			startupDemodMode = dmFMN;
-			iqGain = 1.0;
 			break;
 		case SR_ENSEMBLE_4M:
 			//si570 / 1.33 = 3000000 to 120000000
@@ -176,7 +174,6 @@ void SoftrockSDRDevice::ReadSettings()
 			lowFrequency = 60000000;
 			highFrequency = 100000000;
 			startupDemodMode = dmFMN;
-			iqGain = 1.0;
 			break;
 		case SR_ENSEMBLE_6M:
 			//si570 / 1.33
@@ -184,7 +181,6 @@ void SoftrockSDRDevice::ReadSettings()
 			lowFrequency = 40000000;
 			highFrequency = 60000000;
 			startupDemodMode = dmFMN;
-			iqGain = 1.0;
 			break;
 		case SR_ENSEMBLE_LF:
 			//Extra div/4 stage, so 1/4 normal SR
@@ -192,7 +188,6 @@ void SoftrockSDRDevice::ReadSettings()
 			lowFrequency = 150000;
 			highFrequency = 4000000;
 			startupDemodMode = dmAM;
-			iqGain = 1.0;
 			break;
 		case FiFi:
 			//si570 / 4.0
@@ -202,7 +197,7 @@ void SoftrockSDRDevice::ReadSettings()
 			highFrequency = 150000000; //Test
 			startupDemodMode = dmAM;
 			//FiFi runs hot, even at lowest device setting, reduce gain
-			iqGain = 0.25;
+			normalizeIQGain = 0.25;
 			break;
 		default:
 			break;

@@ -89,14 +89,17 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback,
 		//SR * 2 bytes for I * 2 bytes for Q .  dataBlockSize is 8192
 		producerConsumer.SetProducerInterval(sampleRate,framesPerBuffer);
 		producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
+		normalizeIQGain = 0.75;
 	} else if(deviceNumber == SDR_IP) {
 		//Get get UDP datagrams of 1024 bytes, 4bytes per CPX or 256 CPX samples
 		producerConsumer.SetProducerInterval(sampleRate,udpBlockSize / 4);
 		//Consumer only has to run once every 2048 CPX samples
 		producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
+		normalizeIQGain = 0.75;
 	} else if (deviceNumber == AFEDRI_USB) {
 		DeviceInterfaceBase::Initialize(_callback, NULL, NULL, _framesPerBuffer); //Handle audio input
 		afedri->Initialize(); //HID
+		normalizeIQGain = 0.75;
 	}
 
 	readBufferIndex = 0;
@@ -293,7 +296,6 @@ void RFSpaceDevice::ReadSettings()
 
 	lowFrequency = 150000;
 	highFrequency = 33000000;
-	iqGain = 1.0;
 	DeviceInterfaceBase::ReadSettings();
 	//Device specific settings follow
 	sRFGain = qSettings->value("RFGain",0).toInt();
@@ -874,7 +876,7 @@ void RFSpaceDevice::UDPSocketNewData()
 			readBufferIndex = 0;
 			for (int i=0, j=0; i<framesPerBuffer; i++, j+=4) {
 				//Reverse IQ order
-				normalizeIQ(&producerFreeBufPtr[i],readBuf[j+2],readBuf[j]);
+				normalizeIQ(&producerFreeBufPtr[i],(qint16)readBuf[j+2],(qint16)readBuf[j]);
 			}
 			//Increment the number of data buffers that are filled so consumer thread can access
 			producerConsumer.ReleaseFilledBuffer();

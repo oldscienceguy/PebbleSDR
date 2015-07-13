@@ -281,7 +281,6 @@ void HPSDRDevice::ReadSettings()
 	lowFrequency = 150000;
 	highFrequency = 33000000;
 	startupDemodMode = dmAM;
-	iqGain = 1.0;
 
 	DeviceInterfaceBase::ReadSettings();
 	//Determine sSpeed from sampleRate

@@ -1184,7 +1184,7 @@ void FunCubeSDRDevice::ReadSettings()
 		lowFrequency = 60000000;
 		highFrequency = 1700000000;
 		startupDemodMode = dmFMN;
-		iqGain = 0.05;
+		normalizeIQGain = 0.05;
 		sPID = FCD_PID;
 		sVID = VID;
 	} else {
@@ -1195,7 +1195,7 @@ void FunCubeSDRDevice::ReadSettings()
 		lowFrequency = 150000;
 		highFrequency = 1900000000;
 		startupDemodMode = dmAM;
-		iqGain = 0.05;
+		normalizeIQGain = 0.05;
 		sPID = FCD_PLUS_PID;
 		sVID = VID;
 	}
