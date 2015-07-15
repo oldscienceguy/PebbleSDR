@@ -33,6 +33,7 @@ public:
 
 public slots:
 		void plotSelectionChanged(SignalSpectrum::DISPLAYMODE m);
+		void updatesPerSecChanged(int item);
 
 signals:
 		//User clicked in spectrum

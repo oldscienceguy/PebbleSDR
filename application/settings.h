@@ -38,11 +38,13 @@ public:
 	qint16 windowXPos;
 	qint16 windowYPos;
 
-    //Fonts for consisten UI
+	//Fonts for consistent UI
     QFont smFont;
     QFont medFont;
     QFont lgFont;
 
+	//Spectrum settings
+	int updatesPerSecond;
 
 	public slots:
 

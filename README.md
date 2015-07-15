@@ -1,6 +1,6 @@
 #Pebble II SDR (Mac) 
-December 26, 2013  
-Copyright 2010, 2011, 2012, 2013, 2014  
+June 1, 2015  
+Copyright 2010, 2011, 2012, 2013, 2014, 2015  
 Richard Landsman N1DDY <PebbleSDR@gmail.com>  
 Licensed under GPL, see gpl.h for details, attribution, and references  
 <https://github.com/oldscienceguy/PebbleSDR>  
@@ -26,7 +26,7 @@ In order to keep the UI compact, more advanced and optional functionality had to
 In addition to being extensible by virtue of being open source, I wanted to be able to keep the core functionality intact, while exploring new data modes and options.  This led to the modem plug-in architecture and eventually will include cross platform extio-like device support.
 
 ####Disclaimer
-The source code for this project represents three years of incremental, "drive-by" coding, with numerous experiments, re-writes, re-factoring, re-everything.  No attempt has been made to pretty up the code or clean up comments.  In fact, in many places I have deliberately left alternative implementations and detailed comments in the code for future reference.
+The source code for this project represents incremental, "drive-by" coding, with numerous experiments, re-writes, re-factoring, re-everything.  No attempt has been made to pretty up the code or clean up comments.  In fact, in many places I have deliberately left alternative implementations and detailed comments in the code for future reference.
 
 ####Credits
 I knew nothing about DSP algorithms when I started writing Pebble.  Although I've collected quite a library of DSP books and articles, I learned by looking at the work of others who were kind enough to make their projects open source.  I've included all of the key projects I referenced and in some cases, derived code from, in the gpl.h file you can find in the source tree.  But I especially wanted to thank Moe Wheatley for his outstanding work in making CuteSDR <http://sourceforge.net/projects/cutesdr/> available with source.  While I had working code, Moe's code demonstrated what a professionally written DSP program should look like.
@@ -47,7 +47,8 @@ Files in the directory are:
 3. Make sure the Audio Output and other device options such as Sample Rate are set properly, then close the options dialog
 4. Find the Power button in the lower left and click it to power-on the receiver.
 5. If everything is working correctly, you will see the frequency display light up and show the default frequency for the device.
-6. See the Details section for each area of the UI
+6. The size and position of the Pebble are saved on exit and restored when the application is re-opened.
+7. See the Details section for each area of the UI
 
 ##Details (Top left to Bottom right)
 ###Tuning Box (10 digits)
@@ -138,7 +139,7 @@ There is a large amount of possible band information to select from.  To make th
 5. Other
 
 ###Bands
-For each band category, there is a Each Band selection of bands to choose from.  The frequency that will be switched to for each band is defined in bands.csv, along with other band details.
+For each band category, there is a Each Band selection of bands to choose from.  The frequency that will be switched to for each band is defined in bands.csv, along with other band details.  If no default (tune) frequency is set for the band in bands.csv, the middle of the band will be selected.
 
 ###Stations
 For each band, there is a list of specific stations that can be selected.  This list comes from eibi.csv, whicn can be updated using the instructions in PebbleData directory.  It also comes from memory.csv, which is where user defined station information is stored.
@@ -167,8 +168,12 @@ The Spectrum and Waterfall display has a great deal of hidden functionality.
 2. Waterfall Display: A standard waterfall is displayed.  Colors indicate the power (db) of the signal.
 3. No Display: This turns off the spectrum and collapses the display to save room.  This can be used when running on a system that does not have enough CPU to keep everything updated.
 
-###Spectrum dB range
-This can be used to increase or decrease the resolution of the display, especially when looking at the Waterfall.  The default range is -120db (black) to -50db (red).  If the Waterfall is washed out, increase the max db displayed to -30.  If no signals are visible, decrease the max db displayed to -70.  Easier to see when you try it than to explain
+###Spectrum db Full Scale (FS)spinner
+This can be used to set the full scale value of the spectrum display, effectively increasing or decreasing the resolution.  The default range is -120db (waterfall black) to -50db (waterfall red).  If the Waterfall is washed out, increase the FS db displayed to -30.  If no signals are visible, decrease the FS db displayed to -70.  Easier to see when you try it than to explain
+
+###Spectrum Updates Per Second (x/sec) spinner
+This can be used to speed up or slow down the spectrum display to match your preferences or the band being monitored.  The range is 0 to 30, but 10 is usually a good default.  Faster updates == more CPU, so if your computer is running 'hot' try slowing down the update rate.
+Note: If set to zero, the spectrum display is temporarily frozen and won't update again until you set a rate greater than zero.
 
 ###Spectrum Span
 This is one of my favorite features and makes devices that support large bandwidth, like the rtl-sdr and AFEDRI, more useful.  The problem with large bandwidths is that it can be difficult or impossible to see close signals.  This can always be addressed by powering off the device, changing to a lower sample rate, and restarting, but that's very inconvenient.  The Span control lets you smoothly zoom on the selected frequency and see a second Waterfall or Spectrum display with the smaller bandwidth and higher resolution.  
@@ -259,7 +264,11 @@ Note there is a conflict with FTDI driver that Pebble uses (D2XX) and the built 
 
 Minimum firmware is 1.05
 
-###RFSpace SDR-IP & AFEDRI
+6/15 Install SpectraVue 3.36 to get latest 1.07 firmware
+
+###AFEDRI USB
+
+###RFSpace SDR-IP & AFEDRI Network
 I use a direct network cable, not wifi, when connecting to this device at the full 2mhz bandwidth.  I set my Mac to a fixed IP of 10.0.1.0 using DHCP Manual in Network settings and the AFEDRI to 10.0.1.100.
 
 You will get a "Allow network connections?" box the first time you run any new version.  This is standard Mac protection.
@@ -330,6 +339,17 @@ TCP Only Options
 * IP Port
 
 If your computer is losing samples (you'll hear choppy audio), try a lower RTL sample rate and/or a lower Pebble sample rate.
+
+To test TCP, run rtl_tcp which defaults to 127.0.0.1:1234.  Make sure IP and Port in Pebble are set to same.
+
+###SDRPlay
+
+SDRPlay BandWidth and IF mode are restricted by sample rate.  Every time you change the sample rate, these selections are checked and reset if necessary.  Like all devices, you must re-start the device for the new sample rate to take effect.
+
+AGC
+
+Total Gain Reduction
+
 
 ###Ghpsdr3 Servers
 

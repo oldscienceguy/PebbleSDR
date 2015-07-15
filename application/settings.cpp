@@ -67,6 +67,8 @@ void Settings::ReadSettings()
 
 	fullScaleDb = qSettings->value("FullScaleDb",-50).toInt();
 
+	updatesPerSecond = qSettings->value("UpdatesPerSec", 10).toInt();
+
 	useTestBench = qSettings->value("TestBench",false).toBool();
 	qSettings->beginGroup(tr("Testbench"));
 	global->testBench->m_SweepStartFrequency = qSettings->value(tr("SweepStartFrequency"),0.0).toDouble();
@@ -115,6 +117,8 @@ void Settings::WriteSettings()
 	qSettings->setValue("UpDownIncrement",upDownIncrement);
     qSettings->setValue("ModeOffset",modeOffset);
 	qSettings->setValue("FullScaleDb",fullScaleDb);
+
+	qSettings->setValue("UpdatesPerSec",updatesPerSecond);
 
 	qSettings->setValue("TestBench",useTestBench);
 	qSettings->beginGroup(tr("Testbench"));

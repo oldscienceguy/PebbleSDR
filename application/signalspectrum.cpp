@@ -42,7 +42,7 @@ SignalSpectrum::SignalSpectrum(int sr, quint32 zsr, int ns, Settings *set):
 
     //Spectrum refresh rate from 1 to 50 per second
     //Init here for now and add UI element to set, save with settings data
-    updatesPerSec = 0; //Refresh rate per second
+	updatesPerSec = global->settings->updatesPerSecond; //Refresh rate per second
     skipFfts = 0; //How many samples should we skip to sync with rate
     skipFftsCounter = 0; //Keep count of samples we've skipped
     skipFftsZoomedCounter = 0; //Keep count of samples we've skipped
@@ -77,7 +77,7 @@ void SignalSpectrum::SetSampleRate(quint32 _sampleRate, quint32 _zoomedSampleRat
 	fftUnprocessed->FFTParams(fftSize, +1, DB::maxDb, sampleRate);
 	fftZoomed->FFTParams(fftSize, +1, DB::maxDb, zoomedSampleRate);
     //Based on sample rates
-    SetUpdatesPerSec(10);
+	SetUpdatesPerSec(global->settings->updatesPerSecond);
     emitFftCounter = 0;
 
 }
@@ -85,7 +85,7 @@ void SignalSpectrum::SetSampleRate(quint32 _sampleRate, quint32 _zoomedSampleRat
 void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double outUnder, double outOver)
 {	
     //Only make spectrum often enough to match spectrum update rate, otherwise we just throw it away
-    if (++skipFftsCounter < skipFfts)
+	if (updatesPerSec == 0 ||  ++skipFftsCounter < skipFfts)
         return;
     skipFftsCounter = 0;
 
@@ -162,7 +162,7 @@ void SignalSpectrum::MakeSpectrum(FFT *fft, CPX *in, double *sOut, int size)
 void SignalSpectrum::MakeSpectrum(FFT *fft, double *sOut)
 {
     //Only make spectrum often enough to match spectrum update rate, otherwise we just throw it away
-    if (++skipFftsCounter >= skipFfts) {
+	if (updatesPerSec != 0 ||  ++skipFftsCounter >= skipFfts) {
         skipFftsCounter = 0;
 
         if (displayUpdateComplete) {
@@ -212,10 +212,13 @@ void SignalSpectrum::SetUpdatesPerSec(int updatespersec)
     // fftsToSkip = (192000 / 4096) * 0.100 sec = 4.6875 = skip 4 and process every 5th FFT
     // fftsToSkip = (192000 / 4096) * 0.020 sec = 0.920 = skip 0 and process every FFT
     updatesPerSec = updatespersec;
-    skipFfts = sampleRate / (numSamples * updatesPerSec);
-    skipFftsZoomed = zoomedSampleRate / (numSamples * updatesPerSec);
-    skipFftsCounter = 0;
-    skipFftsZoomedCounter = 0;
+	global->settings->updatesPerSecond = updatesPerSec;
+	skipFfts = skipFftsCounter = 0;
+	skipFftsZoomed = skipFftsZoomedCounter = 0;
+	if (updatesPerSec > 0) {
+		skipFfts = sampleRate / (numSamples * updatesPerSec);
+		skipFftsZoomed = zoomedSampleRate / (numSamples * updatesPerSec);
+	}
 }
 
 

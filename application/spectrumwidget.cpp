@@ -35,9 +35,14 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 	ui.maxDbBox->setMinimum(-50); //Makes no sense to set to anything below this or no useful information
 	ui.maxDbBox->setMaximum(DB::maxDb);
     ui.maxDbBox->setValue(plotMaxDb);
-	ui.maxDbBox->setSingleStep(10);
+	ui.maxDbBox->setSingleStep(5);
     connect(ui.maxDbBox,SIGNAL(valueChanged(int)),this,SLOT(maxDbChanged(int)));
 
+	ui.updatesPerSec->setMinimum(0); //Freezes display
+	ui.updatesPerSec->setMaximum(30); //20 x/sec is very fast
+	ui.updatesPerSec->setValue(global->settings->updatesPerSecond);
+	ui.updatesPerSec->setSingleStep(2);;
+	connect(ui.updatesPerSec,SIGNAL(valueChanged(int)),this,SLOT(updatesPerSecChanged(int)));
 	spectrumMode=SignalSpectrum::SPECTRUM;
 
 	//message = NULL;
@@ -498,8 +503,16 @@ void SpectrumWidget::plotSelectionChanged(SignalSpectrum::DISPLAYMODE mode)
         if (zoom != 1)
             DrawOverlay(true);
     }
-    update();
+	update();
 }
+
+void SpectrumWidget::updatesPerSecChanged(int item)
+{
+	if (signalSpectrum == NULL)
+		return;
+	signalSpectrum->SetUpdatesPerSec(ui.updatesPerSec->value());
+}
+
 void SpectrumWidget::SetSignalSpectrum(SignalSpectrum *s) 
 {
 	signalSpectrum = s;	
@@ -817,7 +830,9 @@ void SpectrumWidget::newFftData()
             //if(fftbuf[i] < m_FftPkBuf[i])
             //    m_FftPkBuf[i] = fftMap[i];
         }
-        plotPainter.setPen( Qt::green );
+		//MiterJoin gives us sharper peaks
+		QPen pen(Qt::green, 1, Qt::SolidLine, Qt::RoundCap, Qt::MiterJoin);
+		plotPainter.setPen(pen);
 		//Add points to complete the polygon
 		LineBuf[numPoints].setX(plotWidth);
 		LineBuf[numPoints].setY(plotHeight);
