@@ -35,6 +35,15 @@ macx {
 		RCC_DIR = $${_PRO_FILE_PWD_}/UIMacRelease
 		LIB_DIR = LibMacRelease
 	}
+        # This adds to the list of files that are deleted when make clean is executed by QTCreator
+        # Not sure what '*=' does, but on Mac '+=' doesn't work
+        QMAKE_CLEAN *= $${DESTDIR}/*
+        QMAKE_CLEAN *= $${OBJECTS_DIR}/*
+        QMAKE_CLEAN *= $${MOC_DIR}/*
+        QMAKE_CLEAN *= $${UI_DIR}/*
+        QMAKE_CLEAN *= $${RCC_DIR}/*
+        QMAKE_CLEAN *= $${LIB_DIR}/*
+        #message("Clean " $${QMAKE_CLEAN})
 
         #FFT library choices are FFTW, FFTCUTE, FFTOOURA
         #DEFINES += USE_FFTW
