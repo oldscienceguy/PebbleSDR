@@ -26,7 +26,7 @@ macx {
     INSTALLDIR = $${DESTDIR} #Save before we modify
     DESTDIR = $${PWD}/$${LIB_DIR}
     #Delete our custom library directory on clean:  LIB_DIR is set in pebbleqt.pri
-    QMAKE_CLEAN *= $${PWD}/$${LIB_DIR}
+    QMAKE_CLEAN *= $${PWD}/$${LIB_DIR}/*
 
     #-rpath is set by application that uses Pebblelib
     #See pebbleqt.pro which sets it to bundle's Framework directory

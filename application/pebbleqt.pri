@@ -37,11 +37,11 @@ macx {
 	}
         # This adds to the list of files that are deleted when make clean is executed by QTCreator
         # Not sure what '*=' does, but on Mac '+=' doesn't work
-        QMAKE_CLEAN *= -r $${DESTDIR} #-r removes directories and any subdirectories
-        QMAKE_CLEAN *= $${OBJECTS_DIR}
-        QMAKE_CLEAN *= $${MOC_DIR}
-        QMAKE_CLEAN *= $${UI_DIR}
-        QMAKE_CLEAN *= $${RCC_DIR}
+        QMAKE_CLEAN *= -r $${DESTDIR}/* #-r removes directories and any subdirectories
+        QMAKE_CLEAN *= $${OBJECTS_DIR}/*
+        QMAKE_CLEAN *= $${MOC_DIR}/*
+        QMAKE_CLEAN *= $${UI_DIR}/*
+        QMAKE_CLEAN *= $${RCC_DIR}/*
         #LIB_DIR will be cleaned when pebblelib is made, otherwise we delete the library every time we clean a subproject
 
         #message("Clean " $${QMAKE_CLEAN})
