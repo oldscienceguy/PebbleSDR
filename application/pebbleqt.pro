@@ -151,7 +151,8 @@ macx {
         # 2. Set all PebbleLib and Pebble plugins to use @rpath
         # 3. Set rpath to Pebble.app/Contents/Frameworks
         # 4. Set rpath to ??? for SDR Garage?
-        QMAKE_POST_LINK += macdeployqt $${DESTDIR}/Pebble.app
+        #8/27/15: Turn off macdeployqt output (verbose=0) to prevent error lookin for libpebblelib in user/...
+        QMAKE_POST_LINK += macdeployqt $${DESTDIR}/Pebble.app -verbose=0
         #QMAKE_POST_LINK += macchangeqt $${DESTDIR}/Pebble.app ./ #This changes location to a fixed directory, not that useful
 
         #This anchors @rpath references to use bundle's Frameworks directory
