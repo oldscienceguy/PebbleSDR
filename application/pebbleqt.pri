@@ -42,7 +42,7 @@ macx {
         QMAKE_CLEAN *= $${MOC_DIR}
         QMAKE_CLEAN *= $${UI_DIR}
         QMAKE_CLEAN *= $${RCC_DIR}
-        QMAKE_CLEAN *= $${PWD}/../pebblelib/$${LIB_DIR}
+        #LIB_DIR will be cleaned when pebblelib is made, otherwise we delete the library every time we clean a subproject
 
         #message("Clean " $${QMAKE_CLEAN})
 
