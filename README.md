@@ -386,6 +386,8 @@ Sometimes you have to manually delete the QT directories with makefiles when cha
 Mavericks / XCode 5 does not include a GDB debugger in the command line tools as in previous releases.  QT Creator will work with the new LLVM, but works better with GDB.  To install GDB (actually ggdb) using macports:
 
 	* sudo port install gdb
+	
+QT5.5: Build PebbleLib and other subprojects manually the first time to create the output subdirectories.  Then you can use the PebbleII subdir project to build everything.  There's a bug in QT5.5 that returns an error if an output file is created in a directory that doesn't exist.  Seems to be a timing issue.  Building each subproject to create the sub directories works around this problem.
 
 ###Coding Style
 Basically a mess right now and needs to be cleaned up.

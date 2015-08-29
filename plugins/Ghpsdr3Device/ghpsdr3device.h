@@ -23,7 +23,7 @@ WARNING: There are at least 2 different prototocols I found in various source co
 
 Codec2 from David Rowe at http://www.rowetel.com/blog/?page_id=452
 https://svn.code.sf.net/p/freetel/code/codec2/
-
+http://openhpsdr.org/wiki/index.php?title=Ghpsdr3_protocols
 
 Documentation may not be up to date, look at client.c readcb() in ghpsdr3 source
 	'!' Documented
@@ -265,7 +265,7 @@ private slots:
 	void TCPSocketNewData();
 	//void UDPSocketNewData();
 
-	void RequestSpectrum();
+	void cmdGetSpectrum();
 
 private:
 	bool Connect();
@@ -277,16 +277,11 @@ private:
 	//Display device option widget in settings dialog
 	void SetupOptionUi(QWidget *parent);
 
-	static const quint16 SEND_BUFFER_SIZE = 64;
-	static const quint16 AUDIO_PACKET_SIZE = 2000; //# 8bit samples we get from server
-	static const quint16 AUDIO_OUTPUT_SIZE = 512; //#audio samples to sent to output at a time
-	static const quint16 SPECTRUM_PACKET_SIZE = 2048; //Check this
-
 	enum AudioEncoding {
 		ALAW = 0,
 		PCM = 1,
 		CODEC2 = 2
-	};
+	}audioEncoding;
 
 	enum PacketType {
 		SpectrumData = 0,
@@ -310,7 +305,7 @@ private:
 				packEnd
 			}packStruct;
 		};
-	};
+	}dspCommonHeader;
 
 	//48 byte header returned in every tcp spectrum response from dspserver
 	struct DspServerHeader {
@@ -336,7 +331,7 @@ private:
 		//3 byte commonHeader plus
 		quint16 bufLen; //BigEndian, use qFromBigEndian() to platform quint16
 		packEnd
-	}packStruct;
+	}packStruct dspAudioHeader;
 
 	//15 byte header returned with every tcp spectrum response from dspServer
 	struct DspSpectrumHeader {
@@ -352,7 +347,7 @@ private:
 		quint32 sampleRate;
 		quint16 loOffset;
 		packEnd
-	}packStruct;
+	}packStruct dspSpectrumHeader;
 
 	enum gDemodMode {
 		LSB=0, USB, DSB, CWL, CWH, FM, AM, DIGU, SPEC, DIGL, SAM, DRM
@@ -391,21 +386,20 @@ private:
 	QTcpSocket *tcpSocket;
 	QHostAddress deviceAddress;
 	quint16 devicePort;
-	static const quint16 tcpHeaderSize = 48; //Must match size of packed structure
-	static const quint16 tcpAudioHeaderSize = 5;
-	static const quint16 tcpReadBufSize = AUDIO_PACKET_SIZE + tcpAudioHeaderSize; //Data buffer size + prefix
 
-	DspCommonHeader dspCommonHeader;
-	DspAudioHeader dspAudioHeader;
-	DspSpectrumHeader dspSpectrumHeader;
+	static const quint16 SEND_BUFFER_SIZE = 64;
+	static const quint16 AUDIO_OUTPUT_SIZE = 512; //#audio samples to sent to output at a time
 
+	static const quint16 AUDIO_PACKET_SIZE = 2000; //# 8bit samples we get from server
 	quint8 audioBuffer[AUDIO_PACKET_SIZE]; //Typically 2000
-	quint16 audioBufferIndex; //#bytes processed so far, reset every 2000
+	quint16 audioBufferCount; //#bytes processed so far, reset every 2000
 
+	static const quint16 SPECTRUM_PACKET_SIZE = 2048; //Check this
 	quint8 spectrumBuffer[SPECTRUM_PACKET_SIZE];
 	quint16 spectrumBufferIndex;
 
-	quint8 answerBuf[256]; //Max length is 99
+	static const quint16 ANSWER_PACKET_SIZE = 256; //Max length is 99
+	quint8 answerBuf[ANSWER_PACKET_SIZE];
 	quint16 answerLength;
 
 	//QUdpSocket *udpSocket;
@@ -419,11 +413,14 @@ private:
 
 	QTimer spectrumTimer;
 
-	bool SendFrequencyCmd(double f);
-	bool SendModeCmd(gDemodMode m);
-	bool SendTcpCmd(QString buf);
-	bool SendGainCmd(quint8 gain);
-	bool SendFilterCmd(qint16 low, qint16 high);
+	//DSPServer commands
+	void cmdStartAudioStream(quint16 _bufferSize, quint16 _audioSampleRate, quint16 _audioChannels, quint16 _audioEncoding);
+	bool cmdSetFrequency(double f);
+	bool cmdSetMode(gDemodMode m);
+	bool sendTcpCmd(QString buf);
+	bool cmdSetRxOutputGain(quint8 gain);
+	bool cmdSetFilter(qint16 low, qint16 high);
 	void RequestInfo();
+
 	};
 #endif // GHPSDR3DEVICE_H

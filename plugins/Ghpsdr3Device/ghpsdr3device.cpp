@@ -55,7 +55,7 @@ bool Ghpsdr3Device::Initialize(cbProcessIQData _callback,
 		connect(this,SIGNAL(CheckNewData()), this, SLOT(TCPSocketNewData()));
 	}
 
-	connect(&spectrumTimer, SIGNAL(timeout()), this, SLOT(RequestSpectrum()));
+	//connect(&spectrumTimer, SIGNAL(timeout()), this, SLOT(cmdGetSpectrum()));
 
 	serverInfo.isValid = false;
 	return true;
@@ -122,12 +122,12 @@ void Ghpsdr3Device::Start()
 	running = true;
 	//Testing initial setup requirements
 	//SendTcpCmd("setClient QtRadio");
-	SendModeCmd(gDemodMode::AM);
-	SendGainCmd(50); //0-100, 100 overloads
-	SendFilterCmd(-2000, 2000);
-	SendTcpCmd("setencoding 0"); //ALAW
-	SendTcpCmd("SetSquelchVal -100");
-	SendTcpCmd("SetSquelchState off");
+	cmdSetMode(gDemodMode::AM);
+	cmdSetRxOutputGain(50); //0-100, 100 overloads
+	cmdSetFilter(-2000, 2000);
+	sendTcpCmd("setencoding 0"); //ALAW
+	sendTcpCmd("SetSquelchVal -100");
+	sendTcpCmd("SetSquelchState off");
 	//Get all the status data from server with q- commands
 	RequestInfo();
 
@@ -135,26 +135,29 @@ void Ghpsdr3Device::Start()
 	//But safe to call either way
 	//Don't rely on default buffer size, set explicitly
 	//Buffer size(seems to be ignored), sample, channels
-	QString buf = "startaudiostream 512 8000 1 0";
-	SendTcpCmd(buf);
+	cmdStartAudioStream(AUDIO_OUTPUT_SIZE,8000,1,ALAW);
 
 	//spectrumTimer.start(100); //10 updates per second
 	//Assume server supports protocol 3
-	SendTcpCmd("setfps 2048 10"); //Testing
+	//Replaces old use of spectrumTimer to request spectrum data, server sends spectrum data automatically at setfps rate
+	sendTcpCmd("setfps 2048 10");
+
+	DeviceInterfaceBase::Start();
 }
 
 void Ghpsdr3Device::Stop()
 {
 	if (!running)
 		return;
-	spectrumTimer.stop();
+	//spectrumTimer.stop();
 
 	running = false;
 	producerConsumer.Stop();
-	SendTcpCmd("stopaudiostream");
+	sendTcpCmd("stopaudiostream");
 	//Drain any buffered data
 	tcpSocket->flush();
 	tcpSocket->readAll(); //Throw away anything left in buffers
+	DeviceInterfaceBase::Stop();
 }
 
 void Ghpsdr3Device::ReadSettings()
@@ -201,7 +204,7 @@ QVariant Ghpsdr3Device::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 			//!!Todo: Update all DeviceType usage to handle Audio_only
 			return DeviceInterface::IQ_DEVICE; //AUDIO_ONLY;
 		case AudioOutputSampleRate:
-			return 8000; //Fixed?
+			return 8000; //Fixed by spec?
 			break;
 		case DeviceSlave:
 			if (!serverInfo.isValid || !serverInfo.isSlave)
@@ -225,7 +228,7 @@ bool Ghpsdr3Device::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, qu
 	switch (_key) {
 		case DeviceFrequency:
 			if (serverInfo.isValid && !serverInfo.isSlave)
-				return SendFrequencyCmd(_value.toFloat());
+				return cmdSetFrequency(_value.toFloat());
 			return false;
 		case DeviceDemodMode:		//RW quint16 enum DeviceInterface::DEMODMODE
 			if (serverInfo.isValid && !serverInfo.isSlave)
@@ -254,7 +257,7 @@ bool Ghpsdr3Device::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, qu
 
 		case DeviceSlave:
 			//Fetch new data
-			RequestInfo();
+			RequestInfo(); //Move to command
 			return true;
 
 		default:
@@ -262,9 +265,9 @@ bool Ghpsdr3Device::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, qu
 	}
 }
 
-void Ghpsdr3Device::RequestSpectrum()
+void Ghpsdr3Device::cmdGetSpectrum()
 {
-	SendTcpCmd("getSpectrum " + QString::number(SPECTRUM_PACKET_SIZE));
+	sendTcpCmd("getSpectrum " + QString::number(SPECTRUM_PACKET_SIZE));
 }
 
 void Ghpsdr3Device::RequestInfo()
@@ -273,20 +276,21 @@ void Ghpsdr3Device::RequestInfo()
 		return;
 
 	mutex.lock();
-	SendTcpCmd("q-version");
-	SendTcpCmd("q-protocol3");
-	SendTcpCmd("q-master");
-	SendTcpCmd("q-loffset");
-	SendTcpCmd("q-cantx#None");
-	SendTcpCmd("q-rtpport");
-	SendTcpCmd("q-server");
+	sendTcpCmd("q-version");
+	sendTcpCmd("q-protocol3");
+	sendTcpCmd("q-master");
+	sendTcpCmd("q-loffset");
+	sendTcpCmd("q-cantx#None");
+	sendTcpCmd("q-rtpport");
+	sendTcpCmd("q-server");
 	//SendTcpCmd("*hardware?"); //Doesn't return any answer
 	//Send q-info last.  We use response to determine if serverInfo has been set.  Not perfect, but ok
-	SendTcpCmd("q-info");
+	sendTcpCmd("q-info");
 	mutex.unlock();
 }
 
-bool Ghpsdr3Device::SendTcpCmd(QString buf)
+
+bool Ghpsdr3Device::sendTcpCmd(QString buf)
 {
 	//Looks like commands are always 64 bytes with unused filled with 0x00
 	quint8 cmdBuf[SEND_BUFFER_SIZE];
@@ -302,28 +306,40 @@ bool Ghpsdr3Device::SendTcpCmd(QString buf)
 	return true;
 }
 
-bool Ghpsdr3Device::SendFrequencyCmd(double f)
+void Ghpsdr3Device::cmdStartAudioStream(quint16 _bufferSize, quint16 _audioSampleRate, quint16 _audioChannels, quint16 _audioEncoding)
+{
+	QString command;
+	command.clear();
+	QTextStream(&command) << "startAudioStream "
+		 << _bufferSize << " "
+		 << _audioSampleRate << " "
+		 << _audioChannels << " "
+		 << _audioEncoding;
+	sendTcpCmd(command);
+}
+
+bool Ghpsdr3Device::cmdSetFrequency(double f)
 {
 	QString buf = "setfrequency "+ QString::number(f,'f',0);
-	return SendTcpCmd(buf);
+	return sendTcpCmd(buf);
 }
 
-bool Ghpsdr3Device::SendModeCmd(gDemodMode m)
+bool Ghpsdr3Device::cmdSetMode(gDemodMode m)
 {
 	QString buf = "setmode "+ QString::number(m);
-	return SendTcpCmd(buf);
+	return sendTcpCmd(buf);
 }
 
-bool Ghpsdr3Device::SendGainCmd(quint8 gain)
+bool Ghpsdr3Device::cmdSetRxOutputGain(quint8 gain)
 {
 	QString buf = "setrxoutputgain " + QString::number(gain);
-	return SendTcpCmd(buf);
+	return sendTcpCmd(buf);
 }
 
-bool Ghpsdr3Device::SendFilterCmd(qint16 low, qint16 high)
+bool Ghpsdr3Device::cmdSetFilter(qint16 low, qint16 high)
 {
 	QString buf = "setfilter " + QString::number(low) + " " + QString::number(high);
-	return SendTcpCmd(buf);
+	return sendTcpCmd(buf);
 }
 
 void Ghpsdr3Device::SetupOptionUi(QWidget *parent)
@@ -417,7 +433,7 @@ void Ghpsdr3Device::TCPSocketNewData()
 	while (bytesAvailable > 0) {
 		switch (tcpReadState) {
 			case READ_HEADER_TYPE:
-				audioBufferIndex = 0;
+				audioBufferCount = 0;
 				spectrumBufferIndex = 0;
 
 				//Looking for 3 byte common header
@@ -497,12 +513,13 @@ void Ghpsdr3Device::TCPSocketNewData()
 			case READ_AUDIO_BUFFER:
 				//qDebug()<<"READ_AUDIO_BUFFER "<<bytesAvailable<<" "<<audioHeader.bufLen;
 				//Process whatever bytes we have, even if not a full buffer
-				bytesToCompleteAudioBuffer = dspAudioHeader.bufLen - audioBufferIndex;
+				//Just because TCP has data ready doesn't mean it's a complete buffer
+				bytesToCompleteAudioBuffer = dspAudioHeader.bufLen - audioBufferCount;
 				if (bytesAvailable > bytesToCompleteAudioBuffer)
+					//Leave extra bytes in tcp buffer for next state machine loop
 					bytesRead = tcpSocket->read((char*)&audioBuffer,bytesToCompleteAudioBuffer);
 				else
 					bytesRead = tcpSocket->read((char*)&audioBuffer,bytesAvailable);
-
 				if (bytesRead < 0) {
 					qDebug()<<"Error in tcpSocketRead";
 					mutex.unlock();
@@ -516,27 +533,30 @@ void Ghpsdr3Device::TCPSocketNewData()
 						//Make sure we wait for free buffer long enough to handle short delays
 						producerBuf = (CPX*)producerConsumer.AcquireFreeBuffer(1000);
 						if (producerBuf == NULL) {
-							qDebug()<<"No free buffer available";
+							qDebug()<<"No free Audio buffer available";
 							//Todo: We need a reset function to start everything over, reconnect etc
 							mutex.unlock();
 							return;
 						}
 					}
 
+					//Samples are 8bit unsigned compressed data
 					decoded = alaw.ALawToLinear(audioBuffer[i]);
 					//qDebug()<<audioBuffer[i]<<" "<<decoded;
 					producerBuf[producerBufIndex].re = producerBuf[producerBufIndex].im = decoded / 32767.0;
 					producerBufIndex++;
+					//Every time we get 512 bytes of audio data, release it to application
 					if (producerBufIndex >= AUDIO_OUTPUT_SIZE) {
+						//ProcessAudioData(producerBuf,AUDIO_OUTPUT_SIZE);
 						producerConsumer.ReleaseFilledBuffer();
 						producerBufIndex = 0;
 					}
 
 				}
-				//If we've processed AUDIO_OUTPUT_SIZE samples, then change state
-				audioBufferIndex += bytesRead;
-				if (audioBufferIndex >= dspAudioHeader.bufLen) {
-					audioBufferIndex = 0;
+				//If we've processed dspAudioHeader.bufLen (2000) samples, then change state
+				audioBufferCount += bytesRead;
+				if (audioBufferCount >= dspAudioHeader.bufLen) {
+					audioBufferCount = 0;
 					tcpReadState = READ_HEADER_TYPE; //Start over and look for next header
 				}
 
