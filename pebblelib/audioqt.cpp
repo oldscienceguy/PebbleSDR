@@ -118,6 +118,10 @@ int AudioQT::StartOutput(QString outputDeviceName, int _outputSampleRate)
 
     qaAudioOutput = new QAudioOutput(qaOutputDevice, qaFormat, this);
 
+	//We need to make sure the buffer is big enough, set to max
+	//If too small, we'll get choppy output as data is thrown away
+	//This has to be called before start
+	qaAudioOutput->setBufferSize(32767);
     outputDataSource = qaAudioOutput->start();
 	return 0;
 }
@@ -159,18 +163,38 @@ void AudioQT::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
         if (gain != 1)
             out[i] *= gain;
 
+		//Not sure if we need to clip, just in case
+		if (out[i].re >= 1.0)
+			out[i].re = 0.9999;
+		if (out[i].im <= -1.0)
+			out[i].im = -0.9999;
+
         //If we use Int 16
         //left = Float2Int(out[i].re);
         //right = Float2Int(out[i].im);
 
         //No conversion necessary from cpx
-        outStreamBuffer[j] = out[i].re;
-        outStreamBuffer[j+1] = out[i].im;
-
+		outStreamBuffer[j] = out[i].re;
+		outStreamBuffer[j+1] = out[i].im;
 	}
-    bytesWritten = outputDataSource->write((char*)outStreamBuffer,outSamples*sizeof(float)*2);
-    //if (bytesWritten != data.length())
-	//	true;
+	//Make sure we have enough buffer space to write
+	quint32 bytesFree = qaAudioOutput->bytesFree();
+	quint32 bytesToWrite = outSamples*sizeof(float)*2;
+	if (bytesFree < bytesToWrite) {
+		//Note if this doesnt solve the buffering problem the better way is to construct our own IO class
+		//Then QAudioOutput will call back to our IO to get data, which we can heavily buffer
+		outputDataSource->waitForBytesWritten(100); //50ms arbitrarily chosen
+		bytesFree = qaAudioOutput->bytesFree();
+		//qaAudioOutput->reset();
+		if (bytesFree < bytesToWrite) {
+			qDebug()<<"QT Audio Output: not enough room in buffer "<<bytesFree;
+			bytesToWrite = bytesFree;
+		}
+	}
+	bytesWritten = outputDataSource->write((char*)outStreamBuffer,bytesToWrite);
+	if (bytesWritten != bytesToWrite)  {
+		qDebug()<<"QT Audio Output: bytesWritten less than bytesToWrite"<<bytesWritten;
+	}
 }
 void AudioQT::ClearCounts()
 {
