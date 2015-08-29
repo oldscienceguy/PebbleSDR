@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>571</width>
-    <height>251</height>
+    <width>573</width>
+    <height>329</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -2111,7 +2111,14 @@
        <number>0</number>
       </property>
       <item>
-       <widget class="SpectrumWidget" name="spectrumWidget" native="true"/>
+       <widget class="SpectrumWidget" name="spectrumWidget" native="true">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>80</height>
+         </size>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>
