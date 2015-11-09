@@ -144,19 +144,25 @@ macx {
 	#2nd arg starts with @executable_path which expands to (path to bundle)/pebble.app/contents/macos
 	#Up one dir to Frameworks which is where we copy .dylib files
 	#3rd arg is the actual executable to patch
-        #3/9/14 YoYo: Switched back to macdeployqt because tracking down all the Qt plugins, fixing them, and updating directories
-        #just got too complicated
-        #New strategy:
         # 1. Let macdeployqt handle all the Pebble fixups and move dylibs to Framewords and plugins to Plugins
         # 2. Set all PebbleLib and Pebble plugins to use @rpath
         # 3. Set rpath to Pebble.app/Contents/Frameworks
         # 4. Set rpath to ??? for SDR Garage?
-        #8/27/15: Turn off macdeployqt output (verbose=0) to prevent error lookin for libpebblelib in user/...
-        QMAKE_POST_LINK += macdeployqt $${DESTDIR}/Pebble.app -verbose=0
-        #QMAKE_POST_LINK += macchangeqt $${DESTDIR}/Pebble.app ./ #This changes location to a fixed directory, not that useful
-
         #This anchors @rpath references to use bundle's Frameworks directory
         QMAKE_LFLAGS += -rpath @executable_path/../Frameworks
+
+        #Uncomment for debugging dependencies
+        #pebblefix.commands += otool -L $${DESTDIR}/Pebble.app/contents/macos/pebble > temp.txt;
+        #Use install_name_tool because macdeployqt occasionally can't find pebblelib
+        pebblefix.commands += install_name_tool -change libpebblelib.1.dylib @executable_path/../Frameworks/libpebblelib.1.dylib $${DESTDIR}/Pebble.app/contents/macos/pebble;
+
+        #macdeployqt should pick up any fixups we missed and copy QT libraries to app Frameworks directory
+        pebblefix.commands += macdeployqt $${DESTDIR}/Pebble.app;
+
+        #Uncomment for debugging dependencies
+        pebblefix.commands += otool -L $${DESTDIR}/Pebble.app/contents/macos/pebble >> temp.txt;
+        pebblefix.path += $${DESTDIR}
+        INSTALLS += pebblefix
 }
 
 win32 {
