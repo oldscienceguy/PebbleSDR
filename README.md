@@ -1,5 +1,5 @@
 #Pebble II SDR (Mac) 
-June 1, 2015  
+Nov 1, 2015  
 Copyright 2010, 2011, 2012, 2013, 2014, 2015  
 Richard Landsman N1DDY <PebbleSDR@gmail.com>  
 Licensed under GPL, see gpl.h for details, attribution, and references  
@@ -28,8 +28,11 @@ In addition to being extensible by virtue of being open source, I wanted to be a
 ####Disclaimer
 The source code for this project represents incremental, "drive-by" coding, with numerous experiments, re-writes, re-factoring, re-everything.  No attempt has been made to pretty up the code or clean up comments.  In fact, in many places I have deliberately left alternative implementations and detailed comments in the code for future reference.
 
+I have not advertised this for broad distribution because of health issues that could cause me to not be able to support it, answer questions, fix bugs, etc.  If you get this, please be patient for a response from me.
+
 ####Credits
 I knew nothing about DSP algorithms when I started writing Pebble.  Although I've collected quite a library of DSP books and articles, I learned by looking at the work of others who were kind enough to make their projects open source.  I've included all of the key projects I referenced and in some cases, derived code from, in the gpl.h file you can find in the source tree.  But I especially wanted to thank Moe Wheatley for his outstanding work in making CuteSDR <http://sourceforge.net/projects/cutesdr/> available with source.  While I had working code, Moe's code demonstrated what a professionally written DSP program should look like.
+	 
 
 ##Installation
 Installation is easy, just unzip the files into a Pebble directory.  Pebble does not install and does not depend on any other libraries being previously installed, everything is in the directory.
@@ -377,17 +380,54 @@ This is an experimental server application that uses the same device plugins as 
 ###Plugins directory
 
 ##Source Code
-### Build Notes
+###Build Instructions 
+If you need to rebuild from source... 
 
-Install QT and after loading PebbleII.pro add ""make install" steps to Debug and Release configuration.
+1. Install QT 5.5.1 (I try to keep up with each QT release) at www.qt.io/downloads 
+2. Open pebbleII.pro
+3. Edit 'Projects' in QT and add make install as an additional build step in both the Debug and Release configurations.  This will copy all the necessary files into a directory that contains all the files.  Pebble should not require any other software to be installed in order to run in the directory created by make install (MacDebug or MacRelease).
+4. Download & install FTDI D2XX drivers from http://www.ftdichip.com/Drivers/D2XX.htm  
+	V 1.1.0 4/25/11   
+	V 1.2.2 10/30/12
+5. Download and install libusb drivers from libusb.info  
+	./configure  
+	make  
+	sudo make install  
+	files are in usr/local/lib  
+6. Download PortAudio from portaudio.com , open terminal  
+	Get latest SVN and make sure configure.in has 10.8 and 10.9 switch statment  
+	autoreconf -if  
+	./configure  
+	make  
+	portaudio directory is at same level as PebbleII  
+	if autoreconf not found  
+		* sudo port install automake autoconf libtool #macports
+7. Download FFTW from fftw.org  
+	open terminal, build floating point  
+	Current version 3.3.1 as of 2/2013  
+	Switched from float to double so we can switch between FFTW and Ooura libraries.  Don't add --enable-float to ./configure  
+	./configure  
+	make  
+	sudo make install  
+	Header is in api directory, lib is in ./libs directory  
+	Or prebuilt fftw from pdb.finkproject.org	
+8. Edit pebbleqt.pri  
+	Define FFT library to use (uncomment)  
+	Define Audio library to use (uncomment)  
+	Define the Mac OSX version you are using  
+9. Install latest XCode and all command line tools
+10. Specific device plugins, like rtl2832, have their own pre-build installation requirements.  See the .pro file for each device
 
-Sometimes you have to manually delete the QT directories with makefiles when changing from Debug to Release.
+Select the Pebble II project (contains all the sub projects) and build/clean from the menu.  Then select build/Run Qmake to update all the make files from the .pro files.  Finally select build/Build All.  If you have any problems with PebbleLib, select the PebbleLib project and build in first.
 
-Mavericks / XCode 5 does not include a GDB debugger in the command line tools as in previous releases.  QT Creator will work with the new LLVM, but works better with GDB.  To install GDB (actually ggdb) using macports:
+Mavericks / XCode 5 does not include a GDB debugger in the command line tools as in previous releases.  QT Creator will work with the new LLVM, but you may need to use GDB for some reason. To install GDB (actually ggdb) using macports:
 
 	* sudo port install gdb
 	
-QT5.5: Build PebbleLib and other subprojects manually the first time to create the output subdirectories.  Then you can use the PebbleII subdir project to build everything.  There's a bug in QT5.5 that returns an error if an output file is created in a directory that doesn't exist.  Seems to be a timing issue.  Building each subproject to create the sub directories works around this problem.
+If you are developing for Windows on a Mac using Parallels you may need to enable UNC paths in order to access files on the Mac side    
+To support UNC paths for Parallels, Regedit HKEY_CURRENTUSER/Software Microsoft/Command Processor and add the value DisableUNCCheck REG_DWORD and set the value to 0 x 1 (Hex).  
+Make sure to update project version if Qt version is updated in QtCreator
+Exit code 0x0c0000315 if "Release DLLs" not copied to Debug and Release dirs
 
 ###Coding Style
 Basically a mess right now and needs to be cleaned up.

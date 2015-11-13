@@ -6,58 +6,10 @@ TARGET = Pebble
 #QT5 requires explicit add of Widgets to add QtWidgets which was in QtGui in earlier releases
 QT += widgets core gui
 
-#Download & install QT 5.2 from http://qt-project.org
-#Edit Projects and make sure Kits use Clang
-#Edit Projects and add 'make install' as additional build step
-#QML Debugging can be turned off, not using QML
-#QT 5.1 crashes in main() if QML debugging is not turned off
-#QT 5.1 generates OSX not supported warnings for 10.8.4 (Mountain Lion)? Maybe in QMutex?
-
-#Subversion files are found at http://www.wandisco.com/subversion/download#osx
-#Edit QtCreator prefs so subversion is found in /opt/subversion/bin/svn (mac default svn is old)  Enter username and pw
-
-#Download & install FTDI D2XX drivers from http://www.ftdichip.com/Drivers/D2XX.htm
-#V 1.1.0 4/25/11
-#V 1.2.2 10/30/12
-
-#Download and install libusb drivers from libusb.info
-# ./configure
-# make
-# sudo make install
-# files are in usr/local/lib
-
-#Download PortAudio from portaudio.com , open terminal
-#Get latest SVN and make sure configure.in has 10.8 and 10.9 switch statment
-# autoreconf -if
-# ./configure
-# make
-#portaudio directory is at same level as PebbleII
-
-#if autoreconf not found, sudo port install automake autoconf libtool #macports
-
-#Download FFTW from fftw.org, open terminal, build floating point
-#Current version 3.3.1 as of 2/2013
-#Swithed from float to double so we can switch between FFTW and Ooura libraries.  Don't add --enable-float to ./configure
-#./configure
-# make
-#sudo make install
-
-#Header is in api directory, lib is in ./libs directory
-#Or prebuilt fftw from pdb.finkproject.org
-
-#Dev Setup notes
-#To support UNC paths for Parallels, Regedit HKEY_CURRENTUSER/Software/Microsoft/Command Processor
-#and add the value DisableUNCCheck REG_DWORD and set the value to 0 x 1 (Hex).
-#Make sure to update project version if Qt version is updated in QtCreator
-#Exit code 0x0c0000315 if "Release DLLs" not copied to Debug and Release dirs
-
-#Specific device plugins, like rtl2832, have their own pre-build installation requirements
-#See the .pro file for each device
+#See readme.md for build instructions and pre-requisites
 
 #Enable this to look at config to debug conditionals. For example: debug and release both show up sometimes
 #message($$CONFIG)
-
-# !!! add make install as additional build step in QT Projects for both Debug and Release to copy all the necessary files
 
 #So we don't have to specify paths everywhere
 INCLUDEPATH += ../pebblelib
