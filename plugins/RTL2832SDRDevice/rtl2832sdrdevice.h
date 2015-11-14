@@ -166,8 +166,6 @@ private:
 
     rtlsdr_dev_t *dev;
 
-    double sampleGain; //Factor to normalize output
-
     SAMPLING_MODES rtlSampleMode;
 
 	quint8 *inBuffer;

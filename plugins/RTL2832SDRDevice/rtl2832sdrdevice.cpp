@@ -90,9 +90,6 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback,
 	readBufferSize = framesPerBuffer * 2;
 	inBuffer = (quint8 *)malloc(readBufferSize);
 
-    //sampleGain = .005; //Matched with rtlGain
-    sampleGain = 1/128.0;
-
     haveDongleInfo = false; //Look for first bytes
     tcpDongleInfo.magic[0] = 0x0;
     tcpDongleInfo.magic[1] = 0x0;
@@ -542,6 +539,7 @@ void RTL2832SDRDevice::ReadSettings()
 	//Defaults for initial ini file
 	sampleRate = 2048000;
 	startupDemodMode = dmFMN;
+	normalizeIQGain = 1/128.0;
 	DeviceInterfaceBase::ReadSettings();
 
     //Valid gain values (in tenths of a dB) for the E4000 tuner:
