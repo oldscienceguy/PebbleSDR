@@ -29,7 +29,6 @@ private slots:
 	void BalanceReset();
 	void ResetAllSettings(bool b);
 	void CloseOptions(bool b);
-	void TestBenchChanged(bool b);
 
 private:
 	DeviceInterface *di;

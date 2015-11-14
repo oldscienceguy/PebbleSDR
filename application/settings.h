@@ -29,7 +29,6 @@ public:
 	int leftRightIncrement;
 	int upDownIncrement;
     int modeOffset; //tone offset for CW
-	bool useTestBench;
 	int fullScaleDb; //Spectrum and waterfall full scale limit
 
 	//Window size and positioning

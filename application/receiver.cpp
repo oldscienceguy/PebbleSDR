@@ -79,6 +79,17 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 
     //qDebug()<<plugins->GetPluginNames();
 
+	//mainMenu = main->menuBar(); //This gives us a menuBar, but only in the main window
+	mainMenu = new QMenuBar(); //When parent = 0 this gives us a menuBar that can be used in any window
+	developerMenu = new QMenu("Developer");
+	developerMenu->addAction("TestBench",this,SLOT(openTestBench()));
+	mainMenu->addAction(developerMenu->menuAction());
+	helpMenu = new QMenu("Help");
+	helpMenu->addAction("About"); //This will be auto-merged with Application menu on Mac
+	helpMenu->addAction("Readme");
+	mainMenu->addAction(helpMenu->menuAction());
+
+
 }
 bool Receiver::On()
 {
@@ -112,27 +123,6 @@ bool Receiver::On()
 		Off();
 		return false;
 	}
-
-	if (settings->useTestBench) {
-        CTestBench *testBench = global->testBench;
-
-        testBench->Init(); //Sets up last device settings used
-        //Anchor in upper left
-        testBench->setGeometry(0,0,-1,-1);
-
-        testBench->ResetProfiles();
-        testBench->AddProfile("Incoming",testBenchRawIQ);
-        testBench->AddProfile("Post Mixer",testBenchPostMixer);
-        testBench->AddProfile("Post Bandpass",testBenchPostBandpass);
-        testBench->AddProfile("Post Demod",testBenchPostDemod);
-
-        testBench->setVisible(true);
-
-        //Keep focus on us
-        mainWindow->activateWindow(); //Makes main active
-        mainWindow->raise(); //Brings it to the top
-        mainWindow->setFocus(); //Makes sure it has keyboard focus
-    }
 
 	sampleRate = demodSampleRate = sdr->Get(DeviceInterface::DeviceSampleRate).toInt();
     framesPerBuffer = demodFrames = settings->framesPerBuffer;
@@ -253,6 +243,29 @@ void Receiver::SetWindowTitle()
 
 }
 
+void Receiver::openTestBench()
+{
+	CTestBench *testBench = global->testBench;
+
+	testBench->Init(); //Sets up last device settings used
+	//Anchor in upper left
+	testBench->setGeometry(0,0,-1,-1);
+
+	testBench->ResetProfiles();
+	testBench->AddProfile("Incoming",testBenchRawIQ);
+	testBench->AddProfile("Post Mixer",testBenchPostMixer);
+	testBench->AddProfile("Post Bandpass",testBenchPostBandpass);
+	testBench->AddProfile("Post Demod",testBenchPostDemod);
+
+	testBench->setVisible(true);
+
+	//Keep focus on us
+	mainWindow->activateWindow(); //Makes main active
+	mainWindow->raise(); //Brings it to the top
+	mainWindow->setFocus(); //Makes sure it has keyboard focus
+
+}
+
 //Delete everything that's based on settings, so we can change receivers, sound cards, etc
 //ReceiverWidget initiates the power off and call us
 bool Receiver::Off()
@@ -262,11 +275,10 @@ bool Receiver::Off()
 
     //If we're closing app, don't bother to set title, crashes sometime
     QWidget *app = QApplication::activeWindow();
-    if (app != NULL)
+	if (app != NULL) {
+		//Not Closing, just power off
         app->setWindowTitle("Pebble II");
-
-    if (global->testBench->isVisible())
-        global->testBench->setVisible(false);
+	}
 
 	sdrOptions->ShowSdrOptions(sdr, false);
 
@@ -373,6 +385,8 @@ void Receiver::Close()
 }
 Receiver::~Receiver(void)
 {
+	if (global->testBench->isVisible())
+		global->testBench->setVisible(false);
 	if (settings != NULL)
 		delete settings;
     if (sdr != NULL)

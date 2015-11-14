@@ -69,7 +69,6 @@ void Settings::ReadSettings()
 
 	updatesPerSecond = qSettings->value("UpdatesPerSec", 10).toInt();
 
-	useTestBench = qSettings->value("TestBench",false).toBool();
 	qSettings->beginGroup(tr("Testbench"));
 	global->testBench->m_SweepStartFrequency = qSettings->value(tr("SweepStartFrequency"),0.0).toDouble();
 	global->testBench->m_SweepStopFrequency = qSettings->value(tr("SweepStopFrequency"),1.0).toDouble();
@@ -120,7 +119,6 @@ void Settings::WriteSettings()
 
 	qSettings->setValue("UpdatesPerSec",updatesPerSecond);
 
-	qSettings->setValue("TestBench",useTestBench);
 	qSettings->beginGroup(tr("Testbench"));
 
 	qSettings->setValue(tr("SweepStartFrequency"),global->testBench->m_SweepStartFrequency);

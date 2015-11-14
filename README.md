@@ -54,6 +54,13 @@ Files in the directory are:
 7. See the Details section for each area of the UI
 
 ##Details (Top left to Bottom right)
+###Menu  
+####Pebble|About
+Display QT version and other application information
+####Developer|TestBench
+Display TestBench window
+####Help|ReadMe
+Not implemented - will display readme.md
 ###Tuning Box (10 digits)
 There are many ways to tune Pebble.  
 
@@ -116,9 +123,6 @@ This defaults to 1.0, but can be changed if the device does not have enough powe
 
 ###I/Q Input
 This field is only visible for devices that do not support direct I/Q input.  For devices like SoftRock, select the input audio device that the SoftRock is plugged into.  Note that some Mac's do not support stereo audio input and an external USB audio device must be used.  For devices that create their own audio device, like Funcube, select that as the input.
-
-###Test Bench
-If this box is checked, a diagnostic Test Bench is displayed along side the main Pebble window when the device is powered on.  This is mostly used for debugging device and DSP code.
 
 ###Device Specific options
 The center of the the Setting page is reserved for device specific options and will change depending on the device selected.  See device specific section of this document.

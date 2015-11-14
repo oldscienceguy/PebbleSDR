@@ -603,18 +603,6 @@
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="testBenchBox">
-        <property name="font">
-         <font>
-          <pointsize>10</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Test Bench</string>
-        </property>
-       </widget>
-      </item>
-      <item>
        <spacer name="spacer">
         <property name="font">
          <font>

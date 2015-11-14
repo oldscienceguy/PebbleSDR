@@ -95,9 +95,6 @@ void SdrOptions::ShowSdrOptions(DeviceInterface *_di, bool b)
 		connect(sd->closeButton,SIGNAL(clicked(bool)),this,SLOT(CloseOptions(bool)));
 		connect(sd->resetAllButton,SIGNAL(clicked(bool)),this,SLOT(ResetAllSettings(bool)));
 
-		sd->testBenchBox->setChecked(global->settings->useTestBench);
-		connect(sd->testBenchBox, SIGNAL(toggled(bool)), this, SLOT(TestBenchChanged(bool)));
-
 		connect(sd->sourceBox,SIGNAL(currentIndexChanged(int)),this,SLOT(InputChanged(int)));
 		connect(sd->outputBox,SIGNAL(currentIndexChanged(int)),this,SLOT(OutputChanged(int)));
 
@@ -222,12 +219,6 @@ void SdrOptions::DeviceSelectionChanged(int i) {
 	di->Set(DeviceInterface::DeviceNumber, i); //Which ini file to read from
 	//Update sdr specific section
 	UpdateOptions();
-}
-
-void SdrOptions::TestBenchChanged(bool b)
-{
-	global->settings->useTestBench = b;
-	global->settings->WriteSettings();
 }
 
 void SdrOptions::SampleRateChanged(int i)

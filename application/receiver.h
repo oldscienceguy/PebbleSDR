@@ -30,6 +30,7 @@
 #include "fft.h"
 
 #include "plugins.h"
+#include <QMenuBar>
 
 class Receiver:public QObject
 {
@@ -84,10 +85,15 @@ public:
         void SdrOptionsPressed();
         void CloseSdrOptions();
         void SetWindowTitle();
+		void openTestBench();
 
 private:
     Plugins *plugins;
 	SdrOptions *sdrOptions;
+	QMenuBar *mainMenu;
+	QMenu *developerMenu;
+	QMenu *helpMenu;
+
 
     //Test bench profiles we can output data to test bench
     enum TestBenchProfiles {
