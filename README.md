@@ -59,6 +59,8 @@ Files in the directory are:
 Display QT version and other application information
 ####Developer|TestBench
 Display TestBench window
+####Developer|Device Info
+Displays device freq range etc
 ####Help|ReadMe
 Not implemented - will display readme.md
 ###Tuning Box (10 digits)

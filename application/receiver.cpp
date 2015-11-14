@@ -83,6 +83,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	mainMenu = new QMenuBar(); //When parent = 0 this gives us a menuBar that can be used in any window
 	developerMenu = new QMenu("Developer");
 	developerMenu->addAction("TestBench",this,SLOT(openTestBench()));
+	developerMenu->addAction("Device Info",this,SLOT(openDeviceAboutBox()));
 	mainMenu->addAction(developerMenu->menuAction());
 	helpMenu = new QMenu("Help");
 	helpMenu->addAction("About",this,SLOT(openAboutBox())); //This will be auto-merged with Application menu on Mac
@@ -298,6 +299,28 @@ void Receiver::openAboutBox()
 #endif
 
 	QMessageBox::about(this->mainWindow,"About Pebble",welcome);
+}
+
+void Receiver::openDeviceAboutBox()
+{
+	if (!powerOn)
+		return;
+	QString about;
+	about += "\nAbout Device\n\n";
+	about += sdr->Get(DeviceInterface::DeviceName).toString();
+	about += "\n";
+	about += sdr->Get(DeviceInterface::DeviceDescription).toString();
+	about += "\nFrequency Range ";
+	about += QString::number(sdr->Get(DeviceInterface::LowFrequency).toDouble()/1000000.0);
+	about += " to ";
+	about += QString::number(sdr->Get(DeviceInterface::HighFrequency).toDouble()/1000000.0);
+	about += " mHz\n";
+	if (sdr->Get(DeviceInterface::DeviceSlave).toBool()) {
+		about += "Device is in Slave mode to server";
+	}
+
+	QMessageBox::about(this->mainWindow,"About Device",about);
+
 }
 
 //Delete everything that's based on settings, so we can change receivers, sound cards, etc

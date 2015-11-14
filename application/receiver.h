@@ -87,6 +87,7 @@ public:
         void SetWindowTitle();
 		void openTestBench();
 		void openAboutBox();
+		void openDeviceAboutBox();
 
 private:
     Plugins *plugins;
