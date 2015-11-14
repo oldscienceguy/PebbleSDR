@@ -85,7 +85,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	developerMenu->addAction("TestBench",this,SLOT(openTestBench()));
 	mainMenu->addAction(developerMenu->menuAction());
 	helpMenu = new QMenu("Help");
-	helpMenu->addAction("About"); //This will be auto-merged with Application menu on Mac
+	helpMenu->addAction("About",this,SLOT(openAboutBox())); //This will be auto-merged with Application menu on Mac
 	helpMenu->addAction("Readme");
 	mainMenu->addAction(helpMenu->menuAction());
 
@@ -264,6 +264,40 @@ void Receiver::openTestBench()
 	mainWindow->raise(); //Brings it to the top
 	mainWindow->setFocus(); //Makes sure it has keyboard focus
 
+}
+
+void Receiver::openAboutBox()
+{
+	QString welcome;
+
+	welcome += "About Pebble SDR";
+	welcome += "\n\n";
+	welcome += global->revision;
+	welcome += "\nCopyright 2010, 2011, 2012, 2013, 2014, 2015 Richard Landsman N1DDY (pebblesdr@gmail.com)";
+	welcome += "\nSee PebbleGPL.txt for GPL license details";
+	welcome += "\nhttps://github.com/oldscienceguy/PebbleSDR.git";
+	welcome += "\nCompiled with Qt Version ";
+	welcome += QT_VERSION_STR;
+#ifdef USE_FFTW
+	welcome += "\nDSP = FFTW";
+#endif
+#ifdef USE_FFTCUTE
+	welcome += "\nDSP = Cute";
+#endif
+#ifdef USE_FFTOOURA
+	welcome += "\nDSP = Ooura";
+#endif
+#ifdef USE_FFTACCELERATE
+	welcome += "\nDSP = Mac Accelerate";
+#endif
+#ifdef USE_QT_AUDIO
+	welcome += "\nAUDIO = QT Audio";
+#endif
+#ifdef USE_PORT_AUDIO
+	welcome += "\nAUDIO = Port Audio";
+#endif
+
+	QMessageBox::about(this->mainWindow,"About Pebble",welcome);
 }
 
 //Delete everything that's based on settings, so we can change receivers, sound cards, etc

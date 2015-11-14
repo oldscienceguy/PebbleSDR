@@ -86,6 +86,7 @@ public:
         void CloseSdrOptions();
         void SetWindowTitle();
 		void openTestBench();
+		void openAboutBox();
 
 private:
     Plugins *plugins;
