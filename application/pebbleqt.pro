@@ -5,6 +5,8 @@ TEMPLATE = app
 TARGET = Pebble
 #QT5 requires explicit add of Widgets to add QtWidgets which was in QtGui in earlier releases
 QT += widgets core gui
+#For QWebView
+QT += webkitwidgets
 
 #See readme.md for build instructions and pre-requisites
 
@@ -81,7 +83,7 @@ macx {
         INSTALLS += plib
 
 	#INSTALLS is called when we manually make -install or add it to the Qt project build steps
-        pebbleData.files = eibireadme.txt eibi.csv bands.csv memory.csv	gpl.h ../readme.md
+        pebbleData.files = eibireadme.txt eibi.csv bands.csv memory.csv	gpl.h ../readme.md ../readme.html
 
 	#We want this to be whatever the release or debug directory is or added to bundle
 	#This will copy the files into the app bundle, same place ini files go

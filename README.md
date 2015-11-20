@@ -62,7 +62,8 @@ Display TestBench window
 ####Developer|Device Info
 Displays device freq range etc
 ####Help|ReadMe
-Not implemented - will display readme.md
+Display readme.html in PebbleData folder
+
 ###Tuning Box (10 digits)
 There are many ways to tune Pebble.  
 
@@ -421,19 +422,28 @@ If you need to rebuild from source...
 	Define FFT library to use (uncomment)  
 	Define Audio library to use (uncomment)  
 	Define the Mac OSX version you are using  
-9. Install latest XCode and all command line tools
+9. Install latest XCode and all command line tools. NOTE: If you get build errors that look like OS problems, make sure you have the laest update and manually install the command line tools that go with the version of XCode and Mac OS you have.
 10. Specific device plugins, like rtl2832, have their own pre-build installation requirements.  See the .pro file for each device
 
 Select the Pebble II project (contains all the sub projects) and build/clean from the menu.  Then select build/Run Qmake to update all the make files from the .pro files.  Finally select build/Build All.  If you have any problems with PebbleLib, select the PebbleLib project and build in first.
 
 Mavericks / XCode 5 does not include a GDB debugger in the command line tools as in previous releases.  QT Creator will work with the new LLVM, but you may need to use GDB for some reason. To install GDB (actually ggdb) using macports:
 
-	* sudo port install gdb
+	sudo port install gdb
+
+If you need to run cmake to build some external utilities and it's not found
 	
+	sudo port install cmake
+		
 If you are developing for Windows on a Mac using Parallels you may need to enable UNC paths in order to access files on the Mac side    
 To support UNC paths for Parallels, Regedit HKEY_CURRENTUSER/Software Microsoft/Command Processor and add the value DisableUNCCheck REG_DWORD and set the value to 0 x 1 (Hex).  
 Make sure to update project version if Qt version is updated in QtCreator
 Exit code 0x0c0000315 if "Release DLLs" not copied to Debug and Release dirs
+
+Ignore any runtime warning messages related to help system.  QT finds open SSL on the Mac, but older version.  Since we don't use SSL, no need to redistribute latest OpenSSL
+
+	qt.network.ssl: QSslSocket: cannot resolve SSL_set_psk_client_callback
+
 
 ###Coding Style
 Basically a mess right now and needs to be cleaned up.

@@ -31,6 +31,7 @@
 
 #include "plugins.h"
 #include <QMenuBar>
+#include <QWebView>
 
 class Receiver:public QObject
 {
@@ -88,6 +89,7 @@ public:
 		void openTestBench();
 		void openAboutBox();
 		void openDeviceAboutBox();
+		void openReadMeWindow();
 
 private:
     Plugins *plugins;
@@ -95,7 +97,7 @@ private:
 	QMenuBar *mainMenu;
 	QMenu *developerMenu;
 	QMenu *helpMenu;
-
+	QWebView *readmeView;
 
     //Test bench profiles we can output data to test bench
     enum TestBenchProfiles {

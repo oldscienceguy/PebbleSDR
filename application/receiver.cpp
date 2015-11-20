@@ -87,10 +87,10 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	mainMenu->addAction(developerMenu->menuAction());
 	helpMenu = new QMenu("Help");
 	helpMenu->addAction("About",this,SLOT(openAboutBox())); //This will be auto-merged with Application menu on Mac
-	helpMenu->addAction("Readme");
+	helpMenu->addAction("Readme",this,SLOT(openReadMeWindow()));
 	mainMenu->addAction(helpMenu->menuAction());
 
-
+	readmeView = NULL;
 }
 bool Receiver::On()
 {
@@ -323,6 +323,21 @@ void Receiver::openDeviceAboutBox()
 
 }
 
+void Receiver::openReadMeWindow()
+{
+	if (readmeView == NULL)
+		readmeView = new QWebView(0);
+	//readmeView->load(QUrl("http://amazon.com"));
+	QString path = QCoreApplication::applicationDirPath();
+#ifdef Q_OS_MAC
+		//Pebble.app/contents/macos = 25
+		path.chop(25);
+#endif
+
+	readmeView->load(QUrl::fromLocalFile(path+"/PebbleData/readme.html"));
+	readmeView->show();
+}
+
 //Delete everything that's based on settings, so we can change receivers, sound cards, etc
 //ReceiverWidget initiates the power off and call us
 bool Receiver::Off()
@@ -444,6 +459,9 @@ Receiver::~Receiver(void)
 {
 	if (global->testBench->isVisible())
 		global->testBench->setVisible(false);
+	if (readmeView != NULL && readmeView->isVisible())
+		readmeView->setVisible(false);
+
 	if (settings != NULL)
 		delete settings;
     if (sdr != NULL)
