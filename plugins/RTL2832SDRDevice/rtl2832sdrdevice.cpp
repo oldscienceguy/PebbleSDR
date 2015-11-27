@@ -540,6 +540,7 @@ void RTL2832SDRDevice::ReadSettings()
 	sampleRate = 2048000;
 	startupDemodMode = dmFMN;
 	normalizeIQGain = 1/128.0;
+	iqOrder = QI;
 	DeviceInterfaceBase::ReadSettings();
 
     //Valid gain values (in tenths of a dB) for the E4000 tuner:
