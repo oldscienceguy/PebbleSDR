@@ -6,7 +6,7 @@
 #include <QObject>
 #include "deviceinterfacebase.h"
 #include "ui_sdrplayoptions.h"
-#include "MiricsAPI/mir_sdr.h"
+#include "MiricsAPI/mirsdrapi-rsp.h"
 
 /*
  * Used the SDRPlay / Mirics libmir_sdr.so API library

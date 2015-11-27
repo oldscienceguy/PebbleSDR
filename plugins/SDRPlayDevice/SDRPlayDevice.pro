@@ -32,11 +32,11 @@ SOURCES += sdrplaydevice.cpp
 HEADERS += sdrplaydevice.h
 
 LIBS += -L$${PWD}/../../pebblelib/$${LIB_DIR} -lpebblelib
-LIBS += -L$${PWD}/../../plugins/SDRPlayDevice/MiricsAPI/ -lmir_sdr
+LIBS += -L$${PWD}/../../plugins/SDRPlayDevice/MiricsAPI/ -lmirsdrapi-rsp
 
 
 #libusb is copied into Frameworks directory in pebbleqt.pro
-copy_files.files += $${PWD}/../../plugins/SDRPlayDevice/MiricsAPI/libmir_sdr.so
+copy_files.files += $${PWD}/../../plugins/SDRPlayDevice/MiricsAPI/libmirsdrapi-rsp.so
 copy_files.path = $${INSTALL_DIR}/Pebble.app/Contents/Frameworks
 INSTALLS += copy_files
 
@@ -45,11 +45,11 @@ INSTALLS += copy_files
 #Many systems have it pre-installed in opt/lib/libusb-1.0.0
 #But we keep all our dependent libraries in the app/contents/frameworks directory, which is set with rpath
 fix_mirlib.path = $${INSTALL_DIR}/Pebble.app/Contents/Frameworks
-fix_mirlib.commands += install_name_tool -change /usr/local/lib/libusb-1.0.0.dylib @rpath/libusb-1.0.0.dylib $${INSTALL_DIR}/Pebble.app/Contents/Frameworks/libmir_sdr.so
+fix_mirlib.commands += install_name_tool -change /usr/local/lib/libusb-1.0.0.dylib @rpath/libusb-1.0.0.dylib $${INSTALL_DIR}/Pebble.app/Contents/Frameworks/libmirsdrapi-rsp.so
 INSTALLS += fix_mirlib
 
 fix_sdrplay.path = $${DESTDIR}
-fix_sdrplay.commands += install_name_tool -change libmir_sdr.so @rpath/libmir_sdr.so $${DESTDIR}/libSDRPlayDevice.dylib
+fix_sdrplay.commands += install_name_tool -change libmirsdrapi-rsp.so @rpath/libmirsdrapi-rsp.so $${DESTDIR}/libSDRPlayDevice.dylib
 INSTALLS += fix_sdrplay
 
 OTHER_FILES += \
