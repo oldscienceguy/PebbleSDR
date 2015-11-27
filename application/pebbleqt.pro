@@ -335,3 +335,6 @@ FORMS += \
 
 RESOURCES += \
     resources.qrc
+
+DISTFILES += \
+    todo.txt

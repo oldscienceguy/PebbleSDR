@@ -1,0 +1,11 @@
+Todo List
+_ Investigate SoapySDR for device driver compatibility
+_ Investigate SDR-J for decoder compatibility
+_ Bug: wav playback doesn't work with QTAudio
+_ Investigate Liquid-DSP DSP library for compatibility
+_ Revisit zoom logic so it doesn't change every click.  Maybe just lock to LO frequency?
+_ Revisit tuning increments.  Select digit on freq display, that's the new units for coarse and fine tuning.
+    Pre-select other common fixed tuning increments
+_ Add spectrum offset back and check to make sure signal strength doesn't change when we change
+    full scale db and offset
+_ SDR Play hangs at high sample rates
