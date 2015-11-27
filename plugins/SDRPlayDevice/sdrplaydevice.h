@@ -112,5 +112,8 @@ private:
 	void matchBandwidthToSampleRate(bool preserveBandwidth);
 
 	void matchIFModeToSRAndBW();
+
+	float apiVersion;
+
 };
 #endif // SDRPLAYDEVICE_H

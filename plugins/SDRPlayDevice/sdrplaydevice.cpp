@@ -7,6 +7,8 @@ SDRPlayDevice::SDRPlayDevice():DeviceInterfaceBase()
 	optionUi = NULL;
 	packetIBuf = packetQBuf = NULL;
 	samplesPerPacket = 0;
+	apiVersion = 0; //Not set
+
 
 }
 
@@ -100,10 +102,9 @@ bool SDRPlayDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _a
 			DeviceInterfaceBase::Connect();
 			//Device specific code follows
 			//Check version
-			float ver;
-			if (!errorCheck(mir_sdr_ApiVersion(&ver)))
+			if (!errorCheck(mir_sdr_ApiVersion(&apiVersion)))
 				return false;
-			qDebug()<<"SDRPLay Version: "<<ver;
+			qDebug()<<"SDRPLay Version: "<<apiVersion;
 
 			currentBand = band0; //Initial value to force band search on first frequency check
 
@@ -288,6 +289,11 @@ void SDRPlayDevice::SetupOptionUi(QWidget *parent)
 	optionUi->dbFS->setMinimum(-50);
 	optionUi->dbFS->setValue(dbFS);
 	connect(optionUi->dbFS,SIGNAL(valueChanged(int)),this,SLOT(dbFSChanged(int)));
+
+	if (apiVersion == 0)
+		optionUi->apiVersion->setText("API Version");
+	else
+		optionUi->apiVersion->setText("API Version " + QString::number(apiVersion));
 
 }
 

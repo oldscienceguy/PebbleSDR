@@ -209,6 +209,24 @@
      <number>102</number>
     </property>
    </widget>
+   <widget class="QLabel" name="apiVersion">
+    <property name="geometry">
+     <rect>
+      <x>9</x>
+      <y>126</y>
+      <width>104</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>API Version</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QGroupBox" name="groupBox_3">
    <property name="geometry">
