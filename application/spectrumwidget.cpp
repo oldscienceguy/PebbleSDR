@@ -693,7 +693,9 @@ void SpectrumWidget::maxDbChanged(int s)
     plotMaxDb = ui.maxDbBox->value();
 	global->settings->fullScaleDb = plotMaxDb;
 	global->settings->WriteSettings(); //save
-	DrawOverlay(false); //plotArea db range changed
+	DrawOverlay(false);
+	if (zoom != 1)
+		DrawOverlay(true); //plotArea db range changed
     update();
 }
 
