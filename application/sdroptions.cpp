@@ -330,7 +330,7 @@ void SdrOptions::ResetAllSettings(bool b)
 			sdrOptionsDialog->close();
 		//Disabled
 		//emit Restart();
-		QDir settingsDir(global->appDirPath + "/PebbleData/");
+		QDir settingsDir(global->pebbleDataPath);
 		settingsDir.setNameFilters({"*.ini"});
 		QStringList iniList = settingsDir.entryList();
 		for (int i=0; i<iniList.count(); i++) {

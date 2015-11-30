@@ -112,7 +112,8 @@ SOURCES += pebblelib.cpp \
     audioqt.cpp \
     alawcompression.cpp \
     fftaccelerate.cpp \
-    audiopa.cpp
+    audiopa.cpp \
+    pebblelib_global.cpp
 
 HEADERS += pebblelib.h\
     pebblelib_global.h \

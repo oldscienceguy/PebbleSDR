@@ -2,7 +2,9 @@
 #include "gpl.h"
 #include "filesdrdevice.h"
 #include "QFileDialog"
+#include "pebblelib_global.h"
 
+PebbleLibGlobal *pebbleLibGobal;
 
 FileSDRDevice::FileSDRDevice():DeviceInterfaceBase()
 {
@@ -10,6 +12,7 @@ FileSDRDevice::FileSDRDevice():DeviceInterfaceBase()
     copyTest = false; //Write what we read
     fileName = "";
     recordingPath = "";
+	pebbleLibGobal = new PebbleLibGlobal();
 }
 
 FileSDRDevice::~FileSDRDevice()
@@ -34,11 +37,7 @@ bool FileSDRDevice::Connect()
 
     //Use last recording path and filename for convenience
     if (recordingPath.isEmpty()) {
-        recordingPath = QCoreApplication::applicationDirPath();
-#ifdef Q_OS_MAC
-        //Pebble.app/contents/macos = 25
-        recordingPath.chop(25);
-#endif
+		recordingPath = pebbleLibGobal->appDirPath;
         //QT QTBUG-35779 Trailing '*' is required to workaround QT 5.2 bug where directory arg was ignored
         recordingPath += "PebbleRecordings/*";
     }

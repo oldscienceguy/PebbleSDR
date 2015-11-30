@@ -8,9 +8,9 @@ Presets::Presets(ReceiverWidget *w)
 {
 	rw = w;
 
-	memoryFile = global->appDirPath + "/PebbleData/memory.csv";
-	bandsFile = global->appDirPath + "/PebbleData/bands.csv";
-	eibiFile = global->appDirPath + "/PebbleData/eibi.csv";
+	memoryFile = global->pebbleDataPath + "memory.csv";
+	bandsFile = global->pebbleDataPath + "bands.csv";
+	eibiFile = global->pebbleDataPath + "eibi.csv";
 
     bands = NULL;
     stations = NULL;

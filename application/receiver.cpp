@@ -325,7 +325,7 @@ void Receiver::openReadMeWindow()
 		readmeView = new QWebView(0);
 	//readmeView->load(QUrl("http://amazon.com"));
 
-	readmeView->load(QUrl::fromLocalFile(global->appDirPath+"/PebbleData/readme.html"));
+	readmeView->load(QUrl::fromLocalFile(global->pebbleDataPath+"readme.html"));
 	readmeView->show();
 }
 

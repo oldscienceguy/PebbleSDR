@@ -71,18 +71,7 @@ void Plugins::findPlugins()
         qDebug()<<plugin->objectName();
         //populateMenus(plugin);
 
-    pluginsDir = QDir(qApp->applicationDirPath());
-
-#if defined(Q_OS_WIN)
-    if (pluginsDir.dirName().toLower() == "debug" || pluginsDir.dirName().toLower() == "release")
-        pluginsDir.cdUp();
-#elif defined(Q_OS_MAC)
-    if (pluginsDir.dirName() == "MacOS") {
-        pluginsDir.cdUp();
-        pluginsDir.cdUp();
-        pluginsDir.cdUp(); //Root dir where app is located
-    }
-#endif
+	pluginsDir = QDir(global->appDirPath);
     pluginsDir.cd("plugins");
 
     PluginInfo pluginInfo;

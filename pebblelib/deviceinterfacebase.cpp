@@ -1,8 +1,13 @@
 #include "deviceinterfacebase.h"
 #include <QWidget>
+#include "pebblelib_global.h"
+
+PebbleLibGlobal *pebbleLibGobal;
 
 DeviceInterfaceBase::DeviceInterfaceBase()
 {
+	pebbleLibGobal = new PebbleLibGlobal();
+
 	connected = false;
 	//These are common settings for every device, variables are defined in DeviceInterface
 	startupType = DEFAULTFREQ;
@@ -447,12 +452,7 @@ void DeviceInterfaceBase::InitSettings(QString fname)
 	//Scope::UserScope puts file C:\Users\...\AppData\Roaming\N1DDY
 	//Scope::SystemScope puts file c:\ProgramData\n1ddy
 
-	QString path = QCoreApplication::applicationDirPath();
-#ifdef Q_OS_MAC
-		//Pebble.app/contents/macos = 25
-		path.chop(25);
-#endif
-	qSettings = new QSettings(path + "/PebbleData/" + fname +".ini",QSettings::IniFormat);
+	qSettings = new QSettings(pebbleLibGobal->appDirPath + "/PebbleData/" + fname +".ini",QSettings::IniFormat);
 
 }
 
