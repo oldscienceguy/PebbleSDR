@@ -60,6 +60,8 @@ List of Sources, Algorithms and References, and thank-you's:
         http://www.w7ay.net/site/Applications/cocoaModem/
     AG1LE Blog
         http://ag1le.blogspot.com/
+	Sound Effects
+		http://www.soundjay.com/beep-sounds-1.html
 
 
 

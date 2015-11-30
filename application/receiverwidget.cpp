@@ -386,12 +386,12 @@ void ReceiverWidget::SetFrequency(double f)
 {
 	//if low and high are 0 or -1, ignore for now
 	if (lowFrequency > 0 && f < lowFrequency) {
-        //qApp->beep(); //Doesn't work on mac
-        DisplayNixieNumber(frequency); //Restore display
+		global->beep.play();
+		DisplayNixieNumber(frequency); //Restore display
 		return;
 	}
 	if (highFrequency > 0 && f > highFrequency){
-        //qApp->beep();
+		global->beep.play();
         DisplayNixieNumber(frequency);
 		return;
 	}

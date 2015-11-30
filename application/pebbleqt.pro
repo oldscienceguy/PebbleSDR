@@ -83,7 +83,7 @@ macx {
         INSTALLS += plib
 
 	#INSTALLS is called when we manually make -install or add it to the Qt project build steps
-        pebbleData.files = eibireadme.txt eibi.csv bands.csv memory.csv	gpl.h ../readme.md ../readme.html
+        pebbleData.files = eibireadme.txt eibi.csv bands.csv memory.csv	gpl.h ../readme.md ../readme.html beep-07.wav
 
 	#We want this to be whatever the release or debug directory is or added to bundle
 	#This will copy the files into the app bundle, same place ini files go
