@@ -198,6 +198,8 @@ void SoftrockSDRDevice::ReadSettings()
 			startupDemodMode = dmAM;
 			//FiFi runs hot, even at lowest device setting, reduce gain
 			normalizeIQGain = 0.25;
+			//Default input device
+			inputDeviceName = "UDA1361 Input";
 			break;
 		default:
 			break;
