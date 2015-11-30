@@ -8,9 +8,15 @@
 Global::Global()
 {
 	appDirPath = QCoreApplication::applicationDirPath();
-#ifdef Q_OS_MAC
-        //Pebble.app/contents/macos = 25
-		appDirPath.chop(25);
+	QDir appDir = QDir(appDirPath);
+#if defined(Q_OS_MAC)
+	if (appDir.dirName() == "MacOS") {
+		//We're in the mac package and need to get back to the package to access relative directories
+		appDir.cdUp();
+		appDir.cdUp();
+		appDir.cdUp(); //Root dir where app is located
+		appDirPath = appDir.absolutePath();
+	}
 #endif
 
 	file = new QFile(appDirPath+"/PebbleData/pebblelog.txt");
