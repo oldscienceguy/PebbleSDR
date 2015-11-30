@@ -11,6 +11,7 @@
 #include <QSize>
 #include <QMainWindow>
 #include "perform.h"
+#include <QSoundEffect>
 
 class Receiver;
 class Settings;
@@ -32,6 +33,7 @@ public:
     CTestBench* testBench;
     QSize defaultWindowSize;
     QMainWindow *mainWindow;
+	QSoundEffect beep;
 
 private:
 	QFile *file;

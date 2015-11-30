@@ -27,6 +27,11 @@ Global::Global()
 
     sdr = NULL;
     perform.InitPerformance();
+
+	beep.setSource(QUrl::fromLocalFile(path+"/pebbledata/beep-07.wav"));
+	beep.setLoopCount(1);
+	beep.setVolume(0.25f);
+
 }
 
 Global::~Global()

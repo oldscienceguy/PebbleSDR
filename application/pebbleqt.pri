@@ -12,6 +12,9 @@ QMAKE_MAC_SDK = macosx10.11
 message("PWD = "$${PWD})
 message("PRO_FILE_PWD = "$$_PRO_FILE_PWD_)
 
+#For sound effects in all projects
+QT += multimedia
+
 macx {
 	#debug and release may both be defined as .pro file is parsed by make multiple times
 	#This tests for debug as the last item to be defined amoung debug and release
