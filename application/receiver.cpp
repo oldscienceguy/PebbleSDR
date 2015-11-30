@@ -27,11 +27,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	pos.setHeight(settings->windowHeight);
 	mainWindow->setGeometry(pos);
 
-    recordingPath = QCoreApplication::applicationDirPath();
-#ifdef Q_OS_MAC
-        //Pebble.app/contents/macos = 25
-        recordingPath.chop(25);
-#endif
+	recordingPath = global->appDirPath;
     //Make sure directory exists, else will get file error
     QDir dir(recordingPath);
     dir.mkdir("PebbleRecordings");
@@ -328,13 +324,8 @@ void Receiver::openReadMeWindow()
 	if (readmeView == NULL)
 		readmeView = new QWebView(0);
 	//readmeView->load(QUrl("http://amazon.com"));
-	QString path = QCoreApplication::applicationDirPath();
-#ifdef Q_OS_MAC
-		//Pebble.app/contents/macos = 25
-		path.chop(25);
-#endif
 
-	readmeView->load(QUrl::fromLocalFile(path+"/PebbleData/readme.html"));
+	readmeView->load(QUrl::fromLocalFile(global->appDirPath+"/PebbleData/readme.html"));
 	readmeView->show();
 }
 

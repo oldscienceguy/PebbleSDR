@@ -330,17 +330,7 @@ void SdrOptions::ResetAllSettings(bool b)
 			sdrOptionsDialog->close();
 		//Disabled
 		//emit Restart();
-		//This returns the path to the application directory
-		//If a Mac application, we have to get back to the bundle directory
-		//If a Mac console app, we don't have a bundle and need to stay where we are
-		QString path = QCoreApplication::applicationDirPath();
-	#ifdef Q_OS_MAC
-		// RegExp for /Pebble.app/contents/macos
-		int pos = path.lastIndexOf(QRegExp("/.+\\.app/contents/macos$",Qt::CaseInsensitive));
-		if (pos > 0)
-			path.truncate(pos);
-	#endif
-		QDir settingsDir(path + "/PebbleData/");
+		QDir settingsDir(global->appDirPath + "/PebbleData/");
 		settingsDir.setNameFilters({"*.ini"});
 		QStringList iniList = settingsDir.entryList();
 		for (int i=0; i<iniList.count(); i++) {

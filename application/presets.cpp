@@ -8,14 +8,9 @@ Presets::Presets(ReceiverWidget *w)
 {
 	rw = w;
 
-    QString path = QCoreApplication::applicationDirPath();
-#ifdef Q_OS_MAC
-        //Pebble.app/contents/macos = 25
-        path.chop(25);
-#endif
-    memoryFile = path + "/PebbleData/memory.csv";
-    bandsFile = path + "/PebbleData/bands.csv";
-    eibiFile = path + "/PebbleData/eibi.csv";
+	memoryFile = global->appDirPath + "/PebbleData/memory.csv";
+	bandsFile = global->appDirPath + "/PebbleData/bands.csv";
+	eibiFile = global->appDirPath + "/PebbleData/eibi.csv";
 
     bands = NULL;
     stations = NULL;

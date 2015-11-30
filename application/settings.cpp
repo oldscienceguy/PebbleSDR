@@ -12,13 +12,8 @@ Settings::Settings(void)
 	//Use ini files to avoid any registry problems or install/uninstall 
 	//Scope::UserScope puts file C:\Users\...\AppData\Roaming\N1DDY
 	//Scope::SystemScope puts file c:\ProgramData\n1ddy
-	QString path = QCoreApplication::applicationDirPath();
-#ifdef Q_OS_MAC
-        //Pebble.app/contents/macos = 25
-        path.chop(25);
-#endif
 
-    qSettings = new QSettings(path+"/PebbleData/pebble.ini",QSettings::IniFormat);
+	qSettings = new QSettings(global->appDirPath+"/PebbleData/pebble.ini",QSettings::IniFormat);
 	//qSettings->beginGroup("IQ");
 
 	//qSetting->endGroup("IQ");
