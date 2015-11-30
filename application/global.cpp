@@ -19,7 +19,9 @@ Global::Global()
 	}
 #endif
 
-	file = new QFile(appDirPath+"/PebbleData/pebblelog.txt");
+	pebbleDataPath = appDirPath + "/PebbleData/";
+
+	file = new QFile(pebbleDataPath+"pebblelog.txt");
 	bool res = file->open(QIODevice::Unbuffered | QIODevice::Truncate | QIODevice::WriteOnly | QIODevice::Text);
 	pLogfile = NULL;
 	if (res) {
@@ -34,7 +36,7 @@ Global::Global()
     sdr = NULL;
     perform.InitPerformance();
 
-	beep.setSource(QUrl::fromLocalFile(appDirPath+"/pebbledata/beep-07.wav"));
+	beep.setSource(QUrl::fromLocalFile(pebbleDataPath + "beep-07.wav"));
 	beep.setLoopCount(1);
 	beep.setVolume(0.25f);
 
