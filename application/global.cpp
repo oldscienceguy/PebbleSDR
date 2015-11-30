@@ -7,13 +7,13 @@
 
 Global::Global()
 {
-	QString path = QCoreApplication::applicationDirPath();
+	appDirPath = QCoreApplication::applicationDirPath();
 #ifdef Q_OS_MAC
         //Pebble.app/contents/macos = 25
-        path.chop(25);
+		appDirPath.chop(25);
 #endif
 
-    file = new QFile(path+"/PebbleData/pebblelog.txt");
+	file = new QFile(appDirPath+"/PebbleData/pebblelog.txt");
 	bool res = file->open(QIODevice::Unbuffered | QIODevice::Truncate | QIODevice::WriteOnly | QIODevice::Text);
 	pLogfile = NULL;
 	if (res) {
@@ -28,7 +28,7 @@ Global::Global()
     sdr = NULL;
     perform.InitPerformance();
 
-	beep.setSource(QUrl::fromLocalFile(path+"/pebbledata/beep-07.wav"));
+	beep.setSource(QUrl::fromLocalFile(appDirPath+"/pebbledata/beep-07.wav"));
 	beep.setLoopCount(1);
 	beep.setVolume(0.25f);
 

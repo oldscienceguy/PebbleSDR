@@ -34,6 +34,7 @@ public:
     QSize defaultWindowSize;
     QMainWindow *mainWindow;
 	QSoundEffect beep;
+	QString appDirPath; //Location of executable, used to access pebbledata, plugins, etc
 
 private:
 	QFile *file;
