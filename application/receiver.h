@@ -31,7 +31,7 @@
 
 #include "plugins.h"
 #include <QMenuBar>
-#include <QWebView>
+#include <QWebEngineView>
 
 class Receiver:public QObject
 {
@@ -97,7 +97,7 @@ private:
 	QMenuBar *mainMenu;
 	QMenu *developerMenu;
 	QMenu *helpMenu;
-	QWebView *readmeView;
+	QWebEngineView *readmeView;
 
     //Test bench profiles we can output data to test bench
     enum TestBenchProfiles {

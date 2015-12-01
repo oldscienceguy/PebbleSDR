@@ -5,8 +5,8 @@ TEMPLATE = app
 TARGET = Pebble
 #QT5 requires explicit add of Widgets to add QtWidgets which was in QtGui in earlier releases
 QT += widgets core gui
-#For QWebView
-QT += webkitwidgets
+#For QWebEngineView
+QT += webenginewidgets
 
 #See readme.md for build instructions and pre-requisites
 

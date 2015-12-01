@@ -322,7 +322,7 @@ void Receiver::openDeviceAboutBox()
 void Receiver::openReadMeWindow()
 {
 	if (readmeView == NULL)
-		readmeView = new QWebView(0);
+		readmeView = new QWebEngineView(0);
 	//readmeView->load(QUrl("http://amazon.com"));
 
 	readmeView->load(QUrl::fromLocalFile(global->pebbleDataPath+"readme.html"));
