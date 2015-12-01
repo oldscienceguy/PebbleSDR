@@ -2,7 +2,7 @@
 /*
     This file is part of a program that implements a Software-Defined Radio.
 
-    Copyright (C) 2010,2011,2012,2013,2014  Richard A. Landsman
+	Copyright (C) 2010, 2011, 2012, 2013, 2014, 2015, 2016  Richard A. Landsman
     Author may be contacted by email at PebbleSDR@gmail.com
 
     This program is free software: you can redistribute it and/or modify
@@ -34,9 +34,9 @@ List of Sources, Algorithms and References, and thank-you's:
         Matteo Frigo, Massachusetts Institute of Technology
     PortAudio - See portaudio.h for details
         Ross Bencina, Phil Burk
-        Latest version available at: http://www.portaudio.com/
-    QT Framework (4.63, 5.2, ...) - dll's distributed under GPL and LPGL license from Nokia
-        Source code and license details available at http://qt.nokia.com/downloads
+		Latest version available at: http://www.portaudio.com
+	QT Framework (4.63, 5.2, ...) - dll's distributed under GPL and LPGL license from qt.io
+		Source code and license details available at http://qt.io
     HIDAPI - Cross platform HIDAPI source code
         HIDAPI cross platform source files from http://www.signal11.us/oss/hidapi/
     FTDI - Cross platform USB lib for ftdi and libusb
@@ -62,6 +62,8 @@ List of Sources, Algorithms and References, and thank-you's:
         http://ag1le.blogspot.com/
 	Sound Effects
 		http://www.soundjay.com/beep-sounds-1.html
+	SDRPlay
+		http://www.sdrplay.com
 
 
 

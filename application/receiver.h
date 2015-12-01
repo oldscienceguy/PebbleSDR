@@ -90,6 +90,7 @@ public:
 		void openAboutBox();
 		void openDeviceAboutBox();
 		void openReadMeWindow();
+		void openGPLWindow();
 
 private:
     Plugins *plugins;
@@ -98,6 +99,7 @@ private:
 	QMenu *developerMenu;
 	QMenu *helpMenu;
 	QWebEngineView *readmeView;
+	QWebEngineView *gplView;
 
     //Test bench profiles we can output data to test bench
     enum TestBenchProfiles {

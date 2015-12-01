@@ -84,9 +84,11 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	helpMenu = new QMenu("Help");
 	helpMenu->addAction("About",this,SLOT(openAboutBox())); //This will be auto-merged with Application menu on Mac
 	helpMenu->addAction("Readme",this,SLOT(openReadMeWindow()));
+	helpMenu->addAction("Credits", this, SLOT(openGPLWindow()));
 	mainMenu->addAction(helpMenu->menuAction());
 
 	readmeView = NULL;
+	gplView = NULL;
 }
 bool Receiver::On()
 {
@@ -329,6 +331,18 @@ void Receiver::openReadMeWindow()
 	readmeView->show();
 }
 
+void Receiver::openGPLWindow()
+{
+	if (gplView == NULL)
+		gplView = new QWebEngineView(0);
+	//readmeView->load(QUrl("http://amazon.com"));
+
+	gplView->load(QUrl::fromLocalFile(global->pebbleDataPath+"gpl.h"));
+	//gplView->setGeometry(0,0,100,100);
+	gplView->show();
+
+}
+
 //Delete everything that's based on settings, so we can change receivers, sound cards, etc
 //ReceiverWidget initiates the power off and call us
 bool Receiver::Off()
@@ -452,6 +466,8 @@ Receiver::~Receiver(void)
 		global->testBench->setVisible(false);
 	if (readmeView != NULL && readmeView->isVisible())
 		readmeView->setVisible(false);
+	if (gplView != NULL && gplView->isVisible())
+		gplView->setVisible(false);
 
 	if (settings != NULL)
 		delete settings;
