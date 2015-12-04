@@ -415,16 +415,24 @@ void ReceiverWidget::SetFrequency(double f)
 
 	} else {
 		//Mixer is delta between what's displayed and last LO Frequency
+		qint32 oldMixer = mixer;
 		mixer = f - loFrequency;
 		//Check limits
         //mixer = mixer < lowMixer ? lowMixer : (mixer > highMixer ? highMixer : mixer);
-        if (mixer < lowMixer || mixer > highMixer) {
-            setLoMode(true); //Switch to LO mode, resets mixer etc
+		if (mixer < lowMixer || mixer > highMixer) {
+			//Testing auto- tune.
+			//When frequency is outside of mixer range, reset LO by difference between last freq and new freq
+			//Result should be smoothly scrolling spectrum (depending on freq diff)
+			qint32 mixerDelta = mixer - oldMixer;
+			//Temporarily switch to LO mode
+			loMode = true;
             //Set LO to new freq and contine
-            loFrequency = receiver->SetFrequency(f, loFrequency );
-            frequency = loFrequency;
+			loFrequency = receiver->SetFrequency(loFrequency + mixerDelta, loFrequency );
+			mixer = f - loFrequency;
+			frequency = loFrequency + mixer;  //Should be the same as f
             //Back to Mixer mode
-            setLoMode(false);
+			loMode = false;
+			receiver->SetMixer(mixer + modeOffset);
         } else {
             //LoFreq not changing, just displayed freq
             frequency = loFrequency + mixer;
