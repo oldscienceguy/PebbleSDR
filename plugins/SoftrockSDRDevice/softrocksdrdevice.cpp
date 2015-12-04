@@ -200,6 +200,7 @@ void SoftrockSDRDevice::ReadSettings()
 			normalizeIQGain = 0.25;
 			//Default input device
 			inputDeviceName = "UDA1361 Input";
+			iqOrder = QI; //Fifi is normal inverted
 			break;
 		default:
 			break;
