@@ -184,7 +184,7 @@ Band *Presets::FindBand(double freq)
 
     //Brute force, first only for now
     for (int i=0; i<numBands; i++) {
-        if (freq >= bands[i].low && freq < bands[i].high)
+		if (freq >= bands[i].low && freq <= bands[i].high)
             return &bands[i];
     }
     return NULL;
@@ -196,7 +196,7 @@ int Presets::FindBandIndex(double freq)
 
     //Brute force, first only for now
     for (int i=0; i<numBands; i++) {
-        if (freq >= bands[i].low && freq < bands[i].high)
+		if (freq >= bands[i].low && freq <= bands[i].high)
             return i;
     }
     return -1;
