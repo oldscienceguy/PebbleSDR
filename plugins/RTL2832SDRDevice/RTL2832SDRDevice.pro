@@ -19,6 +19,7 @@
 #Project common
 include(../../application/pebbleqt.pri)
 #DESTDIR is set in pebbleqt.pri
+INSTALL_DIR = $${DESTDIR}
 DESTDIR = $${DESTDIR}/plugins
 
 #Common library dependency code for all Pebble plugins
@@ -30,17 +31,14 @@ rtl1.commands += install_name_tool -change /usr/local/lib/librtlsdr.0.dylib  @rp
 INSTALLS += rtl1
 
 #Copy rtlsdr dylib to Pebble Frameworks dir
-#We don't want to overwrite and exists() seems to always return true
-#Try removing directory first
+#installed to usr/local/lib by make install in libusb source directory
+#As of 6/15, this crashes occasionally, use the standard Mac version in opt/local
+#plib.files += /usr/local/lib/libusb-1.0.0.dylib
 
-macx {
-        #Application is responsible for copying these, since we don't know destination
-        #Here as a reminder and reference
-        #rtl2.files += /usr/local/lib/librtlsdr.0.dylib
-        #rtl2.files += /opt/local/lib/libusb-1.0.0.dylib
-        #rtl2.path = $${DESTDIR}/../lib
-        #INSTALLS += rtl2
-}
+rtl2.files += /usr/local/lib/librtlsdr.0.dylib
+rtl2.files += /opt/local/lib/libusb-1.0.0.dylib
+rtl2.path = $${INSTALL_DIR}/Pebble.app/Contents/Frameworks
+INSTALLS += rtl2
 
 #We have to fixup librtlsdr dependencies
 rtl3.path += $${DESTDIR}

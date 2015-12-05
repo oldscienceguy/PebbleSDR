@@ -73,12 +73,7 @@ macx {
         #Copy all the other PebbleLib files (Check pebblelib.pro file to make sure)
         plib.files += $${PWD}/../pebblelib/$${LIB_DIR}/libpebblelib.1.dylib
         plib.files += $${PWD}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
-        #Copy all plugin dependencies (Check all the .pro files to make sure)
-        plib.files += /usr/local/lib/librtlsdr.0.dylib
-        plib.files += /opt/local/lib/libusb-1.0.0.dylib
-        #installed to usr/local/lib by make install in libusb source directory
-        #As of 6/15, this crashes occasionally, use the standard Mac version above
-        #plib.files += /usr/local/lib/libusb-1.0.0.dylib
+        #Plugin dependencies are installed with plugin.pro (Check all the .pro files to make sure)
         plib.path = $${DESTDIR}/Pebble.app/Contents/Frameworks
         INSTALLS += plib
 

@@ -36,7 +36,9 @@ LIBS += -L$${PWD}/../../plugins/SDRPlayDevice/MiricsAPI/ -lmirsdrapi-rsp
 
 
 #libusb is copied into Frameworks directory in pebbleqt.pro
+#if Pebble.app doesn't exist, install will create it, so there is no dependency on pebbleqt building first
 copy_files.files += $${PWD}/../../plugins/SDRPlayDevice/MiricsAPI/libmirsdrapi-rsp.so
+copy_files.files += /opt/local/lib/libusb-1.0.0.dylib
 copy_files.path = $${INSTALL_DIR}/Pebble.app/Contents/Frameworks
 INSTALLS += copy_files
 
