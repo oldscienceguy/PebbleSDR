@@ -70,12 +70,6 @@ macx {
         #QT libraries expected by PebbleLib.  Adding here makes sure macdeployqt copies them all to Frameworks
         LIBS += -framework QtMultimedia
         LIBS += -framework QtNetwork
-        #Copy all the other PebbleLib files (Check pebblelib.pro file to make sure)
-        plib.files += $${PWD}/../pebblelib/$${LIB_DIR}/libpebblelib.1.dylib
-        plib.files += $${PWD}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
-        #Plugin dependencies are installed with plugin.pro (Check all the .pro files to make sure)
-        plib.path = $${DESTDIR}/Pebble.app/Contents/Frameworks
-        INSTALLS += plib
 
 	#INSTALLS is called when we manually make -install or add it to the Qt project build steps
         pebbleData.files = eibireadme.txt eibi.csv bands.csv memory.csv	../pebblelib/gpl.h ../readme.md ../readme.html beep-07.wav

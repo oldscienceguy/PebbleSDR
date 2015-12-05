@@ -72,8 +72,11 @@ macx {
     qtlib5.path = $${INSTALLDIR}
     INSTALLS += qtlib5
 
-
-    #Don't copy the fixed up lib file here, let the application do it so we make sure we get fixed up copy
+    #Copy the fixed up lib file and other library dependencies
+    plib.files += $${PWD}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
+    plib.files += $${PWD}/../pebblelib/$${LIB_DIR}/libpebblelib.1.dylib
+    plib.path = $${INSTALLDIR}/Pebble.app/Contents/Frameworks
+    INSTALLS += plib
 
     LIBS += -L$${PWD}/../fftw-3.3.3/.libs/ -lfftw3
     LIBS += -L$${PWD}/../D2XX/bin/10.5-10.7/ -lftd2xx.1.2.2
