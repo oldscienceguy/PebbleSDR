@@ -145,3 +145,6 @@ HEADERS += pebblelib.h\
     medianfilter.h \
     audiopa.h
 
+DISTFILES += \
+    gpl.html
+

@@ -337,7 +337,7 @@ void Receiver::openGPLWindow()
 		gplView = new QWebEngineView(0);
 	//readmeView->load(QUrl("http://amazon.com"));
 
-	gplView->load(QUrl::fromLocalFile(global->pebbleDataPath+"gpl.h"));
+	gplView->load(QUrl::fromLocalFile(global->pebbleDataPath+"gpl.html"));
 	//gplView->setGeometry(0,0,100,100);
 	gplView->show();
 
