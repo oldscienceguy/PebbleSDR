@@ -30,6 +30,7 @@ public:
 	int upDownIncrement;
     int modeOffset; //tone offset for CW
 	int fullScaleDb; //Spectrum and waterfall full scale limit
+	int baseScaleDb;
 
 	//Window size and positioning
 	qint16 windowWidth;

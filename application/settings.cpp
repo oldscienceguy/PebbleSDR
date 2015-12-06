@@ -61,6 +61,7 @@ void Settings::ReadSettings()
     modeOffset = qSettings->value("ModeOffset",1000).toInt(); //CW tone
 
 	fullScaleDb = qSettings->value("FullScaleDb",-50).toInt();
+	baseScaleDb = qSettings->value("BaseScaleDb",DB::minDb).toInt();
 
 	updatesPerSecond = qSettings->value("UpdatesPerSec", 10).toInt();
 
@@ -111,6 +112,7 @@ void Settings::WriteSettings()
 	qSettings->setValue("UpDownIncrement",upDownIncrement);
     qSettings->setValue("ModeOffset",modeOffset);
 	qSettings->setValue("FullScaleDb",fullScaleDb);
+	qSettings->setValue("BaseScaleDb",baseScaleDb);
 
 	qSettings->setValue("UpdatesPerSec",updatesPerSecond);
 
