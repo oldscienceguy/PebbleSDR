@@ -31,7 +31,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
     //Make sure directory exists, else will get file error
     QDir dir(recordingPath);
     dir.mkdir("PebbleRecordings");
-    recordingPath += "PebbleRecordings/";
+	recordingPath += "/PebbleRecordings/";
 
 	//ReceiverWidget link back
 	receiverWidget->SetReceiver(this);

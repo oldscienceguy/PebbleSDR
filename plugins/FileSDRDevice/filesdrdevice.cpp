@@ -39,7 +39,7 @@ bool FileSDRDevice::Connect()
     if (recordingPath.isEmpty()) {
 		recordingPath = pebbleLibGobal->appDirPath;
         //QT QTBUG-35779 Trailing '*' is required to workaround QT 5.2 bug where directory arg was ignored
-        recordingPath += "PebbleRecordings/*";
+		recordingPath += "/PebbleRecordings/*";
     }
 
 #if 1
