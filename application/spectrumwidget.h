@@ -44,6 +44,7 @@ signals:
 		private slots:
             void displayChanged(int item);
             void maxDbChanged(int t);
+			void minDbChanged(int t);
             void zoomChanged(int item);
             void newFftData();
 private:
@@ -86,6 +87,7 @@ private:
     double spectrumOffset; //!!Remove
     qint16 plotMaxDb; //Set by UI
     qint16 plotMinDb;
+	const quint16 minMaxDbDelta = 30; //Delta between min and max can never be less than this
 
 	SignalSpectrum::DISPLAYMODE spectrumMode;
 	int sampleRate;

@@ -31,12 +31,19 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
     //Starting plot range
 	//CuteSDR defaults to -50
 	plotMaxDb = global->settings->fullScaleDb;
-	plotMinDb = DB::minDb;
 	ui.maxDbBox->setMinimum(-50); //Makes no sense to set to anything below this or no useful information
 	ui.maxDbBox->setMaximum(DB::maxDb);
     ui.maxDbBox->setValue(plotMaxDb);
 	ui.maxDbBox->setSingleStep(5);
     connect(ui.maxDbBox,SIGNAL(valueChanged(int)),this,SLOT(maxDbChanged(int)));
+
+	plotMinDb = global->settings->baseScaleDb;
+	ui.minDbBox->setMinimum(DB::minDb);
+	ui.minDbBox->setMaximum(ui.maxDbBox->minimum() - minMaxDbDelta);
+	ui.minDbBox->setValue(plotMinDb);
+	ui.minDbBox->setSingleStep(5);
+	connect(ui.minDbBox,SIGNAL(valueChanged(int)),this,SLOT(minDbChanged(int)));
+
 
 	ui.updatesPerSec->setMinimum(0); //Freezes display
 	ui.updatesPerSec->setMaximum(30); //20 x/sec is very fast
@@ -696,7 +703,19 @@ void SpectrumWidget::maxDbChanged(int s)
 	DrawOverlay(false);
 	if (zoom != 1)
 		DrawOverlay(true); //plotArea db range changed
-    update();
+	update();
+}
+
+void SpectrumWidget::minDbChanged(int t)
+{
+	plotMinDb = ui.minDbBox->value();
+	global->settings->baseScaleDb = plotMinDb;
+	global->settings->WriteSettings(); //save
+	DrawOverlay(false);
+	if (zoom != 1)
+		DrawOverlay(true); //plotArea db range changed
+	update();
+
 }
 
 void SpectrumWidget::zoomChanged(int item)
