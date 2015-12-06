@@ -199,7 +199,12 @@ void SoftrockSDRDevice::ReadSettings()
 			//FiFi runs hot, even at lowest device setting, reduce gain
 			normalizeIQGain = 0.25;
 			//Default input device
+#ifdef USE_PORT_AUDIO
+			inputDeviceName = "CoreAudio:UDA1361 Input";
+#endif
+#ifdef USE_QT_AUDIO
 			inputDeviceName = "UDA1361 Input";
+#endif
 			iqOrder = QI; //Fifi is normal inverted
 			break;
 		default:
