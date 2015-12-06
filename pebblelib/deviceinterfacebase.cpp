@@ -387,7 +387,7 @@ void DeviceInterfaceBase::ReadSettings()
 		outputDeviceName = "Built-in Output";
 #endif
 #ifdef USE_PORT_AUDIO
-		outputDeviceName = "Built-in Output"; //Verify
+		outputDeviceName = "Core Audio:Built-in Output";
 #endif
 
 	}
@@ -396,7 +396,7 @@ void DeviceInterfaceBase::ReadSettings()
 		inputDeviceName = "Built-in Microphone";
 #endif
 #ifdef USE_PORT_AUDIO
-		outputDeviceName = "Built-in Microphone"; //Verify
+		inputDeviceName = "CoreAudio:Built-in Microphone";
 #endif
 
 	}

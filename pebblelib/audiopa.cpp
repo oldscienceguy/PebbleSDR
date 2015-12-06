@@ -41,8 +41,10 @@ int AudioPA::StartInput(QString inputDeviceName, int _inputSampleRate)
     //We're getting input from sound card
     //inParam->device = settings->inputDevice;
     inParam->device = FindDeviceByName(inputDeviceName,true);
-    if (inParam->device < 0)
+	if (inParam->device < 0) {
+		qDebug()<<"Input device "<<inputDeviceName<<" was not found";
         return 0;
+	}
 
     inParam->channelCount = 2;
     inParam->sampleFormat = sampleFormat;
@@ -75,8 +77,10 @@ int AudioPA::StartOutput(QString outputDeviceName, int _outputSampleRate)
 
     //outParam->device = settings->outputDevice;
     outParam->device = FindDeviceByName(outputDeviceName,false);
-    if (outParam->device < 0)
+	if (outParam->device < 0) {
+		qDebug()<<"Output device "<<outputDeviceName<<" was not found";
         return 0;
+	}
 
     outParam->channelCount = 2;
     outParam->sampleFormat = sampleFormat;
@@ -290,7 +294,9 @@ int AudioPA::streamCallback(
 		sc->outBufferOverflowCount++;
 	}
 	mutex.lock();
-	sc->AudioProducer((float*)input, numSamples);
+	//numSamples is the count of interleaved L/R pairs
+	//AudioProducer expects count of individual samples
+	sc->AudioProducer((float*)input, numSamples * 2);
 	mutex.unlock();
 	return paContinue;
 }
