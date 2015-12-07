@@ -50,13 +50,14 @@ public:
 signals:
 
 public slots:
+	void OutputTimedOut();
 
 protected:
 	int inputSampleRate;
 	int outputSampleRate;
 	int framesPerBuffer; //#samples in each callback
 	cbAudioProducer AudioProducer;
-
+	bool hasOutputTimedOut;
 };
 
 #endif // AUDIO_H

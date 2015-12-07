@@ -180,17 +180,20 @@ void AudioQT::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
 	//Make sure we have enough buffer space to write
 	quint32 bytesFree = qaAudioOutput->bytesFree();
 	quint32 bytesToWrite = outSamples*sizeof(float)*2;
-	if (bytesFree < bytesToWrite) {
-		//Note if this doesnt solve the buffering problem the better way is to construct our own IO class
-		//Then QAudioOutput will call back to our IO to get data, which we can heavily buffer
-		outputDataSource->waitForBytesWritten(100); //50ms arbitrarily chosen
-		bytesFree = qaAudioOutput->bytesFree();
-		//qaAudioOutput->reset();
-		if (bytesFree < bytesToWrite) {
-			qDebug()<<"QT Audio Output: not enough room in buffer "<<bytesFree;
-			bytesToWrite = bytesFree;
+	//Wait for bytesFree to be >= bytesToWrite
+	//In port audio, Pa_WriteStream() blocks automatically
+	//In QAudioOutput, write() does not
+	//This ensures we don't write output faster than output device can handle it
+	hasOutputTimedOut = false;
+	QTimer::singleShot(1000, this, SLOT(OutputTimedOut()));
+	while (bytesFree < bytesToWrite) {
+		if (hasOutputTimedOut) {
+			qDebug()<<"QAudioOutput timed out";
+			return;
 		}
+		bytesFree = qaAudioOutput->bytesFree();
 	}
+
 	bytesWritten = outputDataSource->write((char*)outStreamBuffer,bytesToWrite);
 	if (bytesWritten != bytesToWrite)  {
 		qDebug()<<"QT Audio Output: bytesWritten less than bytesToWrite"<<bytesWritten;

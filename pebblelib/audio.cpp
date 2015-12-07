@@ -50,3 +50,9 @@ QStringList Audio::OutputDeviceList()
 	qDebug()<<"Unknown audio configuration";
 	return QStringList();
 }
+
+void Audio::OutputTimedOut()
+{
+	hasOutputTimedOut = true;
+}
+
