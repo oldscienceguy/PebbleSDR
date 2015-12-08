@@ -84,7 +84,7 @@ private:
 
 	int loFilter; //Used to display bandpass
 	int hiFilter;
-    double spectrumOffset; //!!Remove
+
     qint16 plotMaxDb; //Set by UI
     qint16 plotMinDb;
 	const quint16 minMaxDbDelta = 30; //Delta between min and max can never be less than this
