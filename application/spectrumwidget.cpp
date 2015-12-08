@@ -1080,19 +1080,30 @@ void SpectrumWidget::DrawScale(QPainter *labelPainter, double centerFreq, bool i
     //horizDivs must be even number so middle is 0
     //So for 10 divs we start out with [0] at low and [9] at high
 	int center = numXDivs / 2;
-    horizLabels[center] = QString::number(centerFreq/1000,'f',0)+"k";
-    int tick,left,right;
+	if (center < 1000000000)
+		horizLabels[center] = QString::number(centerFreq/1000.0,'f',1)+"k";
+	else
+		horizLabels[center] = QString::number(centerFreq/1000000.0,'f',1)+"m";
+
+	int tick,left,right;
     for (int i=0; i <= center; i++) {
         tick = i * hzPerhDiv;
         left = centerFreq - tick;
         //Never let left label go negative, possible if center < sampleRate/2
         if (left < 0)
             horizLabels[center - i] = "---";
-        else
-            horizLabels[center - i] = QString::number(left/1000,'f',0)+"k";
+		else if (left < 1000000000)
+			horizLabels[center - i] = QString::number(left/1000.0,'f',1)+"k";
+		else
+			horizLabels[center - i] = QString::number(left/1000000.0,'f',1)+"m";
+
 
         right = centerFreq + tick;
-        horizLabels[center + i] = QString::number(right/1000,'f',0)+"k";
+		if (right < 1000000000)
+			horizLabels[center + i] = QString::number(right/1000.0,'f',1)+"k";
+		else
+			horizLabels[center + i] = QString::number(right/1000000.0,'f',1)+"m";
+
     }
 
     QFont overlayFont("Arial");

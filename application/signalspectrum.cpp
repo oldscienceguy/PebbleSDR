@@ -106,6 +106,7 @@ void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double 
         MakeSpectrum(fftUnprocessed, in, unprocessed, numSamples);
 }
 
+//http://www.arc.id.au/ZoomFFT.html
 void SignalSpectrum::Zoomed(CPX *in, int size)
 {
 	quint16 resampledSize;
