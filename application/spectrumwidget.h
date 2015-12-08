@@ -52,7 +52,8 @@ private:
     double *averageSpectrum;
     double *lastSpectrum;
     //Holds values mapped to screen using utility in fft
-    qint32 fftMap[2048]; //!!Fix to dynamic max screen width?
+	qint32 fftMap[4096];
+	qint32 zoomedFftMap[4096];
 
 	int upDownIncrement;
 	int leftRightIncrement;

@@ -106,10 +106,11 @@ void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double 
         MakeSpectrum(fftUnprocessed, in, unprocessed, numSamples);
 }
 
-//Note size = num samples and will typically be much smaller post mixer
-//For example, 2m sample rate with 2048 samples becomes 30k sample rate with 32 samples here
 void SignalSpectrum::Zoomed(CPX *in, int size)
 {
+	quint16 resampledSize;
+	Q_UNUSED(resampledSize)
+
     //Only make spectrum often enough to match spectrum update rate, otherwise we just throw it away
     if (++skipFftsZoomedCounter < skipFftsZoomed)
         return;
@@ -121,7 +122,20 @@ void SignalSpectrum::Zoomed(CPX *in, int size)
         return;
     }
     if (isZoomed) {
-        MakeSpectrum(fftZoomed, in, zoomed, size);
+#if 0
+		//Experiment: This currently gets called with demodSampleRate - 62k for non WFM modes
+		//62,000 / 2048 buckets = 30hz per bucket
+		//If we want to get even finer resolution, we can further resample to a lower rate
+		//ie 24k sample rate = 12hz per bucket
+		//
+		//We need to fill with zeros because Resample won't fill entire buffer
+		CPXBuf::clear(zoomedResampled,fftSize);
+		//LP Filter needed to get rid of aliasing unless .Resample does it for us
+		resampledSize = zoomedResampler.Resample(size,sampleRateIn/sampleRateOut,in,zoomedResampled);
+		//qDebug()<<"ResampledSize: "<<resampledSize<<" sampleRateIn: "<<sampleRateIn<<" sampleRateOut: "<<sampleRateOut;
+		fftZoomed->FFTParams(fftSize, +1, DB::maxDb, sampleRateOut);
+#endif
+		MakeSpectrum(fftZoomed, in, zoomed, size);
     }
     //This will also display any zoomed data
     displayUpdateComplete = false;
