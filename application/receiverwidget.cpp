@@ -133,16 +133,7 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     connect(ui.nixie1gDown,SIGNAL(clicked()),this,SLOT(nixie1gDownClicked()));
 
 	//Send widget component events to this class eventFilter
-	ui.nixie1->installEventFilter(this); //So we can grab clicks
-	ui.nixie10->installEventFilter(this);
-	ui.nixie100->installEventFilter(this);
-	ui.nixie1k->installEventFilter(this);
-	ui.nixie10k->installEventFilter(this);
-	ui.nixie100k->installEventFilter(this);
-	ui.nixie1m->installEventFilter(this);
-	ui.nixie10m->installEventFilter(this);
-	ui.nixie100m->installEventFilter(this);
-    ui.nixie1g->installEventFilter(this);
+	qApp->installEventFilter(this);
 
     ui.recButton->setEnabled(false);
 
@@ -240,14 +231,80 @@ void ReceiverWidget::directEntryCanceled()
     directInputWidget->close();
 }
 
-//Filters all nixie events
+//Filters all application events, installed in constructor
 bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
 {
     static int scrollCounter = 0; //Used to slow down and smooth freq changes from scroll wheel
     static const int smoothing = 10;
 
-    if (!powerOn)
-        return false;
+	//First check for application level shortcuts
+	if (e->type() == QEvent::KeyPress) {
+		QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
+		//int key =  keyEvent->key();
+		double freqChange = 0;
+
+		switch (keyEvent->key()) {
+			case Qt::Key_P:
+				ui.powerButton->toggle();
+				return true;
+			case Qt::Key_M:
+				ui.muteButton->toggle();
+				return true;
+			case Qt::Key_L:
+				ui.loButton->toggled(!loMode);
+				return true;
+			case Qt::Key_J:
+				freqChange = 1;
+				break;
+			case Qt::Key_H:
+				freqChange = 10;
+				break;
+			case Qt::Key_G:
+				freqChange = 100;
+				break;
+			case Qt::Key_F:
+				freqChange = 1000;
+				break;
+			case Qt::Key_D:
+				freqChange = 10000;
+				break;
+			case Qt::Key_S:
+				freqChange = 100000;
+				break;
+			case Qt::Key_A:
+				freqChange = 1000000;
+				break;
+			case Qt::Key_U:
+				freqChange = - 1;
+				break;
+			case Qt::Key_Y:
+				freqChange = - 10;
+				break;
+			case Qt::Key_T:
+				freqChange = - 100;
+				break;
+			case Qt::Key_R:
+				freqChange = - 1000;
+				break;
+			case Qt::Key_E:
+				freqChange =  - 10000;
+				break;
+			case Qt::Key_W:
+				freqChange = - 100000;
+				break;
+			case Qt::Key_Q:
+				freqChange = - 1000000;
+				break;
+		}
+
+		if (freqChange != 0) {
+			SetFrequency(frequency + freqChange);
+			keyEvent->accept();
+			return true;
+		} else {
+			//keyEvent->ignore(); //We didn't handle it, pass it on
+		}
+	}
 
     //If the event (any type) is in a nixie we may need to know which one
     if (o == ui.nixie1) {
@@ -365,7 +422,6 @@ bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
 	return QObject::eventFilter(o,e);
 }
 
-
 void ReceiverWidget::SetLimits(double highF,double lowF,int highM,int lowM)
 {
 	highFrequency = highF;
@@ -384,6 +440,9 @@ void ReceiverWidget::setMixerLimits(int highM, int lowM)
 //Todo: disable digits that are below step value?
 void ReceiverWidget::SetFrequency(double f)
 {
+	if (!powerOn)
+		return;
+
 	//if low and high are 0 or -1, ignore for now
 	if (lowFrequency > 0 && f < lowFrequency) {
 		global->beep.play();
