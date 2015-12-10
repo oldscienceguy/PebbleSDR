@@ -550,18 +550,13 @@ double Receiver::SetSDRFrequency(double fRequested, double fCurrent)
 		restart = true;
 	}
 #endif
-	qDebug()<<fRequested;
+
 	if (sdr->Set(DeviceInterface::DeviceFrequency,fRequested)) {
 		frequency = fRequested;
 		return fRequested;
 	} else {
 		return fCurrent;
 	}
-}
-
-void Receiver::SetFrequency(double fRequested)
-{
-	receiverWidget->SetFrequency(fRequested);
 }
 
 //Called by ReceiverWidget to sets demod mode and default bandpass filter for each mode
