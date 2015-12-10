@@ -214,7 +214,7 @@ void SDRPlayDevice::ReadSettings()
 
 	IFKhz = (mir_sdr_If_kHzT) qSettings->value("IFKhz",mir_sdr_IF_Zero).toInt();
 
-	agcEnabled = qSettings->value("agcEnabled",true).toBool();
+	agcEnabled = qSettings->value("agcEnabled",false).toBool();
 	dbFS = qSettings->value("dbFS",-15).toInt();
 }
 
