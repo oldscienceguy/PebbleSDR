@@ -80,6 +80,8 @@ macx {
         pebbleData.files += ../readme.html
         pebbleData.files += ../gpl-3.0-standalone.html
         pebbleData.files += beep-07.wav
+        pebbleData.files += "Pebble Buttons.pdf"
+        pebbleData.files += Pebble.shuttleSettings
 
 	#We want this to be whatever the release or debug directory is or added to bundle
 	#This will copy the files into the app bundle, same place ini files go
