@@ -254,46 +254,46 @@ bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
 				ui.loButton->toggled(!loMode);
 				return true;
 			case Qt::Key_J:
-				freqChange = 1;
+				freqChange = -1;
 				break;
 			case Qt::Key_H:
-				freqChange = 10;
+				freqChange = -10;
 				break;
 			case Qt::Key_G:
-				freqChange = 100;
+				freqChange = -100;
 				break;
 			case Qt::Key_F:
-				freqChange = 1000;
+				freqChange = -1000;
 				break;
 			case Qt::Key_D:
-				freqChange = 10000;
+				freqChange = -10000;
 				break;
 			case Qt::Key_S:
-				freqChange = 100000;
+				freqChange = -100000;
 				break;
 			case Qt::Key_A:
-				freqChange = 1000000;
+				freqChange = -1000000;
 				break;
 			case Qt::Key_U:
-				freqChange = - 1;
+				freqChange = 1;
 				break;
 			case Qt::Key_Y:
-				freqChange = - 10;
+				freqChange = 10;
 				break;
 			case Qt::Key_T:
-				freqChange = - 100;
+				freqChange = 100;
 				break;
 			case Qt::Key_R:
-				freqChange = - 1000;
+				freqChange = 1000;
 				break;
 			case Qt::Key_E:
-				freqChange =  - 10000;
+				freqChange =  10000;
 				break;
 			case Qt::Key_W:
-				freqChange = - 100000;
+				freqChange = 100000;
 				break;
 			case Qt::Key_Q:
-				freqChange = - 1000000;
+				freqChange = 1000000;
 				break;
 		}
 
