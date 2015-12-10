@@ -46,7 +46,9 @@ public:
 	bool Power(bool on);
 	//Called with a requested frequency and the last frequency
 	//Calculates next higher or lower (actual), sets it and return to widget for display
-	double SetFrequency(double fRequested, double fCurrent);
+	double SetSDRFrequency(double fRequested, double fCurrent);
+	void SetFrequency(double fRequested);
+	double GetFrequency() {return frequency;}
 	void SetMode(DeviceInterface::DEMODMODE m);
 	void SetGain(int g);
 	void SetAgcThreshold(int g);

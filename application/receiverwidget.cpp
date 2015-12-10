@@ -360,9 +360,9 @@ bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
         }
     }
 
-	return false; //Allow ojects to see event
+	//return false; //Allow ojects to see event
     //or
-    //return QObject::eventFilter(o,e);
+	return QObject::eventFilter(o,e);
 }
 
 
@@ -407,7 +407,7 @@ void ReceiverWidget::SetFrequency(double f)
 	{
 		//Ask the receiver if requested freq is within limits and step size
 		//Set actual frequency to next higher or lower step
-        loFrequency = receiver->SetFrequency(f, frequency );
+		loFrequency = receiver->SetSDRFrequency(f, frequency );
         frequency = loFrequency;
 		mixer = 0;
         //Mixer is actually set including modeOffset so we hear tone, but display shows actual freq
@@ -427,7 +427,7 @@ void ReceiverWidget::SetFrequency(double f)
 			//Temporarily switch to LO mode
 			loMode = true;
             //Set LO to new freq and contine
-			loFrequency = receiver->SetFrequency(loFrequency + mixerDelta, loFrequency );
+			loFrequency = receiver->SetSDRFrequency(loFrequency + mixerDelta, loFrequency );
 			mixer = f - loFrequency;
 			frequency = loFrequency + mixer;  //Should be the same as f
             //Back to Mixer mode
