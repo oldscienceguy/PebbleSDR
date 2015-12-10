@@ -93,7 +93,7 @@ void SdrOptions::ShowSdrOptions(DeviceInterface *_di, bool b)
 		connect(sd->sampleRateBox,SIGNAL(currentIndexChanged(int)),this,SLOT(SampleRateChanged(int)));
 
 		connect(sd->closeButton,SIGNAL(clicked(bool)),this,SLOT(CloseOptions(bool)));
-		connect(sd->resetAllButton,SIGNAL(clicked(bool)),this,SLOT(ResetAllSettings(bool)));
+		connect(sd->resetButton,SIGNAL(clicked(bool)),this,SLOT(ResetSettings(bool)));
 
 		connect(sd->sourceBox,SIGNAL(currentIndexChanged(int)),this,SLOT(InputChanged(int)));
 		connect(sd->outputBox,SIGNAL(currentIndexChanged(int)),this,SLOT(OutputChanged(int)));
@@ -317,19 +317,24 @@ void SdrOptions::BalanceReset()
 }
 
 //Note, this should also reset all device settings, just delete all .ini files
-void SdrOptions::ResetAllSettings(bool b)
+void SdrOptions::ResetSettings(bool b)
 {
 	//Confirm
 	QMessageBox::StandardButton bt = QMessageBox::question(NULL,
 			tr("Confirm Reset"),
-			tr("Are you sure you want to reset all settings for all devices")
+			tr("Are you sure you want to reset the settings for this device?")
 			);
 	if (bt == QMessageBox::Ok || bt == QMessageBox::Yes) {
 		//Delete ini files and restart
 		if (sdrOptionsDialog != NULL)
 			sdrOptionsDialog->close();
 		//Disabled
-		//emit Restart();
+		emit Restart(); //Shut receiver off so current options aren't written to ini file
+		//fname gets absolute path
+		QString fname = di->Get(DeviceInterface::DeviceSettingsFile).toString();
+		qDebug()<<"Device file name: "<<fname;
+		QFile::remove(fname);
+#if 0
 		QDir settingsDir(global->pebbleDataPath);
 		settingsDir.setNameFilters({"*.ini"});
 		QStringList iniList = settingsDir.entryList();
@@ -337,6 +342,7 @@ void SdrOptions::ResetAllSettings(bool b)
 			if (QFile::remove(settingsDir.absoluteFilePath(iniList[i])))
 				qDebug()<<"Deleting "<<iniList[i];
 		}
+#endif
 	}
 }
 

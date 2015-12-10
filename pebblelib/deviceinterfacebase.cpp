@@ -254,6 +254,9 @@ QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, quint16 _option) {
 			break;
 		case DeviceSlave:			//RO bool true if device is controled by somthing other than Pebble
 			return false;
+		case DeviceSettingsFile:
+			if (qSettings != NULL)
+				return qSettings->fileName();
 		default:
 			break;
 	}

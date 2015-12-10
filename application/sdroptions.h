@@ -27,8 +27,11 @@ private slots:
 	void BalanceGainChanged(int v);
 	void BalanceEnabledChanged(bool b);
 	void BalanceReset();
-	void ResetAllSettings(bool b);
+	void ResetSettings(bool b);
 	void CloseOptions(bool b);
+
+signals:
+	void Restart();
 
 private:
 	DeviceInterface *di;

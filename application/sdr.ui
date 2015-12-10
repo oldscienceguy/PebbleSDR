@@ -588,14 +588,14 @@
        <number>2</number>
       </property>
       <item>
-       <widget class="QPushButton" name="resetAllButton">
+       <widget class="QPushButton" name="resetButton">
         <property name="font">
          <font>
           <pointsize>10</pointsize>
          </font>
         </property>
         <property name="text">
-         <string>Reset All Settings</string>
+         <string>Reset Settings</string>
         </property>
         <property name="autoDefault">
          <bool>false</bool>

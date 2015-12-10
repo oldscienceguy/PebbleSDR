@@ -69,6 +69,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	dbSpectrumBuf = NULL;
 
 	sdrOptions = new SdrOptions();
+	connect(sdrOptions,SIGNAL(Restart()),this,SLOT(Restart()));
 
 	//Testing
 	useFreqDomainChain = false;

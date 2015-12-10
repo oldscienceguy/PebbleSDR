@@ -85,6 +85,7 @@ public:
 		DeviceANF,				//RW quint16
 		DeviceNB,				//RW quint16
 		DeviceSlave,			//RO bool true if device is controled by somthing other than Pebble
+		DeviceSettingsFile,		//RO returns .ini file name used by device
 		//Expansion room if needed
 		CustomKey1 = 100,		//Devices can implement custom keys, as long as they start with this
 		CustomKey2,
