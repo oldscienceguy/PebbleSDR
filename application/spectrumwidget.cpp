@@ -395,24 +395,29 @@ void SpectrumWidget::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_Up: //Bigger step
 		m += upDownIncrement;
 		emit mixerChanged(m);
-		break;
+		event->accept();
+		return;
 	case Qt::Key_Right:
 		m += leftRightIncrement;
 		emit mixerChanged(m);
-		break;
+		event->accept();
+		return;
 	case Qt::Key_Down:
 		m -= upDownIncrement;
 		emit mixerChanged(m);
-		break;
+		event->accept();
+		return;
 	case Qt::Key_Left:
 		m -= leftRightIncrement;
 		emit mixerChanged(m);
-		break;
+		event->accept();
+		return;
     case Qt::Key_Enter:
         emit mixerChanged(m, true); //Change LO to current mixer freq
-        break;
+		event->accept();
+		return;
 	}
-    event->accept();
+	event->ignore();
 }
 void SpectrumWidget::mousePressEvent ( QMouseEvent * event ) 
 {
