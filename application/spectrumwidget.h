@@ -47,6 +47,7 @@ signals:
 			void minDbChanged(int t);
             void zoomChanged(int item);
             void newFftData();
+			void hiResToggled(bool b);
 private:
 	SignalSpectrum *signalSpectrum; //Source of spectrum data
     double *averageSpectrum;

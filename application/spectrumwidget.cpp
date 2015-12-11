@@ -146,12 +146,13 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
     //  250,000 / 2048 samples = 122hz/bin, 64x =  3906hz span
     //2,000,000 / 2048 samples = 976hz/bin, 64x = 31250hz span
     //Ideally we'd like a max 2k span to be able to see details of cw, rtty, wwv signals
-    ui.zoomSlider->setRange(0,600);
+	ui.zoomSlider->setRange(0,400);
     ui.zoomSlider->setSingleStep(1);
     ui.zoomSlider->setValue(0); //Left end of scale
     connect(ui.zoomSlider,SIGNAL(valueChanged(int)),this,SLOT(zoomChanged(int)));
     zoom = 1;
 
+	connect (ui.hiResButton,SIGNAL(toggled(bool)),this,SLOT(hiResToggled(bool)));
     modeOffset = 0;
 
 	isRunning = false;
@@ -192,14 +193,14 @@ void SpectrumWidget::Run(bool r)
 		ui.displayBox->setCurrentIndex(global->sdr->Get(DeviceInterface::LastSpectrumMode).toInt()); //Initial display mode
         ui.zoomSlider->setValue(0); //Left end of scale
         //zoomChanged(0); //Display initial value
-        ui.zoomLabel->setText(QString().sprintf("Span: %.0f kHz",sampleRate/1000.0));
+		ui.zoomLabel->setText(QString().sprintf("S: %.0f kHz",sampleRate/1000.0));
 		isRunning = true;
 	}
 	else {
 		ui.displayBox->blockSignals(true);
 		ui.displayBox->setCurrentIndex(-1);
 		ui.displayBox->blockSignals(false);
-        ui.zoomLabel->setText(QString().sprintf("Span:"));
+		ui.zoomLabel->setText(QString().sprintf(""));
         isRunning =false;
 		signalSpectrum = NULL;
         plotArea.fill(Qt::black); //Start with a  clean plot every time
@@ -257,7 +258,7 @@ void SpectrumWidget::resizeFrames()
 void SpectrumWidget::resizeEvent(QResizeEvent *event)
 {
     resizeFrames();
-    event->accept(); //We don't handle
+	event->accept(); //We handle
 }
 
 //Returns +/- freq from LO based on where mouse cursor is
@@ -656,8 +657,9 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
     mouseFreq = GetMouseFreq() + loFreq;
     int mouseDb = GetMouseDb();
     if (mouseFreq > 0)
-        label.sprintf("%.3f kHz @ %ddB",mouseFreq / 1000.0,mouseDb);
-    else
+		//label.sprintf("%.3f kHz @ %ddB",mouseFreq / 1000.0,mouseDb);
+		label.sprintf("%.3f kHz",mouseFreq / 1000.0);
+	else
         label = "";
 
     QRect freqFr = ui.cursorLabel->geometry(); //Relative to controlFrame (parent)
@@ -732,15 +734,17 @@ void SpectrumWidget::zoomChanged(int item)
         //We're changing from zoomed to no zoom
         ui.zoomLabelFrame->setVisible(false);
         ui.zoomPlotFrame->setVisible(false);
+		useZoomSpectrum = false;
+		ui.hiResButton->setChecked(false);
         //Need to do something to make sure sizes have been changed
-        adjustSize();
+		//adjustSize();
         resizeFrames();
     } else if (zoom == 1.0){
         //Else resize on first use
         ui.zoomLabelFrame->setVisible(true);
         ui.zoomPlotFrame->setVisible(true);
         //
-        adjustSize();
+		//adjustSize();
         resizeFrames();
     }
 
@@ -752,25 +756,7 @@ void SpectrumWidget::zoomChanged(int item)
     //if (fMixer != 0 && newZoom < zoom)
     //    emit mixerChanged(fMixer, true); //Change LO to current mixer freq
 
-
-    //Smooth zoom from main spectrum buffer to high-res zoom buffer, automatically switch
     zoom = newZoom;
-    //If zoomed range less than zoomedSampleRate, use high-res zoom buffer, else normal
-    qint32 range = sampleRate;
-    qint32 zoomRange = signalSpectrum->getZoomedSampleRate();
-    if ((range * zoom) < zoomRange) {
-        useZoomSpectrum = true;
-        //Now we need to adjust zoom to percentage of zoomSpectrum, ie 30k
-        // zoom * range = newZoom * zoomRange
-        // (zoom * range)/zoomRange = newZoom
-        zoom = (zoom * range) / zoomRange;
-        ui.zoomLabel->setText(QString().sprintf("Span: %.0f kHz",zoomRange/1000 * zoom));
-    } else {
-        useZoomSpectrum = false;
-        ui.zoomLabel->setText(QString().sprintf("Span: %.0f kHz",range/1000 * zoom));
-    }
-
-    //ui.zoomLabel->setText(QString().sprintf("Zoom: %.0f X",1.0 / zoom));
 
     //In zoom mode, hi/low mixer boundaries need to be updated so we always keep frequency on screen
     //emit mixerLimitsChanged(range, - range);
@@ -1043,7 +1029,22 @@ void SpectrumWidget::newFftData()
         }
 
         update();
-    }
+	}
+}
+
+//Only valid in zoom mode
+void SpectrumWidget::hiResToggled(bool b)
+{
+	if (zoom == 1) {
+		ui.hiResButton->setChecked(false);
+		return; //ignore
+	}
+
+	useZoomSpectrum = b;
+	//Update display
+	DrawOverlay(true);
+	update();
+
 }
 
 void SpectrumWidget::DrawSpectrum()
@@ -1157,6 +1158,16 @@ void SpectrumWidget::DrawOverlay(bool isZoomed)
     int overlayHeight;
     QRect plotFr;
 	quint16 dbLabelInterval;
+
+	//Update span label
+	qint32 range = sampleRate;
+	qint32 zoomRange = signalSpectrum->getZoomedSampleRate();
+	if (useZoomSpectrum) {
+		ui.zoomLabel->setText(QString().sprintf("Z: %.0f kHz",zoomRange/1000 * zoom));
+	} else {
+		ui.zoomLabel->setText(QString().sprintf("Z: %.0f kHz",range/1000 * zoom));
+	}
+
 
     if (!isZoomed) {
         if (plotOverlay.isNull())
