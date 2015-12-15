@@ -203,23 +203,25 @@ templateType MedianFilter<templateType>::median()
 	if (!isValid)
 		return lastNewData;
 
-	pMedian = head.point;
-	//We only need to iterate through half of filter, once we find median node we're done
-
 	if (evenFilterSize) {
 		//Average 2 center nodes
-		if (!isPMedianValid)
+		if (!isPMedianValid) {
+			pMedian = head.point;
 			//We only have to iterate if the last insert didn't process and least half nodes
+			//We only need to iterate through half of filter, once we find median node we're done
 			for (int i=0; i<(filterSize / 2) -1 ; i++)
 				pMedian = pMedian->point;
+		}
 		//pMedian points to the first of the 2 nodes to be averaged
 		return (pMedian->value + pMedian->point->value) / 2;
 	} else {
 		//Just return center node
-		if (!isPMedianValid)
+		if (!isPMedianValid) {
+			pMedian = head.point;
 			//We only have to iterate if the last insert didn't process and least half nodes
 			for (int i=0; i<filterSize / 2 ; i++)
 				pMedian = pMedian->point;
+		}
 		return pMedian->value;
 	}
 }

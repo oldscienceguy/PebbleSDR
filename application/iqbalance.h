@@ -9,6 +9,7 @@ class IQBalance : public SignalProcessing
 {
 public:
 	IQBalance(int sr, int fc);
+	~IQBalance();
 	CPX *ProcessBlock(CPX *in);
 
 	double getGainFactor();
@@ -24,6 +25,11 @@ private:
 	double phaseFactor;
 	bool enabled;
 	bool automatic;
+	double *snrSquared;
+	//std::vector has nth element function which will give us fast median
+	std::vector<double> medianBuf;
+	void CalcNoise(CPX *inFreqDomain);
+	void FindPeak();
 };
 
 #endif // IQBALANCE_H

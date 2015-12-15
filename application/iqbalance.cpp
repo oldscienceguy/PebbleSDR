@@ -2,6 +2,9 @@
 #include "gpl.h"
 
 #include "iqbalance.h"
+//Testing
+//Look at ghpsdr3 correctiq
+#include "medianfilter.h"
 
 IQBalance::IQBalance(int sr, int fc):SignalProcessing(sr, fc)
 {
@@ -9,6 +12,18 @@ IQBalance::IQBalance(int sr, int fc):SignalProcessing(sr, fc)
 	gainFactor=1;
 	phaseFactor= 0;
 	enabled = false;
+	medianBuf.reserve(fc);  //To avoid constant resizing on push()
+	medianBuf.assign(fc,0.0); //Initialize
+	snrSquared = new double[fc];
+
+	//Testing
+	//MedianFilter<qint16> mf(9);
+	//mf.test();
+
+}
+IQBalance::~IQBalance()
+{
+	delete snrSquared;
 }
 
 double IQBalance::getGainFactor() {return gainFactor;}
@@ -87,3 +102,41 @@ CPX *IQBalance::BalanceInFrequencyDomain(CPX *in)
 {
 }
 */
+
+//Algorithm and pascal code references from Rocky's iqbal.pas (Alex Shovkoplyas, VE3NEA)
+
+//Relationship between power and amplitude we can get back from FFT
+//From Wikipedia: http://en.wikipedia.org/wiki/Signal-to-noise_ratio
+//SNR = Psignal / Pnoise = (Asignal / Anoise)^2
+//Where P is power, and A is amplitude.
+
+//http://www.mathworks.com/help/signal/ref/snr.html for snr calculation reference
+
+
+//Iterates through FFT output and updates an array of SNR ratios for each bin
+//Todo: We need FFT output before averaging and conversion to db (see fft.cpp) or change algorithm to work with db not power
+void IQBalance::CalcNoise(CPX *inFreqDomain)
+{
+	double noise;
+	for (int i = 0; i < numSamples; i++) {
+		//Magnitude squared (power at ith frequency bin)
+		snrSquared[i] = medianBuf[i] = inFreqDomain[i].sqrMag();
+	}
+	//Update median, which is our noise figure.  Half the bins have lower and half have higher power levels
+	std::nth_element(medianBuf.begin(), medianBuf.begin() + medianBuf.size()/2, medianBuf.end());
+	noise = medianBuf[medianBuf.size()/2];
+	//Calculate signal to noise for each bin
+	//double normalize = 1.0 / median;
+	for (int i = 0; i < numSamples; i++) {
+		snrSquared[i] = snrSquared[i] / noise; //Signal / Noise
+		qDebug() << "SNR ["<< i <<"] "<< snrSquared[i];
+	}
+}
+
+//Find the strongest SNR
+void IQBalance::FindPeak()
+{
+	//Todo: Keep bin size in hz in FFT base class, then use it to determine minimum signal width in # of bins
+	//Use this when looking for signals > 30db (SNR_THRESHOLD) to ignore spikes that are not real signals
+
+}
