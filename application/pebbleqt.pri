@@ -6,8 +6,11 @@ CONFIG += c++11
 #QMAKE_CXXFLAGS += -mmacosx-version-min=10.8
 #QMAKE_CXXFLAGS += -std=c++11
 #QMAKE_CXXFLAGS += -stdlib=libc++
-#Not sure if we still need this, forces a specific SDK version
+#Use this if QMake can't find the installed sdk, this specifies a specif SDK version
 QMAKE_MAC_SDK = macosx10.11
+
+#This is the minimum version QT 5.5 will run on.  10.6 may work, but is not tested
+QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.7
 
 message("PWD = "$${PWD})
 message("PRO_FILE_PWD = "$$_PRO_FILE_PWD_)
