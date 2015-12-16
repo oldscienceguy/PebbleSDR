@@ -4,7 +4,7 @@
 #include "QFileDialog"
 #include "pebblelib_global.h"
 
-PebbleLibGlobal *pebbleLibGobal;
+PebbleLibGlobal *pebbleLibGlobal;
 
 FileSDRDevice::FileSDRDevice():DeviceInterfaceBase()
 {
@@ -12,7 +12,7 @@ FileSDRDevice::FileSDRDevice():DeviceInterfaceBase()
     copyTest = false; //Write what we read
     fileName = "";
     recordingPath = "";
-	pebbleLibGobal = new PebbleLibGlobal();
+	pebbleLibGlobal = new PebbleLibGlobal();
 }
 
 FileSDRDevice::~FileSDRDevice()
@@ -37,7 +37,7 @@ bool FileSDRDevice::Connect()
 
     //Use last recording path and filename for convenience
     if (recordingPath.isEmpty()) {
-		recordingPath = pebbleLibGobal->appDirPath;
+		recordingPath = pebbleLibGlobal->appDirPath;
         //QT QTBUG-35779 Trailing '*' is required to workaround QT 5.2 bug where directory arg was ignored
 		recordingPath += "/PebbleRecordings/*";
     }

@@ -27,7 +27,7 @@ public:
 private:
 };
 
-extern PebbleLibGlobal *pebbleLibGobal;
-#define pebbleLibLogfile (*pebbleLibGobal->pLogfile)
+extern PebbleLibGlobal *pebbleLibGlobal;
+#define pebbleLibLogfile (*pebbleLibGlobal->pLogfile)
 
 #endif // PEBBLELIB_GLOBAL_H

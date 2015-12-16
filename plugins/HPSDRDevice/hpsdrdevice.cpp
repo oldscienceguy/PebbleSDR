@@ -3,7 +3,7 @@
 #include <QProgressDialog>
 #include "pebblelib_global.h"
 
-PebbleLibGlobal *pebbleLibGobal;
+PebbleLibGlobal *pebbleLibGlobal;
 
 #if 0
 References
@@ -13,7 +13,7 @@ Metis: http://www.w7ay.net/site/Software/Metis%20Framework/index.html
 
 HPSDRDevice::HPSDRDevice():DeviceInterfaceBase()
 {
-	pebbleLibGobal = new PebbleLibGlobal();
+	pebbleLibGlobal = new PebbleLibGlobal();
 
 	InitSettings("HPSDR");
 
@@ -913,7 +913,7 @@ bool HPSDRDevice::LoadFpga(QString filename)
 	}
 	qDebug()<<"Loading FPGA";
 
-	QFile rbfFile(pebbleLibGobal->appDirPath + "/PebbleData/" + filename);
+	QFile rbfFile(pebbleLibGlobal->appDirPath + "/PebbleData/" + filename);
 	//QT assumes binary unless we add QIODevice::Text
 	if (!rbfFile.open(QIODevice::ReadOnly)) {
 		qDebug()<<"FPGA file not found";
@@ -979,7 +979,7 @@ bool HPSDRDevice::LoadFirmware(QString filename)
 	}
 	qDebug()<<"Loading firmware";
 
-	QFile rbfFile(pebbleLibGobal->appDirPath + "/PebbleData/" + filename);
+	QFile rbfFile(pebbleLibGlobal->appDirPath + "/PebbleData/" + filename);
 	if (!rbfFile.open(QIODevice::ReadOnly))
 		return false;
 	//Read file and send to Ozy 64bytes at a time

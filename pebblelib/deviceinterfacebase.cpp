@@ -2,11 +2,11 @@
 #include <QWidget>
 #include "pebblelib_global.h"
 
-PebbleLibGlobal *pebbleLibGobal;
+PebbleLibGlobal *pebbleLibGlobal;
 
 DeviceInterfaceBase::DeviceInterfaceBase()
 {
-	pebbleLibGobal = new PebbleLibGlobal();
+	pebbleLibGlobal = new PebbleLibGlobal();
 
 	connected = false;
 	//These are common settings for every device, variables are defined in DeviceInterface
@@ -455,7 +455,7 @@ void DeviceInterfaceBase::InitSettings(QString fname)
 	//Scope::UserScope puts file C:\Users\...\AppData\Roaming\N1DDY
 	//Scope::SystemScope puts file c:\ProgramData\n1ddy
 
-	qSettings = new QSettings(pebbleLibGobal->appDirPath + "/PebbleData/" + fname +".ini",QSettings::IniFormat);
+	qSettings = new QSettings(pebbleLibGlobal->appDirPath + "/PebbleData/" + fname +".ini",QSettings::IniFormat);
 
 }
 
