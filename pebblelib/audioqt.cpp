@@ -121,7 +121,7 @@ int AudioQT::StartOutput(QString outputDeviceName, int _outputSampleRate)
 	//We need to make sure the buffer is big enough, set to max
 	//If too small, we'll get choppy output as data is thrown away
 	//This has to be called before start
-	qaAudioOutput->setBufferSize(32767);
+	qaAudioOutput->setBufferSize(32768);
     outputDataSource = qaAudioOutput->start();
 	return 0;
 }
@@ -185,7 +185,7 @@ void AudioQT::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
 	//In QAudioOutput, write() does not
 	//This ensures we don't write output faster than output device can handle it
 	hasOutputTimedOut = false;
-	QTimer::singleShot(1000, this, SLOT(OutputTimedOut()));
+	QTimer::singleShot(250, this, SLOT(OutputTimedOut()));
 	while (bytesFree < bytesToWrite) {
 		if (hasOutputTimedOut) {
 			qDebug()<<"QAudioOutput timed out";
