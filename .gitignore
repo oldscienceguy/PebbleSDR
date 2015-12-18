@@ -24,3 +24,5 @@ SdrGarage/*MacDebug/
 SdrGarage/*MacRelease/
 
 /DevicePluginTemplate/
+cpp-markdown
+.gitignore
