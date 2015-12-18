@@ -1105,9 +1105,9 @@ void RTL2832SDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 						//qDebug()<<"No filled buffer available";
 						return;
 					}
-				perform.StartPerformance("ProcessIQ");
+				//perform.StartPerformance("ProcessIQ");
 				ProcessIQData(consumerFilledBufferPtr,framesPerBuffer);
-				perform.StopPerformance(1000);
+				//perform.StopPerformance(1000);
 				//We don't release a free buffer until ProcessIQData returns because that would also allow inBuffer to be reused
 				producerConsumer.ReleaseFreeBuffer();
 				}
