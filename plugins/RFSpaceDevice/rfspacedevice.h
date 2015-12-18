@@ -247,13 +247,15 @@ private:
 	bool SendTcpCommand(void *buf, qint64 len);
 	bool SendUsbCommand(void *buf, qint64 len);
 	void processControlItem(ControlHeader header, unsigned char *buf);
-	bool SetSampleRate();
+	bool SetIQSampleRate();
 	bool SetUDPAddressAndPort(QHostAddress address, quint16 port);
 	bool SendAck();
 	void DoUSBProducer();
 	void DoUDPProducer();
 	bool SetADSampleRate();
 	bool SendUDPDiscovery();
+	AD6620::BANDWIDTH MapIQSampleRateToBandwidth(quint32 iqSampleRate);
+	quint32 MapBWToIQSampleRate(AD6620::BANDWIDTH bw);
 };
 
 

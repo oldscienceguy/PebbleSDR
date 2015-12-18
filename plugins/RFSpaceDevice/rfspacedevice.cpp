@@ -237,8 +237,8 @@ void RFSpaceDevice::Start()
 	} else {
 		return;
 	}
-	SetSampleRate();
-	SetADSampleRate();
+	SetIQSampleRate();
+	//SetADSampleRate(); //Don't need to do this unless we are correcting frequency
 
 	//Get basic Device Information for later use, name, version, etc
 	bool result = RequestTargetName();
@@ -294,6 +294,7 @@ void RFSpaceDevice::ReadSettings()
 		return;
 	}
 
+	sampleRate = 196078; //Default if not previously set
 	lowFrequency = 150000;
 	highFrequency = 33000000;
 	DeviceInterfaceBase::ReadSettings();
@@ -304,19 +305,47 @@ void RFSpaceDevice::ReadSettings()
 	devicePort = qSettings->value("DevicePort",50000).toInt();
 	autoDiscover = qSettings->value("AutoDiscover",true).toBool();
 
-	//Instead of getting BW from SDR_IQ options dialog, we now get it directly from settings dialog
-	//because we're passing GetSampleRates() during dialog setup
-	//So sampleRate is actually bandwidth
-	if (sampleRate==190000)
-		sBandwidth = AD6620::BW190K;
-	else if (sampleRate==150000)
-		sBandwidth = AD6620::BW150K;
-	else if (sampleRate==100000)
-		sBandwidth = AD6620::BW100K;
-	else if (sampleRate==50000)
-		sBandwidth = AD6620::BW50K;
-	else
-		sBandwidth = AD6620::BW50K;
+	sBandwidth = MapIQSampleRateToBandwidth(sampleRate);
+}
+
+quint32 RFSpaceDevice::MapBWToIQSampleRate(AD6620::BANDWIDTH bw)
+{
+	switch (bw)
+	{
+		case AD6620::BW5K: return 8138;
+		case AD6620::BW10K: return 16276;
+		case AD6620::BW25K: return 37792;
+		case AD6620::BW50K: return 55555;
+		case AD6620::BW100K: return 111111;
+		case AD6620::BW150K: return 158730;
+		case AD6620::BW190K: return 196078;
+		default: return 196078;
+	}
+
+}
+
+//Sync bandwidth with sample rate
+AD6620::BANDWIDTH RFSpaceDevice::MapIQSampleRateToBandwidth(quint32 iqSampleRate)
+{
+	switch (iqSampleRate) {
+		case 196078:
+			return AD6620::BW190K;
+		case 158730:
+			return AD6620::BW150K;
+		case 111111:
+			return AD6620::BW100K;
+		case 55555:
+			return AD6620::BW50K;
+		case 37792:
+			return AD6620::BW25K;
+		case 16276:
+			return AD6620::BW10K;
+		case 8138:
+			return AD6620::BW5K;
+		default:
+			return AD6620::BW50K;
+	}
+
 }
 
 void RFSpaceDevice::WriteSettings()
@@ -379,8 +408,7 @@ QVariant RFSpaceDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 			if (deviceNumber == SDR_IP)
 				return QStringList()<<"62500"<<"250000"<<"500000"<<"2000000";
 			else if (deviceNumber == SDR_IQ)
-				//return QStringList()<<"55555"<<"111111"<<"158730"<<"196078";
-				return QStringList()<<"50000"<<"100000"<<"150000"<<"190000";
+				return QStringList()<<"55555"<<"111111"<<"158730"<<"196078";
 			else if (deviceNumber == AFEDRI_USB)
 				return QStringList()<<"50000"<<"100000"<<"150000"<<"190000"<<"250000";
 			else
@@ -393,23 +421,6 @@ QVariant RFSpaceDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 			else
 				return DeviceInterfaceBase::AUDIO_IQ_DEVICE;
 
-		case DeviceSampleRate: {
-			return sampleRate;
-			//Note, actual sample rate for SDR_IQ is tied to bandwidth
-#if 0
-				switch (sBandwidth)
-				{
-					case AD6620::BW5K: return 8138;
-					case AD6620::BW10K: return 16276;
-					case AD6620::BW25K: return 37792;
-					case AD6620::BW50K: return 55555;
-					case AD6620::BW100K: return 111111;
-					case AD6620::BW150K: return 158730;
-					case AD6620::BW190K: return 196078;
-				}
-				return 48000;
-#endif
-		}
 		case DeviceFrequency:
 			return GetFrequency();
 		case DeviceHealthValue:
@@ -433,7 +444,7 @@ bool RFSpaceDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, qu
 		case DeviceFrequency:
 			return SetFrequency(_value.toDouble());
 		default:
-		return DeviceInterfaceBase::Set(_key, _value, _option);
+			return DeviceInterfaceBase::Set(_key, _value, _option);
 	}
 }
 
@@ -562,20 +573,24 @@ void RFSpaceDevice::processControlItem(ControlHeader header, unsigned char *buf)
 			break;
 		case 0x0020: //Receiver Frequency
 			receiverFrequency = (double) buf[3] + buf[4] * 0x100 + buf[5] * 0x10000 + buf[6] * 0x1000000;
+			//qDebug()<<"Receiver frequency "<<receiverFrequency;
 			break;
 		case 0x0038: //RF Gain - values are 0 to -30
 			rfGain = (qint8)buf[3];
+			//qDebug()<<"RF Gain "<<rfGain;
 			break;
 		case 0x0040: //IF Gain - values are all 8bit
 			ifGain = (qint8)buf[3];
+			//qDebug()<<"IF Gain "<<ifGain;
 			break;
 		case 0x00B0: //A/D Input Sample Rate
-			qDebug()<<"A/D Sample Rate: "<<*(quint32 *)&buf[3];
+			//qDebug()<<"A/D Sample Rate: "<<*(quint32 *)&buf[3];
 			break;
 		case 0x00b8: //IQ Sample output rate
-			qDebug()<<"Output Sample Rate: "<<*(quint32 *)&buf[3];
+			//qDebug()<<"Output Sample Rate: "<<*(quint32 *)&buf[3];
 			break;
 		default:
+			qDebug()<<"Unrecognized control item: "<<*(quint32 *)&buf[3];
 			//bool brk = true;
 			break;
 		}
@@ -741,10 +756,6 @@ void RFSpaceDevice::consumerWorker(cbProducerConsumerEvents _event)
 				//Not sure if this is required for SDR-IQ, but it is for SDR-14
 				//SendAck();
 
-				//ProcessIQ has a max of about 2800us with 2m sample rate from sdr-ip
-				//But ramps to 200,000us with sdr-iq!
-				//Why?  Wierd samples in sdr-iq causing some error loop?
-				//Lower time/slice
 				//perform.StartPerformance("ProcessIQ");
 				ProcessIQData(consumerFilledBufPtr,inBufferSize);
 				//perform.StopPerformance(100);
@@ -1014,8 +1025,8 @@ bool RFSpaceDevice::SetADSampleRate()
 		return false;
 }
 
-//This sets the bandwidth, not actual sample rate
-bool RFSpaceDevice::SetSampleRate()
+//This sets the sample rate and syncs bandwidth
+bool RFSpaceDevice::SetIQSampleRate()
 {
 	//100k sample rate example: [09] [00] [B8] [00] [00] [A0] [86] [01] [00]
 	unsigned char writeBuf[] = {0x09, 0x00, 0xb8, 0x00, 0x00, 0xa0, 0x86, 0x01, 0x00};
@@ -1028,30 +1039,8 @@ bool RFSpaceDevice::SetSampleRate()
 		//We used to have to flush usb buffer after doing this
 		//Replaced in firmware 1.4 with 0xb8 command
 		// ad6620->SetBandwidth(sBandwidth);
-		//SDR-IQ has specific values we have to map to
-		switch(sBandwidth) {
-			case AD6620::BANDWIDTH::BW5K:
-				*(quint32 *)&writeBuf[5] = 8138;
-				break;
-			case AD6620::BANDWIDTH::BW10K:
-				*(quint32 *)&writeBuf[5] = 16276;
-				break;
-			case AD6620::BANDWIDTH::BW25K:
-				*(quint32 *)&writeBuf[5] = 37793;
-				break;
-			case AD6620::BANDWIDTH::BW50K:
-				*(quint32 *)&writeBuf[5] = 55556;
-				break;
-			case AD6620::BANDWIDTH::BW100K:
-				*(quint32 *)&writeBuf[5] = 111111;
-				break;
-			case AD6620::BANDWIDTH::BW150K:
-				*(quint32 *)&writeBuf[5] = 158730;
-				break;
-			case AD6620::BANDWIDTH::BW190K:
-				*(quint32 *)&writeBuf[5] = 196078;
-				break;
-		}
+
+		*(quint32 *)&writeBuf[5] = sampleRate;
 		return SendUsbCommand(writeBuf,sizeof(writeBuf));
 	} else if (deviceNumber == AFEDRI_USB) {
 		//afedri->Set_New_Sample_Rate(sampleRate);
