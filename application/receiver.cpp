@@ -792,8 +792,10 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
     } else {
 
         //Replaces Mixer.cpp
+		//global->perform.StartPerformance();
         downConvert1.SetFrequency(mixerFrequency);
         int downConvertLen = downConvert1.ProcessData(framesPerBuffer,nextStep,workingBuf);
+		//global->perform.StopPerformance(100);
         //This is a significant change from the way we used to process post downconvert
         //We used to process every downConvertLen samples, 32 for a 2m sdr sample rate
         //Which didn't work when we added zoomed spectrum, we need full framesPerBuffer to get same fidelity as unprocessed
@@ -867,9 +869,13 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 
     }
 
+	//global->perform.StartPerformance("Fract Resampler");
     int numResamp = fractResampler.Resample(demodFrames,resampRate,nextStep,audioBuf);
+	//global->perform.StopPerformance(100);
 
+	//global->perform.StartPerformance("Process Audio");
 	ProcessAudioData(audioBuf,numResamp);
+	//global->perform.StopPerformance(100);
 }
 
 //Should be ProcessSpectrumData, using it for now
