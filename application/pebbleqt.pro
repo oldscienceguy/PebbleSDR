@@ -335,4 +335,5 @@ RESOURCES += \
     resources.qrc
 
 DISTFILES += \
-    todo.txt
+    todo.txt \
+    frequencylist-raleigh.csv
