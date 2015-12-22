@@ -99,7 +99,7 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback,
 	} else if (deviceNumber == AFEDRI_USB) {
 		DeviceInterfaceBase::Initialize(_callback, NULL, NULL, _framesPerBuffer); //Handle audio input
 		afedri->Initialize(); //HID
-		normalizeIQGain = 0.75;
+		normalizeIQGain = 0.02; //Runs hot
 	}
 
 	readBufferIndex = 0;
@@ -290,6 +290,7 @@ void RFSpaceDevice::ReadSettings()
 	} else if (deviceNumber == AFEDRI_USB) {
 		qSettings = afedri_usbSettings;
 		inputDeviceName = "AFEDRI-SDR-Net Audio"; //Default if not overridden by user in dialog
+		iqOrder = QI; //AFEDRI uses audio device and IQ is reversed compared to SDR-IQ
 	} else {
 		return;
 	}
@@ -715,9 +716,10 @@ void RFSpaceDevice::DoUSBProducer()
 			producerConsumer.ReleaseFreeBuffer(); //Put back what we acquired
 			return;
 		}
-		for (int i=0, j=0; i<framesPerBuffer; i++, j+=4) {
-			//IQ appear to be reversed
-			normalizeIQ(&producerFreeBufPtr[i], (qint16)usbReadBuf[j+2], (qint16)usbReadBuf[j]);
+		qint16 *usbShortBuf = (qint16*)usbReadBuf;
+		for (int i=0, j=0; i<framesPerBuffer; i++, j+=2) {
+			//IQ are reversed for SDR-IQ
+			normalizeIQ(&producerFreeBufPtr[i], usbShortBuf[j+1], usbShortBuf[j] );
 		}
 		//Increment the number of data buffers that are filled so consumer thread can access
 		producerConsumer.ReleaseFilledBuffer();
@@ -884,10 +886,11 @@ void RFSpaceDevice::UDPSocketNewData()
 		readBufferIndex += udpBlockSize;
 
 		if (readBufferIndex == dataBlockSize) {
+			qint16 *readShortBuf = (qint16*)readBuf;
 			readBufferIndex = 0;
-			for (int i=0, j=0; i<framesPerBuffer; i++, j+=4) {
+			for (int i=0, j=0; i<framesPerBuffer; i++, j+=2) {
 				//Reverse IQ order
-				normalizeIQ(&producerFreeBufPtr[i],(qint16)readBuf[j+2],(qint16)readBuf[j]);
+				normalizeIQ(&producerFreeBufPtr[i],readShortBuf[j+1],readShortBuf[j]);
 			}
 			//Increment the number of data buffers that are filled so consumer thread can access
 			producerConsumer.ReleaseFilledBuffer();
