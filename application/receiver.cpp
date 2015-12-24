@@ -489,7 +489,11 @@ void Receiver::RecToggled(bool on)
 
     if (on) {
         //We could use QTemporaryFile to get a unique file name, but need more control
-        QString baseName = "PebbleIQ";
+		QString baseName = "PebbleIQ_";
+		baseName += QString::number(frequency/1000,'f',0);
+		baseName +="kHz_";
+		baseName += QString::number(sampleRate/1000);
+		baseName += "kSps_";
         QFileInfo fInfo;
         for (int i=1; i<1000; i++) {
             recordingFileName = recordingPath + baseName + QString::number(i) + ".wav";
