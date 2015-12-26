@@ -85,6 +85,10 @@ Thank you Moe.
 ####Sound Effects
 [www.soundjay.com/beep-sounds-1.html](http://www.soundjay.com/beep-sounds-1.html)
 
+####HIDAPI
+Mac and win functions for accessing HID devices
+<http://www.signal11.us/oss/hidapi/>
+
 ####SDRPlay
 [www.sdrplay.com](http://www.sdrplay.com)  
 
