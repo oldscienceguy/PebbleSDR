@@ -308,6 +308,7 @@ void ProducerWorker::start()
 	//Do any construction here so it's in the thread
 	worker(cbProducerConsumerEvents::Start);
 	timer = new QTimer(this);
+	timer->setTimerType(Qt::PreciseTimer); //1ms resolution
 	connect(timer, SIGNAL(timeout()), this, SLOT(checkNewData()));
 	isRunning = true;
 	timer->start(msInterval); //Times out when there's nothing in the event queue
@@ -342,6 +343,7 @@ void ConsumerWorker::start()
 	//Do any construction here so it's in the thread
 	worker(cbProducerConsumerEvents::Start);
 	timer = new QTimer(this);
+	timer->setTimerType(Qt::PreciseTimer); //1ms resolution
 	connect(timer, SIGNAL(timeout()), this, SLOT(processNewData()));
 	isRunning = true;
 	timer->start(msInterval); //Times out when there's nothing in the event queue
