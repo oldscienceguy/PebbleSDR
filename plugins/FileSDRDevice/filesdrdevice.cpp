@@ -27,7 +27,10 @@ bool FileSDRDevice::Initialize(cbProcessIQData _callback,
 {
 	DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
     producerConsumer.Initialize(std::bind(&FileSDRDevice::producerWorker, this, std::placeholders::_1),
-        std::bind(&FileSDRDevice::consumerWorker, this, std::placeholders::_1),1,framesPerBuffer * sizeof(CPX));
+		std::bind(&FileSDRDevice::consumerWorker, this, std::placeholders::_1),50,framesPerBuffer * sizeof(CPX));
+
+	connect(&sampleRateTimer,SIGNAL(timeout()),this, SLOT(producerSlot()));
+	sampleRateTimer.setTimerType(Qt::PreciseTimer); //1ms resolution
 
     return true;
 }
@@ -74,12 +77,14 @@ bool FileSDRDevice::Connect()
     if (!res)
         return false;
 
+	sampleRate = wavFileRead.GetSampleRate();
 	//We have sample rate for file, set polling interval
-	producerConsumer.SetProducerInterval(wavFileRead.GetSampleRate(), framesPerBuffer);
-	producerConsumer.SetConsumerInterval(wavFileRead.GetSampleRate(), framesPerBuffer);
+	//We don't use producer thread, sampleRateTimer and producerSlot() instead
+	//producerConsumer.SetProducerInterval(sampleRate, framesPerBuffer);
+	producerConsumer.SetConsumerInterval(sampleRate, framesPerBuffer);
 
     if (copyTest) {
-        res = wavFileWrite.OpenWrite(fileName + "2", wavFileRead.GetSampleRate(),0,0,0);
+		res = wavFileWrite.OpenWrite(fileName + "2", sampleRate,0,0,0);
     }
     return true;
 }
@@ -93,11 +98,19 @@ bool FileSDRDevice::Disconnect()
 
 void FileSDRDevice::Start()
 {
-    producerConsumer.Start();
+	//How often do we need to read samples from files to get framesPerBuffer at sampleRate
+	quint16 msToFillBuffer = (1000.0 / sampleRate) * framesPerBuffer;
+	qDebug()<<"msToFillBuffer"<<msToFillBuffer;
+	//Note msToFillBuffer == 0 means timer will get triggered whenever there are no events
+	//ie as fast as possible.  High CPU will result, but we may be able to keep up with higer SR
+
+	producerConsumer.Start(false,true);
+	sampleRateTimer.start(msToFillBuffer);
 }
 
 void FileSDRDevice::Stop()
 {
+	sampleRateTimer.stop();
     producerConsumer.Stop();
 }
 
@@ -129,32 +142,32 @@ QVariant FileSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 			return "Plays back I/Q WAV file";
 			break;
 		case DeviceName:
-			return "SDRFile: " + QFileInfo(fileName).fileName() + "-" + QString::number(wavFileRead.GetSampleRate());
+			return "SDRFile: " + QFileInfo(fileName).fileName() + "-" + QString::number(sampleRate);
 		case DeviceType:
 			return IQ_DEVICE;
 		case DeviceSampleRate:
-			return wavFileRead.GetSampleRate();
+			return sampleRate;
 		case StartupType:
 			return DeviceInterface::DEFAULTFREQ; //Fixed, can't change freq
 		case HighFrequency: {
 			quint32 loFreq = wavFileRead.GetLoFreq();
 			if (loFreq == 0)
-				return wavFileRead.GetSampleRate();
+				return sampleRate;
 			else
-				return loFreq + wavFileRead.GetSampleRate() / 2.0;
+				return loFreq + sampleRate / 2.0;
 		}
 		case LowFrequency: {
 			quint32 loFreq = wavFileRead.GetLoFreq();
 			if (loFreq == 0)
 				return 0;
 			else
-				return loFreq - wavFileRead.GetSampleRate() / 2.0;
+				return loFreq - sampleRate / 2.0;
 		}
 		case StartupFrequency: {
 			//If it's a pebble wav file, we should have LO freq
 			quint32 loFreq = wavFileRead.GetLoFreq();
 			if (loFreq == 0)
-				return wavFileRead.GetSampleRate() / 2.0; //Default
+				return sampleRate / 2.0; //Default
 			else
 				return loFreq;
 			break;
@@ -200,30 +213,40 @@ void FileSDRDevice::SetupOptionUi(QWidget *parent)
 {
 	Q_UNUSED(parent);
 
-    //Nothing to do
+	//Nothing to do
 }
 
+//Producer is not currently used, here for reference
 void FileSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 {
-    CPX *bufPtr;
-    int samplesRead;
-    switch (_event) {
-        case cbProducerConsumerEvents::Start:
-            break;
+	switch (_event) {
+		case cbProducerConsumerEvents::Start:
+			break;
 
-        case cbProducerConsumerEvents::Run:
-            if ((bufPtr = (CPX*)producerConsumer.AcquireFreeBuffer()) == NULL)
-                return;
+		case cbProducerConsumerEvents::Run:
+			producerSlot();
+			break;
 
-            samplesRead = wavFileRead.ReadSamples(bufPtr,framesPerBuffer);
-            producerConsumer.ReleaseFilledBuffer();
+		case cbProducerConsumerEvents::Stop:
+			break;
+	}
 
-            break;
-
-        case cbProducerConsumerEvents::Stop:
-            break;
-    }
 }
+
+//Called by timer to match sampleRate
+void FileSDRDevice::producerSlot()
+{
+	//pebbleLibGlobal->perform.StartPerformance("Wav file producer");
+	CPX *bufPtr;
+	int samplesRead;
+	//Fill one buffer with data
+	if ((bufPtr = (CPX*)producerConsumer.AcquireFreeBuffer()) == NULL)
+		return;
+	samplesRead = wavFileRead.ReadSamples(bufPtr,framesPerBuffer);
+	producerConsumer.ReleaseFilledBuffer();
+	//pebbleLibGlobal->perform.StopPerformance(1000);
+}
+
 void FileSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 {
     CPX *bufPtr;
@@ -233,15 +256,18 @@ void FileSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 
         case cbProducerConsumerEvents::Run:
 
-            if ((bufPtr = (CPX*)producerConsumer.AcquireFilledBuffer()) == NULL)
-                return;
+			//We always want to consume everything we have, producer will eventually block if we're not consuming fast enough
+			while (producerConsumer.GetNumFilledBufs() > 0) {
 
-            if (copyTest)
-                wavFileWrite.WriteSamples(bufPtr, framesPerBuffer);
+				if ((bufPtr = (CPX*)producerConsumer.AcquireFilledBuffer()) == NULL)
+					return;
 
-            ProcessIQData(bufPtr,framesPerBuffer);
-            producerConsumer.ReleaseFreeBuffer();
+				if (copyTest)
+					wavFileWrite.WriteSamples(bufPtr, framesPerBuffer);
 
+				ProcessIQData(bufPtr,framesPerBuffer);
+				producerConsumer.ReleaseFreeBuffer();
+			}
             break;
 
         case cbProducerConsumerEvents::Stop:

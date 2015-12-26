@@ -28,6 +28,8 @@ public:
 	QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
 	bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option = 0);
 
+public slots:
+	void producerSlot();
 
 private:
 	bool Connect();
@@ -48,6 +50,7 @@ private:
     WavFile wavFileWrite;
     bool copyTest; //True if we're reading from one file and writing to another file for testing
 
+	QTimer sampleRateTimer;
 };
 
 
