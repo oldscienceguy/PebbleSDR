@@ -1026,19 +1026,25 @@ void RTL2832SDRDevice::producerWorker(cbProducerConsumerEvents _event)
             int bytesRead;
 
             if (deviceNumber == RTL_USB) {
+
                 if (!running)
                     return;
 
 				if ((producerFreeBufPtr = (CPX *)producerConsumer.AcquireFreeBuffer()) == NULL)
                     return;
 
+
                 //Insert code to put data from device in buffer
+				//rtlsdr_read_sync takes almost 1ms to return since it just blocks until 2048 samples are received
+				//So at 2048msps, it makes sense that it blocks for 1ms
+				//I'd consider switching to rtlsdr_read_async(), but that also blocks
+				//Since we need to read one buffer every ms, hard to see how we're keeping up
 				if (rtlsdr_read_sync(dev, inBuffer, readBufferSize, &bytesRead) < 0) {
                     qDebug("Sync transfer error");
                     producerConsumer.PutbackFreeBuffer(); //Put back buffer for next try
 					producerFreeBufPtr = NULL;
                     return;
-                }
+				}
 
                 if (bytesRead < readBufferSize) {
                     qDebug("RTL2832 Under read");
@@ -1046,6 +1052,7 @@ void RTL2832SDRDevice::producerWorker(cbProducerConsumerEvents _event)
 					producerFreeBufPtr = NULL;
 					return;
                 }
+
 				//Note: we can reduce the effective sample rate using decimation to increase dynamic range
 				//http://www.atmel.com/Images/doc8003.pdf Each bit of resolution requires 4 bits of oversampling
 				//With atmel method, we add the oversampled data, and right shift by N
@@ -1064,6 +1071,7 @@ void RTL2832SDRDevice::producerWorker(cbProducerConsumerEvents _event)
 					normalizeIQ(&producerFreeBufPtr[i],inBuffer[j], inBuffer[j+1]);
 				}
                 producerConsumer.ReleaseFilledBuffer();
+
                 return;
 
             } else if (deviceNumber == RTL_TCP) {
@@ -1082,8 +1090,7 @@ void RTL2832SDRDevice::producerWorker(cbProducerConsumerEvents _event)
             break;
     }
 }
-//Now called via signal from producerConsumer that filled buffer is ready
-//Still running in consumerThread
+
 void RTL2832SDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 {
     switch (_event) {
