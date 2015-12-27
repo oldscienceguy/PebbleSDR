@@ -89,7 +89,7 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback,
 		//SR * 2 bytes for I * 2 bytes for Q .  dataBlockSize is 8192
 		producerConsumer.SetProducerInterval(sampleRate,framesPerBuffer);
 		producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
-		normalizeIQGain = 0.75;
+		normalizeIQGain = 0.10;
 	} else if(deviceNumber == SDR_IP) {
 		//Get get UDP datagrams of 1024 bytes, 4bytes per CPX or 256 CPX samples
 		producerConsumer.SetProducerInterval(sampleRate,udpBlockSize / 4);
@@ -99,7 +99,7 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback,
 	} else if (deviceNumber == AFEDRI_USB) {
 		DeviceInterfaceBase::Initialize(_callback, NULL, NULL, _framesPerBuffer); //Handle audio input
 		afedri->Initialize(); //HID
-		normalizeIQGain = 0.02; //Runs hot
+		normalizeIQGain = 0.02; //Runs hotter than sdr-iq
 	}
 
 	readBufferIndex = 0;
