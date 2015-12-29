@@ -197,7 +197,8 @@ void SpectrumWidget::Run(bool r)
 
 	if (r) {
 		ui.displayBox->setCurrentIndex(global->sdr->Get(DeviceInterface::LastSpectrumMode).toInt()); //Initial display mode
-		updateZoomFrame(Off, true);
+		if (zoomMode != Off)
+			updateZoomFrame(Off, true);
 		ui.zoomLabel->setText(QString().sprintf("S: %.0f kHz",sampleRate/1000.0));
 		isRunning = true;
 	}
