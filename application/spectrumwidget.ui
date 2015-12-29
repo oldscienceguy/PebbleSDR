@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>629</width>
-    <height>94</height>
+    <height>95</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -343,7 +343,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QLabel" name="zoomLabel">
+          <widget class="QComboBox" name="zoomSelector">
            <property name="minimumSize">
             <size>
              <width>60</width>
@@ -361,22 +361,19 @@
              <pointsize>10</pointsize>
             </font>
            </property>
-           <property name="text">
-            <string/>
-           </property>
           </widget>
          </item>
          <item>
-          <widget class="QRadioButton" name="hiResButton">
+          <widget class="QLabel" name="zoomLabel">
            <property name="minimumSize">
             <size>
-             <width>20</width>
+             <width>60</width>
              <height>18</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>20</width>
+             <width>60</width>
              <height>18</height>
             </size>
            </property>

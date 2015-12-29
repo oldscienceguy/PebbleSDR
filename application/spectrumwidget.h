@@ -47,7 +47,7 @@ signals:
 			void minDbChanged(int t);
             void zoomChanged(int item);
             void newFftData();
-			void hiResToggled(bool b);
+			void zoomSelectorChanged(int item);
 private:
 	SignalSpectrum *signalSpectrum; //Source of spectrum data
     double *averageSpectrum;
@@ -63,7 +63,7 @@ private:
 
 	Ui::SpectrumWidgetClass ui;
     void DrawCursor(QPainter *painter, QRect plotFr, bool isZoomed, QColor color);
-    void DrawOverlay(bool isZoomed);
+	void DrawOverlay(bool drawZoomed);
     void DrawSpectrum();
     void DrawWaterfall();
 
@@ -95,7 +95,6 @@ private:
 	int sampleRate;
 	DeviceInterface::DEMODMODE demodMode;
 
-    bool useZoomSpectrum; //True if zoom is within high-res buffer range
 	bool isRunning;
 	//QString *message;
 	QStringList message;
@@ -124,7 +123,11 @@ private:
     int modeOffset;
 
     void resizeFrames();
-    void DrawScale(QPainter *labelPainter, double centerFreq, bool isZoomed);
+	void DrawScale(QPainter *labelPainter, double centerFreq, bool drawZoomed);
+
+	enum ZOOM_MODE {Off, Spectrum, HiResolution};
+	ZOOM_MODE zoomMode;
+	void updateZoomFrame(ZOOM_MODE newMode, bool updateSlider);
 };
 
 #endif // SPECTRUMWIDGET_H

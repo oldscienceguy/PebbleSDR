@@ -152,7 +152,13 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
     connect(ui.zoomSlider,SIGNAL(valueChanged(int)),this,SLOT(zoomChanged(int)));
     zoom = 1;
 
-	connect (ui.hiResButton,SIGNAL(toggled(bool)),this,SLOT(hiResToggled(bool)));
+	ui.zoomSelector->addItem("Off",ZOOM_MODE::Off);
+	ui.zoomSelector->addItem("Spect",ZOOM_MODE::Spectrum);
+	ui.zoomSelector->addItem("HiRes",ZOOM_MODE::HiResolution);
+	ui.zoomSelector->setCurrentIndex(0);
+
+	connect(ui.zoomSelector,SIGNAL(currentIndexChanged(int)),this,SLOT(zoomSelectorChanged(int)));
+
     modeOffset = 0;
 
 	isRunning = false;
@@ -250,9 +256,8 @@ void SpectrumWidget::resizeFrames()
     zoomPlotLabel.fill(Qt::black);
 
     DrawOverlay(false); //plotArea size changed
-    if (zoom != 1)
+	if (zoomMode != Off)
         DrawOverlay(true);
-
 }
 
 void SpectrumWidget::resizeEvent(QResizeEvent *event)
@@ -285,7 +290,7 @@ double SpectrumWidget::GetMouseFreq()
     } else if (zpf.contains(mp) || zlf.contains(mp)) {
         //Find freq at cursor
         float hzPerPixel;
-        if (!useZoomSpectrum)
+		if (zoomMode == Spectrum)
             hzPerPixel= sampleRate / zpf.width() * zoom;
         else
             hzPerPixel= signalSpectrum->getZoomedSampleRate() / zpf.width() * zoom;
@@ -333,6 +338,10 @@ void SpectrumWidget::mouseMoveEvent(QMouseEvent *event)
 void SpectrumWidget::wheelEvent(QWheelEvent *event)
 {
     Q_UNUSED(event);  //Suppress warnings, use everywhere!
+
+	if (spectrumMode == SignalSpectrum::NODISPLAY)
+		return;
+
     //Only in plotFrame
     QRect pf = this->ui.plotFrame->geometry();
     if (!pf.contains(event->pos()))
@@ -424,6 +433,8 @@ void SpectrumWidget::mousePressEvent ( QMouseEvent * event )
 {
 	if (!isRunning || signalSpectrum == NULL)
 		return;
+	if (spectrumMode == SignalSpectrum::NODISPLAY)
+		return;
 
     Qt::MouseButton button = event->button();
     // Mac: Qt::ControlModifier == Command Key
@@ -458,7 +469,7 @@ void SpectrumWidget::SetMixer(int m, double f)
 	fMixer = m;
 	loFreq = f;
     DrawOverlay(false);
-    if (zoom != 1)
+	if (zoomMode != Off)
         DrawOverlay(true);
 }
 //Track bandpass so we can display with cursor
@@ -467,7 +478,7 @@ void SpectrumWidget::SetFilter(int lo, int hi)
 	loFilter = lo;
 	hiFilter = hi;
     DrawOverlay(false);
-    if (zoom != 1)
+	if (zoomMode != Off)
         DrawOverlay(true);
 }
 
@@ -481,16 +492,26 @@ void SpectrumWidget::plotSelectionChanged(SignalSpectrum::DISPLAYMODE mode)
         ui.maxDbBox->setVisible(false);
         ui.zoomSlider->setVisible(false);
         ui.zoomLabel->setVisible(false);
+		ui.zoomSelector->setVisible(false);
+		ui.maxDbBox->setVisible(false);
+		ui.minDbBox->setVisible(false);
+		ui.updatesPerSec->setVisible(false);
         //Turn zoom off
         zoom = 1;
+		zoomMode = Off;
         ui.zoomSlider->setValue(0);
+		//Bug: Doesn't collapse hidden frames
+		adjustSize();
 
+#if 0
+		//Old code, not sure why we did this
         QWidget *parent = ui.controlFrame->parentWidget();
         while (parent) {
             //Warning, adj size will use all layout hints, including h/v spacer sizing.  So overall size may change
             parent->adjustSize();
             parent = parent->parentWidget();
         }
+#endif
 
     } else {
         ui.labelFrame->setVisible(true);
@@ -500,11 +521,15 @@ void SpectrumWidget::plotSelectionChanged(SignalSpectrum::DISPLAYMODE mode)
         ui.maxDbBox->setVisible(true);
         ui.zoomSlider->setVisible(true);
         ui.zoomLabel->setVisible(true);
-    }
+		ui.zoomSelector->setVisible(true);
+		ui.maxDbBox->setVisible(true);
+		ui.minDbBox->setVisible(true);
+		ui.updatesPerSec->setVisible(true);
+	}
 
     spectrumMode = mode;
     if (signalSpectrum != NULL) {
-        signalSpectrum->SetDisplayMode(spectrumMode, zoom != 1);
+		signalSpectrum->SetDisplayMode(spectrumMode, zoomMode == HiResolution);
     }
 
 
@@ -513,7 +538,7 @@ void SpectrumWidget::plotSelectionChanged(SignalSpectrum::DISPLAYMODE mode)
         zoomPlotArea.fill(Qt::black);
 
         DrawOverlay(false);
-        if (zoom != 1)
+		if (zoomMode != Off)
             DrawOverlay(true);
     }
 	update();
@@ -549,7 +574,7 @@ void SpectrumWidget::DrawCursor(QPainter *painter, QRect plotFr, bool isZoomed, 
 
     int hzPerPixel = sampleRate / plotWidth;
     if (isZoomed) {
-        if (!useZoomSpectrum)
+		if (zoomMode == Spectrum)
             hzPerPixel = sampleRate * zoom / plotWidth;
         else
             hzPerPixel = signalSpectrum->getZoomedSampleRate() * zoom / plotWidth;
@@ -672,14 +697,14 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 	{
         painter.drawPixmap(plotFr, plotArea); //Includes plotOverlay which was copied to plotArea
         painter.drawPixmap(plotLabelFr,plotLabel);
-        if (zoom != 1) {
+		if (zoomMode != Off) {
             painter.drawPixmap(zoomPlotFr, zoomPlotArea); //Includes plotOverlay which was copied to plotArea
             painter.drawPixmap(zoomPlotLabelFr,zoomPlotLabel);
         }
     } else if (spectrumMode == SignalSpectrum::WATERFALL) {
         painter.drawPixmap(plotFr, plotArea);
         painter.drawPixmap(plotLabelFr,plotLabel);
-        if (zoom != 1) {
+		if (zoomMode != Off) {
             painter.drawPixmap(zoomPlotFr, zoomPlotArea); //Includes plotOverlay which was copied to plotArea
             painter.drawPixmap(zoomPlotLabelFr,zoomPlotLabel);
         }
@@ -708,7 +733,7 @@ void SpectrumWidget::maxDbChanged(int s)
 	global->settings->fullScaleDb = plotMaxDb;
 	global->settings->WriteSettings(); //save
 	DrawOverlay(false);
-	if (zoom != 1)
+	if (zoomMode != Off)
 		DrawOverlay(true); //plotArea db range changed
 	update();
 }
@@ -719,7 +744,7 @@ void SpectrumWidget::minDbChanged(int t)
 	global->settings->baseScaleDb = plotMinDb;
 	global->settings->WriteSettings(); //save
 	DrawOverlay(false);
-	if (zoom != 1)
+	if (zoomMode != Off)
 		DrawOverlay(true); //plotArea db range changed
 	update();
 
@@ -730,24 +755,19 @@ void SpectrumWidget::zoomChanged(int item)
     double newZoom;
     //Item goes from 10 to 200 (or anything), so zoom goes from 10/10(1) to 10/100(0.1) to 10/200(0.5)
     newZoom = 1.0 / pow(2.0,item/100.0);
-    if (newZoom == 1.0) {
-        //We're changing from zoomed to no zoom
-        ui.zoomLabelFrame->setVisible(false);
-        ui.zoomPlotFrame->setVisible(false);
-		useZoomSpectrum = false;
-		ui.hiResButton->setChecked(false);
-        //Need to do something to make sure sizes have been changed
-		//adjustSize();
-        resizeFrames();
-    } else if (zoom == 1.0){
-        //Else resize on first use
-        ui.zoomLabelFrame->setVisible(true);
-        ui.zoomPlotFrame->setVisible(true);
-        //
-		//adjustSize();
-        resizeFrames();
-    }
 
+	if (zoomMode == Off && item > 0) {
+		//Turn on zoom
+		updateZoomFrame(Spectrum,false);
+	}
+#if 0
+	//Turning zoom off automatically casues user problems when adjusting zoom at lower levels
+	//Too easy to turn it off by mistake
+	else if (item == 0) {
+		//Turn off zoom
+		updateZoomFrame(Off,false);
+	}
+#endif
 
     //There are 2 possible behaviors
     //We could just keep LO and zoom around it.  But if zoom puts mixer off screen, we won't see signal
@@ -761,16 +781,11 @@ void SpectrumWidget::zoomChanged(int item)
     //In zoom mode, hi/low mixer boundaries need to be updated so we always keep frequency on screen
     //emit mixerLimitsChanged(range, - range);
 
-    //Update display
+	//Update display with new labels
     DrawOverlay(false);
-    if (zoom != 1)
+	if (zoomMode != Off)
         DrawOverlay(true);
     update();
-
-    if (signalSpectrum != NULL) {
-        signalSpectrum->SetDisplayMode(spectrumMode, zoom!=1);
-    }
-
 }
 
 //New Fft data is ready for display, update screen if last update is finished
@@ -877,7 +892,7 @@ void SpectrumWidget::newFftData()
 		plotPainter.drawPolygon(LineBuf,numPoints);
 
 #endif
-        if (zoom != 1) {
+		if (zoomMode != Off) {
             plotWidth = zoomPlotArea.width();
             plotHeight = zoomPlotArea.height();
 
@@ -886,7 +901,7 @@ void SpectrumWidget::newFftData()
 			//Painter has to be created AFTER we copy overlay since plotArea is being replaced each time
 			QPainter zoomPlotPainter(&zoomPlotArea);
 
-			if (!useZoomSpectrum) {
+			if (zoomMode == Spectrum) {
 				signalSpectrum->MapFFTToScreen(
 					plotHeight,
 					plotWidth,
@@ -988,14 +1003,14 @@ void SpectrumWidget::newFftData()
 
         //Testng vertical spacing in zoom mode
         int vspace = 1;
-        if (zoom != 1) {
+		if (zoomMode != Off) {
             //Waterfall
             //Scroll fr rect 1 pixel to create new line
             QRect rect = zoomPlotArea.rect();
             //rect.setBottom(rect.bottom() - 10); //Reserve the last 10 pix for labels
             zoomPlotArea.scroll(0,vspace,rect);
 
-            if (!useZoomSpectrum) {
+			if (zoomMode == Spectrum) {
                 signalSpectrum->MapFFTToScreen(
                     255, //Equates to spectrumColor array
                     plotWidth,
@@ -1032,19 +1047,54 @@ void SpectrumWidget::newFftData()
 	}
 }
 
-//Only valid in zoom mode
-void SpectrumWidget::hiResToggled(bool b)
+void SpectrumWidget::zoomSelectorChanged(int item)
 {
-	if (zoom == 1) {
-		ui.hiResButton->setChecked(false);
-		return; //ignore
+	Q_UNUSED(item);
+
+	updateZoomFrame( (ZOOM_MODE)ui.zoomSelector->currentData().toInt(), true);
+}
+
+void SpectrumWidget::updateZoomFrame(ZOOM_MODE newMode, bool updateSlider)
+{
+	//setValue will automatically signal value changed and call connected SLOT unless we block signals
+	switch (newMode) {
+		case Off: //No zoom
+			ui.zoomLabelFrame->setVisible(false);
+			ui.zoomPlotFrame->setVisible(false);
+			//We apparently need to call adjustSize() when we hide windows, but not when we make visible
+			adjustSize();  //If we don't call this, grid and labels aren't painted correctly
+			resizeFrames();
+			zoomMode = Off;
+			if (updateSlider)
+				ui.zoomSlider->setValue(0);
+			break;
+		case Spectrum: //Expanded unprocessed spectrum
+			if (zoomMode == Off) {
+				//Set zoom to middle of range for now, eventually base on bin width
+				ui.zoomLabelFrame->setVisible(true);
+				ui.zoomPlotFrame->setVisible(true);
+				//adjustSize(); //Why do we have to call this when we hide frames, but not when we show them?
+				resizeFrames();
+			}
+			zoomMode = Spectrum;
+			if (updateSlider)
+				ui.zoomSlider->setValue((ui.zoomSlider->maximum() - ui.zoomSlider->minimum()) / 2);
+			break;
+		case HiResolution: //HiRes pre-demod
+			if (zoomMode == Off) {
+				ui.zoomLabelFrame->setVisible(true);
+				ui.zoomPlotFrame->setVisible(true);
+				//adjustSize(); //Causes problems
+				resizeFrames();
+			}
+			zoomMode = HiResolution;
+			if (updateSlider)
+				ui.zoomSlider->setValue((ui.zoomSlider->maximum() - ui.zoomSlider->minimum()) / 2);
+			break;
 	}
 
-	useZoomSpectrum = b;
-	//Update display
-	DrawOverlay(true);
-	update();
-
+	//Let spectrum know if it should process HiRes FFT
+	signalSpectrum->SetDisplayMode(spectrumMode, zoomMode == HiResolution);
 }
 
 void SpectrumWidget::DrawSpectrum()
@@ -1057,7 +1107,7 @@ void SpectrumWidget::DrawWaterfall()
 
 }
 
-void SpectrumWidget::DrawScale(QPainter *labelPainter, double centerFreq, bool isZoomed)
+void SpectrumWidget::DrawScale(QPainter *labelPainter, double centerFreq, bool drawZoomed)
 {
     if (!isRunning)
         return;
@@ -1076,8 +1126,8 @@ void SpectrumWidget::DrawScale(QPainter *labelPainter, double centerFreq, bool i
     //100,000 sps * 0.10 / 10 = 1000 hz per division
     //Bug with 16bit at 2msps rate
 	quint32 hzPerhDiv = sampleRate / numXDivs;
-    if (isZoomed) {
-        if (!useZoomSpectrum)
+	if (drawZoomed) {
+		if (zoomMode == Spectrum)
 			hzPerhDiv = sampleRate * zoom / numXDivs;
         else
 			hzPerhDiv = signalSpectrum->getZoomedSampleRate() * zoom / numXDivs;
@@ -1144,7 +1194,7 @@ void SpectrumWidget::DrawScale(QPainter *labelPainter, double centerFreq, bool i
 
 }
 
-void SpectrumWidget::DrawOverlay(bool isZoomed)
+void SpectrumWidget::DrawOverlay(bool drawZoomed)
 {
     if (!isRunning)
         return;
@@ -1162,14 +1212,15 @@ void SpectrumWidget::DrawOverlay(bool isZoomed)
 	//Update span label
 	qint32 range = sampleRate;
 	qint32 zoomRange = signalSpectrum->getZoomedSampleRate();
-	if (useZoomSpectrum) {
-		ui.zoomLabel->setText(QString().sprintf("Z: %.0f kHz",zoomRange/1000 * zoom));
+	if (zoomMode == Off || zoomMode == Spectrum) {
+		ui.zoomLabel->setText(QString().sprintf(" %.0f kHz",range/1000 * zoom));
 	} else {
-		ui.zoomLabel->setText(QString().sprintf("Z: %.0f kHz",range/1000 * zoom));
+		//HiRes
+		ui.zoomLabel->setText(QString().sprintf(" %.0f kHz",zoomRange/1000 * zoom));
 	}
 
 
-    if (!isZoomed) {
+	if (!drawZoomed) {
         if (plotOverlay.isNull())
             return; //Not created yet
 
@@ -1245,8 +1296,8 @@ void SpectrumWidget::DrawOverlay(bool isZoomed)
 			painter->drawText(0, y-2, "-"+QString::number(abs(plotMaxDb) + (i * dbLabelInterval)));
 		}
 
-        DrawCursor(painter, plotFr, isZoomed, Qt::white);
-        DrawCursor(labelPainter, plotFr, isZoomed, Qt::white); //Continues into label area
+		DrawCursor(painter, plotFr, drawZoomed, Qt::white);
+		DrawCursor(labelPainter, plotFr, drawZoomed, Qt::white); //Continues into label area
 
 
     } else if (spectrumMode == SignalSpectrum::WATERFALL) {
@@ -1260,11 +1311,11 @@ void SpectrumWidget::DrawOverlay(bool isZoomed)
 #endif
         //We can't draw a cursor in scrolling waterfall unless we get into layers
         //This just displays it in label area
-        DrawCursor(labelPainter,plotFr, isZoomed, Qt::white);
+		DrawCursor(labelPainter,plotFr, drawZoomed, Qt::white);
     }
 
 
-    if (!isZoomed)
+	if (!drawZoomed)
         DrawScale(labelPainter, loFreq, false);
     else
         DrawScale(labelPainter, loFreq + fMixer, true);
