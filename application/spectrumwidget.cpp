@@ -139,7 +139,7 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
     //Set focus policy so we get key strokes
     setFocusPolicy(Qt::StrongFocus); //Focus can be set by click or tab
 
-    //Used as a logrithmic scale 2^0 to 2^4 or 1x to 16x, 2^6= 1 to 64x
+	//Used as a geometric scale 2^0 to 2^4 or 1x to 16x, 2^6= 1 to 64x
     //Should range change with sample rate?
     //With SDR-IP sample rates and 2048 FFT
     //   62,500 / 2048 samples =  30hz/bin, 64x =   976hz span
@@ -197,8 +197,7 @@ void SpectrumWidget::Run(bool r)
 
 	if (r) {
 		ui.displayBox->setCurrentIndex(global->sdr->Get(DeviceInterface::LastSpectrumMode).toInt()); //Initial display mode
-        ui.zoomSlider->setValue(0); //Left end of scale
-        //zoomChanged(0); //Display initial value
+		updateZoomFrame(Off, true);
 		ui.zoomLabel->setText(QString().sprintf("S: %.0f kHz",sampleRate/1000.0));
 		isRunning = true;
 	}
@@ -752,9 +751,20 @@ void SpectrumWidget::minDbChanged(int t)
 
 void SpectrumWidget::zoomChanged(int item)
 {
-    double newZoom;
+	double newZoom;
+
+	//Zoom is a geometric progression so it feels smooth
     //Item goes from 10 to 200 (or anything), so zoom goes from 10/10(1) to 10/100(0.1) to 10/200(0.5)
-    newZoom = 1.0 / pow(2.0,item/100.0);
+	//Eventually we should calculate zoom factors using sample rate and bin size to make sure we can't
+	//over-zoom
+	if (zoomMode == Spectrum)
+		//Highest zoom factor is with item==400, .0625
+		newZoom = 1.0 / pow(2.0,item/100.0);
+	else if (zoomMode == HiResolution)
+		//Since SR is lower (48k or 64k typically) max zoom at 400 is only .15749
+		newZoom = 1.0 / pow(2.0,item/150.0);
+	else
+		newZoom = 1.0;
 
 	if (zoomMode == Off && item > 0) {
 		//Turn on zoom
@@ -1056,6 +1066,11 @@ void SpectrumWidget::zoomSelectorChanged(int item)
 
 void SpectrumWidget::updateZoomFrame(ZOOM_MODE newMode, bool updateSlider)
 {
+	//Make sure zoomSelector is changed if this is not called from zoomSelector event
+	ui.zoomSelector->blockSignals(true);
+	ui.zoomSelector->setCurrentIndex(newMode);
+	ui.zoomSelector->blockSignals(false);
+
 	//setValue will automatically signal value changed and call connected SLOT unless we block signals
 	switch (newMode) {
 		case Off: //No zoom
@@ -1078,7 +1093,7 @@ void SpectrumWidget::updateZoomFrame(ZOOM_MODE newMode, bool updateSlider)
 			}
 			zoomMode = Spectrum;
 			if (updateSlider)
-				ui.zoomSlider->setValue((ui.zoomSlider->maximum() - ui.zoomSlider->minimum()) / 2);
+				ui.zoomSlider->setValue((ui.zoomSlider->maximum() - ui.zoomSlider->minimum()) / 4);
 			break;
 		case HiResolution: //HiRes pre-demod
 			if (zoomMode == Off) {
@@ -1089,7 +1104,7 @@ void SpectrumWidget::updateZoomFrame(ZOOM_MODE newMode, bool updateSlider)
 			}
 			zoomMode = HiResolution;
 			if (updateSlider)
-				ui.zoomSlider->setValue((ui.zoomSlider->maximum() - ui.zoomSlider->minimum()) / 2);
+				ui.zoomSlider->setValue((ui.zoomSlider->maximum() - ui.zoomSlider->minimum()) / 8);
 			break;
 	}
 
