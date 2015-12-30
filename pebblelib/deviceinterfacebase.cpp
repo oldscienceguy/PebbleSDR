@@ -38,6 +38,8 @@ DeviceInterfaceBase::DeviceInterfaceBase()
 	audioInputBuffer = NULL;
 	//Set normalizeIQ gain by injecting known signal db into device and matching spectrum display
 	normalizeIQGain = 1.0; //Will be overridden by specific devices if needed
+	converterMode = false;
+	converterOffset = 0;
 }
 
 //Implement pure virtual destructor from interface, otherwise we don't link
@@ -257,6 +259,11 @@ QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, quint16 _option) {
 		case DeviceSettingsFile:
 			if (qSettings != NULL)
 				return qSettings->fileName();
+			return false;
+		case DeviceConverterMode:
+			return converterMode;
+		case DeviceConverterOffset:
+			return converterOffset;
 		default:
 			break;
 	}
@@ -374,6 +381,12 @@ bool DeviceInterfaceBase::Set(STANDARD_KEYS _key, QVariant _value, quint16 _opti
 		case DeviceSlave:			//RO bool true if device is controled by somthing other than Pebble
 			Q_UNREACHABLE();
 			break;
+		case DeviceConverterMode:
+			converterMode = _value.toBool();
+			break;
+		case DeviceConverterOffset:
+			converterOffset = _value.toDouble();
+			break;
 		default:
 			break;
 	}
@@ -423,6 +436,8 @@ void DeviceInterfaceBase::ReadSettings()
 	lowFrequency = qSettings->value("LowFrequency",lowFrequency).toDouble();
 	highFrequency = qSettings->value("HighFrequency",highFrequency).toDouble();
 	startupDemodMode = qSettings->value("StartupDemodMode",startupDemodMode).toInt();
+	converterMode = qSettings->value("ConverterMode", false).toBool();
+	converterOffset = qSettings->value("ConverterOffset", 0).toDouble();
 }
 
 void DeviceInterfaceBase::WriteSettings()
@@ -445,6 +460,8 @@ void DeviceInterfaceBase::WriteSettings()
 	qSettings->setValue("LowFrequency",lowFrequency);
 	qSettings->setValue("HighFrequency",highFrequency);
 	qSettings->setValue("StartupDemodMode",startupDemodMode);
+	qSettings->setValue("ConverterMode",converterMode);
+	qSettings->setValue("ConverterOffset",converterOffset);
 }
 
 
