@@ -29,6 +29,8 @@ private slots:
 	void BalanceReset();
 	void ResetSettings(bool b);
 	void CloseOptions(bool b);
+	void ConverterModeChanged(bool b);
+	void ConverterOffsetChanged();
 
 signals:
 	void Restart();

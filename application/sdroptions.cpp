@@ -98,6 +98,9 @@ void SdrOptions::ShowSdrOptions(DeviceInterface *_di, bool b)
 		connect(sd->sourceBox,SIGNAL(currentIndexChanged(int)),this,SLOT(InputChanged(int)));
 		connect(sd->outputBox,SIGNAL(currentIndexChanged(int)),this,SLOT(OutputChanged(int)));
 
+		connect(sd->converterMode,SIGNAL(clicked(bool)),this,SLOT(ConverterModeChanged(bool)));
+		connect(sd->converterOffset,SIGNAL(editingFinished()),this,SLOT(ConverterOffsetChanged()));
+
 		//From here on, everything can change if different device is selected
 		UpdateOptions();
 
@@ -172,6 +175,14 @@ void SdrOptions::UpdateOptions()
 	sd->iqBalanceGain->setValue(di->Get(DeviceInterface::IQBalanceGain).toDouble() * 1000);
 	sd->iqBalanceGain->blockSignals(false);
 
+	sd->converterMode->blockSignals(true);
+	sd->converterMode->setChecked(di->Get(DeviceInterface::DeviceConverterMode).toBool());
+	sd->converterMode->blockSignals(false);
+
+	sd->converterOffset->blockSignals(true);
+	sd->converterOffset->setText(di->Get(DeviceInterface::DeviceConverterOffset).toString());
+	sd->converterOffset->blockSignals(false);
+
 	//Set up options and get allowable sampleRates from device
 
 	int sr;
@@ -207,6 +218,18 @@ void SdrOptions::CloseOptions(bool b)
 {
 	if (sdrOptionsDialog != NULL)
 		sdrOptionsDialog->close();
+}
+
+void SdrOptions::ConverterModeChanged(bool b)
+{
+	di->Set(DeviceInterface::DeviceConverterMode,b);
+	di->Command(DeviceInterface::CmdWriteSettings,0);
+}
+
+void SdrOptions::ConverterOffsetChanged()
+{
+	di->Set(DeviceInterface::DeviceConverterOffset, sd->converterOffset->text().toDouble());
+	di->Command(DeviceInterface::CmdWriteSettings,0);
 }
 
 void SdrOptions::DeviceSelectionChanged(int i) {
