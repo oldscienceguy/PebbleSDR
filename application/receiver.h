@@ -177,4 +177,7 @@ private:
 	FIRFilter *lsbFilter;
 	FIRFilter *amFilter;
 
+	bool converterMode;
+	double converterOffset;
+
 };

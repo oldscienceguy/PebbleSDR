@@ -224,6 +224,9 @@ bool Receiver::On()
 	audioOutput->StartOutput(sdr->Get(DeviceInterface::OutputDeviceName).toString(), audioOutRate);
 	sdr->Command(DeviceInterface::CmdStart,0);
 
+	converterMode = sdr->Get(DeviceInterface::DeviceConverterMode).toBool();
+	converterOffset = sdr->Get(DeviceInterface::DeviceConverterOffset).toDouble();
+
     //Don't set title until we connect and start.
     //Some drivers handle multiple devices (RTL2832) and we need connection data
 	QTimer::singleShot(200,this,SLOT(SetWindowTitle()));
@@ -555,12 +558,20 @@ double Receiver::SetSDRFrequency(double fRequested, double fCurrent)
 		restart = true;
 	}
 #endif
-
-	if (sdr->Set(DeviceInterface::DeviceFrequency,fRequested)) {
-		frequency = fRequested;
-		return fRequested;
+	if (converterMode) {
+		if (sdr->Set(DeviceInterface::DeviceFrequency,fRequested + converterOffset)) {
+			frequency = fRequested;
+			return fRequested;
+		} else {
+			return fCurrent;
+		}
 	} else {
-		return fCurrent;
+		if (sdr->Set(DeviceInterface::DeviceFrequency,fRequested)) {
+			frequency = fRequested;
+			return fRequested;
+		} else {
+			return fCurrent;
+		}
 	}
 }
 
