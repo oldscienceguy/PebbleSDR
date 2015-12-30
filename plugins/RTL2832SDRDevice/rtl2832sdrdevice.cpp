@@ -696,10 +696,16 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 			return QStringList();
 			break;
 		case HighFrequency:
-			return GetHighLimit();
+			if (converterMode)
+				return 6000000000.0;
+			else
+				return GetHighLimit();
 			break;
 		case LowFrequency:
-			return GetLowLimit();
+			if (converterMode)
+				return 0;
+			else
+				return GetLowLimit();
 			break;
 		case FrequencyCorrection:
 			return rtlFreqencyCorrection; //int, may not be right format for all devices

@@ -184,9 +184,17 @@ QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, quint16 _option) {
 			return outputDeviceName;
 			break;
 		case HighFrequency:
-			return highFrequency;
+			//Assume DC to daylight since we have no idea what converter is doing
+			if (converterMode)
+				return 6000000000.0;
+			else
+				return highFrequency;
 		case LowFrequency:
-			return lowFrequency;
+			//Assume DC to daylight since we have no idea what converter is doing
+			if (converterMode)
+				return 0;
+			else
+				return lowFrequency;
 		case FrequencyCorrection:
 			return 0;
 			break;
@@ -220,6 +228,7 @@ QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, quint16 _option) {
 		case UserSpectrumMode:
 			break;
 		case UserFrequency:
+			return userFrequency;
 			break;
 		case IQOrder:
 			return iqOrder;
@@ -418,7 +427,7 @@ void DeviceInterfaceBase::ReadSettings()
 	}
 	//These are common settings for every device, variables are defined in DeviceInterface
 	startupType = (STARTUP_TYPE)qSettings->value("StartupType", startupType).toInt();
-	userFrequency = qSettings->value("StartupFreq", userFrequency).toDouble();
+	userFrequency = qSettings->value("UserFrequency", userFrequency).toDouble();
 	//Allow the device to specify a fixed inputDeviceName, see rfspacedevice for example
 	inputDeviceName = qSettings->value("InputDeviceName", inputDeviceName).toString();
 	outputDeviceName = qSettings->value("OutputDeviceName", outputDeviceName).toString();
@@ -443,7 +452,7 @@ void DeviceInterfaceBase::ReadSettings()
 void DeviceInterfaceBase::WriteSettings()
 {
 	qSettings->setValue("StartupType",startupType);
-	qSettings->setValue("StartupFreq",userFrequency);
+	qSettings->setValue("UserFrequency",userFrequency);
 	qSettings->setValue("InputDeviceName", inputDeviceName);
 	qSettings->setValue("OutputDeviceName", outputDeviceName);
 	qSettings->setValue("SampleRate",sampleRate);
