@@ -23,8 +23,8 @@ SignalSpectrum::SignalSpectrum(int sr, quint32 zsr, int ns, Settings *set):
 	fftUnprocessed = FFT::Factory();
     unprocessed = new double[fftSize];
 
-	fftZoomed = FFT::Factory();
-    zoomed = new double[fftSize];
+	fftHiRes = FFT::Factory();
+	hiResBuffer = new double[fftSize];
 
     tmp_cpx = CPXBuf::malloc(fftSize);
 	//Create our window coefficients 
@@ -45,11 +45,11 @@ SignalSpectrum::SignalSpectrum(int sr, quint32 zsr, int ns, Settings *set):
 	updatesPerSec = global->settings->updatesPerSecond; //Refresh rate per second
     skipFfts = 0; //How many samples should we skip to sync with rate
     skipFftsCounter = 0; //Keep count of samples we've skipped
-    skipFftsZoomedCounter = 0; //Keep count of samples we've skipped
+	skipFftsHiResCounter = 0; //Keep count of samples we've skipped
     displayUpdateComplete = true;
     displayUpdateOverrun = 0;
 
-    isZoomed = false;
+	isHiRes = false;
 
     SetSampleRate(sr, zsr);
 
@@ -58,7 +58,7 @@ SignalSpectrum::SignalSpectrum(int sr, quint32 zsr, int ns, Settings *set):
 SignalSpectrum::~SignalSpectrum(void)
 {
 	if (unprocessed != NULL) {free (unprocessed);}
-    if (zoomed != NULL) {free (zoomed);}
+	if (hiResBuffer != NULL) {free (hiResBuffer);}
     if (window != NULL) {free (window);}
 	if (window_cpx != NULL) {CPXBuf::free(window_cpx);}
 	if (tmp_cpx != NULL) {CPXBuf::free(tmp_cpx);}
@@ -67,7 +67,7 @@ SignalSpectrum::~SignalSpectrum(void)
 void SignalSpectrum::SetDisplayMode(DISPLAYMODE _displayMode, bool _isZoomed)
 {
     displayMode = _displayMode;
-    isZoomed = _isZoomed;
+	isHiRes = _isZoomed;
 }
 
 void SignalSpectrum::SetSampleRate(quint32 _sampleRate, quint32 _zoomedSampleRate)
@@ -75,7 +75,7 @@ void SignalSpectrum::SetSampleRate(quint32 _sampleRate, quint32 _zoomedSampleRat
     sampleRate = _sampleRate;
     zoomedSampleRate = _zoomedSampleRate;
 	fftUnprocessed->FFTParams(fftSize, +1, DB::maxDb, sampleRate);
-	fftZoomed->FFTParams(fftSize, +1, DB::maxDb, zoomedSampleRate);
+	fftHiRes->FFTParams(fftSize, +1, DB::maxDb, zoomedSampleRate);
     //Based on sample rates
 	SetUpdatesPerSec(global->settings->updatesPerSecond);
     emitFftCounter = 0;
@@ -91,8 +91,8 @@ void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double 
 
     if (!displayUpdateComplete) {
         //We're not keeping up with display for some reason
+		qDebug()<<"Display update overrun counter "<<displayUpdateOverrun;
         displayUpdateOverrun++;
-        return;
     }
 
     inBufferUnderflowCount = inUnder;
@@ -102,8 +102,11 @@ void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double 
 
     //Keep a copy raw I/Q to local buffer for display
     //CPXBuf::copy(rawIQ, in, numSamples);
-    if (displayMode == SPECTRUM || displayMode == WATERFALL)
+	if (displayMode == SPECTRUM || displayMode == WATERFALL) {
         MakeSpectrum(fftUnprocessed, in, unprocessed, numSamples);
+		displayUpdateComplete = false;
+		emit newFftData();
+	}
 }
 
 //http://www.arc.id.au/ZoomFFT.html
@@ -112,36 +115,32 @@ void SignalSpectrum::Zoomed(CPX *in, int size)
 	quint16 resampledSize;
 	Q_UNUSED(resampledSize)
 
-    //Only make spectrum often enough to match spectrum update rate, otherwise we just throw it away
-    if (++skipFftsZoomedCounter < skipFftsZoomed)
-        return;
-    skipFftsZoomedCounter = 0;
+	if (!isHiRes)
+		return; //Nothing to do
 
-    if (!displayUpdateComplete) {
-        //We're not keeping up with display for some reason
-        displayUpdateOverrun++;
+    //Only make spectrum often enough to match spectrum update rate, otherwise we just throw it away
+	if (++skipFftsHiResCounter < skipFftsHiRes)
         return;
-    }
-    if (isZoomed) {
+	skipFftsHiResCounter = 0;
+
 #if 0
-		//Experiment: This currently gets called with demodSampleRate - 62k for non WFM modes
-		//62,000 / 2048 buckets = 30hz per bucket
-		//If we want to get even finer resolution, we can further resample to a lower rate
-		//ie 24k sample rate = 12hz per bucket
-		//
-		//We need to fill with zeros because Resample won't fill entire buffer
-		CPXBuf::clear(zoomedResampled,fftSize);
-		//LP Filter needed to get rid of aliasing unless .Resample does it for us
-		resampledSize = zoomedResampler.Resample(size,sampleRateIn/sampleRateOut,in,zoomedResampled);
-		//qDebug()<<"ResampledSize: "<<resampledSize<<" sampleRateIn: "<<sampleRateIn<<" sampleRateOut: "<<sampleRateOut;
-		fftZoomed->FFTParams(fftSize, +1, DB::maxDb, sampleRateOut);
+	//Experiment: This currently gets called with demodSampleRate - 62k for non WFM modes
+	//62,000 / 2048 buckets = 30hz per bucket
+	//If we want to get even finer resolution, we can further resample to a lower rate
+	//ie 24k sample rate = 12hz per bucket
+	//
+	//We need to fill with zeros because Resample won't fill entire buffer
+	CPXBuf::clear(zoomedResampled,fftSize);
+	//LP Filter needed to get rid of aliasing unless .Resample does it for us
+	resampledSize = zoomedResampler.Resample(size,sampleRateIn/sampleRateOut,in,zoomedResampled);
+	//qDebug()<<"ResampledSize: "<<resampledSize<<" sampleRateIn: "<<sampleRateIn<<" sampleRateOut: "<<sampleRateOut;
+	fftZoomed->FFTParams(fftSize, +1, DB::maxDb, sampleRateOut);
 #endif
-		MakeSpectrum(fftZoomed, in, zoomed, size);
-    }
-    //This will also display any zoomed data
-    displayUpdateComplete = false;
-    //emitFftCounter++; //Testing for matching paint()
-    emit newFftData();
+	MakeSpectrum(fftHiRes, in, hiResBuffer, size);
+	//Updated HiRes fft data won't be available to SpectrumWidget untill Unprocessed() is called in next loop
+	//Should have no impact and avoids displaying spectrum 2x in each ProcessIQ loop
+	//This signal is for future use in case we want to do special handling in SpectrumWidget
+	emit newHiResFftData();
 }
 
 void SignalSpectrum::MakeSpectrum(FFT *fft, CPX *in, double *sOut, int size)
@@ -229,10 +228,10 @@ void SignalSpectrum::SetUpdatesPerSec(int updatespersec)
     updatesPerSec = updatespersec;
 	global->settings->updatesPerSecond = updatesPerSec;
 	skipFfts = skipFftsCounter = 0;
-	skipFftsZoomed = skipFftsZoomedCounter = 0;
+	skipFftsHiRes = skipFftsHiResCounter = 0;
 	if (updatesPerSec > 0) {
 		skipFfts = sampleRate / (numSamples * updatesPerSec);
-		skipFftsZoomed = zoomedSampleRate / (numSamples * updatesPerSec);
+		skipFftsHiRes = zoomedSampleRate / (numSamples * updatesPerSec);
 	}
 }
 
@@ -265,8 +264,8 @@ bool SignalSpectrum::MapFFTZoomedToScreen(qint32 maxHeight,
     //We correct for this by adjusting starting,ending frequency by mode offset
     quint16 span = zoomedSampleRate * zoom;
 
-    if (fftZoomed!=NULL)
-		return fftZoomed->MapFFTToScreen(zoomed,maxHeight,maxWidth,maxdB,mindB, -span/2 - modeOffset, span/2 - modeOffset, outBuf);
+	if (fftHiRes!=NULL)
+		return fftHiRes->MapFFTToScreen(hiResBuffer,maxHeight,maxWidth,maxdB,mindB, -span/2 - modeOffset, span/2 - modeOffset, outBuf);
     else
         return false;
 }

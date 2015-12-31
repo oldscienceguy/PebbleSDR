@@ -63,6 +63,7 @@ public slots:
 
 signals:
     void newFftData(); //New spectrum data to display
+	void newHiResFftData(); //Not used yet, will allow us to update hires zoom independently if we want to
 
 
 private:
@@ -75,21 +76,21 @@ private:
 	//Spectrum data at different steps in receive chaing
 	CPX *rawIQ;
     double *unprocessed;
-    double *zoomed; //Post bandpass spectrum with more resolution around signal
+	double *hiResBuffer; //Post bandpass spectrum with more resolution around signal
     double * window;
-    bool isZoomed;
+	bool isHiRes;
 
     CPX *tmp_cpx;
 	CPX *window_cpx;
 	FFT *fftUnprocessed;
-	FFT *fftZoomed; //Different sample rate, we might be able to re-use fft, but keep separate for now
+	FFT *fftHiRes; //Different sample rate, we might be able to re-use fft, but keep separate for now
 
     float dbOffset; //Used to calibrate power to db calculations
 
     int updatesPerSec; //Refresh rate per second
     int skipFfts; //How many samples should we skip to sync with rate
-    int skipFftsZoomed; //How many samples should we skip to sync with rate
+	int skipFftsHiRes; //How many samples should we skip to sync with rate
     int skipFftsCounter; //Keep count of samples we've skipped
-    int skipFftsZoomedCounter; //Keep zoomed counter separate in case we want to update more frequently
+	int skipFftsHiResCounter; //Keep zoomed counter separate in case we want to update more frequently
 
 };
