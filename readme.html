@@ -158,18 +158,18 @@ sup {
 <body>
 <h1>Pebble II SDR (Mac)</h1>
 
-<p>Nov 1, 2015<br/>
-Copyright 2010, 2011, 2012, 2013, 2014, 2015<br/>
-Richard Landsman N1DDY <a href="&#109;&#97;&#x69;&#108;&#116;&#x6f;&#58;&#80;&#101;&#98;&#98;&#108;&#x65;&#x53;&#68;&#x52;&#64;&#103;&#x6d;&#97;&#105;&#108;&#46;&#99;&#111;&#x6d;">&#80;&#101;&#x62;&#x62;&#108;&#x65;&#x53;&#68;&#x52;&#x40;&#x67;&#x6d;&#x61;&#x69;&#x6c;&#46;&#x63;&#111;&#x6d;</a><br/>
+<p>Dec 15, 2015<br/>
+Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016<br/>
+Richard Landsman N1DDY <a href="&#x6d;&#x61;&#x69;&#108;&#116;&#111;&#x3a;&#x50;&#x65;&#x62;&#98;&#108;&#x65;&#83;&#x44;&#82;&#64;&#x67;&#x6d;&#97;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;">&#x50;&#101;&#x62;&#x62;&#108;&#x65;&#83;&#x44;&#x52;&#64;&#x67;&#109;&#97;&#105;&#x6c;&#46;&#99;&#x6f;&#x6d;</a><br/>
 Licensed under GPL, see gpl.h for details, attribution, and references<br/>
 <a href="https://github.com/oldscienceguy/PebbleSDR">https://github.com/oldscienceguy/PebbleSDR</a><br/>
 Dedicated to SuperRatt, my first program (c 1980) for the Apple II with support for RTTY, CW, and special modes.</p>
 
 <hr />
 
-<p>AFEDRI showing full 2mHz bandwidth from 150kHz to 2150kHz and zoom at 1150 kHz</p>
+<p>AFEDRI showing full 2mHz bandwidth from 150kHz to 2150kHz and HiRes zoom at 850 kHz</p>
 
-<h2><img src=https://raw.github.com/oldscienceguy/PebbleSDR/master/screen_shots/AFEDRI%20150Hz%20to%202150kHz.png width=500> </h2>
+<h2><img src=https://raw.github.com/oldscienceguy/PebbleSDR/master/screen_shots/AFEDRI%20150kHz%20to%202150kHz.png width=500> </h2>
 
 <h2>Introduction</h2>
 
@@ -203,7 +203,7 @@ Dedicated to SuperRatt, my first program (c 1980) for the Apple II with support 
 
 <h2>Installation</h2>
 
-<p>Installation is easy, just unzip the files into a Pebble directory.  Pebble does not install and does not depend on any other libraries being previously installed, everything is in the directory.</p>
+<p>Installation is easy, just unzip the files into a Pebble directory.  Pebble does not install and does not depend on any other libraries being previously installed, everything is in the directory.  The required OSX version is 10.7 or greater.  Development and testing have been done on OSX 10.11.</p>
 
 <p>Files in the directory are:</p>
 
@@ -248,6 +248,10 @@ Dedicated to SuperRatt, my first program (c 1980) for the Apple II with support 
 
 <p>Display readme.html in PebbleData folder</p>
 
+<h4>Help|Credits</h4>
+
+<p>Display GPL and other credits</p>
+
 <h3>Tuning Box (10 digits)</h3>
 
 <p>There are many ways to tune Pebble.</p>
@@ -260,6 +264,8 @@ Dedicated to SuperRatt, my first program (c 1980) for the Apple II with support 
 <li>Click any digit to reset all lower digits to zero.  This is a quick way to reset.</li>
 </ol>
 
+
+<p>Note: If you enter a frequency above or below the range of the device, you will hear a beep and the frequency will not change.  You can over-ride the hi/lo range in the specific device .ini file.</p>
 
 <h3>S-Meter</h3>
 
@@ -316,6 +322,10 @@ Dedicated to SuperRatt, my first program (c 1980) for the Apple II with support 
 </ol>
 
 
+<h3>Converter Mode &amp; Converter Offset</h3>
+
+<p>Checking this box allows the use of an external up or down converter with any device.  The displayed frequency is the actual frequency after the converter, you don't have to add or subtract the converter offset.  Enter the offset for the converter if this box is checked, typically 100mHz or 120mHz.  In this mode, device high/low frequency limits are not checked so you can tune wherever the converter supports.  But you can also enter frequencies that are outside the range of the device and may see strange results.</p>
+
 <h3>SampleRate</h3>
 
 <p>If the device uses audio input, these will be the sample rate of the IQ Input field (see below).  If the device supports direct I/Q input, like the rtl-sdr, the list will be device specific.</p>
@@ -331,6 +341,10 @@ Dedicated to SuperRatt, my first program (c 1980) for the Apple II with support 
 <h3>I/Q Input</h3>
 
 <p>This field is only visible for devices that do not support direct I/Q input.  For devices like SoftRock, select the input audio device that the SoftRock is plugged into.  Note that some Mac's do not support stereo audio input and an external USB audio device must be used.  For devices that create their own audio device, like Funcube, select that as the input.</p>
+
+<h3>Reset Settings</h3>
+
+<p>This will turn off the device and delete the .ini file which stores the device settings.  The next time the device is powered on, the ini file will automatically be re-created with default values.</p>
 
 <h3>Device Specific options</h3>
 
@@ -387,9 +401,9 @@ Dedicated to SuperRatt, my first program (c 1980) for the Apple II with support 
 <li>Right clicking (Option Click) anywhere in the Spectrum or Waterfall will change the LO frequency.</li>
 <li>Clicking Up or Down changes the frequency in 100hz increments.  Very useful for fine tuning data signals.</li>
 <li>Clicking Left or Right arrows changes the frequency in 10hz increments.</li>
-<li>Scrolling Up or Down changes the frequench in 1kHz increments.</li>
+<li>Scrolling Up or Down changes the frequency in 1kHz increments.</li>
 <li>Scrolling Left or Right changes the frequency in 100hz increments.</li>
-<li>Changing the frequency using Arrows or Scrolling also will automatically reset the LO when scrolling off either end of the spectrum.  This provides an easy to use continuous tuning mode.</li>
+<li>Changing the mixer frequency using Arrows or Scrolling also will automatically reset the LO when scrolling off either end of the spectrum.  This provides an easy to use continuous tuning mode.</li>
 </ul>
 
 
@@ -406,20 +420,27 @@ Dedicated to SuperRatt, my first program (c 1980) for the Apple II with support 
 
 <p>This can be used to set the full scale value of the spectrum display, effectively increasing or decreasing the resolution.  The default range is -120db (waterfall black) to -50db (waterfall red).  If the Waterfall is washed out, increase the FS db displayed to -30.  If no signals are visible, decrease the FS db displayed to -70.  Easier to see when you try it than to explain</p>
 
+<h3>Spectum db Base Scale (BS) spiner</h3>
+
+<p>This can be used to set the base value for the spectrum display.  It is usually used to 'hide' the noise floor so that just the signals that are greater than the BS value are shown.</p>
+
 <h3>Spectrum Updates Per Second (x/sec) spinner</h3>
 
 <p>This can be used to speed up or slow down the spectrum display to match your preferences or the band being monitored.  The range is 0 to 30, but 10 is usually a good default.  Faster updates == more CPU, so if your computer is running 'hot' try slowing down the update rate.
 Note: If set to zero, the spectrum display is temporarily frozen and won't update again until you set a rate greater than zero.</p>
 
-<h3>Spectrum Span</h3>
+<h3>Spectrum Zoom</h3>
 
-<p>This is one of my favorite features and makes devices that support large bandwidth, like the rtl-sdr and AFEDRI, more useful.  The problem with large bandwidths is that it can be difficult or impossible to see close signals.  This can always be addressed by powering off the device, changing to a lower sample rate, and restarting, but that's very inconvenient.  The Span control lets you smoothly zoom on the selected frequency and see a second Waterfall or Spectrum display with the smaller bandwidth and higher resolution.</p>
+<p>This is one of my favorite features and makes devices that support large bandwidth, like the rtl-sdr and AFEDRI, more useful.  The problem with large bandwidths is that it can be difficult or impossible to see close signals.  This can always be addressed by powering off the device, changing to a lower sample rate, and restarting, but that's very inconvenient.  The Zoom control lets you smoothly zoom on the selected frequency and see a second Waterfall or Spectrum display with the smaller bandwidth and higher resolution.</p>
 
-<p>The zooming is very smooth, but as you get closer to the maximum you will suddenly see finer detail and resolution as the internal FFT switches to a separate zoom mode.  Even with a 2mHz bandwidth, a 32khz span can be resolved.</p>
+<p>The selector has three choices<br/>
+<strong>Off</strong>: No Zoom<br/>
+<strong>Spect</strong>: Zoom using the same FFT and bin resolution as main display<br/>
+<strong>HiRes</strong>: Zoom using a dedicated FFT that typically has a bandwidth of approx 60kHz and therefore much higher resolution, especially when the main spectrum has a much larger bandwidth.</p>
 
-<p>The zoomed display always has the selected frequency in the center.  Clicking in the zoomed display changes the frequency.</p>
+<p>The zoomed display always has the selected frequency in the center.  Clicking on another signal in the zoomed display changes the frequency so that signal is now centered in the zoom display.</p>
 
-<p>Try sliding the Span control back and forth on a busy part of the band to see how it works.</p>
+<p>Try sliding the Zoom control back and forth on a busy part of the band to see how it works.</p>
 
 <h3>Data Modems</h3>
 
@@ -505,9 +526,9 @@ Note: If set to zero, the spectrum display is temporarily frozen and won't updat
 
 <p>(TBW)</p>
 
-<h3>FiFi</h3>
+<h3>FiFi (Softrock Family)</h3>
 
-<p>Fifi has an onboard sound device that must be selected as the Pebble I/Q input.  In the device preferences, chose "Core Audio:UDA1361".  Make sure you set the Input level in the Mac Audio settings as well.</p>
+<p>Fifi has an onboard sound device that must be selected as the Pebble I/Q input.  In the device preferences, chose "UDA1361 Input".  You may have to use the Mac Audio Midi Setup tool (in applications/utilities) to set the sample rate to 192k (16bit).</p>
 
 <p>In order to run the FiFi rockprog configuration utility I had to first install MacPorts popt using "sudo port install popt"</p>
 
@@ -526,6 +547,8 @@ Note: If set to zero, the spectrum display is temporarily frozen and won't updat
 <p>6/15 Install SpectraVue 3.36 to get latest 1.07 firmware</p>
 
 <h3>AFEDRI USB</h3>
+
+<p>Same as SDR-IQ, but with higher sample rate option</p>
 
 <h3>RFSpace SDR-IP &amp; AFEDRI Network</h3>
 
@@ -598,10 +621,11 @@ Note: If set to zero, the spectrum display is temporarily frozen and won't updat
 
 <ul>
 <li>RTL2832 Sample Rate.  The RTL sample rate should be set to a rate where there is no data loss.  It must be >= to the Pebble sample rate.</li>
-<li>Tuner Gain with preset options.
+<li><p>Tuner Gain with preset options.
   The Tuner gain is set automatically if 'Tuner AGC' is selected.<br/>
-  Chose a preset gain option</li>
-<li>Frequency Correction: Tune to a frequency with a known station, like 162.450 mhz NOAA, and use up/down spinners until station is centered.</li>
+  Chose a preset gain option
+  NOTE: Tuner AGC may produce multiple aliases.  Try a fixed Tuner gain if this occurs.</p></li>
+<li><p>Frequency Correction: Tune to a frequency with a known station, like 162.450 mhz NOAA, and use up/down spinners until station is centered.</p></li>
 <li>Sampling Mode
 
 <ul>
@@ -724,10 +748,101 @@ To support UNC paths for Parallels, Regedit HKEY_CURRENTUSER/Software Microsoft/
 Make sure to update project version if Qt version is updated in QtCreator
 Exit code 0x0c0000315 if "Release DLLs" not copied to Debug and Release dirs</p>
 
-<p>Ignore any runtime warning messages related to help system.  QT finds open SSL on the Mac, but older version.  Since we don't use SSL, no need to redistribute latest OpenSSL</p>
+<p>Other useful mac tools<br/>
+- XCode Merge (File Diff)<br/>
+- Tower GIT UI<br/>
+- Mouser MD editor<br/>
+- Sublime Text editor</p>
 
-<pre><code>qt.network.ssl: QSslSocket: cannot resolve SSL_set_psk_client_callback
-</code></pre>
+<h4>SDRPlay Plugin Build</h4>
+
+<p>Install the latest .so and .h files from sdrplay.com, then copy to the plugins/sdrplay/miricsapi directory.  Files are in /usr/local/include and lib</p>
+
+<p>Source code for API library: <a href="https://github.com/airspy/host">https://github.com/airspy/host</a></p>
+
+<h3>Keyboard Shortcuts</h3>
+
+<p>Keyboard shortcuts are provided primarily for use by external tuning devices like the Contour ShuttleExpress.  An example settings file is provided in the PebbleData directory.</p>
+
+<table>
+<thead>
+<tr>
+<th>Key </th>
+<th> Action    </th>
+<th>Key</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>J   </td>
+<td> Down 1 hZ  </td>
+<td> U </td>
+<td>Up 1 hZ</td>
+</tr>
+<tr>
+<td>H   </td>
+<td> Down 10hZ  </td>
+<td> Y </td>
+<td>Up 10 hZ</td>
+</tr>
+<tr>
+<td>G   </td>
+<td> Down 100hZ </td>
+<td> T </td>
+<td>Up 100 hZ</td>
+</tr>
+<tr>
+<td>F   </td>
+<td> Down 1khZ  </td>
+<td> R </td>
+<td>Up 1 khZ</td>
+</tr>
+<tr>
+<td>D   </td>
+<td> Down 10khZ </td>
+<td> E </td>
+<td>Up 10khZ</td>
+</tr>
+<tr>
+<td>S   </td>
+<td> Down 100khZ</td>
+<td> W </td>
+<td>Up 100khZ</td>
+</tr>
+<tr>
+<td>A   </td>
+<td> Down 1mhZ  </td>
+<td> Q </td>
+<td>Up 1mhZ</td>
+</tr>
+<tr>
+<td></td>
+<td>            </td>
+<td>   </td>
+<td></td>
+</tr>
+<tr>
+<td>P   </td>
+<td> Power</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>M   </td>
+<td> Mute</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>L   </td>
+<td> LO Mode</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
 
 <h3>Coding Style</h3>
 

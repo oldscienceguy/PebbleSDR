@@ -1,14 +1,14 @@
 #Pebble II SDR (Mac) 
-Nov 1, 2015  
-Copyright 2010, 2011, 2012, 2013, 2014, 2015  
+Dec 15, 2015  
+Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016  
 Richard Landsman N1DDY <PebbleSDR@gmail.com>  
 Licensed under GPL, see gpl.h for details, attribution, and references  
 <https://github.com/oldscienceguy/PebbleSDR>  
 Dedicated to SuperRatt, my first program (c 1980) for the Apple II with support for RTTY, CW, and special modes.  
 
 ---
-AFEDRI showing full 2mHz bandwidth from 150kHz to 2150kHz and zoom at 1150 kHz  
-<img src=https://raw.github.com/oldscienceguy/PebbleSDR/master/screen_shots/AFEDRI%20150Hz%20to%202150kHz.png width=500> 
+AFEDRI showing full 2mHz bandwidth from 150kHz to 2150kHz and HiRes zoom at 850 kHz  
+<img src=https://raw.github.com/oldscienceguy/PebbleSDR/master/screen_shots/AFEDRI%20150kHz%20to%202150kHz.png width=500> 
 ---
 ##Introduction
 
@@ -35,7 +35,7 @@ I knew nothing about DSP algorithms when I started writing Pebble.  Although I'v
 	 
 
 ##Installation
-Installation is easy, just unzip the files into a Pebble directory.  Pebble does not install and does not depend on any other libraries being previously installed, everything is in the directory.
+Installation is easy, just unzip the files into a Pebble directory.  Pebble does not install and does not depend on any other libraries being previously installed, everything is in the directory.  The required OSX version is 10.7 or greater.  Development and testing have been done on OSX 10.11.
 
 Files in the directory are:
 
@@ -63,6 +63,8 @@ Display TestBench window
 Displays device freq range etc
 ####Help|ReadMe
 Display readme.html in PebbleData folder
+####Help|Credits
+Display GPL and other credits
 
 ###Tuning Box (10 digits)
 There are many ways to tune Pebble.  
@@ -71,7 +73,10 @@ There are many ways to tune Pebble.
 2. Up/Down buttons above each digit:  You can change each digit by clicking on the small buttons above and below each digit.
 3. Up/Down arrows: Move the cursor over the digit you want to change and press the up or down arrow.
 4. Mouse scroll wheel: Move the cursor over the digit you want to change and use the mouse scroll wheel or track pad to scroll up or down.
-5. Click any digit to reset all lower digits to zero.  This is a quick way to reset.
+5. Click any digit to reset all lower digits to zero.  This is a quick way to reset.  
+
+Note: If you enter a frequency above or below the range of the device, you will hear a beep and the frequency will not change.  You can over-ride the hi/lo range in the specific device .ini file.
+
 
 ###S-Meter  
 The S-Meter can be set to Instaneous or Average using the buttons to the right of the bar graph.
@@ -115,6 +120,10 @@ Select "Core Audio built-in Output" as default.  Option options may be visible i
 2. Set Frequency: Enter a frequency in hz which will be used the next time the device is powered on.
 3. Device Default: A default frequency and mode will be used the next time the device is powered on.
 
+###Converter Mode & Converter Offset  
+Checking this box allows the use of an external up or down converter with any device.  The displayed frequency is the actual frequency after the converter, you don't have to add or subtract the converter offset.  Enter the offset for the converter if this box is checked, typically 100mHz or 120mHz.  In this mode, device high/low frequency limits are not checked so you can tune wherever the converter supports.  But you can also enter frequencies that are outside the range of the device and may see strange results.
+
+
 ###SampleRate
 If the device uses audio input, these will be the sample rate of the IQ Input field (see below).  If the device supports direct I/Q input, like the rtl-sdr, the list will be device specific.
 
@@ -126,6 +135,9 @@ This defaults to 1.0, but can be changed if the device does not have enough powe
 
 ###I/Q Input
 This field is only visible for devices that do not support direct I/Q input.  For devices like SoftRock, select the input audio device that the SoftRock is plugged into.  Note that some Mac's do not support stereo audio input and an external USB audio device must be used.  For devices that create their own audio device, like Funcube, select that as the input.
+
+###Reset Settings
+This will turn off the device and delete the .ini file which stores the device settings.  The next time the device is powered on, the ini file will automatically be re-created with default values.
 
 ###Device Specific options
 The center of the the Setting page is reserved for device specific options and will change depending on the device selected.  See device specific section of this document.
@@ -169,9 +181,9 @@ The Spectrum and Waterfall display has a great deal of hidden functionality.
 * Right clicking (Option Click) anywhere in the Spectrum or Waterfall will change the LO frequency.
 * Clicking Up or Down changes the frequency in 100hz increments.  Very useful for fine tuning data signals.
 * Clicking Left or Right arrows changes the frequency in 10hz increments.
-* Scrolling Up or Down changes the frequench in 1kHz increments.
+* Scrolling Up or Down changes the frequency in 1kHz increments.
 * Scrolling Left or Right changes the frequency in 100hz increments.
-* Changing the frequency using Arrows or Scrolling also will automatically reset the LO when scrolling off either end of the spectrum.  This provides an easy to use continuous tuning mode.
+* Changing the mixer frequency using Arrows or Scrolling also will automatically reset the LO when scrolling off either end of the spectrum.  This provides an easy to use continuous tuning mode.
 
 ###Spectrum Display Selector
 1. Spectrum: The entire spectrum is displayed (see Span below).  The height the spectrum indicates the power (db) of the signal.
@@ -181,18 +193,24 @@ The Spectrum and Waterfall display has a great deal of hidden functionality.
 ###Spectrum db Full Scale (FS)spinner
 This can be used to set the full scale value of the spectrum display, effectively increasing or decreasing the resolution.  The default range is -120db (waterfall black) to -50db (waterfall red).  If the Waterfall is washed out, increase the FS db displayed to -30.  If no signals are visible, decrease the FS db displayed to -70.  Easier to see when you try it than to explain
 
+###Spectum db Base Scale (BS) spiner
+This can be used to set the base value for the spectrum display.  It is usually used to 'hide' the noise floor so that just the signals that are greater than the BS value are shown.
+
 ###Spectrum Updates Per Second (x/sec) spinner
 This can be used to speed up or slow down the spectrum display to match your preferences or the band being monitored.  The range is 0 to 30, but 10 is usually a good default.  Faster updates == more CPU, so if your computer is running 'hot' try slowing down the update rate.
 Note: If set to zero, the spectrum display is temporarily frozen and won't update again until you set a rate greater than zero.
 
-###Spectrum Span
-This is one of my favorite features and makes devices that support large bandwidth, like the rtl-sdr and AFEDRI, more useful.  The problem with large bandwidths is that it can be difficult or impossible to see close signals.  This can always be addressed by powering off the device, changing to a lower sample rate, and restarting, but that's very inconvenient.  The Span control lets you smoothly zoom on the selected frequency and see a second Waterfall or Spectrum display with the smaller bandwidth and higher resolution.  
+###Spectrum Zoom
+This is one of my favorite features and makes devices that support large bandwidth, like the rtl-sdr and AFEDRI, more useful.  The problem with large bandwidths is that it can be difficult or impossible to see close signals.  This can always be addressed by powering off the device, changing to a lower sample rate, and restarting, but that's very inconvenient.  The Zoom control lets you smoothly zoom on the selected frequency and see a second Waterfall or Spectrum display with the smaller bandwidth and higher resolution.  
 
-The zooming is very smooth, but as you get closer to the maximum you will suddenly see finer detail and resolution as the internal FFT switches to a separate zoom mode.  Even with a 2mHz bandwidth, a 32khz span can be resolved.
+The selector has three choices  
+**Off**: No Zoom  
+**Spect**: Zoom using the same FFT and bin resolution as main display  
+**HiRes**: Zoom using a dedicated FFT that typically has a bandwidth of approx 60kHz and therefore much higher resolution, especially when the main spectrum has a much larger bandwidth.
 
-The zoomed display always has the selected frequency in the center.  Clicking in the zoomed display changes the frequency.
+The zoomed display always has the selected frequency in the center.  Clicking on another signal in the zoomed display changes the frequency so that signal is now centered in the zoom display.
 
-Try sliding the Span control back and forth on a busy part of the band to see how it works.
+Try sliding the Zoom control back and forth on a busy part of the band to see how it works.
 
 ###Data Modems
 Pebble support plugin data modems.  This feature is under development and only the Morse modem is currently functional.  Data modems can be independently developed and distributed without requiring new builds of Pebble.  Pebble looks in the 'plugins' directory on startup to build the menu.
@@ -258,8 +276,8 @@ If you have any problems with a device or modem plugin, or just don't want to se
 ###SoftRock Lite II
 (TBW)
 
-###FiFi
-Fifi has an onboard sound device that must be selected as the Pebble I/Q input.  In the device preferences, chose "Core Audio:UDA1361".  Make sure you set the Input level in the Mac Audio settings as well.  
+###FiFi (Softrock Family)
+Fifi has an onboard sound device that must be selected as the Pebble I/Q input.  In the device preferences, chose "UDA1361 Input".  You may have to use the Mac Audio Midi Setup tool (in applications/utilities) to set the sample rate to 192k (16bit).  
 
 In order to run the FiFi rockprog configuration utility I had to first install MacPorts popt using "sudo port install popt"
 
@@ -276,7 +294,8 @@ Minimum firmware is 1.05
 
 6/15 Install SpectraVue 3.36 to get latest 1.07 firmware
 
-###AFEDRI USB
+###AFEDRI USB  
+Same as SDR-IQ, but with higher sample rate option
 
 ###RFSpace SDR-IP & AFEDRI Network
 I use a direct network cable, not wifi, when connecting to this device at the full 2mhz bandwidth.  I set my Mac to a fixed IP of 10.0.1.0 using DHCP Manual in Network settings and the AFEDRI to 10.0.1.100.
@@ -333,6 +352,8 @@ USB and TCP Options
 * Tuner Gain with preset options. 
 	The Tuner gain is set automatically if 'Tuner AGC' is selected.  
 	Chose a preset gain option
+	NOTE: Tuner AGC may produce multiple aliases.  Try a fixed Tuner gain if this occurs.
+	
 * Frequency Correction: Tune to a frequency with a known station, like 162.450 mhz NOAA, and use up/down spinners until station is centered.
 * Sampling Mode
 	* Normal (Frequency range depends on tuner chip)
@@ -440,9 +461,35 @@ To support UNC paths for Parallels, Regedit HKEY_CURRENTUSER/Software Microsoft/
 Make sure to update project version if Qt version is updated in QtCreator
 Exit code 0x0c0000315 if "Release DLLs" not copied to Debug and Release dirs
 
-Ignore any runtime warning messages related to help system.  QT finds open SSL on the Mac, but older version.  Since we don't use SSL, no need to redistribute latest OpenSSL
+Other useful mac tools  
+- XCode Merge (File Diff)  
+- Tower GIT UI  
+- Mouser MD editor  
+- Sublime Text editor
 
-	qt.network.ssl: QSslSocket: cannot resolve SSL_set_psk_client_callback
+####SDRPlay Plugin Build
+Install the latest .so and .h files from sdrplay.com, then copy to the plugins/sdrplay/miricsapi directory.  Files are in /usr/local/include and lib  
+
+Source code for API library: <https://github.com/airspy/host>
+
+###Keyboard Shortcuts
+Keyboard shortcuts are provided primarily for use by external tuning devices like the Contour ShuttleExpress.  An example settings file is provided in the PebbleData directory.
+
+Key | Action    |Key|Action
+--- | ---------- --- ------
+J   | Down 1 hZ  | U |Up 1 hZ
+H   | Down 10hZ  | Y |Up 10 hZ
+G   | Down 100hZ | T |Up 100 hZ
+F   | Down 1khZ  | R |Up 1 khZ
+D   | Down 10khZ | E |Up 10khZ
+S   | Down 100khZ| W |Up 100khZ
+A   | Down 1mhZ  | Q |Up 1mhZ 
+    |            |   |
+P   | Power
+M   | Mute
+L   | LO Mode
+
+
 
 
 ###Coding Style

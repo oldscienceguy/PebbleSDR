@@ -1,11 +1,56 @@
 Todo List
-_ Investigate SoapySDR for device driver compatibility
-_ Investigate SDR-J for decoder compatibility
-_ Bug: wav playback doesn't work with QTAudio
-_ Investigate Liquid-DSP DSP library for compatibility
-_ Revisit zoom logic so it doesn't change every click.  Maybe just lock to LO frequency?
+BUGS
+
+_ Bug: qt.conf already exists warning.  Occurs if Pebble.app already exists when we build
+_ Bug: Try using OSX USB first before D2XX to avoid driver conflict
+_ Bug: No Display doesn't collapse hidden frames any more.  Cosmetic
+_ Bug: HPSDR has not been tested or firmware updated in a long time.  Test Ozzy and Mettis
+_ Bug: Check FunCube dongle device settings.  Seems dead when tested 12/30/15
+_ Bug: Unplugging FCD while Pebble is open (not running) crashes in hid-mac.c
+_ Bug: Can't debug main Pebble application.  Libraries and plugins are ok.  I think there may be a problem
+    with all the fixups we do during install
+
+FEATURES
+_ Hi-res spectrum has slightly lower signal strength than unprocessed spectrum.  Losing gain in downConvert?
+    We need to normalize.\
+_ IQ correction (based on signals above median noise)
+_ Freq correction for devices that support it (like FCD) in ppm
+
 _ Revisit tuning increments.  Select digit on freq display, that's the new units for coarse and fine tuning.
     Pre-select other common fixed tuning increments
-_ Add spectrum offset back and check to make sure signal strength doesn't change when we change
-    full scale db and offset
-_ SDR Play hangs at high sample rates
+_ Calibrate all devices by injecting known signal and adjust normalizeIQ Gain
+_ RTL2832 ADSB decoder plugin
+_ RTL2832 read whatever is there each thread slice and don't wait for full buffer with read_sync.
+
+_ Add peak option to spectrum display
+
+_ Fifi: Add fifi specific device options to form
+_ Fifi: Add support for Fifi built in demod (Fifi-SDR AM/FM/SSB Receiver) audio device
+
+_ ACARS (118-136mhz) aircraft decoder
+_ Direct tuning mode for RTL2832 and other.  LO and mixer are internal, user just sees frequency
+_ Add auto to FS and Base dB.  Uses median noise to set base level and peak signal to set FS db.
+_ Move spectrum cursor tracking to display next to cursor instead of fixed label
+_ Scan mode.  Builds special memory file scan.csv
+
+_ KX3 Slave mode: Track freq from KX3, IQ out to audio for basic spectrum.  Advanced, click on spectrum
+    to adjust KX3.  Maybe full remote mode?  Open QT Serial connection at 38400 and set terminal commands.
+_ AirSpy when I get repaired unit back
+_ Elad FDM S2
+_ HackRF
+
+_ Higher res FFT option, 4096 etc?
+
+INTERNAL
+_ Pick coding standard and update everything
+_ Clean up SpectrumWidget / ReceiverWidget / Receiver logic.  Widgets should just handle UI (View) and send
+    signals that Reciever (Model) (and any other interested class) can connect to.  In this mode, Receiver knows about
+    widgets, but widgets don't have to know about Receiver
+
+INVESTIGATE
+_ Investigate DSDPlus www.dsdplus.com for police, fire, etc decoders https://github.com/szechyjs/dsd
+_ Investigate SDS-B http://www.rtl-sdr.com/adsb-aircraft-radar-with-rtl-sdr/
+_ Investigate Codec2 voice compression http://www.rowetel.com/
+_ Investigate Liquid-DSP DSP library for compatibility
+_ Investigate SoapySDR for device driver compatibility
+_ Investigate SDR-J for decoder compatibility
