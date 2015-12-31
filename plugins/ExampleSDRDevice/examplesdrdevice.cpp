@@ -27,8 +27,8 @@ bool ExampleSDRDevice::Initialize(cbProcessIQData _callback,
 	producerConsumer.Initialize(std::bind(&ExampleSDRDevice::producerWorker, this, std::placeholders::_1),
 		std::bind(&ExampleSDRDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, readBufferSize);
 	//Must be called after Initialize
-	producerConsumer.SetProducerInterval(sampleRate,readBufferSize);
-	producerConsumer.SetConsumerInterval(sampleRate,readBufferSize);
+	producerConsumer.SetProducerInterval(sampleRate,framesPerBuffer);
+	producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
 
 	//Start this immediately, before connect, so we don't miss any data
 	producerConsumer.Start(true,true);
@@ -140,7 +140,16 @@ void ExampleSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 		case cbProducerConsumerEvents::Run:
 			if ((producerFreeBufPtr = producerConsumer.AcquireFreeBuffer()) == NULL)
 				return;
+#if 0
+			while (running) {
+				//This ignores producer thread slices and runs as fast as possible to get samples
+				//May be used for sample rates where thread slice is less than 1ms
+				//Get data from device and put into producerFreeBufPtr
+			}
+#else
 			//Get data from device and put into producerFreeBufPtr
+			//Return and wait for next producer time slice
+#endif
 #if 0
 			//For testing device sample format
 			if (producerIBuf[i] > maxSample) {
