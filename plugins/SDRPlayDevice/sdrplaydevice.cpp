@@ -40,8 +40,8 @@ bool SDRPlayDevice::Initialize(cbProcessIQData _callback,
 	producerConsumer.Initialize(std::bind(&SDRPlayDevice::producerWorker, this, std::placeholders::_1),
 		std::bind(&SDRPlayDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, readBufferSize);
 	//Must be called after Initialize
-	producerConsumer.SetProducerInterval(sampleRate,readBufferSize);
-	producerConsumer.SetConsumerInterval(sampleRate,readBufferSize);
+	producerConsumer.SetProducerInterval(sampleRate,framesPerBuffer);
+	producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
 
 #endif
 
@@ -645,6 +645,7 @@ void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 				if (!errorCheck(mir_sdr_ReadPacket(packetIBuf, packetQBuf, &firstSampleNumber, &gainReductionChanged,
 					&rfFreqChanged, &sampleFreqChanged))) {
 					initInProgress.unlock();
+					qDebug()<<"Error: Partial read";
 					return; //Handle error
 				}
 				initInProgress.unlock();
@@ -677,8 +678,8 @@ void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 						producerIndex = 0;
 						totalPwrInPacket = 0;
 					}
-
-					normalizeIQ(&producerFreeBufPtr[producerIndex], packetIBuf[i], packetQBuf[i]);
+					//I/Q is reversed from Pebble norm, correct here so user sees normal order
+					normalizeIQ(&producerFreeBufPtr[producerIndex], packetQBuf[i], packetIBuf[i]);
 					//I^2 + Q^2
 					totalPwrInPacket += producerFreeBufPtr[producerIndex].sqrMag();
 					producerIndex++;
