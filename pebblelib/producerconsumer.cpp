@@ -112,13 +112,16 @@ void ProducerConsumer::Initialize(cbProducerConsumer _producerWorker, cbProducer
 void ProducerConsumer::SetConsumerInterval(quint32 _sampleRate, quint16 _samplesPerBuffer)
 {
 	//1 sample every N ms X number of samples per buffer = how long it takes device to fill a buffer
-	quint16 msToFillBuffer = (1000.0 / _sampleRate) * _samplesPerBuffer;
+	float msToFillBuffer = (1000.0 / _sampleRate) * _samplesPerBuffer;
 	//Set safe interval (experiment here)
 	//Use something that results in a non-cyclic interval to avoid checking constantly at the wrong time
-	quint16 msBufferInterval = msToFillBuffer * 0.66;
-	//Interval can never be 0 which is a special case for QTimer
-	msConsumerInterval = msBufferInterval > 0 ? msBufferInterval : 1;
-	qDebug()<<"Consumer checks every "<<msConsumerInterval<<" ms "<<"SampleRate | SamplesPerBuffer"<<_sampleRate<<_samplesPerBuffer;
+	msConsumerInterval = msToFillBuffer * 0.66;
+	//0 is a special case for QTimer which sends timeout signal whenever there are no events to be processed
+	//This will run consumer as fast as possible, with corresponding high CPU
+	if (msConsumerInterval == 0)
+		qDebug()<<"Warning: Consumer running as fast as possible, high CPU";
+	else
+		qDebug()<<"Consumer checks every "<<msConsumerInterval<<" ms "<<"SampleRate | SamplesPerBuffer"<<_sampleRate<<_samplesPerBuffer;
 	if (consumerWorker != NULL)
 		consumerWorker->SetPollingInterval(msConsumerInterval);
 
@@ -129,12 +132,15 @@ void ProducerConsumer::SetConsumerInterval(quint32 _sampleRate, quint16 _samples
 void ProducerConsumer::SetProducerInterval(quint32 _sampleRate, quint16 _samplesPerBuffer)
 {
 	//1 sample every N ms X number of samples per buffer = how long it takes device to fill a buffer
-	quint16 msToFillBuffer = (1000.0 / _sampleRate) * _samplesPerBuffer;
+	float msToFillBuffer = (1000.0 / _sampleRate) * _samplesPerBuffer;
 	//Set safe interval (experiment here)
-	quint16 msBufferInterval = msToFillBuffer * 0.66;
-	//Interval can never be 0 which is a special case for QTimer
-	msProducerInterval = msBufferInterval > 0 ? msBufferInterval : 1;
-	qDebug()<<"Producer checks every "<<msProducerInterval<<" ms"<<"SampleRate | SamplesPerBuffer"<<_sampleRate<<_samplesPerBuffer;;
+	msProducerInterval = msToFillBuffer * 0.66;
+	//0 is a special case for QTimer which sends timeout signal whenever there are no events to be processed
+	//This will run consumer as fast as possible, with corresponding high CPU
+	if (msProducerInterval == 0)
+		qDebug()<<"Warning: Producer running as fast as possible, high CPU";
+	else
+		qDebug()<<"Producer checks every "<<msProducerInterval<<" ms"<<"SampleRate | SamplesPerBuffer"<<_sampleRate<<_samplesPerBuffer;;
 	if (producerWorker != NULL)
 		producerWorker->SetPollingInterval(msProducerInterval);
 }
