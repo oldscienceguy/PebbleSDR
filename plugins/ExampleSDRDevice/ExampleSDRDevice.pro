@@ -6,7 +6,8 @@
 
 #Project common
 include(../../application/pebbleqt.pri)
-#DESTDIR is set in pebbleqt.pri
+#DESTDIR is set in pebbleqt.pri, save it
+INSTALL_DIR = $${DESTDIR}
 DESTDIR = $${DESTDIR}/plugins
 
 #Common library dependency code for all Pebble plugins

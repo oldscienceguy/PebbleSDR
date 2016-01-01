@@ -107,7 +107,7 @@ QVariant ExampleSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 		case DeviceName:
 			return "ExampleDevice";
 		case DeviceType:
-			return AUDIO_IQ_DEVICE;
+			return DeviceInterfaceBase::AUDIO_IQ_DEVICE;
 		default:
 			return DeviceInterfaceBase::Get(_key, _option);
 	}
