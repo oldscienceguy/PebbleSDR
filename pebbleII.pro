@@ -26,6 +26,7 @@ SUBDIRS =   pebblelib/pebblelib.pro \
             plugins/RFSpaceDevice \
             plugins/Ghpsdr3Device \
             plugins/SDRPlayDevice \
+            plugins/HackRFDevice \
             application/pebbleqt.pro \
             SdrGarage
 

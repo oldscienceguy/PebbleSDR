@@ -92,6 +92,9 @@ Mac and win functions for accessing HID devices
 ####SDRPlay
 [www.sdrplay.com](http://www.sdrplay.com)  
 
+####HackRF One  
+<https://github.com/mossmann/hackrf>
+
 ----
 
 ##Books and Articles
