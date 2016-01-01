@@ -6,6 +6,7 @@
 #include <QObject>
 #include "deviceinterfacebase.h"
 #include "ui_hackrfoptions.h"
+#include "hackrf.h"
 
 class HackRFDevice : public QObject, public DeviceInterfaceBase
 {
@@ -38,6 +39,9 @@ private:
 	CPXBuf *consumerBuffer;
 
 	Ui::HackRFOptions *optionUi;
+	hackrf_device* hackrfDevice;
+	quint8 hackrfBoardId = BOARD_ID_INVALID;
+	char hackrfVersion[255 + 1];
 
 
 };

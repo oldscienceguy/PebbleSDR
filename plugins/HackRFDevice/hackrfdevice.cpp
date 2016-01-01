@@ -41,15 +41,57 @@ bool HackRFDevice::Initialize(cbProcessIQData _callback,
 
 bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _arg)
 {
+	hackrf_error result;
 	switch (_cmd) {
-		case CmdConnect:
-			DeviceInterfaceBase::Connect();
-			//Device specific code follows
+		case CmdConnect: {
+				DeviceInterfaceBase::Connect();
+				//Device specific code follows
+				hackrf_device_list_t *list;
+				result = (hackrf_error)hackrf_init();
+				if (result != HACKRF_SUCCESS) {
+					qDebug("hackrf_init() failed: %s (%d)\n",hackrf_error_name(result), result);
+					return false;
+				}
+
+				list = hackrf_device_list();
+
+				if (list->devicecount < 1 ) {
+					qDebug("No HackRF boards found.\n");
+					return false;
+				}
+				//We only support 1 (first) device
+				hackrfDevice = NULL;
+				result = (hackrf_error)hackrf_device_list_open(list, 0, &hackrfDevice);
+				if (result != HACKRF_SUCCESS) {
+					qDebug("hackrf_open() failed: %s (%d)\n",hackrf_error_name(result), result);
+					return false;
+				}
+				result = (hackrf_error)hackrf_board_id_read(hackrfDevice, &hackrfBoardId);
+				if (result != HACKRF_SUCCESS) {
+					qDebug("hackrf_board_id_read() failed: %s (%d)\n",hackrf_error_name(result), result);
+					return false;
+				}
+				qDebug("Board ID Number: %d (%s)\n", hackrfBoardId, hackrf_board_id_name((hackrf_board_id)hackrfBoardId));
+
+				result = (hackrf_error)hackrf_version_string_read(hackrfDevice, &hackrfVersion[0], 255);
+				if (result != HACKRF_SUCCESS) {
+					qDebug("hackrf_version_string_read() failed: %s (%d)\n", hackrf_error_name(result), result);
+					return false;
+				}
+				qDebug("Firmware Version: %s\n", hackrfVersion);
+
+				hackrf_device_list_free(list);
+			}
 			return true;
 
 		case CmdDisconnect:
 			DeviceInterfaceBase::Disconnect();
 			//Device specific code follows
+			result = (hackrf_error)hackrf_close(hackrfDevice);
+			if (result != HACKRF_SUCCESS) {
+				qDebug("hackrf_close() failed: %s (%d)\n",hackrf_error_name(result), result);
+			}
+			hackrf_exit();
 			return true;
 
 		case CmdStart:
@@ -107,7 +149,7 @@ QVariant HackRFDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 		case DeviceName:
 			return "HackRF";
 		case DeviceType:
-			return AUDIO_IQ_DEVICE;
+			return DeviceInterfaceBase::IQ_DEVICE;
 		default:
 			return DeviceInterfaceBase::Get(_key, _option);
 	}
@@ -170,7 +212,7 @@ void HackRFDevice::producerWorker(cbProducerConsumerEvents _event)
 			}
 #endif
 
-			producerConsumer.ReleaseFilledBuffer();
+			//producerConsumer.ReleaseFilledBuffer();
 			return;
 
 			break;
