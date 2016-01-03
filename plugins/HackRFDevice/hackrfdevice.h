@@ -32,6 +32,9 @@ public:
 	bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option = 0);
 
 private:
+	void ReadSettings();
+	void WriteSettings();
+
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
 
@@ -43,6 +46,10 @@ private:
 	quint8 hackrfBoardId = BOARD_ID_INVALID;
 	char hackrfVersion[255 + 1];
 
-
+	quint16 producerIndex;
+	CPX *producerFreeBufPtr; //Treat as array of CPX
+	QMutex mutex;
+	static int rx_callback(hackrf_transfer *transfer);
+	bool apiCheck(int result, const char *api);
 };
 #endif // HACKRFDEVICE_H
