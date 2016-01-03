@@ -31,11 +31,15 @@ public:
 	bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option = 0);
 
 private:
+	void ReadSettings();
+	void WriteSettings();
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
 
 	//Work buffer for consumer to convert device format data to CPX Pebble format data
 	CPXBuf *consumerBuffer;
+	quint16 producerIndex;
+	CPX *producerFreeBufPtr; //Treat as array of CPX
 
 	Ui::ExampleSdrOptions *optionUi;
 

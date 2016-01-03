@@ -17,6 +17,7 @@ bool ExampleSDRDevice::Initialize(cbProcessIQData _callback,
 {
 	DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
 	numProducerBuffers = 50;
+	producerFreeBufPtr = NULL;
 #if 1
 	//Remove if producer/consumer buffers are not used
 	//This is set so we always get framesPerBuffer samples (factor in any necessary decimation)
@@ -38,6 +39,16 @@ bool ExampleSDRDevice::Initialize(cbProcessIQData _callback,
 	return true;
 }
 
+void ExampleSDRDevice::ReadSettings()
+{
+	//Set defaults before calling DeviceInterfaceBase
+	DeviceInterfaceBase::ReadSettings();
+}
+
+void ExampleSDRDevice::WriteSettings()
+{
+	DeviceInterfaceBase::WriteSettings();
+}
 
 bool ExampleSDRDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _arg)
 {
@@ -65,11 +76,13 @@ bool ExampleSDRDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant
 		case CmdReadSettings:
 			DeviceInterfaceBase::ReadSettings();
 			//Device specific settings follow
+			ReadSettings();
 			return true;
 
 		case CmdWriteSettings:
 			DeviceInterfaceBase::WriteSettings();
 			//Device specific settings follow
+			WriteSettings();
 			return true;
 
 		case CmdDisplayOptionUi: {
@@ -128,7 +141,6 @@ bool ExampleSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value,
 
 void ExampleSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 {
-	unsigned char *producerFreeBufPtr;
 #if 0
 	//For verifying device data format min/max so we can normalize later
 	static short maxSample = 0;
@@ -138,7 +150,7 @@ void ExampleSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 		case cbProducerConsumerEvents::Start:
 			break;
 		case cbProducerConsumerEvents::Run:
-			if ((producerFreeBufPtr = producerConsumer.AcquireFreeBuffer()) == NULL)
+			if ((producerFreeBufPtr = (CPX*)producerConsumer.AcquireFreeBuffer()) == NULL)
 				return;
 #if 0
 			while (running) {
