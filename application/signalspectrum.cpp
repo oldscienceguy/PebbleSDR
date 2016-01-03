@@ -91,7 +91,7 @@ void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double 
 
     if (!displayUpdateComplete) {
         //We're not keeping up with display for some reason
-		qDebug()<<"Display update overrun counter "<<displayUpdateOverrun;
+		//qDebug()<<"Display update overrun counter "<<displayUpdateOverrun;
         displayUpdateOverrun++;
     }
 
