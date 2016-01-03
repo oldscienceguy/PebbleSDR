@@ -444,8 +444,6 @@ void SpectrumWidget::mousePressEvent ( QMouseEvent * event )
     Qt::KeyboardModifiers modifiers = event->modifiers(); //Keyboard modifiers
 
     double deltaFreq = GetMouseFreq();
-    if (deltaFreq == 0)
-        return; //not in our area or no mixer
 
     if (button == Qt::LeftButton) {
         if( modifiers == Qt::NoModifier)
