@@ -541,13 +541,13 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, qint16 I, qint16 Q)
 
 }
 
-//0 to 255 samples
+//0 to 255 samples RTL2832
 void DeviceInterfaceBase::normalizeIQ(CPX *cpx, quint8 I, quint8 Q)
 {
 	double tmp;
 	//Normalize and apply gain
-	cpx->re = ((I - 127) / 128.0) * userIQGain * normalizeIQGain;
-	cpx->im = ((Q - 127) / 128.0) * userIQGain * normalizeIQGain;
+	cpx->re = ((I - 127) / 127.0) * userIQGain * normalizeIQGain;
+	cpx->im = ((Q - 127) / 127.0) * userIQGain * normalizeIQGain;
 
 	//Configure IQ order if not default
 	switch(iqOrder) {
@@ -566,6 +566,34 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, quint8 I, quint8 Q)
 			cpx->re = cpx->im;
 			break;
 	}
+}
+
+//-127 to +127 samples HackRF
+void DeviceInterfaceBase::normalizeIQ(CPX *cpx, qint8 I, qint8 Q)
+{
+	double tmp;
+	//Normalize and apply gain
+	cpx->re = (I / 127.0) * userIQGain * normalizeIQGain;
+	cpx->im = (Q / 127.0) * userIQGain * normalizeIQGain;
+
+	//Configure IQ order if not default
+	switch(iqOrder) {
+		case DeviceInterface::IQ:
+			//No change, this is the default order
+			break;
+		case DeviceInterface::QI:
+			tmp = cpx->re;
+			cpx->re = cpx->im;
+			cpx->im = tmp;
+			break;
+		case DeviceInterface::IONLY:
+			cpx->im = cpx->re;
+			break;
+		case DeviceInterface::QONLY:
+			cpx->re = cpx->im;
+			break;
+	}
+
 }
 
 //Called by audio devices when new samples are available
