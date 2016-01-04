@@ -1,4 +1,5 @@
 #include "hackrfdevice.h"
+#include "db.h"
 
 HackRFDevice::HackRFDevice():DeviceInterfaceBase()
 {
@@ -17,7 +18,7 @@ bool HackRFDevice::Initialize(cbProcessIQData _callback,
 {
 	DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
 	//numProducerBuffers = 50;
-	numProducerBuffers = 100; //We get 64 buffers worth of data at a time, so this needs to be large enough
+	numProducerBuffers = 128; //We get 64 buffers worth of data at a time, so this needs to be large enough
 	producerFreeBufPtr = NULL;
 #if 1
 	//Remove if producer/consumer buffers are not used
@@ -43,15 +44,21 @@ bool HackRFDevice::Initialize(cbProcessIQData _callback,
 void HackRFDevice::ReadSettings()
 {
 	//Set defaults before calling DeviceInterfaceBase
-	normalizeIQGain = 0.01;
+	//Set for LNA 24db and VGA 6db
+	normalizeIQGain = DB::dbToAmplitude(15);
 	highFrequency = 6000000000;
 	lowFrequency = 1000000;
 	DeviceInterfaceBase::ReadSettings();
+	lnaGain = qSettings->value("lnaGain",24).toUInt();
+	vgaGain = qSettings->value("vgaGain",6).toUInt();
 }
 
 void HackRFDevice::WriteSettings()
 {
 	DeviceInterfaceBase::WriteSettings();
+	qSettings->setValue("lnaGain",lnaGain);
+	qSettings->setValue("vgaGain",vgaGain);
+	qSettings->sync();
 }
 
 bool HackRFDevice::apiCheck(int result, const char* api)
@@ -65,7 +72,6 @@ bool HackRFDevice::apiCheck(int result, const char* api)
 
 bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _arg)
 {
-	unsigned int lna_gain=8, vga_gain=20;
 	quint32 baseband_filter_bw_hz = hackrf_compute_baseband_filter_bw(sampleRate);
 
 	switch (_cmd) {
@@ -120,10 +126,10 @@ bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _ar
 			if (!apiCheck(hackrf_set_baseband_filter_bandwidth(hackrfDevice,baseband_filter_bw_hz),"set_filter_bandwidth"))
 				return false;
 			//baseband rx gain 0-62dB, 2dB steps
-			if (!apiCheck(hackrf_set_vga_gain(hackrfDevice, vga_gain),"set_vga_gain"))
+			if (!apiCheck(hackrf_set_vga_gain(hackrfDevice, vgaGain),"set_vga_gain"))
 				return false;
 			//0 to 40db 8db steps
-			if (!apiCheck(hackrf_set_lna_gain(hackrfDevice, lna_gain),"set_lan_gain"))
+			if (!apiCheck(hackrf_set_lna_gain(hackrfDevice, lnaGain),"set_lan_gain"))
 				return false;
 
 			if (!apiCheck(hackrf_start_rx(hackrfDevice, (hackrf_sample_block_cb_fn)&HackRFDevice::rx_callback, this),"start_rx"))
@@ -164,6 +170,22 @@ bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _ar
 			optionUi = new Ui::HackRFOptions();
 			optionUi->setupUi(parent);
 			parent->setVisible(true);
+
+			//Set up controls, connection, initial display, etc
+			//0 to 40db 8db steps
+			optionUi->lnaSlider->setMinimum(0);
+			optionUi->lnaSlider->setMaximum(5);
+			optionUi->lnaSlider->setValue(lnaGain / 8);
+			optionUi->lnaValue->setText(QString::number(lnaGain)+"dB");
+			connect(optionUi->lnaSlider,SIGNAL(valueChanged(int)),this,SLOT(lnaChanged(int)));
+
+			//baseband rx gain 0-62dB, 2dB steps
+			optionUi->vgaSlider->setMinimum(0);
+			optionUi->vgaSlider->setMaximum(31);
+			optionUi->vgaSlider->setValue(vgaGain / 2);
+			optionUi->vgaValue->setText(QString::number(vgaGain)+"dB");
+			connect(optionUi->vgaSlider,SIGNAL(valueChanged(int)),this,SLOT(vgaChanged(int)));
+
 			return true;
 		}
 		default:
@@ -188,7 +210,8 @@ QVariant HackRFDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 			return DeviceInterfaceBase::IQ_DEVICE;
 		case DeviceSampleRates:
 			//Move to device options page and return empty list
-			return QStringList()<<"2000000"<<"4000000"<<"8000000"<<"10000000"<<"12500000"<<"16000000"<<"20000000";
+			//Sample rates below 8m work, but are not supported by HackRF due to limited alias filtering
+			return QStringList()<<"8000000"<<"10000000"<<"12500000"<<"16000000"<<"20000000";
 
 		default:
 			return DeviceInterfaceBase::Get(_key, _option);
@@ -208,6 +231,30 @@ bool HackRFDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, qui
 	}
 }
 
+void HackRFDevice::lnaChanged(int _value)
+{
+	//0 to 40db 8db steps
+	qint16 db = _value * 8;
+	if (!apiCheck(hackrf_set_lna_gain(hackrfDevice, db),"set_lan_gain"))
+		optionUi->lnaValue->setText("Error");
+	else
+		optionUi->lnaValue->setText(QString::number(db)+"dB");
+	lnaGain = db;
+	qSettings->sync();
+}
+
+void HackRFDevice::vgaChanged(int _value)
+{
+	//baseband rx gain 0-62dB, 2dB steps
+	qint16 db = _value * 2;
+	if (!apiCheck(hackrf_set_vga_gain(hackrfDevice, db),"set_vga_gain"))
+		optionUi->vgaValue->setText("Error");
+	else
+		optionUi->vgaValue->setText(QString::number(db)+"dB");
+	vgaGain = db;
+	qSettings->sync();
+}
+
 //typedef int(*hackrf_sample_block_cb_fn)(hackrf_transfer*transfer)
 //static callback function
 int HackRFDevice::rx_callback(hackrf_transfer*transfer)
@@ -216,11 +263,10 @@ int HackRFDevice::rx_callback(hackrf_transfer*transfer)
 	HackRFDevice *hackRf = (HackRFDevice *)transfer->rx_ctx;
 	hackRf->mutex.lock();
 	//buffer_length 262144
-	//8 bit unsigned samples, rtl2832 device
-	quint8* buf = transfer->buffer;
+	//Even though transfer->buffer is quint8, actual samples are qint8, so we have to convert
+	qint8* buf = (qint8*)transfer->buffer;
 	//buffer_length vs valid_length?
 	for (int i=0; i<transfer->buffer_length; i+=2) {
-		//qDebug()<<buf[i]<<" "<<buf[i+1];
 		if (hackRf->producerFreeBufPtr == NULL) {
 			if ((hackRf->producerFreeBufPtr = (CPX *)hackRf->producerConsumer.AcquireFreeBuffer()) == NULL) {
 				qDebug()<<"No free buffers available.  producerIndex = "<<hackRf->producerIndex <<
@@ -230,12 +276,14 @@ int HackRFDevice::rx_callback(hackrf_transfer*transfer)
 			}
 			hackRf->producerIndex = 0;
 		}
+
 		hackRf->normalizeIQ(&hackRf->producerFreeBufPtr[hackRf->producerIndex], buf[i], buf[i+1]);
 		hackRf->producerIndex++;
 		if (hackRf->producerIndex >= hackRf->framesPerBuffer) {
 			hackRf->producerIndex = 0;
 			hackRf->producerFreeBufPtr = NULL;
 			hackRf->producerConsumer.ReleaseFilledBuffer();
+
 			//We process 262144 bytes per call, at 2 bytes per sample and a 2048 sample buffer,
 			//this is 64 buffers of data each call.  We may need to increase the number of producer
 			//buffers beyond standard 50, but yieldCurrentThread() may let consumer run in between

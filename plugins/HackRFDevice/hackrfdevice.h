@@ -31,6 +31,10 @@ public:
 	QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
 	bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option = 0);
 
+private slots:
+	void lnaChanged(int _value);
+	void vgaChanged(int _value);
+
 private:
 	void ReadSettings();
 	void WriteSettings();
@@ -39,7 +43,7 @@ private:
 	void consumerWorker(cbProducerConsumerEvents _event);
 
 	//Work buffer for consumer to convert device format data to CPX Pebble format data
-	CPXBuf *consumerBuffer;
+	CPX *consumerBuffer;
 
 	Ui::HackRFOptions *optionUi;
 	hackrf_device* hackrfDevice;
@@ -51,5 +55,9 @@ private:
 	QMutex mutex;
 	static int rx_callback(hackrf_transfer *transfer);
 	bool apiCheck(int result, const char *api);
+
+	quint16 lnaGain;
+	quint16 vgaGain;
+
 };
 #endif // HACKRFDEVICE_H

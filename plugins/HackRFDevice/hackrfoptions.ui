@@ -13,12 +13,39 @@
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
+  <widget class="QSlider" name="lnaSlider">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>14</y>
+     <width>160</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>16777215</height>
+    </size>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="singleStep">
+    <number>1</number>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+  </widget>
   <widget class="QLabel" name="label">
    <property name="geometry">
     <rect>
-     <x>150</x>
-     <y>50</y>
-     <width>105</width>
+     <x>13</x>
+     <y>14</y>
+     <width>59</width>
      <height>16</height>
     </rect>
    </property>
@@ -28,7 +55,88 @@
     </font>
    </property>
    <property name="text">
-    <string>HackRF Options</string>
+    <string>LNA Gain</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_2">
+   <property name="geometry">
+    <rect>
+     <x>13</x>
+     <y>41</y>
+     <width>59</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>VGA Gain</string>
+   </property>
+  </widget>
+  <widget class="QSlider" name="vgaSlider">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>41</y>
+     <width>160</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>16777215</width>
+     <height>16777215</height>
+    </size>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+   <property name="tickPosition">
+    <enum>QSlider::NoTicks</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="lnaValue">
+   <property name="geometry">
+    <rect>
+     <x>251</x>
+     <y>15</y>
+     <width>59</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QLabel" name="vgaValue">
+   <property name="geometry">
+    <rect>
+     <x>253</x>
+     <y>41</y>
+     <width>59</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string/>
    </property>
   </widget>
  </widget>
