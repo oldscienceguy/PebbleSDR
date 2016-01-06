@@ -1066,17 +1066,16 @@ void ReceiverWidget::ReceiverChanged(int i)
 //Updates all the nixies to display a number
 void ReceiverWidget::DisplayNixieNumber(double n)
 {
-	qint32 d = n; //Saves us having to cast to int below to get mod
-    ui.nixie1g->display( (d / 1000000000)%10);
-    ui.nixie100m->display( (d / 100000000)%10);
-	ui.nixie10m->display( (d / 10000000)%10);
-	ui.nixie1m->display( (d / 1000000)%10);
-	ui.nixie100k->display( (d / 100000)%10);
-	ui.nixie10k->display( (d / 10000)%10);
-	ui.nixie1k->display( (d / 1000)%10);
-	ui.nixie100->display( (d / 100)%10);
-	ui.nixie10->display( (d /10) % 10);
-    ui.nixie1->display( (d % 10));
+	ui.nixie1g->display( fmod(n / 1000000000.0,10));
+	ui.nixie100m->display( fmod(n / 100000000.0,10));
+	ui.nixie10m->display( fmod(n / 10000000.0,10));
+	ui.nixie1m->display( fmod(n / 1000000.0,10));
+	ui.nixie100k->display( fmod(n / 100000.0,10));
+	ui.nixie10k->display( fmod(n / 10000.0,10));
+	ui.nixie1k->display( fmod(n / 1000.0,10));
+	ui.nixie100->display( fmod(n / 100.0,10));
+	ui.nixie10->display( fmod(n /10.0,10));
+	ui.nixie1->display( fmod(n,10));
 }
 
 void ReceiverWidget::bandTypeChanged(int s)
