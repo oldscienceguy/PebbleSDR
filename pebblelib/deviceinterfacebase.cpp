@@ -541,7 +541,7 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, qint16 I, qint16 Q)
 
 }
 
-//0 to 255 samples in Offset Binary mode, ie RTL2832
+// 0 to 255 samples in Offset Binary mode, ie RTL2832
 // 255 = +127 (full scale - lsb)
 // 128 = 0
 // 0 = -128 (full scale)
@@ -571,13 +571,17 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, quint8 I, quint8 Q)
 	}
 }
 
-//-127 to +127 samples HackRF
+// -128 to +127 samples in 2's complement format
+// 255 = -1
+// 128 = -128 (full scale)
+// 127 = 127 (full scale)
+// 0 = 0
 void DeviceInterfaceBase::normalizeIQ(CPX *cpx, qint8 I, qint8 Q)
 {
 	double tmp;
 	//Normalize and apply gain
-	cpx->re = (I / 127.0) * userIQGain * normalizeIQGain;
-	cpx->im = (Q / 127.0) * userIQGain * normalizeIQGain;
+	cpx->re = (I / 128.0) * userIQGain * normalizeIQGain;
+	cpx->im = (Q / 128.0) * userIQGain * normalizeIQGain;
 
 	//Configure IQ order if not default
 	switch(iqOrder) {
