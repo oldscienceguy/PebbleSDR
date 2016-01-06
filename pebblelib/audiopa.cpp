@@ -307,6 +307,11 @@ void AudioPA::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
 	outPtr = outStreamBuffer;
     float temp;
 
+	//Save CPU and don't output anything if mute
+	//Note some sound systems may require outputting 0's, if so, then remove this check
+	if (mute)
+		return;
+
 	//We may have to skip samples to reduce rate to match audio out, decimate set when we
 	//opened stream
     for (int i=0;i<outSamples;i++)
