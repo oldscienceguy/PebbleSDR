@@ -282,7 +282,7 @@ double SpectrumWidget::GetMouseFreq()
         //Find freq at cursor
         float hzPerPixel = sampleRate / pf.width();
         //Convert to +/- relative to center
-        int m = mp.x() - pf.center().x();
+		qint32 m = mp.x() - pf.center().x();
         //And conver to freq
         m *= hzPerPixel;
         return m;
@@ -296,7 +296,7 @@ double SpectrumWidget::GetMouseFreq()
             hzPerPixel= signalSpectrum->getZoomedSampleRate() / zpf.width() * zoom;
 
         //Convert to +/- relative to center
-        int m = mp.x() - zpf.center().x();
+		qint32 m = mp.x() - zpf.center().x();
         //And conver to freq
         m *= hzPerPixel;
         //and factor in mixer
@@ -348,7 +348,7 @@ void SpectrumWidget::wheelEvent(QWheelEvent *event)
             return;
 
     QPoint angleDelta = event->angleDelta();
-    int freq = fMixer;
+	qint32 freq = fMixer;
 
     if (angleDelta.ry() == 0) {
         if (angleDelta.rx() > 0) {
@@ -399,7 +399,7 @@ void SpectrumWidget::hoverLeave(QHoverEvent *event)
 void SpectrumWidget::keyPressEvent(QKeyEvent *event)
 {
 	int key = event->key();
-	int m = fMixer;
+	qint32 m = fMixer;
 	switch (key)
 	{
 	case Qt::Key_Up: //Bigger step
@@ -580,7 +580,7 @@ void SpectrumWidget::DrawCursor(QPainter *painter, QRect plotFr, bool isZoomed, 
 
     //Show mixer cursor, fMixer varies from -f..0..+f relative to LO
     //Map to coordinates
-    int x1;
+	qint32 x1;
     if (spectrumMode == SignalSpectrum::SPECTRUM || spectrumMode == SignalSpectrum::WATERFALL) {
         if (isZoomed) {
             x1 = 0.5 * plotWidth; //Zoom is always centered
@@ -978,6 +978,7 @@ void SpectrumWidget::newFftData()
         update();
 
     } else if (spectrumMode == SignalSpectrum::WATERFALL) {
+		quint16 wfPixPerLine = 1; //Testing vertical zoom
         //Color code each bin and draw line
         QPainter plotPainter(&plotArea);
         QPainter zoomPlotPainter(&zoomPlotArea);
@@ -988,7 +989,7 @@ void SpectrumWidget::newFftData()
         //Scroll fr rect 1 pixel to create new line
         QRect rect = plotArea.rect();
         //rect.setBottom(rect.bottom() - 10); //Reserve the last 10 pix for labels
-        plotArea.scroll(0,1,rect);
+		plotArea.scroll(0,wfPixPerLine,rect);
 
         //Instead of plot area coordinates we convert to screen color array
         //Width is unchanged, but height is # colors we have for each db
@@ -1002,22 +1003,23 @@ void SpectrumWidget::newFftData()
             endFreq, //High frequency
             fftMap );
 
-        for (int i=0; i<plotArea.width(); i++)
-        {
-            plotColor = spectrumColors[255 - fftMap[i]];
-            plotPainter.setPen(plotColor);
-            plotPainter.drawPoint(i,0);
+		for (int i=0; i<plotArea.width(); i++) {
+			for (int j=0; j<wfPixPerLine; j++) {
+				plotColor = spectrumColors[255 - fftMap[i]];
+				plotPainter.setPen(plotColor);
+				plotPainter.drawPoint(i,j);
+			}
 
         }
 
         //Testng vertical spacing in zoom mode
-        int vspace = 1;
+		quint16 wfZoomPixPerLine = 1;
 		if (zoomMode != Off) {
             //Waterfall
             //Scroll fr rect 1 pixel to create new line
             QRect rect = zoomPlotArea.rect();
             //rect.setBottom(rect.bottom() - 10); //Reserve the last 10 pix for labels
-            zoomPlotArea.scroll(0,vspace,rect);
+			zoomPlotArea.scroll(0,wfZoomPixPerLine,rect);
 
 			if (zoomMode == Spectrum) {
                 signalSpectrum->MapFFTToScreen(
@@ -1043,12 +1045,14 @@ void SpectrumWidget::newFftData()
                     modeOffset,
                     fftMap );
             }
-            for (int i=0; i<plotArea.width(); i++)
-            {
-                plotColor = spectrumColors[255 - fftMap[i]];
-                zoomPlotPainter.setPen(plotColor);
-                zoomPlotPainter.drawPoint(i,0);
-            }
+			for (int i=0; i<plotArea.width(); i++) {
+				for (int j=0; j<wfZoomPixPerLine; j++) {
+
+					plotColor = spectrumColors[255 - fftMap[i]];
+					zoomPlotPainter.setPen(plotColor);
+					zoomPlotPainter.drawPoint(i,j);
+				}
+			}
 
         }
 

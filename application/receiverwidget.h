@@ -117,8 +117,8 @@ private slots:
 		void squelchSliderChanged(int s);
 		void modeSelectionChanged(QString item);
 		void filterSelectionChanged(QString item);
-		void mixerChanged(int m);
-        void mixerChanged(int m, bool b);
+		void mixerChanged(qint32 m);
+		void mixerChanged(qint32 m, bool b);
         void anfButtonToggled(bool b);
 		void nbButtonToggled(bool b);
 		void nb2ButtonToggled(bool b);

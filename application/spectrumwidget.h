@@ -37,8 +37,8 @@ public slots:
 
 signals:
 		//User clicked in spectrum
-		void mixerChanged(int m);
-        void mixerChanged(int m, bool changeLO);
+		void mixerChanged(qint32 m);
+		void mixerChanged(qint32 m, bool changeLO);
         void mixerLimitsChanged(int high, int low);
 
 		private slots:
@@ -80,7 +80,7 @@ private:
     void hoverLeave(QHoverEvent *event);
 
 	//Show mixer freq
-	int fMixer;
+	qint32 fMixer;
 	double loFreq;
     double mouseFreq; //Freq under mouse pointer
 

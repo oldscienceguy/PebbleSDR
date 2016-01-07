@@ -106,8 +106,8 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	connect(ui.filterBox,SIGNAL(currentIndexChanged(QString)),this,SLOT(filterSelectionChanged(QString)));
 	connect(ui.gainSlider,SIGNAL(valueChanged(int)),this,SLOT(gainSliderChanged(int)));
 	connect(ui.agcSlider,SIGNAL(valueChanged(int)),this,SLOT(agcSliderChanged(int)));
-	connect(ui.spectrumWidget,SIGNAL(mixerChanged(int)),this,SLOT(mixerChanged(int)));
-    connect(ui.spectrumWidget,SIGNAL(mixerChanged(int,bool)),this,SLOT(mixerChanged(int,bool)));
+	connect(ui.spectrumWidget,SIGNAL(mixerChanged(qint32)),this,SLOT(mixerChanged(qint32)));
+	connect(ui.spectrumWidget,SIGNAL(mixerChanged(qint32,bool)),this,SLOT(mixerChanged(qint32,bool)));
     connect(ui.addMemoryButton,SIGNAL(clicked()),this,SLOT(addMemoryButtonClicked()));
     connect(ui.findStationButton,SIGNAL(clicked()),this,SLOT(findStationButtonClicked()));
 
@@ -200,15 +200,18 @@ void ReceiverWidget::showDataFrame(bool b)
     ui.dataFrame->setVisible(b);
 }
 
-void ReceiverWidget::mixerChanged(int m)
+void ReceiverWidget::mixerChanged(qint32 m)
 {
-	SetFrequency(loFrequency + m);
+	if (loFrequency + m > 0)
+		SetFrequency(loFrequency + m);
 }
 
-void ReceiverWidget::mixerChanged(int m, bool b)
+void ReceiverWidget::mixerChanged(qint32 m, bool b)
 {
-    setLoMode(b);
-    SetFrequency(loFrequency + m);
+	if (loFrequency + m > 0) {
+		setLoMode(b);
+		SetFrequency(loFrequency + m);
+	}
 }
 
 //User hit enter, esc
@@ -375,7 +378,7 @@ bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
             }
         } else if (e->type() == QEvent::MouseButtonRelease) {
             //Clicking on a digit sets tuning step and resets lower digits to zero
-            frequency = (int)(frequency/tunerStep) * tunerStep;
+			frequency = (quint64)(frequency/tunerStep) * tunerStep;
             SetFrequency(frequency);
 
             return true;
@@ -445,11 +448,13 @@ void ReceiverWidget::SetFrequency(double f)
 
 	//if low and high are 0 or -1, ignore for now
 	if (lowFrequency > 0 && f < lowFrequency) {
+		//qDebug()<<"Low Limit "<<lowFrequency<<" "<<f;
 		global->beep.play();
 		DisplayNixieNumber(frequency); //Restore display
 		return;
 	}
 	if (highFrequency > 0 && f > highFrequency){
+		//qDebug()<<"High Limit "<<highFrequency<<" "<<f;
 		global->beep.play();
         DisplayNixieNumber(frequency);
 		return;
@@ -1066,16 +1071,17 @@ void ReceiverWidget::ReceiverChanged(int i)
 //Updates all the nixies to display a number
 void ReceiverWidget::DisplayNixieNumber(double n)
 {
-	ui.nixie1g->display( fmod(n / 1000000000.0,10));
-	ui.nixie100m->display( fmod(n / 100000000.0,10));
-	ui.nixie10m->display( fmod(n / 10000000.0,10));
-	ui.nixie1m->display( fmod(n / 1000000.0,10));
-	ui.nixie100k->display( fmod(n / 100000.0,10));
-	ui.nixie10k->display( fmod(n / 10000.0,10));
-	ui.nixie1k->display( fmod(n / 1000.0,10));
-	ui.nixie100->display( fmod(n / 100.0,10));
-	ui.nixie10->display( fmod(n /10.0,10));
-	ui.nixie1->display( fmod(n,10));
+	quint64 d = n;
+	ui.nixie1g->display( fmod(d / 1000000000,10));
+	ui.nixie100m->display( fmod(d / 100000000,10));
+	ui.nixie10m->display( fmod(d / 10000000,10));
+	ui.nixie1m->display( fmod(d / 1000000,10));
+	ui.nixie100k->display( fmod(d / 100000,10));
+	ui.nixie10k->display( fmod(d / 10000,10));
+	ui.nixie1k->display( fmod(d / 1000,10));
+	ui.nixie100->display( fmod(d / 100,10));
+	ui.nixie10->display( fmod(d /10,10));
+	ui.nixie1->display( fmod(d,10));
 }
 
 void ReceiverWidget::bandTypeChanged(int s)
