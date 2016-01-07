@@ -169,9 +169,13 @@ void AudioQT::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
             out[i] *= gain;
 
 		//Not sure if we need to clip, just in case
-		if (out[i].re >= 1.0)
+		if (out[i].re > 0.9999)
 			out[i].re = 0.9999;
-		if (out[i].im <= -1.0)
+		if (out[i].re < -0.9999)
+			out[i].re = -0.9999;
+		if (out[i].im > 0.9999)
+			out[i].im = 0.9999;
+		if (out[i].im < -0.9999)
 			out[i].im = -0.9999;
 
         //If we use Int 16
