@@ -183,7 +183,6 @@ void SpectrumWidget::Run(bool r)
     //Global is not initialized in constructor
     ui.displayBox->setFont(global->settings->medFont);
     ui.maxDbBox->setFont(global->settings->medFont);
-    ui.cursorLabel->setFont(global->settings->medFont);
 
     QRect plotFr = ui.plotFrame->geometry(); //relative to parent
 
@@ -647,7 +646,8 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
     QRect zoomPlotFr = ui.zoomPlotFrame->geometry(); //relative to parent
     int zoomPlotHeight = zoomPlotFr.height(); //Plot area height
     QRect zoomPlotLabelFr = ui.zoomLabelFrame->geometry();
-
+	QPoint cursorPos = QWidget::mapFromGlobal(QCursor::pos());
+	cursorPos.setX(cursorPos.x() + 4);
 
 	//Make all painter coordinates 0,0 relative to plotFrame
 	//0,0 will be translated to 4,4 etc
@@ -685,20 +685,22 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 
 
     //Cursor tracking of freq and db
-    QString label;
+	QString freqLabel;
+	QString dbLabel;
     mouseFreq = GetMouseFreq() + loFreq;
     int mouseDb = GetMouseDb();
     if (mouseFreq > 0)
-		//label.sprintf("%.3f kHz @ %ddB",mouseFreq / 1000.0,mouseDb);
-		label.sprintf("%.3f kHz",mouseFreq / 1000.0);
+		freqLabel.sprintf("%.3f kHz",mouseFreq / 1000.0);
 	else
-        label = "";
+		freqLabel = "";
+	dbLabel.sprintf("%d db",mouseDb);
 
-    QRect freqFr = ui.cursorLabel->geometry(); //Relative to controlFrame (parent)
-    QRect ctrlFr = ui.controlFrame->geometry(); //Relateive to spectrum widget (parent)
-    painter.setFont(global->settings->medFont);
-    //x is from freq frame, y is from ctrlFr (relative to spectrumWidget)
-    painter.drawText(freqFr.left(), ctrlFr.top() + (ctrlFr.height() * 0.7),label);
+	painter.setFont(global->settings->medFont);
+	//How many pixels do we need to display label with specified font
+	QFontMetrics metrics(global->settings->medFont);
+	QRect rect = metrics.boundingRect(freqLabel);
+	if (cursorPos.x() + rect.width() > plotFr.width())
+		cursorPos.setX(cursorPos.x() - rect.width()); //left of cursor
 
 	if (spectrumMode == SignalSpectrum::SPECTRUM)
 	{
@@ -708,6 +710,15 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
             painter.drawPixmap(zoomPlotFr, zoomPlotArea); //Includes plotOverlay which was copied to plotArea
             painter.drawPixmap(zoomPlotLabelFr,zoomPlotLabel);
         }
+		//Draw cursor label on top of pixmap, but not control frame
+		if (plotFr.contains(cursorPos) || zoomPlotFr.contains(cursorPos)) {
+			painter.setPen(Qt::white);
+			painter.drawText(cursorPos,freqLabel);
+			//db label below freq
+			cursorPos.setY(cursorPos.y() + metrics.height());
+			painter.drawText(cursorPos,dbLabel);
+		}
+
     } else if (spectrumMode == SignalSpectrum::WATERFALL) {
         painter.drawPixmap(plotFr, plotArea);
         painter.drawPixmap(plotLabelFr,plotLabel);
@@ -715,6 +726,12 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
             painter.drawPixmap(zoomPlotFr, zoomPlotArea); //Includes plotOverlay which was copied to plotArea
             painter.drawPixmap(zoomPlotLabelFr,zoomPlotLabel);
         }
+		if (plotFr.contains(cursorPos) || zoomPlotFr.contains(cursorPos)) {
+			painter.setPen(Qt::black);
+			painter.drawText(cursorPos,freqLabel);
+			cursorPos.setY(cursorPos.y() + metrics.height());
+			painter.drawText(cursorPos,dbLabel);
+		}
     }
 	else
 	{
