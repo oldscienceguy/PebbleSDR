@@ -39,7 +39,7 @@ void Settings::ReadSettings()
 	//Todo: Make strings constants
 	//If we don' specify a group, "General" is assumed
 	//Restore efault or last window size and position
-	QRect pos = qApp->screens()[0]->geometry();
+	QRect pos = global->primaryScreen->availableGeometry();
 	//Default position is upper right corner of screen
 	windowHeight = qSettings->value("windowHeight", -1).toInt();
 	windowWidth = qSettings->value("windowWidth", -1).toInt();

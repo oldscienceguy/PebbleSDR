@@ -53,8 +53,8 @@ private:
     double *averageSpectrum;
     double *lastSpectrum;
     //Holds values mapped to screen using utility in fft
-	qint32 fftMap[4096];
-	qint32 zoomedFftMap[4096];
+	qint32 *fftMap;
+	qint32 *zoomedFftMap;
 
 	int upDownIncrement;
 	int leftRightIncrement;
@@ -106,7 +106,7 @@ private:
     QPixmap zoomPlotOverlay;
     QPixmap zoomPlotLabel;
 
-	QPoint LineBuf[4096]; //Enough for a huge monitor
+	QPoint *LineBuf;
 
     int dbRange;
 

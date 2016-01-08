@@ -161,13 +161,22 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 
     modeOffset = 0;
 
+	//Size arrays to be able to handle full scree, whatever the resolution
+	quint32 screenWidth = global->primaryScreen->availableSize().width();
+	fftMap = new qint32[screenWidth];
+	zoomedFftMap = new qint32[screenWidth];
+	LineBuf = new QPoint[screenWidth];
+
 	isRunning = false;
 }
 
 SpectrumWidget::~SpectrumWidget()
 {
-	if (lastSpectrum != NULL) free(lastSpectrum);
+	if (lastSpectrum != NULL) free (lastSpectrum);
 	if (averageSpectrum != NULL) free (averageSpectrum);
+	delete[] fftMap;
+	delete[] zoomedFftMap;
+	delete[] LineBuf;
 }
 void SpectrumWidget::Run(bool r)
 {
@@ -304,8 +313,8 @@ double SpectrumWidget::GetMouseFreq()
         return m;
 
     } else {
-        //Not in our area
-        return 0.0;
+		//Not in our area, return current frequency
+		return loFreq * fMixer;
     }
 
 }
