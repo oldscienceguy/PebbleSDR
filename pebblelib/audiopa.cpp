@@ -312,29 +312,29 @@ void AudioPA::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
 	if (mute)
 		return;
 
+	const float maxOutput = 0.9999;
+
 	//We may have to skip samples to reduce rate to match audio out, decimate set when we
 	//opened stream
     for (int i=0;i<outSamples;i++)
 	{
-        if (mute)
-            out[i].re = out[i].im = 0;
-
-        if (gain != 1)
-            out[i] *= gain;
+		//PortAudio doesn't have a SetVolume() call like QAudio, so we scale up samples
+		//UI returns gain from 0 to 100
+		out[i] *= (gain / 100); //1 is full gain
 
         temp = out[i].re;
         //Cap at -1 to +1 to make sure we don't overdrive
-        if (temp >.9999)
-            temp = .9999;
-        else if (temp < -.9999)
-            temp = -.9999;
+		if (temp > maxOutput)
+			temp = maxOutput;
+		else if (temp < -maxOutput)
+			temp = -maxOutput;
         *outPtr++ = temp;
         temp = out[i].im;
         //Cap at -1 to +1 to make sure we don't overdrive
-        if (temp >.9999)
-            temp = .9999;
-        else if (temp < -.9999)
-            temp = -.9999;
+		if (temp > maxOutput)
+			temp = maxOutput;
+		else if (temp < -maxOutput)
+			temp = -maxOutput;
         *outPtr++ = temp;
 	}
 

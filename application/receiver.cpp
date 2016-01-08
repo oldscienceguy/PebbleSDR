@@ -638,7 +638,8 @@ void Receiver::SetGain(int g)
 {
 	//Convert dbGain to amplitude so we can use it to scale
 	//No magic DSP math, just found something that sounds right to convert slider 0-100 reasonable vol
-	gain = DB::dbToAmplitude(25 + g * 0.35);
+	//gain = DB::dbToAmplitude(25 + g * 0.35);
+	gain = g; //Adjust in audio classes
 }
 //Called by ReceiverWidget
 void Receiver::SetSquelch(int s)
@@ -827,7 +828,9 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 
         sampleBufLen = 0;
         //Create zoomed spectrum
+		//global->perform.StartPerformance("Signal Spectrum Zoomed");
         signalSpectrum->Zoomed(sampleBuf, framesPerBuffer);
+		//global->perform.StopPerformance(100);
 
         nextStep = sampleBuf;
 
@@ -841,51 +844,57 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
         //global->perform.StartPerformance();
 
         //float pre = SignalProcessing::TotalPower(nextStep,frameCount);
+		//global->perform.StartPerformance("Band Pass Filter");
         nextStep = bpFilter->ProcessBlock(nextStep);
-        //Crude AGC, too much fluctuation
+		//global->perform.StopPerformance(100);
+		//Crude AGC, too much fluctuation
         //CPXBuf::scale(nextStep,nextStep,pre/post,frameCount);
         global->testBench->DisplayData(demodFrames,nextStep,demodSampleRate,testBenchPostBandpass);
 
-        //global->perform.StopPerformance(100);
 
-        //global->perform.StartPerformance();
 
         //If squelch is set, and we're below threshold and should set output to zero
         //Do this in SignalStrength, since that's where we're calculating average signal strength anyway
-        nextStep = signalStrength->ProcessBlock(nextStep, framesPerBuffer, squelch);
-        //global->perform.StopPerformance(100);
-        //global->perform.StartPerformance();
+		//global->perform.StartPerformance("Signal Strength");
+		nextStep = signalStrength->ProcessBlock(nextStep, framesPerBuffer, squelch);
+		//global->perform.StopPerformance(100);
 
         //Tune only mode, no demod or output
 		if (demod->DemodMode() == DeviceInterface::dmNONE){
             CPXBuf::clear(audioBuf,framesPerBuffer);
             return;
         }
+
+		//global->perform.StartPerformance("Noise Filter");
         nextStep = noiseFilter->ProcessBlock(nextStep);
+		//global->perform.StopPerformance(100);
 
         //nr->ProcessBlock(out, in, size);
         //float post = SignalProcessing::totalPower(nextStep,framesPerBuffer);
 
+		//global->perform.StartPerformance("AGC");
         nextStep = agc->ProcessBlock(nextStep);
-        //global->perform.StopPerformance(100);
+		//global->perform.StopPerformance(100);
 
-        //global->perform.StartPerformance();
 
         //Data decoders come before demod
         if (iDigitalModem != NULL)
             nextStep = iDigitalModem->ProcessBlock(nextStep);
 
-        nextStep = demod->ProcessBlock(nextStep, framesPerBuffer);
-        global->testBench->DisplayData(demodFrames,nextStep,demodSampleRate,testBenchPostDemod);
+		//global->perform.StartPerformance("Demod");
+		nextStep = demod->ProcessBlock(nextStep, framesPerBuffer);
+		//global->perform.StopPerformance(100);
 
-        //global->perform.StopPerformance(100);
+		global->testBench->DisplayData(demodFrames,nextStep,demodSampleRate,testBenchPostDemod);
 
         resampRate = (demodSampleRate*1.0) / (audioOutRate*1.0);
 
     }
 
+	quint16 numResamp = 0;
+	//Fractional resampler is very expensive, 1000 to 1500ms
 	//global->perform.StartPerformance("Fract Resampler");
-    int numResamp = fractResampler.Resample(demodFrames,resampRate,nextStep,audioBuf);
+	numResamp = fractResampler.Resample(demodFrames,resampRate,nextStep,audioBuf);
 	//global->perform.StopPerformance(100);
 
 	//global->perform.StartPerformance("Process Audio");

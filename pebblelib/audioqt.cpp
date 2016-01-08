@@ -34,10 +34,12 @@ int AudioQT::StartInput(QString inputDeviceName, int _inputSampleRate)
     qaFormat.setSampleRate(inputSampleRate);
     qaFormat.setChannelCount(2);
     qaFormat.setCodec("audio/pcm");
-    qaFormat.setByteOrder(QAudioFormat::LittleEndian);
+	//Platform byte order, LittleEndian on Mac
+	qaFormat.setByteOrder( QAudioFormat::Endian(QSysInfo::ByteOrder));
     //Same as PortAudio PAFloat32
+	//bits per sample
     qaFormat.setSampleSize(32);
-    qaFormat.setSampleType(QAudioFormat::Float);
+	qaFormat.setSampleType(QAudioFormat::Float);
 
     QAudioDeviceInfo info(qaInputDevice);
     if (!info.isFormatSupported(qaFormat)) {
@@ -100,10 +102,11 @@ int AudioQT::StartOutput(QString outputDeviceName, int _outputSampleRate)
     qaFormat.setSampleRate(outputSampleRate);
     qaFormat.setChannelCount(2);
     qaFormat.setCodec("audio/pcm");
-    qaFormat.setByteOrder(QAudioFormat::LittleEndian);
+	//Platform byte order, LittleEndian on Mac
+	qaFormat.setByteOrder( QAudioFormat::Endian(QSysInfo::ByteOrder));
     //Testedwith Int/16 and Float32
     //Same as PortAudio PAFloat32
-    qaFormat.setSampleSize(32);
+	qaFormat.setSampleSize(32);
     qaFormat.setSampleType(QAudioFormat::Float);
 
     //qaAudioOutput->setBufferSize(framesPerBuffer*sizeof(CPX)); //Optional??
@@ -159,24 +162,26 @@ void AudioQT::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
 	//We may have to skip samples to reduce rate to match audio out, decimate set when we
 	//opened stream
 	qint64 bytesWritten = 0;
+	const float maxOutput = 0.9999;
     //qint16 left,right;
+
+	//CPX samples range from -1 to +1 and output samples have to be in same range or we clip
+	//So we can't scale samples by gain and must use QTAudio setVolume control
+	//Volume from 0 - 1
+	qaAudioOutput->setVolume(gain / 100.0); //UI gain from 0 to 100
+
     for (int i=0, j=0;i<outSamples;i++, j+=2)
 	{
-        if (mute)
-            out[i].re = out[i].im = 0;
-
-        if (gain != 1)
-            out[i] *= gain;
-
 		//Not sure if we need to clip, just in case
-		if (out[i].re > 0.9999)
-			out[i].re = 0.9999;
-		if (out[i].re < -0.9999)
-			out[i].re = -0.9999;
-		if (out[i].im > 0.9999)
-			out[i].im = 0.9999;
-		if (out[i].im < -0.9999)
-			out[i].im = -0.9999;
+		if (out[i].re > maxOutput)
+			out[i].re = maxOutput;
+		else if (out[i].re < -maxOutput)
+			out[i].re = -maxOutput;
+
+		if (out[i].im > maxOutput)
+			out[i].im = maxOutput;
+		else if (out[i].im < -maxOutput)
+			out[i].im = -maxOutput;
 
         //If we use Int 16
         //left = Float2Int(out[i].re);
@@ -194,6 +199,7 @@ void AudioQT::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
 	//In QAudioOutput, write() does not
 	//This ensures we don't write output faster than output device can handle it
 	hasOutputTimedOut = false;
+
 	QTimer::singleShot(250, this, SLOT(OutputTimedOut()));
 	while (bytesFree < bytesToWrite) {
 		if (hasOutputTimedOut) {
@@ -205,7 +211,7 @@ void AudioQT::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
 
 	bytesWritten = outputDataSource->write((char*)outStreamBuffer,bytesToWrite);
 	if (bytesWritten != bytesToWrite)  {
-		qDebug()<<"QT Audio Output: bytesWritten less than bytesToWrite"<<bytesWritten;
+		qDebug()<<"QT Audio Output: bytesWritten less than bytesToWrite"<<bytesWritten<<" "<<bytesToWrite;
 	}
 }
 void AudioQT::ClearCounts()

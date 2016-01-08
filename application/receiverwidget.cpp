@@ -65,7 +65,6 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     SetDataMode(0);
 
 	loMode = true;
-	//Set intial gain slider position
 	ui.gainSlider->setValue(0);
 	tunerStep=1000;
 
@@ -555,8 +554,9 @@ void ReceiverWidget::powerToggled(bool on)
 					sdr->Get(DeviceInterface::LowFrequency).toDouble(),
 					sampleRate/2,-sampleRate/2);
 
-		//Setup Gain slider
-		ui.gainSlider->setMinimum(1);
+		//Set intial gain slider position and range
+		//QTAudio uses this as 0 - 1 volume setting
+		ui.gainSlider->setMinimum(0);
 		ui.gainSlider->setMaximum(100);
 		ui.gainSlider->setValue(30);
 		receiver->SetGain(30);

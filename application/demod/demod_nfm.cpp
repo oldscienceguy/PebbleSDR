@@ -54,8 +54,8 @@ void Demod_NFM::Init(double samplerate)
     pllBeta = (pllAlpha * pllAlpha) / (4.0 * FMPLL_ZETA * FMPLL_ZETA);
 
     //Check this, gain is like 33k!
-    //pllOutGain = MAX_FMOUT / ncoHLimit;	//audio output level gain value
-    pllOutGain = 0.0005; //Same as FM2
+	//pllOutGain = MAX_FMOUT / ncoHLimit;	//audio output level gain value
+	pllOutGain = 1.0; //Fudge to get approx same audio output as AM
 
     //DC removal filter time constant
     pllDcAlpha = (1.0 - exp(-1.0 / (sampleRate * FMDC_ALPHA)) );

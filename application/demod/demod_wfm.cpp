@@ -48,7 +48,7 @@
 
 //#define FMDEMOD_GAIN 8000.0
 //RL Pebble needs much smaller values, else overloads
-#define FMDEMOD_GAIN .001
+#define FMDEMOD_GAIN 0.25 //Fudge to get approx same audio output as AM
 
 #define PILOTPLL_RANGE 20.0	//maximum deviation limit of PLL
 #define PILOTPLL_BW 10.0	//natural frequency ~loop bandwidth

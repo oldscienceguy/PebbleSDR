@@ -189,7 +189,7 @@ TYPEREAL f = InRate;
 		m_Mutex.unlock();
 		m_OutputRate = f;
 		SetFrequency(m_NcoFreq);
-qDebug()<<"Filters "<<n<< " Fin="<<InRate<<" BW="<<m_MaxBW<<" fout="<<m_OutputRate;
+		qDebug()<<"Filters "<<n<< " Fin="<<InRate<<" BW="<<m_MaxBW<<" fout="<<m_OutputRate;
 	}
 	return m_OutputRate;
 }
@@ -217,6 +217,8 @@ TYPEREAL f = InRate;
 		}
 		m_OutputRate = f;
 		SetFrequency(m_NcoFreq);
+		qDebug()<<"Filters "<<n<< " Fin="<<InRate<<" BW="<<m_MaxBW<<" fout="<<m_OutputRate;
+
 	}
 	return m_OutputRate;
 }
