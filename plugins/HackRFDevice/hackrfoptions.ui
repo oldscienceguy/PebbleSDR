@@ -16,8 +16,8 @@
   <widget class="QSlider" name="lnaSlider">
    <property name="geometry">
     <rect>
-     <x>80</x>
-     <y>14</y>
+     <x>120</x>
+     <y>31</y>
      <width>160</width>
      <height>16</height>
     </rect>
@@ -44,8 +44,8 @@
    <property name="geometry">
     <rect>
      <x>13</x>
-     <y>14</y>
-     <width>59</width>
+     <y>31</y>
+     <width>97</width>
      <height>16</height>
     </rect>
    </property>
@@ -55,15 +55,15 @@
     </font>
    </property>
    <property name="text">
-    <string>LNA Gain</string>
+    <string>IF (lna) Gain</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_2">
    <property name="geometry">
     <rect>
      <x>13</x>
-     <y>41</y>
-     <width>59</width>
+     <y>58</y>
+     <width>103</width>
      <height>16</height>
     </rect>
    </property>
@@ -73,14 +73,14 @@
     </font>
    </property>
    <property name="text">
-    <string>VGA Gain</string>
+    <string>Baseband (vga) gain</string>
    </property>
   </widget>
   <widget class="QSlider" name="vgaSlider">
    <property name="geometry">
     <rect>
-     <x>80</x>
-     <y>41</y>
+     <x>120</x>
+     <y>58</y>
      <width>160</width>
      <height>16</height>
     </rect>
@@ -106,8 +106,8 @@
   <widget class="QLabel" name="lnaValue">
    <property name="geometry">
     <rect>
-     <x>251</x>
-     <y>15</y>
+     <x>294</x>
+     <y>32</y>
      <width>59</width>
      <height>16</height>
     </rect>
@@ -124,8 +124,57 @@
   <widget class="QLabel" name="vgaValue">
    <property name="geometry">
     <rect>
-     <x>253</x>
-     <y>41</y>
+     <x>294</x>
+     <y>58</y>
+     <width>59</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_3">
+   <property name="geometry">
+    <rect>
+     <x>13</x>
+     <y>5</y>
+     <width>97</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>RF (amp) gain</string>
+   </property>
+  </widget>
+  <widget class="QRadioButton" name="rfGain">
+   <property name="geometry">
+    <rect>
+     <x>120</x>
+     <y>3</y>
+     <width>24</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QLabel" name="rfValue">
+   <property name="geometry">
+    <rect>
+     <x>152</x>
+     <y>7</y>
      <width>59</width>
      <height>16</height>
     </rect>
