@@ -12,6 +12,7 @@
 #include <QMainWindow>
 #include "perform.h"
 #include <QSoundEffect>
+#include <QScreen>
 
 class Receiver;
 class Settings;
@@ -36,6 +37,7 @@ public:
 	QSoundEffect beep;
 	QString appDirPath; //Location of executable, used to access pebbledata, plugins, etc
 	QString pebbleDataPath; //Location of data files
+	QScreen *primaryScreen;
 private:
 	QFile *file;
 };

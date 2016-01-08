@@ -40,6 +40,8 @@ Global::Global()
 	beep.setLoopCount(1);
 	beep.setVolume(0.25f);
 
+	primaryScreen = QGuiApplication::primaryScreen();
+
 }
 
 Global::~Global()
