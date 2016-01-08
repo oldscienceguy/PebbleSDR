@@ -1153,30 +1153,42 @@ void SpectrumWidget::DrawScale(QPainter *labelPainter, double centerFreq, bool d
 
     //horizDivs must be even number so middle is 0
     //So for 10 divs we start out with [0] at low and [9] at high
-	int center = numXDivs / 2;
-	if (center < 1000000000)
-		horizLabels[center] = QString::number(centerFreq/1000.0,'f',1)+"k";
-	else
-		horizLabels[center] = QString::number(centerFreq/1000000.0,'f',1)+"m";
+	const quint32 displayMhz = 1000000;
+	const quint32 displayGhz = 1000000000;
 
-	int tick,left,right;
+	int center = numXDivs / 2;
+	if (centerFreq < displayMhz) //Switching point for kHz to mHz labels
+		horizLabels[center] = QString::number(centerFreq/1000.0,'f',1)+"k";
+	else if (centerFreq < displayGhz)
+		horizLabels[center] = QString::number(centerFreq/1000000.0,'f',1)+"m";
+	else
+		horizLabels[center] = QString::number(centerFreq/1000000000.0,'f',3)+"g";
+
+
+	int tick;
+	qint64 leftFreq,rightFreq;
     for (int i=0; i <= center; i++) {
         tick = i * hzPerhDiv;
-        left = centerFreq - tick;
+		leftFreq = centerFreq - tick;
         //Never let left label go negative, possible if center < sampleRate/2
-        if (left < 0)
+		if (leftFreq < 0)
             horizLabels[center - i] = "---";
-		else if (left < 1000000000)
-			horizLabels[center - i] = QString::number(left/1000.0,'f',1)+"k";
+		else if (leftFreq < displayMhz)
+			horizLabels[center - i] = QString::number(leftFreq/1000.0,'f',1)+"k";
+		else if (leftFreq < displayGhz)
+			horizLabels[center - i] = QString::number(leftFreq/1000000.0,'f',1)+"m";
 		else
-			horizLabels[center - i] = QString::number(left/1000000.0,'f',1)+"m";
+			horizLabels[center - i] = QString::number(leftFreq/1000000000.0,'f',3)+"g";
 
 
-        right = centerFreq + tick;
-		if (right < 1000000000)
-			horizLabels[center + i] = QString::number(right/1000.0,'f',1)+"k";
+
+		rightFreq = centerFreq + tick;
+		if (rightFreq < displayMhz)
+			horizLabels[center + i] = QString::number(rightFreq/1000.0,'f',1)+"k";
+		else if (rightFreq < displayGhz)
+			horizLabels[center + i] = QString::number(rightFreq/1000000.0,'f',1)+"m";
 		else
-			horizLabels[center + i] = QString::number(right/1000000.0,'f',1)+"m";
+			horizLabels[center + i] = QString::number(rightFreq/1000000000.0,'f',3)+"g";
 
     }
 
@@ -1192,13 +1204,13 @@ void SpectrumWidget::DrawScale(QPainter *labelPainter, double centerFreq, bool d
             //Left justify
             x = (int)( (float) i * pixPerHdiv);
             rect.setRect(x ,0, (int)pixPerHdiv, plotLabelHeight);
-            labelPainter->drawText(rect, Qt::AlignLeft|Qt::AlignVCenter, horizLabels[i]);
+			labelPainter->drawText(rect, Qt::AlignLeft|Qt::AlignVCenter, horizLabels[i]);
 
 		} else if (i == numXDivs) {
             //Right justify
             x = (int)( (float)i*pixPerHdiv - pixPerHdiv);
             rect.setRect(x ,0, (int)pixPerHdiv, plotLabelHeight);
-            labelPainter->drawText(rect, Qt::AlignRight|Qt::AlignVCenter, horizLabels[i]);
+			labelPainter->drawText(rect, Qt::AlignRight|Qt::AlignVCenter, horizLabels[i]);
 
         } else {
             //Center justify
