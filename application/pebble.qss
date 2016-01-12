@@ -132,6 +132,12 @@ QRadioButton {
 	color: white;
 	background-color: #8D99A6; /*Same as BG color*/
 }
+
+QSplitter::handle {
+        width: 5px;
+        background-color: #8D99A6; /*Same as BG color*/
+}
+
 /*Use this to eventually change .png used for checked/unchecked */
 QRadioButton::indicator::unchecked{
 	/* Empty for now */

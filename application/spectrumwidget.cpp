@@ -16,8 +16,9 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 {
 	ui.setupUi(this);
 
-    ui.zoomLabelFrame->setVisible(false);
-    ui.zoomPlotFrame->setVisible(false);
+	ui.zoomLabelFrame->setVisible(false);
+	ui.zoomPlotFrame->setVisible(false);
+	ui.zoomFrameSplitter->setVisible(false);
 
     ui.displayBox->addItem("Spectrum",SignalSpectrum::SPECTRUM);
     ui.displayBox->addItem("Waterfall",SignalSpectrum::WATERFALL);
@@ -167,6 +168,9 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 	zoomedFftMap = new qint32[screenWidth];
 	LineBuf = new QPoint[screenWidth];
 
+	//We need to resize objects as frames change sizes
+	connect(ui.splitter,SIGNAL(splitterMoved(int,int)),this,SLOT(splitterMoved(int,int)));
+
 	isRunning = false;
 }
 
@@ -240,26 +244,48 @@ void SpectrumWidget::leaveEvent(QEvent *event)
     event->accept();
 }
 
-void SpectrumWidget::resizeFrames()
+//Resizes pixmaps to match size of plot frames
+void SpectrumWidget::resizeFrames(bool scale)
 {
-    QRect plotFr = ui.plotFrame->geometry(); //relative to parent
+	QRect plotFr = ui.plotFrame->rect(); //We just need width and height
 
-    //Window resized
-    plotArea = QPixmap(plotFr.width(),plotFr.height());
-    plotArea.fill(Qt::black);
-    plotOverlay = QPixmap(plotFr.width(),plotFr.height());
-    plotOverlay.fill(Qt::black);
+	//Scale the plot areas first, then copy to new plot area that is resized
+	//Result should be that we see smooth resize without blanking, especially in waterfall
+	if (!plotArea.isNull() && scale) {
+		//Warnings if we scale a null pixmap
+		plotArea = plotArea.scaled(plotFr.width(),plotFr.height());
+	} else {
+		plotArea = QPixmap(plotFr.width(),plotFr.height());
+		plotArea.fill(Qt::black);
+	}
 
-    QRect plotLabelFr = ui.labelFrame->geometry();
+	if (!plotOverlay.isNull() && scale) {
+		plotOverlay = plotOverlay.scaled(plotFr.width(),plotFr.height());
+	} else {
+		plotOverlay = QPixmap(plotFr.width(),plotFr.height());
+		plotOverlay.fill(Qt::black);
+	}
+
+	QRect plotLabelFr = ui.labelFrame->rect();
     plotLabel = QPixmap(plotLabelFr.width(),plotLabelFr.height());
     plotLabel.fill(Qt::black);
 
-    QRect zoomPlotFr = ui.zoomPlotFrame->geometry();
-    zoomPlotArea = QPixmap(zoomPlotFr.width(),zoomPlotFr.height());
-    zoomPlotArea.fill(Qt::black);
-    zoomPlotOverlay = QPixmap(zoomPlotFr.width(), zoomPlotFr.height());
+	QRect zoomPlotFr = ui.zoomPlotFrame->rect();
+	if (!zoomPlotArea.isNull() && scale) {
+		zoomPlotArea = zoomPlotArea.scaled(zoomPlotFr.width(),zoomPlotFr.height());
+	} else {
+		zoomPlotArea = QPixmap(zoomPlotFr.width(),zoomPlotFr.height());
+		zoomPlotArea.fill(Qt::black);
+	}
 
-    QRect zoomPlotLabelFr = ui.zoomLabelFrame->geometry();
+	if (!zoomPlotOverlay.isNull() && scale) {
+		zoomPlotOverlay = zoomPlotOverlay.scaled(zoomPlotFr.width(), zoomPlotFr.height());
+	} else {
+		zoomPlotOverlay = QPixmap(zoomPlotFr.width(), zoomPlotFr.height());
+		zoomPlotOverlay.fill(Qt::black);
+	}
+
+	QRect zoomPlotLabelFr = ui.zoomLabelFrame->rect();
     zoomPlotLabel = QPixmap(zoomPlotLabelFr.width(),zoomPlotLabelFr.height());
     zoomPlotLabel.fill(Qt::black);
 
@@ -490,64 +516,68 @@ void SpectrumWidget::SetFilter(int lo, int hi)
 
 void SpectrumWidget::plotSelectionChanged(SignalSpectrum::DISPLAYMODE mode)
 {
-    if (mode == SignalSpectrum::NODISPLAY) {
+	SignalSpectrum::DISPLAYMODE oldMode = spectrumMode; //Save
+	spectrumMode = mode;
+	if (signalSpectrum != NULL) {
+		signalSpectrum->SetDisplayMode(spectrumMode, zoomMode == HiResolution);
+	}
+
+	//Changing from spectrum or WF to Off
+	if (spectrumMode == SignalSpectrum::NODISPLAY) {
+		//Hide everything except the plot selector so we can switch back on
+		//Turn zoom off
+		zoom = 1;
+		zoomMode = Off;
+		ui.zoomSlider->setValue(0);
+
         ui.labelFrame->setVisible(false);
         ui.plotFrame->setVisible(false);
         ui.zoomLabelFrame->setVisible(false);
         ui.zoomPlotFrame->setVisible(false);
-        ui.maxDbBox->setVisible(false);
+		ui.zoomFrameSplitter->setVisible(false);
+
+		ui.maxDbBox->setVisible(false);
         ui.zoomSlider->setVisible(false);
         ui.zoomLabel->setVisible(false);
 		ui.zoomSelector->setVisible(false);
 		ui.maxDbBox->setVisible(false);
 		ui.minDbBox->setVisible(false);
 		ui.updatesPerSec->setVisible(false);
-        //Turn zoom off
-        zoom = 1;
-		zoomMode = Off;
-        ui.zoomSlider->setValue(0);
-		//Bug: Doesn't collapse hidden frames
-		adjustSize();
 
-#if 0
-		//Old code, not sure why we did this
-        QWidget *parent = ui.controlFrame->parentWidget();
-        while (parent) {
-            //Warning, adj size will use all layout hints, including h/v spacer sizing.  So overall size may change
-            parent->adjustSize();
-            parent = parent->parentWidget();
-        }
-#endif
+		//We may not need this
+		//adjustSize();
+		//resizeFrames(); //Make sure pixmaps are properly sized
+		update(); //Schedule a paint in the event loop.  repaint() triggers immediate
 
     } else {
-        ui.labelFrame->setVisible(true);
-        ui.plotFrame->setVisible(true);
-        //ui.zoomLabelFrame->setVisible(false);
-        //ui.zoomPlotFrame->setVisible(false);
-        ui.maxDbBox->setVisible(true);
-        ui.zoomSlider->setVisible(true);
-        ui.zoomLabel->setVisible(true);
-		ui.zoomSelector->setVisible(true);
-		ui.maxDbBox->setVisible(true);
-		ui.minDbBox->setVisible(true);
-		ui.updatesPerSec->setVisible(true);
-	}
+		if (oldMode == SignalSpectrum::NODISPLAY) {
+			//Changing from no display to a display
+			ui.labelFrame->setVisible(true);
+			ui.plotFrame->setVisible(true);
+			//Zoom was turned off when display was set to off
+			ui.zoomLabelFrame->setVisible(false);
+			ui.zoomPlotFrame->setVisible(false);
+			ui.zoomFrameSplitter->setVisible(false);
 
-    spectrumMode = mode;
-    if (signalSpectrum != NULL) {
-		signalSpectrum->SetDisplayMode(spectrumMode, zoomMode == HiResolution);
-    }
+			ui.maxDbBox->setVisible(true);
+			ui.zoomSlider->setVisible(true);
+			ui.zoomLabel->setVisible(true);
+			ui.zoomSelector->setVisible(true);
+			ui.maxDbBox->setVisible(true);
+			ui.minDbBox->setVisible(true);
+			ui.updatesPerSec->setVisible(true);
+			//adjustSize();
+			resizeFrames(); //Make sure pixmaps are properly sized
+		}
+		//switching between Waterfall and Spectrum, clear the old display
+		plotArea.fill(Qt::black);
+		zoomPlotArea.fill(Qt::black);
 
-
-    if (spectrumMode != SignalSpectrum::NODISPLAY) {
-        plotArea.fill(Qt::black);
-        zoomPlotArea.fill(Qt::black);
-
-        DrawOverlay(false);
+		DrawOverlay(false);
 		if (zoomMode != Off)
-            DrawOverlay(true);
-    }
-	update();
+			DrawOverlay(true);
+		update(); //Schedule a paint in the event loop.  repaint() triggers immediate
+	}
 }
 
 void SpectrumWidget::updatesPerSecChanged(int item)
@@ -555,6 +585,11 @@ void SpectrumWidget::updatesPerSecChanged(int item)
 	if (signalSpectrum == NULL)
 		return;
 	signalSpectrum->SetUpdatesPerSec(ui.updatesPerSec->value());
+}
+
+void SpectrumWidget::splitterMoved(int x, int y)
+{
+	resizeFrames();
 }
 
 void SpectrumWidget::SetSignalSpectrum(SignalSpectrum *s) 
@@ -636,16 +671,32 @@ void SpectrumWidget::DrawCursor(QPainter *painter, QRect plotFr, bool isZoomed, 
 
 }
 
+//Returns QRect in coordinates relative to widget
+//Used to paint spectrumWidget frames
+QRect SpectrumWidget::mapFrameToWidget(QFrame *frame)
+{
+	//0,0 origin, translate to widget relative coordinates
+	QRect mapped = frame->rect(); //May need to try Geometry() or FrameGeometry() if borders not correct
+	//Map 0,0 in frame relative to 0,0 in SpectrumWidget (this)
+	mapped.translate(frame->mapTo(this,QPoint(0,0)));
+	return mapped;
+}
+
 void SpectrumWidget::paintEvent(QPaintEvent *e)
 {
 
     QPainter painter(this);
-    QRect plotFr = ui.plotFrame->geometry(); //relative to parent
-    int plotHeight = plotFr.height(); //Plot area height
-    QRect plotLabelFr = ui.labelFrame->geometry();
-    QRect zoomPlotFr = ui.zoomPlotFrame->geometry(); //relative to parent
+	QRect plotFr = mapFrameToWidget(ui.plotFrame);
+
+	int plotHeight = plotFr.height(); //Plot area height
+	QRect plotLabelFr = mapFrameToWidget(ui.labelFrame);
+
+	QRect zoomPlotFr = mapFrameToWidget(ui.zoomPlotFrame);
+
     int zoomPlotHeight = zoomPlotFr.height(); //Plot area height
-    QRect zoomPlotLabelFr = ui.zoomLabelFrame->geometry();
+
+	QRect zoomPlotLabelFr = mapFrameToWidget(ui.zoomLabelFrame);
+
 	QPoint cursorPos = QWidget::mapFromGlobal(QCursor::pos());
 	cursorPos.setX(cursorPos.x() + 4);
 
@@ -1105,8 +1156,10 @@ void SpectrumWidget::updateZoomFrame(ZOOM_MODE newMode, bool updateSlider)
 		case Off: //No zoom
 			ui.zoomLabelFrame->setVisible(false);
 			ui.zoomPlotFrame->setVisible(false);
-			//We apparently need to call adjustSize() when we hide windows, but not when we make visible
-			adjustSize();  //If we don't call this, grid and labels aren't painted correctly
+			ui.zoomFrameSplitter->setVisible(false);
+			//Adjust the size of the plot frames based on hidden or visible frames
+			adjustSize();
+			//Adjust the size of the pixmaps to new plot frame sizes
 			resizeFrames();
 			zoomMode = Off;
 			if (updateSlider)
@@ -1117,7 +1170,8 @@ void SpectrumWidget::updateZoomFrame(ZOOM_MODE newMode, bool updateSlider)
 				//Set zoom to middle of range for now, eventually base on bin width
 				ui.zoomLabelFrame->setVisible(true);
 				ui.zoomPlotFrame->setVisible(true);
-				//adjustSize(); //Why do we have to call this when we hide frames, but not when we show them?
+				ui.zoomFrameSplitter->setVisible(true);
+				adjustSize();
 				resizeFrames();
 			}
 			zoomMode = Spectrum;
@@ -1128,7 +1182,8 @@ void SpectrumWidget::updateZoomFrame(ZOOM_MODE newMode, bool updateSlider)
 			if (zoomMode == Off) {
 				ui.zoomLabelFrame->setVisible(true);
 				ui.zoomPlotFrame->setVisible(true);
-				//adjustSize(); //Causes problems
+				ui.zoomFrameSplitter->setVisible(true);
+				adjustSize();
 				resizeFrames();
 			}
 			zoomMode = HiResolution;

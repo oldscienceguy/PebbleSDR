@@ -34,6 +34,7 @@ public:
 public slots:
 		void plotSelectionChanged(SignalSpectrum::DISPLAYMODE m);
 		void updatesPerSecChanged(int item);
+		void splitterMoved(int x, int y);
 
 signals:
 		//User clicked in spectrum
@@ -122,12 +123,13 @@ private:
 
     int modeOffset;
 
-    void resizeFrames();
+	void resizeFrames(bool scale = true);
 	void DrawScale(QPainter *labelPainter, double centerFreq, bool drawZoomed);
 
 	enum ZOOM_MODE {Off, Spectrum, HiResolution};
 	ZOOM_MODE zoomMode;
 	void updateZoomFrame(ZOOM_MODE newMode, bool updateSlider);
+	QRect mapFrameToWidget(QFrame *frame);
 };
 
 #endif // SPECTRUMWIDGET_H
