@@ -304,33 +304,38 @@ void SpectrumWidget::resizeEvent(QResizeEvent *event)
 //Called from paint & mouse click
 double SpectrumWidget::GetMouseFreq()
 {
-    QRect pf = this->ui.plotFrame->geometry();
-    QRect lf = this->ui.labelFrame->geometry();
-    QRect zpf = this->ui.zoomPlotFrame->geometry();
-    QRect zlf = this->ui.zoomLabelFrame->geometry();
+	QRect plotFr = mapFrameToWidget(ui.plotFrame);
+	plotFr.adjust(-1,0,+1,0);
+
+	//QRect plotLabelFr = mapFrameToWidget(ui.labelFrame);
+	QRect zoomPlotFr = mapFrameToWidget(ui.zoomPlotFrame);
+	zoomPlotFr.adjust(-1,0,+1,0);
+
+	//QRect zoomPlotLabelFr = mapFrameToWidget(ui.zoomLabelFrame);
+
 
     QPoint mp = QCursor::pos(); //Current mouse position in global coordinates
     mp = mapFromGlobal(mp); //Convert to widget relative
 
-    if (pf.contains(mp) || lf.contains(mp)) {
+	if (plotFr.contains(mp)) {
         //Find freq at cursor
-        float hzPerPixel = sampleRate / pf.width();
+		float hzPerPixel = sampleRate / plotFr.width();
         //Convert to +/- relative to center
-		qint32 m = mp.x() - pf.center().x();
+		qint32 m = mp.x() - plotFr.center().x();
         //And conver to freq
         m *= hzPerPixel;
         return m;
 
-    } else if (zpf.contains(mp) || zlf.contains(mp)) {
+	} else if (zoomPlotFr.contains(mp)) {
         //Find freq at cursor
         float hzPerPixel;
 		if (zoomMode == Spectrum)
-            hzPerPixel= sampleRate / zpf.width() * zoom;
+			hzPerPixel= sampleRate / zoomPlotFr.width() * zoom;
         else
-            hzPerPixel= signalSpectrum->getZoomedSampleRate() / zpf.width() * zoom;
+			hzPerPixel= signalSpectrum->getZoomedSampleRate() / zoomPlotFr.width() * zoom;
 
         //Convert to +/- relative to center
-		qint32 m = mp.x() - zpf.center().x();
+		qint32 m = mp.x() - zoomPlotFr.center().x();
         //And conver to freq
         m *= hzPerPixel;
         //and factor in mixer
@@ -346,19 +351,41 @@ double SpectrumWidget::GetMouseFreq()
 
 int SpectrumWidget::GetMouseDb()
 {
-    QPoint mp = QCursor::pos(); //Current mouse position in global coordinates
-    mp = mapFromGlobal(mp); //Convert to widget relative
-    QRect pf = this->ui.plotFrame->geometry();
-    if (!pf.contains(mp))
-        return plotMinDb;
+	QRect plotFr = mapFrameToWidget(ui.plotFrame);
+	plotFr.adjust(-1,0,+1,0);
 
-    //Find db at cursor
-    int db = (pf.height() - mp.y()); //Num pixels
-    double scale = (double)(plotMaxDb - plotMinDb)/pf.height();
-    db *= scale; //Scale to get db
-    //Convert back to minDb relative
-    db += plotMinDb;
-    return db;
+	//QRect plotLabelFr = mapFrameToWidget(ui.labelFrame);
+	QRect zoomPlotFr = mapFrameToWidget(ui.zoomPlotFrame);
+	zoomPlotFr.adjust(-1,0,+1,0);
+
+	//QRect zoomPlotLabelFr = mapFrameToWidget(ui.zoomLabelFrame);
+
+    QPoint mp = QCursor::pos(); //Current mouse position in global coordinates
+	mp = mapFromGlobal(mp); //Convert to widget relative, not frame relative
+
+	if (plotFr.contains(mp)) {
+		//Make cursor pos relative to plotFrame so 0,0 is top left frame (not widget)
+		mp -= plotFr.topLeft();
+
+		int db = (plotFr.height() - mp.y()); //Num pixels
+		double scale = (double)(plotMaxDb - plotMinDb)/plotFr.height();
+		db *= scale; //Scale to get db
+		//Convert back to minDb relative
+		db += plotMinDb;
+		return db;
+	} else if (zoomPlotFr.contains(mp)) {
+		mp -= zoomPlotFr.topLeft();
+
+		int db = (zoomPlotFr.height() - mp.y()); //Num pixels
+		double scale = (double)(plotMaxDb - plotMinDb)/zoomPlotFr.height();
+		db *= scale; //Scale to get db
+		//Convert back to minDb relative
+		db += plotMinDb;
+		return db;
+
+	} else {
+		return plotMinDb;
+	}
 }
 
 //Track cursor and display freq in cursorLabel
@@ -679,6 +706,9 @@ QRect SpectrumWidget::mapFrameToWidget(QFrame *frame)
 	QRect mapped = frame->rect(); //May need to try Geometry() or FrameGeometry() if borders not correct
 	//Map 0,0 in frame relative to 0,0 in SpectrumWidget (this)
 	mapped.translate(frame->mapTo(this,QPoint(0,0)));
+	//Hack to move left and right edges out 1px for 1px frame border
+	//Otherwise we still see left plot border
+	//mapped.adjust(-1,0,+1,0);
 	return mapped;
 }
 
@@ -687,22 +717,12 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 
     QPainter painter(this);
 	QRect plotFr = mapFrameToWidget(ui.plotFrame);
-
-	int plotHeight = plotFr.height(); //Plot area height
 	QRect plotLabelFr = mapFrameToWidget(ui.labelFrame);
-
 	QRect zoomPlotFr = mapFrameToWidget(ui.zoomPlotFrame);
-
-    int zoomPlotHeight = zoomPlotFr.height(); //Plot area height
-
 	QRect zoomPlotLabelFr = mapFrameToWidget(ui.zoomLabelFrame);
 
 	QPoint cursorPos = QWidget::mapFromGlobal(QCursor::pos());
 	cursorPos.setX(cursorPos.x() + 4);
-
-	//Make all painter coordinates 0,0 relative to plotFrame
-	//0,0 will be translated to 4,4 etc
-    //painter.translate(plotFr.x(),plotFr.y());
 
 	if (!isRunning)
 	{
@@ -755,11 +775,15 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 
 	if (spectrumMode == SignalSpectrum::SPECTRUM)
 	{
-        painter.drawPixmap(plotFr, plotArea); //Includes plotOverlay which was copied to plotArea
+		//We don't want to paint the left and right pixmap borders, just the spectrum data
+		//So we expand plotFr so the left border is off screen (-1) same with right border (+1)
+		plotFr.adjust(-1,0,+1,0);
+		painter.drawPixmap(plotFr, plotArea); //Includes plotOverlay which was copied to plotArea
         painter.drawPixmap(plotLabelFr,plotLabel);
 		if (zoomMode != Off) {
-            painter.drawPixmap(zoomPlotFr, zoomPlotArea); //Includes plotOverlay which was copied to plotArea
-            painter.drawPixmap(zoomPlotLabelFr,zoomPlotLabel);
+			zoomPlotFr.adjust(-1,0,+1,0);
+			painter.drawPixmap(zoomPlotFr, zoomPlotArea); //Includes plotOverlay which was copied to plotArea
+			painter.drawPixmap(zoomPlotLabelFr,zoomPlotLabel);
         }
 		//Draw cursor label on top of pixmap, but not control frame
 		if (plotFr.contains(cursorPos) || zoomPlotFr.contains(cursorPos)) {
@@ -780,8 +804,9 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 		if (plotFr.contains(cursorPos) || zoomPlotFr.contains(cursorPos)) {
 			painter.setPen(Qt::black);
 			painter.drawText(cursorPos,freqLabel);
-			cursorPos.setY(cursorPos.y() + metrics.height());
-			painter.drawText(cursorPos,dbLabel);
+			//No db label for waterfall
+			//cursorPos.setY(cursorPos.y() + metrics.height());
+			//painter.drawText(cursorPos,dbLabel);
 		}
     }
 	else
@@ -874,6 +899,82 @@ void SpectrumWidget::zoomChanged(int item)
     update();
 }
 
+void SpectrumWidget::drawSpectrum(QPixmap &_pixMap, QPixmap &_pixOverlayMap, qint32 *_fftMap)
+{
+	int plotWidth = _pixMap.width();
+	int plotHeight = _pixMap.height();
+
+	//Gradient is used for fill
+	QLinearGradient gradient;
+	//Relative to bounding rectanble of polygon since polygon changes every update
+	//Upper right (0,0) and Lower left (1,1)
+	gradient.setCoordinateMode(QGradient::ObjectBoundingMode);
+	gradient.setStart(0.5, 0); //Midway top
+	//Semi-transparent green.  Solid green Pen will show spectrum line
+	gradient.setColorAt(0.20,QColor(0, 200, 0, 127));
+	//Semi-transparent white, alpha = 127  alpha = 0 is fully transparenet, 255 is fully opaque
+	gradient.setColorAt(1.0, QColor(255, 255, 255, 127));
+	gradient.setFinalStop(0.5,1); //Midway bottom
+
+	//!!Draw frequency overlay
+	//first copy into 2Dbitmap the overlay bitmap.
+	_pixMap = _pixOverlayMap.copy(0,0,plotWidth,plotHeight);
+	//Painter has to be created AFTER we copy overlay since plotArea is being replaced each time
+	QPainter plotPainter(&_pixMap);
+
+	//Define a line or a polygon (if filled) that represents the spectrum power levels
+	quint16 numPoints = 0;
+	quint16 lastFftMap;
+	//1px left, right and bottom borders will not be painted so we don't see lines
+	//Spectrum data starts and x=1 and ends at plotWidth
+	//Start at lower left corner (upper left is (0,0) in Qt coordinate system
+	LineBuf[numPoints].setX(0);
+	LineBuf[numPoints].setY(_fftMap[0]);
+	numPoints++;
+	//Plot data
+	for (int i=0; i< plotWidth; i++)
+	{
+		LineBuf[numPoints].setX(i+1); //Adjust for hidden border
+		LineBuf[numPoints].setY(_fftMap[i]);
+		lastFftMap = _fftMap[i];  //Keep for right border in polygon
+		numPoints++;
+		//Keep track of peak values for optional display
+	}
+	//MiterJoin gives us sharper peaks
+	//Set style to Qt::NoPen for no borders
+	QPen pen(Qt::green, 1, Qt::SolidLine, Qt::RoundCap, Qt::MiterJoin);
+	plotPainter.setPen(pen);
+	//Add points to complete the polygon
+	//Top Right (border)
+	LineBuf[numPoints].setX(plotWidth);
+	LineBuf[numPoints].setY(lastFftMap);
+	numPoints++;
+	//Bottom Right
+	LineBuf[numPoints].setX(plotWidth);
+	LineBuf[numPoints].setY(plotHeight);
+
+	numPoints++;
+	//Bottom Left
+	LineBuf[numPoints].setX(0);
+	LineBuf[numPoints].setY(plotHeight);
+
+	numPoints++;
+	//Top fftMap[0]
+	LineBuf[numPoints].setX(0);
+	LineBuf[numPoints].setY(_fftMap[0]);
+
+#if 0
+	//Just draw the spectrum line, no fill
+	plotPainter.drawPolyline(LineBuf, numPoints);
+#else
+	//Draw the filled polygon.  Note this may take slightly more CPUs
+	QBrush tmpBrush = QBrush(gradient);
+	plotPainter.setBrush(tmpBrush);
+	plotPainter.drawPolygon(LineBuf,numPoints);
+
+#endif
+}
+
 //New Fft data is ready for display, update screen if last update is finished
 void SpectrumWidget::newFftData()
 {
@@ -900,160 +1001,53 @@ void SpectrumWidget::newFftData()
         zoomStartFreq += adj;
     }
 
-    //SpectrumGain of 1
-	qint16 maxDbDisplayed = DB::maxDb;
-	qint16 minDbDisplayed = DB::minDb;
-    //Apply offset and gain options from UI
-    minDbDisplayed = plotMinDb; //minDbDisplayed - spectrumOffset;
-    maxDbDisplayed = plotMaxDb; //minDbDisplayed - (minDbDisplayed / spectrumGain);
-
     int plotWidth = plotArea.width();
     int plotHeight = plotArea.height();
 
     if (spectrumMode == SignalSpectrum::SPECTRUM) {
-		//Gradient is used for fill
-		QLinearGradient gradient;
-		//Relative to bounding rectanble of polygon since polygon changes every update
-		//Upper right (0,0) and Lower left (1,1)
-		gradient.setCoordinateMode(QGradient::ObjectBoundingMode);
-		gradient.setStart(0.5, 0); //Midway top
-		//Semi-transparent green.  Solid green Pen will show spectrum line
-		gradient.setColorAt(0.20,QColor(0, 200, 0, 127));
-		//Semi-transparent white, alpha = 127  alpha = 0 is fully transparenet, 255 is fully opaque
-		gradient.setColorAt(1.0, QColor(255, 255, 255, 127));
-		gradient.setFinalStop(0.5,1); //Midway bottom
+		//Convert to plot area coordinates
+		//This gets passed straight through to FFT MapFFTToScreen
+		signalSpectrum->MapFFTToScreen(
+			plotArea.height(),
+			plotArea.width(),
+			//These are same as testbench
+			plotMaxDb,      //FFT dB level  corresponding to output value == MaxHeight
+			plotMinDb,   //FFT dB level corresponding to output value == 0
+			startFreq, //-sampleRate/2, //Low frequency
+			endFreq, //sampleRate/2, //High frequency
+			fftMap );
 
-        //!!Draw frequency overlay
-        //first copy into 2Dbitmap the overlay bitmap.
-        plotArea = plotOverlay.copy(0,0,plotWidth,plotHeight);
-        //Painter has to be created AFTER we copy overlay since plotArea is being replaced each time
-        QPainter plotPainter(&plotArea);
+		drawSpectrum(plotArea, plotOverlay, fftMap);
 
-        //Convert to plot area coordinates
-        //This gets passed straight through to FFT MapFFTToScreen
-        signalSpectrum->MapFFTToScreen(
-            plotHeight,
-            plotWidth,
-            //These are same as testbench
-            maxDbDisplayed,      //FFT dB level  corresponding to output value == MaxHeight
-            minDbDisplayed,   //FFT dB level corresponding to output value == 0
-            startFreq, //-sampleRate/2, //Low frequency
-            endFreq, //sampleRate/2, //High frequency
-            fftMap );
+		if (zoomMode == Spectrum) {
+			//Convert to plot area coordinates
+			//This gets passed straight through to FFT MapFFTToScreen
+			signalSpectrum->MapFFTToScreen(
+				zoomPlotArea.height(),
+				zoomPlotArea.width(),
+				//These are same as testbench
+				plotMaxDb,      //FFT dB level  corresponding to output value == MaxHeight
+				plotMinDb,   //FFT dB level corresponding to output value == 0
+				zoomStartFreq, //-sampleRate/2, //Low frequency
+				zoomEndFreq, //sampleRate/2, //High frequency
+				zoomedFftMap );
 
-		//Define a line or a polygon (if filled) that represents the spectrum power levels
-		quint16 numPoints = 0;
-		//Start at lower left corner (upper left is (0,0) in Qt coordinate system
-		LineBuf[numPoints].setX(0);
-		LineBuf[numPoints].setY(plotHeight);
-		numPoints++;
-		for (int i=1; i< plotWidth; i++)
-        {
-			LineBuf[numPoints].setX(i);
-			LineBuf[numPoints].setY(fftMap[i]);
-			numPoints++;
-            //Keep track of peak values for optional display
-            //if(fftbuf[i] < m_FftPkBuf[i])
-            //    m_FftPkBuf[i] = fftMap[i];
-        }
-		//MiterJoin gives us sharper peaks
-		QPen pen(Qt::green, 1, Qt::SolidLine, Qt::RoundCap, Qt::MiterJoin);
-		plotPainter.setPen(pen);
-		//Add points to complete the polygon
-		LineBuf[numPoints].setX(plotWidth);
-		LineBuf[numPoints].setY(plotHeight);
+			drawSpectrum(zoomPlotArea, zoomPlotOverlay, zoomedFftMap);
+		} else if (zoomMode == HiResolution){
+			signalSpectrum->MapFFTZoomedToScreen(
+				zoomPlotArea.height(),
+				zoomPlotArea.width(),
+				//These are same as testbench
+				plotMaxDb,      //FFT dB level  corresponding to output value == MaxHeight
+				plotMinDb,   //FFT dB level corresponding to output value == 0
+				zoom,
+				modeOffset,
+				zoomedFftMap );
+			drawSpectrum(zoomPlotArea, zoomPlotOverlay, zoomedFftMap);
+		}
 
-		numPoints++;
-		//Connect back to origin
-		LineBuf[numPoints].setX(0);
-		LineBuf[numPoints].setY(plotHeight);
-
-#if 0
-		//Just draw the spectrum line, no fill
-		plotPainter.drawPolyline(LineBuf, numPoints);
-#else
-		//Draw the filled polygon.  Note this may take slightly more CPUs
-		QBrush tmpBrush = QBrush(gradient);
-		plotPainter.setBrush(tmpBrush);
-		plotPainter.drawPolygon(LineBuf,numPoints);
-
-#endif
-		if (zoomMode != Off) {
-            plotWidth = zoomPlotArea.width();
-            plotHeight = zoomPlotArea.height();
-
-			//first copy into 2Dbitmap the overlay bitmap.
-			zoomPlotArea = zoomPlotOverlay.copy(0,0,plotWidth,plotHeight);
-			//Painter has to be created AFTER we copy overlay since plotArea is being replaced each time
-			QPainter zoomPlotPainter(&zoomPlotArea);
-
-			if (zoomMode == Spectrum) {
-				signalSpectrum->MapFFTToScreen(
-					plotHeight,
-					plotWidth,
-					//These are same as testbench
-					maxDbDisplayed,      //FFT dB level  corresponding to output value == MaxHeight
-					minDbDisplayed,   //FFT dB level corresponding to output value == 0
-					zoomStartFreq, //-sampleRate/2, //Low frequency
-					zoomEndFreq, //sampleRate/2, //High frequency
-					zoomedFftMap );
-
-			} else {
-				//Convert to plot area coordinates
-				//This gets passed straight through to FFT MapFFTToScreen
-				signalSpectrum->MapFFTZoomedToScreen(
-					plotHeight,
-					plotWidth,
-					//These are same as testbench
-					maxDbDisplayed,      //FFT dB level  corresponding to output value == MaxHeight
-					minDbDisplayed,   //FFT dB level corresponding to output value == 0
-					zoom,
-					modeOffset,
-					zoomedFftMap );
-			}
-
-			//Start at lower left corner (upper left is (0,0) in Qt coordinate system
-			numPoints = 0;
-			LineBuf[numPoints].setX(0);
-			LineBuf[numPoints].setY(plotHeight);
-			numPoints++;
-			for (int i=1; i< plotWidth; i++)
-			{
-				LineBuf[numPoints].setX(i);
-				LineBuf[numPoints].setY(zoomedFftMap[i]);
-				numPoints++;
-				//Keep track of peak values for optional display
-				//if(fftbuf[i] < m_FftPkBuf[i])
-				//    m_FftPkBuf[i] = fftMap[i];
-			}
-			//MiterJoin gives us sharper peaks
-			QPen pen(Qt::green, 1, Qt::SolidLine, Qt::RoundCap, Qt::MiterJoin);
-			zoomPlotPainter.setPen(pen);
-			//Add points to complete the polygon
-			LineBuf[numPoints].setX(plotWidth);
-			LineBuf[numPoints].setY(plotHeight);
-
-			numPoints++;
-			//Connect back to origin
-			LineBuf[numPoints].setX(0);
-			LineBuf[numPoints].setY(plotHeight);
-
-#if 0
-			//Just connect the dots in LineBuf!
-			//Just draw the spectrum line, no fill
-			zoomPlotPainter.drawPolyline(LineBuf, numPoints);
-#else
-			//Draw the filled polygon.  Note this may take slightly more CPUs
-			QBrush tmpBrush = QBrush(gradient);
-			zoomPlotPainter.setBrush(tmpBrush);
-			zoomPlotPainter.drawPolygon(LineBuf,numPoints);
-
-#endif
-
-        }
-        //We can only display offscreen pixmap in paint() event, so call it to update
+		//We can only display offscreen pixmap in paint() event, so call it to update
         update();
-
     } else if (spectrumMode == SignalSpectrum::WATERFALL) {
 		quint16 wfPixPerLine = 1; //Testing vertical zoom
         //Color code each bin and draw line
@@ -1072,10 +1066,10 @@ void SpectrumWidget::newFftData()
         //Width is unchanged, but height is # colors we have for each db
         signalSpectrum->MapFFTToScreen(
             255, //Equates to spectrumColor array
-            plotWidth,
+			plotArea.width(),
             //These are same as testbench
-            maxDbDisplayed, //FFT dB level  corresponding to output value == MaxHeight
-            minDbDisplayed, //FFT dB level corresponding to output value == 0
+			plotMaxDb, //FFT dB level  corresponding to output value == MaxHeight
+			plotMinDb, //FFT dB level corresponding to output value == 0
             startFreq, //Low frequency
             endFreq, //High frequency
             fftMap );
@@ -1101,10 +1095,10 @@ void SpectrumWidget::newFftData()
 			if (zoomMode == Spectrum) {
                 signalSpectrum->MapFFTToScreen(
                     255, //Equates to spectrumColor array
-                    plotWidth,
+					zoomPlotArea.width(),
                     //These are same as testbench
-                    maxDbDisplayed, //FFT dB level  corresponding to output value == MaxHeight
-                    minDbDisplayed, //FFT dB level corresponding to output value == 0
+					plotMaxDb, //FFT dB level  corresponding to output value == MaxHeight
+					plotMinDb, //FFT dB level corresponding to output value == 0
                     zoomStartFreq, //Low frequency
                     zoomEndFreq, //High frequency
                     fftMap );
@@ -1114,10 +1108,10 @@ void SpectrumWidget::newFftData()
                 //Width is unchanged, but height is # colors we have for each db
                 signalSpectrum->MapFFTZoomedToScreen(
                     255, //Equates to spectrumColor array
-                    plotWidth,
+					zoomPlotArea.width(),
                     //These are same as testbench
-                    maxDbDisplayed, //FFT dB level  corresponding to output value == MaxHeight
-                    minDbDisplayed, //FFT dB level corresponding to output value == 0
+					plotMaxDb, //FFT dB level  corresponding to output value == MaxHeight
+					plotMinDb, //FFT dB level corresponding to output value == 0
                     zoom,
                     modeOffset,
                     fftMap );
@@ -1194,11 +1188,6 @@ void SpectrumWidget::updateZoomFrame(ZOOM_MODE newMode, bool updateSlider)
 
 	//Let spectrum know if it should process HiRes FFT
 	signalSpectrum->SetDisplayMode(spectrumMode, zoomMode == HiResolution);
-}
-
-void SpectrumWidget::DrawSpectrum()
-{
-
 }
 
 void SpectrumWidget::DrawWaterfall()

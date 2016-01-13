@@ -65,7 +65,7 @@ private:
 	Ui::SpectrumWidgetClass ui;
     void DrawCursor(QPainter *painter, QRect plotFr, bool isZoomed, QColor color);
 	void DrawOverlay(bool drawZoomed);
-    void DrawSpectrum();
+	void drawSpectrum(QPixmap &_pixMap, QPixmap &_pixOverlayMap, qint32 *_fftMap);
     void DrawWaterfall();
 
 	//Event overrides

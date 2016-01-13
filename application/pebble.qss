@@ -134,7 +134,7 @@ QRadioButton {
 }
 
 QSplitter::handle {
-        width: 5px;
+        /*width: 5px;*/
         background-color: #8D99A6; /*Same as BG color*/
 }
 
