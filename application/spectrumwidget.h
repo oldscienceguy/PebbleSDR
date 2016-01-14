@@ -32,7 +32,7 @@ public:
 	void SetSignalSpectrum(SignalSpectrum *s);
 
 public slots:
-		void plotSelectionChanged(SignalSpectrum::DISPLAYMODE m);
+		void plotSelectionChanged(SignalSpectrum::DISPLAYMODE _mode);
 		void updatesPerSecChanged(int item);
 		void splitterMoved(int x, int y);
 
@@ -48,14 +48,14 @@ signals:
 			void minDbChanged(int t);
             void zoomChanged(int item);
             void newFftData();
-			void zoomSelectorChanged(int item);
+
 private:
 	SignalSpectrum *signalSpectrum; //Source of spectrum data
     double *averageSpectrum;
     double *lastSpectrum;
     //Holds values mapped to screen using utility in fft
 	qint32 *fftMap;
-	qint32 *zoomedFftMap;
+	qint32 *topPanelFftMap;
 
 	int upDownIncrement;
 	int leftRightIncrement;
@@ -64,9 +64,8 @@ private:
 
 	Ui::SpectrumWidgetClass ui;
     void DrawCursor(QPainter *painter, QRect plotFr, bool isZoomed, QColor color);
-	void DrawOverlay(bool drawZoomed);
+	void DrawOverlay();
 	void drawSpectrum(QPixmap &_pixMap, QPixmap &_pixOverlayMap, qint32 *_fftMap);
-    void DrawWaterfall();
 
 	//Event overrides
 	void paintEvent(QPaintEvent *event);
@@ -103,9 +102,9 @@ private:
     QPixmap plotArea;
     QPixmap plotOverlay;
     QPixmap plotLabel;
-    QPixmap zoomPlotArea;
-    QPixmap zoomPlotOverlay;
-    QPixmap zoomPlotLabel;
+	QPixmap topPanelPlotArea;
+	QPixmap topPanelPlotOverlay;
+	QPixmap topPanelPlotLabel;
 
 	QPoint *LineBuf;
 
@@ -126,10 +125,16 @@ private:
 	void resizeFrames(bool scale = true);
 	void DrawScale(QPainter *labelPainter, double centerFreq, bool drawZoomed);
 
-	enum ZOOM_MODE {Off, Spectrum, HiResolution};
-	ZOOM_MODE zoomMode;
-	void updateZoomFrame(ZOOM_MODE newMode, bool updateSlider);
+	void updateTopPanel(SignalSpectrum::DISPLAYMODE _newMode, bool updateSlider);
 	QRect mapFrameToWidget(QFrame *frame);
+
+	bool twoPanel; //True if both panels are shown
+	bool topPanelHighResolution; //True if top panel is in hi-res mode
+	SignalSpectrum::DISPLAYMODE  topPanelDisplayMode; //Spectrum or Waterfall
+	void paintSpectrum(bool paintTopPanel, QPainter *painter);
+	void drawSpectrumOverlay(bool drawTopPanel);
+	void drawWaterfallOverlay(bool drawTopPanel);
+	void drawWaterfall(QPixmap &_pixMap, QPixmap &_pixOverlayMap, qint32 *_fftMap);
 };
 
 #endif // SPECTRUMWIDGET_H

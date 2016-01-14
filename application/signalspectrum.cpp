@@ -70,12 +70,12 @@ void SignalSpectrum::SetDisplayMode(DISPLAYMODE _displayMode, bool _isZoomed)
 	isHiRes = _isZoomed;
 }
 
-void SignalSpectrum::SetSampleRate(quint32 _sampleRate, quint32 _zoomedSampleRate)
+void SignalSpectrum::SetSampleRate(quint32 _sampleRate, quint32 _hiResSampleRate)
 {
     sampleRate = _sampleRate;
-    zoomedSampleRate = _zoomedSampleRate;
+	hiResSampleRate = _hiResSampleRate;
 	fftUnprocessed->FFTParams(fftSize, +1, DB::maxDb, sampleRate);
-	fftHiRes->FFTParams(fftSize, +1, DB::maxDb, zoomedSampleRate);
+	fftHiRes->FFTParams(fftSize, +1, DB::maxDb, hiResSampleRate);
     //Based on sample rates
 	SetUpdatesPerSec(global->settings->updatesPerSecond);
     emitFftCounter = 0;
@@ -102,7 +102,7 @@ void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double 
 
     //Keep a copy raw I/Q to local buffer for display
     //CPXBuf::copy(rawIQ, in, numSamples);
-	if (displayMode == SPECTRUM || displayMode == WATERFALL) {
+	if (displayMode != NODISPLAY) {
         MakeSpectrum(fftUnprocessed, in, unprocessed, numSamples);
 		displayUpdateComplete = false;
 		emit newFftData();
@@ -231,7 +231,7 @@ void SignalSpectrum::SetUpdatesPerSec(int updatespersec)
 	skipFftsHiRes = skipFftsHiResCounter = 0;
 	if (updatesPerSec > 0) {
 		skipFfts = sampleRate / (numSamples * updatesPerSec);
-		skipFftsHiRes = zoomedSampleRate / (numSamples * updatesPerSec);
+		skipFftsHiRes = hiResSampleRate / (numSamples * updatesPerSec);
 	}
 }
 
@@ -262,7 +262,7 @@ bool SignalSpectrum::MapFFTZoomedToScreen(qint32 maxHeight,
     //Zoomed spectrum is created AFTER mixer and downconvert and has modeOffset applied
     //So if unprocessed spectrum is centered on 10k, zoomed spectrum will be centered on 10k +/- mode offset
     //We correct for this by adjusting starting,ending frequency by mode offset
-    quint16 span = zoomedSampleRate * zoom;
+	quint16 span = hiResSampleRate * zoom;
 
 	if (fftHiRes!=NULL)
 		return fftHiRes->MapFFTToScreen(hiResBuffer,maxHeight,maxWidth,maxdB,mindB, -span/2 - modeOffset, span/2 - modeOffset, outBuf);

@@ -15,7 +15,9 @@ class SignalSpectrum :
 
 public:
 	//Moved from spectrumWidget to avoid .h circular ref.  We need to know mode so we can skip non-visible displays
-    enum DISPLAYMODE {SPECTRUM = 0,WATERFALL,NODISPLAY};
+	//Waterfall_Spectrum is non-standard mode and is deliberately skipped
+	enum DISPLAYMODE {SPECTRUM = 0, WATERFALL, SPECTRUM_SPECTRUM, SPECTRUM_WATERFALL,
+		WATERFALL_WATERFALL, NODISPLAY};
 
     SignalSpectrum(int sr, quint32 zsr, int ns, Settings *set);
 	~SignalSpectrum(void);
@@ -53,9 +55,9 @@ public:
     bool displayUpdateComplete; //Wrap in access func after testing
     int displayUpdateOverrun; //temp counter
 
-    quint32 getZoomedSampleRate() {return zoomedSampleRate;}
+	quint32 getHiResSampleRate() {return hiResSampleRate;}
 
-    void SetSampleRate(quint32 _sampleRate, quint32 _zoomedSampleRate);
+	void SetSampleRate(quint32 _sampleRate, quint32 _hiResSampleRate);
 
     qint32 emitFftCounter; //Testing to see if we're getting more paints than signals
 
@@ -67,7 +69,7 @@ signals:
 
 
 private:
-    quint32 zoomedSampleRate;
+	quint32 hiResSampleRate;
 
 	QMutex mutex;
 	DISPLAYMODE displayMode; //Don't FFT spectrum if that display is not active

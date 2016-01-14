@@ -40,7 +40,7 @@
      <property name="orientation">
       <enum>Qt::Vertical</enum>
      </property>
-     <widget class="QFrame" name="zoomFrameSplitter">
+     <widget class="QFrame" name="topFrameSplitter">
       <property name="frameShape">
        <enum>QFrame::NoFrame</enum>
       </property>
@@ -67,7 +67,7 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="QFrame" name="zoomPlotFrame">
+        <widget class="QFrame" name="topPlotFrame">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
            <horstretch>0</horstretch>
@@ -95,7 +95,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QFrame" name="zoomLabelFrame">
+        <widget class="QFrame" name="topLabelFrame">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -249,7 +249,7 @@
             </property>
             <property name="maximumSize">
              <size>
-              <width>90</width>
+              <width>150</width>
               <height>18</height>
              </size>
             </property>
@@ -362,27 +362,6 @@
             </property>
             <property name="prefix">
              <string/>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QComboBox" name="zoomSelector">
-            <property name="minimumSize">
-             <size>
-              <width>60</width>
-              <height>18</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>60</width>
-              <height>18</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <pointsize>10</pointsize>
-             </font>
             </property>
            </widget>
           </item>
