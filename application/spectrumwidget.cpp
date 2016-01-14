@@ -20,14 +20,14 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 	ui.topPlotFrame->setVisible(false);
 	ui.topFrameSplitter->setVisible(false);
 
-    ui.displayBox->addItem("Spectrum",SignalSpectrum::SPECTRUM);
-    ui.displayBox->addItem("Waterfall",SignalSpectrum::WATERFALL);
-	ui.displayBox->addItem("Spectrum/Spectrum",SignalSpectrum::SPECTRUM_SPECTRUM);
-	ui.displayBox->addItem("Spectrum/Waterfall",SignalSpectrum::SPECTRUM_WATERFALL);
-	ui.displayBox->addItem("Waterfall/Waterfall",SignalSpectrum::WATERFALL_WATERFALL);
-	//ui.displayBox->addItem("I/Q",SignalSpectrum::IQ);
-    //ui.displayBox->addItem("Phase",SignalSpectrum::PHASE);
-    ui.displayBox->addItem("No Display",SignalSpectrum::NODISPLAY);
+	ui.displayBox->addItem("Spectrum",SPECTRUM);
+	ui.displayBox->addItem("Waterfall",WATERFALL);
+	ui.displayBox->addItem("Spectrum/Spectrum",SPECTRUM_SPECTRUM);
+	ui.displayBox->addItem("Spectrum/Waterfall",SPECTRUM_WATERFALL);
+	ui.displayBox->addItem("Waterfall/Waterfall",WATERFALL_WATERFALL);
+	//ui.displayBox->addItem("I/Q",IQ);
+	//ui.displayBox->addItem("Phase",PHASE);
+	ui.displayBox->addItem("No Display",NODISPLAY);
     ui.displayBox->setCurrentIndex(-1);
 
     connect(ui.displayBox,SIGNAL(currentIndexChanged(int)),this,SLOT(displayChanged(int)));
@@ -54,7 +54,7 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 	ui.updatesPerSec->setValue(global->settings->updatesPerSecond);
 	ui.updatesPerSec->setSingleStep(2);;
 	connect(ui.updatesPerSec,SIGNAL(valueChanged(int)),this,SLOT(updatesPerSecChanged(int)));
-	spectrumMode=SignalSpectrum::SPECTRUM;
+	spectrumMode=SPECTRUM;
 
 	//message = NULL;
 	signalSpectrum = NULL;
@@ -169,7 +169,7 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 
 	twoPanel = false;
 	topPanelHighResolution = false;
-	topPanelDisplayMode = SignalSpectrum::SPECTRUM;
+	topPanelDisplayMode = SPECTRUM;
 	isRunning = false;
 }
 
@@ -210,7 +210,7 @@ void SpectrumWidget::Run(bool r)
 		ui.displayBox->setCurrentIndex(global->sdr->Get(DeviceInterface::LastSpectrumMode).toInt()); //Initial display mode
 		//Todo, init based on spectrumMode
 		if (twoPanel)
-			updateTopPanel(SignalSpectrum::NODISPLAY, true);
+			updateTopPanel(NODISPLAY, true);
 		ui.zoomLabel->setText(QString().sprintf("S: %.0f kHz",sampleRate/1000.0));
 		isRunning = true;
 	}
@@ -327,7 +327,7 @@ double SpectrumWidget::GetMouseFreq()
 	} else if (zoomPlotFr.contains(mp)) {
         //Find freq at cursor
         float hzPerPixel;
-		if (topPanelDisplayMode == SignalSpectrum::SPECTRUM)
+		if (topPanelDisplayMode == SPECTRUM)
 			hzPerPixel= sampleRate / zoomPlotFr.width() * zoom;
         else
 			hzPerPixel= signalSpectrum->getHiResSampleRate() / zoomPlotFr.width() * zoom;
@@ -398,7 +398,7 @@ void SpectrumWidget::wheelEvent(QWheelEvent *event)
 {
     Q_UNUSED(event);  //Suppress warnings, use everywhere!
 
-	if (spectrumMode == SignalSpectrum::NODISPLAY)
+	if (spectrumMode == NODISPLAY)
 		return;
 
     //Only in plotFrame
@@ -492,7 +492,7 @@ void SpectrumWidget::mousePressEvent ( QMouseEvent * event )
 {
 	if (!isRunning || signalSpectrum == NULL)
 		return;
-	if (spectrumMode == SignalSpectrum::NODISPLAY)
+	if (spectrumMode == NODISPLAY)
 		return;
 
     Qt::MouseButton button = event->button();
@@ -535,15 +535,17 @@ void SpectrumWidget::SetFilter(int lo, int hi)
 	DrawOverlay();
 }
 
-void SpectrumWidget::plotSelectionChanged(SignalSpectrum::DISPLAYMODE _mode)
+void SpectrumWidget::plotSelectionChanged(DISPLAYMODE _mode)
 {
-	SignalSpectrum::DISPLAYMODE oldMode = spectrumMode; //Save
+	DISPLAYMODE oldMode = spectrumMode; //Save
 	spectrumMode = _mode;
+#if 0
 	if (signalSpectrum != NULL) {
 		signalSpectrum->SetDisplayMode(spectrumMode, topPanelHighResolution);
 	}
+#endif
 
-	if (oldMode == SignalSpectrum::NODISPLAY) {
+	if (oldMode == NODISPLAY) {
 		//Changing from no display to a display
 		ui.labelFrame->setVisible(true);
 		ui.plotFrame->setVisible(true);
@@ -563,7 +565,7 @@ void SpectrumWidget::plotSelectionChanged(SignalSpectrum::DISPLAYMODE _mode)
 	}
 
 	switch (spectrumMode) {
-		case SignalSpectrum::NODISPLAY:
+		case NODISPLAY:
 			//Changing from spectrum or WF to Off
 			//Hide everything except the plot selector so we can switch back on
 			//Turn zoom off
@@ -592,41 +594,41 @@ void SpectrumWidget::plotSelectionChanged(SignalSpectrum::DISPLAYMODE _mode)
 			update(); //Schedule a paint in the event loop.  repaint() triggers immediate
 			break;
 
-		case SignalSpectrum::SPECTRUM:
+		case SPECTRUM:
 			//switching between Waterfall, Spectrum, etc clear the old display
 			zoom = 1;
 			ui.zoomSlider->setValue(0);
 
 			plotArea.fill(Qt::black);
 			topPanelPlotArea.fill(Qt::black);
-			updateTopPanel(SignalSpectrum::NODISPLAY,false);
+			updateTopPanel(NODISPLAY,false);
 			break;
-		case SignalSpectrum::WATERFALL:
+		case WATERFALL:
 			//switching between Waterfall, Spectrum, etc clear the old display
 			zoom = 1;
 			ui.zoomSlider->setValue(0);
 
 			plotArea.fill(Qt::black);
 			topPanelPlotArea.fill(Qt::black);
-			updateTopPanel(SignalSpectrum::NODISPLAY,false);
+			updateTopPanel(NODISPLAY,false);
 			break;
-		case SignalSpectrum::SPECTRUM_WATERFALL:
+		case SPECTRUM_WATERFALL:
 			//switching between Waterfall, Spectrum, etc clear the old display
 			plotArea.fill(Qt::black);
 			topPanelPlotArea.fill(Qt::black);
-			updateTopPanel(SignalSpectrum::SPECTRUM,false);
+			updateTopPanel(SPECTRUM,false);
 			break;
-		case SignalSpectrum::SPECTRUM_SPECTRUM:
+		case SPECTRUM_SPECTRUM:
 			//switching between Waterfall, Spectrum, etc clear the old display
 			plotArea.fill(Qt::black);
 			topPanelPlotArea.fill(Qt::black);
-			updateTopPanel(SignalSpectrum::SPECTRUM,false);
+			updateTopPanel(SPECTRUM,false);
 			break;
-		case SignalSpectrum::WATERFALL_WATERFALL:
+		case WATERFALL_WATERFALL:
 			//switching between Waterfall, Spectrum, etc clear the old display
 			plotArea.fill(Qt::black);
 			topPanelPlotArea.fill(Qt::black);
-			updateTopPanel(SignalSpectrum::WATERFALL,false);
+			updateTopPanel(WATERFALL,false);
 			break;
 		default:
 			qDebug()<<"Invalid display mode";
@@ -682,7 +684,7 @@ void SpectrumWidget::DrawCursor(QPainter *painter, QRect plotFr, bool isZoomed, 
     //Show mixer cursor, fMixer varies from -f..0..+f relative to LO
     //Map to coordinates
 	qint32 x1=0;
-	if (spectrumMode != SignalSpectrum::NODISPLAY) {
+	if (spectrumMode != NODISPLAY) {
         if (isZoomed) {
             x1 = 0.5 * plotWidth; //Zoom is always centered
         } else {
@@ -835,7 +837,7 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
     }
 #endif
 
-    if (spectrumMode == SignalSpectrum::NODISPLAY || signalSpectrum == NULL)
+	if (spectrumMode == NODISPLAY || signalSpectrum == NULL)
         return;
 
 
@@ -858,14 +860,14 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 		cursorPos.setX(cursorPos.x() - rect.width()); //left of cursor
 
 	switch (spectrumMode) {
-		case SignalSpectrum::SPECTRUM:
+		case SPECTRUM:
 			paintSpectrum(false,&painter); //Main frame
 			break;
-		case SignalSpectrum::SPECTRUM_SPECTRUM:
+		case SPECTRUM_SPECTRUM:
 			paintSpectrum(true,&painter); //Top frame
 			paintSpectrum(false,&painter); //Main frame
 			break;
-		case SignalSpectrum::SPECTRUM_WATERFALL:
+		case SPECTRUM_WATERFALL:
 			paintSpectrum(true,&painter); //Top frame
 
 			painter.drawPixmap(plotFr, plotArea);
@@ -880,7 +882,7 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 			}
 			break;
 
-		case SignalSpectrum::WATERFALL:
+		case WATERFALL:
 			painter.drawPixmap(plotFr, plotArea);
 			painter.drawPixmap(plotLabelFr,plotLabel);
 
@@ -892,7 +894,7 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 				//painter.drawText(cursorPos,dbLabel);
 			}
 			break;
-		case SignalSpectrum::WATERFALL_WATERFALL:
+		case WATERFALL_WATERFALL:
 			painter.drawPixmap(plotFr, plotArea);
 			painter.drawPixmap(plotLabelFr,plotLabel);
 
@@ -919,7 +921,7 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 void SpectrumWidget::displayChanged(int s)
 {
     //Get mode from itemData
-    SignalSpectrum::DISPLAYMODE displayMode = (SignalSpectrum::DISPLAYMODE)ui.displayBox->itemData(s).toInt();
+	DISPLAYMODE displayMode = (DISPLAYMODE)ui.displayBox->itemData(s).toInt();
 	//Save in device ini
 	global->sdr->Set(DeviceInterface::LastSpectrumMode,displayMode);
     plotSelectionChanged(displayMode);
@@ -961,7 +963,7 @@ void SpectrumWidget::zoomChanged(int item)
 
 	if (!twoPanel && item > 0) {
 		//Turn on zoom
-		updateTopPanel(SignalSpectrum::SPECTRUM,false);
+		updateTopPanel(SPECTRUM,false);
 	}
 #if 0
 	//Turning zoom off automatically casues user problems when adjusting zoom at lower levels
@@ -1097,7 +1099,7 @@ void SpectrumWidget::drawWaterfall(QPixmap &_pixMap, QPixmap &_pixOverlayMap, qi
 		//rect.setBottom(rect.bottom() - 10); //Reserve the last 10 pix for labels
 		topPanelPlotArea.scroll(0,wfZoomPixPerLine,rect);
 
-		if (topPanelDisplayMode == SignalSpectrum::SPECTRUM) {
+		if (topPanelDisplayMode == SPECTRUM) {
 			signalSpectrum->MapFFTToScreen(
 				255, //Equates to spectrumColor array
 				topPanelPlotArea.width(),
@@ -1162,11 +1164,11 @@ void SpectrumWidget::newFftData()
     }
 
 	switch (spectrumMode) {
-		case SignalSpectrum::NODISPLAY:
+		case NODISPLAY:
 			//Do nothing
 			break;
 
-		case SignalSpectrum::SPECTRUM:
+		case SPECTRUM:
 			//Convert to plot area coordinates
 			//This gets passed straight through to FFT MapFFTToScreen
 			signalSpectrum->MapFFTToScreen(
@@ -1182,7 +1184,7 @@ void SpectrumWidget::newFftData()
 			//We can only display offscreen pixmap in paint() event, so call it to update
 			update();
 			break;
-		case SignalSpectrum::SPECTRUM_SPECTRUM:
+		case SPECTRUM_SPECTRUM:
 			//Draw bottom spectrum
 			signalSpectrum->MapFFTToScreen(
 				plotArea.height(),
@@ -1223,7 +1225,7 @@ void SpectrumWidget::newFftData()
 			//We can only display offscreen pixmap in paint() event, so call it to update
 			update();
 			break;
-		case SignalSpectrum::SPECTRUM_WATERFALL:
+		case SPECTRUM_WATERFALL:
 			//Upper Spectrum
 			signalSpectrum->MapFFTToScreen(
 				topPanelPlotArea.height(),
@@ -1250,7 +1252,7 @@ void SpectrumWidget::newFftData()
 			drawWaterfall(plotArea, plotOverlay, fftMap);
 			update();
 			break;
-		case SignalSpectrum::WATERFALL_WATERFALL:
+		case WATERFALL_WATERFALL:
 			//Top waterfall
 			signalSpectrum->MapFFTToScreen(
 				255, //Equates to spectrumColor array
@@ -1278,7 +1280,7 @@ void SpectrumWidget::newFftData()
 
 			update();
 			break;
-		case SignalSpectrum::WATERFALL: {
+		case WATERFALL: {
 			//Instead of plot area coordinates we convert to screen color array
 			//Width is unchanged, but height is # colors we have for each db
 			signalSpectrum->MapFFTToScreen(
@@ -1336,7 +1338,7 @@ void SpectrumWidget::newFftData()
 				//rect.setBottom(rect.bottom() - 10); //Reserve the last 10 pix for labels
 				topPanelPlotArea.scroll(0,wfZoomPixPerLine,rect);
 
-				if (topPanelDisplayMode == SignalSpectrum::SPECTRUM) {
+				if (topPanelDisplayMode == SPECTRUM) {
 					signalSpectrum->MapFFTToScreen(
 						255, //Equates to spectrumColor array
 						topPanelPlotArea.width(),
@@ -1379,11 +1381,11 @@ void SpectrumWidget::newFftData()
 }
 
 //Update top pane with new mode
-void SpectrumWidget::updateTopPanel(SignalSpectrum::DISPLAYMODE _newMode, bool updateSlider)
+void SpectrumWidget::updateTopPanel(DISPLAYMODE _newMode, bool updateSlider)
 {
 	//setValue will automatically signal value changed and call connected SLOT unless we block signals
 	switch(_newMode) {
-		case SignalSpectrum::NODISPLAY:
+		case NODISPLAY:
 			//Hide top pane and update sizes
 			ui.topLabelFrame->setVisible(false);
 			ui.topPlotFrame->setVisible(false);
@@ -1399,14 +1401,14 @@ void SpectrumWidget::updateTopPanel(SignalSpectrum::DISPLAYMODE _newMode, bool u
 				ui.zoomSlider->setValue(0);
 			update();
 			break;
-		case SignalSpectrum::SPECTRUM:
+		case SPECTRUM:
 			//Show top pane and update sizes
 			ui.topLabelFrame->setVisible(true);
 			ui.topPlotFrame->setVisible(true);
 			ui.topFrameSplitter->setVisible(true);
 			adjustSize();
 			resizeFrames();
-			topPanelDisplayMode = SignalSpectrum::SPECTRUM;
+			topPanelDisplayMode = SPECTRUM;
 			twoPanel = true;
 			topPanelHighResolution = false;
 
@@ -1414,13 +1416,13 @@ void SpectrumWidget::updateTopPanel(SignalSpectrum::DISPLAYMODE _newMode, bool u
 				ui.zoomSlider->setValue((ui.zoomSlider->maximum() - ui.zoomSlider->minimum()) / 4);
 			update();
 			break;
-		case SignalSpectrum::WATERFALL:
+		case WATERFALL:
 			ui.topLabelFrame->setVisible(true);
 			ui.topPlotFrame->setVisible(true);
 			ui.topFrameSplitter->setVisible(true);
 			adjustSize();
 			resizeFrames();
-			topPanelDisplayMode = SignalSpectrum::WATERFALL;
+			topPanelDisplayMode = WATERFALL;
 			twoPanel = true;
 			topPanelHighResolution = false;
 
@@ -1450,8 +1452,11 @@ void SpectrumWidget::updateTopPanel(SignalSpectrum::DISPLAYMODE _newMode, bool u
 	}
 #endif
 
+#if 0
 	//Let spectrum know if it should process HiRes FFT
 	signalSpectrum->SetDisplayMode(spectrumMode, topPanelHighResolution);
+#endif
+
 }
 
 void SpectrumWidget::DrawScale(QPainter *labelPainter, double centerFreq, bool drawZoomed)
@@ -1712,25 +1717,25 @@ void SpectrumWidget::DrawOverlay()
 	}
 
 	switch(spectrumMode) {
-		case SignalSpectrum::SPECTRUM:
+		case SPECTRUM:
 			drawSpectrumOverlay(false);
 			break;
-		case SignalSpectrum::SPECTRUM_SPECTRUM:
+		case SPECTRUM_SPECTRUM:
 			drawSpectrumOverlay(true);
 			drawSpectrumOverlay(false);
 			break;
-		case SignalSpectrum::SPECTRUM_WATERFALL:
+		case SPECTRUM_WATERFALL:
 			drawSpectrumOverlay(true);
 			drawWaterfallOverlay(false);
 			break;
-		case SignalSpectrum::WATERFALL_WATERFALL:
+		case WATERFALL_WATERFALL:
 			drawWaterfallOverlay(true);
 			drawWaterfallOverlay(false);
 			break;
-		case SignalSpectrum::WATERFALL:
+		case WATERFALL:
 			drawWaterfallOverlay(false);
 			break;
-		case SignalSpectrum::NODISPLAY:
+		case NODISPLAY:
 			break;
 	}
 

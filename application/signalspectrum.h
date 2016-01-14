@@ -14,14 +14,9 @@ class SignalSpectrum :
     Q_OBJECT
 
 public:
-	//Moved from spectrumWidget to avoid .h circular ref.  We need to know mode so we can skip non-visible displays
-	//Waterfall_Spectrum is non-standard mode and is deliberately skipped
-	enum DISPLAYMODE {SPECTRUM = 0, WATERFALL, SPECTRUM_SPECTRUM, SPECTRUM_WATERFALL,
-		WATERFALL_WATERFALL, NODISPLAY};
-
     SignalSpectrum(int sr, quint32 zsr, int ns, Settings *set);
 	~SignalSpectrum(void);
-    void SetDisplayMode(DISPLAYMODE m, bool z);
+	void SetHiRes(bool _on) {useHiRes = _on;}
 	//Pass in soundcard buffer under/overflow counts for display
 	void Unprocessed(CPX * in, double inUnder, double inOver,double outUnder, double outOver);
     void MakeSpectrum(FFT *fft, CPX *in, double *out, int size); //Use if we just have CPX samples
@@ -72,7 +67,6 @@ private:
 	quint32 hiResSampleRate;
 
 	QMutex mutex;
-	DISPLAYMODE displayMode; //Don't FFT spectrum if that display is not active
     int fftSize;
 
 	//Spectrum data at different steps in receive chaing
@@ -80,7 +74,7 @@ private:
     double *unprocessed;
 	double *hiResBuffer; //Post bandpass spectrum with more resolution around signal
     double * window;
-	bool isHiRes;
+	bool useHiRes;
 
     CPX *tmp_cpx;
 	CPX *window_cpx;

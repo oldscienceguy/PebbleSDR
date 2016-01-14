@@ -49,7 +49,7 @@ SignalSpectrum::SignalSpectrum(int sr, quint32 zsr, int ns, Settings *set):
     displayUpdateComplete = true;
     displayUpdateOverrun = 0;
 
-	isHiRes = false;
+	useHiRes = false;
 
     SetSampleRate(sr, zsr);
 
@@ -63,11 +63,6 @@ SignalSpectrum::~SignalSpectrum(void)
 	if (window_cpx != NULL) {CPXBuf::free(window_cpx);}
 	if (tmp_cpx != NULL) {CPXBuf::free(tmp_cpx);}
 	if (rawIQ != NULL) {CPXBuf::free(rawIQ);}
-}
-void SignalSpectrum::SetDisplayMode(DISPLAYMODE _displayMode, bool _isZoomed)
-{
-    displayMode = _displayMode;
-	isHiRes = _isZoomed;
 }
 
 void SignalSpectrum::SetSampleRate(quint32 _sampleRate, quint32 _hiResSampleRate)
@@ -102,11 +97,9 @@ void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double 
 
     //Keep a copy raw I/Q to local buffer for display
     //CPXBuf::copy(rawIQ, in, numSamples);
-	if (displayMode != NODISPLAY) {
-        MakeSpectrum(fftUnprocessed, in, unprocessed, numSamples);
-		displayUpdateComplete = false;
-		emit newFftData();
-	}
+	MakeSpectrum(fftUnprocessed, in, unprocessed, numSamples);
+	displayUpdateComplete = false;
+	emit newFftData();
 }
 
 //http://www.arc.id.au/ZoomFFT.html
@@ -115,7 +108,7 @@ void SignalSpectrum::Zoomed(CPX *in, int size)
 	quint16 resampledSize;
 	Q_UNUSED(resampledSize)
 
-	if (!isHiRes)
+	if (!useHiRes)
 		return; //Nothing to do
 
     //Only make spectrum often enough to match spectrum update rate, otherwise we just throw it away

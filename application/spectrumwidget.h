@@ -20,6 +20,11 @@ class SpectrumWidget : public QWidget
 	Q_OBJECT
 
 public:
+	//Waterfall_Spectrum is non-standard mode and is deliberately skipped
+	enum DISPLAYMODE {SPECTRUM = 0, WATERFALL, SPECTRUM_SPECTRUM, SPECTRUM_WATERFALL,
+		WATERFALL_WATERFALL, NODISPLAY};
+
+
 	SpectrumWidget(QWidget *parent = 0);
 	~SpectrumWidget();
 
@@ -32,7 +37,7 @@ public:
 	void SetSignalSpectrum(SignalSpectrum *s);
 
 public slots:
-		void plotSelectionChanged(SignalSpectrum::DISPLAYMODE _mode);
+		void plotSelectionChanged(DISPLAYMODE _mode);
 		void updatesPerSecChanged(int item);
 		void splitterMoved(int x, int y);
 
@@ -91,7 +96,7 @@ private:
     qint16 plotMinDb;
 	const quint16 minMaxDbDelta = 30; //Delta between min and max can never be less than this
 
-	SignalSpectrum::DISPLAYMODE spectrumMode;
+	DISPLAYMODE spectrumMode;
 	int sampleRate;
 	DeviceInterface::DEMODMODE demodMode;
 
@@ -125,12 +130,12 @@ private:
 	void resizeFrames(bool scale = true);
 	void DrawScale(QPainter *labelPainter, double centerFreq, bool drawZoomed);
 
-	void updateTopPanel(SignalSpectrum::DISPLAYMODE _newMode, bool updateSlider);
+	void updateTopPanel(DISPLAYMODE _newMode, bool updateSlider);
 	QRect mapFrameToWidget(QFrame *frame);
 
 	bool twoPanel; //True if both panels are shown
 	bool topPanelHighResolution; //True if top panel is in hi-res mode
-	SignalSpectrum::DISPLAYMODE  topPanelDisplayMode; //Spectrum or Waterfall
+	DISPLAYMODE  topPanelDisplayMode; //Spectrum or Waterfall
 	void paintSpectrum(bool paintTopPanel, QPainter *painter);
 	void drawSpectrumOverlay(bool drawTopPanel);
 	void drawWaterfallOverlay(bool drawTopPanel);

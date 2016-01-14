@@ -585,7 +585,7 @@ void ReceiverWidget::powerToggled(bool on)
         ui.sMeterWidget->SetSignalSpectrum(receiver->GetSignalSpectrum());
         ui.spectrumWidget->SetSignalSpectrum(receiver->GetSignalSpectrum());
 
-		ui.spectrumWidget->plotSelectionChanged((SignalSpectrum::DISPLAYMODE)sdr->Get(DeviceInterface::LastSpectrumMode).toInt());
+		ui.spectrumWidget->plotSelectionChanged((SpectrumWidget::DISPLAYMODE)sdr->Get(DeviceInterface::LastSpectrumMode).toInt());
         ui.bandType->setCurrentIndex(Band::HAM);
 
 		ui.spectrumWidget->Run(true);
