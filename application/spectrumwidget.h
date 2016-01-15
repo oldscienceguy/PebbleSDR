@@ -40,6 +40,7 @@ public slots:
 		void plotSelectionChanged(DISPLAYMODE _mode);
 		void updatesPerSecChanged(int item);
 		void splitterMoved(int x, int y);
+		void hiResClicked(bool _b);
 
 signals:
 		//User clicked in spectrum
@@ -68,8 +69,8 @@ private:
     double zoom; //Percentage of total spectrum to display
 
 	Ui::SpectrumWidgetClass ui;
-    void DrawCursor(QPainter *painter, QRect plotFr, bool isZoomed, QColor color);
-	void DrawOverlay();
+	void drawCursor(QPainter *painter, QRect plotFr, bool isZoomed, QColor color);
+	void drawOverlay();
 	void drawSpectrum(QPixmap &_pixMap, QPixmap &_pixOverlayMap, qint32 *_fftMap);
 
 	//Event overrides
@@ -111,35 +112,33 @@ private:
 	QPixmap topPanelPlotOverlay;
 	QPixmap topPanelPlotLabel;
 
-	QPoint *LineBuf;
+	QPoint *lineBuf;
 
     int dbRange;
 
     QColor *spectrumColors;
 
-    double GetMouseFreq();
-    int GetMouseDb();
+	double getMouseFreq();
+	int getMouseDb();
 
     //Grid display, will change depending on plotArea size
     static const int maxHDivs = 50;
-	int numXDivs; //Must be even number to split right around center
-	int numYDivs;
 
     int modeOffset;
 
 	void resizeFrames(bool scale = true);
-	void DrawScale(QPainter *labelPainter, double centerFreq, bool drawZoomed);
+	void drawScale(QPainter *labelPainter, double centerFreq, bool drawTopFrame);
 
 	void updateTopPanel(DISPLAYMODE _newMode, bool updateSlider);
 	QRect mapFrameToWidget(QFrame *frame);
 
-	bool twoPanel; //True if both panels are shown
 	bool topPanelHighResolution; //True if top panel is in hi-res mode
 	DISPLAYMODE  topPanelDisplayMode; //Spectrum or Waterfall
 	void paintSpectrum(bool paintTopPanel, QPainter *painter);
 	void drawSpectrumOverlay(bool drawTopPanel);
 	void drawWaterfallOverlay(bool drawTopPanel);
 	void drawWaterfall(QPixmap &_pixMap, QPixmap &_pixOverlayMap, qint32 *_fftMap);
+	QString frequencyLabel(double f, qint16 precision = -1);
 };
 
 #endif // SPECTRUMWIDGET_H

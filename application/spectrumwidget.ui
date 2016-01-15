@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>629</width>
-    <height>160</height>
+    <height>106</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -366,26 +366,14 @@
            </widget>
           </item>
           <item>
-           <widget class="QLabel" name="zoomLabel">
-            <property name="minimumSize">
-             <size>
-              <width>60</width>
-              <height>18</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>60</width>
-              <height>18</height>
-             </size>
-            </property>
+           <widget class="QRadioButton" name="hiResButton">
             <property name="font">
              <font>
               <pointsize>10</pointsize>
              </font>
             </property>
             <property name="text">
-             <string/>
+             <string>HiRes</string>
             </property>
            </widget>
           </item>
@@ -422,6 +410,30 @@
             </property>
             <property name="tickPosition">
              <enum>QSlider::NoTicks</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="zoomLabel">
+            <property name="minimumSize">
+             <size>
+              <width>60</width>
+              <height>18</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>60</width>
+              <height>18</height>
+             </size>
+            </property>
+            <property name="font">
+             <font>
+              <pointsize>10</pointsize>
+             </font>
+            </property>
+            <property name="text">
+             <string/>
             </property>
            </widget>
           </item>

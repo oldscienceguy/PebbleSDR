@@ -162,12 +162,12 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 	quint32 screenWidth = global->primaryScreen->availableSize().width();
 	fftMap = new qint32[screenWidth];
 	topPanelFftMap = new qint32[screenWidth];
-	LineBuf = new QPoint[screenWidth];
+	lineBuf = new QPoint[screenWidth];
 
 	//We need to resize objects as frames change sizes
 	connect(ui.splitter,SIGNAL(splitterMoved(int,int)),this,SLOT(splitterMoved(int,int)));
 
-	twoPanel = false;
+	connect(ui.hiResButton,SIGNAL(clicked(bool)),this,SLOT(hiResClicked(bool)));
 	topPanelHighResolution = false;
 	topPanelDisplayMode = SPECTRUM;
 	isRunning = false;
@@ -179,7 +179,7 @@ SpectrumWidget::~SpectrumWidget()
 	if (averageSpectrum != NULL) free (averageSpectrum);
 	delete[] fftMap;
 	delete[] topPanelFftMap;
-	delete[] LineBuf;
+	delete[] lineBuf;
 }
 void SpectrumWidget::Run(bool r)
 {
@@ -207,10 +207,9 @@ void SpectrumWidget::Run(bool r)
 	topPanelPlotLabel.fill(Qt::black);
 
 	if (r) {
-		ui.displayBox->setCurrentIndex(global->sdr->Get(DeviceInterface::LastSpectrumMode).toInt()); //Initial display mode
-		//Todo, init based on spectrumMode
-		if (twoPanel)
-			updateTopPanel(NODISPLAY, true);
+		spectrumMode = (DISPLAYMODE)global->sdr->Get(DeviceInterface::LastSpectrumMode).toInt();
+		//Triggers connection slot to set current mode
+		ui.displayBox->setCurrentIndex(ui.displayBox->findData(spectrumMode)); //Initial display mode
 		ui.zoomLabel->setText(QString().sprintf("S: %.0f kHz",sampleRate/1000.0));
 		isRunning = true;
 	}
@@ -289,7 +288,7 @@ void SpectrumWidget::resizeFrames(bool scale)
 	topPanelPlotLabel = QPixmap(zoomPlotLabelFr.width(),zoomPlotLabelFr.height());
 	topPanelPlotLabel.fill(Qt::black);
 
-	DrawOverlay(); //plotArea size changed
+	drawOverlay(); //plotArea size changed
 }
 
 void SpectrumWidget::resizeEvent(QResizeEvent *event)
@@ -300,20 +299,21 @@ void SpectrumWidget::resizeEvent(QResizeEvent *event)
 
 //Returns +/- freq from LO based on where mouse cursor is
 //Called from paint & mouse click
-double SpectrumWidget::GetMouseFreq()
+double SpectrumWidget::getMouseFreq()
 {
 	QRect plotFr = mapFrameToWidget(ui.plotFrame);
 	plotFr.adjust(-1,0,+1,0);
 
 	//QRect plotLabelFr = mapFrameToWidget(ui.labelFrame);
-	QRect zoomPlotFr = mapFrameToWidget(ui.topPlotFrame);
-	zoomPlotFr.adjust(-1,0,+1,0);
+	QRect topPlotFr = mapFrameToWidget(ui.topPlotFrame);
+	topPlotFr.adjust(-1,0,+1,0);
 
 	//QRect zoomPlotLabelFr = mapFrameToWidget(ui.zoomLabelFrame);
 
-
     QPoint mp = QCursor::pos(); //Current mouse position in global coordinates
     mp = mapFromGlobal(mp); //Convert to widget relative
+
+	//qDebug()<<mp<<" "<<plotFr<<" "<<topPlotFr;
 
 	if (plotFr.contains(mp)) {
         //Find freq at cursor
@@ -324,16 +324,16 @@ double SpectrumWidget::GetMouseFreq()
         m *= hzPerPixel;
         return m;
 
-	} else if (zoomPlotFr.contains(mp)) {
+	} else if (topPlotFr.contains(mp)) {
         //Find freq at cursor
         float hzPerPixel;
-		if (topPanelDisplayMode == SPECTRUM)
-			hzPerPixel= sampleRate / zoomPlotFr.width() * zoom;
+		if (!topPanelHighResolution)
+			hzPerPixel= sampleRate / topPlotFr.width() * zoom;
         else
-			hzPerPixel= signalSpectrum->getHiResSampleRate() / zoomPlotFr.width() * zoom;
+			hzPerPixel= signalSpectrum->getHiResSampleRate() / topPlotFr.width() * zoom;
 
         //Convert to +/- relative to center
-		qint32 m = mp.x() - zoomPlotFr.center().x();
+		qint32 m = mp.x() - topPlotFr.center().x();
         //And conver to freq
         m *= hzPerPixel;
         //and factor in mixer
@@ -347,7 +347,7 @@ double SpectrumWidget::GetMouseFreq()
 
 }
 
-int SpectrumWidget::GetMouseDb()
+int SpectrumWidget::getMouseDb()
 {
 	QRect plotFr = mapFrameToWidget(ui.plotFrame);
 	plotFr.adjust(-1,0,+1,0);
@@ -502,7 +502,7 @@ void SpectrumWidget::mousePressEvent ( QMouseEvent * event )
 
     Qt::KeyboardModifiers modifiers = event->modifiers(); //Keyboard modifiers
 
-    double deltaFreq = GetMouseFreq();
+	double deltaFreq = getMouseFreq();
 
     if (button == Qt::LeftButton) {
         if( modifiers == Qt::NoModifier)
@@ -525,16 +525,17 @@ void SpectrumWidget::SetMixer(int m, double f)
 {
 	fMixer = m;
 	loFreq = f;
-	DrawOverlay();
+	drawOverlay();
 }
 //Track bandpass so we can display with cursor
 void SpectrumWidget::SetFilter(int lo, int hi)
 {
 	loFilter = lo;
 	hiFilter = hi;
-	DrawOverlay();
+	drawOverlay();
 }
 
+//NOTE: This gets called when UI selection changes, as well as when we need to change modes from code
 void SpectrumWidget::plotSelectionChanged(DISPLAYMODE _mode)
 {
 	DISPLAYMODE oldMode = spectrumMode; //Save
@@ -570,7 +571,6 @@ void SpectrumWidget::plotSelectionChanged(DISPLAYMODE _mode)
 			//Hide everything except the plot selector so we can switch back on
 			//Turn zoom off
 			zoom = 1;
-			twoPanel = false;
 			topPanelHighResolution = false;
 
 			ui.zoomSlider->setValue(0);
@@ -587,6 +587,7 @@ void SpectrumWidget::plotSelectionChanged(DISPLAYMODE _mode)
 			ui.maxDbBox->setVisible(false);
 			ui.minDbBox->setVisible(false);
 			ui.updatesPerSec->setVisible(false);
+			ui.hiResButton->setVisible(false);
 
 			//We may not need this
 			//adjustSize();
@@ -596,46 +597,41 @@ void SpectrumWidget::plotSelectionChanged(DISPLAYMODE _mode)
 
 		case SPECTRUM:
 			//switching between Waterfall, Spectrum, etc clear the old display
-			zoom = 1;
-			ui.zoomSlider->setValue(0);
-
+			//UpdateTopPanel first to turn on/off top panel modes
+			updateTopPanel(NODISPLAY,false);
 			plotArea.fill(Qt::black);
 			topPanelPlotArea.fill(Qt::black);
-			updateTopPanel(NODISPLAY,false);
 			break;
 		case WATERFALL:
 			//switching between Waterfall, Spectrum, etc clear the old display
-			zoom = 1;
-			ui.zoomSlider->setValue(0);
-
+			updateTopPanel(NODISPLAY,false);
 			plotArea.fill(Qt::black);
 			topPanelPlotArea.fill(Qt::black);
-			updateTopPanel(NODISPLAY,false);
 			break;
 		case SPECTRUM_WATERFALL:
 			//switching between Waterfall, Spectrum, etc clear the old display
+			updateTopPanel(SPECTRUM,false);
 			plotArea.fill(Qt::black);
 			topPanelPlotArea.fill(Qt::black);
-			updateTopPanel(SPECTRUM,false);
 			break;
 		case SPECTRUM_SPECTRUM:
 			//switching between Waterfall, Spectrum, etc clear the old display
+			updateTopPanel(SPECTRUM,false);
 			plotArea.fill(Qt::black);
 			topPanelPlotArea.fill(Qt::black);
-			updateTopPanel(SPECTRUM,false);
 			break;
 		case WATERFALL_WATERFALL:
 			//switching between Waterfall, Spectrum, etc clear the old display
+			updateTopPanel(WATERFALL,false);
 			plotArea.fill(Qt::black);
 			topPanelPlotArea.fill(Qt::black);
-			updateTopPanel(WATERFALL,false);
 			break;
 		default:
 			qDebug()<<"Invalid display mode";
 			break;
 	}
 
-	DrawOverlay();
+	drawOverlay();
 	update(); //Schedule a paint in the event loop.  repaint() triggers immediate
 
 }
@@ -652,6 +648,14 @@ void SpectrumWidget::splitterMoved(int x, int y)
 	resizeFrames();
 }
 
+void SpectrumWidget::hiResClicked(bool _b)
+{
+	signalSpectrum->SetHiRes(_b); //Tell spectrum to start collecting hires data
+	topPanelHighResolution = _b;
+	drawOverlay();
+	update(); //Redraw scale
+}
+
 void SpectrumWidget::SetSignalSpectrum(SignalSpectrum *s) 
 {
 	signalSpectrum = s;	
@@ -665,7 +669,7 @@ void SpectrumWidget::SetSignalSpectrum(SignalSpectrum *s)
 }
 // Diplays frequency cursor and filter range
 //Now called from DrawOverlay
-void SpectrumWidget::DrawCursor(QPainter *painter, QRect plotFr, bool isZoomed, QColor color)
+void SpectrumWidget::drawCursor(QPainter *painter, QRect plotFr, bool isZoomed, QColor color)
 {
     if (!isRunning)
         return;
@@ -762,8 +766,8 @@ void SpectrumWidget::paintSpectrum(bool paintTopPanel, QPainter *painter)
 	//Cursor tracking of freq and db
 	QString freqLabel;
 	QString dbLabel;
-	mouseFreq = GetMouseFreq() + loFreq;
-	int mouseDb = GetMouseDb();
+	mouseFreq = getMouseFreq() + loFreq;
+	int mouseDb = getMouseDb();
 	if (mouseFreq > 0)
 		freqLabel.sprintf("%.3f kHz",mouseFreq / 1000.0);
 	else
@@ -844,8 +848,8 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
     //Cursor tracking of freq and db
 	QString freqLabel;
 	QString dbLabel;
-    mouseFreq = GetMouseFreq() + loFreq;
-    int mouseDb = GetMouseDb();
+	mouseFreq = getMouseFreq() + loFreq;
+	int mouseDb = getMouseDb();
     if (mouseFreq > 0)
 		freqLabel.sprintf("%.3f kHz",mouseFreq / 1000.0);
 	else
@@ -932,7 +936,7 @@ void SpectrumWidget::maxDbChanged(int s)
     plotMaxDb = ui.maxDbBox->value();
 	global->settings->fullScaleDb = plotMaxDb;
 	global->settings->WriteSettings(); //save
-	DrawOverlay();
+	drawOverlay();
 	update();
 }
 
@@ -941,7 +945,7 @@ void SpectrumWidget::minDbChanged(int t)
 	plotMinDb = ui.minDbBox->value();
 	global->settings->baseScaleDb = plotMinDb;
 	global->settings->WriteSettings(); //save
-	DrawOverlay();
+	drawOverlay();
 	update();
 
 }
@@ -961,10 +965,12 @@ void SpectrumWidget::zoomChanged(int item)
 		//Since SR is lower (48k or 64k typically) max zoom at 400 is only .15749
 		newZoom = 1.0 / pow(2.0,item/150.0);
 
-	if (!twoPanel && item > 0) {
-		//Turn on zoom
-		updateTopPanel(SPECTRUM,false);
-	}
+	if (spectrumMode == SPECTRUM  && item > 0)
+		//Top panel is off, Turn on as if user clicked on selection
+		ui.displayBox->setCurrentIndex(ui.displayBox->findData(SPECTRUM_SPECTRUM));
+	else if (spectrumMode == WATERFALL && item > 0)
+		ui.displayBox->setCurrentIndex(ui.displayBox->findData(WATERFALL_WATERFALL));
+
 #if 0
 	//Turning zoom off automatically casues user problems when adjusting zoom at lower levels
 	//Too easy to turn it off by mistake
@@ -987,7 +993,7 @@ void SpectrumWidget::zoomChanged(int item)
     //emit mixerLimitsChanged(range, - range);
 
 	//Update display with new labels
-	DrawOverlay();
+	drawOverlay();
     update();
 }
 
@@ -1020,14 +1026,14 @@ void SpectrumWidget::drawSpectrum(QPixmap &_pixMap, QPixmap &_pixOverlayMap, qin
 	//1px left, right and bottom borders will not be painted so we don't see lines
 	//Spectrum data starts and x=1 and ends at plotWidth
 	//Start at lower left corner (upper left is (0,0) in Qt coordinate system
-	LineBuf[numPoints].setX(0);
-	LineBuf[numPoints].setY(_fftMap[0]);
+	lineBuf[numPoints].setX(0);
+	lineBuf[numPoints].setY(_fftMap[0]);
 	numPoints++;
 	//Plot data
 	for (int i=0; i< plotWidth; i++)
 	{
-		LineBuf[numPoints].setX(i+1); //Adjust for hidden border
-		LineBuf[numPoints].setY(_fftMap[i]);
+		lineBuf[numPoints].setX(i+1); //Adjust for hidden border
+		lineBuf[numPoints].setY(_fftMap[i]);
 		lastFftMap = _fftMap[i];  //Keep for right border in polygon
 		numPoints++;
 		//Keep track of peak values for optional display
@@ -1038,22 +1044,22 @@ void SpectrumWidget::drawSpectrum(QPixmap &_pixMap, QPixmap &_pixOverlayMap, qin
 	plotPainter.setPen(pen);
 	//Add points to complete the polygon
 	//Top Right (border)
-	LineBuf[numPoints].setX(plotWidth);
-	LineBuf[numPoints].setY(lastFftMap);
+	lineBuf[numPoints].setX(plotWidth);
+	lineBuf[numPoints].setY(lastFftMap);
 	numPoints++;
 	//Bottom Right
-	LineBuf[numPoints].setX(plotWidth);
-	LineBuf[numPoints].setY(plotHeight);
+	lineBuf[numPoints].setX(plotWidth);
+	lineBuf[numPoints].setY(plotHeight);
 
 	numPoints++;
 	//Bottom Left
-	LineBuf[numPoints].setX(0);
-	LineBuf[numPoints].setY(plotHeight);
+	lineBuf[numPoints].setX(0);
+	lineBuf[numPoints].setY(plotHeight);
 
 	numPoints++;
 	//Top fftMap[0]
-	LineBuf[numPoints].setX(0);
-	LineBuf[numPoints].setY(_fftMap[0]);
+	lineBuf[numPoints].setX(0);
+	lineBuf[numPoints].setY(_fftMap[0]);
 
 #if 0
 	//Just draw the spectrum line, no fill
@@ -1062,7 +1068,7 @@ void SpectrumWidget::drawSpectrum(QPixmap &_pixMap, QPixmap &_pixOverlayMap, qin
 	//Draw the filled polygon.  Note this may take slightly more CPUs
 	QBrush tmpBrush = QBrush(gradient);
 	plotPainter.setBrush(tmpBrush);
-	plotPainter.drawPolygon(LineBuf,numPoints);
+	plotPainter.drawPolygon(lineBuf,numPoints);
 
 #endif
 }
@@ -1185,18 +1191,7 @@ void SpectrumWidget::newFftData()
 			update();
 			break;
 		case SPECTRUM_SPECTRUM:
-			//Draw bottom spectrum
-			signalSpectrum->MapFFTToScreen(
-				plotArea.height(),
-				plotArea.width(),
-				//These are same as testbench
-				plotMaxDb,      //FFT dB level  corresponding to output value == MaxHeight
-				plotMinDb,   //FFT dB level corresponding to output value == 0
-				startFreq, //-sampleRate/2, //Low frequency
-				endFreq, //sampleRate/2, //High frequency
-				fftMap );
-			drawSpectrum(plotArea, plotOverlay, fftMap);
-
+			//Draw top
 			if (!topPanelHighResolution) {
 				//Convert to plot area coordinates
 				//This gets passed straight through to FFT MapFFTToScreen
@@ -1220,22 +1215,45 @@ void SpectrumWidget::newFftData()
 					modeOffset,
 					topPanelFftMap );
 			}
-
 			drawSpectrum(topPanelPlotArea, topPanelPlotOverlay, topPanelFftMap);
+
+			//Draw bottom spectrum
+			signalSpectrum->MapFFTToScreen(
+				plotArea.height(),
+				plotArea.width(),
+				//These are same as testbench
+				plotMaxDb,      //FFT dB level  corresponding to output value == MaxHeight
+				plotMinDb,   //FFT dB level corresponding to output value == 0
+				startFreq, //-sampleRate/2, //Low frequency
+				endFreq, //sampleRate/2, //High frequency
+				fftMap );
+			drawSpectrum(plotArea, plotOverlay, fftMap);
 			//We can only display offscreen pixmap in paint() event, so call it to update
 			update();
 			break;
 		case SPECTRUM_WATERFALL:
 			//Upper Spectrum
-			signalSpectrum->MapFFTToScreen(
-				topPanelPlotArea.height(),
-				topPanelPlotArea.width(),
-				//These are same as testbench
-				plotMaxDb,      //FFT dB level  corresponding to output value == MaxHeight
-				plotMinDb,   //FFT dB level corresponding to output value == 0
-				topPanelStartFreq, //-sampleRate/2, //Low frequency
-				topPanelEndFreq, //sampleRate/2, //High frequency
-				topPanelFftMap );
+			if (!topPanelHighResolution) {
+				signalSpectrum->MapFFTToScreen(
+					topPanelPlotArea.height(),
+					topPanelPlotArea.width(),
+					//These are same as testbench
+					plotMaxDb,      //FFT dB level  corresponding to output value == MaxHeight
+					plotMinDb,   //FFT dB level corresponding to output value == 0
+					topPanelStartFreq, //-sampleRate/2, //Low frequency
+					topPanelEndFreq, //sampleRate/2, //High frequency
+					topPanelFftMap );
+			} else {
+				signalSpectrum->MapFFTZoomedToScreen(
+					topPanelPlotArea.height(),
+					topPanelPlotArea.width(),
+					//These are same as testbench
+					plotMaxDb,      //FFT dB level  corresponding to output value == MaxHeight
+					plotMinDb,   //FFT dB level corresponding to output value == 0
+					zoom,
+					modeOffset,
+					topPanelFftMap );
+			}
 			drawSpectrum(topPanelPlotArea, topPanelPlotOverlay, topPanelFftMap);
 
 			//Lower waterfall
@@ -1248,22 +1266,33 @@ void SpectrumWidget::newFftData()
 				startFreq, //Low frequency
 				endFreq, //High frequency
 				fftMap );
-			//Todo: Handle hires
+
 			drawWaterfall(plotArea, plotOverlay, fftMap);
 			update();
 			break;
 		case WATERFALL_WATERFALL:
 			//Top waterfall
-			signalSpectrum->MapFFTToScreen(
-				255, //Equates to spectrumColor array
-				topPanelPlotArea.width(),
-				//These are same as testbench
-				plotMaxDb, //FFT dB level  corresponding to output value == MaxHeight
-				plotMinDb, //FFT dB level corresponding to output value == 0
-				topPanelStartFreq, //Low frequency
-				topPanelEndFreq, //High frequency
-				topPanelFftMap );
-			//Todo: Handle hires
+			if (!topPanelHighResolution) {
+				signalSpectrum->MapFFTToScreen(
+					255, //Equates to spectrumColor array
+					topPanelPlotArea.width(),
+					//These are same as testbench
+					plotMaxDb, //FFT dB level  corresponding to output value == MaxHeight
+					plotMinDb, //FFT dB level corresponding to output value == 0
+					topPanelStartFreq, //Low frequency
+					topPanelEndFreq, //High frequency
+					topPanelFftMap );
+			} else {
+				signalSpectrum->MapFFTZoomedToScreen(
+					topPanelPlotArea.height(),
+					topPanelPlotArea.width(),
+					//These are same as testbench
+					plotMaxDb,      //FFT dB level  corresponding to output value == MaxHeight
+					plotMinDb,   //FFT dB level corresponding to output value == 0
+					zoom,
+					modeOffset,
+					topPanelFftMap );
+			}
 			drawWaterfall(topPanelPlotArea, topPanelPlotOverlay, topPanelFftMap);
 
 			//Lower waterfall
@@ -1390,12 +1419,17 @@ void SpectrumWidget::updateTopPanel(DISPLAYMODE _newMode, bool updateSlider)
 			ui.topLabelFrame->setVisible(false);
 			ui.topPlotFrame->setVisible(false);
 			ui.topFrameSplitter->setVisible(false);
+			zoom = 1;
+			ui.zoomSlider->setValue(0);
+			ui.hiResButton->setChecked(false);
+			topPanelHighResolution = false;
+			ui.hiResButton->setVisible(false);
+
 			//Adjust the size of the plot frames based on hidden or visible frames
 			adjustSize();
 			//Adjust the size of the pixmaps to new plot frame sizes
 			resizeFrames();
-			twoPanel = false;
-			topPanelHighResolution = false;
+			topPanelDisplayMode = NODISPLAY;
 
 			if (updateSlider)
 				ui.zoomSlider->setValue(0);
@@ -1406,11 +1440,14 @@ void SpectrumWidget::updateTopPanel(DISPLAYMODE _newMode, bool updateSlider)
 			ui.topLabelFrame->setVisible(true);
 			ui.topPlotFrame->setVisible(true);
 			ui.topFrameSplitter->setVisible(true);
+
+			ui.hiResButton->setChecked(false);
+			topPanelHighResolution = false;
+			ui.hiResButton->setVisible(true);
+
 			adjustSize();
 			resizeFrames();
 			topPanelDisplayMode = SPECTRUM;
-			twoPanel = true;
-			topPanelHighResolution = false;
 
 			if (updateSlider)
 				ui.zoomSlider->setValue((ui.zoomSlider->maximum() - ui.zoomSlider->minimum()) / 4);
@@ -1420,11 +1457,14 @@ void SpectrumWidget::updateTopPanel(DISPLAYMODE _newMode, bool updateSlider)
 			ui.topLabelFrame->setVisible(true);
 			ui.topPlotFrame->setVisible(true);
 			ui.topFrameSplitter->setVisible(true);
+
+			ui.hiResButton->setChecked(false);
+			topPanelHighResolution = false;
+			ui.hiResButton->setVisible(true);
+
 			adjustSize();
 			resizeFrames();
 			topPanelDisplayMode = WATERFALL;
-			twoPanel = true;
-			topPanelHighResolution = false;
 
 			if (updateSlider)
 				ui.zoomSlider->setValue((ui.zoomSlider->maximum() - ui.zoomSlider->minimum()) / 4);
@@ -1435,41 +1475,42 @@ void SpectrumWidget::updateTopPanel(DISPLAYMODE _newMode, bool updateSlider)
 			break;
 	}
 
-#if 0
-		case HiResolution: //HiRes pre-demod
-			if (!twoPanel) {
-				ui.zoomLabelFrame->setVisible(true);
-				ui.topPlotFrame->setVisible(true);
-				ui.topFrameSplitter->setVisible(true);
-				adjustSize();
-				resizeFrames();
-			}
-			twoPanel = true;
-			topPanelHighResolution = true;
-			if (updateSlider)
-				ui.zoomSlider->setValue((ui.zoomSlider->maximum() - ui.zoomSlider->minimum()) / 8);
-			break;
-	}
-#endif
-
-#if 0
-	//Let spectrum know if it should process HiRes FFT
-	signalSpectrum->SetDisplayMode(spectrumMode, topPanelHighResolution);
-#endif
-
 }
 
-void SpectrumWidget::DrawScale(QPainter *labelPainter, double centerFreq, bool drawZoomed)
+//Returns a formatted string for use in scale
+//If precision >=0, then override what we would normally display -1 to use default precision
+QString SpectrumWidget::frequencyLabel(double f, qint16 precision)
+{
+	QString label;
+	//Change precision and suffix based on frequency
+	//Keep to 4 significant digts if possible
+	// 9.999g 999.1m 99.99m 1.70k
+	if (f < 0)
+		label = "---";
+	else if (f <= 1700000) //AM band in kHz
+		label = QString::number(f/1000.0,'f',precision >= 0 ? precision : 2)+"k";
+	else if (f <= 99999999)
+		label = QString::number(f/1000000.0,'f',precision >= 0 ? precision : 2)+"m";
+	else if (f < 1000000000)
+		label = QString::number(f/1000000.0,'f',precision >= 0 ? precision : 1)+"m";
+	else
+		label = QString::number(f/1000000000.0,'f',precision >= 0 ? precision : 3)+"g";
+
+	return label;
+}
+
+void SpectrumWidget::drawScale(QPainter *labelPainter, double centerFreq, bool drawTopFrame)
 {
     if (!isRunning)
         return;
 
+	int numXDivs;
+
     //Draw the frequency scale
     float pixPerHdiv;
-	pixPerHdiv = (float)plotLabel.width() / (float)numXDivs;
     int x,y;
     QRect rect;
-    int plotLabelHeight = plotLabel.height();
+	int plotLabelHeight;
 
     //Show actual hi/lo frequency range
     QString horizLabels[maxHDivs];
@@ -1477,54 +1518,54 @@ void SpectrumWidget::DrawScale(QPainter *labelPainter, double centerFreq, bool d
     //100,000 sps * 1.00 / 10 = 10,000 hz per division
     //100,000 sps * 0.10 / 10 = 1000 hz per division
     //Bug with 16bit at 2msps rate
-	quint32 hzPerhDiv = sampleRate / numXDivs;
-	if (drawZoomed) {
-		if (!topPanelHighResolution)
+	quint32 hzPerhDiv;
+	if (drawTopFrame) {
+		numXDivs = (topPanelPlotLabel.width() / 100) * 2; //x2 to make sure always even number
+		plotLabelHeight = topPanelPlotLabel.height();
+		pixPerHdiv = (float)topPanelPlotLabel.width() / (float)numXDivs;
+		if (!topPanelHighResolution) {
 			hzPerhDiv = sampleRate * zoom / numXDivs;
-        else
+		} else {
+			//Smaller range
 			hzPerhDiv = signalSpectrum->getHiResSampleRate() * zoom / numXDivs;
-    }
+		}
+	} else {
+		numXDivs = (plotLabel.width() / 100) * 2; //x2 to make sure always even number
+		plotLabelHeight = plotLabel.height();
+		pixPerHdiv = (float)plotLabel.width() / (float)numXDivs;
+		hzPerhDiv = sampleRate / numXDivs;
+	}
+
 
     //horizDivs must be even number so middle is 0
     //So for 10 divs we start out with [0] at low and [9] at high
-	const quint32 displayMhz = 1000000;
-	const quint32 displayGhz = 1000000000;
+#if 1
+	quint64 leftFreq = centerFreq - ((numXDivs / 2) * hzPerhDiv);
+	quint64 rightFreq = centerFreq + ((numXDivs / 2) * hzPerhDiv);
+	quint64 labelFreq;
 
+	//Truncate far left and right labels with no decimal places
+	horizLabels[0] = frequencyLabel(leftFreq,1);
+	horizLabels[numXDivs] = frequencyLabel(rightFreq,1);
+	for (int i = 1; i<numXDivs; i++) {
+		labelFreq = leftFreq + (i * hzPerhDiv);
+		horizLabels[i] = frequencyLabel(labelFreq);
+	}
+#else
+	quint64 leftFreq,rightFreq;
 	int center = numXDivs / 2;
-	if (centerFreq < displayMhz) //Switching point for kHz to mHz labels
-		horizLabels[center] = QString::number(centerFreq/1000.0,'f',1)+"k";
-	else if (centerFreq < displayGhz)
-		horizLabels[center] = QString::number(centerFreq/1000000.0,'f',1)+"m";
-	else
-		horizLabels[center] = QString::number(centerFreq/1000000000.0,'f',3)+"g";
-
-
-	int tick;
-	qint64 leftFreq,rightFreq;
-    for (int i=0; i <= center; i++) {
+	quint32 tick; //+/- freq from center
+	horizLabels[center] = frequencyLabel(centerFreq);
+	//All divs including far left and far right
+	for (int i=0; i <= center; i++) {
         tick = i * hzPerhDiv;
 		leftFreq = centerFreq - tick;
-        //Never let left label go negative, possible if center < sampleRate/2
-		if (leftFreq < 0)
-            horizLabels[center - i] = "---";
-		else if (leftFreq < displayMhz)
-			horizLabels[center - i] = QString::number(leftFreq/1000.0,'f',1)+"k";
-		else if (leftFreq < displayGhz)
-			horizLabels[center - i] = QString::number(leftFreq/1000000.0,'f',1)+"m";
-		else
-			horizLabels[center - i] = QString::number(leftFreq/1000000000.0,'f',3)+"g";
-
-
+		horizLabels[center - i] = frequencyLabel(leftFreq);
 
 		rightFreq = centerFreq + tick;
-		if (rightFreq < displayMhz)
-			horizLabels[center + i] = QString::number(rightFreq/1000.0,'f',1)+"k";
-		else if (rightFreq < displayGhz)
-			horizLabels[center + i] = QString::number(rightFreq/1000000.0,'f',1)+"m";
-		else
-			horizLabels[center + i] = QString::number(rightFreq/1000000000.0,'f',3)+"g";
-
+		horizLabels[center + i] = frequencyLabel(rightFreq);
     }
+#endif
 
     QFont overlayFont("Arial");
     overlayFont.setPointSize(10);
@@ -1567,6 +1608,9 @@ void SpectrumWidget::drawSpectrumOverlay(bool drawTopPanel)
 	int overlayHeight;
 	QRect plotFr;
 	quint16 dbLabelInterval;
+
+	int numXDivs; //Must be even number to split right around center
+	int numYDivs;
 
 	if (!drawTopPanel) {
 		if (plotOverlay.isNull())
@@ -1643,13 +1687,13 @@ void SpectrumWidget::drawSpectrumOverlay(bool drawTopPanel)
 		painter->drawText(0, y-2, "-"+QString::number(abs(plotMaxDb) + (i * dbLabelInterval)));
 	}
 
-	DrawCursor(painter, plotFr, drawTopPanel, Qt::white);
-	DrawCursor(labelPainter, plotFr, drawTopPanel, Qt::white); //Continues into label area
+	drawCursor(painter, plotFr, drawTopPanel, Qt::white);
+	drawCursor(labelPainter, plotFr, drawTopPanel, Qt::white); //Continues into label area
 
 	if (!drawTopPanel)
-		DrawScale(labelPainter, loFreq, false);
+		drawScale(labelPainter, loFreq, false);
 	else
-		DrawScale(labelPainter, loFreq + fMixer, true);
+		drawScale(labelPainter, loFreq + fMixer, true);
 
 	painter->end();  //Because we use pointer, automatic with instance
 	labelPainter->end();
@@ -1665,10 +1709,12 @@ void SpectrumWidget::drawWaterfallOverlay(bool drawTopPanel)
 
 	if (!drawTopPanel) {
 		plotFr = ui.plotFrame->geometry(); //relative to parent
+		plotLabel.fill(Qt::black);
 		painter->begin(&plotOverlay);  //Because we use pointer, automatic with instance
 		labelPainter->begin(&plotLabel);
 	} else {
 		plotFr = ui.topPlotFrame->geometry(); //relative to parent
+		topPanelPlotLabel.fill(Qt::black);
 		painter->begin(&topPanelPlotOverlay);  //Because we use pointer, automatic with instance
 		labelPainter->begin(&topPanelPlotLabel);
 	}
@@ -1686,12 +1732,12 @@ void SpectrumWidget::drawWaterfallOverlay(bool drawTopPanel)
 		labelPainter.drawPoint(overlayWidth/2 - 80 + i, plotLabelHeight);
 	}
 #endif
-	DrawCursor(labelPainter,plotFr, false, Qt::white);
+	drawCursor(labelPainter,plotFr, false, Qt::white);
 
 	if (!drawTopPanel)
-		DrawScale(labelPainter, loFreq, false);
+		drawScale(labelPainter, loFreq, false);
 	else
-		DrawScale(labelPainter, loFreq + fMixer, true);
+		drawScale(labelPainter, loFreq + fMixer, true);
 
 	painter->end();  //Because we use pointer, automatic with instance
 	labelPainter->end();
@@ -1699,7 +1745,7 @@ void SpectrumWidget::drawWaterfallOverlay(bool drawTopPanel)
 	delete labelPainter;
 }
 
-void SpectrumWidget::DrawOverlay()
+void SpectrumWidget::drawOverlay()
 {
     if (!isRunning)
         return;
