@@ -51,10 +51,10 @@ public:
     void CalcPowerAverages(CPX* in, double *out, int size);
 	void SetMovingAvgLimit(quint32 ave);
 
-	bool MapFFTToScreen(double *inBuf, qint32 maxHeight, qint32 maxWidth,
-                                    double maxdB, double mindB,
-                                    qint32 startFreq, qint32 stopFreq,
-                                    qint32* outBuf );
+	bool MapFFTToScreen(double *inBuf, qint32 yPixels, qint32 xPixels,
+									double maxdB, double mindB,
+									qint32 startFreq, qint32 stopFreq,
+									qint32* outBuf );
 
     int getFFTSize() {return fftSize;}
     CPX *getFreqDomain() {return freqDomain;}
@@ -77,12 +77,12 @@ protected:
     bool fftInputOverload;
 
     //Used by MapFFTToScreen
-    qint32 *plotTranslateTable;
+	qint32 *fftBinToX;
     qint32 binLow; //lowest frequency to be displayed
     qint32 binHigh; //highest frequency to be displayed
-    qint32 lastStartFreq;
-    qint32 lastStopFreq;
-    qint32 lastPlotWidth;
+	qint32 plotStartFreq;
+	qint32 plotStopFreq;
+	qint32 plotWidth;
 
     //For calculating power averages
 	quint32 movingAvgLimit; //How many time to do moving avg before exponential avg
