@@ -77,11 +77,6 @@ protected:
 
     //Used by MapFFTToScreen
 	qint32 *fftBinToX;
-	//qint32 binLow; //lowest frequency to be displayed
-	//qint32 binHigh; //highest frequency to be displayed
-	qint32 plotStartFreq;
-	qint32 plotStopFreq;
-	qint32 plotWidth;
 
     //For calculating power averages
 	quint32 movingAvgLimit; //How many time to do moving avg before exponential avg

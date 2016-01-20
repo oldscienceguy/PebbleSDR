@@ -34,8 +34,6 @@ FFT::FFT() :
 
 
 	fftBinToX = NULL;
-	//binLow = 0;		//force recalculation of plot variables
-	//binHigh = 0;
 
     //These will be init on first use in CalcAverages
     bufferCnt = 0;
@@ -128,10 +126,6 @@ void FFT::FFTParams(quint32 _size, bool _invert, double _dBCompensation, double 
 	if (fftBinToX != NULL)
 		delete fftBinToX;
 	fftBinToX = new qint32[fftSize];
-
-	plotStartFreq = 0;
-	plotStopFreq = 0;
-	plotWidth = 0;
 
     fftParamsSet = true;
 }
@@ -252,35 +246,44 @@ void FFT::CalcPowerAverages(CPX* in, double *out, int size)
 
 }
 
-#if 1
+#if 0
+Returns an array of plotable y values for each element of the array (x value)
+Auto scales so startFreq and stopFreq fill the array (zoom)
+Auto scales to fit xPixels, yPixels, mindB and maxdB
+Handles the case where are more fft bins to plot than pixels available (average fft bins)
+Also handles the case where there are not enough fft bins to fill pixels available
+
+If startFreq or endFreq are outside the FFT range, maps the pixels to DB::minDb ie no signal
+#endif
+
 bool FFT::MapFFTToScreen(
 		double *inBuf,
 
-		qint32 yPixels, //Height
-		qint32 xPixels, //Width
-		double maxdB,
-		double mindB,
-		qint32 startFreq, //In hZ, relative to 0
-		qint32 stopFreq, //In hZ, relative to 0
+		qint32 yPixels, //Height of the plot area
+		qint32 xPixels, //Width of the plot area
+		double maxdB, //Fft value corresponding to output value 0
+		double mindB, //FFT value corresponding to output value DB::maxDb
+		qint32 startFreq, //In +/- hZ, relative to 0
+		qint32 stopFreq, //In +/- hZ, relative to 0
 		qint32* outBuf )
 {
 
 	qint32 binLow;
 	qint32 binHigh;
-	float hzPerBin = (float)sampleRate / (float)fftSize; //hZ per fft bin
+	//float hzPerBin = (float)sampleRate / (float)fftSize; //hZ per fft bin
 	float binsPerHz = (float)fftSize / (float)sampleRate;
 	//
-	qint32 fftLowFreq = -sampleRate / 2;
-	qint32 fftHighFreq = sampleRate / 2;
+	//qint32 fftLowFreq = -sampleRate / 2;
+	//qint32 fftHighFreq = sampleRate / 2;
 
 	//Find the beginning and ending FFT bins that correspond to Start and StopFreq
 	//
 	//Ex: If no zoom, binLow will be 1/2 of fftSize or -1024
-	binLow = (qint32)((double)startFreq * binsPerHz);
+	binLow = (qint32)(startFreq * binsPerHz);
 	//Ex: makes it zero relative, so will be 0
 	binLow += (fftSize/2);
 	//Ex: 1024 for full spectrum
-	binHigh = (qint32)((double)stopFreq * binsPerHz);
+	binHigh = (qint32)(stopFreq * binsPerHz);
 	//Ex: now 2048
 	binHigh += (fftSize/2);
 
@@ -289,12 +292,13 @@ bool FFT::MapFFTToScreen(
 	//We handle this in the output loop
 
 	qint32 fftBinsToPlot = binHigh - binLow;
+
 	//If more pixels than bins, pixelsPerBin will be > 1
 	float pixelsPerBin = (float)xPixels / (float)fftBinsToPlot;
 	float binsPerPixel = (float)fftBinsToPlot / (float)xPixels;
 
 	//dbGainFactor is used to scale min/max db values so they fit in N vertical pixels
-	double dBGainFactor = -1/(maxdB-mindB);
+	float dBGainFactor = -1 / (maxdB - mindB);
 
 	qint32 fftBin; //Bin corresponding to freq being processed
 
@@ -303,42 +307,66 @@ bool FFT::MapFFTToScreen(
 
 	fftMutex.lock();
 
-	for (qint32 i=0; i<xPixels; i++) {
-
-		//If freq for this pixel is outside fft range, output 0 until we are in range
+	qint32 lastFftBin = -1; //Flag as invalid
+	//if more FFT bins than plot bins, averge skipped fftBins to match plots bins
+	if(fftBinsToPlot > xPixels ) {
 		//f is in range, find fft bin that corresponds to it
-		if(fftBinsToPlot >= xPixels ) {
-			//if more FFT bins than plot bins, averge skipped fftBins to match plots bins
+		for (qint32 i=0; i < xPixels; i++) {
 			totalBinPower = 0;
-			for (int j=0; j<binsPerPixel; j++) {
-				fftBin = binLow + (i * binsPerPixel);
-				fftBin += j;
-				//Check fftBin before we look for invert, otherwise won't be negative
-				if (fftBin < 0) {
-					powerdB = mindB; //Out of bin range
-				} else if (fftBin >= fftSize) {
-					powerdB = mindB;
-				} else if (invert) {
-					//Lowest freq is in highest bin
-					fftBin = fftSize - fftBin;
-					powerdB = inBuf[fftBin] - maxdB;
+			//binsPerPixel is a float, be careful about integer math that loses precision and plot points
+			fftBin = binLow + (i*binsPerPixel);
+			//Check fftBin before we look for invert, otherwise won't be negative
+			//If freq for this pixel is outside fft range, output 0 until we are in range
+			if (fftBin < 0) {
+				powerdB = DB::minDb; //Out of bin range
+				lastFftBin = fftBin;
+			} else if (fftBin >= fftSize) {
+				powerdB = DB::minDb;
+				lastFftBin = fftBin;
+			} else if (invert) {
+				//Lowest freq is in highest bin
+				fftBin = fftSize - fftBin - 1; //0 maps to 2047
+
+				//we start from fftBin[fftSize] and go to zero
+				if (lastFftBin > 0 && fftBin != lastFftBin - 1) {
+					//We skipped some bins, average the ones we skipped
+					qint32 skippedBins = lastFftBin - fftBin;
+					for (int j=0; j<skippedBins; j++) {
+						totalBinPower += inBuf[lastFftBin - j] - maxdB;
+					}
+					powerdB = totalBinPower / skippedBins;
+					lastFftBin = fftBin;
 				} else {
 					powerdB = inBuf[fftBin] - maxdB;
 				}
-				totalBinPower += powerdB;
-			}
-			powerdB = totalBinPower / binsPerPixel; //Average
 
-		} else {
-			//if more plot bins than FFT bins, each fft bin maps to multiple plot bins
+			} else if (lastFftBin > 0 && fftBin != lastFftBin + 1) {
+				//Lowest freq is in fftBin[0]
+				//We skipped some bins, average the ones we skipped
+				qint32 skippedBins = fftBin - lastFftBin;
+				for (int j=0; j<skippedBins; j++) {
+					totalBinPower += inBuf[lastFftBin + j] - maxdB;
+				}
+				powerdB = totalBinPower / skippedBins;
+				lastFftBin = fftBin;
+			} else {
+				powerdB = inBuf[fftBin] - maxdB;
+			}
+
+			outBuf[i] = (qint32)(yPixels * dBGainFactor * powerdB);
+		} //End xPixel loop
+
+	} else {
+		//if more plot bins than FFT bins, each fft bin maps to multiple plot bins
+		for (qint32 i=0; i < xPixels; i++) {
 			//ie inBuf[0] maps to outBuf[0..3]
 			// inBuf[1] maps to outBuf [4..7]
 			fftBin = binLow + (i / pixelsPerBin);
 			//Check fftBin before we look for invert, otherwise won't be negative
 			if (fftBin < 0) {
-				powerdB = mindB; //Out of bin range
+				powerdB = DB::minDb; //Out of bin range
 			} else if (fftBin >= fftSize) {
-				powerdB = mindB;
+				powerdB = DB::minDb;
 			} else if (invert) {
 				//Lowest freq is in highest bin
 				fftBin = fftSize - fftBin;
@@ -346,17 +374,25 @@ bool FFT::MapFFTToScreen(
 			} else {
 				powerdB = inBuf[fftBin] - maxdB;
 			}
+			outBuf[i] = (qint32)(yPixels * dBGainFactor * powerdB);
+			lastFftBin = fftBin;
 
-		}
+		} //End xPixel loop
+	}
 
-		outBuf[i] = (qint32)((double)yPixels * dBGainFactor * powerdB);
-	} //End xPixel loop
 	fftMutex.unlock();
 
 	return false; //True if y has to be truncated (overloaded)
 }
 
-#endif
+#if 0
+//Save for reference, replaced 1/20/16
+//Private variables
+//qint32 binLow; //lowest frequency to be displayed
+//qint32 binHigh; //highest frequency to be displayed
+//qint32 plotStartFreq;
+//qint32 plotStopFreq;
+//qint32 plotWidth;
 
 //Common routine borrowed from cuteSDR
 //Scales X axis to fit more FFT data in fewer pixels or fewer FFT data in more pixels
@@ -392,7 +428,6 @@ bool FFT::MapFFTToScreen(
 /// \param outBuf
 /// \return
 
-#if 0
 bool FFT::MapFFTToScreen(
 		double *inBuf,
 		qint32 yPixels, //Height
