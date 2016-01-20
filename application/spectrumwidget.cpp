@@ -501,7 +501,11 @@ void SpectrumWidget::mousePressEvent ( QMouseEvent * event )
     Qt::KeyboardModifiers modifiers = event->modifiers(); //Keyboard modifiers
 
 	double deltaFreq = getMouseFreq();
-
+	if (deltaFreq < -sampleRate / 2 || deltaFreq > sampleRate/2) {
+		//Invalid range
+		event->accept();
+		return;
+	}
     if (button == Qt::LeftButton) {
         if( modifiers == Qt::NoModifier)
             emit mixerChanged(deltaFreq, false); //Mixer mode
