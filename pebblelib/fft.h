@@ -19,9 +19,8 @@ public:
 
     const bool useIntegerFFT; //Used as we switch cuteSDR code to +/-1
 
-    //Move defines to public constants
-    quint32 maxFFTSize;
-    quint32 minFFTSize;
+	const quint32 maxFFTSize = 65535;
+	const quint32 minFFTSize = 512;
     double ampMax;	//maximum sin wave Pk for 16 bit input data
     double overLimit;	//limit for detecting over ranging inputs
 
@@ -54,7 +53,7 @@ public:
 	bool MapFFTToScreen(double *inBuf, qint32 yPixels, qint32 xPixels,
 									double maxdB, double mindB,
 									qint32 startFreq, qint32 stopFreq,
-									qint32* outBuf );
+									qint32 *outBuf );
 
     int getFFTSize() {return fftSize;}
     CPX *getFreqDomain() {return freqDomain;}
@@ -78,8 +77,8 @@ protected:
 
     //Used by MapFFTToScreen
 	qint32 *fftBinToX;
-    qint32 binLow; //lowest frequency to be displayed
-    qint32 binHigh; //highest frequency to be displayed
+	//qint32 binLow; //lowest frequency to be displayed
+	//qint32 binHigh; //highest frequency to be displayed
 	qint32 plotStartFreq;
 	qint32 plotStopFreq;
 	qint32 plotWidth;

@@ -13,8 +13,6 @@
 FFT::FFT() :
     useIntegerFFT(false)
 {
-    maxFFTSize = 65536;
-    minFFTSize = 512;
     if (useIntegerFFT) {
         ampMax = 32767.0;	//maximum sin wave Pk for 16 bit input data
         overLimit = 32000.0;	//limit for detecting over ranging inputs
@@ -36,8 +34,8 @@ FFT::FFT() :
 
 
 	fftBinToX = NULL;
-    binLow = 0;		//force recalculation of plot variables
-    binHigh = 0;
+	//binLow = 0;		//force recalculation of plot variables
+	//binHigh = 0;
 
     //These will be init on first use in CalcAverages
     bufferCnt = 0;
@@ -254,6 +252,112 @@ void FFT::CalcPowerAverages(CPX* in, double *out, int size)
 
 }
 
+#if 1
+bool FFT::MapFFTToScreen(
+		double *inBuf,
+
+		qint32 yPixels, //Height
+		qint32 xPixels, //Width
+		double maxdB,
+		double mindB,
+		qint32 startFreq, //In hZ, relative to 0
+		qint32 stopFreq, //In hZ, relative to 0
+		qint32* outBuf )
+{
+
+	qint32 binLow;
+	qint32 binHigh;
+	float hzPerBin = (float)sampleRate / (float)fftSize; //hZ per fft bin
+	float binsPerHz = (float)fftSize / (float)sampleRate;
+	//
+	qint32 fftLowFreq = -sampleRate / 2;
+	qint32 fftHighFreq = sampleRate / 2;
+
+	//Find the beginning and ending FFT bins that correspond to Start and StopFreq
+	//
+	//Ex: If no zoom, binLow will be 1/2 of fftSize or -1024
+	binLow = (qint32)((double)startFreq * binsPerHz);
+	//Ex: makes it zero relative, so will be 0
+	binLow += (fftSize/2);
+	//Ex: 1024 for full spectrum
+	binHigh = (qint32)((double)stopFreq * binsPerHz);
+	//Ex: now 2048
+	binHigh += (fftSize/2);
+
+	//Note: binLow can be less than zero, indicating we have plots that are below fft
+	//binHigh can be greater than fftSize for the same reason, indicating invalid fft bins
+	//We handle this in the output loop
+
+	qint32 fftBinsToPlot = binHigh - binLow;
+	//If more pixels than bins, pixelsPerBin will be > 1
+	float pixelsPerBin = (float)xPixels / (float)fftBinsToPlot;
+	float binsPerPixel = (float)fftBinsToPlot / (float)xPixels;
+
+	//dbGainFactor is used to scale min/max db values so they fit in N vertical pixels
+	double dBGainFactor = -1/(maxdB-mindB);
+
+	qint32 fftBin; //Bin corresponding to freq being processed
+
+	qint32 totalBinPower = 0;
+	qint32 powerdB = 0;
+
+	fftMutex.lock();
+
+	for (qint32 i=0; i<xPixels; i++) {
+
+		//If freq for this pixel is outside fft range, output 0 until we are in range
+		//f is in range, find fft bin that corresponds to it
+		if(fftBinsToPlot >= xPixels ) {
+			//if more FFT bins than plot bins, averge skipped fftBins to match plots bins
+			totalBinPower = 0;
+			for (int j=0; j<binsPerPixel; j++) {
+				fftBin = binLow + (i * binsPerPixel);
+				fftBin += j;
+				//Check fftBin before we look for invert, otherwise won't be negative
+				if (fftBin < 0) {
+					powerdB = mindB; //Out of bin range
+				} else if (fftBin >= fftSize) {
+					powerdB = mindB;
+				} else if (invert) {
+					//Lowest freq is in highest bin
+					fftBin = fftSize - fftBin;
+					powerdB = inBuf[fftBin] - maxdB;
+				} else {
+					powerdB = inBuf[fftBin] - maxdB;
+				}
+				totalBinPower += powerdB;
+			}
+			powerdB = totalBinPower / binsPerPixel; //Average
+
+		} else {
+			//if more plot bins than FFT bins, each fft bin maps to multiple plot bins
+			//ie inBuf[0] maps to outBuf[0..3]
+			// inBuf[1] maps to outBuf [4..7]
+			fftBin = binLow + (i / pixelsPerBin);
+			//Check fftBin before we look for invert, otherwise won't be negative
+			if (fftBin < 0) {
+				powerdB = mindB; //Out of bin range
+			} else if (fftBin >= fftSize) {
+				powerdB = mindB;
+			} else if (invert) {
+				//Lowest freq is in highest bin
+				fftBin = fftSize - fftBin;
+				powerdB = inBuf[fftBin] - maxdB;
+			} else {
+				powerdB = inBuf[fftBin] - maxdB;
+			}
+
+		}
+
+		outBuf[i] = (qint32)((double)yPixels * dBGainFactor * powerdB);
+	} //End xPixel loop
+	fftMutex.unlock();
+
+	return false; //True if y has to be truncated (overloaded)
+}
+
+#endif
+
 //Common routine borrowed from cuteSDR
 //Scales X axis to fit more FFT data in fewer pixels or fewer FFT data in more pixels
 //For cah pixel bin, calculates the scaled db y value for FFTAvgBuf
@@ -277,6 +381,18 @@ void FFT::CalcPowerAverages(CPX* in, double *out, int size)
 //		MindB = FFT dB level  corresponding to output value == MaxHeight
 //			must be >= to K_MINDB
 //////////////////////////////////////////////////////////////////////
+/// \brief FFT::MapFFTToScreen
+/// \param inBuf
+/// \param yPixels
+/// \param xPixels
+/// \param maxdB
+/// \param mindB
+/// \param startFreq
+/// \param stopFreq
+/// \param outBuf
+/// \return
+
+#if 0
 bool FFT::MapFFTToScreen(
 		double *inBuf,
 		qint32 yPixels, //Height
@@ -419,4 +535,4 @@ bool FFT::MapFFTToScreen(
     //!!return m_Overload;
     return false; //No overload
 }
-
+#endif
