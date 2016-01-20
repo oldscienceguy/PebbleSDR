@@ -169,7 +169,6 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 
 	connect(ui.hiResButton,SIGNAL(clicked(bool)),this,SLOT(hiResClicked(bool)));
 	topPanelHighResolution = false;
-	topPanelDisplayMode = SPECTRUM;
 	isRunning = false;
 }
 
@@ -244,9 +243,12 @@ void SpectrumWidget::leaveEvent(QEvent *event)
 }
 
 //Resizes pixmaps to match size of plot frames
-void SpectrumWidget::resizeFrames(bool scale)
+void SpectrumWidget::resizePixmaps(bool scale)
 {
 	QRect plotFr = ui.plotFrame->rect(); //We just need width and height
+	QRect plotLabelFr = ui.labelFrame->rect();
+	QRect topPlotFr = ui.topPlotFrame->rect();
+	QRect topPlotLabelFr = ui.topLabelFrame->rect();
 
 	//Scale the plot areas first, then copy to new plot area that is resized
 	//Result should be that we see smooth resize without blanking, especially in waterfall
@@ -265,11 +267,9 @@ void SpectrumWidget::resizeFrames(bool scale)
 		plotOverlay.fill(Qt::black);
 	}
 
-	QRect plotLabelFr = ui.labelFrame->rect();
     plotLabel = QPixmap(plotLabelFr.width(),plotLabelFr.height());
     plotLabel.fill(Qt::black);
 
-	QRect topPlotFr = ui.topPlotFrame->rect();
 	if (!topPanelPlotArea.isNull() && scale) {
 		topPanelPlotArea = topPanelPlotArea.scaled(topPlotFr.width(),topPlotFr.height());
 	} else {
@@ -284,16 +284,14 @@ void SpectrumWidget::resizeFrames(bool scale)
 		topPanelPlotOverlay.fill(Qt::black);
 	}
 
-	QRect zoomPlotLabelFr = ui.topLabelFrame->rect();
-	topPanelPlotLabel = QPixmap(zoomPlotLabelFr.width(),zoomPlotLabelFr.height());
+	topPanelPlotLabel = QPixmap(topPlotLabelFr.width(),topPlotLabelFr.height());
 	topPanelPlotLabel.fill(Qt::black);
-
-	drawOverlay(); //plotArea size changed
 }
 
 void SpectrumWidget::resizeEvent(QResizeEvent *event)
 {
-    resizeFrames();
+	resizePixmaps(true); //Scale instead of blacking screen
+	drawOverlay();
 	event->accept(); //We handle
 }
 
@@ -561,8 +559,6 @@ void SpectrumWidget::plotSelectionChanged(DISPLAYMODE _mode)
 		ui.maxDbBox->setVisible(true);
 		ui.minDbBox->setVisible(true);
 		ui.updatesPerSec->setVisible(true);
-		//adjustSize();
-		resizeFrames(); //Make sure pixmaps are properly sized
 	}
 
 	switch (spectrumMode) {
@@ -589,9 +585,6 @@ void SpectrumWidget::plotSelectionChanged(DISPLAYMODE _mode)
 			ui.updatesPerSec->setVisible(false);
 			ui.hiResButton->setVisible(false);
 
-			//We may not need this
-			//adjustSize();
-			//resizeFrames(); //Make sure pixmaps are properly sized
 			update(); //Schedule a paint in the event loop.  repaint() triggers immediate
 			break;
 
@@ -599,32 +592,22 @@ void SpectrumWidget::plotSelectionChanged(DISPLAYMODE _mode)
 			//switching between Waterfall, Spectrum, etc clear the old display
 			//UpdateTopPanel first to turn on/off top panel modes
 			updateTopPanel(NODISPLAY,false);
-			plotArea.fill(Qt::black);
-			topPanelPlotArea.fill(Qt::black);
 			break;
 		case WATERFALL:
 			//switching between Waterfall, Spectrum, etc clear the old display
 			updateTopPanel(NODISPLAY,false);
-			plotArea.fill(Qt::black);
-			topPanelPlotArea.fill(Qt::black);
 			break;
 		case SPECTRUM_WATERFALL:
 			//switching between Waterfall, Spectrum, etc clear the old display
 			updateTopPanel(SPECTRUM,false);
-			plotArea.fill(Qt::black);
-			topPanelPlotArea.fill(Qt::black);
 			break;
 		case SPECTRUM_SPECTRUM:
 			//switching between Waterfall, Spectrum, etc clear the old display
 			updateTopPanel(SPECTRUM,false);
-			plotArea.fill(Qt::black);
-			topPanelPlotArea.fill(Qt::black);
 			break;
 		case WATERFALL_WATERFALL:
 			//switching between Waterfall, Spectrum, etc clear the old display
 			updateTopPanel(WATERFALL,false);
-			plotArea.fill(Qt::black);
-			topPanelPlotArea.fill(Qt::black);
 			break;
 		default:
 			qDebug()<<"Invalid display mode";
@@ -633,7 +616,6 @@ void SpectrumWidget::plotSelectionChanged(DISPLAYMODE _mode)
 
 	drawOverlay();
 	update(); //Schedule a paint in the event loop.  repaint() triggers immediate
-
 }
 
 void SpectrumWidget::updatesPerSecChanged(int item)
@@ -645,13 +627,23 @@ void SpectrumWidget::updatesPerSecChanged(int item)
 
 void SpectrumWidget::splitterMoved(int x, int y)
 {
-	resizeFrames();
+	resizePixmaps(true); //Scale so display isnt' blanked
+	drawOverlay();
 }
 
 void SpectrumWidget::hiResClicked(bool _b)
 {
 	signalSpectrum->SetHiRes(_b); //Tell spectrum to start collecting hires data
 	topPanelHighResolution = _b;
+	ui.zoomSlider->blockSignals(true);
+	if (_b) {
+		ui.zoomSlider->setValue(10);
+		zoom = calcZoom(10); //Set new low zoom rate
+	} else {
+		ui.zoomSlider->setValue(0);
+		zoom = calcZoom(0); //Set new low zoom rate
+	}
+	ui.zoomSlider->blockSignals(false);
 	drawOverlay();
 	update(); //Redraw scale
 }
@@ -950,20 +942,23 @@ void SpectrumWidget::minDbChanged(int t)
 
 }
 
-void SpectrumWidget::zoomChanged(int item)
+double SpectrumWidget::calcZoom(int item)
 {
-	double newZoom;
-
 	//Zoom is a geometric progression so it feels smooth
-    //Item goes from 10 to 200 (or anything), so zoom goes from 10/10(1) to 10/100(0.1) to 10/200(0.5)
+	//Item goes from 10 to 200 (or anything), so zoom goes from 10/10(1) to 10/100(0.1) to 10/200(0.5)
 	//Eventually we should calculate zoom factors using sample rate and bin size to make sure we can't
 	//over-zoom
 	if (!topPanelHighResolution)
 		//Highest zoom factor is with item==400, .0625
-		newZoom = 1.0 / pow(2.0,item/100.0);
+		return 1.0 / pow(2.0,item/100.0);
 	else
 		//Since SR is lower (48k or 64k typically) max zoom at 400 is only .15749
-		newZoom = 1.0 / pow(2.0,item/150.0);
+		return 1.0 / pow(2.0,item/150.0);
+}
+
+void SpectrumWidget::zoomChanged(int item)
+{
+	zoom = calcZoom(item);
 
 	if (spectrumMode == SPECTRUM  && item > 0)
 		//Top panel is off, Turn on as if user clicked on selection
@@ -986,8 +981,6 @@ void SpectrumWidget::zoomChanged(int item)
     //But when zooming out, we expect LO to not change
     //if (fMixer != 0 && newZoom < zoom)
     //    emit mixerChanged(fMixer, true); //Change LO to current mixer freq
-
-    zoom = newZoom;
 
     //In zoom mode, hi/low mixer boundaries need to be updated so we always keep frequency on screen
     //emit mixerLimitsChanged(range, - range);
@@ -1149,25 +1142,22 @@ void SpectrumWidget::newFftData()
     if (!isRunning)
         return;
 
+	//Safety check to make sure pixmaps are always sized correctly
+	if (topPanelPlotArea.size() != ui.topPlotFrame->size() ||
+			plotArea.size() != ui.plotFrame->size()) {
+		//qDebug()<<"Resize pixmap";
+		resizePixmaps(false); //Don't scale, we may have switched modes
+		drawOverlay();
+	}
+
     double startFreq =  - (sampleRate/2); //Relative to 0
     double endFreq = sampleRate/2;
-    //Zoom is always centered on fMixer
+	//Top panel is always centered on fMixer
     //Start by assuming we have full +/- samplerate and make fMixer zero centered
 	double topPanelStartFreq =  startFreq * zoom;
 	double topPanelEndFreq = endFreq * zoom ;
 	topPanelStartFreq += fMixer;
 	topPanelEndFreq += fMixer;
-    //Now handle overflow, we want fMixer in center regardless of where we are
-    double adj = 0;
-	if (topPanelStartFreq <= startFreq) {
-		adj = topPanelStartFreq - startFreq;
-		topPanelStartFreq = startFreq;
-		topPanelEndFreq -= adj;
-	} else if (topPanelEndFreq >= endFreq) {
-		adj = topPanelEndFreq - endFreq;
-		topPanelEndFreq = endFreq;
-		topPanelStartFreq += adj;
-    }
 
 	switch (spectrumMode) {
 		case NODISPLAY:
@@ -1306,7 +1296,6 @@ void SpectrumWidget::newFftData()
 				endFreq, //High frequency
 				fftMap );
 			drawWaterfall(plotArea,plotOverlay,fftMap);
-
 			update();
 			break;
 		case WATERFALL: {
@@ -1322,85 +1311,6 @@ void SpectrumWidget::newFftData()
 				endFreq, //High frequency
 				fftMap );
 			drawWaterfall(plotArea,plotOverlay,fftMap);
-
-
-#if 0
-			quint16 wfPixPerLine = 1; //Testing vertical zoom
-			//Color code each bin and draw line
-			QPainter plotPainter(&plotArea);
-			QPainter zoomPlotPainter(&topPanelPlotArea);
-
-			QColor plotColor;
-
-			//Waterfall
-			//Scroll fr rect 1 pixel to create new line
-			QRect rect = plotArea.rect();
-			plotArea.scroll(0,wfPixPerLine,rect);
-
-			//Instead of plot area coordinates we convert to screen color array
-			//Width is unchanged, but height is # colors we have for each db
-			signalSpectrum->MapFFTToScreen(
-				255, //Equates to spectrumColor array
-				plotArea.width(),
-				//These are same as testbench
-				plotMaxDb, //FFT dB level  corresponding to output value == MaxHeight
-				plotMinDb, //FFT dB level corresponding to output value == 0
-				startFreq, //Low frequency
-				endFreq, //High frequency
-				fftMap );
-
-			for (int i=0; i<plotArea.width(); i++) {
-				for (int j=0; j<wfPixPerLine; j++) {
-					plotColor = spectrumColors[255 - fftMap[i]];
-					plotPainter.setPen(plotColor);
-					plotPainter.drawPoint(i,j);
-				}
-
-			}
-
-			//Testng vertical spacing in zoom mode
-			quint16 wfZoomPixPerLine = 1;
-			if (twoPanel) {
-				//Waterfall
-				//Scroll fr rect 1 pixel to create new line
-				QRect rect = topPanelPlotArea.rect();
-				//rect.setBottom(rect.bottom() - 10); //Reserve the last 10 pix for labels
-				topPanelPlotArea.scroll(0,wfZoomPixPerLine,rect);
-
-				if (topPanelDisplayMode == SPECTRUM) {
-					signalSpectrum->MapFFTToScreen(
-						255, //Equates to spectrumColor array
-						topPanelPlotArea.width(),
-						//These are same as testbench
-						plotMaxDb, //FFT dB level  corresponding to output value == MaxHeight
-						plotMinDb, //FFT dB level corresponding to output value == 0
-						zoomStartFreq, //Low frequency
-						zoomEndFreq, //High frequency
-						fftMap );
-
-				} else {
-					//Instead of plot area coordinates we convert to screen color array
-					//Width is unchanged, but height is # colors we have for each db
-					signalSpectrum->MapFFTZoomedToScreen(
-						255, //Equates to spectrumColor array
-						topPanelPlotArea.width(),
-						//These are same as testbench
-						plotMaxDb, //FFT dB level  corresponding to output value == MaxHeight
-						plotMinDb, //FFT dB level corresponding to output value == 0
-						zoom,
-						modeOffset,
-						fftMap );
-				}
-				for (int i=0; i<plotArea.width(); i++) {
-					for (int j=0; j<wfZoomPixPerLine; j++) {
-						plotColor = spectrumColors[255 - fftMap[i]];
-						zoomPlotPainter.setPen(plotColor);
-						zoomPlotPainter.drawPoint(i,j);
-					}
-				}
-
-			}
-#endif
 			update();
 			break;
 		}
@@ -1425,12 +1335,7 @@ void SpectrumWidget::updateTopPanel(DISPLAYMODE _newMode, bool updateSlider)
 			topPanelHighResolution = false;
 			ui.hiResButton->setVisible(false);
 
-			//Adjust the size of the plot frames based on hidden or visible frames
-			adjustSize();
-			//Adjust the size of the pixmaps to new plot frame sizes
-			resizeFrames();
-			topPanelDisplayMode = NODISPLAY;
-
+			resizePixmaps(false);
 			if (updateSlider)
 				ui.zoomSlider->setValue(0);
 			update();
@@ -1445,10 +1350,7 @@ void SpectrumWidget::updateTopPanel(DISPLAYMODE _newMode, bool updateSlider)
 			topPanelHighResolution = false;
 			ui.hiResButton->setVisible(true);
 
-			adjustSize();
-			resizeFrames();
-			topPanelDisplayMode = SPECTRUM;
-
+			resizePixmaps(false);
 			if (updateSlider)
 				ui.zoomSlider->setValue((ui.zoomSlider->maximum() - ui.zoomSlider->minimum()) / 4);
 			update();
@@ -1462,10 +1364,7 @@ void SpectrumWidget::updateTopPanel(DISPLAYMODE _newMode, bool updateSlider)
 			topPanelHighResolution = false;
 			ui.hiResButton->setVisible(true);
 
-			adjustSize();
-			resizeFrames();
-			topPanelDisplayMode = WATERFALL;
-
+			resizePixmaps(false);
 			if (updateSlider)
 				ui.zoomSlider->setValue((ui.zoomSlider->maximum() - ui.zoomSlider->minimum()) / 4);
 			update();
@@ -1474,7 +1373,6 @@ void SpectrumWidget::updateTopPanel(DISPLAYMODE _newMode, bool updateSlider)
 			qDebug()<<"Invalid mode for top spectrum pane";
 			break;
 	}
-
 }
 
 //Returns a formatted string for use in scale
@@ -1529,11 +1427,13 @@ void SpectrumWidget::drawScale(QPainter *labelPainter, double centerFreq, bool d
 			//Smaller range
 			hzPerhDiv = signalSpectrum->getHiResSampleRate() * zoom / numXDivs;
 		}
+		//qDebug()<<"Top "<<hzPerhDiv;
 	} else {
 		numXDivs = (plotLabel.width() / 100) * 2; //x2 to make sure always even number
 		plotLabelHeight = plotLabel.height();
 		pixPerHdiv = (float)plotLabel.width() / (float)numXDivs;
 		hzPerhDiv = sampleRate / numXDivs;
+		//qDebug()<<"Bottom "<<hzPerhDiv;
 	}
 
 

@@ -126,19 +126,19 @@ private:
 
     int modeOffset;
 
-	void resizeFrames(bool scale = true);
+	void resizePixmaps(bool scale = true);
 	void drawScale(QPainter *labelPainter, double centerFreq, bool drawTopFrame);
 
 	void updateTopPanel(DISPLAYMODE _newMode, bool updateSlider);
 	QRect mapFrameToWidget(QFrame *frame);
 
 	bool topPanelHighResolution; //True if top panel is in hi-res mode
-	DISPLAYMODE  topPanelDisplayMode; //Spectrum or Waterfall
 	void paintSpectrum(bool paintTopPanel, QPainter *painter);
 	void drawSpectrumOverlay(bool drawTopPanel);
 	void drawWaterfallOverlay(bool drawTopPanel);
 	void drawWaterfall(QPixmap &_pixMap, QPixmap &_pixOverlayMap, qint32 *_fftMap);
 	QString frequencyLabel(double f, qint16 precision = -1);
+	double calcZoom(int item);
 };
 
 #endif // SPECTRUMWIDGET_H
