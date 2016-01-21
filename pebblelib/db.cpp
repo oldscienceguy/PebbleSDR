@@ -38,7 +38,7 @@
 double DB::maxDb = 0;
 //Same as SpectraVue & CuteSDR;
 double DB::minDb = -120.0;
-//Hard wired for FFT 2048 for testing
+//Hard wired for FFT 2048 for testing, reset by fft setParams
 double DB::dbOffset = DB::maxDb - 20 * log10(2048 * 1.0 / 2.0);
 double DB::pwrOffset = pow(10, (DB::minDb - DB::dbOffset) / 10.0);
 

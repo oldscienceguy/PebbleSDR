@@ -94,6 +94,10 @@ void FFT::FFTParams(quint32 _size, bool _invert, double _dBCompensation, double 
     else
         fftSize = _size;
 
+	//Reset to actual fft size
+	DB::dbOffset = DB::maxDb - 20 * log10(fftSize * 1.0 / 2.0);
+	DB::pwrOffset = pow(10, (DB::minDb - DB::dbOffset) / 10.0);
+
     invert = _invert;
     dBCompensation = _dBCompensation;
     sampleRate = _sampleRate;
