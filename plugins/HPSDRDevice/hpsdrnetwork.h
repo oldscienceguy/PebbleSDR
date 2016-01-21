@@ -105,6 +105,7 @@ private:
 	quint32 udpSequenceNumberIn;
 	quint32 udpSequenceNumberOut;
 
+	//This is based on datagram size not fft size.  Ok to hard code
 	quint8 dataGramBuffer[2048]; //2x bigger than largest we expect, used to read raw datagram
 
 	QHostAddress metisHostAddress;

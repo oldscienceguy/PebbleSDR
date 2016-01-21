@@ -576,7 +576,7 @@ void HPSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 			}
 
 			//Got data, process
-			ProcessIQData((CPX *)dataBuf,2048); //!!Check size, CPX samples?
+			ProcessIQData((CPX *)dataBuf,framesPerBuffer); //!!Check size, CPX samples?
 
 			producerConsumer.ReleaseFreeBuffer();
 			break;
