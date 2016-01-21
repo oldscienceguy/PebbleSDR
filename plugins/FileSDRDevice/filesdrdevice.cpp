@@ -73,7 +73,7 @@ bool FileSDRDevice::Connect()
     QFileInfo fi(fileName);
     recordingPath = fi.path()+"/*";
 
-    bool res = wavFileRead.OpenRead(fileName);
+	bool res = wavFileRead.OpenRead(fileName, framesPerBuffer);
     if (!res)
         return false;
 

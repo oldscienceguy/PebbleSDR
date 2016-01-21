@@ -164,7 +164,7 @@ class WavFile
 public:
     WavFile();
     ~WavFile();
-    bool OpenRead(QString fname);
+	bool OpenRead(QString fname, quint32 _maxNumberOfSamples);
     bool OpenWrite(QString fname, int sampleRate, quint32 loFreq, quint8 _mode, quint8 spare);
     CPX ReadSample();
     int ReadSamples(CPX *buf, int numSamples);
@@ -186,9 +186,10 @@ protected:
     quint16 dataStart; //Offset in file where data starts, allows us to loop continuously
     char tmpBuf[256];
     //Use this buffer for both 1 and 2 channel files, numSamples is 1024 for 1 channel however
-    PCM_DATA_2CH pcmBuf[4096]; //Max samples per read is 4096
-    FLOAT_DATA floatBuf[4096];
-    qint16 monoPcmBuf[2048];
+	quint32 maxNumberOfSamples;
+	PCM_DATA_2CH *pcmBuf;
+	FLOAT_DATA *floatBuf;
+	qint16 *monoPcmBuf;
 
     QFile *wavFile;
     //wav file data structs

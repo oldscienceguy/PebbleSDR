@@ -11,7 +11,9 @@ WavFile::WavFile()
     fileParsed = false;
     writeMode = false;
     wavFile = NULL;
-
+	pcmBuf = NULL;
+	floatBuf = NULL;
+	monoPcmBuf = NULL;
 }
 
 WavFile::~WavFile()
@@ -20,8 +22,19 @@ WavFile::~WavFile()
         wavFile->close();
 }
 
-bool WavFile::OpenRead(QString fname)
+bool WavFile::OpenRead(QString fname, quint32 _maxNumberOfSamples)
 {
+	maxNumberOfSamples = _maxNumberOfSamples;
+	if (pcmBuf != NULL)
+		delete []pcmBuf;
+	pcmBuf = new PCM_DATA_2CH[maxNumberOfSamples * 2];
+	if (floatBuf != NULL)
+		delete []floatBuf;
+	floatBuf = new FLOAT_DATA[maxNumberOfSamples * 2];
+	if (monoPcmBuf != NULL)
+		delete []monoPcmBuf;
+	monoPcmBuf = new qint16[maxNumberOfSamples];
+
     wavFile = new QFile(fname);
     if (wavFile == NULL) {
         return false;
@@ -436,6 +449,17 @@ bool WavFile::Close()
             return false;
 
         wavFile->close();
+
+		if (pcmBuf != NULL)
+			delete []pcmBuf;
+		pcmBuf = NULL;
+		if (floatBuf != NULL)
+			delete []floatBuf;
+		floatBuf = NULL;
+		if (monoPcmBuf != NULL)
+			delete []monoPcmBuf;
+		monoPcmBuf = NULL;
+
         return true;
     }
 
