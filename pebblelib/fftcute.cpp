@@ -28,7 +28,9 @@ CFft::CFft() :FFT()
 	m_pSinCosTbl = NULL;
 	m_pWindowTbl = NULL;
 
-    FFTParams( 2048, false ,0.0, 1000);
+	//1/20/16: Not sure why we initialize this in constructor, should be initialized with actual FFT size
+	//by receiver or other classes
+	//FFTParams( 2048, false ,0.0, 1000);
     SetMovingAvgLimit( 1);
 }
 
