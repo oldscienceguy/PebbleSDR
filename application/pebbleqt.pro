@@ -109,10 +109,13 @@ macx {
         pebblefix.commands += install_name_tool -change libpebblelib.1.dylib @executable_path/../Frameworks/libpebblelib.1.dylib $${DESTDIR}/Pebble.app/contents/macos/pebble;
 
         #macdeployqt should pick up any fixups we missed and copy QT libraries to app Frameworks directory
-        pebblefix.commands += macdeployqt $${DESTDIR}/Pebble.app;
+        #pebblefix.commands += dsymutil $${DESTDIR}/Pebble.app/Contents/MacOS/Pebble;
+        #1/26/16: macdeployqt has been strippping debug symbol for some time, ie no breakpoints
+        #Some QT update starting running strip at the the end.  Adding -no-strip arg gives us bp back!
+        pebblefix.commands += macdeployqt $${DESTDIR}/Pebble.app -no-strip;
 
         #Uncomment for debugging dependencies
-        pebblefix.commands += otool -L $${DESTDIR}/Pebble.app/contents/macos/pebble >> temp.txt;
+        #pebblefix.commands += otool -L $${DESTDIR}/Pebble.app/contents/macos/pebble >> temp.txt;
         pebblefix.path += $${DESTDIR}
         INSTALLS += pebblefix
 }
