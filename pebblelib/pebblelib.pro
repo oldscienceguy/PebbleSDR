@@ -116,7 +116,8 @@ SOURCES += pebblelib.cpp \
     alawcompression.cpp \
     fftaccelerate.cpp \
     audiopa.cpp \
-    pebblelib_global.cpp
+    pebblelib_global.cpp \
+    wavfile.cpp
 
 HEADERS += pebblelib.h\
     pebblelib_global.h \
@@ -143,7 +144,8 @@ HEADERS += pebblelib.h\
     alawcompression.h \
     fftaccelerate.h \
     medianfilter.h \
-    audiopa.h
+    audiopa.h \
+    wavfile.h
 
 DISTFILES += \
     gpl.html

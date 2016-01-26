@@ -273,7 +273,6 @@ HEADERS += \
     demod/rdsdecode.h \
     filters/fractresampler.h \
     devices/extio.h \
-    devices/wavfile.h \
     bargraphmeter.h \
     testbench.h \
     demod/demod_am.h \
@@ -310,7 +309,6 @@ SOURCES += \
 	demod/demod_wfm.cpp \
     demod/rdsdecode.cpp \
     filters/fractresampler.cpp \
-    devices/wavfile.cpp \
     bargraphmeter.cpp \
     testbench.cpp \
     demod/demod_am.cpp \

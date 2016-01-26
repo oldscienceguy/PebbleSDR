@@ -3,9 +3,6 @@
 #include "wavfile.h"
 #include "QDebug"
 
-#include "global.h"
-#include "testbench.h"
-
 WavFile::WavFile()
 {
     fileParsed = false;
@@ -164,6 +161,7 @@ bool WavFile::OpenRead(QString fname, quint32 _maxNumberOfSamples)
 
 bool WavFile::OpenWrite(QString fname, int sampleRate, quint32 _loFreq, quint8 _mode, quint8 spare)
 {
+	Q_UNUSED(spare);
     //qDebug()<<fname;
 
     wavFile = new QFile(fname);
