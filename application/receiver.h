@@ -25,7 +25,7 @@
 #include "iqbalance.h"
 #include "filters/fir.h"
 #include "filters/fractresampler.h"
-#include "devices/wavfile.h"
+#include "wavfile.h"
 #include "sdroptions.h"
 #include "fft.h"
 
