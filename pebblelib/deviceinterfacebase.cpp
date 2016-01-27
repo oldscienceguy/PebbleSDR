@@ -603,6 +603,33 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, qint8 I, qint8 Q)
 
 }
 
+void DeviceInterfaceBase::normalizeIQ(CPX *cpx, CPX iq)
+{
+	double tmp;
+	//Normalize and apply gain
+	cpx->re = iq.re * userIQGain * normalizeIQGain;
+	cpx->im = iq.im * userIQGain * normalizeIQGain;
+
+	//Configure IQ order if not default
+	switch(iqOrder) {
+		case DeviceInterface::IQ:
+			//No change, this is the default order
+			break;
+		case DeviceInterface::QI:
+			tmp = cpx->re;
+			cpx->re = cpx->im;
+			cpx->im = tmp;
+			break;
+		case DeviceInterface::IONLY:
+			cpx->im = cpx->re;
+			break;
+		case DeviceInterface::QONLY:
+			cpx->re = cpx->im;
+			break;
+	}
+
+}
+
 //Called by audio devices when new samples are available
 //Samples are paired I and Q
 //numSamples is total number of samples I + Q

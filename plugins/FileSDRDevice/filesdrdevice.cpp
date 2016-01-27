@@ -116,6 +116,7 @@ void FileSDRDevice::Stop()
 
 void FileSDRDevice::ReadSettings()
 {
+
 	DeviceInterfaceBase::ReadSettings();
 
 	fileName = qSettings->value("FileName", "").toString();
@@ -181,8 +182,6 @@ QVariant FileSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 
 			break;
 		}
-		case IQGain:
-			return 0.5;
 		default:
 			//If we don't handle it, let default grab it
 			return DeviceInterfaceBase::Get(_key, _option);
@@ -243,6 +242,9 @@ void FileSDRDevice::producerSlot()
 	if ((bufPtr = (CPX*)producerConsumer.AcquireFreeBuffer()) == NULL)
 		return;
 	samplesRead = wavFileRead.ReadSamples(bufPtr,framesPerBuffer);
+	for (int i=0; i<framesPerBuffer; i++) {
+		normalizeIQ(&bufPtr[i],bufPtr[i]);
+	}
 	producerConsumer.ReleaseFilledBuffer();
 	//pebbleLibGlobal->perform.StopPerformance(1000);
 }
