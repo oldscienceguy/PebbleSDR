@@ -13,7 +13,7 @@ public:
 	FFTAccelerate();
 	~FFTAccelerate();
 
-	void FFTParams(quint32 _size, bool _invert, double _dBCompensation, double _sampleRate);
+	void FFTParams(quint32 _size, double _dBCompensation, double _sampleRate);
 	void FFTForward(CPX * in, CPX * out, int size);
 	void FFTMagnForward(CPX * in,int size,double baseline,double correction,double *fbr);
 	void FFTInverse(CPX * in, CPX * out, int size);

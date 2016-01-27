@@ -69,8 +69,8 @@ void SignalSpectrum::SetSampleRate(quint32 _sampleRate, quint32 _hiResSampleRate
 {
     sampleRate = _sampleRate;
 	hiResSampleRate = _hiResSampleRate;
-	fftUnprocessed->FFTParams(fftSize, true, DB::maxDb, sampleRate);
-	fftHiRes->FFTParams(fftSize, true, DB::maxDb, hiResSampleRate);
+	fftUnprocessed->FFTParams(fftSize, DB::maxDb, sampleRate);
+	fftHiRes->FFTParams(fftSize, DB::maxDb, hiResSampleRate);
     //Based on sample rates
 	SetUpdatesPerSec(global->settings->updatesPerSecond);
     emitFftCounter = 0;

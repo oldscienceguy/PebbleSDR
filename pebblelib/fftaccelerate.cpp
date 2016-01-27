@@ -15,10 +15,10 @@ FFTAccelerate::~FFTAccelerate()
 		delete splitComplex.imagp;
 }
 
-void FFTAccelerate::FFTParams(quint32 _size, bool _invert, double _dBCompensation, double _sampleRate)
+void FFTAccelerate::FFTParams(quint32 _size, double _dBCompensation, double _sampleRate)
 {
 	//Must call FFT base to properly init
-	FFT::FFTParams(_size, _invert, _dBCompensation, _sampleRate);
+	FFT::FFTParams(_size, _dBCompensation, _sampleRate);
 
 	fftSizeLog2n = log2f(_size);
 	//n = 1 << log2n; //???

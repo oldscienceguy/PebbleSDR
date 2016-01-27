@@ -14,10 +14,10 @@ FFTfftw::~FFTfftw()
     if (buf) CPXBuf::free(buf);
 }
 
-void FFTfftw::FFTParams(quint32 _size, bool _invert, double _dBCompensation, double _sampleRate)
+void FFTfftw::FFTParams(quint32 _size, double _dBCompensation, double _sampleRate)
 {
     //Must call FFT base to properly init
-    FFT::FFTParams(_size, _invert, _dBCompensation, _sampleRate);
+	FFT::FFTParams(_size, _dBCompensation, _sampleRate);
 
     half_sz = fftSize / 2;
     plan_fwd = fftw_plan_dft_1d(fftSize , (double (*)[2])timeDomain, (double (*)[2])freqDomain, FFTW_FORWARD, FFTW_MEASURE);

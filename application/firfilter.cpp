@@ -90,9 +90,9 @@ FIRFilter::FIRFilter(int sr, int ns, bool _useFFT, int _numTaps, int _delay):
 		//Circular convolution appears as a ghost signal that does not show up in the spectrum at the
 		//mirror frequency of a signal in the lower part of the spectrum
 		fftFIR = FFT::Factory();
-		fftFIR->FFTParams(numSamplesX2, true, 0, sr);
+		fftFIR->FFTParams(numSamplesX2, 0, sr);
 		fftSamples = FFT::Factory();
-		fftSamples->FFTParams(numSamplesX2, true, 0, sr);
+		fftSamples->FFTParams(numSamplesX2, 0, sr);
 
         window = new double[numSamples];
 

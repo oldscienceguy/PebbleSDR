@@ -21,7 +21,6 @@
 CFft::CFft() :FFT()
 {
     fftInputOverload = false;
-    invert = false;
 	m_LastFFTSize = 0;
     fftSize = 1024;
 	m_pWorkArea = NULL;
@@ -61,10 +60,10 @@ void CFft::FreeMemory()
 ///////////////////////////////////////////////////////////////////
 //FFT initialization and parameter setup function
 ///////////////////////////////////////////////////////////////////
-void CFft::FFTParams(quint32 _size, bool _invert, double _dBCompensation, double _sampleRate)
+void CFft::FFTParams(quint32 _size, double _dBCompensation, double _sampleRate)
 {
     //Must call FFT base to properly init
-    FFT::FFTParams(_size, _invert, _dBCompensation, _sampleRate);
+	FFT::FFTParams(_size, _dBCompensation, _sampleRate);
 
     qint32 i;
     fftMutex.lock();

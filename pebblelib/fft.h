@@ -26,7 +26,7 @@ public:
 
     //Keep separate from constructor so we can change on the fly eventually
     //cutesdr usage
-	virtual void FFTParams(quint32 _size, bool _invert, double _dBCompensation, double _sampleRate);
+	virtual void FFTParams(quint32 _size, double _dBCompensation, double _sampleRate);
     //Reset to init state, same parameters
     virtual void ResetFFT();
 
@@ -53,7 +53,7 @@ public:
 	bool MapFFTToScreen(double *inBuf, qint32 yPixels, qint32 xPixels,
 									double maxdB, double mindB,
 									qint32 startFreq, qint32 stopFreq,
-									qint32 *outBuf );
+									qint32 *outBuf, bool _reverseMap = false );
 
     int getFFTSize() {return fftSize;}
     CPX *getFreqDomain() {return freqDomain;}
@@ -71,7 +71,6 @@ protected:
 
     qint32 fftSize;
     double sampleRate;
-    bool invert; //forward or reverse in process
 
     bool fftInputOverload;
 

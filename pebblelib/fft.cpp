@@ -29,7 +29,6 @@ FFT::FFT() :
 
     fftParamsSet = false; //Only set to true in FFT::FFTParams(...)
 
-    invert = false;
 	dBCompensation = DB::maxDb;
 
 
@@ -83,7 +82,7 @@ FFT* FFT::Factory()
 	return NULL;
 }
 
-void FFT::FFTParams(quint32 _size, bool _invert, double _dBCompensation, double _sampleRate)
+void FFT::FFTParams(quint32 _size, double _dBCompensation, double _sampleRate)
 {
     if (_size == 0)
         return; //Error
@@ -98,7 +97,6 @@ void FFT::FFTParams(quint32 _size, bool _invert, double _dBCompensation, double 
 	DB::dbOffset = DB::maxDb - 20 * log10(fftSize * 1.0 / 2.0);
 	DB::pwrOffset = pow(10, (DB::minDb - DB::dbOffset) / 10.0);
 
-    invert = _invert;
     dBCompensation = _dBCompensation;
     sampleRate = _sampleRate;
 
@@ -260,8 +258,7 @@ Also handles the case where there are not enough fft bins to fill pixels availab
 If startFreq or endFreq are outside the FFT range, maps the pixels to DB::minDb ie no signal
 #endif
 
-bool FFT::MapFFTToScreen(
-		double *inBuf,
+bool FFT::MapFFTToScreen(double *inBuf,
 
 		qint32 yPixels, //Height of the plot area
 		qint32 xPixels, //Width of the plot area
@@ -269,7 +266,7 @@ bool FFT::MapFFTToScreen(
 		double mindB, //FFT value corresponding to output value DB::maxDb
 		qint32 startFreq, //In +/- hZ, relative to 0
 		qint32 stopFreq, //In +/- hZ, relative to 0
-		qint32* outBuf )
+		qint32* outBuf , bool _reverseMap)
 {
 
 	qint32 binLow;
@@ -327,7 +324,7 @@ bool FFT::MapFFTToScreen(
 			} else if (fftBin >= fftSize) {
 				powerdB = DB::minDb;
 				lastFftBin = fftBin;
-			} else if (invert) {
+			} else if (_reverseMap) {
 				//Lowest freq is in highest bin
 				fftBin = fftSize - fftBin - 1; //0 maps to 2047
 
@@ -371,7 +368,7 @@ bool FFT::MapFFTToScreen(
 				powerdB = DB::minDb; //Out of bin range
 			} else if (fftBin >= fftSize) {
 				powerdB = DB::minDb;
-			} else if (invert) {
+			} else if (_reverseMap) {
 				//Lowest freq is in highest bin
 				fftBin = fftSize - fftBin;
 				powerdB = inBuf[fftBin] - maxdB;

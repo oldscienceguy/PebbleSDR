@@ -193,7 +193,7 @@ bool Receiver::On()
 	//fft must be large enough to avoid circular convolution for filtering
 	fftSize = framesPerBuffer *2;
 	fft = FFT::Factory();
-	fft->FFTParams(fftSize, true, 0, sampleRate);
+	fft->FFTParams(fftSize, 0, sampleRate);
 
 
     //These steps work on demodSampleRate rates

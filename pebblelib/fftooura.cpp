@@ -57,10 +57,10 @@ FFTOoura::~FFTOoura()
 {
 }
 
-void FFTOoura::FFTParams( quint32 _size, bool _invert, double _dBCompensation, double _sampleRate)
+void FFTOoura::FFTParams( quint32 _size, double _dBCompensation, double _sampleRate)
 {
     //Must call FFT base to properly init
-    FFT::FFTParams(_size, _invert, _dBCompensation, _sampleRate);
+	FFT::FFTParams(_size, _dBCompensation, _sampleRate);
 
     //These are inplace transforms,ie out = in, of 1 dimensional data (dft_1d)
 	offtWorkArea = new int[fftSize]; //Work buffer for bit reversal, size at least 2+sqrt(n)
