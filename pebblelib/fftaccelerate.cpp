@@ -64,16 +64,6 @@ void FFTAccelerate::FFTForward(CPX *in, CPX *out, int size)
 
 }
 
-void FFTAccelerate::FFTMagnForward(CPX *in, int size, double baseline, double correction, double *fbr)
-{
-	Q_UNUSED (in);
-	Q_UNUSED (size);
-	Q_UNUSED (baseline);
-	Q_UNUSED (correction);
-	Q_UNUSED (fbr);
-	//Not used anywhere
-}
-
 void FFTAccelerate::FFTInverse(CPX *in, CPX *out, int size)
 {
 	if (!fftParamsSet)
@@ -112,14 +102,7 @@ void FFTAccelerate::FFTSpectrum(CPX *in, double *out, int size)
 
 	FFTForward(in,workingBuf,size); //No need to copy to out, leave in freqDomain
 
-	//Now in freq domain we need to work with fftSize, not sample size
-	for( int unfolded = 0, folded = fftSize/2 ; folded < fftSize; unfolded++, folded++) {
-		freqDomain[unfolded] = workingBuf[folded]; //folded = 1024 to 2047 unfolded = 0 to 1023
-	}
-	// FFT output index 0 to N/2-1 is frequency output 0 to +Fs/2 Hz  (positive frequencies)
-	for( int unfolded = fftSize/2, folded = 0; unfolded < fftSize; unfolded++, folded++) {
-		freqDomain[unfolded] = workingBuf[folded]; //folded = 0 to 1023 unfolded = 1024 to 2047
-	}
+	unfoldInOrder(workingBuf, freqDomain);
 
 	CalcPowerAverages(freqDomain, out, fftSize);
 

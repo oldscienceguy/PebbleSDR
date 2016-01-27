@@ -34,7 +34,6 @@ public:
     //If in==NULL, use whatever is in timeDomain buffer
     //If out==NULL, leave result in freqDomain buffer and don't copy to out
     virtual void FFTForward(CPX * in, CPX * out, int size) = 0;
-    virtual void FFTMagnForward(CPX * in,int size,double baseline,double correction,double *fbr) = 0;
     virtual void FFTSpectrum(CPX *in, double * out, int size) = 0; //Replacing FFTMagnForward in most uses
 
     //If in==NULL, use whatever is in freqDomain buffer
@@ -53,7 +52,7 @@ public:
 	bool MapFFTToScreen(double *inBuf, qint32 yPixels, qint32 xPixels,
 									double maxdB, double mindB,
 									qint32 startFreq, qint32 stopFreq,
-									qint32 *outBuf, bool _reverseMap = false );
+									qint32 *outBuf);
 
     int getFFTSize() {return fftSize;}
     CPX *getFreqDomain() {return freqDomain;}
@@ -89,6 +88,7 @@ protected:
     //This should replace m_mutex in fftcute
     QMutex fftMutex; //Used to sync threads calling FFT and display calling Screen mapping
 
+	void unfoldInOrder(CPX *inBuf, CPX *outBuf);
 };
 
 #endif // FFT_H

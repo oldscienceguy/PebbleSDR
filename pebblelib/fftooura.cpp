@@ -109,53 +109,9 @@ void FFTOoura::FFTSpectrum(CPX *in, double *out, int size)
 
     FFTForward(in,workingBuf,size); //No need to copy to out, leave in freqBuf
 
-    //See fftooura for spectrum folding model, cuteSDR uses same
-    // FFT output index N/2 to N-1 is frequency output -Fs/2 to 0hz (negative frequencies)
-    for( int unfolded = 0, folded = size/2 ; folded < size; unfolded++, folded++) {
-        freqDomain[unfolded] = workingBuf[folded]; //folded = 1024 to 2047 unfolded = 0 to 1023
-    }
-    // FFT output index 0 to N/2-1 is frequency output 0 to +Fs/2 Hz  (positive frequencies)
-    for( int unfolded = size/2, folded = 0; unfolded < size; unfolded++, folded++) {
-        freqDomain[unfolded] = workingBuf[folded]; //folded = 0 to 1023 unfolded = 1024 to 2047
-    }
+	unfoldInOrder(workingBuf, freqDomain);
 
     CalcPowerAverages(freqDomain, out, size);
-}
-
-//Not used
-void FFTOoura::FFTMagnForward(CPX * in,int size,double baseline,double correction,double *fbr)
-{
-    if (!fftParamsSet)
-        return;
-
-    if (size < fftSize)
-        //Make sure that buffer which does not have samples is zero'd out
-        CPXBuf::clear(timeDomain, fftSize);
-
-    //perform.StartPerformance();
-    //FFTW averages 25-30us (relative) between calls
-    //Ooura averages 35-40us (relative) between calls
-    //Confirmed with Mac CPU usage: avg 90% with Ooura vs 80% with fftwW, just using Ooura for Spectrum FFT!
-    //So Ooura is significantly slower!
-    CPXBuf::copy(workingBuf, in, size);
-
-    //Size is 2x fftSize because offt works on double[] re-im-re-im et
-	cdft(2*fftSize, +1, (double*)workingBuf, offtWorkArea, offtSinCosTable);
-
-    //See fftooura for spectrum folding model, cuteSDR uses same
-    // FFT output index N/2 to N-1 is frequency output -Fs/2 to 0hz (negative frequencies)
-    for( int unfolded = 0, folded = size/2 ; folded < size; unfolded++, folded++) {
-        freqDomain[unfolded] = workingBuf[folded]; //folded = 1024 to 2047 unfolded = 0 to 1023
-    }
-    // FFT output index 0 to N/2-1 is frequency output 0 to +Fs/2 Hz  (positive frequencies)
-    for( int unfolded = size/2, folded = 0; unfolded < size; unfolded++, folded++) {
-        freqDomain[unfolded] = workingBuf[folded]; //folded = 0 to 1023 unfolded = 1024 to 2047
-    }
-
-    FreqDomainToMagnitude(freqDomain, size, baseline, correction, fbr);
-
-    //perform.StopPerformance(5);
-
 }
 
 void FFTOoura::FFTInverse(CPX *in, CPX *out, int size)

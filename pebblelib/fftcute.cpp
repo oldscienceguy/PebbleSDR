@@ -241,16 +241,6 @@ void CFft::FFTForward(CPX * in, CPX * out, int size)
 
 }
 
-void CFft::FFTMagnForward(CPX *in, int size, double baseline, double correction, double *fbr)
-{
-	Q_UNUSED(in);
-	Q_UNUSED(size);
-	Q_UNUSED(baseline);
-	Q_UNUSED(correction);
-	Q_UNUSED(fbr);
-    // Not used, will be replaced by spectrum
-}
-
 void CFft::FFTSpectrum(CPX *in, double *out, int size)
 {
     if (!fftParamsSet)
@@ -258,15 +248,8 @@ void CFft::FFTSpectrum(CPX *in, double *out, int size)
     FFTForward(in,workingBuf,size); //No need to copy to out, leave in freqDomain
 
     //We to unfold here because CalcPowerAverages expects things in most neg to most pos order
-    //See fftooura for spectrum folding model, cuteSDR uses same
-    // FFT output index N/2 to N-1 is frequency output -Fs/2 to 0hz (negative frequencies)
-    for( int unfolded = 0, folded = size/2 ; folded < size; unfolded++, folded++) {
-        freqDomain[unfolded] = workingBuf[folded]; //folded = 1024 to 2047 unfolded = 0 to 1023
-    }
-    // FFT output index 0 to N/2-1 is frequency output 0 to +Fs/2 Hz  (positive frequencies)
-    for( int unfolded = size/2, folded = 0; unfolded < size; unfolded++, folded++) {
-        freqDomain[unfolded] = workingBuf[folded]; //folded = 0 to 1023 unfolded = 1024 to 2047
-    }
+	//See fftooura for spectrum folding model, cuteSDR uses same
+	unfoldInOrder(workingBuf, freqDomain);
 
     CalcPowerAverages(freqDomain, out, size);
 }

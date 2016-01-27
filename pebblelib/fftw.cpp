@@ -79,53 +79,12 @@ void FFTfftw::FFTSpectrum(CPX *in, double *out, int size)
 
     FFTForward(in,workingBuf,size); //No need to copy to out, leave in freqDomain
 
-    //Now in freq domain we need to work with fftSize, not sample size
-    for( int unfolded = 0, folded = fftSize/2 ; folded < fftSize; unfolded++, folded++) {
-        freqDomain[unfolded] = workingBuf[folded]; //folded = 1024 to 2047 unfolded = 0 to 1023
-    }
-    // FFT output index 0 to N/2-1 is frequency output 0 to +Fs/2 Hz  (positive frequencies)
-    for( int unfolded = fftSize/2, folded = 0; unfolded < fftSize; unfolded++, folded++) {
-        freqDomain[unfolded] = workingBuf[folded]; //folded = 0 to 1023 unfolded = 1024 to 2047
-    }
+	unfoldInOrder(workingBuf, freqDomain);
 
     CalcPowerAverages(freqDomain, out, fftSize);
 
 
 }
 
-//NOTE: size= # samples in 'in' buffer, 'out' must be == fftSize (set on construction) which is #bins
-void FFTfftw::FFTMagnForward (CPX * in, int size, double baseline, double correction, double *fbr)
-{
-    if (!fftParamsSet)
-        return;
-
-    if (size < fftSize)
-        //Make sure that buffer which does not have samples is zero'd out
-        CPXBuf::clear(timeDomain, fftSize);
-
-    CPXBuf::copy(timeDomain, in, size);
-    // For Ref plan_fwd = fftwf_plan_dft_1d(size , (float (*)[2])timeDomain, (float (*)[2])freqDomain, FFTW_FORWARD, FFTW_MEASURE);
-    fftw_execute(plan_fwd);
-    //FFT output is now in freqDomain
-    //FFTW does not appear to be in order as documented.  On-going mystery
-    /*
-     *From FFTW documentation
-     *From above, an FFTW_FORWARD transform corresponds to a sign of -1 in the exponent of the DFT.
-     *Note also that we use the standard “in-order” output ordering—the k-th output corresponds to the frequency k/n
-     *(or k/T, where T is your total sampling period).
-     *For those who like to think in terms of positive and negative frequencies,
-     *this means that the positive frequencies are stored in the first half of the output
-     *and the negative frequencies are stored in backwards order in the second half of the output.
-     *(The frequency -k/n is the same as the frequency (n-k)/n.)
-     */
-    CPX temp;
-    for (int i=0, j = size-1; i < size/2; i++, j--) {
-        temp = freqDomain[i];
-        freqDomain[i] = freqDomain[j];
-        freqDomain[j] = temp;
-    }
-
-    FreqDomainToMagnitude(freqDomain, size, baseline, correction, fbr);
-}
 
 

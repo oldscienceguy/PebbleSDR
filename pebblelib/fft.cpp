@@ -153,26 +153,43 @@ void FFT::ResetFFT()
     //Clear buffers?
 }
 
+// Unfolds output of fft to -f to +f order
+// Note also that we use the standard “in-order” output ordering—the k-th output corresponds to the frequency k/n
+// (or k/T, where T is your total sampling period).
+// For those who like to think in terms of positive and negative frequencies,
+// this means that the positive frequencies are stored in the first half of the output
+// and the negative frequencies are stored in backwards order in the second half of the output.
+// (The frequency -k/n is the same as the frequency (n-k)/n.)
+
+void FFT::unfoldInOrder(CPX *inBuf, CPX *outBuf)
+{
+	// FFT output index 0 to N/2-1 - frequency output 0 to +Fs/2 Hz  ( 0 Hz DC term, positive frequencies )
+	// This puts 0 to size/2 into size/2 to size-1 position
+	for( int unfolded = 0, folded = fftSize/2 ; folded < fftSize; unfolded++, folded++) {
+		outBuf[unfolded] = inBuf[folded]; //folded = 1024 to 2047 unfolded = 0 to 1023
+	}
+	// FFT output index N/2 to N-1 - frequency output -Fs/2 to 0 (negative frequencies)
+	// This puts size/2 to size-1 into 0 to size/2
+	// Works correctly with Ooura FFT
+	for( int unfolded = fftSize/2, folded = 0; unfolded < fftSize; unfolded++, folded++) {
+		outBuf[unfolded] = inBuf[folded]; //folded = 0 to 1023 unfolded = 1024 to 2047
+	}
+
+}
 
 //!!Compare with cuteSDR logic, replace if necessary
 //This can be called directly if we've already done FFT
 //WARNING:  fbr must be large enough to hold 'size' values
 void FFT::FreqDomainToMagnitude(CPX * freqBuf, int size, double baseline, double correction, double *fbr)
 {
+	Q_UNUSED (size);
     //calculate the magnitude of your complex frequency domain data (magnitude = sqrt(re^2 + im^2))
     //convert magnitude to a log scale (dB) (magnitude_dB = 20*log10(magnitude))
 
-    // FFT output index 0 to N/2-1 - frequency output 0 to +Fs/2 Hz  ( 0 Hz DC term )
-    //This puts 0 to size/2 into size/2 to size-1 position
-    for (int i=0, j=size/2; i<size/2; i++,j++) {
-		fbr[j] = DB::amplitudeToDb(freqBuf[i].mag() + baseline) + correction;
-    }
-    // FFT output index N/2 to N-1 - frequency output -Fs/2 to 0
-    // This puts size/2 to size-1 into 0 to size/2
-    //Works correctly with Ooura FFT
-    for (int i=size/2, j=0; i<size; i++,j++) {
-		fbr[j] = DB::amplitudeToDb(freqBuf[i].mag() + baseline) + correction;
-    }
+	unfoldInOrder(freqBuf,workingBuf);
+	for (int i=0; i<fftSize; i++) {
+		fbr[i] = DB::amplitudeToDb(workingBuf[i].mag() + baseline) + correction;
+	}
 }
 
 //Utility to handle overlap/add using FFT buffers
@@ -266,7 +283,7 @@ bool FFT::MapFFTToScreen(double *inBuf,
 		double mindB, //FFT value corresponding to output value DB::maxDb
 		qint32 startFreq, //In +/- hZ, relative to 0
 		qint32 stopFreq, //In +/- hZ, relative to 0
-		qint32* outBuf , bool _reverseMap)
+		qint32* outBuf)
 {
 
 	qint32 binLow;
@@ -324,23 +341,6 @@ bool FFT::MapFFTToScreen(double *inBuf,
 			} else if (fftBin >= fftSize) {
 				powerdB = DB::minDb;
 				lastFftBin = fftBin;
-			} else if (_reverseMap) {
-				//Lowest freq is in highest bin
-				fftBin = fftSize - fftBin - 1; //0 maps to 2047
-
-				//we start from fftBin[fftSize] and go to zero
-				if (lastFftBin > 0 && fftBin != lastFftBin - 1) {
-					//We skipped some bins, average the ones we skipped
-					qint32 skippedBins = lastFftBin - fftBin;
-					for (int j=0; j<skippedBins; j++) {
-						totalBinPower += inBuf[lastFftBin - j] - maxdB;
-					}
-					powerdB = totalBinPower / skippedBins;
-					lastFftBin = fftBin;
-				} else {
-					powerdB = inBuf[fftBin] - maxdB;
-				}
-
 			} else if (lastFftBin > 0 && fftBin != lastFftBin + 1) {
 				//Lowest freq is in fftBin[0]
 				//We skipped some bins, average the ones we skipped
@@ -368,10 +368,6 @@ bool FFT::MapFFTToScreen(double *inBuf,
 				powerdB = DB::minDb; //Out of bin range
 			} else if (fftBin >= fftSize) {
 				powerdB = DB::minDb;
-			} else if (_reverseMap) {
-				//Lowest freq is in highest bin
-				fftBin = fftSize - fftBin;
-				powerdB = inBuf[fftBin] - maxdB;
 			} else {
 				powerdB = inBuf[fftBin] - maxdB;
 			}
