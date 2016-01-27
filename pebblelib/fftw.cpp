@@ -27,20 +27,20 @@ void FFTfftw::FFTParams(quint32 _size, double _dBCompensation, double _sampleRat
 }
 
 //NOTE: size= # samples in 'in' buffer, 'out' must be == fftSize (set on construction) which is #bins
-void FFTfftw::FFTForward(CPX * in, CPX * out, int size)
+void FFTfftw::FFTForward(CPX * in, CPX * out, int numSamples)
 {
     if (!fftParamsSet)
         return;
 
     //If in==NULL, use whatever is in timeDomain buffer
     if (in != NULL ) {
-        if (size < fftSize)
+		if (numSamples < fftSize)
             //Make sure that buffer which does not have samples is zero'd out
             //We can pad samples in the time domain because it does not impact frequency results in FFT
             CPXBuf::clear(timeDomain,fftSize);
 
         //Put the data in properly aligned FFTW buffer
-        CPXBuf::copy(timeDomain, in, size);
+		CPXBuf::copy(timeDomain, in, numSamples);
     }
 
     fftw_execute(plan_fwd);
@@ -51,18 +51,18 @@ void FFTfftw::FFTForward(CPX * in, CPX * out, int size)
 }
 
 //NOTE: size= # samples in 'in' buffer, 'out' must be == fftSize (set on construction) which is #bins
-void FFTfftw::FFTInverse(CPX * in, CPX * out, int size)
+void FFTfftw::FFTInverse(CPX * in, CPX * out, int numSamples)
 {
     if (!fftParamsSet)
         return;
 
     //If in==NULL, use whatever is in freqDomain buffer
     if (in != NULL) {
-        if (size < fftSize)
+		if (numSamples < fftSize)
             //Make sure that buffer which does not have samples is zero'd out
             CPXBuf::clear(freqDomain,fftSize);
 
-        CPXBuf::copy(freqDomain, in, size);
+		CPXBuf::copy(freqDomain, in, numSamples);
     }
     fftw_execute(plan_rev);
 
@@ -72,12 +72,12 @@ void FFTfftw::FFTInverse(CPX * in, CPX * out, int size)
 }
 
 //size is the number of samples, not the size of fft
-void FFTfftw::FFTSpectrum(CPX *in, double *out, int size)
+void FFTfftw::FFTSpectrum(CPX *in, double *out, int numSamples)
 {
     if (!fftParamsSet)
         return;
 
-    FFTForward(in,workingBuf,size); //No need to copy to out, leave in freqDomain
+	FFTForward(in,workingBuf,numSamples); //No need to copy to out, leave in freqDomain
 
 	unfoldInOrder(workingBuf, freqDomain);
 

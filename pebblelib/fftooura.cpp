@@ -68,17 +68,17 @@ void FFTOoura::FFTParams( quint32 _size, double _dBCompensation, double _sampleR
     offtSinCosTable = new double[fftSize * 5 / 4]; //sine/cosine table.  Check size
 }
 
-void FFTOoura::FFTForward(CPX *in, CPX *out, int size)
+void FFTOoura::FFTForward(CPX *in, CPX *out, int numSamples)
 {
     if (!fftParamsSet)
         return;
 
 	if (in!=NULL) {
-		if (size < fftSize)
+		if (numSamples < fftSize)
 			//Make sure that buffer which does not have samples is zero'd out
 			//We can pad samples in the time domain because it does not impact frequency results in FFT
 			CPXBuf::clear(timeDomain,fftSize);
-		for(int i=0; i<size; i++)
+		for(int i=0; i<numSamples; i++)
 		{
 			if( in[i].re > overLimit )	//flag overload if within OVLimit of max
 				fftInputOverload = true;
@@ -102,30 +102,30 @@ void FFTOoura::FFTForward(CPX *in, CPX *out, int size)
 
 }
 
-void FFTOoura::FFTSpectrum(CPX *in, double *out, int size)
+void FFTOoura::FFTSpectrum(CPX *in, double *out, int numSamples)
 {
     if (!fftParamsSet)
         return;
 
-    FFTForward(in,workingBuf,size); //No need to copy to out, leave in freqBuf
+	FFTForward(in,workingBuf,numSamples); //No need to copy to out, leave in freqBuf
 
 	unfoldInOrder(workingBuf, freqDomain);
 
-    CalcPowerAverages(freqDomain, out, size);
+	CalcPowerAverages(freqDomain, out, numSamples);
 }
 
-void FFTOoura::FFTInverse(CPX *in, CPX *out, int size)
+void FFTOoura::FFTInverse(CPX *in, CPX *out, int numSamples)
 {
     if (!fftParamsSet)
         return;
 
 	//If in==NULL, use whatever is in freqDomain buffer
 	if (in != NULL) {
-		if (size < fftSize)
+		if (numSamples < fftSize)
 			//Make sure that buffer which does not have samples is zero'd out
 			CPXBuf::clear(freqDomain,fftSize);
 
-		CPXBuf::copy(freqDomain,in, size);  //In-place functions, use workingBuf to keep other buffers intact
+		CPXBuf::copy(freqDomain,in, numSamples);  //In-place functions, use workingBuf to keep other buffers intact
 	}
 
 	//Ooura is inplace, so copy to working dir so freqdomain is intact

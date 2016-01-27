@@ -184,7 +184,7 @@ qint32 CFft::PutInDisplayFFT(qint32 n, TYPECPX* InBuf)
 
 //This should be called by Pebble, returns FP and unfolds
 //CuteSDR should call CPXFFT
-void CFft::FFTForward(CPX * in, CPX * out, int size)
+void CFft::FFTForward(CPX * in, CPX * out, int numSamples)
 {
     if (!fftParamsSet)
         return;
@@ -195,12 +195,12 @@ void CFft::FFTForward(CPX * in, CPX * out, int size)
 
     double dtmp1;
 	if (in != NULL) {
-		if (size < fftSize)
+		if (numSamples < fftSize)
 			//Make sure that buffer which does not have samples is zero'd out
 			//We can pad samples in the time domain because it does not impact frequency results in FFT
 			CPXBuf::clear(timeDomain,fftSize);
 
-		for(i=0; i<size; i++)
+		for(i=0; i<numSamples; i++)
 		{
 			if( in[i].re > overLimit )	//flag overload if within OVLimit of max
 				fftInputOverload = true;
@@ -241,31 +241,31 @@ void CFft::FFTForward(CPX * in, CPX * out, int size)
 
 }
 
-void CFft::FFTSpectrum(CPX *in, double *out, int size)
+void CFft::FFTSpectrum(CPX *in, double *out, int numSamples)
 {
     if (!fftParamsSet)
         return;
-    FFTForward(in,workingBuf,size); //No need to copy to out, leave in freqDomain
+	FFTForward(in,workingBuf,numSamples); //No need to copy to out, leave in freqDomain
 
     //We to unfold here because CalcPowerAverages expects things in most neg to most pos order
 	//See fftooura for spectrum folding model, cuteSDR uses same
 	unfoldInOrder(workingBuf, freqDomain);
 
-    CalcPowerAverages(freqDomain, out, size);
+	CalcPowerAverages(freqDomain, out, numSamples);
 }
 
-void CFft::FFTInverse(CPX * in, CPX * out, int size)
+void CFft::FFTInverse(CPX * in, CPX * out, int numSamples)
 {
     if (!fftParamsSet)
         return;
 
 	//If in==NULL, use whatever is in freqDomain buffer
 	if (in != NULL) {
-		if (size < fftSize)
+		if (numSamples < fftSize)
 			//Make sure that buffer which does not have samples is zero'd out
 			CPXBuf::clear(freqDomain,fftSize);
 
-		CPXBuf::copy(freqDomain,in, size);  //In-place functions, use workingBuf to keep other buffers intact
+		CPXBuf::copy(freqDomain,in, numSamples);  //In-place functions, use workingBuf to keep other buffers intact
 
 	}
 	//Ooura is inplace, so copy to working dir so freqdomain is intact

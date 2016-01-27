@@ -31,9 +31,6 @@ FFT::FFT() :
 
 	dBCompensation = DB::maxDb;
 
-
-	fftBinToX = NULL;
-
     //These will be init on first use in CalcAverages
     bufferCnt = 0;
     averageCnt = 0;
@@ -50,7 +47,6 @@ FFT::~FFT()
     if (freqDomain) CPXBuf::free(freqDomain);
     if (workingBuf) CPXBuf::free(workingBuf);
     if (overlap) CPXBuf::free(overlap);
-	if (fftBinToX) delete fftBinToX;
     if (FFTPwrAvgBuf != NULL)
         delete FFTPwrAvgBuf;
     if (FFTAvgBuf != NULL)
@@ -124,11 +120,6 @@ void FFT::FFTParams(quint32 _size, double _dBCompensation, double _sampleRate)
     for (int i=0; i<fftSize; i++)
         FFTPwrSumBuf[i] = 0.0;
 
-
-	if (fftBinToX != NULL)
-		delete fftBinToX;
-	fftBinToX = new qint32[fftSize];
-
     fftParamsSet = true;
 }
 
@@ -179,10 +170,9 @@ void FFT::unfoldInOrder(CPX *inBuf, CPX *outBuf)
 
 //!!Compare with cuteSDR logic, replace if necessary
 //This can be called directly if we've already done FFT
-//WARNING:  fbr must be large enough to hold 'size' values
-void FFT::FreqDomainToMagnitude(CPX * freqBuf, int size, double baseline, double correction, double *fbr)
+//WARNING:  fbr must be large enough to hold 'fftSize' values
+void FFT::FreqDomainToMagnitude(CPX * freqBuf, double baseline, double correction, double *fbr)
 {
-	Q_UNUSED (size);
     //calculate the magnitude of your complex frequency domain data (magnitude = sqrt(re^2 + im^2))
     //convert magnitude to a log scale (dB) (magnitude_dB = 20*log10(magnitude))
 
@@ -193,19 +183,19 @@ void FFT::FreqDomainToMagnitude(CPX * freqBuf, int size, double baseline, double
 }
 
 //Utility to handle overlap/add using FFT buffers
-void FFT::OverlapAdd(CPX *out, int size)
+void FFT::OverlapAdd(CPX *out, int numSamples)
 {
     //Do Overlap-Add to reduce from 1/2 fftSize
 
     //Add the samples in 'in' to last overlap
-    CPXBuf::add(out, timeDomain, overlap, size);
+	CPXBuf::add(out, timeDomain, overlap, numSamples);
 
     //Save the upper 50% samples to  overlap for next run
-    CPXBuf::copy(overlap, (timeDomain+size), size);
+	CPXBuf::copy(overlap, (timeDomain+numSamples), numSamples);
 
 }
 
-void FFT::CalcPowerAverages(CPX* in, double *out, int size)
+void FFT::CalcPowerAverages(CPX* in, double *out, int numSamples)
 {
 
 #if 0
@@ -240,7 +230,7 @@ void FFT::CalcPowerAverages(CPX* in, double *out, int size)
     // FFT output index 0 to N/2-1
     // is frequency output 0 to +Fs/2 Hz  ( 0 Hz DC term )
     // Buffer is already unfolded, unlike in cuteSDR implementation, so simple loop
-    for( int i = 0; i < size; i++){
+	for( int i = 0; i < numSamples; i++){
         //re^2 + im^2
         samplePwr = in[i].norm(); // or .sqrMag() = Power in sample
 

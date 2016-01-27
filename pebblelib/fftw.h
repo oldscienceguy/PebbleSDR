@@ -13,9 +13,9 @@ public:
     FFTfftw();
     ~FFTfftw();
 	void FFTParams(quint32 _size, double _dBCompensation, double sampleRate);
-    void FFTForward(CPX * in, CPX * out, int size);
-    void FFTInverse(CPX * in, CPX * out, int size);
-    void FFTSpectrum(CPX *in, double *out, int size);
+	void FFTForward(CPX * in, CPX * out, int numSamples);
+	void FFTInverse(CPX * in, CPX * out, int numSamples);
+	void FFTSpectrum(CPX *in, double *out, int numSamples);
 
 private:
     fftw_plan plan_fwd;

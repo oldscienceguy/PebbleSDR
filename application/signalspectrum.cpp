@@ -184,7 +184,7 @@ void SignalSpectrum::MakeSpectrum(FFT *fft, double *sOut)
                 CPXBuf::copy(tmp_cpx,fft->getFreqDomain(),fftSize);
             }
 
-            fft->FreqDomainToMagnitude(tmp_cpx, fftSize, 0, dbOffset, sOut);
+			fft->FreqDomainToMagnitude(tmp_cpx, 0, dbOffset, sOut);
             displayUpdateComplete = false;
             emit newFftData();
         } else {

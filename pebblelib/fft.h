@@ -33,20 +33,20 @@ public:
 
     //If in==NULL, use whatever is in timeDomain buffer
     //If out==NULL, leave result in freqDomain buffer and don't copy to out
-    virtual void FFTForward(CPX * in, CPX * out, int size) = 0;
-    virtual void FFTSpectrum(CPX *in, double * out, int size) = 0; //Replacing FFTMagnForward in most uses
+	virtual void FFTForward(CPX * in, CPX * out, int numSamples) = 0;
+	virtual void FFTSpectrum(CPX *in, double * out, int numSamples) = 0; //Replacing FFTMagnForward in most uses
 
     //If in==NULL, use whatever is in freqDomain buffer
     //If out==NULL, then leave result in timeDomain buffer and don't copy to out
-    virtual void FFTInverse(CPX * in, CPX * out, int size) = 0;
+	virtual void FFTInverse(CPX * in, CPX * out, int numSamples) = 0;
 
     //Not virtual and common to all FFT implementations
-    void FreqDomainToMagnitude(CPX * freqBuf, int size, double baseline, double correction, double *fbr);
-    void OverlapAdd(CPX *out, int size);
+	void FreqDomainToMagnitude(CPX * freqBuf, double baseline, double correction, double *fbr);
+	void OverlapAdd(CPX *out, int numSamples);
 
     //WIP Calculate m_pFFTPwrAveBuf for any FFT.  Heavily embedded in cuteSDR
     //Compare with cuteSDR to see if we got it right
-    void CalcPowerAverages(CPX* in, double *out, int size);
+	void CalcPowerAverages(CPX* in, double *out, int numSamples);
 	void SetMovingAvgLimit(quint32 ave);
 
 	bool MapFFTToScreen(double *inBuf, qint32 yPixels, qint32 xPixels,
@@ -72,9 +72,6 @@ protected:
     double sampleRate;
 
     bool fftInputOverload;
-
-    //Used by MapFFTToScreen
-	qint32 *fftBinToX;
 
     //For calculating power averages
 	quint32 movingAvgLimit; //How many time to do moving avg before exponential avg
