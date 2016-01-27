@@ -3,42 +3,44 @@
 #include "signalspectrum.h"
 #include "firfilter.h"
 
-SignalSpectrum::SignalSpectrum(int sr, quint32 zsr, int ns, Settings *set):
-	SignalProcessing(sr,ns)
+SignalSpectrum::SignalSpectrum(int _sampleRate, quint32 _hiResSampleRate, int _numSamples):
+	SignalProcessing(_sampleRate,_numSamples)
 {
-	settings = set;
-
 	//FFT bin size can be greater than sample size
-	//But we don't need 2x bins for FFT spectrum processing unless we are going to support
-	//a zoom function, ie 500 pixels can show 500 bins, or a portion of available spectrum data
-	//Less bins = faster FFT
-	if (false)
-        fftSize = numSamplesX2;
-	else
-        fftSize = numSamples;
+	numSpectrumBins = global->settings->numSpectrumBins;
+	numHiResSpectrumBins = global->settings->numHiResSpectrumBins;
 
+	hiResSampleRate = _hiResSampleRate;
 	//Output buffers
 	rawIQ = CPXBuf::malloc(numSamples);
 
-	fftUnprocessed = FFT::Factory();
-    unprocessed = new double[fftSize];
+	fftUnprocessed = FFT::Factory("Unprocessed spectrum");
+	unprocessed = new double[numSpectrumBins];
 
-	fftHiRes = FFT::Factory();
-	hiResBuffer = new double[fftSize];
+	fftHiRes = FFT::Factory("HiRes spectrum");
+	hiResBuffer = new double[numHiResSpectrumBins];
 
-    tmp_cpx = CPXBuf::malloc(fftSize);
+	tmp_cpx = CPXBuf::malloc(numSpectrumBins);
 	//Create our window coefficients 
-    window = new double[numSamples];
-	window_cpx = CPXBuf::malloc(numSamples);
-	FIRFilter::MakeWindow(FIRFilter::BLACKMANHARRIS, numSamples, window);
-	for (int i = 0; i < numSamples; i++)
+	window = new double[numSpectrumBins];
+	window_cpx = CPXBuf::malloc(numSpectrumBins);
+	FIRFilter::MakeWindow(FIRFilter::BLACKMANHARRIS, numSpectrumBins, window);
+	for (int i = 0; i < numSpectrumBins; i++)
 	{
 		window_cpx[i].re = window[i];
 		window_cpx[i].im = window[i];
 	}
+	hiResWindow = new double[numHiResSpectrumBins];
+	hiResWindow_cpx = CPXBuf::malloc(numHiResSpectrumBins);
+	FIRFilter::MakeWindow(FIRFilter::BLACKMANHARRIS, numHiResSpectrumBins, hiResWindow);
+	for (int i = 0; i < numHiResSpectrumBins; i++)
+	{
+		hiResWindow_cpx[i].re = hiResWindow[i];
+		hiResWindow_cpx[i].im = hiResWindow[i];
+	}
 
 	//db calibration
-    dbOffset  = settings->dbOffset;
+	dbOffset  = global->settings->dbOffset;
 
     //Spectrum refresh rate from 1 to 50 per second
     //Init here for now and add UI element to set, save with settings data
@@ -51,7 +53,7 @@ SignalSpectrum::SignalSpectrum(int sr, quint32 zsr, int ns, Settings *set):
 
 	useHiRes = false;
 
-    SetSampleRate(sr, zsr);
+	SetSampleRate(sampleRate, hiResSampleRate);
 
 }
 
@@ -61,6 +63,8 @@ SignalSpectrum::~SignalSpectrum(void)
 	if (hiResBuffer != NULL) {free (hiResBuffer);}
     if (window != NULL) {free (window);}
 	if (window_cpx != NULL) {CPXBuf::free(window_cpx);}
+	if (hiResWindow != NULL) {free (hiResWindow);}
+	if (hiResWindow_cpx != NULL) {CPXBuf::free(hiResWindow_cpx);}
 	if (tmp_cpx != NULL) {CPXBuf::free(tmp_cpx);}
 	if (rawIQ != NULL) {CPXBuf::free(rawIQ);}
 }
@@ -69,15 +73,15 @@ void SignalSpectrum::SetSampleRate(quint32 _sampleRate, quint32 _hiResSampleRate
 {
     sampleRate = _sampleRate;
 	hiResSampleRate = _hiResSampleRate;
-	fftUnprocessed->FFTParams(fftSize, DB::maxDb, sampleRate);
-	fftHiRes->FFTParams(fftSize, DB::maxDb, hiResSampleRate);
+	fftUnprocessed->FFTParams(numSpectrumBins, DB::maxDb, sampleRate);
+	fftHiRes->FFTParams(numHiResSpectrumBins, DB::maxDb, hiResSampleRate);
     //Based on sample rates
 	SetUpdatesPerSec(global->settings->updatesPerSecond);
     emitFftCounter = 0;
 
 }
 
-void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double outUnder, double outOver)
+void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double outUnder, double outOver, int _numSamples)
 {	
     //Only make spectrum often enough to match spectrum update rate, otherwise we just throw it away
 	if (updatesPerSec == 0 ||  ++skipFftsCounter < skipFfts)
@@ -97,17 +101,14 @@ void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double 
 
     //Keep a copy raw I/Q to local buffer for display
     //CPXBuf::copy(rawIQ, in, numSamples);
-	MakeSpectrum(fftUnprocessed, in, unprocessed, numSamples);
+	MakeSpectrum(fftUnprocessed, in, unprocessed, _numSamples, window_cpx);
 	displayUpdateComplete = false;
 	emit newFftData();
 }
 
 //http://www.arc.id.au/ZoomFFT.html
-void SignalSpectrum::Zoomed(CPX *in, int size)
+void SignalSpectrum::Zoomed(CPX *in, int _numSamples)
 {
-	quint16 resampledSize;
-	Q_UNUSED(resampledSize)
-
 	if (!useHiRes)
 		return; //Nothing to do
 
@@ -116,51 +117,33 @@ void SignalSpectrum::Zoomed(CPX *in, int size)
         return;
 	skipFftsHiResCounter = 0;
 
-#if 0
-	//Experiment: This currently gets called with demodSampleRate - 62k for non WFM modes
-	//62,000 / 2048 buckets = 30hz per bucket
-	//If we want to get even finer resolution, we can further resample to a lower rate
-	//ie 24k sample rate = 12hz per bucket
-	//
-	//We need to fill with zeros because Resample won't fill entire buffer
-	CPXBuf::clear(zoomedResampled,fftSize);
-	//LP Filter needed to get rid of aliasing unless .Resample does it for us
-	resampledSize = zoomedResampler.Resample(size,sampleRateIn/sampleRateOut,in,zoomedResampled);
-	//qDebug()<<"ResampledSize: "<<resampledSize<<" sampleRateIn: "<<sampleRateIn<<" sampleRateOut: "<<sampleRateOut;
-	fftZoomed->FFTParams(fftSize, +1, DB::maxDb, sampleRateOut);
-#endif
-	MakeSpectrum(fftHiRes, in, hiResBuffer, size);
+	MakeSpectrum(fftHiRes, in, hiResBuffer, _numSamples, hiResWindow_cpx);
 	//Updated HiRes fft data won't be available to SpectrumWidget untill Unprocessed() is called in next loop
 	//Should have no impact and avoids displaying spectrum 2x in each ProcessIQ loop
 	//This signal is for future use in case we want to do special handling in SpectrumWidget
 	emit newHiResFftData();
 }
 
-void SignalSpectrum::MakeSpectrum(FFT *fft, CPX *in, double *sOut, int size)
+void SignalSpectrum::MakeSpectrum(FFT *fft, CPX *in, double *sOut, int _numSamples, CPX *_window)
 {
     //Smooth the data with our window
-    CPXBuf::clear(tmp_cpx, fftSize);
+	CPXBuf::clear(tmp_cpx, numSpectrumBins);
     //Since tmp_cpx is 2x size of in, we're left with empty entries at the end of tmp_cpx
     //The extra zeros don't change the frequency component of the signal and give us smaller bins
     //But why do we need more bins for spectrum, we're just going to decimate to fit # pixels in graph
 
     //Zero padded
-    if (size < fftSize)
-        CPXBuf::scale(tmp_cpx, in, 1.0, size);
+	if (_numSamples < numSpectrumBins)
+		CPXBuf::scale(tmp_cpx, in, 1.0, _numSamples);
     else
         //Apply window filter so we get better FFT results
         //If size != numSamples, then window_cpx will not be right and we skip
-        CPXBuf::mult(tmp_cpx, in, window_cpx, fftSize);
+		CPXBuf::mult(tmp_cpx, in, _window, fft->getFFTSize());
 
     //I don't think this is critical section
     //mutex.lock();
 
-#if 0
-    //Change #if here in sync with SpectrumWidget to switch between old and new paint
-    fft->FFTMagnForward (tmp_cpx, size, 0, dbOffset, sOut);
-#else
-    fft->FFTSpectrum(tmp_cpx, sOut, fftSize);
-#endif
+	fft->FFTSpectrum(tmp_cpx, sOut, _numSamples);
 
     //out now has the spectrum in db, -f..0..+f
     //mutex.unlock();
@@ -173,15 +156,15 @@ void SignalSpectrum::MakeSpectrum(FFT *fft, double *sOut)
         skipFftsCounter = 0;
 
         if (displayUpdateComplete) {
-            CPXBuf::clear(tmp_cpx, fftSize);
+			CPXBuf::clear(tmp_cpx, numSpectrumBins);
 
-            if (fftSize < fft->getFFTSize()) {
+			if (numSpectrumBins < fft->getFFTSize()) {
                 //Decimate to fit spectrum binCount
-                int decimate = fft->getFFTSize() / fftSize;
-                for (int i=0; i<fftSize; i++)
+				int decimate = fft->getFFTSize() / numSpectrumBins;
+				for (int i=0; i<numSpectrumBins; i++)
                     tmp_cpx[i] = fft->getFreqDomain()[i*decimate];
             } else {
-                CPXBuf::copy(tmp_cpx,fft->getFreqDomain(),fftSize);
+				CPXBuf::copy(tmp_cpx,fft->getFreqDomain(),numSpectrumBins);
             }
 
 			fft->FreqDomainToMagnitude(tmp_cpx, 0, dbOffset, sOut);
@@ -197,7 +180,7 @@ void SignalSpectrum::MakeSpectrum(FFT *fft, double *sOut)
 
 void SignalSpectrum::SetSpectrum(double *in)
 {
-	for (int i=0; i< fftSize ;i++) {
+	for (int i=0; i< numSpectrumBins ;i++) {
 		unprocessed[i] = in[i];
 	}
 	displayUpdateComplete = false;

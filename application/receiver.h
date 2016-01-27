@@ -111,7 +111,6 @@ private:
 
 
 	FFT *fft;
-	int fftSize;
 	bool useFreqDomainChain;
 
 	bool mute;

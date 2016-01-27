@@ -164,7 +164,7 @@ bool Receiver::On()
 	demodWfmSampleRate = downConvertWfm1.SetDataRateSimple(sampleRate, Demod::demodInfo[DeviceInterface::dmFMS].maxOutputBandWidth);
 
     //We need original sample rate, and post mixer sample rate for zoomed spectrum
-    signalSpectrum = new SignalSpectrum(sampleRate, demodSampleRate, framesPerBuffer, settings);
+	signalSpectrum = new SignalSpectrum(sampleRate, demodSampleRate, framesPerBuffer);
 
     //Init demod with defaults
     //Demod uses variable frame size, up to framesPerBuffer
@@ -190,10 +190,8 @@ bool Receiver::On()
 
 
 	//Testing with frequency domain receive chain
-	//fft must be large enough to avoid circular convolution for filtering
-	fftSize = framesPerBuffer *2;
-	fft = FFT::Factory();
-	fft->FFTParams(fftSize, 0, sampleRate);
+	fft = FFT::Factory("Testing freq domain chain");
+	fft->FFTParams(settings->numSpectrumBins, 0, sampleRate);
 
 
     //These steps work on demodSampleRate rates
@@ -752,7 +750,8 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
         0,//audio->inBufferUnderflowCount,
         0,//audio->inBufferOverflowCount,
         0,//audio->outBufferUnderflowCount,
-        0);//audio->outBufferOverflowCount);
+		0,//audio->outBufferOverflowCount);
+		numSamples);
 	//audio->ClearCounts();
     //global->perform.StopPerformance(100);
 

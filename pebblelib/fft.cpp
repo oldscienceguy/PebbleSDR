@@ -55,22 +55,22 @@ FFT::~FFT()
         delete FFTPwrSumBuf;
 }
 
-FFT* FFT::Factory()
+FFT* FFT::Factory(QString _label)
 {
 #ifdef USE_FFTW
-	qDebug()<<"Using FFTW";
+	qDebug()<<"Using FFTW for "<<_label;
 	return new FFTfftw();
 #endif
 #ifdef USE_FFTCUTE
-	qDebug()<<"Using FFT CUTE";
+	qDebug()<<"Using FFT CUTE for "<<_label;
 	return new CFft();
 #endif
 #ifdef USE_FFTOOURA
-	qDebug()<<"Using FFT Ooura";
+	qDebug()<<"Using FFT Ooura for "<<_label;
 	return new FFTOoura();
 #endif
 #ifdef USE_FFTACCELERATE
-	qDebug()<<"Using FFT Accelerate";
+	qDebug()<<"Using FFT Accelerate for "<<_label;
 	return new FFTAccelerate();
 #endif
 

@@ -24,6 +24,8 @@ public:
 	int decimateLimit;
 	bool postMixerDecimate; //If true, then downsample to decimate limit after mixer
 	int framesPerBuffer;
+	int numSpectrumBins;
+	int numHiResSpectrumBins;
 	double dbOffset; //DB calibration for spectrum and smeter
 	//Increment for left-right and up-down in spectrum display
 	int leftRightIncrement;

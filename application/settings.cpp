@@ -54,6 +54,10 @@ void Settings::ReadSettings()
     postMixerDecimate = qSettings->value("PostMixerDecimate",true).toBool();
     //Be careful about changing this, has global impact
     framesPerBuffer = qSettings->value("FramesPerBuffer",2048).toInt();
+	//Could be UI, more bins = more resolution at zoom levels
+	numSpectrumBins = qSettings->value("NumSpectrumBins",4096).toInt();
+	//Hires spectrum is less than 100k or 50hz per bin at 2048 bins
+	numHiResSpectrumBins = qSettings->value("NumHiResSpectrumBins",2048).toInt();
 
     dbOffset = qSettings->value("dbOffset",-60).toFloat();
 	leftRightIncrement = qSettings->value("LeftRightIncrement",10).toInt();
@@ -108,6 +112,8 @@ void Settings::WriteSettings()
 	qSettings->setValue("DecimateLimit",decimateLimit);
 	qSettings->setValue("PostMixerDecimate",postMixerDecimate);
 	qSettings->setValue("FramesPerBuffer",framesPerBuffer);
+	qSettings->setValue("NumSpectrumBins",numSpectrumBins);
+	qSettings->setValue("NumHiResSpectrumBins",numHiResSpectrumBins);
 	qSettings->setValue("LeftRightIncrement",leftRightIncrement);
 	qSettings->setValue("UpDownIncrement",upDownIncrement);
     qSettings->setValue("ModeOffset",modeOffset);

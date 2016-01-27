@@ -659,8 +659,8 @@ void SpectrumWidget::SetSignalSpectrum(SignalSpectrum *s)
         connect(signalSpectrum,SIGNAL(newFftData()),this,SLOT(newFftData()));
 
 		sampleRate = s->SampleRate();
-		upDownIncrement = s->settings->upDownIncrement;
-		leftRightIncrement = s->settings->leftRightIncrement;
+		upDownIncrement = global->settings->upDownIncrement;
+		leftRightIncrement = global->settings->leftRightIncrement;
 	}
 }
 // Diplays frequency cursor and filter range

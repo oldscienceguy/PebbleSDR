@@ -14,12 +14,12 @@ class SignalSpectrum :
     Q_OBJECT
 
 public:
-    SignalSpectrum(int sr, quint32 zsr, int ns, Settings *set);
+	SignalSpectrum(int _sampleRate, quint32 _hiResSampleRate, int _numSamples);
 	~SignalSpectrum(void);
 	void SetHiRes(bool _on) {useHiRes = _on;}
 	//Pass in soundcard buffer under/overflow counts for display
-	void Unprocessed(CPX * in, double inUnder, double inOver,double outUnder, double outOver);
-    void MakeSpectrum(FFT *fft, CPX *in, double *out, int size); //Use if we just have CPX samples
+	void Unprocessed(CPX * in, double inUnder, double inOver, double outUnder, double outOver, int _numSamples);
+	void MakeSpectrum(FFT *fft, CPX *in, double *out, int _numSamples, CPX *_window); //Use if we just have CPX samples
 	void MakeSpectrum(FFT *fft, double *out); //Used if we already have FFT
 
 	//Used when we already have spectrum, typically from dsp server or device
@@ -33,17 +33,15 @@ public:
 
     bool MapFFTZoomedToScreen(qint32 maxHeight, qint32 maxWidth, double maxdB, double mindB, double zoom, int modeOffset, qint32 *outBuf);
 
-    int BinCount() {return fftSize;}
+	int BinCount() {return numSpectrumBins;}
 	double *GetUnprocessed() {return unprocessed;}
-    void Zoomed(CPX *in, int size);
+	void Zoomed(CPX *in, int _numSamples);
     CPX *RawIQ() {return rawIQ;}
 
 	double inBufferUnderflowCount;
 	double inBufferOverflowCount;
 	double outBufferUnderflowCount;
 	double outBufferOverflowCount;
-
-	Settings *settings;
 
     //New technique from CuteSdr to ignore spectrum data between updates
     void SetUpdatesPerSec(int updatespersec);
@@ -67,17 +65,20 @@ private:
 	quint32 hiResSampleRate;
 
 	QMutex mutex;
-    int fftSize;
+	int numSpectrumBins;
+	int numHiResSpectrumBins;
 
 	//Spectrum data at different steps in receive chaing
 	CPX *rawIQ;
     double *unprocessed;
 	double *hiResBuffer; //Post bandpass spectrum with more resolution around signal
     double * window;
+	double * hiResWindow;
 	bool useHiRes;
 
     CPX *tmp_cpx;
 	CPX *window_cpx;
+	CPX *hiResWindow_cpx;
 	FFT *fftUnprocessed;
 	FFT *fftHiRes; //Different sample rate, we might be able to re-use fft, but keep separate for now
 
