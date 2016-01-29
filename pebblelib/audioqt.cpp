@@ -97,7 +97,7 @@ int AudioQT::StartOutput(QString outputDeviceName, int _outputSampleRate)
     //qaDevice = QAudioDeviceInfo::defaultOutputDevice();
     qaOutputDevice = FindOutputDeviceByName(outputDeviceName);
 
-    //DumpDeviceInfo(qaOutputDevice); //Use this to see supported formats
+	//DumpDeviceInfo(qaOutputDevice); //Use this to see supported formats
 
     qaFormat.setSampleRate(outputSampleRate);
     qaFormat.setChannelCount(2);
@@ -109,11 +109,9 @@ int AudioQT::StartOutput(QString outputDeviceName, int _outputSampleRate)
 	qaFormat.setSampleSize(32);
     qaFormat.setSampleType(QAudioFormat::Float);
 
-    //qaAudioOutput->setBufferSize(framesPerBuffer*sizeof(CPX)); //Optional??
     //qaAudioOutput->setNotifyInterval(42); //Only if we want callbacks
 
-    QAudioDeviceInfo info(qaOutputDevice);
-    if (!info.isFormatSupported(qaFormat)) {
+	if (!qaOutputDevice.isFormatSupported(qaFormat)) {
         qWarning() << "QAudio output format not supported";
         //qaFormat = info.nearestFormat(qaFormat);
         return -1;
@@ -124,7 +122,10 @@ int AudioQT::StartOutput(QString outputDeviceName, int _outputSampleRate)
 	//We need to make sure the buffer is big enough, set to max
 	//If too small, we'll get choppy output as data is thrown away
 	//This has to be called before start
-	qaAudioOutput->setBufferSize(32768);
+	//Default if not set is 8192
+	qaAudioOutput->setBufferSize(outputSampleRate * sizeof(float) * 2); //1 second buffer
+	qDebug()<<"Qt Audio output buffer size "<<qaAudioOutput->bufferSize();
+
     outputDataSource = qaAudioOutput->start();
 	return 0;
 }
@@ -191,15 +192,16 @@ void AudioQT::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
 		outStreamBuffer[j] = out[i].re;
 		outStreamBuffer[j+1] = out[i].im;
 	}
-	//Make sure we have enough buffer space to write
-	quint32 bytesFree = qaAudioOutput->bytesFree();
 	quint32 bytesToWrite = outSamples*sizeof(float)*2;
+
+#if 0
+	//Experiment with blocking IO, waits for there to be enough room in buffer to write output
+	//Result, dramatically increases CPU usage
+	//Make sure we have enough buffer space to write
 	//Wait for bytesFree to be >= bytesToWrite
-	//In port audio, Pa_WriteStream() blocks automatically
-	//In QAudioOutput, write() does not
-	//This ensures we don't write output faster than output device can handle it
 	hasOutputTimedOut = false;
 
+	quint32 bytesFree = qaAudioOutput->bytesFree();
 	QTimer::singleShot(250, this, SLOT(OutputTimedOut()));
 	while (bytesFree < bytesToWrite) {
 		if (hasOutputTimedOut) {
@@ -208,12 +210,14 @@ void AudioQT::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
 		}
 		bytesFree = qaAudioOutput->bytesFree();
 	}
+#endif
 
 	bytesWritten = outputDataSource->write((char*)outStreamBuffer,bytesToWrite);
 	if (bytesWritten != bytesToWrite)  {
 		qDebug()<<"QT Audio Output: bytesWritten less than bytesToWrite"<<bytesWritten<<" "<<bytesToWrite;
 	}
 }
+
 void AudioQT::ClearCounts()
 {
 
