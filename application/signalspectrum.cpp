@@ -126,29 +126,22 @@ void SignalSpectrum::Zoomed(CPX *in, int _numSamples)
 
 void SignalSpectrum::MakeSpectrum(FFT *fft, CPX *in, double *sOut, int _numSamples, CPX *_window)
 {
+	//Must work with unprocessed or zoomed fft, so get size directly from fft
+	int fftSize = fft->getFFTSize();
     //Smooth the data with our window
-	CPXBuf::clear(tmp_cpx, numSpectrumBins);
-    //Since tmp_cpx is 2x size of in, we're left with empty entries at the end of tmp_cpx
-    //The extra zeros don't change the frequency component of the signal and give us smaller bins
-    //But why do we need more bins for spectrum, we're just going to decimate to fit # pixels in graph
+	CPXBuf::clear(tmp_cpx, fftSize);
+	CPXBuf::copy(tmp_cpx,in, _numSamples);
 
-    //Zero padded
-	if (_numSamples < numSpectrumBins)
-		CPXBuf::scale(tmp_cpx, in, 1.0, _numSamples);
-    else
-        //Apply window filter so we get better FFT results
-        //If size != numSamples, then window_cpx will not be right and we skip
-		CPXBuf::mult(tmp_cpx, in, _window, fft->getFFTSize());
+	//Zero padded
+	//Apply window filter so we get better FFT results
+	CPXBuf::mult(tmp_cpx, tmp_cpx, _window, fftSize);
 
-    //I don't think this is critical section
-    //mutex.lock();
-
-	fft->FFTSpectrum(tmp_cpx, sOut, _numSamples);
+	fft->FFTSpectrum(tmp_cpx, sOut, fftSize);
 
     //out now has the spectrum in db, -f..0..+f
-    //mutex.unlock();
 }
 
+//Obsolete and needs work if we use in future
 void SignalSpectrum::MakeSpectrum(FFT *fft, double *sOut)
 {
     //Only make spectrum often enough to match spectrum update rate, otherwise we just throw it away
