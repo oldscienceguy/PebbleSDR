@@ -34,7 +34,7 @@ public:
     bool MapFFTZoomedToScreen(qint32 maxHeight, qint32 maxWidth, double maxdB, double mindB, double zoom, int modeOffset, qint32 *outBuf);
 
 	int BinCount() {return numSpectrumBins;}
-	double *GetUnprocessed() {return unprocessed;}
+	double *GetUnprocessed() {return unprocessedSpectrum;}
 	void Zoomed(CPX *in, int _numSamples);
     CPX *RawIQ() {return rawIQ;}
 
@@ -70,15 +70,13 @@ private:
 
 	//Spectrum data at different steps in receive chaing
 	CPX *rawIQ;
-    double *unprocessed;
-	double *hiResBuffer; //Post bandpass spectrum with more resolution around signal
+	double *unprocessedSpectrum;
+	double *hiResSpectrum; //Post bandpass spectrum with more resolution around signal
     double * window;
-	double * hiResWindow;
 	bool useHiRes;
 
     CPX *tmp_cpx;
 	CPX *window_cpx;
-	CPX *hiResWindow_cpx;
 	FFT *fftUnprocessed;
 	FFT *fftHiRes; //Different sample rate, we might be able to re-use fft, but keep separate for now
 

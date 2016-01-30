@@ -15,28 +15,22 @@ SignalSpectrum::SignalSpectrum(int _sampleRate, quint32 _hiResSampleRate, int _n
 	rawIQ = CPXBuf::malloc(numSamples);
 
 	fftUnprocessed = FFT::Factory("Unprocessed spectrum");
-	unprocessed = new double[numSpectrumBins];
+	unprocessedSpectrum = new double[numSpectrumBins];
 
 	fftHiRes = FFT::Factory("HiRes spectrum");
-	hiResBuffer = new double[numHiResSpectrumBins];
+	hiResSpectrum = new double[numHiResSpectrumBins];
 
 	tmp_cpx = CPXBuf::malloc(numSpectrumBins);
+
 	//Create our window coefficients 
-	window = new double[numSpectrumBins];
-	window_cpx = CPXBuf::malloc(numSpectrumBins);
-	FIRFilter::MakeWindow(FIRFilter::BLACKMANHARRIS, numSpectrumBins, window);
-	for (int i = 0; i < numSpectrumBins; i++)
+	//windows are applied to numSamples, not the entire FFT bins
+	window = new double[numSamples];
+	window_cpx = CPXBuf::malloc(numSamples);
+	FIRFilter::MakeWindow(FIRFilter::BLACKMANHARRIS, numSamples, window);
+	for (int i = 0; i < numSamples; i++)
 	{
 		window_cpx[i].re = window[i];
 		window_cpx[i].im = window[i];
-	}
-	hiResWindow = new double[numHiResSpectrumBins];
-	hiResWindow_cpx = CPXBuf::malloc(numHiResSpectrumBins);
-	FIRFilter::MakeWindow(FIRFilter::BLACKMANHARRIS, numHiResSpectrumBins, hiResWindow);
-	for (int i = 0; i < numHiResSpectrumBins; i++)
-	{
-		hiResWindow_cpx[i].re = hiResWindow[i];
-		hiResWindow_cpx[i].im = hiResWindow[i];
 	}
 
 	//db calibration
@@ -59,12 +53,10 @@ SignalSpectrum::SignalSpectrum(int _sampleRate, quint32 _hiResSampleRate, int _n
 
 SignalSpectrum::~SignalSpectrum(void)
 {
-	if (unprocessed != NULL) {free (unprocessed);}
-	if (hiResBuffer != NULL) {free (hiResBuffer);}
+	if (unprocessedSpectrum != NULL) {free (unprocessedSpectrum);}
+	if (hiResSpectrum != NULL) {free (hiResSpectrum);}
     if (window != NULL) {free (window);}
 	if (window_cpx != NULL) {CPXBuf::free(window_cpx);}
-	if (hiResWindow != NULL) {free (hiResWindow);}
-	if (hiResWindow_cpx != NULL) {CPXBuf::free(hiResWindow_cpx);}
 	if (tmp_cpx != NULL) {CPXBuf::free(tmp_cpx);}
 	if (rawIQ != NULL) {CPXBuf::free(rawIQ);}
 }
@@ -101,7 +93,7 @@ void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double 
 
     //Keep a copy raw I/Q to local buffer for display
     //CPXBuf::copy(rawIQ, in, numSamples);
-	MakeSpectrum(fftUnprocessed, in, unprocessed, _numSamples, window_cpx);
+	MakeSpectrum(fftUnprocessed, in, unprocessedSpectrum, _numSamples, window_cpx);
 	displayUpdateComplete = false;
 	emit newFftData();
 }
@@ -117,7 +109,7 @@ void SignalSpectrum::Zoomed(CPX *in, int _numSamples)
         return;
 	skipFftsHiResCounter = 0;
 
-	MakeSpectrum(fftHiRes, in, hiResBuffer, _numSamples, hiResWindow_cpx);
+	MakeSpectrum(fftHiRes, in, hiResSpectrum, _numSamples, window_cpx);
 	//Updated HiRes fft data won't be available to SpectrumWidget untill Unprocessed() is called in next loop
 	//Should have no impact and avoids displaying spectrum 2x in each ProcessIQ loop
 	//This signal is for future use in case we want to do special handling in SpectrumWidget
@@ -128,13 +120,12 @@ void SignalSpectrum::MakeSpectrum(FFT *fft, CPX *in, double *sOut, int _numSampl
 {
 	//Must work with unprocessed or zoomed fft, so get size directly from fft
 	int fftSize = fft->getFFTSize();
-    //Smooth the data with our window
-	CPXBuf::clear(tmp_cpx, fftSize);
-	CPXBuf::copy(tmp_cpx,in, _numSamples);
-
-	//Zero padded
-	//Apply window filter so we get better FFT results
-	CPXBuf::mult(tmp_cpx, tmp_cpx, _window, fftSize);
+	//Smooth the input data with our window
+	CPXBuf::mult(tmp_cpx, in, _window, _numSamples);
+	//Zero pad remainder of buffer if needed
+	for (int i = _numSamples; i<fftSize; i++) {
+		tmp_cpx[i] = 0;
+	}
 
 	fft->FFTSpectrum(tmp_cpx, sOut, fftSize);
 
@@ -174,7 +165,7 @@ void SignalSpectrum::MakeSpectrum(FFT *fft, double *sOut)
 void SignalSpectrum::SetSpectrum(double *in)
 {
 	for (int i=0; i< numSpectrumBins ;i++) {
-		unprocessed[i] = in[i];
+		unprocessedSpectrum[i] = in[i];
 	}
 	displayUpdateComplete = false;
 	emit newFftData();
@@ -215,7 +206,7 @@ bool SignalSpectrum::MapFFTToScreen(qint32 maxHeight,
                                 qint32* outBuf )
 {
     if (fftUnprocessed!=NULL)
-		return fftUnprocessed->MapFFTToScreen(unprocessed, maxHeight,maxWidth,maxdB,mindB,startFreq,stopFreq,outBuf);
+		return fftUnprocessed->MapFFTToScreen(unprocessedSpectrum, maxHeight,maxWidth,maxdB,mindB,startFreq,stopFreq,outBuf);
     else
         return false;
 }
@@ -234,7 +225,7 @@ bool SignalSpectrum::MapFFTZoomedToScreen(qint32 maxHeight,
 	quint16 span = hiResSampleRate * zoom;
 
 	if (fftHiRes!=NULL)
-		return fftHiRes->MapFFTToScreen(hiResBuffer,maxHeight,maxWidth,maxdB,mindB, -span/2 - modeOffset, span/2 - modeOffset, outBuf);
+		return fftHiRes->MapFFTToScreen(hiResSpectrum,maxHeight,maxWidth,maxdB,mindB, -span/2 - modeOffset, span/2 - modeOffset, outBuf);
     else
         return false;
 }
