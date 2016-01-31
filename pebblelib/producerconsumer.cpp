@@ -14,6 +14,11 @@
  * This also reduces CPU load because we sleep for a safe amount of time between polling for new data
  *
  * 2/26/14: Significant update to use QTimers in threads.  QThread::msSleep() actually blocks, but QTimer() let other threads run
+ *
+ * 1/31/16: Another major update to handle sample rates above 2048 and reduce CPU usage at the same time
+ * QTimer only has ms intervals and poor accuracy, making it impossible to use reliably at higher sample rates
+ * We now use QIntervalTimer, which has ns resolution and high accuracy
+ * Then we use nanonsleep() to wait for the next sampling interval.
  */
 
 ProducerConsumer::ProducerConsumer()
@@ -30,9 +35,9 @@ ProducerConsumer::ProducerConsumer()
     consumerWorker = NULL;
     consumerWorkerThread = NULL;
 
-	//0 interval is reserved and sets timer that is triggered everytime event loop is empty
-	msProducerInterval = 1;
-	msConsumerInterval = 1;
+	//Interval of 0 will run as fast as possible
+	nsProducerInterval = 1;
+	nsConsumerInterval = 1;
 }
 
 //This can get called on an existing ProducerConsumer object
@@ -70,40 +75,24 @@ void ProducerConsumer::Initialize(cbProducerConsumer _producerWorker, cbProducer
     semNumFilledBuffers = new QSemaphore(0);
 
     nextProducerDataBuf = nextConsumerDataBuf = 0;
-    /*
-        Thread                      Worker
-        producerWorkerThread->start();
-        Signal started() ---------->Slot Start()        Thread tells works to start
-
-                                    Stop()              Sets bool stop=true to exit forever loop
-
-        Slot quit() <-------------- Signal finished()   Worker tells thread it's finished after detecting interupt request
-        Slot finished() ----------->Slot Stop()         Thread tells worker everything is done
-
-    */
-
 
     //New worker pattern that replaces subclassed QThread.  Recommended new QT 5 pattern
     if (producerWorkerThread == NULL) {
 		producerWorkerThread = new QThread(this);
-        producerWorkerThread->setObjectName("PebbleProducer");
+		producerWorkerThread->setObjectName("PebbleProducer");
     }
     if (producerWorker == NULL) {
 		producerWorker = new ProducerWorker(cbProducerWorker);
 		connect(producerWorkerThread,&QThread::started,producerWorker,&ProducerWorker::start);
-		connect(producerWorkerThread, &QThread::finished, producerWorker,&ProducerWorker::stop);
-		connect(this,&ProducerConsumer::CheckNewData, producerWorker, &ProducerWorker::checkNewData);
 	}
     if (consumerWorkerThread == NULL) {
 		consumerWorkerThread = new QThread(this);
-        consumerWorkerThread->setObjectName("PebbleConsumer");
+		consumerWorkerThread->setObjectName("PebbleConsumer");
     }
     if (consumerWorker == NULL) {
 		consumerWorker = new ConsumerWorker(cbConsumerWorker);
 		connect(consumerWorkerThread,&QThread::started,consumerWorker,&ConsumerWorker::start);
-		connect(consumerWorkerThread, &QThread::finished, consumerWorker,&ConsumerWorker::stop);
-		connect(this,&ProducerConsumer::ProcessNewData, consumerWorker, &ConsumerWorker::processNewData);
-    }
+	}
 
 }
 
@@ -111,19 +100,17 @@ void ProducerConsumer::Initialize(cbProducerConsumer _producerWorker, cbProducer
 //Bytes, CPX's, etc
 void ProducerConsumer::SetConsumerInterval(quint32 _sampleRate, quint16 _samplesPerBuffer)
 {
-	//1 sample every N ms X number of samples per buffer = how long it takes device to fill a buffer
-	float msToFillBuffer = (1000.0 / _sampleRate) * _samplesPerBuffer;
+	//1 sample every N ns X number of samples per buffer = how long it takes device to fill a buffer
+	float nsToFillBuffer = (1000000000.0 / _sampleRate) * _samplesPerBuffer;
 	//Set safe interval (experiment here)
 	//Use something that results in a non-cyclic interval to avoid checking constantly at the wrong time
-	msConsumerInterval = msToFillBuffer * 0.66;
-	//0 is a special case for QTimer which sends timeout signal whenever there are no events to be processed
-	//This will run consumer as fast as possible, with corresponding high CPU
-	if (msConsumerInterval == 0)
+	nsConsumerInterval = nsToFillBuffer * 0.90;
+	if (nsConsumerInterval == 0)
 		qDebug()<<"Warning: Consumer running as fast as possible, high CPU";
 	else
-		qDebug()<<"Consumer checks every "<<msConsumerInterval<<" ms "<<"SampleRate | SamplesPerBuffer"<<_sampleRate<<_samplesPerBuffer;
+		qDebug()<<"Consumer checks every "<<nsConsumerInterval<<" ns "<<"SampleRate | SamplesPerBuffer"<<_sampleRate<<_samplesPerBuffer;
 	if (consumerWorker != NULL)
-		consumerWorker->SetPollingInterval(msConsumerInterval);
+		consumerWorker->SetPollingInterval(nsConsumerInterval);
 
 }
 
@@ -131,18 +118,16 @@ void ProducerConsumer::SetConsumerInterval(quint32 _sampleRate, quint16 _samples
 //Call after initialize
 void ProducerConsumer::SetProducerInterval(quint32 _sampleRate, quint16 _samplesPerBuffer)
 {
-	//1 sample every N ms X number of samples per buffer = how long it takes device to fill a buffer
-	float msToFillBuffer = (1000.0 / _sampleRate) * _samplesPerBuffer;
+	//1 sample every N ns X number of samples per buffer = how long it takes device to fill a buffer
+	float nsToFillBuffer = (1000000000.0 / _sampleRate) * _samplesPerBuffer;
 	//Set safe interval (experiment here)
-	msProducerInterval = msToFillBuffer * 0.66;
-	//0 is a special case for QTimer which sends timeout signal whenever there are no events to be processed
-	//This will run consumer as fast as possible, with corresponding high CPU
-	if (msProducerInterval == 0)
+	nsProducerInterval = nsToFillBuffer * 0.90;
+	if (nsProducerInterval == 0)
 		qDebug()<<"Warning: Producer running as fast as possible, high CPU";
 	else
-		qDebug()<<"Producer checks every "<<msProducerInterval<<" ms"<<"SampleRate | SamplesPerBuffer"<<_sampleRate<<_samplesPerBuffer;;
+		qDebug()<<"Producer checks every "<<nsProducerInterval<<" ns "<<"SampleRate | SamplesPerBuffer"<<_sampleRate<<_samplesPerBuffer;;
 	if (producerWorker != NULL)
-		producerWorker->SetPollingInterval(msProducerInterval);
+		producerWorker->SetPollingInterval(nsProducerInterval);
 }
 
 
@@ -179,11 +164,13 @@ bool ProducerConsumer::Stop()
         return false; //Init has not been called
 
     if (producerThreadIsRunning) {
+		producerWorker->stop();
 		producerWorkerThread->quit();
         producerThreadIsRunning = false;
     }
 
     if (consumerThreadIsRunning) {
+		consumerWorker->stop();
 		consumerWorkerThread->quit();
         consumerThreadIsRunning = false;
     }
@@ -245,7 +232,6 @@ void ProducerConsumer::ReleaseFreeBuffer()
 {
     nextConsumerDataBuf = (nextConsumerDataBuf +1 ) % numDataBufs;
     semNumFreeBuffers->release();
-	emit CheckNewData();
 }
 
 void ProducerConsumer::PutbackFreeBuffer()
@@ -282,9 +268,6 @@ void ProducerConsumer::ReleaseFilledBuffer()
 {
     nextProducerDataBuf = (nextProducerDataBuf +1 ) % numDataBufs; //Increment producer pointer
     semNumFilledBuffers->release();
-	//Consumer worker is called via thread loop, also via signal
-	//Don't really need both, but experiementing with what's more efficient
-	emit ProcessNewData();
 }
 
 void ProducerConsumer::PutbackFilledBuffer()
@@ -304,43 +287,41 @@ quint16 ProducerConsumer::GetPercentageFree()
 ProducerWorker::ProducerWorker(cbProducerConsumer _worker)
 {
 	worker = _worker;
-	msInterval = 1; //0 reserved by QTimer
 	isRunning = false;
 }
 
-//This gets called by producerThread because we connected the started() signal to this method
 void ProducerWorker::start()
 {
 	//Do any construction here so it's in the thread
 	worker(cbProducerConsumerEvents::Start);
-	timer = new QTimer(this);
-	timer->setTimerType(Qt::PreciseTimer); //1ms resolution
-	connect(timer, SIGNAL(timeout()), this, SLOT(checkNewData()));
 	isRunning = true;
-	timer->start(msInterval); //Times out when there's nothing in the event queue
-	return; //Event loop will take over and our timer will fire worker function
+	timespec req, rem;
+	elapsedTimer.start();
+	while (isRunning) {
+		qint64 nsRemaining = nsInterval - elapsedTimer.nsecsElapsed();
+		if (nsRemaining > 0) {
+			req.tv_sec = 0;
+			//We want to get close to exact time, but not go over
+			req.tv_nsec = nsRemaining;
+			if (nanosleep(&req,&rem) < 0) {
+				qDebug()<<"nanosleep failed";
+			}
+		}
+		elapsedTimer.start(); //Restart elapsed timer
+		worker(cbProducerConsumerEvents::Run);
+	}
+	return;
 }
 void ProducerWorker::stop()
 {
 	isRunning = false;
-	timer->stop();
-	delete timer;
 	//Do any worker destruction here
 	worker(cbProducerConsumerEvents::Stop);
-}
-void ProducerWorker::checkNewData()
-{
-	if (!isRunning)
-		return;
-	//perform.StartPerformance("Producer");
-	worker(cbProducerConsumerEvents::Run);
-	//perform.StopPerformance(100);
 }
 
 ConsumerWorker::ConsumerWorker(cbProducerConsumer _worker)
 {
 	worker = _worker;
-	msInterval = 1;
 	isRunning = false;
 }
 
@@ -348,31 +329,29 @@ void ConsumerWorker::start()
 {
 	//Do any construction here so it's in the thread
 	worker(cbProducerConsumerEvents::Start);
-	timer = new QTimer(this);
-	timer->setTimerType(Qt::PreciseTimer); //1ms resolution
-	connect(timer, SIGNAL(timeout()), this, SLOT(processNewData()));
 	isRunning = true;
-	timer->start(msInterval); //Times out when there's nothing in the event queue
-	return; //Event loop will take over and our timer will fire worker function
+	timespec req, rem;
+	elapsedTimer.start();
+	while (isRunning) {
+		qint64 nsRemaining = nsInterval - elapsedTimer.nsecsElapsed();
+		if (nsRemaining > 0) {
+			req.tv_sec = 0;
+			//We want to get close to exact time, but not go over
+			req.tv_nsec = nsRemaining;
+			if (nanosleep(&req,&rem) < 0) {
+				qDebug()<<"nanosleep failed";
+			}
+		}
+		elapsedTimer.start(); //Restart elapsed timer
+		worker(cbProducerConsumerEvents::Run);
+	}
+	return;
 }
 //Called just before thread finishes
 void ConsumerWorker::stop()
 {
 	isRunning = false;
-	timer->stop();
-	delete timer;
 	//Do any worker destruction here
 	worker(cbProducerConsumerEvents::Stop);
-}
-
-//Consumer work can get executed 2 ways, as a result of signal from producer, or as a result of ConsumerWorker loop
-//
-void ConsumerWorker::processNewData()
-{
-	if (!isRunning)
-		return;
-	//perform.StartPerformance("Consumer");
-	worker(cbProducerConsumerEvents::Run);
-	//perform.StopPerformance(100);
 }
 

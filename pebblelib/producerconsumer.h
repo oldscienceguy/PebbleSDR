@@ -52,8 +52,6 @@ public:
     quint16 GetNumFilledBufs() {return semNumFilledBuffers->available();}
 
 signals:
-	void CheckNewData();
-	void ProcessNewData(); //Producer released a filled buffer
 
 private:
     //Experiment using blocking acquire() vs checking for available first
@@ -84,8 +82,8 @@ private:
     cbProducerConsumer cbProducerWorker;
     cbProducerConsumer cbConsumerWorker;
 
-	quint16 msProducerInterval;
-	quint16 msConsumerInterval;
+	qint64 nsProducerInterval;
+	qint64 nsConsumerInterval;
 
 };
 
@@ -95,18 +93,17 @@ class ProducerWorker: public QObject
     Q_OBJECT
 public:
 	ProducerWorker(cbProducerConsumer _worker);
-	void SetPollingInterval(quint16 _msInterval) {msInterval = _msInterval;}
+	void SetPollingInterval(quint16 _nsInterval) {nsInterval = _nsInterval;}
 
 public slots:
     void start();
     void stop();
-	void checkNewData();
 
 private:
     cbProducerConsumer worker;
     Perform perform;
-	quint16 msInterval;
-	QTimer *timer;
+	QElapsedTimer elapsedTimer;
+	qint64 nsInterval;
 	bool isRunning;
 };
 class ConsumerWorker: public QObject
@@ -114,18 +111,17 @@ class ConsumerWorker: public QObject
 	Q_OBJECT
 public:
 	ConsumerWorker(cbProducerConsumer _worker);
-	void SetPollingInterval(quint16 _msInterval) {msInterval = _msInterval;}
+	void SetPollingInterval(quint16 _nsInterval) {nsInterval = _nsInterval;}
 
 public slots:
 	void start();
 	void stop();
-	void processNewData();
 
 private:
 	cbProducerConsumer worker;
 	Perform perform;
-	quint16 msInterval;
-	QTimer *timer;
+	QElapsedTimer elapsedTimer;
+	qint64 nsInterval;
 	bool isRunning;
 };
 
