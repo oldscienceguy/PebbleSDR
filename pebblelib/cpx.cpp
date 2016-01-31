@@ -2,7 +2,7 @@
 #include "gpl.h"
 #include "cpx.h"
 #include <vector>
-#include "../fftw-3.3.3/api/fftw3.h"
+#include "../fftw-3.3.4/api/fftw3.h"
 
 #if (SIMD)
 #include <pmmintrin.h>

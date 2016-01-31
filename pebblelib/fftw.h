@@ -5,7 +5,7 @@
 
 #include "fft.h"
 #include "cpx.h"
-#include "../fftw-3.3.3/api/fftw3.h"
+#include "../fftw-3.3.4/api/fftw3.h"
 
 class PEBBLELIBSHARED_EXPORT FFTfftw : public FFT
 {

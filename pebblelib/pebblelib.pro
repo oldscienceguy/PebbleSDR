@@ -78,7 +78,7 @@ macx {
     plib.path = $${INSTALLDIR}/Pebble.app/Contents/Frameworks
     INSTALLS += plib
 
-    LIBS += -L$${PWD}/../fftw-3.3.3/.libs/ -lfftw3
+    LIBS += -L$${PWD}/../fftw-3.3.4/.libs/ -lfftw3
     LIBS += -L$${PWD}/../D2XX/bin/10.5-10.7/ -lftd2xx.1.2.2
     LIBS += -framework IOKit #For HID
     LIBS += -framework CoreServices #For HID
