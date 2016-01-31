@@ -76,12 +76,11 @@ void FFTfftw::FFTSpectrum(CPX *in, double *out, int numSamples)
 {
     if (!fftParamsSet)
         return;
-
 	FFTForward(in,workingBuf,numSamples);
 
-	unfoldInOrder(workingBuf, freqDomain);
+	unfoldInOrder(workingBuf, freqDomain, true);
 
-    CalcPowerAverages(freqDomain, out, fftSize);
+	CalcPowerAverages(freqDomain, out, fftSize);
 
 
 }

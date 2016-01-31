@@ -85,7 +85,7 @@ protected:
     //This should replace m_mutex in fftcute
     QMutex fftMutex; //Used to sync threads calling FFT and display calling Screen mapping
 
-	void unfoldInOrder(CPX *inBuf, CPX *outBuf);
+	void unfoldInOrder(CPX *inBuf, CPX *outBuf, bool bitReversed = true);
 };
 
 #endif // FFT_H

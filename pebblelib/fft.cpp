@@ -145,27 +145,59 @@ void FFT::ResetFFT()
 }
 
 // Unfolds output of fft to -f to +f order
-// Note also that we use the standard “in-order” output ordering—the k-th output corresponds to the frequency k/n
-// (or k/T, where T is your total sampling period).
-// For those who like to think in terms of positive and negative frequencies,
-// this means that the positive frequencies are stored in the first half of the output
-// and the negative frequencies are stored in backwards order in the second half of the output.
-// (The frequency -k/n is the same as the frequency (n-k)/n.)
+/*
+ (From FFTW documentation)
+ Note also that we use the standard “in-order” output ordering—the k-th output corresponds to the frequency k/n
+ (or k/T, where T is your total sampling period).
+ For those who like to think in terms of positive and negative frequencies,
+ this means that the positive frequencies are stored in the first half of the output
+ and the negative frequencies are stored in backwards order in the second half of the output.
+ (The frequency -k/n is the same as the frequency (n-k)/n.)
 
-void FFT::unfoldInOrder(CPX *inBuf, CPX *outBuf)
+ But!
+
+ What's not well documented is that the normal output of most FFT's is in bit-reversed order
+ output[n] is reversed with output [fftSize -n]
+ So we have to handle this as well for -f - 0 - +f spectrum displays
+
+
+ (from FFTW doc, alternative to unfolding output by pre-processing input)
+ For human viewing of a spectrum, it is often convenient to put the origin in
+ frequency space at the center of the output array, rather than in the zero-th
+ element (the default in FFTW). If all of the dimensions of your array are
+ even, you can accomplish this by simply multiplying each element of the input
+ array by (-1)^(i + j + ...), where i, j, etcetera are the indices of the
+ element. (This trick is a general property of the DFT, and is not specific to
+ FFTW.)
+
+	for (int i=0; i<numSamples; i++) {
+		buf[i] = in[i] * pow(-1,i);
+	}
+
+*/
+void FFT::unfoldInOrder(CPX *inBuf, CPX *outBuf, bool bitReversed)
 {
+	CPX tmp;
+	//Not sure if we reverse before or after unfolding or if it makes a difference
+	if (bitReversed) {
+		for (int i=0, j=fftSize-1; i<fftSize/2; i++, j--) {
+			tmp = inBuf[i];
+			inBuf[i] = inBuf[j];
+			inBuf[j] = tmp;
+		}
+	}
+
 	// FFT output index 0 to N/2-1 - frequency output 0 to +Fs/2 Hz  ( 0 Hz DC term, positive frequencies )
 	// This puts 0 to size/2 into size/2 to size-1 position
 	for( int unfolded = 0, folded = fftSize/2 ; folded < fftSize; unfolded++, folded++) {
-		outBuf[unfolded] = inBuf[folded]; //folded = 1024 to 2047 unfolded = 0 to 1023
+		outBuf[unfolded] = inBuf[folded]; //1024 to 2047 folded -> 0 to 1023 unfolded
 	}
 	// FFT output index N/2 to N-1 - frequency output -Fs/2 to 0 (negative frequencies)
 	// This puts size/2 to size-1 into 0 to size/2
 	// Works correctly with Ooura FFT
 	for( int unfolded = fftSize/2, folded = 0; unfolded < fftSize; unfolded++, folded++) {
-		outBuf[unfolded] = inBuf[folded]; //folded = 0 to 1023 unfolded = 1024 to 2047
+		outBuf[unfolded] = inBuf[folded]; //0 to 1023 folded -> 1024 to 2047 unfolded
 	}
-
 }
 
 //!!Compare with cuteSDR logic, replace if necessary
@@ -198,6 +230,7 @@ void FFT::OverlapAdd(CPX *out, int numSamples)
 void FFT::CalcPowerAverages(CPX* in, double *out, int numSamples)
 {
 
+	numSamples = fftSize; //Remove arg
 #if 0
 
 
@@ -250,7 +283,8 @@ void FFT::CalcPowerAverages(CPX* in, double *out, int numSamples)
 
         //Skip copying to out if null
         if (out != NULL)
-            out[i] = FFTAvgBuf[i];
+			out[i] = FFTAvgBuf[i];
+			//out[i] = DB::powerToDbAdjusted(in[i].norm()); //Raw, no average
     }
 
 }
@@ -327,23 +361,22 @@ bool FFT::MapFFTToScreen(double *inBuf,
 			//If freq for this pixel is outside fft range, output 0 until we are in range
 			if (fftBin < 0) {
 				powerdB = DB::minDb; //Out of bin range
-				lastFftBin = fftBin;
 			} else if (fftBin >= fftSize) {
 				powerdB = DB::minDb;
-				lastFftBin = fftBin;
 			} else if (lastFftBin > 0 && fftBin != lastFftBin + 1) {
 				//Lowest freq is in fftBin[0]
-				//We skipped some bins, average the ones we skipped
+				//We skipped some bins, average the ones we skipped - including this one
 				qint32 skippedBins = fftBin - lastFftBin;
 				for (int j=0; j<skippedBins; j++) {
 					totalBinPower += inBuf[lastFftBin + j] - maxdB;
 				}
 				powerdB = totalBinPower / skippedBins;
-				lastFftBin = fftBin;
 			} else {
 				powerdB = inBuf[fftBin] - maxdB;
 			}
-
+			lastFftBin = fftBin;
+			// y(0) = maxdB (top of screen)  y(yPixels) = mindB (bottom of screen)
+			//dbGainFactor scales powerDb to this range
 			outBuf[i] = (qint32)(yPixels * dBGainFactor * powerdB);
 		} //End xPixel loop
 
