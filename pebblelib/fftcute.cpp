@@ -249,7 +249,7 @@ void CFft::FFTSpectrum(CPX *in, double *out, int numSamples)
 
     //We to unfold here because CalcPowerAverages expects things in most neg to most pos order
 	//See fftooura for spectrum folding model, cuteSDR uses same
-	unfoldInOrder(workingBuf, freqDomain);
+	unfoldInOrder(workingBuf, freqDomain, true);
 
 	CalcPowerAverages(freqDomain, out, numSamples);
 }
