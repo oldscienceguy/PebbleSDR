@@ -93,7 +93,7 @@ class ProducerWorker: public QObject
     Q_OBJECT
 public:
 	ProducerWorker(cbProducerConsumer _worker);
-	void SetPollingInterval(quint16 _nsInterval) {nsInterval = _nsInterval;}
+	void SetPollingInterval(qint64 _nsInterval) {nsInterval = _nsInterval;}
 
 public slots:
     void start();
@@ -111,7 +111,7 @@ class ConsumerWorker: public QObject
 	Q_OBJECT
 public:
 	ConsumerWorker(cbProducerConsumer _worker);
-	void SetPollingInterval(quint16 _nsInterval) {nsInterval = _nsInterval;}
+	void SetPollingInterval(qint64 _nsInterval) {nsInterval = _nsInterval;}
 
 public slots:
 	void start();

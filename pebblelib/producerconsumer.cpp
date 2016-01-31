@@ -104,7 +104,7 @@ void ProducerConsumer::SetConsumerInterval(quint32 _sampleRate, quint16 _samples
 	float nsToFillBuffer = (1000000000.0 / _sampleRate) * _samplesPerBuffer;
 	//Set safe interval (experiment here)
 	//Use something that results in a non-cyclic interval to avoid checking constantly at the wrong time
-	nsConsumerInterval = nsToFillBuffer * 0.90;
+	nsConsumerInterval = nsToFillBuffer * 0.90; //Slightly faster because we'll wait if no filled buffers
 	if (nsConsumerInterval == 0)
 		qDebug()<<"Warning: Consumer running as fast as possible, high CPU";
 	else
@@ -121,7 +121,7 @@ void ProducerConsumer::SetProducerInterval(quint32 _sampleRate, quint16 _samples
 	//1 sample every N ns X number of samples per buffer = how long it takes device to fill a buffer
 	float nsToFillBuffer = (1000000000.0 / _sampleRate) * _samplesPerBuffer;
 	//Set safe interval (experiment here)
-	nsProducerInterval = nsToFillBuffer * 0.90;
+	nsProducerInterval = nsToFillBuffer;// Exact so we can use this to match device sample rate
 	if (nsProducerInterval == 0)
 		qDebug()<<"Warning: Producer running as fast as possible, high CPU";
 	else
@@ -288,6 +288,7 @@ ProducerWorker::ProducerWorker(cbProducerConsumer _worker)
 {
 	worker = _worker;
 	isRunning = false;
+	nsInterval = 1;
 }
 
 void ProducerWorker::start()
@@ -296,9 +297,10 @@ void ProducerWorker::start()
 	worker(cbProducerConsumerEvents::Start);
 	isRunning = true;
 	timespec req, rem;
+	qint64 nsRemaining;
 	elapsedTimer.start();
 	while (isRunning) {
-		qint64 nsRemaining = nsInterval - elapsedTimer.nsecsElapsed();
+		nsRemaining = nsInterval - elapsedTimer.nsecsElapsed();
 		if (nsRemaining > 0) {
 			req.tv_sec = 0;
 			//We want to get close to exact time, but not go over
@@ -323,6 +325,7 @@ ConsumerWorker::ConsumerWorker(cbProducerConsumer _worker)
 {
 	worker = _worker;
 	isRunning = false;
+	nsInterval = 1;
 }
 
 void ConsumerWorker::start()
@@ -331,9 +334,10 @@ void ConsumerWorker::start()
 	worker(cbProducerConsumerEvents::Start);
 	isRunning = true;
 	timespec req, rem;
+	qint64 nsRemaining;
 	elapsedTimer.start();
 	while (isRunning) {
-		qint64 nsRemaining = nsInterval - elapsedTimer.nsecsElapsed();
+		nsRemaining = nsInterval - elapsedTimer.nsecsElapsed();
 		if (nsRemaining > 0) {
 			req.tv_sec = 0;
 			//We want to get close to exact time, but not go over
