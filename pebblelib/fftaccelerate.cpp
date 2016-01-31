@@ -102,7 +102,7 @@ void FFTAccelerate::FFTSpectrum(CPX *in, double *out, int numSamples)
 
 	FFTForward(in,workingBuf,numSamples); //No need to copy to out, leave in freqDomain
 
-	unfoldInOrder(workingBuf, freqDomain);
+	unfoldInOrder(workingBuf, freqDomain, true);
 
 	CalcPowerAverages(freqDomain, out, fftSize);
 
