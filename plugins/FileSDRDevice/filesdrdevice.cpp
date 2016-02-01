@@ -29,9 +29,6 @@ bool FileSDRDevice::Initialize(cbProcessIQData _callback,
     producerConsumer.Initialize(std::bind(&FileSDRDevice::producerWorker, this, std::placeholders::_1),
 		std::bind(&FileSDRDevice::consumerWorker, this, std::placeholders::_1),50,framesPerBuffer * sizeof(CPX));
 
-	connect(&sampleRateTimer,SIGNAL(timeout()),this, SLOT(producerSlot()));
-	sampleRateTimer.setTimerType(Qt::PreciseTimer); //1ms resolution
-
     return true;
 }
 
@@ -80,7 +77,7 @@ bool FileSDRDevice::Connect()
 	sampleRate = wavFileRead.GetSampleRate();
 	//We have sample rate for file, set polling interval
 	//We don't use producer thread, sampleRateTimer and producerSlot() instead
-	//producerConsumer.SetProducerInterval(sampleRate, framesPerBuffer);
+	producerConsumer.SetProducerInterval(sampleRate, framesPerBuffer);
 	producerConsumer.SetConsumerInterval(sampleRate, framesPerBuffer);
 
     if (copyTest) {
@@ -99,18 +96,16 @@ bool FileSDRDevice::Disconnect()
 void FileSDRDevice::Start()
 {
 	//How often do we need to read samples from files to get framesPerBuffer at sampleRate
-	quint16 msToFillBuffer = (1000.0 / sampleRate) * framesPerBuffer;
-	qDebug()<<"msToFillBuffer"<<msToFillBuffer;
-	//Note msToFillBuffer == 0 means timer will get triggered whenever there are no events
-	//ie as fast as possible.  High CPU will result, but we may be able to keep up with higer SR
+	nsPerBuffer = (1000000000.0 / sampleRate) * framesPerBuffer;
+	//qDebug()<<"nsPerBuffer"<<nsPerBuffer;
 
-	producerConsumer.Start(false,true);
-	sampleRateTimer.start(msToFillBuffer);
+	producerConsumer.Start(true,true);
+
+	elapsedTimer.start();
 }
 
 void FileSDRDevice::Stop()
 {
-	sampleRateTimer.stop();
     producerConsumer.Stop();
 }
 
@@ -232,19 +227,41 @@ void FileSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 
 }
 
-//Called by timer to match sampleRate
+//Called by timer at fastest rate, we use timer to make sure events are processed between samples
 void FileSDRDevice::producerSlot()
 {
-	//pebbleLibGlobal->perform.StartPerformance("Wav file producer");
-	CPX *bufPtr;
-	int samplesRead;
-	//Fill one buffer with data
-	if ((bufPtr = (CPX*)producerConsumer.AcquireFreeBuffer()) == NULL)
-		return;
-	samplesRead = wavFileRead.ReadSamples(bufPtr,framesPerBuffer);
-	for (int i=0; i<framesPerBuffer; i++) {
-		normalizeIQ(&bufPtr[i],bufPtr[i]);
+	//qDebug()<<elapsedTimer.restart();
+
+	timespec req, rem;
+	//Note: timer(0) averages 30,000ns between calls to this slot
+	//Govern output rate to match sampleRate, same as if actual device was outputing samples
+	qint64 nsRemaining = nsPerBuffer - elapsedTimer.nsecsElapsed();
+	if (nsRemaining > 0) {
+		req.tv_sec = 0;
+		//We want to get close to exact time, but not go over
+		//So we sleep for 1/2 of the remaining time each sequence
+		req.tv_nsec = nsRemaining;
+		if (nanosleep(&req,&rem) < 0) {
+			qDebug()<<"nanosleep failed";
+		}
 	}
+	elapsedTimer.start(); //Restart elapsed timer
+
+
+	//pebbleLibGlobal->perform.StartPerformance("Wav file producer");
+	int samplesRead;
+
+	//Fill one buffer with data
+	if ((producerBuf = (CPX*)producerConsumer.AcquireFreeBuffer()) == NULL)
+		return;
+
+	samplesRead = wavFileRead.ReadSamples(producerBuf,framesPerBuffer);
+	for (int i=0; i<framesPerBuffer; i++) {
+		normalizeIQ(&producerBuf[i],producerBuf[i]);
+	}
+
+	//ProcessIQData(producerBuf,framesPerBuffer);
+
 	producerConsumer.ReleaseFilledBuffer();
 	//pebbleLibGlobal->perform.StopPerformance(1000);
 }

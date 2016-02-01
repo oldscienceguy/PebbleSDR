@@ -50,7 +50,9 @@ private:
     WavFile wavFileWrite;
     bool copyTest; //True if we're reading from one file and writing to another file for testing
 
-	QTimer sampleRateTimer;
+	QElapsedTimer elapsedTimer;
+	qint64 nsPerBuffer; //How fast do we have to output a buffer of data to match recorded sample rate
+	CPX *producerBuf;
 };
 
 
