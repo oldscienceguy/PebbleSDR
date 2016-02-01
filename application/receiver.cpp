@@ -128,7 +128,7 @@ bool Receiver::On()
     framesPerBuffer = demodFrames = settings->framesPerBuffer;
     //These steps work on full sample rates
     noiseBlanker = new NoiseBlanker(sampleRate,framesPerBuffer);
-    //Don't need Mixer anymore - TBD
+	//Todo: Don't need Mixer anymore
     mixer = new Mixer(sampleRate, framesPerBuffer);
     iqBalance = new IQBalance(sampleRate,framesPerBuffer);
 	iqBalance->setEnabled(sdr->Get(DeviceInterface::IQBalanceEnabled).toBool());
@@ -217,6 +217,8 @@ bool Receiver::On()
 	bpFilter->setEnabled(true);
 	
     agc = new AGC(demodSampleRate, demodFrames);
+
+	mixerFrequency = 0;
 
 	//This should always be last because it starts samples flowing through the processBlocks
 	audioOutput->StartOutput(sdr->Get(DeviceInterface::OutputDeviceName).toString(), audioOutRate);
@@ -647,11 +649,17 @@ void Receiver::SetSquelch(int s)
 //Called by ReceiverWidget
 void Receiver::SetMixer(int f)
 {
-    if (mixer != NULL) {
+#if 1
+	mixerFrequency = f;
+	demod->ResetDemod();
+#else
+	//mixer no longer used
+	if (mixer != NULL) {
         mixerFrequency = f;
 		mixer->SetFrequency(f);
-        demod->ResetDemod();
+		demod->ResetDemod();
     }
+#endif
 }
 
 void Receiver::SdrOptionsPressed()
@@ -690,6 +698,11 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 {
 	if (sdr == NULL || !powerOn)
 		return;
+
+	//Number of samples in the buffer before each step
+	//Will change with decimation and resampling
+	//Use instead of numSamples
+	quint32 numStepSamples = numSamples;
 
     /*
      * Critical timing!!
@@ -783,24 +796,26 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
         downConvertWfm1.SetFrequency(mixerFrequency);
         // InLength must be a multiple of 2^N where N is the maximum decimation by 2 stages expected.
         //We need a separated input/output buffer for downConvert
-        int downConvertLen = downConvertWfm1.ProcessData(framesPerBuffer,nextStep,workingBuf);
+		numStepSamples = downConvertWfm1.ProcessData(numStepSamples,nextStep,workingBuf);
         //We are always decimating by a factor of 2
         //so we know we can accumulate a full fft buffer at this lower sample rate
-        for (int i=0; i<downConvertLen; i++) {
+		for (int i=0; i<numStepSamples; i++) {
             sampleBuf[sampleBufLen++] = workingBuf[i];
         }
 
+#if 1
         if (sampleBufLen < framesPerBuffer)
             return; //Nothing to do until we have full buffer
-
+		numStepSamples = framesPerBuffer;
+#endif
         sampleBufLen = 0;
         //Create zoomed spectrum
-        signalSpectrum->Zoomed(sampleBuf, framesPerBuffer);
+		signalSpectrum->Zoomed(sampleBuf, numStepSamples);
         nextStep = sampleBuf;
 
-        nextStep = signalStrength->ProcessBlock(nextStep, framesPerBuffer, squelch);
+		nextStep = signalStrength->ProcessBlock(nextStep, numStepSamples, squelch);
 
-        nextStep = demod->ProcessBlock(nextStep, framesPerBuffer);
+		nextStep = demod->ProcessBlock(nextStep, numStepSamples);
 
         resampRate = (demodWfmSampleRate*1.0) / (audioOutRate*1.0);
 
@@ -809,7 +824,7 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
         //Replaces Mixer.cpp
 		//global->perform.StartPerformance();
         downConvert1.SetFrequency(mixerFrequency);
-        int downConvertLen = downConvert1.ProcessData(framesPerBuffer,nextStep,workingBuf);
+		numStepSamples = downConvert1.ProcessData(numStepSamples, nextStep,workingBuf);
 		//global->perform.StopPerformance(100);
         //This is a significant change from the way we used to process post downconvert
         //We used to process every downConvertLen samples, 32 for a 2m sdr sample rate
@@ -818,17 +833,20 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 
         //We are always decimating by a factor of 2
         //so we know we can accumulate a full fft buffer at this lower sample rate
-        for (int i=0; i<downConvertLen; i++) {
+		for (int i=0; i<numStepSamples; i++) {
             sampleBuf[sampleBufLen++] = workingBuf[i];
         }
 
+#if 1
+		//Build full frame buffer
         if (sampleBufLen < framesPerBuffer)
             return; //Nothing to do until we have full buffer
-
-        sampleBufLen = 0;
+		numStepSamples = framesPerBuffer;
+		sampleBufLen = 0;
+#endif
         //Create zoomed spectrum
 		//global->perform.StartPerformance("Signal Spectrum Zoomed");
-        signalSpectrum->Zoomed(sampleBuf, framesPerBuffer);
+		signalSpectrum->Zoomed(sampleBuf, numStepSamples);
 		//global->perform.StopPerformance(100);
 
         nextStep = sampleBuf;
@@ -836,7 +854,7 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
         //Mixer shows no loss in testing
         //nextStep = mixer->ProcessBlock(nextStep);
         //float post = SignalProcessing::TotalPower(nextStep,frameCount);
-        global->testBench->DisplayData(demodFrames,nextStep,demodSampleRate,testBenchPostMixer);
+		global->testBench->DisplayData(numStepSamples,nextStep,demodSampleRate,testBenchPostMixer);
 
         //global->perform.StopPerformance(100);
 
@@ -844,18 +862,18 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 
         //float pre = SignalProcessing::TotalPower(nextStep,frameCount);
 		//global->perform.StartPerformance("Band Pass Filter");
-        nextStep = bpFilter->ProcessBlock(nextStep);
+		nextStep = bpFilter->ProcessBlock(nextStep);
 		//global->perform.StopPerformance(100);
 		//Crude AGC, too much fluctuation
         //CPXBuf::scale(nextStep,nextStep,pre/post,frameCount);
-        global->testBench->DisplayData(demodFrames,nextStep,demodSampleRate,testBenchPostBandpass);
+		global->testBench->DisplayData(numStepSamples,nextStep,demodSampleRate,testBenchPostBandpass);
 
 
 
         //If squelch is set, and we're below threshold and should set output to zero
         //Do this in SignalStrength, since that's where we're calculating average signal strength anyway
 		//global->perform.StartPerformance("Signal Strength");
-		nextStep = signalStrength->ProcessBlock(nextStep, framesPerBuffer, squelch);
+		nextStep = signalStrength->ProcessBlock(nextStep, numStepSamples, squelch);
 		//global->perform.StopPerformance(100);
 
         //Tune only mode, no demod or output
@@ -865,14 +883,14 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
         }
 
 		//global->perform.StartPerformance("Noise Filter");
-        nextStep = noiseFilter->ProcessBlock(nextStep);
+		nextStep = noiseFilter->ProcessBlock(nextStep);
 		//global->perform.StopPerformance(100);
 
         //nr->ProcessBlock(out, in, size);
         //float post = SignalProcessing::totalPower(nextStep,framesPerBuffer);
 
 		//global->perform.StartPerformance("AGC");
-        nextStep = agc->ProcessBlock(nextStep);
+		nextStep = agc->ProcessBlock(nextStep);
 		//global->perform.StopPerformance(100);
 
 
@@ -881,23 +899,22 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
             nextStep = iDigitalModem->ProcessBlock(nextStep);
 
 		//global->perform.StartPerformance("Demod");
-		nextStep = demod->ProcessBlock(nextStep, framesPerBuffer);
+		nextStep = demod->ProcessBlock(nextStep, numStepSamples);
 		//global->perform.StopPerformance(100);
 
-		global->testBench->DisplayData(demodFrames,nextStep,demodSampleRate,testBenchPostDemod);
+		global->testBench->DisplayData(numStepSamples,nextStep,demodSampleRate,testBenchPostDemod);
 
         resampRate = (demodSampleRate*1.0) / (audioOutRate*1.0);
 
     }
 
-	quint16 numResamp = 0;
 	//Fractional resampler is very expensive, 1000 to 1500ms
 	//global->perform.StartPerformance("Fract Resampler");
-	numResamp = fractResampler.Resample(demodFrames,resampRate,nextStep,audioBuf);
+	numStepSamples = fractResampler.Resample(numStepSamples,resampRate,nextStep,audioBuf);
 	//global->perform.StopPerformance(100);
 
 	//global->perform.StartPerformance("Process Audio");
-	ProcessAudioData(audioBuf,numResamp);
+	ProcessAudioData(audioBuf,numStepSamples);
 	//global->perform.StopPerformance(100);
 }
 
