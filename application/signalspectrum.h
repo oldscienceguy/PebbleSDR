@@ -20,7 +20,7 @@ public:
 	void SetHiRes(bool _on) {useHiRes = _on;}
 	//Pass in soundcard buffer under/overflow counts for display
 	void Unprocessed(CPX * in, double inUnder, double inOver, double outUnder, double outOver, int _numSamples);
-	void MakeSpectrum(FFT *fft, CPX *in, double *out, int _numSamples, CPX *_window); //Use if we just have CPX samples
+	void MakeSpectrum(FFT *fft, CPX *in, double *out, int _numSamples); //Use if we just have CPX samples
 	void MakeSpectrum(FFT *fft, double *out); //Used if we already have FFT
 
 	//Used when we already have spectrum, typically from dsp server or device

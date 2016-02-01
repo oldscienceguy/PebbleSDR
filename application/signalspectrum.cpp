@@ -85,7 +85,7 @@ void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double 
 
     //Keep a copy raw I/Q to local buffer for display
     //CPXBuf::copy(rawIQ, in, numSamples);
-	MakeSpectrum(fftUnprocessed, in, unprocessedSpectrum, _numSamples, windowFunction->windowCpx);
+	MakeSpectrum(fftUnprocessed, in, unprocessedSpectrum, _numSamples);
 	displayUpdateComplete = false;
 	emit newFftData();
 }
@@ -101,19 +101,19 @@ void SignalSpectrum::Zoomed(CPX *in, int _numSamples)
         return;
 	skipFftsHiResCounter = 0;
 
-	MakeSpectrum(fftHiRes, in, hiResSpectrum, _numSamples, windowFunction->windowCpx);
+	MakeSpectrum(fftHiRes, in, hiResSpectrum, _numSamples);
 	//Updated HiRes fft data won't be available to SpectrumWidget untill Unprocessed() is called in next loop
 	//Should have no impact and avoids displaying spectrum 2x in each ProcessIQ loop
 	//This signal is for future use in case we want to do special handling in SpectrumWidget
 	emit newHiResFftData();
 }
 
-void SignalSpectrum::MakeSpectrum(FFT *fft, CPX *in, double *sOut, int _numSamples, CPX *_window)
+void SignalSpectrum::MakeSpectrum(FFT *fft, CPX *in, double *sOut, int _numSamples)
 {
 	//Must work with unprocessed or zoomed fft, so get size directly from fft
 	int fftSize = fft->getFFTSize();
 	//Smooth the input data with our window
-	CPXBuf::mult(tmp_cpx, in, _window, _numSamples);
+	CPXBuf::mult(tmp_cpx, in, windowFunction->windowCpx, _numSamples);
 	//Zero pad remainder of buffer if needed
 	for (int i = _numSamples; i<fftSize; i++) {
 		tmp_cpx[i] = 0;
