@@ -4,6 +4,7 @@
 #include "gpl.h"
 
 #include "signalprocessing.h"
+#include "delayline.h"
 #include "QtGlobal"
 #include "cpx.h"
 
