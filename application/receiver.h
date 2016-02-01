@@ -24,7 +24,7 @@
 #include "agc.h"
 #include "iqbalance.h"
 #include "fir.h"
-#include "filters/fractresampler.h"
+#include "fractresampler.h"
 #include "wavfile.h"
 #include "sdroptions.h"
 #include "fft.h"

@@ -271,7 +271,6 @@ HEADERS += \
 	demod/demod_wfm.h \
     demod/rbdsconstants.h \
     demod/rdsdecode.h \
-    filters/fractresampler.h \
     devices/extio.h \
     bargraphmeter.h \
     testbench.h \
@@ -305,7 +304,6 @@ SOURCES += \
     goertzel.cpp \
 	demod/demod_wfm.cpp \
     demod/rdsdecode.cpp \
-    filters/fractresampler.cpp \
     bargraphmeter.cpp \
     testbench.cpp \
     demod/demod_am.cpp \

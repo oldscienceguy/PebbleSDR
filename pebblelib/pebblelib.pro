@@ -121,7 +121,8 @@ SOURCES += pebblelib.cpp \
     delayline.cpp \
     firfilter.cpp \
     iirfilter.cpp \
-    fir.cpp
+    fir.cpp \
+    fractresampler.cpp
 
 HEADERS += pebblelib.h\
     pebblelib_global.h \
@@ -153,7 +154,8 @@ HEADERS += pebblelib.h\
     delayline.h \
     firfilter.h \
     iirfilter.h \
-    fir.h
+    fir.h \
+    fractresampler.h
 
 DISTFILES += \
     gpl.html
