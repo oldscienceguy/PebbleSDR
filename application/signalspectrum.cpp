@@ -24,14 +24,7 @@ SignalSpectrum::SignalSpectrum(int _sampleRate, quint32 _hiResSampleRate, int _n
 
 	//Create our window coefficients 
 	//windows are applied to numSamples, not the entire FFT bins
-	window = new double[numSamples];
-	window_cpx = CPXBuf::malloc(numSamples);
-	FIRFilter::MakeWindow(FIRFilter::BLACKMANHARRIS, numSamples, window);
-	for (int i = 0; i < numSamples; i++)
-	{
-		window_cpx[i].re = window[i];
-		window_cpx[i].im = window[i];
-	}
+	windowFunction = new WindowFunction(WindowFunction::BLACKMANHARRIS,numSamples);
 
 	//db calibration
 	dbOffset  = global->settings->dbOffset;
@@ -55,10 +48,9 @@ SignalSpectrum::~SignalSpectrum(void)
 {
 	if (unprocessedSpectrum != NULL) {free (unprocessedSpectrum);}
 	if (hiResSpectrum != NULL) {free (hiResSpectrum);}
-    if (window != NULL) {free (window);}
-	if (window_cpx != NULL) {CPXBuf::free(window_cpx);}
 	if (tmp_cpx != NULL) {CPXBuf::free(tmp_cpx);}
 	if (rawIQ != NULL) {CPXBuf::free(rawIQ);}
+	if (windowFunction != NULL) {delete windowFunction;}
 }
 
 void SignalSpectrum::SetSampleRate(quint32 _sampleRate, quint32 _hiResSampleRate)
@@ -93,7 +85,7 @@ void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double 
 
     //Keep a copy raw I/Q to local buffer for display
     //CPXBuf::copy(rawIQ, in, numSamples);
-	MakeSpectrum(fftUnprocessed, in, unprocessedSpectrum, _numSamples, window_cpx);
+	MakeSpectrum(fftUnprocessed, in, unprocessedSpectrum, _numSamples, windowFunction->windowCpx);
 	displayUpdateComplete = false;
 	emit newFftData();
 }
@@ -109,7 +101,7 @@ void SignalSpectrum::Zoomed(CPX *in, int _numSamples)
         return;
 	skipFftsHiResCounter = 0;
 
-	MakeSpectrum(fftHiRes, in, hiResSpectrum, _numSamples, window_cpx);
+	MakeSpectrum(fftHiRes, in, hiResSpectrum, _numSamples, windowFunction->windowCpx);
 	//Updated HiRes fft data won't be available to SpectrumWidget untill Unprocessed() is called in next loop
 	//Should have no impact and avoids displaying spectrum 2x in each ProcessIQ loop
 	//This signal is for future use in case we want to do special handling in SpectrumWidget

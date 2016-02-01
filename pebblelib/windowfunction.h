@@ -15,6 +15,7 @@ public:
 	~WindowFunction();
 
 	double *window;
+	CPX *windowCpx; //CPX version, same coefficients in re and im
 	int numSamples;
 	WINDOWTYPE windowType;
 };

@@ -7,6 +7,7 @@
 #include "settings.h"
 #include "goertzel.h"
 #include "fftw.h"
+#include "windowfunction.h"
 
 class SignalSpectrum :
 	public SignalProcessing
@@ -72,11 +73,10 @@ private:
 	CPX *rawIQ;
 	double *unprocessedSpectrum;
 	double *hiResSpectrum; //Post bandpass spectrum with more resolution around signal
-    double * window;
+	WindowFunction *windowFunction;
 	bool useHiRes;
 
     CPX *tmp_cpx;
-	CPX *window_cpx;
 	FFT *fftUnprocessed;
 	FFT *fftHiRes; //Different sample rate, we might be able to re-use fft, but keep separate for now
 
