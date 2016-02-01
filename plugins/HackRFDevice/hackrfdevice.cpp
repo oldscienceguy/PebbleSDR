@@ -250,10 +250,9 @@ QVariant HackRFDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 			//Move to device options page and return empty list
 			if (sampleRateDecimate == 1)
 				//Sample rates below 8m work, but are not supported by HackRF due to limited alias filtering
-				//Testing shows sample rates down to 1mhz work ok
-				//return QStringList()<<"8000000"<<"10000000"<<"12500000"<<"16000000"<<"20000000";
+				return QStringList()<<"4000000"<<"8000000"<<"10000000"<<"12500000"<<"16000000"<<"20000000";
 				//Pebble may only support up to 2msps with current receiver chain
-				return QStringList()<<"2000000"<<"3500000"<<"5000000"<<"8000000";
+				//return QStringList()<<"2000000"<<"3500000"<<"5000000"<<"8000000";
 			else
 				//Sample rates assuming decimate by 4 in producer
 				return QStringList()<<"2000000"<<"2500000"<<"3125000"<<"4000000"<<"5000000";
