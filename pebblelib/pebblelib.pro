@@ -123,7 +123,8 @@ SOURCES += pebblelib.cpp \
     iirfilter.cpp \
     fir.cpp \
     fractresampler.cpp \
-    butterworth.cpp
+    butterworth.cpp \
+    windowfunction.cpp
 
 HEADERS += pebblelib.h\
     pebblelib_global.h \
@@ -157,7 +158,8 @@ HEADERS += pebblelib.h\
     iirfilter.h \
     fir.h \
     fractresampler.h \
-    butterworth.h
+    butterworth.h \
+    windowfunction.h
 
 DISTFILES += \
     gpl.html
