@@ -399,10 +399,15 @@ void SpectrumWidget::wheelEvent(QWheelEvent *event)
 	if (spectrumMode == NODISPLAY)
 		return;
 
-    //Only in plotFrame
-    QRect pf = this->ui.plotFrame->geometry();
-    if (!pf.contains(event->pos()))
-            return;
+	QRect plotFr = mapFrameToWidget(ui.plotFrame);
+	plotFr.adjust(-1,0,+1,0);
+
+	//QRect plotLabelFr = mapFrameToWidget(ui.labelFrame);
+	QRect topPlotFr = mapFrameToWidget(ui.topPlotFrame);
+	topPlotFr.adjust(-1,0,+1,0);
+
+	if (!plotFr.contains(event->pos()) && !topPlotFr.contains(event->pos()))
+		return;
 
     QPoint angleDelta = event->angleDelta();
 	qint32 freq = fMixer;
