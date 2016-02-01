@@ -261,7 +261,6 @@ HEADERS += \
 	nco.h \
 	mixer.h \
 	iirfilter.h \
-	firfilter.h \
 	demod.h \
     defs.h \
 	butterworth.h \
@@ -301,7 +300,6 @@ SOURCES += \
 	mixer.cpp \
     main.cpp \
 	iirfilter.cpp \
-	firfilter.cpp \
 	demod.cpp \
 	butterworth.cpp \
 	agc.cpp \
