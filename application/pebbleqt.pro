@@ -260,7 +260,6 @@ HEADERS += \
 	noiseblanker.h \
 	nco.h \
 	mixer.h \
-	iirfilter.h \
 	demod.h \
     defs.h \
 	butterworth.h \
@@ -299,7 +298,6 @@ SOURCES += \
 	nco.cpp \
 	mixer.cpp \
     main.cpp \
-	iirfilter.cpp \
 	demod.cpp \
 	butterworth.cpp \
 	agc.cpp \

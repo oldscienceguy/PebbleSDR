@@ -119,7 +119,8 @@ SOURCES += pebblelib.cpp \
     pebblelib_global.cpp \
     wavfile.cpp \
     delayline.cpp \
-    firfilter.cpp
+    firfilter.cpp \
+    iirfilter.cpp
 
 HEADERS += pebblelib.h\
     pebblelib_global.h \
@@ -149,7 +150,8 @@ HEADERS += pebblelib.h\
     audiopa.h \
     wavfile.h \
     delayline.h \
-    firfilter.h
+    firfilter.h \
+    iirfilter.h
 
 DISTFILES += \
     gpl.html
