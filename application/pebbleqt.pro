@@ -262,7 +262,6 @@ HEADERS += \
 	mixer.h \
 	demod.h \
     defs.h \
-	butterworth.h \
 	#build.h \
 	agc.h \
 	iqbalance.h \
@@ -297,7 +296,6 @@ SOURCES += \
 	mixer.cpp \
     main.cpp \
 	demod.cpp \
-	butterworth.cpp \
 	agc.cpp \
     iqbalance.cpp \
     global.cpp \
