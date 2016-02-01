@@ -57,10 +57,11 @@ FFTOoura::~FFTOoura()
 {
 }
 
-void FFTOoura::FFTParams( quint32 _size, double _dBCompensation, double _sampleRate)
+void FFTOoura::FFTParams( quint32 _size, double _dBCompensation, double _sampleRate, int _samplesPerBuffer,
+						  WindowFunction::WINDOWTYPE _windowType)
 {
     //Must call FFT base to properly init
-	FFT::FFTParams(_size, _dBCompensation, _sampleRate);
+	FFT::FFTParams(_size, _dBCompensation, _sampleRate, _samplesPerBuffer, _windowType);
 
     //These are inplace transforms,ie out = in, of 1 dimensional data (dft_1d)
 	offtWorkArea = new int[fftSize]; //Work buffer for bit reversal, size at least 2+sqrt(n)
@@ -74,19 +75,31 @@ void FFTOoura::FFTForward(CPX *in, CPX *out, int numSamples)
         return;
 
 	if (in!=NULL) {
-		if (numSamples < fftSize)
+
+		if (windowType != WindowFunction::NONE && numSamples == samplesPerBuffer) {
+			//Smooth the input data with our window
+			CPXBuf::mult(timeDomain, in, windowFunction->windowCpx, samplesPerBuffer);
+			//Zero pad remainder of buffer if needed
+			for (int i = samplesPerBuffer; i<fftSize; i++) {
+				timeDomain[i] = 0;
+			}
+		} else {
 			//Make sure that buffer which does not have samples is zero'd out
 			//We can pad samples in the time domain because it does not impact frequency results in FFT
 			CPXBuf::clear(timeDomain,fftSize);
-		for(int i=0; i<numSamples; i++)
-		{
-			if( in[i].re > overLimit )	//flag overload if within OVLimit of max
-				fftInputOverload = true;
-			//CuteSDR swapped I/Q here
-			//11/14 Spectrum is reversed compared to FFTW, so IQ swap is necessary
-			timeDomain[i].im = in[i].re;
-			timeDomain[i].re = in[i].im;
+			//Put the data in properly aligned FFTW buffer
+			CPXBuf::copy(timeDomain, in, numSamples);
 		}
+
+		//CuteSDR swapped I/Q here
+		//11/14 Spectrum is reversed compared to FFTW, so IQ swap is necessary
+		double tmp;
+		for (int i=0; i<fftSize; i++) {
+			tmp = timeDomain[i].re;
+			timeDomain[i].re = timeDomain[i].im;
+			timeDomain[i].im = tmp;
+		}
+
 	}
 	//Ooura is inplace, so copy to working dir so timedomain is intact
 	CPXBuf::copy(workingBuf,timeDomain,fftSize);

@@ -14,10 +14,11 @@ FFTfftw::~FFTfftw()
     if (buf) CPXBuf::free(buf);
 }
 
-void FFTfftw::FFTParams(quint32 _size, double _dBCompensation, double _sampleRate)
+void FFTfftw::FFTParams(quint32 _size, double _dBCompensation, double _sampleRate, int _samplesPerBuffer,
+						WindowFunction::WINDOWTYPE _windowType)
 {
     //Must call FFT base to properly init
-	FFT::FFTParams(_size, _dBCompensation, _sampleRate);
+	FFT::FFTParams(_size, _dBCompensation, _sampleRate, _samplesPerBuffer, _windowType);
 
     half_sz = fftSize / 2;
 	plan_fwd = fftw_plan_dft_1d(fftSize , (fftw_complex*)timeDomain, (fftw_complex*)freqDomain, FFTW_FORWARD, FFTW_MEASURE);
@@ -34,13 +35,21 @@ void FFTfftw::FFTForward(CPX * in, CPX * out, int numSamples)
 
     //If in==NULL, use whatever is in timeDomain buffer
     if (in != NULL ) {
-		if (numSamples < fftSize)
-            //Make sure that buffer which does not have samples is zero'd out
-            //We can pad samples in the time domain because it does not impact frequency results in FFT
-            CPXBuf::clear(timeDomain,fftSize);
+		if (windowType != WindowFunction::NONE && numSamples == samplesPerBuffer) {
+			//Smooth the input data with our window
+			CPXBuf::mult(timeDomain, in, windowFunction->windowCpx, samplesPerBuffer);
+			//Zero pad remainder of buffer if needed
+			for (int i = samplesPerBuffer; i<fftSize; i++) {
+				timeDomain[i] = 0;
+			}
+		} else {
+			//Make sure that buffer which does not have samples is zero'd out
+			//We can pad samples in the time domain because it does not impact frequency results in FFT
+			CPXBuf::clear(timeDomain,fftSize);
+			//Put the data in properly aligned FFTW buffer
+			CPXBuf::copy(timeDomain, in, numSamples);
+		}
 
-        //Put the data in properly aligned FFTW buffer
-		CPXBuf::copy(timeDomain, in, numSamples);
     }
 
     fftw_execute(plan_fwd);

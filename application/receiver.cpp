@@ -191,8 +191,7 @@ bool Receiver::On()
 
 	//Testing with frequency domain receive chain
 	fft = FFT::Factory("Testing freq domain chain");
-	fft->FFTParams(settings->numSpectrumBins, 0, sampleRate);
-
+	fft->FFTParams(settings->numSpectrumBins, 0, sampleRate, framesPerBuffer, WindowFunction::NONE);
 
     //These steps work on demodSampleRate rates
 

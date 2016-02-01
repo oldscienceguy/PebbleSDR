@@ -26,6 +26,7 @@ FFT::FFT() :
     freqDomain = NULL;
     workingBuf = NULL;
     overlap = NULL;
+	windowFunction = NULL;
 
     fftParamsSet = false; //Only set to true in FFT::FFTParams(...)
 
@@ -53,6 +54,8 @@ FFT::~FFT()
         delete FFTAvgBuf;
     if (FFTPwrSumBuf != NULL)
         delete FFTPwrSumBuf;
+	if (windowFunction != NULL)
+		delete windowFunction;
 }
 
 FFT* FFT::Factory(QString _label)
@@ -78,16 +81,20 @@ FFT* FFT::Factory(QString _label)
 	return NULL;
 }
 
-void FFT::FFTParams(quint32 _size, double _dBCompensation, double _sampleRate)
+void FFT::FFTParams(quint32 _fftSize, double _dBCompensation, double _sampleRate, int _samplesPerBuffer,
+					WindowFunction::WINDOWTYPE _windowType)
 {
-    if (_size == 0)
+	if (_fftSize == 0)
         return; //Error
-    else if( _size < minFFTSize )
+	else if( _fftSize < minFFTSize )
         fftSize = minFFTSize;
-    else if( _size > maxFFTSize )
+	else if( _fftSize > maxFFTSize )
         fftSize = maxFFTSize;
     else
-        fftSize = _size;
+		fftSize = _fftSize;
+
+	samplesPerBuffer = _samplesPerBuffer;
+	windowType = _windowType;
 
 	//Reset to actual fft size
 	DB::dbOffset = DB::maxDb - 20 * log10(fftSize * 1.0 / 2.0);
@@ -119,6 +126,15 @@ void FFT::FFTParams(quint32 _size, double _dBCompensation, double _sampleRate)
     FFTPwrSumBuf = new double[fftSize];
     for (int i=0; i<fftSize; i++)
         FFTPwrSumBuf[i] = 0.0;
+
+	if (windowFunction != NULL) {
+		delete windowFunction;
+		windowFunction = NULL;
+	}
+	if (_windowType != WindowFunction::NONE) {
+		//Window are sized to expected samples per buffer, which may be smaller than fftSize
+		windowFunction = new WindowFunction(windowType,samplesPerBuffer);
+	}
 
     fftParamsSet = true;
 }

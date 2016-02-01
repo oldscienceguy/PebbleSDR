@@ -15,10 +15,11 @@ FFTAccelerate::~FFTAccelerate()
 		delete splitComplex.imagp;
 }
 
-void FFTAccelerate::FFTParams(quint32 _size, double _dBCompensation, double _sampleRate)
+void FFTAccelerate::FFTParams(quint32 _size, double _dBCompensation, double _sampleRate, int _samplesPerBuffer,
+							  WindowFunction::WINDOWTYPE _windowType)
 {
 	//Must call FFT base to properly init
-	FFT::FFTParams(_size, _dBCompensation, _sampleRate);
+	FFT::FFTParams(_size, _dBCompensation, _sampleRate, _samplesPerBuffer, _windowType);
 
 	fftSizeLog2n = log2f(_size);
 	//n = 1 << log2n; //???
@@ -37,13 +38,20 @@ void FFTAccelerate::FFTForward(CPX *in, CPX *out, int numSamples)
 
 	//If in==NULL, use whatever is in timeDomain buffer
 	if (in != NULL ) {
-		if (numSamples < fftSize)
+		if (windowType != WindowFunction::NONE && numSamples == samplesPerBuffer) {
+			//Smooth the input data with our window
+			CPXBuf::mult(timeDomain, in, windowFunction->windowCpx, samplesPerBuffer);
+			//Zero pad remainder of buffer if needed
+			for (int i = samplesPerBuffer; i<fftSize; i++) {
+				timeDomain[i] = 0;
+			}
+		} else {
 			//Make sure that buffer which does not have samples is zero'd out
 			//We can pad samples in the time domain because it does not impact frequency results in FFT
 			CPXBuf::clear(timeDomain,fftSize);
-
-		//Put the data in properly aligned FFTW buffer
-		CPXBuf::copy(timeDomain, in, numSamples);
+			//Put the data in properly aligned FFTW buffer
+			CPXBuf::copy(timeDomain, in, numSamples);
+		}
 	}
 
 	//Copy timeDomain to splitComplex

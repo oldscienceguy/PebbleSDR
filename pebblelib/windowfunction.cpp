@@ -145,6 +145,8 @@ WindowFunction::WindowFunction(WINDOWTYPE _type, int _numSamples)
 				}
 			}
 			break;
+		case NONE: //Do nothing
+			break;
 		default:
 			return;
 	}

@@ -6,6 +6,7 @@
 #include "cpx.h"
 #include "db.h"
 #include "QMutex"
+#include "windowfunction.h"
 
 //New base class for multiple FFT variations
 //This will eventually let us switch usage or at least document the various options
@@ -26,7 +27,8 @@ public:
 
     //Keep separate from constructor so we can change on the fly eventually
     //cutesdr usage
-	virtual void FFTParams(quint32 _size, double _dBCompensation, double _sampleRate);
+	virtual void FFTParams(quint32 _fftSize, double _dBCompensation, double _sampleRate, int _samplesPerBuffer,
+						   WindowFunction::WINDOWTYPE _windowType);
     //Reset to init state, same parameters
     virtual void ResetFFT();
 
@@ -86,6 +88,10 @@ protected:
     QMutex fftMutex; //Used to sync threads calling FFT and display calling Screen mapping
 
 	void unfoldInOrder(CPX *inBuf, CPX *outBuf, bool bitReversed = true);
+	WindowFunction *windowFunction;
+	WindowFunction::WINDOWTYPE windowType;
+	int samplesPerBuffer; //Not the same as fftSize, which may be larger than sample buffers
+
 };
 
 #endif // FFT_H

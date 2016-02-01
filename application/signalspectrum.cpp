@@ -57,8 +57,8 @@ void SignalSpectrum::SetSampleRate(quint32 _sampleRate, quint32 _hiResSampleRate
 {
     sampleRate = _sampleRate;
 	hiResSampleRate = _hiResSampleRate;
-	fftUnprocessed->FFTParams(numSpectrumBins, DB::maxDb, sampleRate);
-	fftHiRes->FFTParams(numHiResSpectrumBins, DB::maxDb, hiResSampleRate);
+	fftUnprocessed->FFTParams(numSpectrumBins, DB::maxDb, sampleRate, numSamples, WindowFunction::BLACKMANHARRIS);
+	fftHiRes->FFTParams(numHiResSpectrumBins, DB::maxDb, hiResSampleRate, numSamples, WindowFunction::BLACKMANHARRIS);
     //Based on sample rates
 	SetUpdatesPerSec(global->settings->updatesPerSecond);
     emitFftCounter = 0;
@@ -110,17 +110,7 @@ void SignalSpectrum::Zoomed(CPX *in, int _numSamples)
 
 void SignalSpectrum::MakeSpectrum(FFT *fft, CPX *in, double *sOut, int _numSamples)
 {
-	//Must work with unprocessed or zoomed fft, so get size directly from fft
-	int fftSize = fft->getFFTSize();
-	//Smooth the input data with our window
-	CPXBuf::mult(tmp_cpx, in, windowFunction->windowCpx, _numSamples);
-	//Zero pad remainder of buffer if needed
-	for (int i = _numSamples; i<fftSize; i++) {
-		tmp_cpx[i] = 0;
-	}
-
-	fft->FFTSpectrum(tmp_cpx, sOut, fftSize);
-
+	fft->FFTSpectrum(in, sOut, _numSamples);
     //out now has the spectrum in db, -f..0..+f
 }
 

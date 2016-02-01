@@ -25,7 +25,8 @@ class PEBBLELIBSHARED_EXPORT CFft : public FFT
 public:
 	CFft();
 	virtual ~CFft();
-	void FFTParams(quint32 _size, double _dBCompensation, double _SampleFreq);
+	void FFTParams(quint32 _fftSize, double _dBCompensation, double _sampleRate, int _samplesPerBuffer,
+				   WindowFunction::WINDOWTYPE _windowType);
 	void FFTForward(CPX * in, CPX * out, int numSamples);
 	void FFTInverse(CPX * in, CPX * out, int numSamples);
 	void FFTSpectrum(CPX *in, double *out, int numSamples);
