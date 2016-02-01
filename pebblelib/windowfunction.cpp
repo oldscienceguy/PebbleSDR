@@ -5,18 +5,28 @@
 
 WindowFunction::WindowFunction(WINDOWTYPE _type, int _numSamples)
 {
-	int i, j, midn, midp1, midm1;
-	float freq, rate, sr1, angle, expn, expsum, cx, two_pi;
 	windowType = _type;
 	numSamples = _numSamples;
 	window = new double[numSamples];
 	windowCpx = CPXBuf::malloc(numSamples);
+	generate (_type);
+}
 
-	midn = _numSamples / 2;
-	midp1 = (_numSamples + 1) / 2;
-	midm1 = (_numSamples - 1) / 2;
+WindowFunction::~WindowFunction()
+{
+	delete []window;
+	free (windowCpx);
+}
+
+void WindowFunction::generate(WindowFunction::WINDOWTYPE _type)
+{
+	int i, j, midn, midp1, midm1;
+	float freq, rate, sr1, angle, expn, expsum, cx, two_pi;
+	midn = numSamples / 2;
+	midp1 = (numSamples + 1) / 2;
+	midm1 = (numSamples - 1) / 2;
 	two_pi = TWOPI; //8.0 * atan(1.0);
-	freq = two_pi / _numSamples;
+	freq = two_pi / numSamples;
 	rate = 1.0 /  midn;
 	angle = 0.0;
 	expn = log(2.0) / midn + 1.0;
@@ -25,34 +35,34 @@ WindowFunction::WindowFunction(WINDOWTYPE _type, int _numSamples)
 	switch (_type)
 	{
 		case RECTANGULAR: // RECTANGULAR_WINDOW
-			for (i = 0; i < _numSamples; i++) {
+			for (i = 0; i < numSamples; i++) {
 				window[i] = 1.0;
 				windowCpx[i] = 1.0;
 			}
 			break;
 		case HANNING:	// HANNING_WINDOW
-			for (i = 0, j = _numSamples - 1, angle = 0.0; i <= midn; i++, j--, angle += freq) {
+			for (i = 0, j = numSamples - 1, angle = 0.0; i <= midn; i++, j--, angle += freq) {
 				window[j] = (window[i] = 0.5 - 0.5 * cos(angle));
 				windowCpx[i] = window[i];
 				windowCpx[j] = window[j];
 			}
 			break;
 		case WELCH: // WELCH_WINDOW
-			for (i = 0, j = _numSamples - 1; i <= midn; i++, j--) {
+			for (i = 0, j = numSamples - 1; i <= midn; i++, j--) {
 				window[j] = (window[i] = 1.0 - (float)sqrt((float)((i - midm1) / midp1)));
 				windowCpx[i] = window[i];
 				windowCpx[j] = window[j];
 			}
 			break;
 		case PARZEN: // PARZEN_WINDOW
-			for (i = 0, j = _numSamples - 1; i <= midn; i++, j--) {
+			for (i = 0, j = numSamples - 1; i <= midn; i++, j--) {
 				window[j] = (window[i] = 1.0 - ((float)fabs((float)(i - midm1) / midp1)));
 				windowCpx[i] = window[i];
 				windowCpx[j] = window[j];
 			}
 			break;
 		case BARTLETT: // BARTLETT_WINDOW
-			for (i = 0, j = _numSamples - 1, angle = 0.0; i <= midn; i++, j--, angle += rate) {
+			for (i = 0, j = numSamples - 1, angle = 0.0; i <= midn; i++, j--, angle += rate) {
 				window[j] = (window[i] = angle);
 				windowCpx[i] = window[i];
 				windowCpx[j] = window[j];
@@ -62,7 +72,7 @@ WindowFunction::WindowFunction(WINDOWTYPE _type, int _numSamples)
 		//Lynn forumula 5.22 shows 0.54 + 0.46, online reference show 0.54 - 0.46
 		//Error in Lynn forumula, see Widipedia reference for all window functions
 		case HAMMING: // HAMMING_WINDOW
-			for (i = 0, j = _numSamples - 1, angle = 0.0; i <= midn; i++, j--, angle += freq) {
+			for (i = 0, j = numSamples - 1, angle = 0.0; i <= midn; i++, j--, angle += freq) {
 				window[j] = (window[i] = 0.54F - 0.46 * cos(angle));
 				windowCpx[i] = window[i];
 				windowCpx[j] = window[j];
@@ -71,13 +81,13 @@ WindowFunction::WindowFunction(WINDOWTYPE _type, int _numSamples)
 		//Window function Blackman
 		//RL: Used this algorithm effectively with DSPGUIDE code
 		case BLACKMAN:
-			for (i = 0; i<_numSamples; i++) {
+			for (i = 0; i<numSamples; i++) {
 				window[i] = 0.42 - 0.5 * cos((TWOPI * i) / midm1) + 0.08 * cos((FOURPI * i) / midm1);
 				windowCpx[i] = window[i];
 			}
 			break;
 		case BLACKMAN2:	// BLACKMAN2_WINDOW
-			for (i = 0, j = _numSamples - 1, angle = 0.0; i <= midn; i++, j--, angle += freq) {
+			for (i = 0, j = numSamples - 1, angle = 0.0; i <= midn; i++, j--, angle += freq) {
 				cx = cos(angle);
 				window[j] = (window[i] = (.34401 + (cx * (-.49755 + (cx * .15844)))));
 				windowCpx[i] = window[i];
@@ -85,7 +95,7 @@ WindowFunction::WindowFunction(WINDOWTYPE _type, int _numSamples)
 			}
 			break;
 		case BLACKMAN3: // BLACKMAN3_WINDOW
-			for (i = 0, j = _numSamples - 1, angle = 0.0; i <= midn; i++, j--, angle += freq) {
+			for (i = 0, j = numSamples - 1, angle = 0.0; i <= midn; i++, j--, angle += freq) {
 				cx = cos(angle);
 				window[j] = (window[i] = (.21747 + (cx * (-.45325 + (cx * (.28256 - (cx * .04672)))))));
 				windowCpx[i] = window[i];
@@ -93,7 +103,7 @@ WindowFunction::WindowFunction(WINDOWTYPE _type, int _numSamples)
 			}
 			break;
 		case BLACKMAN4: // BLACKMAN4_WINDOW
-			for (i = 0, j = _numSamples - 1, angle = 0.0; i <= midn; i++, j--, angle += freq)
+			for (i = 0, j = numSamples - 1, angle = 0.0; i <= midn; i++, j--, angle += freq)
 			{
 				cx = cos(angle);
 				window[j] = (window[i] =
@@ -107,7 +117,7 @@ WindowFunction::WindowFunction(WINDOWTYPE _type, int _numSamples)
 			}
 			break;
 		case EXPONENTIAL: // EXPONENTIAL_WINDOW
-			for (i = 0, j = _numSamples - 1; i <= midn; i++, j--) {
+			for (i = 0, j = numSamples - 1; i <= midn; i++, j--) {
 				window[j] = (window[i] = expsum - 1.0);
 				windowCpx[i] = window[i];
 				windowCpx[j] = window[j];
@@ -115,8 +125,8 @@ WindowFunction::WindowFunction(WINDOWTYPE _type, int _numSamples)
 			}
 			break;
 		case RIEMANN: // RIEMANN_WINDOW
-			sr1 = two_pi / _numSamples;
-			for (i = 0, j = _numSamples - 1; i <= midn; i++, j--) {
+			sr1 = two_pi / numSamples;
+			for (i = 0, j = numSamples - 1; i <= midn; i++, j--) {
 				if (i == midn) window[j] = (window[i] = 1.0);
 				else {
 					cx = sr1 * (midn - i);
@@ -136,11 +146,11 @@ WindowFunction::WindowFunction(WINDOWTYPE _type, int _numSamples)
 						a3 = 0.01168F;
 
 
-				for (i = 0; i<_numSamples;i++)
+				for (i = 0; i<numSamples;i++)
 				{
-					window[i] = a0 - a1* cos(two_pi*(i+0.5)/_numSamples)
-							+ a2* cos(2.0*two_pi*(i+0.5)/_numSamples)
-							- a3* cos(3.0*two_pi*(i+0.5)/_numSamples);
+					window[i] = a0 - a1* cos(two_pi*(i+0.5)/numSamples)
+							+ a2* cos(2.0*two_pi*(i+0.5)/numSamples)
+							- a3* cos(3.0*two_pi*(i+0.5)/numSamples);
 					windowCpx[i] = window[i];
 				}
 			}
@@ -150,10 +160,5 @@ WindowFunction::WindowFunction(WINDOWTYPE _type, int _numSamples)
 		default:
 			return;
 	}
-}
 
-WindowFunction::~WindowFunction()
-{
-	delete []window;
-	free (windowCpx);
 }

@@ -98,8 +98,6 @@ FIRFilter::FIRFilter(int sr, int ns, bool _useFFT, int _numTaps, int _delay)
 		fftSamples = FFT::Factory("FIR samples");
 		fftSamples->FFTParams(numSamplesX2, 0, sr, numSamples, WindowFunction::NONE);
 
-        window = new double[numSamples];
-
 		//Time domain FIR coefficients
 		taps = CPXBuf::malloc(numSamples);
 		CPXBuf::clear (taps,numSamples);
@@ -113,7 +111,6 @@ FIRFilter::FIRFilter(int sr, int ns, bool _useFFT, int _numTaps, int _delay)
 		M = _numTaps; //For sinc formula
 		//Delay line has to be large enough so we have 1 sample per tap
 		delayLine = new DelayLine((numTaps + delay) * 2, delay);
-        window = new double[numTaps];
 
 		taps = CPXBuf::malloc(numTaps);
 		CPXBuf::clear (taps,numTaps);
@@ -131,8 +128,6 @@ FIRFilter::~FIRFilter(void)
 	enabled = false;
 	if (delayLine != NULL)
 		delete delayLine;
-	if (window != NULL)
-		free (window);
 	if (taps != NULL)
 		CPXBuf::free(taps);
 	if (fftFIR != NULL)
@@ -256,9 +251,9 @@ Per Paul Lynn, practical FIR filters are between 10-150 taps
 Lynn algorithm 5.12 and 5.14, example program 13
 Semi working but also doesn't handle neg frequencies
 */
-void FIRFilter::SetBandPass2(float lo, float hi, WINDOWTYPE w)
+void FIRFilter::SetBandPass2(float lo, float hi, WindowFunction::WINDOWTYPE w)
 {
-	MakeWindow(w, numTaps, window);
+	WindowFunction wf(w,numTaps);
 	//Negative frequencies not supported, use FIR-DFT methods
 	float tmp;
 	if (lo < 0 && hi < 0) {
@@ -287,23 +282,23 @@ void FIRFilter::SetBandPass2(float lo, float hi, WINDOWTYPE w)
 		coeff = (1.0 / (((float)i) * ONEPI)) * 
 			sin(((float)i) * fbDeg) * 
 			cos(((float)i) * fcDeg); 
-		taps[i].re = taps[i].im = coeff * window[i];
+		taps[i].re = taps[i].im = coeff * wf.window[i];
 	}
 }
-void FIRFilter::SetBandStop(float lo, float hi, WINDOWTYPE w)
+void FIRFilter::SetBandStop(float lo, float hi, WindowFunction::WINDOWTYPE w)
 {
 	useFFT = true; //No MAC version yet
 	FFTSetBandStop(lo, hi, w);
 	MakeFFTTaps();
 }
-void FIRFilter::SetBandPass(float lo, float hi, WINDOWTYPE w)
+void FIRFilter::SetBandPass(float lo, float hi, WindowFunction::WINDOWTYPE w)
 {
 	if (useFFT) {
 		FFTSetBandPass(lo, hi, w);
 		MakeFFTTaps();
 		return;
 	}
-	MakeWindow(w, numTaps, window);
+	WindowFunction wf(w,numTaps);
 
 	//Negative frequencies not supported, use FIR-DFT methods
 	float tmp;
@@ -320,9 +315,9 @@ void FIRFilter::SetBandPass(float lo, float hi, WINDOWTYPE w)
 	hpCutoff = hi;
 	FIRFilter *lp = new FIRFilter(sampleRate,numSamples,numTaps);
 	//Only apply window once at end
-	lp->SetLowPass(lo,RECTANGULAR);
+	lp->SetLowPass(lo,WindowFunction::RECTANGULAR);
 	FIRFilter *hp = new FIRFilter(sampleRate,numSamples,numTaps);
-	hp->SetHighPass(hi,RECTANGULAR);
+	hp->SetHighPass(hi,WindowFunction::RECTANGULAR);
 	//Add the two filters to get a band reject
 	float reSumTaps = 0.0;
 	float imSumTaps = 0.0;
@@ -344,7 +339,7 @@ void FIRFilter::SetBandPass(float lo, float hi, WINDOWTYPE w)
 
 //dspguide using sinc
 //Works well, but doesn't differentiate negative freq or cutoff
-void FIRFilter::SetLowPass(float cutoff, WINDOWTYPE w)
+void FIRFilter::SetLowPass(float cutoff, WindowFunction::WINDOWTYPE w)
 {
 	//For some TBD reason, taps for MAC FIR are not the same as for FFT FIR
 	//We should be able to use the same algorithm for both
@@ -357,7 +352,7 @@ void FIRFilter::SetLowPass(float cutoff, WINDOWTYPE w)
 
 	int length = numTaps;
 
-	MakeWindow(w, length, window);
+	WindowFunction wf(w, numTaps);
 
 	cutoff = std::abs(cutoff); //No negative freq in this algorithm
 
@@ -371,7 +366,7 @@ void FIRFilter::SetLowPass(float cutoff, WINDOWTYPE w)
 	
 	for (int i = 0; i < length; i++)
     {
-		taps[i] = Sinc(fc,i) * window[i];
+		taps[i] = Sinc(fc,i) * wf.window[i];
 		reSumTaps += taps[i].re;
 		imSumTaps += taps[i].im;
     }
@@ -408,14 +403,15 @@ void FIRFilter::SpectralReversal()
 }
 //HighPass taps are same as LowPass, but with neg coefficients
 //"Digital Filters", Hamming pg124
-void FIRFilter::SetHighPass(float cutoff, WINDOWTYPE w)
+void FIRFilter::SetHighPass(float cutoff, WindowFunction::WINDOWTYPE w)
 {
 	if (useFFT) {
 		FFTSetHighPass(cutoff, w);
 		MakeFFTTaps();
 		return;		
 	}
-	MakeWindow(w, numTaps, window);
+
+	WindowFunction wf(w,numTaps);
 
 	cutoff = std::abs(cutoff); //Negative freq not supported in this algorithm
 	//Create low pass taps
@@ -457,122 +453,6 @@ void FIRFilter::SetLoadable(float * coeff)
     }
 	MakeFFTTaps();
 }
-/*
-Returns window[] with standard window coefficients
-From PowerSDR, SDRMax and DSP books in reference
-*/
-void FIRFilter::MakeWindow(WINDOWTYPE wtype, int size, double * window)
-{
-    int i, j, midn, midp1, midm1;
-    float freq, rate, sr1, angle, expn, expsum, cx, two_pi;
-
-    midn = size / 2;
-    midp1 = (size + 1) / 2;
-    midm1 = (size - 1) / 2;
-    two_pi = TWOPI; //8.0 * atan(1.0);
-    freq = two_pi / size;
-    rate = 1.0 /  midn;
-    angle = 0.0;
-    expn = log(2.0) / midn + 1.0;
-    expsum = 1.0;
-
-    switch (wtype) 
-    {
-        case RECTANGULAR: // RECTANGULAR_WINDOW
-            for (i = 0; i < size; i++)
-                window[i] = 1.0;
-            break;
-        case HANNING:	// HANNING_WINDOW
-            for (i = 0, j = size - 1, angle = 0.0; i <= midn; i++, j--, angle += freq)
-                window[j] = (window[i] = 0.5 - 0.5 * cos(angle));
-            break;
-        case WELCH: // WELCH_WINDOW
-            for (i = 0, j = size - 1; i <= midn; i++, j--)
-                window[j] = (window[i] = 1.0 - (float)sqrt((float)((i - midm1) / midp1)));
-            break;
-        case PARZEN: // PARZEN_WINDOW  
-            for (i = 0, j = size - 1; i <= midn; i++, j--)
-                window[j] = (window[i] = 1.0 - ((float)fabs((float)(i - midm1) / midp1)));             
-            break;
-        case BARTLETT: // BARTLETT_WINDOW
-            for (i = 0, j = size - 1, angle = 0.0; i <= midn; i++, j--, angle += rate)
-                window[j] = (window[i] = angle);
-            break;
-		//Hamming Window: Raised cosine with a platform ("Digital Filters and their Design" pg 119)
-        //Lynn forumula 5.22 shows 0.54 + 0.46, online reference show 0.54 - 0.46
-		//Error in Lynn forumula, see Widipedia reference for all window functions
-		case HAMMING: // HAMMING_WINDOW
-            for (i = 0, j = size - 1, angle = 0.0; i <= midn; i++, j--, angle += freq)
-                window[j] = (window[i] = 0.54F - 0.46 * cos(angle));
-            break;
-		//Window function Blackman
-		//RL: Used this algorithm effectively with DSPGUIDE code
-		case BLACKMAN:
-			for (i = 0; i<size; i++)
-				window[i] = 0.42 - 0.5 * cos((TWOPI * i) / midm1) + 0.08 * cos((FOURPI * i) / midm1);
-			break;
-        case BLACKMAN2:	// BLACKMAN2_WINDOW
-            for (i = 0, j = size - 1, angle = 0.0; i <= midn; i++, j--, angle += freq) {
-                cx = cos(angle);
-                window[j] = (window[i] = (.34401 + (cx * (-.49755 + (cx * .15844)))));
-            }
-            break;
-        case BLACKMAN3: // BLACKMAN3_WINDOW
-            for (i = 0, j = size - 1, angle = 0.0; i <= midn; i++, j--, angle += freq) {
-                cx = cos(angle);
-                window[j] = (window[i] = (.21747 + (cx * (-.45325 + (cx * (.28256 - (cx * .04672)))))));
-            }
-            break;
-        case BLACKMAN4: // BLACKMAN4_WINDOW
-            for (i = 0, j = size - 1, angle = 0.0; i <= midn; i++, j--, angle += freq) 
-            {                    
-                cx = cos(angle);
-                window[j] = (window[i] =
-                            (.084037 +
-                            (cx *
-                            (-.29145 +
-                            (cx *
-                            (.375696 + (cx * (-.20762 + (cx * .041194)))))))));
-            }
-            break;
-        case EXPONENTIAL: // EXPONENTIAL_WINDOW
-            for (i = 0, j = size - 1; i <= midn; i++, j--) {
-                window[j] = (window[i] = expsum - 1.0);
-                expsum *= expn;
-            }
-            break;
-        case RIEMANN: // RIEMANN_WINDOW
-            sr1 = two_pi / size;
-            for (i = 0, j = size - 1; i <= midn; i++, j--) {
-                if (i == midn) window[j] = (window[i] = 1.0);
-                else {
-                    cx = sr1 * (midn - i);
-                    window[i] = sin(cx) / cx;
-                    window[j] = window[i];
-                }
-            }
-            break;
-        case BLACKMANHARRIS: // BLACKMANHARRIS_WINDOW
-            {
-                float 
-                        a0 = 0.35875F,
-                        a1 = 0.48829F,
-                        a2 = 0.14128F,
-                        a3 = 0.01168F;
-
-
-                for (i = 0; i<size;i++) 
-                {
-                    window[i] = a0 - a1* cos(two_pi*(i+0.5)/size) 
-                            + a2* cos(2.0*two_pi*(i+0.5)/size)
-                            - a3* cos(3.0*two_pi*(i+0.5)/size);
-                }
-            }
-            break;
-        default:
-            return;
-    }    
-}
 
 void FIRFilter::MakeFFTTaps()
 {
@@ -592,9 +472,10 @@ void FIRFilter::MakeFFTTaps()
 
 }
 
-void FIRFilter::FFTSetBandPass(float lo, float hi, WINDOWTYPE wtype)
+void FIRFilter::FFTSetBandPass(float lo, float hi, WindowFunction::WINDOWTYPE wtype)
 {
 	int size = numSamples; //not numTaps!
+	WindowFunction wf(wtype,numSamples);
 
 	float fl = lo / sampleRate;
 	float fh = hi / sampleRate;
@@ -603,8 +484,6 @@ void FIRFilter::FFTSetBandPass(float lo, float hi, WINDOWTYPE wtype)
 
     int midpoint = size >> 1;
 
-    MakeWindow(wtype, size, window);
-
     for (int i = 1; i <= size; i++)
     {
         int j = i - 1;
@@ -612,7 +491,7 @@ void FIRFilter::FFTSetBandPass(float lo, float hi, WINDOWTYPE wtype)
         float temp = 0.0;
         float phase = k * ff * -1;
         if (i != midpoint)
-            temp = ((sin(TWOPI * k * fc) / (ONEPI * k))) * window[j];
+			temp = ((sin(TWOPI * k * fc) / (ONEPI * k))) * wf.window[j];
         else
             temp = 2.0 * fc;
         temp *= 2.0;
@@ -621,7 +500,7 @@ void FIRFilter::FFTSetBandPass(float lo, float hi, WINDOWTYPE wtype)
     }
 }
 
-void FIRFilter::FFTSetLowPass(float cutoff, WINDOWTYPE wtype)
+void FIRFilter::FFTSetLowPass(float cutoff, WindowFunction::WINDOWTYPE wtype)
 {
 	int length = numSamples; //NOT numTaps
     float fc = cutoff / sampleRate;
@@ -633,16 +512,16 @@ void FIRFilter::FFTSetLowPass(float cutoff, WINDOWTYPE wtype)
 
     int midpoint = length >> 1;
 	
-    FIRFilter::MakeWindow(wtype, length, window);
+	WindowFunction wf(wtype,length);
     for (int i = 1; i <= length; i++)
     {
         int j = i - 1;
         if (i != midpoint)
         {
-            taps[j].re = (sin(TWOPI * (i - midpoint) * fc) / (ONEPI * (i - midpoint))) * window[j];
+			taps[j].re = (sin(TWOPI * (i - midpoint) * fc) / (ONEPI * (i - midpoint))) * wf.window[j];
             //Setting im to cos(...) doesn't work, so just like normal FIR, we'll set em both to sin for now
 			//taps[j].im = (cos(TWOPI * (i - midpoint) * fc) / (ONEPI * (i - midpoint))) * window[j];
-            taps[j].im = (sin(TWOPI * (i - midpoint) * fc) / (ONEPI * (i - midpoint))) * window[j];
+			taps[j].im = (sin(TWOPI * (i - midpoint) * fc) / (ONEPI * (i - midpoint))) * wf.window[j];
         }
         else
         {
@@ -652,14 +531,14 @@ void FIRFilter::FFTSetLowPass(float cutoff, WINDOWTYPE wtype)
     }
 }
 //Broken, Spectral Inversion doesn't work with FFT, need different algorithm
-void FIRFilter::FFTSetHighPass(float cutoff, WINDOWTYPE wtype)
+void FIRFilter::FFTSetHighPass(float cutoff, WindowFunction::WINDOWTYPE wtype)
 {
 	FFTSetLowPass(cutoff,wtype);
 	SpectralInversion();
 }
 
 //NOT TESTED
-void FIRFilter::FFTSetBandStop(float lo, float hi, WINDOWTYPE wtype)
+void FIRFilter::FFTSetBandStop(float lo, float hi, WindowFunction::WINDOWTYPE wtype)
 {
 	int length = numSamples;
 
@@ -670,8 +549,7 @@ void FIRFilter::FFTSetBandStop(float lo, float hi, WINDOWTYPE wtype)
 
     int midpoint = (length >> 1) | 1;
 
-	FIRFilter::MakeWindow(wtype, length, window);
-
+	WindowFunction wf(wtype,length);
     for (int i = 1; i <= length; i++)
     {
         int j = i - 1;
@@ -680,7 +558,7 @@ void FIRFilter::FFTSetBandStop(float lo, float hi, WINDOWTYPE wtype)
         float phase = k * ff * -1.0;
         if (i != midpoint)
         {
-            temp = ((sin(TWOPI * k * fc) / (ONEPI * k))) * window[j];
+			temp = ((sin(TWOPI * k * fc) / (ONEPI * k))) * wf.window[j];
             taps[j].re = -2.0 * temp * (cos(phase));
             taps[j].im = -2.0 * temp * (sin(phase));
         }

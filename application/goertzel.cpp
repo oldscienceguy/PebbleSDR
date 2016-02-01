@@ -44,7 +44,7 @@ Goertzel::Goertzel(int _sampleRate, int _numSamples)
     peakPower = 0;
     scale = 1000; //So we don't lose precision?
     powerBuf = NULL;
-    window = NULL;
+	windowFunction = NULL;
 }
 
 Goertzel::~Goertzel()
@@ -163,10 +163,9 @@ int Goertzel::SetFreqHz(int fTone, int bw, int gsr)
     resultCounter = 0;
 
     //See http://www.mstarlabs.com/dsp/goertzel/goertzel.html for details on using a window for better detection
-    if (window != NULL)
-        free (window);
-    window = new double[samplesPerBin];
-    FIRFilter::MakeWindow(FIRFilter::BLACKMANHARRIS, samplesPerBin, window);
+	if (windowFunction != NULL)
+		delete windowFunction;
+	windowFunction = new WindowFunction(WindowFunction::BLACKMANHARRIS, samplesPerBin);
 #if 0
     for (int n = 0; n<samplesPerBin; n++) {
         //Hamming: Pass band spans primary 2 bins plus first neighbors on each side.
@@ -368,8 +367,8 @@ bool Goertzel::NewSample(float sample, float &power)
     //delay1 = delay0;
 
     //Apply window for better discrimination
-    if (window != NULL)
-        sample = sample * window[sampleCount];
+	if (windowFunction != NULL)
+		sample = sample * windowFunction->window[sampleCount];
 
 #if 0
     float phase;

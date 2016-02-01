@@ -7,6 +7,7 @@
 #include "delayline.h"
 #include "QtGlobal"
 #include "cpx.h"
+#include "windowfunction.h"
 
 //Standard Reference Tones
 struct DTMF {
@@ -137,7 +138,7 @@ private:
     int binWidthHz;
     int scale;
 
-    double *window; //Precalculated array of window values for specified freq,
+	WindowFunction *windowFunction; //Precalculated array of window values for specified freq,
 
     //These could be static in FPNextSample, but here for debugging and for use
     //if we try different algorithms
