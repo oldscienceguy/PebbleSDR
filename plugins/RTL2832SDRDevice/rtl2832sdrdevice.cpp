@@ -161,6 +161,8 @@ bool RTL2832SDRDevice::Connect()
         int device_count;
         int dev_index = 0; //Assume we only have 1 RTL2832 device for now
         //dev = NULL;
+
+		//1/30/16: Started crashing in get_device_count on libusb exit(ctx)
         device_count = rtlsdr_get_device_count();
         if (device_count == 0) {
             qDebug("No supported devices found.");
@@ -839,9 +841,11 @@ void RTL2832SDRDevice::SetupOptionUi(QWidget *parent)
     //Common UI
     //optionUi->sampleRateSelector->addItem("250 ksps",(quint32)250000);
     optionUi->sampleRateSelector->addItem("1024 msps",(quint32)1024000);
-    //optionUi->sampleRateSelector->addItem("1920 msps",(quint32)1920000);
+	optionUi->sampleRateSelector->addItem("1920 msps",(quint32)1920000);
     optionUi->sampleRateSelector->addItem("2048 msps",(quint32)2048000);
-    //optionUi->sampleRateSelector->addItem("2400 msps",(quint32)2400000);
+	optionUi->sampleRateSelector->addItem("2400 msps",(quint32)2400000);
+	optionUi->sampleRateSelector->addItem("2800 msps",(quint32)2800000);
+	optionUi->sampleRateSelector->addItem("3200 msps",(quint32)3200000);
 	int cur = optionUi->sampleRateSelector->findData(sampleRate);
     optionUi->sampleRateSelector->setCurrentIndex(cur);
     connect(optionUi->sampleRateSelector,SIGNAL(currentIndexChanged(int)),this,SLOT(SampleRateChanged(int)));
@@ -1035,7 +1039,7 @@ void RTL2832SDRDevice::producerWorker(cbProducerConsumerEvents _event)
 
                 if (!running)
                     return;
-
+				while (running) {
 				if ((producerFreeBufPtr = (CPX *)producerConsumer.AcquireFreeBuffer()) == NULL)
                     return;
 
@@ -1077,7 +1081,7 @@ void RTL2832SDRDevice::producerWorker(cbProducerConsumerEvents _event)
 					normalizeIQ(&producerFreeBufPtr[i],inBuffer[j], inBuffer[j+1]);
 				}
                 producerConsumer.ReleaseFilledBuffer();
-
+			} //End while(running)
                 return;
 
             } else if (deviceNumber == RTL_TCP) {
