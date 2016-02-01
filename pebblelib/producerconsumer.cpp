@@ -104,7 +104,7 @@ void ProducerConsumer::SetConsumerInterval(quint32 _sampleRate, quint16 _samples
 	float nsToFillBuffer = (1000000000.0 / _sampleRate) * _samplesPerBuffer;
 	//Set safe interval (experiment here)
 	//Use something that results in a non-cyclic interval to avoid checking constantly at the wrong time
-	nsConsumerInterval = nsToFillBuffer * 0.90; //Slightly faster because we'll wait if no filled buffers
+	nsConsumerInterval = nsToFillBuffer * 0.90;
 	if (nsConsumerInterval == 0)
 		qDebug()<<"Warning: Consumer running as fast as possible, high CPU";
 	else
@@ -121,7 +121,8 @@ void ProducerConsumer::SetProducerInterval(quint32 _sampleRate, quint16 _samples
 	//1 sample every N ns X number of samples per buffer = how long it takes device to fill a buffer
 	float nsToFillBuffer = (1000000000.0 / _sampleRate) * _samplesPerBuffer;
 	//Set safe interval (experiment here)
-	nsProducerInterval = nsToFillBuffer;// Exact so we can use this to match device sample rate
+	//For best CPU usage, we want to call producer worker just before we need to based on incoming sample rate
+	nsProducerInterval = nsToFillBuffer * 0.90;
 	if (nsProducerInterval == 0)
 		qDebug()<<"Warning: Producer running as fast as possible, high CPU";
 	else
