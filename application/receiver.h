@@ -23,7 +23,7 @@
 #include "firfilter.h"
 #include "agc.h"
 #include "iqbalance.h"
-#include "filters/fir.h"
+#include "fir.h"
 #include "filters/fractresampler.h"
 #include "wavfile.h"
 #include "sdroptions.h"

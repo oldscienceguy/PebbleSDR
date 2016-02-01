@@ -268,7 +268,6 @@ HEADERS += \
 	iqbalance.h \
     global.h \
     goertzel.h \
-    filters/fir.h \
 	demod/demod_wfm.h \
     demod/rbdsconstants.h \
     demod/rdsdecode.h \
@@ -304,7 +303,6 @@ SOURCES += \
     iqbalance.cpp \
     global.cpp \
     goertzel.cpp \
-    filters/fir.cpp \
 	demod/demod_wfm.cpp \
     demod/rdsdecode.cpp \
     filters/fractresampler.cpp \

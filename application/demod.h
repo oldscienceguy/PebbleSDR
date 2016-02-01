@@ -7,7 +7,7 @@
 #include "signalprocessing.h"
 #include <iostream>
 #include <QString>
-#include "filters/fir.h"
+#include "fir.h"
 #include "iir.h"
 #include "demod/rdsdecode.h"
 #include "ui_data-band.h"

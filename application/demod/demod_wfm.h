@@ -10,7 +10,7 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 
-#include "filters/fir.h"
+#include "fir.h"
 #include "iir.h"
 #include "downconvert.h"
 #include "rbdsconstants.h"
