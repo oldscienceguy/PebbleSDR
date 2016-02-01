@@ -15,7 +15,7 @@ public:
 	~WindowFunction();
 
 	//Regenerate window function
-	void generate(WINDOWTYPE _type);
+	void regenerate(WINDOWTYPE _type);
 
 	double *window;
 	CPX *windowCpx; //CPX version, same coefficients in re and im

@@ -9,7 +9,7 @@ WindowFunction::WindowFunction(WINDOWTYPE _type, int _numSamples)
 	numSamples = _numSamples;
 	window = new double[numSamples];
 	windowCpx = CPXBuf::malloc(numSamples);
-	generate (_type);
+	regenerate (_type);
 }
 
 WindowFunction::~WindowFunction()
@@ -18,7 +18,7 @@ WindowFunction::~WindowFunction()
 	free (windowCpx);
 }
 
-void WindowFunction::generate(WindowFunction::WINDOWTYPE _type)
+void WindowFunction::regenerate(WindowFunction::WINDOWTYPE _type)
 {
 	int i, j, midn, midp1, midm1;
 	float freq, rate, sr1, angle, expn, expsum, cx, two_pi;
