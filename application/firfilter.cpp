@@ -75,9 +75,13 @@ details on overlap-add method of combining filter results and dealing with convo
 
 */
 
-FIRFilter::FIRFilter(int sr, int ns, bool _useFFT, int _numTaps, int _delay):
-	SignalProcessing(sr,ns)
+FIRFilter::FIRFilter(int sr, int ns, bool _useFFT, int _numTaps, int _delay)
 {
+	sampleRate = sr;
+	numSamples = ns;
+	numSamplesX2 = ns*2; //Frequency used
+	out = CPXBuf::malloc(numSamples);
+
 	useFFT = _useFFT;
 	lpCutoff = 0.0;
 	delay = _delay;
@@ -135,6 +139,9 @@ FIRFilter::~FIRFilter(void)
 		delete fftFIR;
 	if (fftSamples != NULL)
 		delete fftSamples;
+	if (out != NULL)
+		CPXBuf::free(out);
+
 }
 void FIRFilter::setEnabled(bool b)
 {

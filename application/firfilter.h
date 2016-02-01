@@ -1,12 +1,11 @@
 #pragma once
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-#include "signalprocessing.h"
 #include <QMutex>
 #include "fft.h"
+#include "delayline.h"
 
-class FIRFilter :
-	public SignalProcessing
+class FIRFilter: public QObject
 {
 public:
 	enum FILTERTYPE {LOWPASS, HIGHPASS, BANDPASS, BANDSTOP};
@@ -46,6 +45,14 @@ public:
 
 
 private:
+	int numSamples;
+	int numSamplesX2;
+	int sampleRate;
+	//Each process block returns it's output to a module specific buffer
+	//So mixer has it's own output buffer, noise blanker has its own, etc.
+	//This is not absolutely necessary, but makes it easier to test, debug, and add new blocks
+	CPX *out;
+
 	QMutex mutex;
 	bool useFFT;
 	int numTaps; //Size of filter coefficient array
