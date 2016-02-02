@@ -11,7 +11,7 @@ FFTfftw::~FFTfftw()
     fftw_destroy_plan(plan_fwd);
     fftw_destroy_plan(plan_rev);
 
-    if (buf) CPXBuf::free(buf);
+	if (buf) free(buf);
 }
 
 void FFTfftw::FFTParams(quint32 _size, double _dBCompensation, double _sampleRate, int _samplesPerBuffer,

@@ -44,10 +44,10 @@ FFT::FFT() :
 }
 FFT::~FFT()
 {
-    if (timeDomain) CPXBuf::free(timeDomain);
-    if (freqDomain) CPXBuf::free(freqDomain);
-    if (workingBuf) CPXBuf::free(workingBuf);
-    if (overlap) CPXBuf::free(overlap);
+	if (timeDomain) free(timeDomain);
+	if (freqDomain) free(freqDomain);
+	if (workingBuf) free(workingBuf);
+	if (overlap) free(overlap);
     if (FFTPwrAvgBuf != NULL)
         delete FFTPwrAvgBuf;
     if (FFTAvgBuf != NULL)

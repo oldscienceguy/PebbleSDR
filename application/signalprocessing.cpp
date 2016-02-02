@@ -14,6 +14,6 @@ SignalProcessing::SignalProcessing(int sr, int ns)
 SignalProcessing::~SignalProcessing(void)
 {
 	if (out != NULL)
-		CPXBuf::free(out);
+		free(out);
 }
 

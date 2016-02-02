@@ -48,8 +48,8 @@ SignalSpectrum::~SignalSpectrum(void)
 {
 	if (unprocessedSpectrum != NULL) {free (unprocessedSpectrum);}
 	if (hiResSpectrum != NULL) {free (hiResSpectrum);}
-	if (tmp_cpx != NULL) {CPXBuf::free(tmp_cpx);}
-	if (rawIQ != NULL) {CPXBuf::free(rawIQ);}
+	if (tmp_cpx != NULL) {free(tmp_cpx);}
+	if (rawIQ != NULL) {free(rawIQ);}
 	if (windowFunction != NULL) {delete windowFunction;}
 }
 

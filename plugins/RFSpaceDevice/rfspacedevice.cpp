@@ -40,7 +40,7 @@ RFSpaceDevice::~RFSpaceDevice()
 		usbUtil->CloseDevice();
 
 	if (inBuffer != NULL)
-		CPXBuf::free(inBuffer);
+		free(inBuffer);
 	if (readBuf != NULL)
 		delete [] readBuf;
 	if (usbReadBuf != NULL)

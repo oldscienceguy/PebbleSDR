@@ -129,13 +129,13 @@ FIRFilter::~FIRFilter(void)
 	if (delayLine != NULL)
 		delete delayLine;
 	if (taps != NULL)
-		CPXBuf::free(taps);
+		free(taps);
 	if (fftFIR != NULL)
 		delete fftFIR;
 	if (fftSamples != NULL)
 		delete fftSamples;
 	if (out != NULL)
-		CPXBuf::free(out);
+		free(out);
 
 }
 void FIRFilter::setEnabled(bool b)

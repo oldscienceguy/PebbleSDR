@@ -11,7 +11,7 @@ DelayLine::DelayLine(int s, int d)
 }
 DelayLine::~DelayLine()
 {
-	if (buffer != NULL) CPXBuf::free(buffer);
+	if (buffer != NULL) free(buffer);
 }
 void DelayLine::NewSample(CPX c)
 {
