@@ -1,8 +1,6 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include "cpx.h"
-#include <vector>
-#include "../fftw-3.3.4/api/fftw3.h"
 
 #if (SIMD)
 #include <pmmintrin.h>
@@ -39,19 +37,12 @@ CPXBuf::CPXBuf(int _size)
 {
     size = _size;
     int msz = sizeof(CPX) * size;
-    if (SIMD) {
-        cpxBuffer = (CPX*)fftwf_malloc(msz);
-    } else {
-        cpxBuffer = (CPX*)std::malloc(msz);
-    }
+	cpxBuffer = CPXBuf::malloc(msz); //16byte aligned
 }
 CPXBuf::~CPXBuf()
 {
     if (cpxBuffer != NULL) {
-        if (SIMD)
-            fftwf_free(cpxBuffer);
-        else
-            std::free (cpxBuffer);
+		free (cpxBuffer);
     }
 }
 void CPXBuf::Clear()
@@ -61,20 +52,19 @@ void CPXBuf::Clear()
 
 CPX *CPXBuf::malloc(int size)
 {
-	int msz = sizeof(CPX) * size;
-	if (SIMD) {
-		return (CPX*)fftwf_malloc(msz);
-	} else {
-		return (CPX*)std::malloc(msz);
-	}
+	void * buf;
+	size_t align = 16;
+	size_t msz = sizeof(CPX) * size;
+	//Many FFT libraries require 16 byte alignment for best performance
+	//Especially if they use SIMD (SSE) instructions
+	posix_memalign(&buf, align, msz);
+	return (CPX*)buf;
 }
 void CPXBuf::free(CPX *memory)
 {
+	return;
 	if (memory != NULL) {
-		if (SIMD)
-			fftwf_free(memory);
-		else
-			std::free (memory);
+		free (memory);
 	}
 }
 void CPXBuf::scale(CPX *out, CPX *in, double a, int size)
@@ -253,7 +243,7 @@ double CPXBuf::PeakPower()
     double maxPower = 0.0;
     for (int i=0; i<size; i++)
         maxPower = std::max(cpxBuffer[i].sqrMag(),maxPower);
-    return maxPower;
+	return maxPower;
 
 }
 
