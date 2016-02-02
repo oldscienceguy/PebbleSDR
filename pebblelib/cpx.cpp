@@ -32,6 +32,22 @@ double CPX::phase()
 
 }
 
+//Allocates a block of 16byte aligned memory, optimal for FFT and SIMD
+CPX *CPX::memalign(int _numCPX)
+{
+	void * buf;
+	size_t align = 16;
+	size_t msz = sizeof(CPX) * _numCPX;
+	//Many FFT libraries require 16 byte alignment for best performance
+	//Especially if they use SIMD (SSE) instructions
+	posix_memalign(&buf, align, msz);
+	return (CPX*)buf;
+}
+
+
+
+
+
 //CPXBuf
 CPXBuf::CPXBuf(int _size)
 {

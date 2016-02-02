@@ -70,6 +70,9 @@ public:
 
     ~CPX(void){}
 
+	//Allocates a block of 16byte aligned memory, optimal for FFT and SIMD
+	static CPX *memalign(int _numCPX);
+
     double re, im;
     double real() { return re; }
     void real(double R) {re = R;}
