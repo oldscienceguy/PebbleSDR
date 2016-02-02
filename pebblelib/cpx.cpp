@@ -60,13 +60,6 @@ CPX *CPXBuf::malloc(int size)
 	posix_memalign(&buf, align, msz);
 	return (CPX*)buf;
 }
-void CPXBuf::free(CPX *memory)
-{
-	return;
-	if (memory != NULL) {
-		free (memory);
-	}
-}
 void CPXBuf::scale(CPX *out, CPX *in, double a, int size)
 {
 	if(SIMD)

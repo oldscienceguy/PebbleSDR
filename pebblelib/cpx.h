@@ -276,9 +276,8 @@ public:
     double PeakPower();
 
 	//Static for now
-	//Returns 16byte aligned pointer if SIMD math enabled, you must use CPXBuf::free(...) to delete
+	//Returns 16byte aligned pointer
 	static CPX *malloc(int size);
-	static void free(CPX *memory);
 
 	//Just copies in to out
 	static inline void copy(CPX *out, CPX *in, int size)
