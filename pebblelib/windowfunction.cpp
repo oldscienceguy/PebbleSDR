@@ -8,7 +8,7 @@ WindowFunction::WindowFunction(WINDOWTYPE _type, int _numSamples)
 	windowType = _type;
 	numSamples = _numSamples;
 	window = new double[numSamples];
-	windowCpx = CPXBuf::malloc(numSamples);
+	windowCpx = CPX::memalign(numSamples);
 	regenerate (_type);
 }
 

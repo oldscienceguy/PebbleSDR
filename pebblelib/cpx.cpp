@@ -53,7 +53,7 @@ CPXBuf::CPXBuf(int _size)
 {
     size = _size;
     int msz = sizeof(CPX) * size;
-	cpxBuffer = CPXBuf::malloc(msz); //16byte aligned
+	cpxBuffer = CPX::memalign(msz); //16byte aligned
 }
 CPXBuf::~CPXBuf()
 {
@@ -66,16 +66,6 @@ void CPXBuf::Clear()
     memset(cpxBuffer,0,sizeof(CPX) * size);
 }
 
-CPX *CPXBuf::malloc(int size)
-{
-	void * buf;
-	size_t align = 16;
-	size_t msz = sizeof(CPX) * size;
-	//Many FFT libraries require 16 byte alignment for best performance
-	//Especially if they use SIMD (SSE) instructions
-	posix_memalign(&buf, align, msz);
-	return (CPX*)buf;
-}
 void CPXBuf::scale(CPX *out, CPX *in, double a, int size)
 {
 	if(SIMD)

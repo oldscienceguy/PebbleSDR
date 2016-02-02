@@ -12,7 +12,7 @@ SignalSpectrum::SignalSpectrum(int _sampleRate, quint32 _hiResSampleRate, int _n
 
 	hiResSampleRate = _hiResSampleRate;
 	//Output buffers
-	rawIQ = CPXBuf::malloc(numSamples);
+	rawIQ = CPX::memalign(numSamples);
 
 	fftUnprocessed = FFT::Factory("Unprocessed spectrum");
 	unprocessedSpectrum = new double[numSpectrumBins];
@@ -20,7 +20,7 @@ SignalSpectrum::SignalSpectrum(int _sampleRate, quint32 _hiResSampleRate, int _n
 	fftHiRes = FFT::Factory("HiRes spectrum");
 	hiResSpectrum = new double[numHiResSpectrumBins];
 
-	tmp_cpx = CPXBuf::malloc(numSpectrumBins);
+	tmp_cpx = CPX::memalign(numSpectrumBins);
 
 	//Create our window coefficients 
 	//windows are applied to numSamples, not the entire FFT bins

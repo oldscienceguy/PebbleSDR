@@ -23,7 +23,7 @@ void FFTfftw::FFTParams(quint32 _size, double _dBCompensation, double _sampleRat
     half_sz = fftSize / 2;
 	plan_fwd = fftw_plan_dft_1d(fftSize , (fftw_complex*)timeDomain, (fftw_complex*)freqDomain, FFTW_FORWARD, FFTW_MEASURE);
 	plan_rev = fftw_plan_dft_1d(fftSize , (fftw_complex*)freqDomain, (fftw_complex*)timeDomain, FFTW_BACKWARD, FFTW_MEASURE);
-    buf = CPXBuf::malloc(fftSize);
+	buf = CPX::memalign(fftSize);
     CPXBuf::clear(buf, fftSize);
 }
 

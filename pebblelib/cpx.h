@@ -278,10 +278,6 @@ public:
     double Peak();
     double PeakPower();
 
-	//Static for now
-	//Returns 16byte aligned pointer
-	static CPX *malloc(int size);
-
 	//Just copies in to out
 	static inline void copy(CPX *out, CPX *in, int size)
 		{memcpy(out,in,sizeof(CPX) * size);}

@@ -80,7 +80,7 @@ FIRFilter::FIRFilter(int sr, int ns, bool _useFFT, int _numTaps, int _delay)
 	sampleRate = sr;
 	numSamples = ns;
 	numSamplesX2 = ns*2; //Frequency used
-	out = CPXBuf::malloc(numSamples);
+	out = CPX::memalign(numSamples);
 
 	useFFT = _useFFT;
 	lpCutoff = 0.0;
@@ -99,7 +99,7 @@ FIRFilter::FIRFilter(int sr, int ns, bool _useFFT, int _numTaps, int _delay)
 		fftSamples->FFTParams(numSamplesX2, 0, sr, numSamples, WindowFunction::NONE);
 
 		//Time domain FIR coefficients
-		taps = CPXBuf::malloc(numSamples);
+		taps = CPX::memalign(numSamples);
 		CPXBuf::clear (taps,numSamples);
 
 		//We don't need a delayLine
@@ -112,7 +112,7 @@ FIRFilter::FIRFilter(int sr, int ns, bool _useFFT, int _numTaps, int _delay)
 		//Delay line has to be large enough so we have 1 sample per tap
 		delayLine = new DelayLine((numTaps + delay) * 2, delay);
 
-		taps = CPXBuf::malloc(numTaps);
+		taps = CPX::memalign(numTaps);
 		CPXBuf::clear (taps,numTaps);
 
 		//Unused

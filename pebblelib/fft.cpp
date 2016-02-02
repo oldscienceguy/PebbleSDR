@@ -103,10 +103,10 @@ void FFT::FFTParams(quint32 _fftSize, double _dBCompensation, double _sampleRate
     dBCompensation = _dBCompensation;
     sampleRate = _sampleRate;
 
-    timeDomain = CPXBuf::malloc(fftSize);
-    freqDomain = CPXBuf::malloc(fftSize);
-    workingBuf = CPXBuf::malloc(fftSize);
-    overlap = CPXBuf::malloc(fftSize);
+	timeDomain = CPX::memalign(fftSize);
+	freqDomain = CPX::memalign(fftSize);
+	workingBuf = CPX::memalign(fftSize);
+	overlap = CPX::memalign(fftSize);
     CPXBuf::clear(overlap, fftSize);
 
     if (FFTPwrAvgBuf != NULL)

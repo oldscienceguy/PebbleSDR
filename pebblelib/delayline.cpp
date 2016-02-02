@@ -4,7 +4,7 @@ DelayLine::DelayLine(int s, int d)
 {
 	size = s;
 	delay = d;
-	buffer = CPXBuf::malloc(size);
+	buffer = CPX::memalign(size);
 	CPXBuf::clear(buffer,size);
 	head = 0;
 	last = 0;

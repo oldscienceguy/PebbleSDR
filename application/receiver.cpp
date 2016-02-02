@@ -180,9 +180,9 @@ bool Receiver::On()
     //Sets the Mixer NCO frequency
     //downConvert.SetFrequency(-RDS_FREQUENCY);
 
-    workingBuf = CPXBuf::malloc(framesPerBuffer);
-    sampleBuf = CPXBuf::malloc(framesPerBuffer);
-    audioBuf = CPXBuf::malloc(framesPerBuffer);
+	workingBuf = CPX::memalign(framesPerBuffer);
+	sampleBuf = CPX::memalign(framesPerBuffer);
+	audioBuf = CPX::memalign(framesPerBuffer);
     sampleBufLen = 0;
 	dbSpectrumBuf = new double[framesPerBuffer];
 

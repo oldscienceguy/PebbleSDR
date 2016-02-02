@@ -8,7 +8,7 @@ SignalProcessing::SignalProcessing(int sr, int ns)
 	sampleRate = sr;
 	numSamples = ns;
 	numSamplesX2 = ns*2; //Frequency used
-	out = CPXBuf::malloc(numSamples);
+	out = CPX::memalign(numSamples);
 }
 
 SignalProcessing::~SignalProcessing(void)
