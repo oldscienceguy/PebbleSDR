@@ -206,7 +206,7 @@ void CFft::FFTForward(CPX * in, CPX * out, int numSamples)
 			//We can pad samples in the time domain because it does not impact frequency results in FFT
 			CPXBuf::clear(timeDomain,fftSize);
 			//Put the data in properly aligned FFTW buffer
-			CPXBuf::copy(timeDomain, in, numSamples);
+			CPX::copyCPX(timeDomain, in, numSamples);
 		}
 
 		//CuteSDR swapped I/Q here
@@ -220,16 +220,16 @@ void CFft::FFTForward(CPX * in, CPX * out, int numSamples)
 
 	}
 	//Ooura is inplace, so copy to working dir so timedomain is intact
-	CPXBuf::copy(workingBuf,timeDomain,fftSize);
+	CPX::copyCPX(workingBuf,timeDomain,fftSize);
 
     bitrv2(fftSize*2, m_pWorkArea + 2, (TYPEREAL*)workingBuf);
     CpxFFT(fftSize*2, (TYPEREAL*)workingBuf, m_pSinCosTbl);
 
-	CPXBuf::copy(freqDomain,workingBuf,fftSize) ;
+	CPX::copyCPX(freqDomain,workingBuf,fftSize) ;
 
     //If out == NULL, just leave result in freqDomain buffer and let caller get it
     if (out != NULL)
-        CPXBuf::copy(out, freqDomain, fftSize);
+		CPX::copyCPX(out, freqDomain, fftSize);
 
 #if 0
     //Test Pebble restuls with original cuteSDR calculations
@@ -272,20 +272,20 @@ void CFft::FFTInverse(CPX * in, CPX * out, int numSamples)
 			//Make sure that buffer which does not have samples is zero'd out
 			CPXBuf::clear(freqDomain,fftSize);
 
-		CPXBuf::copy(freqDomain,in, numSamples);  //In-place functions, use workingBuf to keep other buffers intact
+		CPX::copyCPX(freqDomain,in, numSamples);  //In-place functions, use workingBuf to keep other buffers intact
 
 	}
 	//Ooura is inplace, so copy to working dir so freqdomain is intact
-	CPXBuf::copy(workingBuf,freqDomain,fftSize);
+	CPX::copyCPX(workingBuf,freqDomain,fftSize);
 
     bitrv2conj(fftSize*2, m_pWorkArea + 2, (TYPEREAL*)workingBuf);
 	cftbsub(fftSize*2, (TYPEREAL*)workingBuf, m_pSinCosTbl);
 
     //in and out are same buffer so we need to copy to freqDomain buffer to be consistent
-    CPXBuf::copy(timeDomain, workingBuf, fftSize);
+	CPX::copyCPX(timeDomain, workingBuf, fftSize);
 
     if (out != NULL)
-        CPXBuf::copy(out, timeDomain, fftSize);
+		CPX::copyCPX(out, timeDomain, fftSize);
 
 }
 

@@ -47,7 +47,7 @@ void FFTfftw::FFTForward(CPX * in, CPX * out, int numSamples)
 			//We can pad samples in the time domain because it does not impact frequency results in FFT
 			CPXBuf::clear(timeDomain,fftSize);
 			//Put the data in properly aligned FFTW buffer
-			CPXBuf::copy(timeDomain, in, numSamples);
+			CPX::copyCPX(timeDomain, in, numSamples);
 		}
 
     }
@@ -56,7 +56,7 @@ void FFTfftw::FFTForward(CPX * in, CPX * out, int numSamples)
 
     //If out == NULL, just leave result in freqDomain buffer and let caller get it
     if (out != NULL)
-        CPXBuf::copy(out, freqDomain, fftSize);
+		CPX::copyCPX(out, freqDomain, fftSize);
 }
 
 //NOTE: size= # samples in 'in' buffer, 'out' must be == fftSize (set on construction) which is #bins
@@ -71,12 +71,12 @@ void FFTfftw::FFTInverse(CPX * in, CPX * out, int numSamples)
             //Make sure that buffer which does not have samples is zero'd out
             CPXBuf::clear(freqDomain,fftSize);
 
-		CPXBuf::copy(freqDomain, in, numSamples);
+		CPX::copyCPX(freqDomain, in, numSamples);
     }
     fftw_execute(plan_rev);
 
     if (out != NULL)
-        CPXBuf::copy(out, timeDomain, fftSize);
+		CPX::copyCPX(out, timeDomain, fftSize);
 
 }
 

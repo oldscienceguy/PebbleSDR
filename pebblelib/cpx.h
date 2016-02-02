@@ -72,6 +72,9 @@ public:
 
 	//Allocates a block of 16byte aligned memory, optimal for FFT and SIMD
 	static CPX *memalign(int _numCPX);
+	//Just copies in to out
+	static inline void copyCPX(CPX *out, CPX *in, int size)
+		{memcpy(out,in,sizeof(CPX) * size);}
 
     double re, im;
     double real() { return re; }
@@ -278,9 +281,6 @@ public:
     double Peak();
     double PeakPower();
 
-	//Just copies in to out
-	static inline void copy(CPX *out, CPX *in, int size)
-		{memcpy(out,in,sizeof(CPX) * size);}
 	//Clears buffer to zeros, equiv to CPX(0,0)
 	static inline void clear(CPX *out, int size)
 		{memset(out,0,sizeof(CPX) * size); }

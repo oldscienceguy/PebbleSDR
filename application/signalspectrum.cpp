@@ -84,7 +84,7 @@ void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double 
 	outBufferOverflowCount = outOver;
 
     //Keep a copy raw I/Q to local buffer for display
-    //CPXBuf::copy(rawIQ, in, numSamples);
+	//CPX::copyCPX(rawIQ, in, numSamples);
 	MakeSpectrum(fftUnprocessed, in, unprocessedSpectrum, _numSamples);
 	displayUpdateComplete = false;
 	emit newFftData();
@@ -130,7 +130,7 @@ void SignalSpectrum::MakeSpectrum(FFT *fft, double *sOut)
 				for (int i=0; i<numSpectrumBins; i++)
                     tmp_cpx[i] = fft->getFreqDomain()[i*decimate];
             } else {
-				CPXBuf::copy(tmp_cpx,fft->getFreqDomain(),numSpectrumBins);
+				CPX::copyCPX(tmp_cpx,fft->getFreqDomain(),numSpectrumBins);
             }
 
 			fft->FreqDomainToMagnitude(tmp_cpx, 0, dbOffset, sOut);

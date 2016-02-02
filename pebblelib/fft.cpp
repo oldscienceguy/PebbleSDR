@@ -239,7 +239,7 @@ void FFT::OverlapAdd(CPX *out, int numSamples)
 	CPXBuf::add(out, timeDomain, overlap, numSamples);
 
     //Save the upper 50% samples to  overlap for next run
-	CPXBuf::copy(overlap, (timeDomain+numSamples), numSamples);
+	CPX::copyCPX(overlap, (timeDomain+numSamples), numSamples);
 
 }
 
