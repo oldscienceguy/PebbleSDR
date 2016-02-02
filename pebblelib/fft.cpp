@@ -107,7 +107,7 @@ void FFT::FFTParams(quint32 _fftSize, double _dBCompensation, double _sampleRate
 	freqDomain = CPX::memalign(fftSize);
 	workingBuf = CPX::memalign(fftSize);
 	overlap = CPX::memalign(fftSize);
-    CPXBuf::clear(overlap, fftSize);
+	CPX::clearCPX(overlap, fftSize);
 
     if (FFTPwrAvgBuf != NULL)
         delete FFTPwrAvgBuf;
@@ -236,7 +236,7 @@ void FFT::OverlapAdd(CPX *out, int numSamples)
     //Do Overlap-Add to reduce from 1/2 fftSize
 
     //Add the samples in 'in' to last overlap
-	CPXBuf::add(out, timeDomain, overlap, numSamples);
+	CPX::addCPX(out, timeDomain, overlap, numSamples);
 
     //Save the upper 50% samples to  overlap for next run
 	CPX::copyCPX(overlap, (timeDomain+numSamples), numSamples);

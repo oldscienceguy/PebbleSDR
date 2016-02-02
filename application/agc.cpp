@@ -476,7 +476,7 @@ CPX * AGC::ProcessBlock(CPX *in)
 	//We always apply some gain, even if AGC is disabled, to bring audio up to level where we can control
 	//with user gain control
 	//if (agcMode == OFF || agcDelay == NULL) {
-	//	CPXBuf::scale(out,in,gainFix,numSamples);
+	//	CPX::scaleCPX(out,in,gainFix,numSamples);
 	//	return out;
 	//}
 	//10/11/10: I think this just confuses gain management.  Everything handled in final gain step

@@ -864,7 +864,7 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 		nextStep = bpFilter->ProcessBlock(nextStep);
 		//global->perform.StopPerformance(100);
 		//Crude AGC, too much fluctuation
-        //CPXBuf::scale(nextStep,nextStep,pre/post,frameCount);
+		//CPX::scaleCPX(nextStep,nextStep,pre/post,frameCount);
 		global->testBench->DisplayData(numStepSamples,nextStep,demodSampleRate,testBenchPostBandpass);
 
 
@@ -877,7 +877,7 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 
         //Tune only mode, no demod or output
 		if (demod->DemodMode() == DeviceInterface::dmNONE){
-            CPXBuf::clear(audioBuf,framesPerBuffer);
+			CPX::clearCPX(audioBuf,framesPerBuffer);
             return;
         }
 
@@ -982,9 +982,9 @@ void Receiver::ProcessBlockFreqDomain(CPX *in, CPX *out, int frameCount)
 
 
 	if (mute)
-        CPXBuf::clear(out, demodFrames);
+		CPX::clearCPX(out, demodFrames);
 	else
-        CPXBuf::scale(out, nextStep, gain, demodFrames);
+		CPX::scaleCPX(out, nextStep, gain, demodFrames);
 
     audioOutput->SendToOutput(out,demodFrames);
 

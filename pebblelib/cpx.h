@@ -73,8 +73,18 @@ public:
 	//Allocates a block of 16byte aligned memory, optimal for FFT and SIMD
 	static CPX *memalign(int _numCPX);
 	//Just copies in to out
-	static inline void copyCPX(CPX *out, CPX *in, int size)
-		{memcpy(out,in,sizeof(CPX) * size);}
+	static void copyCPX(CPX *out, CPX *in, int size);
+	//Clears buffer to zeros, equiv to CPX(0,0)
+	static void clearCPX(CPX *out, int size);
+	//scales in by a and returns in out, SIMD enabled
+	static void scaleCPX(CPX * out, CPX * in, double a, int size);
+	static void multCPX(CPX * out, CPX * in, CPX *in2, int size);
+	//adds in + in2 and returns in out, SIMD enabled
+	static void addCPX(CPX * out, CPX * in, CPX *in2, int size);
+	//out.re = mag, out.im = original out.re SIMD enabled
+	static void magCPX(CPX *out, CPX *in, int size);
+	//out.re = sqrMag, out.im = original out.reSIMD enabled
+	static void sqrMagCPX(CPX *out, CPX *in, int size);
 
     double re, im;
     double real() { return re; }
@@ -281,19 +291,7 @@ public:
     double Peak();
     double PeakPower();
 
-	//Clears buffer to zeros, equiv to CPX(0,0)
-	static inline void clear(CPX *out, int size)
-		{memset(out,0,sizeof(CPX) * size); }
-	//scales in by a and returns in out, SIMD enabled
-    static void scale(CPX * out, CPX * in, double a, int size);
-	//adds in + in2 and returns in out, SIMD enabled
-	static void add(CPX * out, CPX * in, CPX *in2, int size);
 	//SIMD enabled
-	static void mult(CPX * out, CPX * in, CPX *in2, int size);
-	//out.re = mag, out.im = original out.re SIMD enabled
-	static void mag(CPX *out, CPX *in, int size);
-	//out.re = sqrMag, out.im = original out.reSIMD enabled
-	static void sqrMag(CPX *out, CPX *in, int size);
 	//Copy every N samples from in to out
 	static void decimate(CPX *out, CPX *in, int by, int size);
 	//Hypot version of norm

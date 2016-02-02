@@ -40,7 +40,7 @@ void FFTAccelerate::FFTForward(CPX *in, CPX *out, int numSamples)
 	if (in != NULL ) {
 		if (windowType != WindowFunction::NONE && numSamples == samplesPerBuffer) {
 			//Smooth the input data with our window
-			CPXBuf::mult(timeDomain, in, windowFunction->windowCpx, samplesPerBuffer);
+			CPX::multCPX(timeDomain, in, windowFunction->windowCpx, samplesPerBuffer);
 			//Zero pad remainder of buffer if needed
 			for (int i = samplesPerBuffer; i<fftSize; i++) {
 				timeDomain[i] = 0;
@@ -48,7 +48,7 @@ void FFTAccelerate::FFTForward(CPX *in, CPX *out, int numSamples)
 		} else {
 			//Make sure that buffer which does not have samples is zero'd out
 			//We can pad samples in the time domain because it does not impact frequency results in FFT
-			CPXBuf::clear(timeDomain,fftSize);
+			CPX::clearCPX(timeDomain,fftSize);
 			//Put the data in properly aligned FFTW buffer
 			CPX::copyCPX(timeDomain, in, numSamples);
 		}
@@ -80,7 +80,7 @@ void FFTAccelerate::FFTInverse(CPX *in, CPX *out, int numSamples)
 	//If in==NULL, use whatever is in freqDomain buffer
 	if (in != NULL ) {
 		if (numSamples < fftSize)
-			CPXBuf::clear(freqDomain,fftSize);
+			CPX::clearCPX(freqDomain,fftSize);
 		//Put the data in properly aligned FFTW buffer
 		CPX::copyCPX(freqDomain, in, numSamples);
 	}

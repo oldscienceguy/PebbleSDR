@@ -122,7 +122,7 @@ void SignalSpectrum::MakeSpectrum(FFT *fft, double *sOut)
         skipFftsCounter = 0;
 
         if (displayUpdateComplete) {
-			CPXBuf::clear(tmp_cpx, numSpectrumBins);
+			CPX::clearCPX(tmp_cpx, numSpectrumBins);
 
 			if (numSpectrumBins < fft->getFFTSize()) {
                 //Decimate to fit spectrum binCount

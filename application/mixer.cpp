@@ -37,7 +37,7 @@ CPX *Mixer::ProcessBlock(CPX *in)
 #if(0)
 	//Experiment: Does it make a difference if we do this in blocks or sample by sample?
 	mix = nco->GenSamples();
-	CPXBuf::mult(out,in,mix,numSamples);
+	CPX::multCPX(out,in,mix,numSamples);
 #else
 	CPX cx;
 	for (int i = 0; i < numSamples; i++)

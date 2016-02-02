@@ -100,7 +100,7 @@ FIRFilter::FIRFilter(int sr, int ns, bool _useFFT, int _numTaps, int _delay)
 
 		//Time domain FIR coefficients
 		taps = CPX::memalign(numSamples);
-		CPXBuf::clear (taps,numSamples);
+		CPX::clearCPX (taps,numSamples);
 
 		//We don't need a delayLine
 		delayLine = NULL;
@@ -113,7 +113,7 @@ FIRFilter::FIRFilter(int sr, int ns, bool _useFFT, int _numTaps, int _delay)
 		delayLine = new DelayLine((numTaps + delay) * 2, delay);
 
 		taps = CPX::memalign(numTaps);
-		CPXBuf::clear (taps,numTaps);
+		CPX::clearCPX (taps,numTaps);
 
 		//Unused
 		fftFIR = NULL;
@@ -146,7 +146,7 @@ void FIRFilter::setEnabled(bool b)
 void FIRFilter::Convolution(FFT *fft)
 {
 	//Do Convolution
-    CPXBuf::mult(fft->getFreqDomain(),fft->getFreqDomain(),fftFIR->getFreqDomain(), fft->getFFTSize());
+	CPX::multCPX(fft->getFreqDomain(),fft->getFreqDomain(),fftFIR->getFreqDomain(), fft->getFFTSize());
 }
 
 CPX * FIRFilter::ProcessBlock(CPX *in)
@@ -466,7 +466,7 @@ void FIRFilter::MakeFFTTaps()
     fftFIR->FFTForward(taps, NULL, numSamples); //
 
     // Do compensation here instead of in inverse FFT
-    CPXBuf::scale(fftFIR->getFreqDomain(), fftFIR->getFreqDomain(), one_over_norm, fftFIR->getFFTSize());
+	CPX::scaleCPX(fftFIR->getFreqDomain(), fftFIR->getFreqDomain(), one_over_norm, fftFIR->getFFTSize());
 
 	//firTaps now has filter in frequency-domain and can be used for FFT convolution
 
