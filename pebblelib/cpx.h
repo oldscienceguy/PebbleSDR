@@ -69,7 +69,9 @@ public:
 		{re=cx.re; im=cx.im;}
 
     ~CPX(void){}
+	double re, im;
 
+	//Static methods that work on CPX* buffers, was in CPXBuf
 	//Allocates a block of 16byte aligned memory, optimal for FFT and SIMD
 	static CPX *memalign(int _numCPX);
 	//Just copies in to out
@@ -85,8 +87,16 @@ public:
 	static void magCPX(CPX *out, CPX *in, int size);
 	//out.re = sqrMag, out.im = original out.reSIMD enabled
 	static void sqrMagCPX(CPX *out, CPX *in, int size);
+	//Copy every N samples from in to out
+	static void decimateCPX(CPX *out, CPX *in, int by, int size);
+	//Hypot version of norm
+	static double normCPX(CPX *in, int size);
+	//Squared version of norm
+	static double normSqrCPX(CPX *in, int size);
+	//Return max mag()
+	static double peakCPX(CPX *in, int size);
+	static double peakPowerCPX(CPX *in, int size);
 
-    double re, im;
     double real() { return re; }
     void real(double R) {re = R;}
     double imag() { return im; }
@@ -239,6 +249,8 @@ public:
 
 };
 
+#if 0
+//Never used as intended and deprecated, use CPX:: static methods for array operations instead
 //Methods for operating on an array of CPX
 class CPXBuf
 {
@@ -291,23 +303,13 @@ public:
     double Peak();
     double PeakPower();
 
-	//SIMD enabled
-	//Copy every N samples from in to out
-	static void decimate(CPX *out, CPX *in, int by, int size);
-	//Hypot version of norm
-    static double norm(CPX *in, int size);
-	//Squared version of norm
-    static double normSqr(CPX *in, int size);
-	//Return max mag()
-    static double peak(CPX *in, int size);
-    static double peakPower(CPX *in, int size);
-
 private:
     CPX *cpxBuffer;
     int size;
 
 
 };
+#endif
 
 // MinGW doesn't have a aligned_malloc???
 

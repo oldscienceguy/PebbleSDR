@@ -101,6 +101,50 @@ void CPX::clearCPX(CPX *out, int size)
 	memset(out,0,sizeof(CPX) * size);
 }
 
+
+//Copy every 'by' samples from in to out
+//decimate(out,in,2,numSamples) //Copy 0,2,4... to in
+//decimate(out,in,3,numSamples) //COpy 0,3,6 ...
+void CPX::decimateCPX(CPX *out, CPX *in, int by, int size)
+{
+    for (int i = 0, j = 0; i < size; i+=by, j++)
+    {
+        out[j] = in[i];
+    }  
+}
+//
+double CPX::normSqrCPX(CPX *in, int size)
+{
+    double sum = 0.0;
+	for (int i=0; i<size; i++)
+		sum += in[i].sqrMag();
+	return sum;
+}
+double CPX::normCPX(CPX *in, int size)
+{
+    double sum = 0.0;
+	for (int i=0; i<size; i++)
+		sum += in[i].sqrMag();
+	return sqrt(sum/size);
+}
+//Returns max mag() in buffer
+double CPX::peakCPX(CPX *in, int size)
+{
+	double maxMag=0.0;
+	for (int i=0; i<size; i++)
+		maxMag = std::max(in[i].mag(),maxMag);
+	return maxMag;
+}
+double CPX::peakPowerCPX(CPX *in, int size)
+{
+	double maxPower = 0.0;
+	for (int i=0; i<size; i++)
+		maxPower = std::max(in[i].sqrMag(),maxPower);
+	return maxPower;
+}
+
+
+#if 0
 //CPXBuf
 CPXBuf::CPXBuf(int _size)
 {
@@ -110,52 +154,10 @@ CPXBuf::CPXBuf(int _size)
 }
 CPXBuf::~CPXBuf()
 {
-    if (cpxBuffer != NULL) {
+	if (cpxBuffer != NULL) {
 		free (cpxBuffer);
-    }
+	}
 }
-
-//Copy every 'by' samples from in to out
-//decimate(out,in,2,numSamples) //Copy 0,2,4... to in
-//decimate(out,in,3,numSamples) //COpy 0,3,6 ...
-void CPXBuf::decimate(CPX *out, CPX *in, int by, int size)
-{
-    for (int i = 0, j = 0; i < size; i+=by, j++)
-    {
-        out[j] = in[i];
-    }  
-}
-//
-double CPXBuf::normSqr(CPX *in, int size)
-{
-    double sum = 0.0;
-	for (int i=0; i<size; i++)
-		sum += in[i].sqrMag();
-	return sum;
-}
-double CPXBuf::norm(CPX *in, int size)
-{
-    double sum = 0.0;
-	for (int i=0; i<size; i++)
-		sum += in[i].sqrMag();
-	return sqrt(sum/size);
-}
-//Returns max mag() in buffer
-double CPXBuf::peak(CPX *in, int size)
-{
-    double maxMag=0.0;
-	for (int i=0; i<size; i++)
-		maxMag = std::max(in[i].mag(),maxMag);
-	return maxMag;
-}
-double CPXBuf::peakPower(CPX *in, int size)
-{
-    double maxPower = 0.0;
-	for (int i=0; i<size; i++)
-		maxPower = std::max(in[i].sqrMag(),maxPower);
-    return maxPower;
-}
-
 
 void CPXBuf::Add(CPX *out, CPX *in2)
 {
@@ -187,7 +189,6 @@ void CPXBuf::Mag(CPX *out)
     }
 
 }
-
 void CPXBuf::SqrMag(CPX *out)
 {
     if (SIMD)
@@ -250,6 +251,8 @@ CPXBuf &CPXBuf::operator +(CPXBuf a)
         cpxBuffer[i] = cpxBuffer[i] + a.Cpx(i);
     return *this;
 }
+
+#endif
 
 #if (SIMD)
 /*

@@ -91,7 +91,7 @@ protected:
     CPX *out;
 
     Ui::dataMorse *dataUi;
-    CPXBuf *workingBuf;
+	CPX *workingBuf;
     int demodMode; //See DeviceInterface::DEMODMODE for enum, move to lib?
     bool useNormalizingThreshold; //Switch how we compare tone values to determine rising or falling
 

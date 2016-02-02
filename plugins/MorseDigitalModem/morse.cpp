@@ -111,7 +111,7 @@ void Morse::SetSampleRate(int _sampleRate, int _sampleCount)
     sampleRate = _sampleRate;
     numSamples = _sampleCount;
     out = new CPX[numSamples];
-    workingBuf = new CPXBuf(numSamples);
+	workingBuf = CPX::memalign(numSamples);
 
     morseCode.init();
     resetDotDashBuf();
@@ -190,7 +190,7 @@ void Morse::SetSampleRate(int _sampleRate, int _sampleCount)
 
 Morse::~Morse()
 {
-    if (workingBuf != NULL) delete workingBuf;
+	if (workingBuf != NULL) free (workingBuf);
 
     if (hilbert) delete hilbert;
     if (cw_FIR_filter) delete cw_FIR_filter;
@@ -587,7 +587,7 @@ CPX * Morse::ProcessBlock(CPX *in)
     syncFilterWithWpm();
 
     //Downconverter first mixes in place, ie changes in!  So we have to work with a copy
-    CPX::copyCPX(workingBuf->Ptr(),in,numSamples);
+	CPX::copyCPX(workingBuf,in,numSamples);
 
     //We need to account for modemOffset in ReceiverWidget added so we hear tone but freq display is correct
     //Actual freq for CWU will be freq + modemFrequency for CWL will be freq -modemFrequency.
@@ -601,7 +601,7 @@ CPX * Morse::ProcessBlock(CPX *in)
         modemDownConvert.SetFrequency(0);
 
     //!!Bug - SampleRate 44100 (wav file) to 8000 should reduce sample size by 5.5, but is still 2048
-    int numModemSamples = modemDownConvert.ProcessData(numSamples, workingBuf->Ptr(), this->out);
+	int numModemSamples = modemDownConvert.ProcessData(numSamples, workingBuf, this->out);
     //Now at lower modem rate with bandwidth set by modemDownConvert in constructor
     //Verify that testbench post banpass signal looks the same, just at modemSampleRate
     //global->testBench->DisplayData(numModemSamples,this->out, modemSampleRate, PROFILE_5);

@@ -215,7 +215,7 @@ void ExampleSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 				//Process data in filled buffer and convert to Pebble format in consumerBuffer
 
 				//perform.StartPerformance("ProcessIQ");
-				ProcessIQData(consumerBuffer->Ptr(),framesPerBuffer);
+				ProcessIQData(consumerBuffer,framesPerBuffer);
 				//perform.StopPerformance(1000);
 				//We don't release a free buffer until ProcessIQData returns because that would also allow inBuffer to be reused
 				producerConsumer.ReleaseFreeBuffer();

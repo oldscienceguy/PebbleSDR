@@ -37,7 +37,7 @@ private:
 	void consumerWorker(cbProducerConsumerEvents _event);
 
 	//Work buffer for consumer to convert device format data to CPX Pebble format data
-	CPXBuf *consumerBuffer;
+	CPX *consumerBuffer;
 	quint16 producerIndex;
 	CPX *producerFreeBufPtr; //Treat as array of CPX
 
