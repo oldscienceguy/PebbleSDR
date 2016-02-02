@@ -1283,7 +1283,7 @@ void SpectrumWidget::newFftData()
 					topPanelFftMap );
 			} else {
 				signalSpectrum->MapFFTZoomedToScreen(
-					topPanelPlotArea.height(),
+					255,
 					topPanelPlotArea.width(),
 					//These are same as testbench
 					plotMaxDb,      //FFT dB level  corresponding to output value == MaxHeight
