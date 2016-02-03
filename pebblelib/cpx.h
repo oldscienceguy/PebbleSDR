@@ -5,6 +5,7 @@
 #include <string.h>
 #define _USE_MATH_DEFINES
 #include "math.h"
+
 //Moved from defs.h
 //Very small number that is used in place of zero in cases where we want to avoid divide by zero error
 #define ALMOSTZERO 1e-200
@@ -248,6 +249,28 @@ public:
 	{return CPX(re * cos(im), re * sin(im));}
 
 };
+
+//Tells Qt it can use memmove on this type instead of repeated copy constructors
+Q_DECLARE_TYPEINFO(CPX, Q_MOVABLE_TYPE);
+
+#if 0
+//Specializations of QT container classes
+//Problem with QVector is that we can't replace its allocator with a 16byte aligned one
+//See std::vector for alternative
+//Could add additional methods if useful
+class CPXVector : public QVector<CPX>
+{
+public:
+	CPXVector(int _size) : QVector(_size) {}
+};
+#endif
+#if 0
+//QCircularBuffer could not be resolved in QT5.5. #include <Qt3D> not found even with Qt+=3dcore
+class CPXCircularBuffer : public QCircularBuffer<CPX>
+{
+	CPXCircularBuffer(int _size) : QCircularBuffer(_size) {}
+};
+#endif
 
 #if 0
 //Never used as intended and deprecated, use CPX:: static methods for array operations instead
