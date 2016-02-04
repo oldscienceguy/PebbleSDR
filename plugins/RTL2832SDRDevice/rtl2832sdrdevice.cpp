@@ -299,7 +299,8 @@ void RTL2832SDRDevice::TCPSocketNewData()
         readBufferIndex %= readBufferSize;
         if (readBufferIndex == 0) {
 			for (int i=0, j=0; i<framesPerBuffer; i++, j+=2) {
-				normalizeIQ(&producerFreeBufPtr[i],inBuffer[j], inBuffer[j+1]);
+				//IQ normally reversed
+				normalizeIQ(&producerFreeBufPtr[i], inBuffer[j+1], inBuffer[j]);
 			}
             producerConsumer.ReleaseFilledBuffer();
             producerFreeBufPtr = NULL; //Trigger new Acquire next loop
@@ -542,7 +543,6 @@ void RTL2832SDRDevice::ReadSettings()
 	sampleRate = 2048000;
 	startupDemodMode = dmFMN;
 	normalizeIQGain = 1/128.0;
-	iqOrder = QI;
 	DeviceInterfaceBase::ReadSettings();
 
     //Valid gain values (in tenths of a dB) for the E4000 tuner:
@@ -1078,7 +1078,8 @@ void RTL2832SDRDevice::producerWorker(cbProducerConsumerEvents _event)
 
 				for (int i=0, j=0; i<framesPerBuffer; i++, j+=2) {
 					//rtl data is 0-255, we need to normalize to -1 to +1
-					normalizeIQ(&producerFreeBufPtr[i],inBuffer[j], inBuffer[j+1]);
+					//I/Q are normally reversed
+					normalizeIQ(&producerFreeBufPtr[i],inBuffer[j+1],inBuffer[j]);
 				}
                 producerConsumer.ReleaseFilledBuffer();
 			} //End while(running)
