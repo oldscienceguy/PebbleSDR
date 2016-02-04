@@ -1,11 +1,11 @@
 #pragma once
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-#include "signalprocessing.h"
+#include "processstep.h"
 #include "delayline.h"
 
 class AGC :
-	public SignalProcessing
+	public ProcessStep
 {
 public:
     //Keep in sync with order of selection box in receiverWidget

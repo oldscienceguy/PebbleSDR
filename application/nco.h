@@ -1,7 +1,7 @@
 #pragma once
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-#include "signalprocessing.h"
+#include "processstep.h"
 #include <QMutex>
 /*
 Numerically Controlled Oscillator
@@ -14,7 +14,7 @@ sin(a+b) = sin(a) * cos(b) + cos(a) * sin(b)
 cos(a+b) = cos(a) * cos(b) - sin(a) * sin(b)
 http://en.wikipedia.org/wiki/List_of_trigonometric_identities
 */
-class NCO : public SignalProcessing
+class NCO : public ProcessStep
 {
 public:
 	NCO(int sr, int ns);

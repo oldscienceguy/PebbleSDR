@@ -1,12 +1,12 @@
 #pragma once
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-#include "signalprocessing.h"
+#include "processstep.h"
 
 #define SPECDBMOFFSET 100.50
 
 class SignalStrength :
-	public SignalProcessing
+	public ProcessStep
 {
 public:
 	SignalStrength(int sr, int ns);

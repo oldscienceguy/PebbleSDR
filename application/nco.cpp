@@ -3,7 +3,7 @@
 #include "nco.h"
 
 NCO::NCO(int sr, int ns) :
-	SignalProcessing(sr,ns)
+	ProcessStep(sr,ns)
 {
 }
 

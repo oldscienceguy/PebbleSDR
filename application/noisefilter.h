@@ -1,11 +1,11 @@
 #pragma once
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-#include "signalprocessing.h"
+#include "processstep.h"
 #include "delayline.h"
 
 class NoiseFilter :
-	public SignalProcessing
+	public ProcessStep
 {
 public:
 	NoiseFilter(int sampleRate, int nSamples);

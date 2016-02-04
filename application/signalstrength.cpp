@@ -3,7 +3,7 @@
 #include "signalstrength.h"
 
 SignalStrength::SignalStrength(int sr, int ns):
-	SignalProcessing(sr,ns)
+	ProcessStep(sr,ns)
 {
 	instValue = DB::minDb;
 	avgValue = DB::minDb;

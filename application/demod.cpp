@@ -41,14 +41,14 @@ const Demod::DemodInfo Demod::demodInfo[] = {
 
 //New constructor as we move demods to sub classes
 Demod::Demod(int _inputRate, int _numSamples) :
-    SignalProcessing(_inputRate,_numSamples)
+    ProcessStep(_inputRate,_numSamples)
 {
 
 }
 
 //Two input rates, one normal and one for wfm
 Demod::Demod(int _inputRate, int _inputWfmRate, int ns) :
-    SignalProcessing(_inputRate,ns)
+    ProcessStep(_inputRate,ns)
 {   
     inputSampleRate = _inputRate;
     inputWfmSampleRate = _inputWfmRate;

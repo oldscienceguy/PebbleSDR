@@ -3,7 +3,7 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 
-#include "signalprocessing.h"
+#include "processstep.h"
 #include "delayline.h"
 #include "QtGlobal"
 #include "cpx.h"

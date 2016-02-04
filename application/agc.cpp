@@ -15,7 +15,7 @@ Max Gain: 31622.8 (linear, not db)
 Min Gain: 0.00001
 Initial Gain: 1
 */
-AGC::AGC(int r, int n):SignalProcessing(r,n)
+AGC::AGC(int r, int n):ProcessStep(r,n)
 {
 	agcDelay = NULL;
 

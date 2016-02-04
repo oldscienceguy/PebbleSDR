@@ -1,7 +1,7 @@
 #pragma once
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-#include "signalprocessing.h"
+#include "processstep.h"
 #include "demod.h"
 #include <QMutex>
 #include "settings.h"
@@ -10,7 +10,7 @@
 #include "windowfunction.h"
 
 class SignalSpectrum :
-	public SignalProcessing
+	public ProcessStep
 {
     Q_OBJECT
 

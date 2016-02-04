@@ -2,7 +2,7 @@
 #include "gpl.h"
 #include "noiseblanker.h"
 
-NoiseBlanker::NoiseBlanker(int r, int n):SignalProcessing(r,n)
+NoiseBlanker::NoiseBlanker(int r, int n):ProcessStep(r,n)
 {
 	nbEnabled = false;
 	nb2Enabled = false;

@@ -2,7 +2,7 @@
 #include "gpl.h"
 #include "mixer.h"
 
-Mixer::Mixer(int sr, int ns):SignalProcessing(sr,ns)
+Mixer::Mixer(int sr, int ns):ProcessStep(sr,ns)
 {
 	//Test
 	nco = new NCO(sr,ns);

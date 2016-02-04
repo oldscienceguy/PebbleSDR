@@ -250,7 +250,7 @@ HEADERS += \
     smeterwidget.h \
 	signalstrength.h \
 	signalspectrum.h \
-	signalprocessing.h \
+        processstep.h \
 	settings.h \
 	receiverwidget.h \
 	receiver.h \
@@ -285,7 +285,7 @@ SOURCES += \
     smeterwidget.cpp \
 	signalstrength.cpp \
 	signalspectrum.cpp \
-	signalprocessing.cpp \
+        processstep.cpp \
 	settings.cpp \
 	receiverwidget.cpp \
 	receiver.cpp \

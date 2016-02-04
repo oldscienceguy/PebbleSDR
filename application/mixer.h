@@ -6,7 +6,7 @@ Simple DSP Mixer
 */
 #include "nco.h"
 
-class Mixer:public SignalProcessing
+class Mixer:public ProcessStep
 {
 public:
 	Mixer(int sampleRate, int nSamples);

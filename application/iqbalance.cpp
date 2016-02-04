@@ -6,7 +6,7 @@
 //Look at ghpsdr3 correctiq
 #include "medianfilter.h"
 
-IQBalance::IQBalance(int sr, int fc):SignalProcessing(sr, fc)
+IQBalance::IQBalance(int sr, int fc):ProcessStep(sr, fc)
 {
 	//Default no gain, no phase
 	gainFactor=1;

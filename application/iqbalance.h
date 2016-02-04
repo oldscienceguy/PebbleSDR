@@ -3,9 +3,9 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 
-#include "signalprocessing.h"
+#include "processstep.h"
 
-class IQBalance : public SignalProcessing
+class IQBalance : public ProcessStep
 {
 public:
 	IQBalance(int sr, int fc);

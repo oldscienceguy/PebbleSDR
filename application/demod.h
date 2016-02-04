@@ -4,7 +4,7 @@
 #include "global.h"
 
 #include "QObject"
-#include "signalprocessing.h"
+#include "processstep.h"
 #include <iostream>
 #include <QString>
 #include "fir.h"
@@ -18,7 +18,7 @@ class Demod_SAM;
 class Demod_WFM;
 class Demod_NFM;
 
-class Demod : public SignalProcessing
+class Demod : public ProcessStep
 {
     //Note:  If moc complier is not called, delete Makefile so it can be regenerated
     Q_OBJECT

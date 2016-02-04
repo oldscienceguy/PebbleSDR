@@ -3,7 +3,7 @@
 #include "noisefilter.h"
 
 NoiseFilter::NoiseFilter(int sr, int ns):
-	SignalProcessing(sr,ns)
+	ProcessStep(sr,ns)
 {
 
 	anfDelaySize = 512; //dttsp 512, SDRMax 1024
