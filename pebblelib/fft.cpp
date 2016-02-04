@@ -194,15 +194,23 @@ void FFT::ResetFFT()
 void FFT::unfoldInOrder(CPX *inBuf, CPX *outBuf, bool bitReversed)
 {
 	CPX tmp;
+	int fftMid = fftSize/2;
 	//Not sure if we reverse before or after unfolding or if it makes a difference
 	if (bitReversed) {
-		for (int i=0, j=fftSize-1; i<fftSize/2; i++, j--) {
+		for (int i=0, j=fftSize-1; i<fftMid; i++, j--) {
 			tmp = inBuf[i];
 			inBuf[i] = inBuf[j];
 			inBuf[j] = tmp;
 		}
 	}
 
+#if 1
+	//For fftSize 2048, fftMid=1024
+	// move in[0] to in[1023] to out[1024] to out[2047]
+	// move in[1024] to in[2047] to out[0] to out[1023]
+	CPX::copyCPX(&outBuf[fftMid], &inBuf[0], fftMid);
+	CPX::copyCPX(&outBuf[0], &inBuf[fftMid], fftMid);
+#else
 	// FFT output index 0 to N/2-1 - frequency output 0 to +Fs/2 Hz  ( 0 Hz DC term, positive frequencies )
 	// This puts 0 to size/2 into size/2 to size-1 position
 	for( int unfolded = 0, folded = fftSize/2 ; folded < fftSize; unfolded++, folded++) {
@@ -214,6 +222,7 @@ void FFT::unfoldInOrder(CPX *inBuf, CPX *outBuf, bool bitReversed)
 	for( int unfolded = fftSize/2, folded = 0; unfolded < fftSize; unfolded++, folded++) {
 		outBuf[unfolded] = inBuf[folded]; //0 to 1023 folded -> 1024 to 2047 unfolded
 	}
+#endif
 }
 
 //!!Compare with cuteSDR logic, replace if necessary
