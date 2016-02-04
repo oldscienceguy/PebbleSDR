@@ -277,7 +277,8 @@ HEADERS += \
     demod/demod_sam.h \
     demod/demod_nfm.h \
     plugins.h \
-    sdroptions.h
+    sdroptions.h \
+    dcremoval.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -308,7 +309,8 @@ SOURCES += \
     demod/demod_sam.cpp \
     demod/demod_nfm.cpp \
     plugins.cpp \
-    sdroptions.cpp
+    sdroptions.cpp \
+    dcremoval.cpp
 
 FORMS += \
     spectrumwidget.ui \
