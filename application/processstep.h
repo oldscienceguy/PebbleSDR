@@ -13,13 +13,13 @@
 ANF algorithm from SuperMax, DTTSP, Doug Smith book, Andy Talbot book, etc
 */
 
-class SignalProcessing : public QObject
+class ProcessStep : public QObject
 {
     Q_OBJECT
 
 public:
-	SignalProcessing(int sr, int fc);
-	~SignalProcessing(void);
+	ProcessStep(int sr, int fc);
+	~ProcessStep(void);
 
 	int SampleRate() {return sampleRate;}
 	int NumSamples() {return numSamples;}

@@ -1,9 +1,9 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-#include "signalprocessing.h"
+#include "processstep.h"
 #include "string.h"
 
-SignalProcessing::SignalProcessing(int sr, int ns)
+ProcessStep::ProcessStep(int sr, int ns)
 {
 	sampleRate = sr;
 	numSamples = ns;
@@ -11,7 +11,7 @@ SignalProcessing::SignalProcessing(int sr, int ns)
 	out = CPX::memalign(numSamples);
 }
 
-SignalProcessing::~SignalProcessing(void)
+ProcessStep::~ProcessStep(void)
 {
 	if (out != NULL)
 		free(out);
