@@ -31,6 +31,7 @@ private slots:
 	void CloseOptions(bool b);
 	void ConverterModeChanged(bool b);
 	void ConverterOffsetChanged();
+	void dcRemovalChanged(bool b);
 
 signals:
 	void Restart();

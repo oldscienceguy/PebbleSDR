@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>514</width>
-    <height>309</height>
+    <height>319</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -560,8 +560,8 @@
      <widget class="QSlider" name="iqBalanceGain">
       <property name="geometry">
        <rect>
-        <x>110</x>
-        <y>4</y>
+        <x>178</x>
+        <y>3</y>
         <width>160</width>
         <height>16</height>
        </rect>
@@ -584,8 +584,8 @@
      <widget class="QCheckBox" name="iqEnableBalance">
       <property name="geometry">
        <rect>
-        <x>3</x>
-        <y>2</y>
+        <x>85</x>
+        <y>0</y>
         <width>83</width>
         <height>17</height>
        </rect>
@@ -620,8 +620,8 @@
      <widget class="QLabel" name="iqBalancePhaseLabel">
       <property name="geometry">
        <rect>
-        <x>390</x>
-        <y>20</y>
+        <x>403</x>
+        <y>21</y>
         <width>49</width>
         <height>16</height>
        </rect>
@@ -638,8 +638,8 @@
      <widget class="QLabel" name="iqBalanceGainLabel">
       <property name="geometry">
        <rect>
-        <x>170</x>
-        <y>20</y>
+        <x>239</x>
+        <y>22</y>
         <width>50</width>
         <height>16</height>
        </rect>
@@ -656,7 +656,7 @@
      <widget class="QSlider" name="iqBalancePhase">
       <property name="geometry">
        <rect>
-        <x>330</x>
+        <x>346</x>
         <y>4</y>
         <width>160</width>
         <height>16</height>
@@ -673,6 +673,24 @@
       </property>
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="dcRemoval">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>85</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>10</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>DC Removal</string>
       </property>
      </widget>
     </widget>

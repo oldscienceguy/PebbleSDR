@@ -5,12 +5,13 @@
 #include "global.h"
 #include "cpx.h"
 #include "iir.h"
+#include "processstep.h"
 
-class DCRemoval
+class DCRemoval : public ProcessStep
 {
 public:
-	DCRemoval(quint32 _sampleRate);
-	void Process(CPX *in, CPX *out, quint32 _numSamples);
+	DCRemoval(quint32 _sampleRate, quint32 _frameCount);
+	void process(CPX *in, CPX *out, quint32 _numSamples);
 
 private:
 	CIir dcHpFilter;

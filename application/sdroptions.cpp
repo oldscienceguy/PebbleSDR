@@ -90,6 +90,9 @@ void SdrOptions::ShowSdrOptions(DeviceInterface *_di, bool b)
 		connect(sd->iqEnableBalance,SIGNAL(toggled(bool)),this,SLOT(BalanceEnabledChanged(bool)));
 		connect(sd->iqBalanceReset,SIGNAL(clicked()),this,SLOT(BalanceReset()));
 
+		//Todo: Read and Write to settings file
+		connect (sd->dcRemoval, SIGNAL(clicked(bool)),this,SLOT(dcRemovalChanged(bool)));
+
 		connect(sd->sampleRateBox,SIGNAL(currentIndexChanged(int)),this,SLOT(SampleRateChanged(int)));
 
 		connect(sd->closeButton,SIGNAL(clicked(bool)),this,SLOT(CloseOptions(bool)));
@@ -230,6 +233,11 @@ void SdrOptions::ConverterOffsetChanged()
 {
 	di->Set(DeviceInterface::DeviceConverterOffset, sd->converterOffset->text().toDouble());
 	di->Command(DeviceInterface::CmdWriteSettings,0);
+}
+
+void SdrOptions::dcRemovalChanged(bool b)
+{
+	global->receiver->dcRemoval->enableStep(b);
 }
 
 void SdrOptions::DeviceSelectionChanged(int i) {

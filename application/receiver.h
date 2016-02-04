@@ -15,7 +15,7 @@
 #include "receiverwidget.h"
 #include "settings.h"
 #include "presets.h"
-#include "signalprocessing.h"
+#include "processstep.h"
 #include "noiseblanker.h"
 #include "noisefilter.h"
 #include "signalstrength.h"
@@ -28,6 +28,7 @@
 #include "wavfile.h"
 #include "sdroptions.h"
 #include "fft.h"
+#include "dcremoval.h"
 
 #include "plugins.h"
 #include <QMenuBar>
@@ -36,6 +37,7 @@
 class Receiver:public QObject
 {
 	Q_OBJECT
+	friend class SdrOptions; //Avoid lots of needless access methods for now
 
 public:
 	Receiver(ReceiverWidget *rw, QMainWindow *main);
@@ -178,5 +180,6 @@ private:
 
 	bool converterMode;
 	double converterOffset;
+	DCRemoval *dcRemoval;
 
 };

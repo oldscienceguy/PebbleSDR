@@ -17,3 +17,8 @@ ProcessStep::~ProcessStep(void)
 		free(out);
 }
 
+void ProcessStep::enableStep(bool _enableStep)
+{
+	enabled = _enableStep;
+}
+

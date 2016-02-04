@@ -1,12 +1,18 @@
 #include "dcremoval.h"
 
-DCRemoval::DCRemoval(quint32 _sampleRate)
+DCRemoval::DCRemoval(quint32 _sampleRate, quint32 _frameCount) : ProcessStep(_sampleRate, _frameCount)
 {
+	//Not sure what effect Q has on DC filter
 	double Q = 0.7071;
-	dcHpFilter.InitHP(10, 1.0, _sampleRate);
+	//Filter out 10hz and lower
+	dcHpFilter.InitHP(10, Q, _sampleRate);
 }
 
-void DCRemoval::Process(CPX* in, CPX *out, quint32 _numSamples) {
+void DCRemoval::process(CPX* in, CPX *out, quint32 _numSamples) {
+	if (!enabled) {
+		CPX::copyCPX(out, in, _numSamples);
+		return;
+	}
 #if 1
 	dcHpFilter.ProcessFilter(_numSamples,in, out);
 #else

@@ -21,8 +21,10 @@ public:
 	ProcessStep(int sr, int fc);
 	~ProcessStep(void);
 
-	int SampleRate() {return sampleRate;}
-	int NumSamples() {return numSamples;}
+	//int sampleRate() {return sampleRate;}
+	//int numSamples() {return numSamples;}
+	void enableStep(bool _enableStep);
+	bool isEnabled(){return enabled;}
 
 
 protected:
@@ -33,6 +35,9 @@ protected:
 	//So mixer has it's own output buffer, noise blanker has its own, etc.
 	//This is not absolutely necessary, but makes it easier to test, debug, and add new blocks
 	CPX *out;
+
+	//Every step can be enabled/disabled
+	bool enabled;
 
 
 };

@@ -3,7 +3,7 @@
 #include "global.h"
 #include "receiver.h"
 #include "qmessagebox.h"
-#include "signalprocessing.h"
+#include "processstep.h"
 #include "testbench.h"
 #include "db.h"
 
@@ -134,6 +134,8 @@ bool Receiver::On()
 	iqBalance->setEnabled(sdr->Get(DeviceInterface::IQBalanceEnabled).toBool());
 	iqBalance->setGainFactor(sdr->Get(DeviceInterface::IQBalanceGain).toDouble());
 	iqBalance->setPhaseFactor(sdr->Get(DeviceInterface::IQBalancePhase).toDouble());
+
+	dcRemoval = new DCRemoval(sampleRate, framesPerBuffer);
 
     /*
      * Decimation strategy
@@ -697,6 +699,11 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 {
 	if (sdr == NULL || !powerOn)
 		return;
+
+	if (dcRemoval->isEnabled()) {
+		dcRemoval->process(in, workingBuf, numSamples);
+		in = workingBuf;
+	}
 
 	//Number of samples in the buffer before each step
 	//Will change with decimation and resampling
