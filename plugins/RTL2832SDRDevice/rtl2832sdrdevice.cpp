@@ -549,10 +549,10 @@ void RTL2832SDRDevice::ReadSettings()
     //-10, 15, 40, 65, 90, 115, 140, 165, 190,
     //215, 240, 290, 340, 420, 430, 450, 470, 490
     //0 for automatic gain
-	rtlTunerGain = qSettings->value("RtlGain",15).toInt();
+	rtlTunerGain = qSettings->value("RtlGain",250).toInt();
 	rtlServerIP = QHostAddress(qSettings->value("IPAddr","127.0.0.1").toString());
 	rtlServerPort = qSettings->value("Port","1234").toInt();
-	rtlTunerGainMode = qSettings->value("RtlGainMode",GAIN_MODE_AUTO).toUInt();
+	rtlTunerGainMode = qSettings->value("RtlGainMode",GAIN_MODE_MANUAL).toUInt();
 	rtlFreqencyCorrection = qSettings->value("RtlFrequencyCorrection",0).toInt();
 	rtlSampleMode = (SAMPLING_MODES)qSettings->value("RtlSampleMode",NORMAL).toInt();
 	rtlAgcMode = qSettings->value("RtlAgcMode",false).toBool();
