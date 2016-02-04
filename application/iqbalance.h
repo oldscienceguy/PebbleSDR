@@ -23,7 +23,6 @@ public:
 private:
 	double gainFactor;
 	double phaseFactor;
-	bool enabled;
 	bool automatic;
 	double *snrSquared;
 	//std::vector has nth element function which will give us fast median

@@ -338,7 +338,7 @@ void SdrOptions::BalanceEnabledChanged(bool b)
 	di->Command(DeviceInterface::CmdWriteSettings,0);
 	if (!global->receiver->GetPowerOn())
 		return;
-	global->receiver->GetIQBalance()->setEnabled(b);
+	global->receiver->GetIQBalance()->enableStep(b);
 }
 
 void SdrOptions::BalanceReset()

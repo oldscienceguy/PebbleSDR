@@ -11,7 +11,6 @@ IQBalance::IQBalance(quint32 _sampleRate, quint32 _bufferSize):ProcessStep(_samp
 	//Default no gain, no phase
 	gainFactor=1;
 	phaseFactor= 0;
-	enabled = false;
 	medianBuf.reserve(_bufferSize);  //To avoid constant resizing on push()
 	medianBuf.assign(_bufferSize,0.0); //Initialize
 	snrSquared = new double[_bufferSize];
@@ -28,10 +27,8 @@ IQBalance::~IQBalance()
 
 double IQBalance::getGainFactor() {return gainFactor;}
 double IQBalance::getPhaseFactor() {return phaseFactor;}
-bool IQBalance::getEnabled() {return enabled;}
 void IQBalance::setGainFactor(double g) {gainFactor=g;}
 void IQBalance::setPhaseFactor(double f) {phaseFactor=f;}
-void IQBalance::setEnabled(bool b) {enabled = b;}
 void IQBalance::setAutomatic(bool b) {automatic = b;}
 
 //Correct IM relative to RE using phase and gain factors to reduce images

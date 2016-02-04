@@ -131,7 +131,7 @@ bool Receiver::On()
 	//Todo: Don't need Mixer anymore
     mixer = new Mixer(sampleRate, framesPerBuffer);
     iqBalance = new IQBalance(sampleRate,framesPerBuffer);
-	iqBalance->setEnabled(sdr->Get(DeviceInterface::IQBalanceEnabled).toBool());
+	iqBalance->enableStep(sdr->Get(DeviceInterface::IQBalanceEnabled).toBool());
 	iqBalance->setGainFactor(sdr->Get(DeviceInterface::IQBalanceGain).toDouble());
 	iqBalance->setPhaseFactor(sdr->Get(DeviceInterface::IQBalancePhase).toDouble());
 
