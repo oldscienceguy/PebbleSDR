@@ -4,7 +4,7 @@
 /MacDebug/
 /MacRelease/
 
-/fftw-3.3.3/.libs/
+/fftw-3.3.4/
 /portaudio/bin/.libs/
 /portaudio/autom4te.cache/
 /portaudio/bindings/cpp/autom4te.cache/
