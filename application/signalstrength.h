@@ -9,7 +9,7 @@ class SignalStrength :
 	public ProcessStep
 {
 public:
-	SignalStrength(int sr, int ns);
+	SignalStrength(quint32 _sampleRate, quint32 _bufferSize);
 	~SignalStrength(void);
 	float instFValue();
 	float avgFValue();

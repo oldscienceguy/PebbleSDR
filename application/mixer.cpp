@@ -2,10 +2,10 @@
 #include "gpl.h"
 #include "mixer.h"
 
-Mixer::Mixer(int sr, int ns):ProcessStep(sr,ns)
+Mixer::Mixer(quint32 _sampleRate, quint32 _bufferSize):ProcessStep(_sampleRate,_bufferSize)
 {
 	//Test
-	nco = new NCO(sr,ns);
+	nco = new NCO(_sampleRate,_bufferSize);
 	SetFrequency(0);
 	gain = 1; //Testing shows no loss
 }

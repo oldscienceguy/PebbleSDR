@@ -10,8 +10,8 @@
 class DCRemoval : public ProcessStep
 {
 public:
-	DCRemoval(quint32 _sampleRate, quint32 _frameCount);
-	void process(CPX *in, CPX *out, quint32 _numSamples);
+	DCRemoval(quint32 _sampleRate, quint32 _bufferSize);
+	CPX *process(CPX *in, quint32 _numSamples);
 
 private:
 	CIir dcHpFilter;

@@ -2,8 +2,8 @@
 #include "gpl.h"
 #include "noisefilter.h"
 
-NoiseFilter::NoiseFilter(int sr, int ns):
-	ProcessStep(sr,ns)
+NoiseFilter::NoiseFilter(quint32 _sampleRate, quint32 _bufferSize):
+	ProcessStep(_sampleRate,_bufferSize)
 {
 
 	anfDelaySize = 512; //dttsp 512, SDRMax 1024

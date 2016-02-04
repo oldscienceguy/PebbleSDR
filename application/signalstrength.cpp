@@ -2,8 +2,8 @@
 #include "gpl.h"
 #include "signalstrength.h"
 
-SignalStrength::SignalStrength(int sr, int ns):
-	ProcessStep(sr,ns)
+SignalStrength::SignalStrength(quint32 _sampleRate, quint32 _bufferSize):
+	ProcessStep(_sampleRate,_bufferSize)
 {
 	instValue = DB::minDb;
 	avgValue = DB::minDb;

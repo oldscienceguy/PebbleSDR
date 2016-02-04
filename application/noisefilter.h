@@ -8,7 +8,7 @@ class NoiseFilter :
 	public ProcessStep
 {
 public:
-	NoiseFilter(int sampleRate, int nSamples);
+	NoiseFilter(quint32 _sampleRate, quint32 _bufferSize);
 	~NoiseFilter(void);
     CPX * ProcessBlock(CPX *in);
 	void setAnfEnabled(bool b);

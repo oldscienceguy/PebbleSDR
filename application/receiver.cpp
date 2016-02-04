@@ -700,10 +700,7 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 	if (sdr == NULL || !powerOn)
 		return;
 
-	if (dcRemoval->isEnabled()) {
-		dcRemoval->process(in, workingBuf, numSamples);
-		in = workingBuf;
-	}
+	CPX *nextStep = in;
 
 	//Number of samples in the buffer before each step
 	//Will change with decimation and resampling
@@ -737,13 +734,11 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 	//	audio->inBufferUnderflowCount++; //Treat like in buffer underflow
 
     //Inject signals from test bench if desired
-    global->testBench->CreateGeneratorSamples(numSamples, in, sampleRate);
-    global->testBench->MixNoiseSamples(numSamples, in, sampleRate);
+	global->testBench->CreateGeneratorSamples(numSamples, nextStep, sampleRate);
+	global->testBench->MixNoiseSamples(numSamples, nextStep, sampleRate);
 
     if (isRecording)
-        recordingFile.WriteSamples(in,numSamples);
-
-	CPX *nextStep = in;
+		recordingFile.WriteSamples(nextStep,numSamples);
 
     global->testBench->DisplayData(numSamples,nextStep,sampleRate,testBenchRawIQ);
 
@@ -755,6 +750,11 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
       3. Decimate to demod steps
       4. Decimate to final audio
     */
+
+	if (dcRemoval->isEnabled()) {
+		nextStep = dcRemoval->process(nextStep, numSamples);
+	}
+
 	//Adj IQ to get 90deg phase and I==Q gain
     nextStep = iqBalance->ProcessBlock(nextStep);
 

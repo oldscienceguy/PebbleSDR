@@ -8,7 +8,7 @@
 class IQBalance : public ProcessStep
 {
 public:
-	IQBalance(int sr, int fc);
+	IQBalance(quint32 _sampleRate, quint32 _bufferSize);
 	~IQBalance();
 	CPX *ProcessBlock(CPX *in);
 

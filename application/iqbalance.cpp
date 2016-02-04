@@ -6,15 +6,15 @@
 //Look at ghpsdr3 correctiq
 #include "medianfilter.h"
 
-IQBalance::IQBalance(int sr, int fc):ProcessStep(sr, fc)
+IQBalance::IQBalance(quint32 _sampleRate, quint32 _bufferSize):ProcessStep(_sampleRate, _bufferSize)
 {
 	//Default no gain, no phase
 	gainFactor=1;
 	phaseFactor= 0;
 	enabled = false;
-	medianBuf.reserve(fc);  //To avoid constant resizing on push()
-	medianBuf.assign(fc,0.0); //Initialize
-	snrSquared = new double[fc];
+	medianBuf.reserve(_bufferSize);  //To avoid constant resizing on push()
+	medianBuf.assign(_bufferSize,0.0); //Initialize
+	snrSquared = new double[_bufferSize];
 
 	//Testing
 	//MedianFilter<qint16> mf(9);

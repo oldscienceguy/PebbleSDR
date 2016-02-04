@@ -663,7 +663,7 @@ void SpectrumWidget::SetSignalSpectrum(SignalSpectrum *s)
 	if (s!=NULL) {
         connect(signalSpectrum,SIGNAL(newFftData()),this,SLOT(newFftData()));
 
-		sampleRate = s->SampleRate();
+		sampleRate = s->getSampleRate();
 		upDownIncrement = global->settings->upDownIncrement;
 		leftRightIncrement = global->settings->leftRightIncrement;
 	}

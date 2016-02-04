@@ -2,7 +2,7 @@
 #include "gpl.h"
 #include "noiseblanker.h"
 
-NoiseBlanker::NoiseBlanker(int r, int n):ProcessStep(r,n)
+NoiseBlanker::NoiseBlanker(quint32 _sampleRate, quint32 _bufferSize):ProcessStep(_sampleRate,_bufferSize)
 {
 	nbEnabled = false;
 	nb2Enabled = false;

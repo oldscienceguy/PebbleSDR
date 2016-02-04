@@ -2,8 +2,8 @@
 #include "gpl.h"
 #include "nco.h"
 
-NCO::NCO(int sr, int ns) :
-	ProcessStep(sr,ns)
+NCO::NCO(quint32 _sampleRate, quint32 _bufferSize) :
+	ProcessStep(_sampleRate,_bufferSize)
 {
 }
 

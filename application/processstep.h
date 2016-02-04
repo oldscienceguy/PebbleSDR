@@ -18,19 +18,20 @@ class ProcessStep : public QObject
     Q_OBJECT
 
 public:
-	ProcessStep(int sr, int fc);
+	ProcessStep(quint32 _sampleRate, quint32 _bufferSize);
 	~ProcessStep(void);
 
-	//int sampleRate() {return sampleRate;}
-	//int numSamples() {return numSamples;}
+	quint32 getSampleRate() {return sampleRate;}
+	quint32 getBufferSize() {return bufferSize;}
 	void enableStep(bool _enableStep);
 	bool isEnabled(){return enabled;}
 
 
 protected:
-	int numSamples;
-	int numSamplesX2;
-	int sampleRate;
+	quint32 numSamples;
+	quint32 bufferSize;
+	quint32 numSamplesX2;
+	quint32 sampleRate;
 	//Each process block returns it's output to a module specific buffer
 	//So mixer has it's own output buffer, noise blanker has its own, etc.
 	//This is not absolutely necessary, but makes it easier to test, debug, and add new blocks

@@ -9,7 +9,7 @@ Simple DSP Mixer
 class Mixer:public ProcessStep
 {
 public:
-	Mixer(int sampleRate, int nSamples);
+	Mixer(quint32 _sampleRate, quint32 _bufferSize);
 	~Mixer(void);
         CPX * ProcessBlock(CPX *in);
 	void SetFrequency(double f);

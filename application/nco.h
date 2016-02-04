@@ -17,7 +17,7 @@ http://en.wikipedia.org/wiki/List_of_trigonometric_identities
 class NCO : public ProcessStep
 {
 public:
-	NCO(int sr, int ns);
+	NCO(quint32 _sampleRate, quint32 _bufferSize);
 	~NCO(void);
 	void SetFrequency(double f);
 	void SetStartingPhase (double p);

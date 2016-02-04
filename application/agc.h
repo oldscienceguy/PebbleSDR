@@ -11,7 +11,7 @@ public:
     //Keep in sync with order of selection box in receiverWidget
     enum AGCMODE {FAST, MED, SLOW, LONG, OFF};
 
-	AGC(int sampleRate, int nSamples);
+	AGC(quint32 _sampleRate, quint32 _bufferSize);
 	~AGC(void);
 	void setAgcMode(AGCMODE m);
     void setAgcThreshold(int g);

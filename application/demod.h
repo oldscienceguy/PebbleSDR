@@ -24,8 +24,8 @@ class Demod : public ProcessStep
     Q_OBJECT
 
 public:
-    Demod(int _inputRate, int _numSamples);
-    Demod(int _inputRate, int _inputWfmRate, int size);
+	Demod(quint32 _sampleRate, quint32 _bufferSize);
+	Demod(quint32 _sampleRate, quint32 _wfmSampleRate, quint32 _bufferSize);
 	~Demod();
 
     void SetupDataUi(QWidget *parent);

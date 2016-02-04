@@ -3,8 +3,8 @@
 #include "signalspectrum.h"
 #include "firfilter.h"
 
-SignalSpectrum::SignalSpectrum(int _sampleRate, quint32 _hiResSampleRate, int _numSamples):
-	ProcessStep(_sampleRate,_numSamples)
+SignalSpectrum::SignalSpectrum(quint32 _sampleRate, quint32 _hiResSampleRate, quint32 _bufferSize):
+	ProcessStep(_sampleRate,_bufferSize)
 {
 	//FFT bin size can be greater than sample size
 	numSpectrumBins = global->settings->numSpectrumBins;

@@ -15,7 +15,7 @@ Max Gain: 31622.8 (linear, not db)
 Min Gain: 0.00001
 Initial Gain: 1
 */
-AGC::AGC(int r, int n):ProcessStep(r,n)
+AGC::AGC(quint32 _sampleRate, quint32 _bufferSize):ProcessStep(_sampleRate,_bufferSize)
 {
 	agcDelay = NULL;
 

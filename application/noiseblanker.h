@@ -8,7 +8,7 @@ class NoiseBlanker :
 	public ProcessStep
 {
 public:
-	NoiseBlanker(int sampleRate, int nSamples);
+	NoiseBlanker(quint32 _sampleRate, quint32 _bufferSize);
 	~NoiseBlanker(void);
 	void setNbEnabled(bool b);
 	void setNb2Enabled(bool b);

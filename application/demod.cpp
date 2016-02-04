@@ -40,18 +40,18 @@ const Demod::DemodInfo Demod::demodInfo[] = {
 };
 
 //New constructor as we move demods to sub classes
-Demod::Demod(int _inputRate, int _numSamples) :
-    ProcessStep(_inputRate,_numSamples)
+Demod::Demod(quint32 _sampleRate, quint32 _bufferSize) :
+	ProcessStep(_sampleRate,_bufferSize)
 {
 
 }
 
 //Two input rates, one normal and one for wfm
-Demod::Demod(int _inputRate, int _inputWfmRate, int ns) :
-    ProcessStep(_inputRate,ns)
+Demod::Demod(quint32 _sampleRate, quint32 _wfmSampleRate, quint32 _bufferSize) :
+	ProcessStep(_sampleRate,_bufferSize)
 {   
-    inputSampleRate = _inputRate;
-    inputWfmSampleRate = _inputWfmRate;
+	inputSampleRate = _sampleRate;
+	inputWfmSampleRate = _wfmSampleRate;
 
 	SetDemodMode(DeviceInterface::dmAM, sampleRate, sampleRate);
 	

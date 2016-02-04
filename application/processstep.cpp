@@ -3,11 +3,12 @@
 #include "processstep.h"
 #include "string.h"
 
-ProcessStep::ProcessStep(int sr, int ns)
+ProcessStep::ProcessStep(quint32 _sampleRate, quint32 _bufferSize)
 {
-	sampleRate = sr;
-	numSamples = ns;
-	numSamplesX2 = ns*2; //Frequency used
+	sampleRate = _sampleRate;
+	numSamples = _bufferSize;
+	bufferSize = _bufferSize; //Will eventually replace numSamples
+	numSamplesX2 = _bufferSize*2; //Frequency used
 	out = CPX::memalign(numSamples);
 }
 

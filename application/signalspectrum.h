@@ -15,7 +15,7 @@ class SignalSpectrum :
     Q_OBJECT
 
 public:
-	SignalSpectrum(int _sampleRate, quint32 _hiResSampleRate, int _numSamples);
+	SignalSpectrum(quint32 _sampleRate, quint32 _hiResSampleRate, quint32 _bufferSize);
 	~SignalSpectrum(void);
 	void SetHiRes(bool _on) {useHiRes = _on;}
 	//Pass in soundcard buffer under/overflow counts for display

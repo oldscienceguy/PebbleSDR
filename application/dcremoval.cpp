@@ -1,6 +1,6 @@
 #include "dcremoval.h"
 
-DCRemoval::DCRemoval(quint32 _sampleRate, quint32 _frameCount) : ProcessStep(_sampleRate, _frameCount)
+DCRemoval::DCRemoval(quint32 _sampleRate, quint32 _bufferSize) : ProcessStep(_sampleRate, _bufferSize)
 {
 	//Not sure what effect Q has on DC filter
 	double Q = 0.7071;
@@ -8,13 +8,14 @@ DCRemoval::DCRemoval(quint32 _sampleRate, quint32 _frameCount) : ProcessStep(_sa
 	dcHpFilter.InitHP(10, Q, _sampleRate);
 }
 
-void DCRemoval::process(CPX* in, CPX *out, quint32 _numSamples) {
+CPX* DCRemoval::process(CPX* in, quint32 _numSamples) {
 	if (!enabled) {
 		CPX::copyCPX(out, in, _numSamples);
-		return;
+		return out;
 	}
 #if 1
 	dcHpFilter.ProcessFilter(_numSamples,in, out);
+	return out;
 #else
 	//http://sam-koblenski.blogspot.com/2015/11/everyday-dsp-for-programmers-dc-and.html
 	//Test DC removal with IIR hp filter
