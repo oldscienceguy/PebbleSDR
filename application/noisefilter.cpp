@@ -13,19 +13,10 @@ NoiseFilter::NoiseFilter(quint32 _sampleRate, quint32 _bufferSize):
 	anfLeakage = 0.00001; //dttsp 0.00001, SDRMax 0.01
     anfDelay = new DelayLine(anfDelaySize, anfDelaySamples); //64 sample delay line
     anfCoeff = new CPX[anfAdaptiveFilterSize];
-	anfEnabled = false;
 }
 
 NoiseFilter::~NoiseFilter(void)
 {
-}
-void NoiseFilter::setAnfEnabled(bool b)
-{
-	if (b)
-		//Clean out any garbage from prior filtering
-        memset(anfCoeff,0.0,sizeof(anfCoeff) * anfAdaptiveFilterSize);
-
-	anfEnabled = b;
 }
 
 //Called from main recieve chain if enabled
@@ -37,7 +28,7 @@ Algorithm references
 CPX * NoiseFilter::ProcessBlock(CPX *in)
 {
 	int size = numSamples;
-	if (!anfEnabled)
+	if (!enabled)
 	{
 		return in;
 	}

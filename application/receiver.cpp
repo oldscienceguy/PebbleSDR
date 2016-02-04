@@ -605,7 +605,7 @@ void Receiver::SetFilter(int lo, int hi)
 //Called by ReceiverWidget when UI changes ANF
 void Receiver::SetAnfEnabled(bool b)
 {
-	noiseFilter->setAnfEnabled(b);
+	noiseFilter->enableStep(b);
 }
 //Called by ReceiverWidget when UI changes NB
 void Receiver::SetNbEnabled(bool b)

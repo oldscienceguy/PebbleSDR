@@ -11,11 +11,9 @@ public:
 	NoiseFilter(quint32 _sampleRate, quint32 _bufferSize);
 	~NoiseFilter(void);
     CPX * ProcessBlock(CPX *in);
-	void setAnfEnabled(bool b);
 
 private:
 	//ANF Delay line, todo: make DelayLine class
-	bool anfEnabled;
 	int anfAdaptiveFilterSize;
     double anfAdaptationRate;
     double anfLeakage;
