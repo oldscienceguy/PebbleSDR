@@ -157,22 +157,22 @@ void CFastFIR::FreeMemory()
 {
 	if(m_pWindowTbl)
 	{
-		delete m_pWindowTbl;
+		delete [] m_pWindowTbl;
 		m_pWindowTbl = NULL;
 	}
 	if(m_pFFTOverlapBuf)
 	{
-		delete m_pFFTOverlapBuf;
+		delete [] m_pFFTOverlapBuf;
 		m_pFFTOverlapBuf = NULL;
 	}
 	if(m_pFilterCoef)
 	{
-		delete m_pFilterCoef;
+		delete [] m_pFilterCoef;
 		m_pFilterCoef = NULL;
 	}
 	if(m_pFFTBuf)
 	{
-		delete m_pFFTBuf;
+		delete [] m_pFFTBuf;
 		m_pFFTBuf = NULL;
 	}
 }
