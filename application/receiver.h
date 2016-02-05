@@ -20,7 +20,7 @@
 #include "noisefilter.h"
 #include "signalstrength.h"
 #include "signalspectrum.h"
-#include "firfilter.h"
+#include "bandpassfilter.h"
 #include "agc.h"
 #include "iqbalance.h"
 #include "fir.h"
@@ -168,7 +168,7 @@ private:
 	float gain;
 	int squelch;
 
-	FIRFilter *bpFilter; //Current BandPass filter
+	BandPassFilter *bpFilter; //Current BandPass filter
 	FIRFilter *usbFilter;
 	FIRFilter *lsbFilter;
 	FIRFilter *amFilter;

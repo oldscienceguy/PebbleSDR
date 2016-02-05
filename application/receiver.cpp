@@ -212,11 +212,8 @@ bool Receiver::On()
 
     iDigitalModem = NULL;
 
-	//Testing, time intensive for large # taps, ie @512 we lose chunks of signal
-	//Check post-bandpass spectrum and make just large enough to be effective
-	//64 is too small, 128 is good, ignored if useFFT arg == true
-	bpFilter = new FIRFilter(demodSampleRate, demodFrames,true, 128);
-	bpFilter->setEnabled(true);
+	bpFilter = new BandPassFilter(demodSampleRate, demodFrames);
+	bpFilter->enableStep(true);
 	
     agc = new AGC(demodSampleRate, demodFrames);
 
@@ -600,7 +597,7 @@ void Receiver::SetFilter(int lo, int hi)
 {
 	if (demod == NULL)
 		return;
-	bpFilter->SetBandPass(lo,hi);
+	bpFilter->setBandPass(lo,hi);
     demod->SetBandwidth(hi - lo);
 }
 //Called by ReceiverWidget when UI changes ANF
@@ -869,7 +866,7 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 
         //float pre = SignalProcessing::TotalPower(nextStep,frameCount);
 		//global->perform.StartPerformance("Band Pass Filter");
-		nextStep = bpFilter->ProcessBlock(nextStep);
+		nextStep = bpFilter->process(nextStep, numStepSamples);
 		//global->perform.StopPerformance(100);
 		//Crude AGC, too much fluctuation
 		//CPX::scaleCPX(nextStep,nextStep,pre/post,frameCount);

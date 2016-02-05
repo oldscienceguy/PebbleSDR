@@ -278,7 +278,8 @@ HEADERS += \
     demod/demod_nfm.h \
     plugins.h \
     sdroptions.h \
-    dcremoval.h
+    dcremoval.h \
+    bandpassfilter.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -310,7 +311,8 @@ SOURCES += \
     demod/demod_nfm.cpp \
     plugins.cpp \
     sdroptions.cpp \
-    dcremoval.cpp
+    dcremoval.cpp \
+    bandpassfilter.cpp
 
 FORMS += \
     spectrumwidget.ui \
