@@ -19,6 +19,12 @@ ProcessStep::~ProcessStep(void)
 		free(out);
 }
 
+CPX *ProcessStep::process(CPX *in, quint32 _numSamples)
+{
+	Q_UNUSED(_numSamples);
+	return in;
+}
+
 void ProcessStep::enableStep(bool _enableStep)
 {
 	enabled = _enableStep;

@@ -21,6 +21,8 @@ public:
 	ProcessStep(quint32 _sampleRate, quint32 _bufferSize);
 	~ProcessStep(void);
 
+	virtual CPX *process(CPX *in, quint32 _numSamples);
+
 	quint32 getSampleRate() {return sampleRate;}
 	quint32 getBufferSize() {return bufferSize;}
 	void enableStep(bool _enableStep);
