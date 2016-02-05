@@ -21,7 +21,6 @@ public:
 	//Pass in soundcard buffer under/overflow counts for display
 	void Unprocessed(CPX * in, double inUnder, double inOver, double outUnder, double outOver, int _numSamples);
 	void MakeSpectrum(FFT *fft, CPX *in, double *out, int _numSamples); //Use if we just have CPX samples
-	void MakeSpectrum(FFT *fft, double *out); //Used if we already have FFT
 
 	//Used when we already have spectrum, typically from dsp server or device
 	//Just copies spectrum into unprocessed
@@ -83,9 +82,11 @@ private:
     float dbOffset; //Used to calibrate power to db calculations
 
     int updatesPerSec; //Refresh rate per second
-    int skipFfts; //How many samples should we skip to sync with rate
-	int skipFftsHiRes; //How many samples should we skip to sync with rate
-    int skipFftsCounter; //Keep count of samples we've skipped
-	int skipFftsHiResCounter; //Keep zoomed counter separate in case we want to update more frequently
+	//Replaces old method of skipping ffts based on count with one that uses elapsed time
+	//Simpler and more flexible
+	QElapsedTimer spectrumTimer;
+	qint64 spectrumTimerUpdate; //How many ms to wait before updating spectrum
+	QElapsedTimer hiResTimer;
+	qint64 hiResTimerUpdate;
 
 };

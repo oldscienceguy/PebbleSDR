@@ -32,9 +32,10 @@ SignalSpectrum::SignalSpectrum(quint32 _sampleRate, quint32 _hiResSampleRate, qu
     //Spectrum refresh rate from 1 to 50 per second
     //Init here for now and add UI element to set, save with settings data
 	updatesPerSec = global->settings->updatesPerSecond; //Refresh rate per second
-    skipFfts = 0; //How many samples should we skip to sync with rate
-    skipFftsCounter = 0; //Keep count of samples we've skipped
-	skipFftsHiResCounter = 0; //Keep count of samples we've skipped
+	//Elapsed time in ms for use with QElapsedTimer
+	spectrumTimerUpdate = 1000 /updatesPerSec;
+	hiResTimerUpdate = 1000/ updatesPerSec;
+
     displayUpdateComplete = true;
     displayUpdateOverrun = 0;
 
@@ -59,18 +60,18 @@ void SignalSpectrum::SetSampleRate(quint32 _sampleRate, quint32 _hiResSampleRate
 	hiResSampleRate = _hiResSampleRate;
 	fftUnprocessed->FFTParams(numSpectrumBins, DB::maxDb, sampleRate, numSamples, WindowFunction::BLACKMANHARRIS);
 	fftHiRes->FFTParams(numHiResSpectrumBins, DB::maxDb, hiResSampleRate, numSamples, WindowFunction::BLACKMANHARRIS);
-    //Based on sample rates
-	SetUpdatesPerSec(global->settings->updatesPerSecond);
     emitFftCounter = 0;
-
 }
 
 void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double outUnder, double outOver, int _numSamples)
 {	
-    //Only make spectrum often enough to match spectrum update rate, otherwise we just throw it away
-	if (updatesPerSec == 0 ||  ++skipFftsCounter < skipFfts)
-        return;
-    skipFftsCounter = 0;
+	if (!spectrumTimer.isValid()) {
+		spectrumTimer.start(); //First time
+		return;
+	}
+	if (updatesPerSec == 0 ||  spectrumTimer.elapsed() < spectrumTimerUpdate)
+		return;
+	spectrumTimer.start(); //Reset
 
     if (!displayUpdateComplete) {
         //We're not keeping up with display for some reason
@@ -96,10 +97,13 @@ void SignalSpectrum::Zoomed(CPX *in, int _numSamples)
 	if (!useHiRes)
 		return; //Nothing to do
 
-    //Only make spectrum often enough to match spectrum update rate, otherwise we just throw it away
-	if (++skipFftsHiResCounter < skipFftsHiRes)
-        return;
-	skipFftsHiResCounter = 0;
+	if (!hiResTimer.isValid()) {
+		hiResTimer.start(); //First time
+		return;
+	}
+	if (updatesPerSec == 0 ||  hiResTimer.elapsed() < hiResTimerUpdate)
+		return;
+	hiResTimer.start(); //Reset
 
 	MakeSpectrum(fftHiRes, in, hiResSpectrum, _numSamples);
 	//Updated HiRes fft data won't be available to SpectrumWidget untill Unprocessed() is called in next loop
@@ -114,36 +118,6 @@ void SignalSpectrum::MakeSpectrum(FFT *fft, CPX *in, double *sOut, int _numSampl
     //out now has the spectrum in db, -f..0..+f
 }
 
-//Obsolete and needs work if we use in future
-void SignalSpectrum::MakeSpectrum(FFT *fft, double *sOut)
-{
-    //Only make spectrum often enough to match spectrum update rate, otherwise we just throw it away
-	if (updatesPerSec != 0 ||  ++skipFftsCounter >= skipFfts) {
-        skipFftsCounter = 0;
-
-        if (displayUpdateComplete) {
-			CPX::clearCPX(tmp_cpx, numSpectrumBins);
-
-			if (numSpectrumBins < fft->getFFTSize()) {
-                //Decimate to fit spectrum binCount
-				int decimate = fft->getFFTSize() / numSpectrumBins;
-				for (int i=0; i<numSpectrumBins; i++)
-                    tmp_cpx[i] = fft->getFreqDomain()[i*decimate];
-            } else {
-				CPX::copyCPX(tmp_cpx,fft->getFreqDomain(),numSpectrumBins);
-            }
-
-			fft->FreqDomainToMagnitude(tmp_cpx, 0, dbOffset, sOut);
-            displayUpdateComplete = false;
-            emit newFftData();
-        } else {
-            //We're not able to keep up with selected display rate, display is taking longer than refresh rate
-            //We could auto-adjust display rate when we get here
-            displayUpdateOverrun++;
-        }
-	}
-}
-
 void SignalSpectrum::SetSpectrum(double *in)
 {
 	for (int i=0; i< numSpectrumBins ;i++) {
@@ -153,27 +127,14 @@ void SignalSpectrum::SetSpectrum(double *in)
 	emit newFftData();
 }
 
-//UpdatesPerSecond 1(min) to 50(max)
 void SignalSpectrum::SetUpdatesPerSec(int updatespersec)
 {
-    // updateInterval = 1 / UpdatesPerSecond = updateInterval
-    // updateInterval = 1 / 1 = 1 update ever 1.000 sec
-    // updateInterval = 1 / 10 = 1 update every 0.100sec (100 ms)
-    // updateInterval = 1/ 50 = 1 update every 0.020 sec (20ms)
-    // So we only need to proccess 1 FFT Spectrum block every updateInterval seconds
-    // If we're sampling at 192,000 sps and each Spectrum fft is 4096 (fftSize)
-    // then there are 192000/4096 or 46.875 possible FFTs every second
-    // fftsToSkip = FFTs per second * updateInterval
-    // fftsToSkip = (192000 / 4096) * 1.000 sec = 46.875 = skip 46 and process every 47th
-    // fftsToSkip = (192000 / 4096) * 0.100 sec = 4.6875 = skip 4 and process every 5th FFT
-    // fftsToSkip = (192000 / 4096) * 0.020 sec = 0.920 = skip 0 and process every FFT
     updatesPerSec = updatespersec;
 	global->settings->updatesPerSecond = updatesPerSec;
-	skipFfts = skipFftsCounter = 0;
-	skipFftsHiRes = skipFftsHiResCounter = 0;
 	if (updatesPerSec > 0) {
-		skipFfts = sampleRate / (numSamples * updatesPerSec);
-		skipFftsHiRes = hiResSampleRate / (numSamples * updatesPerSec);
+		//Elapsed time in ms for use with QElapsedTimer
+		spectrumTimerUpdate = 1000 /updatesPerSec;
+		hiResTimerUpdate = 1000/ updatesPerSec;
 	}
 }
 
