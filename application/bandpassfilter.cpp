@@ -12,38 +12,42 @@ BandPassFilter::BandPassFilter(quint32 _sampleRate, quint32 _bufferSize):
 		//bpFilter = new FIRFilter(demodSampleRate, demodFrames,true, 128);
 		bpFilter1 = new FIRFilter(_sampleRate, _bufferSize,true, 128);
 		bpFilter1->setEnabled(true);
+		bpFilter2 = NULL;
 	} else {
 		bpFilter2 = new CFastFIR();
+		bpFilter1 = NULL;
 	}
 
 }
 
 BandPassFilter::~BandPassFilter()
 {
-	if (!useFastFIR) {
+	if (bpFilter1 != NULL)
 		delete bpFilter1;
-	} else {
+
+	if (bpFilter2 != NULL)
 		delete bpFilter2;
-	}
 }
 
 void BandPassFilter::setBandPass(float _low, float _high)
 {
-	if (!useFastFIR) {
+	if (bpFilter1 != NULL) {
 		bpFilter1->SetBandPass(_low, _high);
-	} else {
+	} else if (bpFilter2 != NULL) {
 		bpFilter2->SetupParameters(_low, _high, 0, sampleRate);
 	}
 }
 
 CPX *BandPassFilter::process(CPX *in, quint32 _numSamples)
 {
-	if (!useFastFIR) {
+	if (bpFilter1 != NULL) {
 		return bpFilter1->ProcessBlock(in);
-	} else {
+	}
+	if (bpFilter2 != NULL) {
 		int postNumSamples;
 		postNumSamples = bpFilter2->ProcessData(_numSamples,in, out);
 		return out;
 	}
+	return in;
 
 }
