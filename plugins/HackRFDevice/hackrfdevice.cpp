@@ -7,7 +7,9 @@ HackRFDevice::HackRFDevice():DeviceInterfaceBase()
 	optionUi = NULL;
 	useSynchronousAPI = true; //Testing
 	useSignals = false;
-	sampleRateDecimate = 1; //1 or 4
+	sampleRateDecimate = 1;
+	sampleRate = 0;
+	deviceSampleRate = 0;
 }
 
 HackRFDevice::~HackRFDevice()
@@ -15,6 +17,7 @@ HackRFDevice::~HackRFDevice()
 
 }
 
+//Sample rate must be set before this is called
 bool HackRFDevice::Initialize(cbProcessIQData _callback,
 								  cbProcessBandscopeData _callbackBandscope,
 								  cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
@@ -37,7 +40,9 @@ bool HackRFDevice::Initialize(cbProcessIQData _callback,
 	producerConsumer.Initialize(std::bind(&HackRFDevice::producerWorker, this, std::placeholders::_1),
 		std::bind(&HackRFDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, readBufferSize);
 	//Must be called after Initialize
-	producerConsumer.SetProducerInterval(sampleRate,framesPerBuffer);
+	//Producer checks at device rate
+	producerConsumer.SetProducerInterval(deviceSampleRate,framesPerBuffer);
+	//Consumer checks at decimated rate
 	producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
 
 	if (useSignals)
@@ -57,12 +62,15 @@ void HackRFDevice::ReadSettings()
 	//lowFrequency = 1000000;
 	//1mHz is spec, but rest of AM band seems ok
 	lowFrequency = 500000;
-	sampleRate = 2000000;
+	sampleRate = 8000000;
+	deviceSampleRate = sampleRate;
 	DeviceInterfaceBase::ReadSettings();
 	//Recommended defaults from hackRf wiki
 	rfGain = qSettings->value("rfGain",false).toBool();
 	lnaGain = qSettings->value("lnaGain",16).toUInt();
 	vgaGain = qSettings->value("vgaGain",16).toUInt();
+	//Make sure deviceSampleRate is set if decimation
+	setSampleRate(sampleRate);
 }
 
 void HackRFDevice::WriteSettings()
@@ -72,6 +80,23 @@ void HackRFDevice::WriteSettings()
 	qSettings->setValue("lnaGain",lnaGain);
 	qSettings->setValue("vgaGain",vgaGain);
 	qSettings->sync();
+}
+
+void HackRFDevice::setSampleRate(quint32 _sampleRate)
+{
+	sampleRate = _sampleRate;
+	if (sampleRate == 4000000) {
+		//Lower sample rates are decimated so hackRF sample rate is never less than 8m per spec
+		sampleRateDecimate = 2;
+	} else if (sampleRate == 2000000) {
+		sampleRateDecimate = 4;
+	} else if (sampleRate == 1000000) {
+		sampleRateDecimate = 8;
+	} else {
+		sampleRateDecimate = 1;
+	}
+	deviceSampleRate = sampleRate * sampleRateDecimate;
+
 }
 
 bool HackRFDevice::apiCheck(int result, const char* api)
@@ -85,7 +110,7 @@ bool HackRFDevice::apiCheck(int result, const char* api)
 
 bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _arg)
 {
-	quint32 baseband_filter_bw_hz = hackrf_compute_baseband_filter_bw(sampleRate);
+	quint32 baseband_filter_bw_hz = hackrf_compute_baseband_filter_bw(deviceSampleRate);
 
 	switch (_cmd) {
 		case CmdConnect: {
@@ -131,7 +156,7 @@ bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _ar
 			//Device specific code follows
 
 			//If sampleRateDecimate ==4, then set actual device sample rate 4x what user specifies
-			if (!apiCheck(hackrf_set_sample_rate(hackrfDevice,sampleRate * sampleRateDecimate),"set_sample_rate"))
+			if (!apiCheck(hackrf_set_sample_rate(hackrfDevice,deviceSampleRate),"set_sample_rate"))
 				return false;
 
 			//5000000 default filter bandwidth 1750000 to 28000000
@@ -248,14 +273,8 @@ QVariant HackRFDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _option
 			return DeviceInterfaceBase::IQ_DEVICE;
 		case DeviceSampleRates:
 			//Move to device options page and return empty list
-			if (sampleRateDecimate == 1)
-				//Sample rates below 8m work, but are not supported by HackRF due to limited alias filtering
-				return QStringList()<<"4000000"<<"8000000"<<"10000000"<<"12500000"<<"16000000"<<"20000000";
-				//Pebble may only support up to 2msps with current receiver chain
-				//return QStringList()<<"2000000"<<"3500000"<<"5000000"<<"8000000";
-			else
-				//Sample rates assuming decimate by 4 in producer
-				return QStringList()<<"2000000"<<"2500000"<<"3125000"<<"4000000"<<"5000000";
+			//Sample rates below 8m are decimated, keeping device sample rate at 8msps or greater
+			return QStringList()<<"1000000"<<"2000000"<<"4000000"<<"8000000"<<"10000000"<<"12500000"<<"16000000"<<"20000000";
 
 		default:
 			return DeviceInterfaceBase::Get(_key, _option);
@@ -270,6 +289,10 @@ bool HackRFDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, QVa
 			if (!apiCheck(hackrf_set_freq(hackrfDevice, _value.toDouble()),"set_freq"))
 				return false;
 			return true; //Must be handled by device
+		case DeviceSampleRate:
+			setSampleRate(_value.toInt());
+			return true;
+			break;
 		default:
 			return DeviceInterfaceBase::Set(_key, _value, _option);
 	}
@@ -346,7 +369,7 @@ bool HackRFDevice::synchronousRead(qint8 *data)
 	quint16 length = framesPerBuffer * 2 * sampleRateDecimate; //1 byte I, 1 byte Q
 	int actual_length;
 	//Set timeout to 2x what it should take to get a complete frame, based on sampleRate
-	quint16 timeout = framesPerBuffer / sampleRate * 1000; //ms per frame
+	quint16 timeout = framesPerBuffer / deviceSampleRate * 1000; //ms per frame
 	timeout *= 2;
 
 	int ret = libusb_bulk_transfer(hackrfDevice->usb_device, endpoint_address, (unsigned char*)data, length, &actual_length, timeout);

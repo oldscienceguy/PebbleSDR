@@ -89,6 +89,8 @@ private:
 	void ReadSettings();
 	void WriteSettings();
 
+	void setSampleRate(quint32 _sampleRate); //Handles decimation and deviceSampleRate
+
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
 
@@ -112,7 +114,8 @@ private:
 
 	bool useSynchronousAPI; //Testing to see if more even performance than asynchronous API
 	bool useSignals; //Testing to see if producer signals consumer is better than consumer process
-	quint16 sampleRateDecimate;
+	quint32 sampleRateDecimate;
+	quint32 deviceSampleRate;
 
 	bool synchronousStartRx();
 	int hackrf_set_transceiver_mode(hackrf_transceiver_mode value);
