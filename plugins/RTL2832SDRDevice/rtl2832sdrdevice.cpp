@@ -649,7 +649,7 @@ double RTL2832SDRDevice::GetLowLimit()
     }
 }
 
-QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
+QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _option)
 {
 	switch (_key) {
 		case PluginName:
@@ -660,7 +660,7 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 			return 2;
 			break;
 		case DeviceName:
-			switch (_option) {
+			switch (_option.toInt()) {
 				case 0:
 					return "RTL2832 USB";
 				case 1:
@@ -750,7 +750,7 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 	return QVariant();
 }
 
-bool RTL2832SDRDevice::Set(STANDARD_KEYS _key, QVariant _value, quint16 _option) {
+bool RTL2832SDRDevice::Set(STANDARD_KEYS _key, QVariant _value, QVariant _option) {
 	Q_UNUSED(_option);
 	switch (_key) {
 		case DeviceFrequency: {

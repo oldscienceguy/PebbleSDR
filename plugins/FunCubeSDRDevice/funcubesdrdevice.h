@@ -29,8 +29,8 @@ public:
 					cbProcessBandscopeData _callbackBandscope,
 					cbProcessAudioData _callbackAudio,
 					quint16 _framesPerBuffer);
-	QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
-	bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option = 0);
+	QVariant Get(STANDARD_KEYS _key, QVariant _option = 0);
+	bool Set(STANDARD_KEYS _key, QVariant _value, QVariant _option = 0);
 
 private slots:
 	void BiasTeeChanged(int s);

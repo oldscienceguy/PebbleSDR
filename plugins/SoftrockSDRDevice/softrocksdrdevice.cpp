@@ -244,7 +244,7 @@ void SoftrockSDRDevice::WriteSettings()
 
 }
 
-QVariant SoftrockSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
+QVariant SoftrockSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _option)
 {
 	switch (_key) {
 		//Used to select device
@@ -256,7 +256,7 @@ QVariant SoftrockSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _op
 			return 8;
 		//Used in titles
 		case DeviceName:
-			switch (_option)
+			switch (_option.toInt())
 			{
 				case SR_LITE: return "SR Lite - Fixed"; break;
 				case FiFi: return "FiFi"; break;
@@ -275,7 +275,7 @@ QVariant SoftrockSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _op
 	}
 }
 
-bool SoftrockSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, quint16 _option)
+bool SoftrockSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, QVariant _option)
 {
 	Q_UNUSED(_option);
 	double fRequested = _value.toDouble();

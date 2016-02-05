@@ -371,7 +371,7 @@ void RFSpaceDevice::WriteSettings()
 	qSettings->sync();
 }
 
-QVariant RFSpaceDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
+QVariant RFSpaceDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _option)
 {
 	Q_UNUSED(_option);
 
@@ -384,7 +384,7 @@ QVariant RFSpaceDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 		case PluginNumDevices:
 			return 3;
 		case DeviceName:
-			switch (_option) {
+			switch (_option.toInt()) {
 				case SDR_IQ:
 					return "SDR-IQ";
 				case SDR_IP:
@@ -437,7 +437,7 @@ QVariant RFSpaceDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 	}
 }
 
-bool RFSpaceDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, quint16 _option)
+bool RFSpaceDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, QVariant _option)
 {
 	Q_UNUSED(_option);
 

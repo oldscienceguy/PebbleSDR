@@ -32,8 +32,8 @@ public:
 	virtual bool Command(STANDARD_COMMANDS _cmd, QVariant _arg);
 
 	//Defaults so devices only have to handle what they need to
-	virtual QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
-	virtual bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option = 0);
+	virtual QVariant Get(STANDARD_KEYS _key, QVariant _option = 0);
+	virtual bool Set(STANDARD_KEYS _key, QVariant _value, QVariant _option = 0);
 
 protected:
 	//Used to be in public DeviceInterface, made private as a transition so we don't have to immediately re-write all the plugins

@@ -37,8 +37,8 @@ public:
 					cbProcessAudioData _callbackAudio,
 					quint16 _framesPerBuffer);
 	bool Command(STANDARD_COMMANDS _cmd, QVariant _arg);
-	QVariant Get(STANDARD_KEYS _key, quint16 _option = 0);
-	bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option = 0);
+	QVariant Get(STANDARD_KEYS _key, QVariant _option = 0);
+	bool Set(STANDARD_KEYS _key, QVariant _value, QVariant _option = 0);
 	void ReadSettings();
 	void WriteSettings();
 	//Display device option widget in settings dialog

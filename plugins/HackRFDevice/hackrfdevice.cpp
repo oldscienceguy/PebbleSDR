@@ -231,7 +231,7 @@ bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _ar
 	}
 }
 
-QVariant HackRFDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
+QVariant HackRFDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _option)
 {
 	Q_UNUSED(_option);
 
@@ -262,7 +262,7 @@ QVariant HackRFDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
 	}
 }
 
-bool HackRFDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, quint16 _option)
+bool HackRFDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, QVariant _option)
 {
 	Q_UNUSED(_option);
 	switch (_key) {

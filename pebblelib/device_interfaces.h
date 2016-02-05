@@ -160,8 +160,8 @@ public:
 	virtual bool Command(STANDARD_COMMANDS _cmd, QVariant _arg) = 0;
 
     //Allows us to get/set any device specific data
-	virtual QVariant Get(STANDARD_KEYS _key, quint16 _option = 0) = 0;
-	virtual bool Set(STANDARD_KEYS _key, QVariant _value, quint16 _option = 0) = 0;
+	virtual QVariant Get(STANDARD_KEYS _key, QVariant _option = 0) = 0;
+	virtual bool Set(STANDARD_KEYS _key, QVariant _value, QVariant _option = 0) = 0;
 };
 
 //How best to encode version number in interface

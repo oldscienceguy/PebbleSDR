@@ -124,7 +124,7 @@ void FunCubeSDRDevice::Stop()
 	DeviceInterfaceBase::Stop();
 }
 
-QVariant FunCubeSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
+QVariant FunCubeSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _option)
 {
 	Q_UNUSED(_option);
 
@@ -137,7 +137,7 @@ QVariant FunCubeSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 		case PluginNumDevices:
 			return 2;
 		case DeviceName:
-			switch (_option) {
+			switch (_option.toInt()) {
 				case 0: return "Funcube Pro";
 				case 1: return "Funcube Pro+";
 				default: return "Unknown";
@@ -153,7 +153,7 @@ QVariant FunCubeSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 	}
 }
 
-bool FunCubeSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, quint16 _option)
+bool FunCubeSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, QVariant _option)
 {
 	Q_UNUSED(_option);
 

@@ -178,7 +178,7 @@ void Ghpsdr3Device::WriteSettings()
 	qSettings->sync();
 }
 
-QVariant Ghpsdr3Device::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
+QVariant Ghpsdr3Device::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _option)
 {
 	Q_UNUSED(_option);
 
@@ -221,7 +221,7 @@ QVariant Ghpsdr3Device::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 	}
 }
 
-bool Ghpsdr3Device::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, quint16 _option)
+bool Ghpsdr3Device::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, QVariant _option)
 {
 	Q_UNUSED(_option);
 

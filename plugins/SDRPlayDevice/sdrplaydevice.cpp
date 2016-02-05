@@ -161,7 +161,7 @@ bool SDRPlayDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _a
 	}
 }
 
-QVariant SDRPlayDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
+QVariant SDRPlayDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _option)
 {
 	Q_UNUSED(_option);
 	QStringList sl;
@@ -186,7 +186,7 @@ QVariant SDRPlayDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 	}
 }
 
-bool SDRPlayDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, quint16 _option)
+bool SDRPlayDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, QVariant _option)
 {
 	Q_UNUSED(_option);
 	switch (_key) {

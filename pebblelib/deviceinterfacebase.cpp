@@ -143,7 +143,7 @@ bool DeviceInterfaceBase::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVari
 }
 
 
-QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, quint16 _option) {
+QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, QVariant _option) {
 	Q_UNUSED(_option);
 	switch (_key) {
 		case PluginName:
@@ -279,7 +279,7 @@ QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, quint16 _option) {
 	return QVariant();
 }
 
-bool DeviceInterfaceBase::Set(STANDARD_KEYS _key, QVariant _value, quint16 _option) {
+bool DeviceInterfaceBase::Set(STANDARD_KEYS _key, QVariant _value, QVariant _option) {
 	Q_UNUSED(_value);
 	Q_UNUSED(_option);
 	switch (_key) {

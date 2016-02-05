@@ -111,7 +111,7 @@ bool ExampleSDRDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant
 	}
 }
 
-QVariant ExampleSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
+QVariant ExampleSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _option)
 {
 	Q_UNUSED(_option);
 
@@ -131,7 +131,7 @@ QVariant ExampleSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _opt
 	}
 }
 
-bool ExampleSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, quint16 _option)
+bool ExampleSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, QVariant _option)
 {
 	Q_UNUSED(_option);
 

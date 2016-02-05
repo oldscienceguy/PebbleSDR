@@ -126,7 +126,7 @@ void FileSDRDevice::WriteSettings()
 	qSettings->setValue("RecordingPath", recordingPath);
 }
 
-QVariant FileSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
+QVariant FileSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _option)
 {
 	Q_UNUSED(_option);
 
@@ -185,7 +185,7 @@ QVariant FileSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 	}
 }
 
-bool FileSDRDevice::Set(STANDARD_KEYS _key, QVariant _value, quint16 _option)
+bool FileSDRDevice::Set(STANDARD_KEYS _key, QVariant _value, QVariant _option)
 {
 	Q_UNUSED(_option);
 

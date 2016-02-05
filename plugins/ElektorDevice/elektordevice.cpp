@@ -149,7 +149,7 @@ void ElektorDevice::WriteSettings()
 
 }
 
-QVariant ElektorDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option)
+QVariant ElektorDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _option)
 {
 	Q_UNUSED(_option);
 
@@ -174,7 +174,7 @@ QVariant ElektorDevice::Get(DeviceInterface::STANDARD_KEYS _key, quint16 _option
 	}
 }
 
-bool ElektorDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, quint16 _option)
+bool ElektorDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, QVariant _option)
 {
 	Q_UNUSED(_option);
 
