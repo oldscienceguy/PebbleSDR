@@ -111,10 +111,6 @@ private:
         testBenchPostDemod
     };
 
-
-	FFT *fft;
-	bool useFreqDomainChain;
-
 	bool mute;
 	QMutex mutex;
 	bool powerOn;
@@ -170,7 +166,6 @@ private:
     CDecimateBy2 *decimate4;
 
 	float gain;
-	double sdrGain;
 	int squelch;
 
 	FIRFilter *bpFilter; //Current BandPass filter

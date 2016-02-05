@@ -71,9 +71,6 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	sdrOptions = new SdrOptions();
 	connect(sdrOptions,SIGNAL(Restart()),this,SLOT(Restart()));
 
-	//Testing
-	useFreqDomainChain = false;
-
     //qDebug()<<plugins->GetPluginNames();
 
 	//mainMenu = main->menuBar(); //This gives us a menuBar, but only in the main window
@@ -148,10 +145,14 @@ bool Receiver::On()
 
     /*
      * Decimation strategy
-     * sampleRate = device A/D rate.  FFT for spectrum uses this rate
+	 * We try to keep decimation rates at a factor of 2 to avoid needing to resample (expensive)
+	 *
+	 * deviceSampleRate: Used internally by device for actual sample rate from hardware.
+	 *	May be decimated by device to a lower rate before being passed to receiver
+	 * receiverSampleRate: Sample rate into the receiver DSP chain  FFT for raw spectrum uses this rate
      * demodSampleRate = DSP processing rate.  This is calcualted to be close to, but greater than, the final filter bandwidth
-     *  This results in the most optimap DSP steps, since we're never processing much more than the final bandwidth needed for output
-     * audioOutputRate = This post DSP decimation (resampling?) takes us to the final audio output rate.
+	 *  This results in the most optimal DSP steps, since we're never processing much more than the final bandwidth needed for output
+	 * audioOutputRate = This post DSP decimation (resampling?) takes us to the final audio output rate.
      *  It should be just enough for the fidelity we want so we don't waste audio subsystem cpu
      *
      * FM is the same, except the DSP bandwidth is initially much higher
@@ -199,11 +200,6 @@ bool Receiver::On()
 
     presets = new Presets(receiverWidget);
 
-
-	//Testing with frequency domain receive chain
-	fft = FFT::Factory("Testing freq domain chain");
-	fft->FFTParams(settings->numSpectrumBins, 0, sampleRate, framesPerBuffer, WindowFunction::NONE);
-
     //These steps work on demodSampleRate rates
 
     //WIP, testing QT audio as alternative to PortAudio
@@ -219,11 +215,7 @@ bool Receiver::On()
 	//Testing, time intensive for large # taps, ie @512 we lose chunks of signal
 	//Check post-bandpass spectrum and make just large enough to be effective
 	//64 is too small, 128 is good, ignored if useFFT arg == true
-	if (useFreqDomainChain)
-		//In freq domain chain we have full size fft available
-		bpFilter = new FIRFilter(sampleRate, framesPerBuffer,true, 128);
-	else
-        bpFilter = new FIRFilter(demodSampleRate, demodFrames,true, 128);
+	bpFilter = new FIRFilter(demodSampleRate, demodFrames,true, 128);
 	bpFilter->setEnabled(true);
 	
     agc = new AGC(demodSampleRate, demodFrames);
