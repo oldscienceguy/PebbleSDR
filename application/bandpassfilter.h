@@ -5,6 +5,7 @@
 #include "global.h"
 #include "processstep.h"
 #include "firfilter.h"
+#include "fastfir.h"
 
 
 class BandPassFilter : public ProcessStep
@@ -17,7 +18,9 @@ public:
 	CPX *process(CPX *in, quint32 _numSamples);
 
 private:
-	FIRFilter *bpFilter; //Old implementation
+	FIRFilter *bpFilter1; //Old implementation
+	CFastFIR *bpFilter2;
+	bool useFastFIR;
 };
 
 #endif // BANDPASSFILTER_H
