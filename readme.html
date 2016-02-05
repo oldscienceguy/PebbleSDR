@@ -158,9 +158,9 @@ sup {
 <body>
 <h1>Pebble II SDR (Mac)</h1>
 
-<p>Dec 15, 2015<br/>
+<p>Jan 1, 2016<br/>
 Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016<br/>
-Richard Landsman N1DDY <a href="&#x6d;&#x61;&#x69;&#108;&#116;&#111;&#x3a;&#x50;&#x65;&#x62;&#98;&#108;&#x65;&#83;&#x44;&#82;&#64;&#x67;&#x6d;&#97;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;">&#x50;&#101;&#x62;&#x62;&#108;&#x65;&#83;&#x44;&#x52;&#64;&#x67;&#109;&#97;&#105;&#x6c;&#46;&#99;&#x6f;&#x6d;</a><br/>
+Richard Landsman N1DDY <a href="&#x6d;&#97;&#x69;&#108;&#x74;&#x6f;&#x3a;&#x50;&#x65;&#x62;&#98;&#108;&#x65;&#x53;&#x44;&#82;&#x40;&#x67;&#109;&#x61;&#x69;&#108;&#x2e;&#99;&#111;&#x6d;">&#x50;&#x65;&#x62;&#x62;&#108;&#101;&#x53;&#x44;&#82;&#64;&#x67;&#x6d;&#x61;&#105;&#108;&#x2e;&#99;&#111;&#x6d;</a><br/>
 Licensed under GPL, see gpl.h for details, attribution, and references<br/>
 <a href="https://github.com/oldscienceguy/PebbleSDR">https://github.com/oldscienceguy/PebbleSDR</a><br/>
 Dedicated to SuperRatt, my first program (c 1980) for the Apple II with support for RTTY, CW, and special modes.</p>
@@ -179,27 +179,29 @@ Dedicated to SuperRatt, my first program (c 1980) for the Apple II with support 
 
 <p>There are a few design principles I tried to follow throughtout the evolution of Pebble</p>
 
-<h4>Compact</h4>
+<ul>
+<li><h4>Compact</h4></li>
+</ul>
+
 
 <p>There are plenty of full featured SDR applications these days, but many of them take up the entire screen and present an overwhelming number of options to the average user.  I wanted something that had all the key features in a compact UI, leaving room for other programs to be visible on an average screen.</p>
 
-<h4>Incremental</h4>
+<ul>
+<li><h4>Incremental</h4>
 
-<p>In order to keep the UI compact, more advanced and optional functionality had to be exposed incrementally.  There when you need it, not there when you don't.  This led to features like being able to collapse the spectrum and data windows.</p>
+<p>In order to keep the UI compact, more advanced and optional functionality had to be exposed incrementally.  There when you need it, not there when you don't.  This led to features like being able to collapse the spectrum and data windows.</p></li>
+<li><h4>Extensible</h4>
 
-<h4>Extensible</h4>
+<p>In addition to being extensible by virtue of being open source, I wanted to be able to keep the core functionality intact, while exploring new data modes and options.  This led to the modem plug-in architecture and eventually will include cross platform extio-like device support.</p></li>
+<li><h4>Disclaimer</h4>
 
-<p>In addition to being extensible by virtue of being open source, I wanted to be able to keep the core functionality intact, while exploring new data modes and options.  This led to the modem plug-in architecture and eventually will include cross platform extio-like device support.</p>
+<p>The source code for this project represents incremental, "drive-by" coding, with numerous experiments, re-writes, re-factoring, re-everything.  No attempt has been made to pretty up the code or clean up comments.  In fact, in many places I have deliberately left alternative implementations and detailed comments in the code for future reference.<br/>
+I have not advertised this for broad distribution because of health issues that could cause me to not be able to support it, answer questions, fix bugs, etc.  If you get this, please be patient for a response from me.</p></li>
+<li><h4>Credits</h4>
 
-<h4>Disclaimer</h4>
+<p>I knew nothing about DSP algorithms when I started writing Pebble.  Although I've collected quite a library of DSP books and articles, I learned by looking at the work of others who were kind enough to make their projects open source.  I've included all of the key projects I referenced and in some cases, derived code from, in the gpl.h file you can find in the source tree.  But I especially wanted to thank Moe Wheatley for his outstanding work in making CuteSDR <a href="http://sourceforge.net/projects/cutesdr/">http://sourceforge.net/projects/cutesdr/</a> available with source.  While I had working code, Moe's code demonstrated what a professionally written DSP program should look like.</p></li>
+</ul>
 
-<p>The source code for this project represents incremental, "drive-by" coding, with numerous experiments, re-writes, re-factoring, re-everything.  No attempt has been made to pretty up the code or clean up comments.  In fact, in many places I have deliberately left alternative implementations and detailed comments in the code for future reference.</p>
-
-<p>I have not advertised this for broad distribution because of health issues that could cause me to not be able to support it, answer questions, fix bugs, etc.  If you get this, please be patient for a response from me.</p>
-
-<h4>Credits</h4>
-
-<p>I knew nothing about DSP algorithms when I started writing Pebble.  Although I've collected quite a library of DSP books and articles, I learned by looking at the work of others who were kind enough to make their projects open source.  I've included all of the key projects I referenced and in some cases, derived code from, in the gpl.h file you can find in the source tree.  But I especially wanted to thank Moe Wheatley for his outstanding work in making CuteSDR <a href="http://sourceforge.net/projects/cutesdr/">http://sourceforge.net/projects/cutesdr/</a> available with source.  While I had working code, Moe's code demonstrated what a professionally written DSP program should look like.</p>
 
 <h2>Installation</h2>
 
@@ -232,25 +234,24 @@ Dedicated to SuperRatt, my first program (c 1980) for the Apple II with support 
 
 <h3>Menu</h3>
 
-<h4>Pebble|About</h4>
+<ul>
+<li><h4>Pebble|About</h4>
 
-<p>Display QT version and other application information</p>
+<p>Display QT version and other application information</p></li>
+<li><h4>Developer|TestBench</h4>
 
-<h4>Developer|TestBench</h4>
+<p>Display TestBench window</p></li>
+<li><h4>Developer|Device Info</h4>
 
-<p>Display TestBench window</p>
+<p>Displays device freq range etc</p></li>
+<li><h4>Help|ReadMe</h4>
 
-<h4>Developer|Device Info</h4>
+<p>Display readme.html in PebbleData folder</p></li>
+<li><h4>Help|Credits</h4>
 
-<p>Displays device freq range etc</p>
+<p>Display GPL and other credits</p></li>
+</ul>
 
-<h4>Help|ReadMe</h4>
-
-<p>Display readme.html in PebbleData folder</p>
-
-<h4>Help|Credits</h4>
-
-<p>Display GPL and other credits</p>
 
 <h3>Tuning Box (10 digits)</h3>
 
@@ -305,90 +306,83 @@ Dedicated to SuperRatt, my first program (c 1980) for the Apple II with support 
 
 <p>Except as notes, Device options do not take effect until the device is powered off and back on.</p>
 
-<h3>Device Selection</h3>
+<ul>
+<li><h4>Device Selection</h4>
 
-<p>This drop down at the top of the Options dialog lists all of the specifi devices supported by the selected plugin.  Each device may have it's own device-specific options (see below).</p>
+<p>This drop down at the top of the Options dialog lists all of the specifi devices supported by the selected plugin.  Each device may have it's own device-specific options (see below).</p></li>
+<li><h4>Audio Ouput</h4>
 
-<h3>Audio Ouput</h3>
-
-<p>Select "Core Audio built-in Output" as default.  Option options may be visible if other output devices are installed</p>
-
-<h3>Startup</h3>
+<p>Select "Core Audio built-in Output" as default.  Option options may be visible if other output devices are installed</p></li>
+<li><h4>Startup</h4>
 
 <ol>
-<li>Last Frequency: The last frequency and mode will be remembered when the device is powered off and will be used the next time the device is powered on</li>
-<li>Set Frequency: Enter a frequency in hz which will be used the next time the device is powered on.</li>
-<li>Device Default: A default frequency and mode will be used the next time the device is powered on.</li>
+<li> Last Frequency: The last frequency and mode will be remembered when the device is powered off and will be used the next time the device is powered on</li>
+<li> Set Frequency: Enter a frequency in hz which will be used the next time the device is powered on.</li>
+<li> Device Default: A default frequency and mode will be used the next time the device is powered on.</li>
 </ol>
+</li>
+<li><h4>Converter Mode &amp; Converter Offset</h4>
 
+<p>Checking this box allows the use of an external up or down converter with any device.  The displayed frequency is the actual frequency after the converter, you don't have to add or subtract the converter offset.  Enter the offset for the converter if this box is checked, typically 100mHz or 120mHz.  In this mode, device high/low frequency limits are not checked so you can tune wherever the converter supports.  But you can also enter frequencies that are outside the range of the device and may see strange results.</p></li>
+<li><h4>SampleRate</h4>
 
-<h3>Converter Mode &amp; Converter Offset</h3>
+<p>If the device uses audio input, these will be the sample rate of the IQ Input field (see below).  If the device supports direct I/Q input, like the rtl-sdr, the list will be device specific.</p></li>
+<li><h4>DC Removal</h4>
 
-<p>Checking this box allows the use of an external up or down converter with any device.  The displayed frequency is the actual frequency after the converter, you don't have to add or subtract the converter offset.  Enter the offset for the converter if this box is checked, typically 100mHz or 120mHz.  In this mode, device high/low frequency limits are not checked so you can tune wherever the converter supports.  But you can also enter frequencies that are outside the range of the device and may see strange results.</p>
+<p>Some SDR's will display a large spike in the center of the spectrum.  This is usually caused by a DC component in the signal.  Checking this box inserts a high pass filter that removes DC - 10hz.  This should eliminate a DC spike, while having minimal affect on any signal.  If you do experience distortion or other signal degradation, just tune the LO slightly and use the mixer to select the signal.</p></li>
+<li><h4>I/Q Order</h4>
 
-<h3>SampleRate</h3>
+<p>This can be used to invert the incoming I/Q input, or select only the I or Q input for testing.</p></li>
+<li><h4>I/Q Gain</h4>
 
-<p>If the device uses audio input, these will be the sample rate of the IQ Input field (see below).  If the device supports direct I/Q input, like the rtl-sdr, the list will be device specific.</p>
+<p>This defaults to 1.0, but can be changed if the device does not have enough power or too much power in the I/Q signals.  This will be evident in the spectrum display.  This value can be changed in real time and the results observed in the Specturm display.  This option can also be used to normalize levels among difference devices so that switch between them keeps a steady level.</p></li>
+<li><h4>I/Q Input</h4>
 
-<h3>I/Q Order</h3>
+<p>This field is only visible for devices that do not support direct I/Q input.  For devices like SoftRock, select the input audio device that the SoftRock is plugged into.  Note that some Mac's do not support stereo audio input and an external USB audio device must be used.  For devices that create their own audio device, like Funcube, select that as the input.</p></li>
+<li><h4>Reset Settings</h4>
 
-<p>This can be used to invert the incoming I/Q input, or select only the I or Q input for testing.</p>
+<p>This will turn off the device and delete the .ini file which stores the device settings.  The next time the device is powered on, the ini file will automatically be re-created with default values.</p></li>
+<li><h4>Device Specific options</h4>
 
-<h3>I/Q Gain</h3>
+<p>The center of the the Setting page is reserved for device specific options and will change depending on the device selected.  See device specific section of this document.</p></li>
+<li><h4>I/Q Balance</h4>
 
-<p>This defaults to 1.0, but can be changed if the device does not have enough power or too much power in the I/Q signals.  This will be evident in the spectrum display.  This value can be changed in real time and the results observed in the Specturm display.  This option can also be used to normalize levels among difference devices so that switch between them keeps a steady level.</p>
+<p>This can be used to manually adjust the gain and phase of the incoming I/Q signals if the device does not produce accurate 90 degree phase shifts.</p></li>
+</ul>
 
-<h3>I/Q Input</h3>
-
-<p>This field is only visible for devices that do not support direct I/Q input.  For devices like SoftRock, select the input audio device that the SoftRock is plugged into.  Note that some Mac's do not support stereo audio input and an external USB audio device must be used.  For devices that create their own audio device, like Funcube, select that as the input.</p>
-
-<h3>Reset Settings</h3>
-
-<p>This will turn off the device and delete the .ini file which stores the device settings.  The next time the device is powered on, the ini file will automatically be re-created with default values.</p>
-
-<h3>Device Specific options</h3>
-
-<p>The center of the the Setting page is reserved for device specific options and will change depending on the device selected.  See device specific section of this document.</p>
-
-<h3>I/Q Balance</h3>
-
-<p>This can be used to manually adjust the gain and phase of the incoming I/Q signals if the device does not produce accurate 90 degree phase shifts.</p>
 
 <h3>Frequency Information</h3>
 
 <p>This bar is used to change frequencies to known bands and stations.  It also is used to track frequency changes made elsewhere.  The data for this comes from three .csv files in the PebbleData directory.  Details of how to manually edit these files is in the advanced section.</p>
 
-<ol>
-<li>eibi.csv: Stores station specific information</li>
-<li>bands.csv: Stores band categories and bands</li>
-<li>memory.csv: Stores user defined station information</li>
-</ol>
+<pre><code>eibi.csv: Stores station specific information
+bands.csv: Stores band categories and bands
+memory.csv: Stores user defined station information
+</code></pre>
 
+<ul>
+<li><h4>Band Category</h4>
 
-<h3>Band Category</h3>
+<p>There is a large amount of possible band information to select from.  To make this more manageable, all the band information is broken into categories.  To select a frequency, first select a band category from this drop down.</p></li>
+<li>All</li>
+<li>Ham</li>
+<li>Broadcast</li>
+<li>Scanner</li>
+<li><p>Other</p></li>
+<li><h4>Bands</h4>
 
-<p>There is a large amount of possible band information to select from.  To make this more manageable, all the band information is broken into categories.  To select a frequency, first select a band category from this drop down.
-1. All
-2. Ham
-3. Broadcast
-4. Scanner
-5. Other</p>
+<p>For each band category, there is a Each Band selection of bands to choose from.  The frequency that will be switched to for each band is defined in bands.csv, along with other band details.  If no default (tune) frequency is set for the band in bands.csv, the middle of the band will be selected.</p></li>
+<li><h4>Stations</h4>
 
-<h3>Bands</h3>
+<p>For each band, there is a list of specific stations that can be selected.  This list comes from eibi.csv, whicn can be updated using the instructions in PebbleData directory.  It also comes from memory.csv, which is where user defined station information is stored.</p></li>
+<li><h4>"?"</h4>
 
-<p>For each band category, there is a Each Band selection of bands to choose from.  The frequency that will be switched to for each band is defined in bands.csv, along with other band details.  If no default (tune) frequency is set for the band in bands.csv, the middle of the band will be selected.</p>
+<p>Clicking this will attempt to look up the closest station to the current frequency.</p></li>
+<li><h4>Add</h4>
 
-<h3>Stations</h3>
+<p>Clicking Add will append an entry to memory.csv.  To fill in the station details, edit memory.csv (save a backup first) using any text editor.</p></li>
+</ul>
 
-<p>For each band, there is a list of specific stations that can be selected.  This list comes from eibi.csv, whicn can be updated using the instructions in PebbleData directory.  It also comes from memory.csv, which is where user defined station information is stored.</p>
-
-<h3>"?"</h3>
-
-<p>Clicking this will attempt to look up the closest station to the current frequency.</p>
-
-<h3>Add</h3>
-
-<p>Clicking Add will append an entry to memory.csv.  To fill in the station details, edit memory.csv (save a backup first) using any text editor.</p>
 
 <h3>Spectrum</h3>
 
@@ -403,72 +397,59 @@ Dedicated to SuperRatt, my first program (c 1980) for the Apple II with support 
 <li>Clicking Left or Right arrows changes the frequency in 10hz increments.</li>
 <li>Scrolling Up or Down changes the frequency in 1kHz increments.</li>
 <li>Scrolling Left or Right changes the frequency in 100hz increments.</li>
-<li>Changing the mixer frequency using Arrows or Scrolling also will automatically reset the LO when scrolling off either end of the spectrum.  This provides an easy to use continuous tuning mode.</li>
+<li><p>Changing the mixer frequency using Arrows or Scrolling also will automatically reset the LO when scrolling off either end of the spectrum.  This provides an easy to use continuous tuning mode.</p></li>
+<li><h4>Spectrum Display Selector</h4></li>
+<li>Spectrum: The entire spectrum is displayed.  The height the spectrum indicates the power (db) of the signal.</li>
+<li>Waterfall Display: A standard waterfall is displayed.  Colors indicate the power (db) of the signal.</li>
+<li>Spectrum/Spectrum: The spectrum window is split into a top and bottom, separated by an adjustable splitter.  Grab the splitter and drag up or down to change the sizes of the two windows.  The upper window can also be zoomed on the currently selected frequency, to show finer granularity.  See Spectrum Zoom below</li>
+<li>Spectrum/Waterfall: Spectrum on top, waterfall on bottom</li>
+<li>Waterfall/Waterfall: Waterfall on top, waterfall on bottom</li>
+<li><p>No Display: This turns off the spectrum and collapses the display to save room.  This can be used when running on a system that does not have enough CPU to keep everything updated.</p></li>
+<li><h4>Spectrum db Full Scale (FS)spinner</h4>
+
+<p>This can be used to set the full scale value of the spectrum display, effectively increasing or decreasing the resolution.  The default range is -120db (waterfall black) to -50db (waterfall red).  If the Waterfall is washed out, increase the FS db displayed to -30.  If no signals are visible, decrease the FS db displayed to -70.  Easier to see when you try it than to explain</p></li>
+<li><h4>Spectum db Base Scale (BS) spiner</h4>
+
+<p>This can be used to set the base value for the spectrum display.  It is usually used to 'hide' the noise floor so that just the signals that are greater than the BS value are shown.</p></li>
+<li><h4>Spectrum Updates Per Second (x/sec) spinner</h4>
+
+<p>This can be used to speed up or slow down the spectrum display to match your preferences or the band being monitored.  The range is 0 to 30, but 10 is usually a good default.  Faster updates == more CPU, so if your computer is running 'hot' try slowing down the update rate.
+Note: If set to zero, the spectrum display is temporarily frozen and won't update again until you set a rate greater than zero.</p></li>
+<li><h4>Spectrum Zoom (only in split window display)</h4>
+
+<p>This is one of my favorite features and makes devices that support large bandwidth, like the rtl-sdr and AFEDRI, more useful.  The problem with large bandwidths is that it can be difficult or impossible to see close signals.  This can always be addressed by powering off the device, changing to a lower sample rate, and restarting, but that's very inconvenient.  The Zoom control lets you smoothly zoom on the selected frequency and see a second Waterfall or Spectrum display with the smaller bandwidth and higher resolution in the top display.</p></li>
 </ul>
 
 
-<h3>Spectrum Display Selector</h3>
-
-<ol>
-<li>Spectrum: The entire spectrum is displayed (see Span below).  The height the spectrum indicates the power (db) of the signal.</li>
-<li>Waterfall Display: A standard waterfall is displayed.  Colors indicate the power (db) of the signal.</li>
-<li>No Display: This turns off the spectrum and collapses the display to save room.  This can be used when running on a system that does not have enough CPU to keep everything updated.</li>
-</ol>
-
-
-<h3>Spectrum db Full Scale (FS)spinner</h3>
-
-<p>This can be used to set the full scale value of the spectrum display, effectively increasing or decreasing the resolution.  The default range is -120db (waterfall black) to -50db (waterfall red).  If the Waterfall is washed out, increase the FS db displayed to -30.  If no signals are visible, decrease the FS db displayed to -70.  Easier to see when you try it than to explain</p>
-
-<h3>Spectum db Base Scale (BS) spiner</h3>
-
-<p>This can be used to set the base value for the spectrum display.  It is usually used to 'hide' the noise floor so that just the signals that are greater than the BS value are shown.</p>
-
-<h3>Spectrum Updates Per Second (x/sec) spinner</h3>
-
-<p>This can be used to speed up or slow down the spectrum display to match your preferences or the band being monitored.  The range is 0 to 30, but 10 is usually a good default.  Faster updates == more CPU, so if your computer is running 'hot' try slowing down the update rate.
-Note: If set to zero, the spectrum display is temporarily frozen and won't update again until you set a rate greater than zero.</p>
-
-<h3>Spectrum Zoom</h3>
-
-<p>This is one of my favorite features and makes devices that support large bandwidth, like the rtl-sdr and AFEDRI, more useful.  The problem with large bandwidths is that it can be difficult or impossible to see close signals.  This can always be addressed by powering off the device, changing to a lower sample rate, and restarting, but that's very inconvenient.  The Zoom control lets you smoothly zoom on the selected frequency and see a second Waterfall or Spectrum display with the smaller bandwidth and higher resolution.</p>
-
-<p>The selector has three choices<br/>
-<strong>Off</strong>: No Zoom<br/>
-<strong>Spect</strong>: Zoom using the same FFT and bin resolution as main display<br/>
-<strong>HiRes</strong>: Zoom using a dedicated FFT that typically has a bandwidth of approx 60kHz and therefore much higher resolution, especially when the main spectrum has a much larger bandwidth.</p>
-
 <p>The zoomed display always has the selected frequency in the center.  Clicking on another signal in the zoomed display changes the frequency so that signal is now centered in the zoom display.</p>
 
-<p>Try sliding the Zoom control back and forth on a busy part of the band to see how it works.</p>
+<p>Clicking the Hi-Res button switches the upper window to use a different FFT with more resolution, but lower bandwidth.</p>
 
-<h3>Data Modems</h3>
+<h3>Data Modems (WIP)</h3>
 
 <p>Pebble support plugin data modems.  This feature is under development and only the Morse modem is currently functional.  Data modems can be independently developed and distributed without requiring new builds of Pebble.  Pebble looks in the 'plugins' directory on startup to build the menu.</p>
 
-<h3>No Data</h3>
+<ul>
+<li><h4>No Data</h4>
 
-<p>This collapses the modem display if previously open</p>
+<p>This collapses the modem display if previously open</p></li>
+<li><h4>Band Data</h4>
 
-<h3>Band Data</h3>
+<p>This is a special modem (not in plugins) that will be used to display extended band and station information.  In this release it is only used in FM Stereo to display RDS station information.</p></li>
+<li><h4>Example Modem</h4>
 
-<p>This is a special modem (not in plugins) that will be used to display extended band and station information.  In this release it is only used in FM Stereo to display RDS station information.</p>
+<p>This is a 'Hello World' plugin for testing</p></li>
+<li><h4>Morse Modem (WIP)</h4>
 
-<h3>Example Modem</h3>
+<p>Make sure you are in the correct CWU or CWL mode and tune until you get maximum levels in the bar graph.  Detected WPM is dynamically updated and displayed.  WPM can be locked by checking the box.  Output can be temporarily turned off and on to 'freeze' the display if needed.  Just because, you can select character only display, dot-dash only display, or mixed.  Reset button puts everything back to defaults in case internal tracking algorithms get confused.</p></li>
+<li><h4>RTTY Modem</h4>
 
-<p>This is a 'Hello World' plugin for testing</p>
+<p>Not functional</p></li>
+<li><h4>WWV Modem</h4>
 
-<h3>Morse Modem</h3>
+<p>Not functional</p></li>
+</ul>
 
-<p>Make sure you are in the correct CWU or CWL mode and tune until you get maximum levels in the bar graph.  Detected WPM is dynamically updated and displayed.  WPM can be locked by checking the box.  Output can be temporarily turned off and on to 'freeze' the display if needed.  Just because, you can select character only display, dot-dash only display, or mixed.  Reset button puts everything back to defaults in case internal tracking algorithms get confused.</p>
-
-<h3>RTTY Modem</h3>
-
-<p>Not functional</p>
-
-<h3>WWV Modem</h3>
-
-<p>Not functional</p>
 
 <h3>AGC</h3>
 
@@ -520,7 +501,7 @@ Note: If set to zero, the spectrum display is temporarily frozen and won't updat
 
 <h3>SoftRock V9-ABPF</h3>
 
-<p>(TBW)</p>
+<p>My mac does not have a built in stereo sound card.  I've found the ASUS Xonar U5 card to work well.  It supports sample rates up to 192ksps and is not very expensive.</p>
 
 <h3>SoftRock Lite II</h3>
 
@@ -667,6 +648,17 @@ This is for devices like the HF Direct Sampling mod from KNOCK (http://www.easy-
 
 <p>Online servers can be found at <a href="http://qtradio.napan.ca/qtradio/qtradio.pl">http://qtradio.napan.ca/qtradio/qtradio.pl</a></p>
 
+<h3>HackRF One</h3>
+
+<p>This is a high speed, wide band SDR.  Supported sample rates for the device are from 8msps to 20msps, but Pebble can't keep up much beyond 2-3msps.  The sample rate selector shows sample rates below the 8msps supported rate.  These seem to work ok.</p>
+
+<p>(From HackRF wiki <a href="https://github.com/mossmann/hackrf/wiki/FAQ">https://github.com/mossmann/hackrf/wiki/FAQ</a>)<br/>
+A good default setting to start with is RF=0 (off), IF=16, baseband=16. Increase or decrease the IF and baseband gain controls roughly equally to find the best settings for your situation. Turn on the RF amp if you need help picking up weak signals. If your gain settings are too low, your signal may be buried in the noise. If one or more of your gain settings is too high, you may see distortion (look for unexpected frequencies that pop up when you increase the gain) or the noise floor may be amplified more than your signal is.</p>
+
+<h3>AirSpy</h3>
+
+<p>WIP</p>
+
 <h2>SDRGarage</h2>
 
 <p>WIP</p>
@@ -703,25 +695,31 @@ This is for devices like the HF Direct Sampling mod from KNOCK (http://www.easy-
  make<br/>
  sudo make install<br/>
  files are in usr/local/lib</li>
-<li>Download PortAudio from portaudio.com , open terminal<br/>
- Get latest SVN and make sure configure.in has 10.8 and 10.9 switch statment<br/>
- autoreconf -if<br/>
- ./configure<br/>
- make<br/>
- portaudio directory is at same level as PebbleII<br/>
- if autoreconf not found
+<li><p>Download PortAudio from portaudio.com , open terminal<br/>
+ Get latest SVN and make sure configure.in has 10.8 and 10.9 switch statment</p>
 
-<pre><code> * sudo port install automake autoconf libtool #macports
+<pre><code> autoreconf -if  
+ ./configure  
+ make  
+</code></pre>
+
+<p> portaudio directory is at same level as PebbleII<br/>
+ if autoreconf not found</p>
+
+<pre><code> sudo port install automake autoconf libtool #macports
 </code></pre></li>
-<li>Download FFTW from fftw.org<br/>
- open terminal, build floating point<br/>
- Current version 3.3.1 as of 2/2013<br/>
- Switched from float to double so we can switch between FFTW and Ooura libraries.  Don't add --enable-float to ./configure<br/>
- ./configure<br/>
- make<br/>
- sudo make install<br/>
- Header is in api directory, lib is in ./libs directory<br/>
- Or prebuilt fftw from pdb.finkproject.org</li>
+<li><p>Download FFTW from <a href="http://github.com/FFTW/fftw3">http://github.com/FFTW/fftw3</a><br/>
+ Current version 3.3.4 as of 2/2016<br/>
+ open terminal</p>
+
+<pre><code> export CFLAGS=-mmacosx-version-min=10.7
+ ./configure  
+ make
+ sudo make install  
+</code></pre>
+
+<p> Header is in api directory, lib is in ./libs directory<br/>
+ Or prebuilt fftw from <a href="http://pdb.finkproject.org">http://pdb.finkproject.org</a></p></li>
 <li>Edit pebbleqt.pri<br/>
  Define FFT library to use (uncomment)<br/>
  Define Audio library to use (uncomment)<br/>
@@ -759,6 +757,40 @@ Exit code 0x0c0000315 if "Release DLLs" not copied to Debug and Release dirs</p>
 <p>Install the latest .so and .h files from sdrplay.com, then copy to the plugins/sdrplay/miricsapi directory.  Files are in /usr/local/include and lib</p>
 
 <p>Source code for API library: <a href="https://github.com/airspy/host">https://github.com/airspy/host</a></p>
+
+<h4>HackRF Plugin Build</h4>
+
+<p>You do not need to build the HackRF toolset to build Pebble, but you will need it to update firmware or run test programs.  Get the latest source from <a href="https://github.com/mossmann/hackrf">https://github.com/mossmann/hackrf</a>.  The hackrf.c and hackrf.h files can be found in this tree and updated in Pebble if necessary.  To build HackRF tools (from GitHub md file)</p>
+
+<pre><code>cd host  
+mkdir build  
+cd build  
+cmake ../ -DINSTALL_UDEV_RULES=ON  
+make  
+sudo make install  
+</code></pre>
+
+<p>If you get updated hackrf.c, you will need to make the following changes.</p>
+
+<pre><code>//#include &lt;libusb.h&gt;
+#include "../d2xx/libusb/libusb/libusb.h"
+</code></pre>
+
+<h4>AirSpy Plugin Build</h4>
+
+<p>Get latest library source from https://github.com/airspy/host/</p>
+
+<h4>RTL2832 Plugin Build</h4>
+
+<p>Get latest from <a href="http://sdr.osmocom.org/trac/wiki/rtl-sdr">http://sdr.osmocom.org/trac/wiki/rtl-sdr</a>
+Libraries are copied from /usr/local/lib</p>
+
+<pre><code>autoreconf -i
+./configure
+make
+sudo make install
+sudo ldconfig
+</code></pre>
 
 <h3>Keyboard Shortcuts</h3>
 
