@@ -273,6 +273,9 @@ QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, QVariant _option) {
 			return converterMode;
 		case DeviceConverterOffset:
 			return converterOffset;
+		case DeviceSetting:
+			return qSettings->value(_option.toString());
+			break;
 		default:
 			break;
 	}
@@ -395,6 +398,11 @@ bool DeviceInterfaceBase::Set(STANDARD_KEYS _key, QVariant _value, QVariant _opt
 			break;
 		case DeviceConverterOffset:
 			converterOffset = _value.toDouble();
+			break;
+		case DeviceSetting:
+			if (qSettings == NULL)
+				return false;
+			qSettings->setValue(_value.toString(), _option);
 			break;
 		default:
 			break;

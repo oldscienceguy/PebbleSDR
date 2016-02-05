@@ -47,6 +47,8 @@ private:
 	QStringList outputDevices;
 
 	void UpdateOptions();
+
+	bool dcRemove;
 };
 
 #endif // SDROPTIONS_H

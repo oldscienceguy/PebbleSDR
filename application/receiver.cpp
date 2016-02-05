@@ -136,6 +136,15 @@ bool Receiver::On()
 	iqBalance->setPhaseFactor(sdr->Get(DeviceInterface::IQBalancePhase).toDouble());
 
 	dcRemoval = new DCRemoval(sampleRate, framesPerBuffer);
+	QVariant tmp = sdr->Get(DeviceInterface::DeviceSetting,"DCRemove");
+	if (!tmp.isNull())
+		dcRemoval->enableStep(tmp.toBool());
+	else {
+		//Not found in settings file, set default
+		dcRemoval->enableStep(false);
+		sdr->Set(DeviceInterface::DeviceSetting,"DCRemove",false);
+		sdr->Command(DeviceInterface::STANDARD_COMMANDS::CmdWriteSettings,0);
+	}
 
     /*
      * Decimation strategy

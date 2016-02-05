@@ -88,6 +88,7 @@ public:
 		DeviceSettingsFile,		//RO returns .ini file name used by device
 		DeviceConverterMode,	//RW returns whether device is using an up/down converter
 		DeviceConverterOffset,	//RW Offset to device frequency to use if converter is active
+		DeviceSetting,			//RW Direct access to device settings file. Settings name in _option
 		//Expansion room if needed
 		CustomKey1 = 100,		//Devices can implement custom keys, as long as they start with this
 		CustomKey2,
