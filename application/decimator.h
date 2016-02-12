@@ -70,7 +70,13 @@
 	typically 20k (10k per halfband).  For FM, its typically 200k (100k per halfband).  For CPU effective
 	decimation, we need to find the smallest filter, in terms of taps, that protects this passBand.
 
-	Low pass filters are designed using MatLab Filter Design and Analysis Tool with the following parameters
+	Halfband Lowpass filters are designed using MatLab Filter Design and Analysis Tool with the following parameters
+	The transition band in halfband filters is centered on Fs/4 (real samples) or Fs/2 (complex samples), so the
+	discarded portion of the band (post decimation) is effectively discarded.  Every other coefficient is also zero,
+	reducing the calculation complexity.
+
+	For our purposes, we care mostly about the stop band, where aliasing can put false signals in our primary
+	area of interest.
 
 	Response type: Halfband Lowpass
 	Design method: FIR - equiripple
@@ -107,7 +113,7 @@
 
 
 
-	How is the wPass determined for each set of coefficients?
+	How was wPass determined for each filter order?
 	Lower tap filters are designed to be used with higher sample rates, ie more samples to process.
 	Fewer taps = less CPU
 	As we decimate by 2, each filter gets more taps (fewer samples to process) and
@@ -126,23 +132,28 @@
 	Lower sample rates need higher alias free bandwidth percentage
 	ie SR = 1.024e6 minBw = 20k, 20k / 1.024e6 = .01953
 
-	The lowest sample rate a filter can handle for a given bandwidth = Bandwidth / wPass
-	Examples at 10k, 20k, 30k bw
+	The lowest inbound sample rate a filter can handle for a given bandwidth = Bandwidth / wPass
+	Lowest outbound sample rate is lowest inbound rate / 2
+	Smallest decimated rate, as defined by cuteSDR, is 7900.  So smallest inbound rate is 2x or 15800
+	This means smallest bw we can handle is 15800 * .3332 (51tap) = 5264 (5.3k)
+	Filter order has to be even and increase by 4 for decimate x 2 chain
 
-	Order  Taps   wPass	10k		20k		30k
+	Examples at 5.3k(lowest bw), 20k(am), 30k(fmn) bw
+
+	Order  Taps   wPass	5.3k	20k		30k
 	----------------------------------------------------------------
-	*6      7    .0300	333k	666k	1.000m
-	10     11    .0500	200k	400k	600k
-	14     15    .0980	102k	204k	306k
-	18     19    .1434	69k		139k	209k
-	22     23    .1820	55k		110k	165k
-	26     27    .2160	49k		93k		139k
-	30     31    .2440	41k		82k		123k
-	34     35    .2680	37k		75k		112k
-	38     39    .2880	35k		69k		104k
-	42     43    .3060	33k		65k		98k
-	46     47    .3200	31k		63k		94k
-	50     51    .3332	30k		60k		90k
+	*6      7    .0030	1.766m	6.666m	10.000m
+	10     11    .0500	106k	400k	600k
+	14     15    .0980	54.1k	204k	306k
+	18     19    .1434	37.0k	139k	209k
+	22     23    .1820	29.1k	110k	165k
+	26     27    .2160	24.5k	93k		139k
+	30     31    .2440	21.7k	82k		123k
+	34     35    .2680	19.7k	75k		112k
+	38     39    .2880	18.4k	69k		104k
+	42     43    .3060	17.3k	65k		98k
+	46     47    .3200	16.5k	63k		94k
+	50     51    .3332	15.9k	60k		90k
 	* - Implemented as CIC filter in cuteSDR
 
 
@@ -153,7 +164,49 @@ class Decimator : public ProcessStep
 public:
 	Decimator(quint32 _sampleRate, quint32 _bufferSize);
 
+	//Builds a decimation chain to get from incoming sample rate to lowest sample rate that protects
+	//maxBandWidth
+	quint32 buildDecimateChain(quint32 _sampleRate, quint32 _maxBandWidth);
+
+	//Overload virtual method in ProcessStep
 	CPX *process(CPX *in, quint32 _numSamples);
+
+private:
+	class HalfbandFilter {
+	public:
+		HalfbandFilter(quint16 _numTaps, float _wPass, double * _coeff);
+		~HalfbandFilter();
+	private:
+		quint32 numTaps;
+		float wPass; //For reference
+		//double has 15 decimal digit precision, so we truncate Matlab results
+		double *coeff;
+	};
+
+	class DecimationStage {
+	public:
+		quint32 decimationFactor;
+		quint32 inboundSampleRate;
+		quint32 outboundSampleRate;
+	};
+
+	quint32 decimatedSampleRate;
+	void initFilters();
+	void deleteFilters();
+
+	//Halfband filters (order n) designed with Matlab using parameters in comments
+	HalfbandFilter *hb7;
+	HalfbandFilter *hb11;
+	HalfbandFilter *hb15;
+	HalfbandFilter *hb19;
+	HalfbandFilter *hb23;
+	HalfbandFilter *hb27;
+	HalfbandFilter *hb31;
+	HalfbandFilter *hb35;
+	HalfbandFilter *hb39;
+	HalfbandFilter *hb43;
+	HalfbandFilter *hb47;
+	HalfbandFilter *hb51;
 
 };
 
