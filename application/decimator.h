@@ -142,7 +142,7 @@
 
 	Order  Taps   wPass	5.3k	20k		30k
 	----------------------------------------------------------------
-	*6      7    .0030	1.766m	6.666m	10.000m
+	6*      7    .0030	1.766m	6.666m	10.000m
 	10     11    .0500	106k	400k	600k
 	14     15    .0980	54.1k	204k	306k
 	18     19    .1434	37.0k	139k	209k
@@ -154,43 +154,44 @@
 	42     43    .3060	17.3k	65k		98k
 	46     47    .3200	16.5k	63k		94k
 	50     51    .3332	15.9k	60k		90k
+	58**   55    .4000          50k          (100db)
 	* - Implemented as CIC filter in cuteSDR
-
-
+	** - Added to Pebble to support lower sample rates, still above minimum sample rate
 
 */
 class Decimator : public ProcessStep
 {
 public:
 	Decimator(quint32 _sampleRate, quint32 _bufferSize);
+	~Decimator();
 
 	//Builds a decimation chain to get from incoming sample rate to lowest sample rate that protects
 	//maxBandWidth
-	quint32 buildDecimateChain(quint32 _sampleRate, quint32 _maxBandWidth);
+	//_maxBandwidth is the full bandwith (wPass) ie not 1/2 bw as in cuteSDR.  Compared to wPass
+	quint32 buildDecimationChain(quint32 _sampleRate, quint32 _maxBandWidth);
 
 	//Overload virtual method in ProcessStep
-	CPX *process(CPX *in, quint32 _numSamples);
+	quint32 process(CPX *_in, CPX* _out, quint32 _numSamples);
 
 private:
+	const quint32 minDecimatedSampleRate = 15000; //Review
+
 	class HalfbandFilter {
 	public:
 		HalfbandFilter(quint16 _numTaps, float _wPass, double * _coeff);
 		~HalfbandFilter();
-	private:
+		quint32 process(CPX *_in, CPX *_out, quint32 _numInSamples);
+
 		quint32 numTaps;
-		float wPass; //For reference
+		CPX *delayBuffer;
+		double wPass; //For reference
 		//double has 15 decimal digit precision, so we truncate Matlab results
 		double *coeff;
 	};
 
-	class DecimationStage {
-	public:
-		quint32 decimationFactor;
-		quint32 inboundSampleRate;
-		quint32 outboundSampleRate;
-	};
-
 	quint32 decimatedSampleRate;
+	quint32 maxBandWidth; //Protected bandwidth of signal of interest
+
 	void initFilters();
 	void deleteFilters();
 
@@ -207,6 +208,9 @@ private:
 	HalfbandFilter *hb43;
 	HalfbandFilter *hb47;
 	HalfbandFilter *hb51;
+	HalfbandFilter *hb59; //Testing
+
+	QVector<HalfbandFilter*> decimationChain;
 
 };
 
