@@ -15,6 +15,7 @@
 	http://www.dsprelated.com/freebooks/sasp/
 	http://www.dsprelated.com/showarticle/903.php (Lyons, 1/4/16 important)
 	http://www.dsprelated.com/showarticle/761.php (Lyons)
+	Understanding DSP 3rd edition (Lyons) 10.12 - Sample rate conversion with halfband filters
 	....TBD....
 
 	The aliasing theorem states that downsampling in time corresponds to aliasing in the frequency domain.
@@ -111,7 +112,13 @@
 		measure(HDecim)
 		hfvt = fvtool(HDecim,'DesignMask','on','Color','White');
 
-
+	Note that there are 3 ways of displaying filter magnitude/response graphs and they can be confusing
+	1. Zero centered, -Fs 0 +Fs.  The filter passband will be centered.  This is a Matlab optional display
+	2. Zero to Fs/2 (or Fs/4 for real signals).  The filter passband will be shown on the left (zero) side
+		of the plot.  This is the default Matlab display.
+	3. Zero to Fs.  The filter passband will be shown at the left (zero) side AND at the right (Fs) side.
+		The result can be confusing because it looks like the Zero Centered plot, but with the stop band
+		in the center.
 
 	How was wPass determined for each filter order?
 	Lower tap filters are designed to be used with higher sample rates, ie more samples to process.
@@ -136,7 +143,8 @@
 	Lowest outbound sample rate is lowest inbound rate / 2
 	Smallest decimated rate, as defined by cuteSDR, is 7900.  So smallest inbound rate is 2x or 15800
 	This means smallest bw we can handle is 15800 * .3332 (51tap) = 5264 (5.3k)
-	Filter order has to be even and increase by 4 for decimate x 2 chain
+
+	To build linear phase half-band FIR filters, Taps + 1 must be an integer multiple of four.
 
 	Examples at 5.3k(lowest bw), 20k(am), 30k(fmn) bw
 
@@ -178,24 +186,31 @@ private:
 
 	class HalfbandFilter {
 	public:
-		HalfbandFilter(quint16 _numTaps, float _wPass, double * _coeff);
+		HalfbandFilter(quint16 _numTaps, double _wPass, double * _coeff);
 		~HalfbandFilter();
 		quint32 process(CPX *_in, CPX *_out, quint32 _numInSamples);
+		quint32 processCIC3(CPX *_in, CPX *_out, quint32 _numInSamples);
+		quint32 processExp(CPX *_in, CPX *_out, quint32 _numInSamples);
 
 		quint32 numTaps;
 		CPX *delayBuffer;
 		double wPass; //For reference
+		//CIC3 implemenation for early stages
+		bool useCIC3;
+		CPX xOdd;
+		CPX xEven;
 		//double has 15 decimal digit precision, so we truncate Matlab results
 		double *coeff;
 	};
 
 	quint32 decimatedSampleRate;
-	quint32 maxBandWidth; //Protected bandwidth of signal of interest
+	double maxBandWidth; //Protected bandwidth of signal of interest
 
 	void initFilters();
 	void deleteFilters();
 
 	//Halfband filters (order n) designed with Matlab using parameters in comments
+	HalfbandFilter *cic3; //Faster than hb7 for early stages of decimation
 	HalfbandFilter *hb7;
 	HalfbandFilter *hb11;
 	HalfbandFilter *hb15;

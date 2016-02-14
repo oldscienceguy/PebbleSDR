@@ -4,6 +4,7 @@ Decimator::Decimator(quint32 _sampleRate, quint32 _bufferSize) :
 	ProcessStep(_sampleRate, _bufferSize)
 {
 	decimatedSampleRate = _sampleRate;
+	decimationChain.clear();
 	initFilters();
 }
 
@@ -20,9 +21,16 @@ quint32 Decimator::buildDecimationChain(quint32 _sampleRate, quint32 _maxBandWid
 
 	qDebug()<<"Building Decimator chain for sampleRate = "<<_sampleRate<<" max bw = "<<_maxBandWidth;
 	while (decimatedSampleRate > minDecimatedSampleRate) {
+		//Use cic3 for faster decimation
+#if 1
+		if(decimatedSampleRate >= (maxBandWidth / cic3->wPass) ) {		//See if can use CIC order 3
+			decimationChain.append(cic3);
+			qDebug()<<"cic3 = "<<decimatedSampleRate;
+#else
 		if(decimatedSampleRate >= (maxBandWidth / hb7->wPass) ) {		//See if can use CIC order 3
 			decimationChain.append(hb7);
 			qDebug()<<"hb7 = "<<decimatedSampleRate;
+#endif
 		} else if(decimatedSampleRate >= (maxBandWidth / hb11->wPass) ) {	//See if can use fixed 11 Tap Halfband
 			decimationChain.append(hb11);
 			qDebug()<<"hb11 = "<<decimatedSampleRate;
@@ -82,13 +90,20 @@ quint32 Decimator::process(CPX *_in, CPX *_out, quint32 _numSamples)
 	return remainingSamples;
 }
 
-Decimator::HalfbandFilter::HalfbandFilter(quint16 _numTaps, float _wPass, double *_coeff)
+Decimator::HalfbandFilter::HalfbandFilter(quint16 _numTaps, double _wPass, double *_coeff)
 {
 	numTaps = _numTaps;
 	wPass = _wPass;
 	coeff = _coeff;
 	//Big enough for 2x max samples we will handle
 	delayBuffer = CPX::memalign(32768);
+
+	if (_coeff == NULL)
+		useCIC3 = true;
+	else
+		useCIC3 = false;
+	xOdd = 0;
+	xEven = 0;
 }
 
 Decimator::HalfbandFilter::~HalfbandFilter()
@@ -99,6 +114,12 @@ Decimator::HalfbandFilter::~HalfbandFilter()
 //From cuteSdr, refactored and modified for Pebble
 quint32 Decimator::HalfbandFilter::process(CPX *_in, CPX *_out, quint32 _numInSamples)
 {
+	if (useCIC3) {
+		return processCIC3(_in, _out, _numInSamples);
+	}
+	//Testing
+	return processExp(_in, _out, _numInSamples);
+
 	quint32 numInSamples = _numInSamples;
 	quint32 numOutSamples = 0;
 	CPX* inBuffer = _in;
@@ -107,20 +128,26 @@ quint32 Decimator::HalfbandFilter::process(CPX *_in, CPX *_out, quint32 _numInSa
 	if(numInSamples < numTaps)	//safety net to make sure numInSamples is large enough to process
 		return numInSamples / 2;
 
-	//StartPerformance();
+	//global->perform.StartPerformance();
 	//Copy input samples into 2nd half of delay buffer starting at position numTaps-1
 	//1st half of delay buffer has samples from last call
-	for(int i=0,j = numTaps - 1; i<numInSamples; i++, j++)
-		delayBuffer[j] = inBuffer[i];
+	//Faster, using memcpy
+	CPX::copyCPX(&delayBuffer[numTaps - 1], inBuffer, numInSamples);
 
 	//perform decimation FIR filter on even samples
 	CPX acc;
 	for(int i=0; i<numInSamples; i+=2) {
+		//Todo: This looks like a bug in cuteSDR (1.19) that double processes delayBuffer[i]
+		// Here and in first [i+j] loop where j=0 and i+j = i
+		// cuteSDR 1.0 started j loop with j=2 which didn't have this problem
+#if 0
 		acc.re = ( delayBuffer[i].re * coeff[0] );
 		acc.im = ( delayBuffer[i].im * coeff[0] );
+#else
+		acc = 0;
+#endif
 		//Fix from cuteSdr 1.10
-		for(int j=0; j<numTaps; j+=2)	//only use even coefficients since odd are zero(except center point)
-		{
+		for(int j=0; j<numTaps; j+=2) {	//only use even coefficients since odd are zero(except center point)
 			acc.re += ( delayBuffer[i+j].re * coeff[j] );
 			acc.im += ( delayBuffer[i+j].im * coeff[j] );
 		}
@@ -132,11 +159,122 @@ quint32 Decimator::HalfbandFilter::process(CPX *_in, CPX *_out, quint32 _numInSa
 	}
 	//need to copy last numInSamples - 1 input samples in buffer to beginning of buffer
 	// for FIR wrap around management
-	for(int i=0,j = numInSamples-numTaps+1; i<numTaps - 1; i++)
-		delayBuffer[i] = inBuffer[j++];
+	CPX::copyCPX(delayBuffer,&inBuffer[numInSamples-numTaps+1], numTaps);
 
+	//global->perform.StopPerformance(numInSamples);
+	return numOutSamples;
+}
+
+//From cuteSDR
+//Decimate by 2 CIC 3 stage
+// -80dB alias rejection up to Fs * (.5 - .4985)
+
+//Function performs decimate by 2 using polyphase decompostion
+// implemetation of a CIC N=3 filter.
+// InLength must be an even number
+//returns number of output samples processed
+quint32 Decimator::HalfbandFilter::processCIC3(CPX *_in, CPX *_out, quint32 _numInSamples)
+{
+	quint32 numInSamples = _numInSamples;
+	quint32 numOutSamples = 0;
+	CPX* inBuffer = _in;
+	CPX *outBuffer = _out;
+
+	CPX even,odd;
+	//StartPerformance();
+	for(int i=0; i<numInSamples; i+=2)
+	{	//mag gn=8
+		even = inBuffer[i];
+		odd = inBuffer[i+1];
+		outBuffer[numOutSamples].re = .125*( odd.re + xEven.re + 3.0*(xOdd.re + even.re) );
+		outBuffer[numOutSamples].im = .125*( odd.im + xEven.im + 3.0*(xOdd.im + even.im) );
+		xOdd = odd;
+		xEven = even;
+		numOutSamples++;
+	}
 	//StopPerformance(numInSamples);
 	return numOutSamples;
+
+}
+
+//From Lyons 10.12 pg 547 z-Domain transfer function for 11 tap halfband filter
+//	z = samples ih the delay buffer, z-1 is previous sample#, z-2 is earlier ...
+//	h(0) = 1st coeff, h(1) = 2nd coeff ...
+// H(z) = h(0) + h(1)z-1 + h(2)z-2 + h(3)z-3 + h(4)z-4 + h(5)z-5 + h(6)z-6 +
+//	h(7)z-7 + h(8)z-8 +h(9)-9 + h(10)-10
+//Because every other coeff, except for middle, is zero in a half band filter, we can skip these
+// H(z) = h(0) + h(2)z-2 + h(4)z-4 + h(6)z-6 + h(8)z-8 +  h(10)-10
+//Then we add the non-zero middle term that was skipped
+// H(z) += h(5)z-5
+
+
+//Experimental improvement over cuteSDR code which processes 1st coeff twice?
+//Avoids copying entire inbuffer into delay buffer, we just need numTaps delay buffer
+quint32 Decimator::HalfbandFilter::processExp(CPX *_in, CPX *_out, quint32 _numInSamples)
+{
+	quint32 numInSamples = _numInSamples;
+	quint32 numOutSamples = 0;
+	CPX* inBuffer = _in;
+	CPX *outBuffer = _out;
+
+	//Step 1: Process samples in delay buffer
+	//For numTaps = 11, will process delay[0] to delay[8]
+
+	//Step 2: Process samples in input buffer, except for final numTap samples.
+	//	Total samples processed will be same as numInSamples
+
+	//Step 3: Copy last numTap input samples to delay buffer
+	//global->perform.StartPerformance();
+	//Copy input samples into 2nd half of delay buffer starting at position numTaps-1
+
+	//1st half of delay buffer has samples from last call
+	//Faster, using memcpy
+	CPX::copyCPX(&delayBuffer[numTaps - 1], inBuffer, numInSamples);
+
+	//perform decimation FIR filter on even samples
+	//Avoid CPX copy from using local CPX and put directly in outBuffer
+	CPX acc;
+	CPX *delayCpx;
+	quint32 midPoint = (numTaps - 1) / 2; //5 for 11 tap filter
+	for(int i=0; i<numInSamples; i+=2) {
+		acc.clear();
+		delayCpx = &delayBuffer[i]; // Oldest sample
+		for(int j=0; j<numTaps; j+=2) {	//only use even coefficients since odd are zero(except center point)
+			acc.re += ( delayCpx[j].re * coeff[j] );
+			acc.im += ( delayCpx[j].im * coeff[j] );
+		}
+		//now multiply the center coefficient
+		acc.re += ( delayCpx[midPoint].re * coeff[midPoint] );
+		acc.im += ( delayCpx[midPoint].im * coeff[midPoint] );
+		outBuffer[numOutSamples++] = acc;	//put output buffer
+
+	}
+	//need to copy last numInSamples - 1 input samples in buffer to beginning of buffer
+	// for FIR wrap around management
+	CPX::copyCPX(delayBuffer,&inBuffer[numInSamples-numTaps+1], numTaps);
+
+	//global->perform.StopPerformance(numInSamples);
+	return numOutSamples;
+
+
+}
+
+void Decimator::deleteFilters()
+{
+	delete (cic3);
+	delete (hb7);
+	delete (hb11);
+	delete (hb15);
+	delete (hb19);
+	delete (hb23);
+	delete (hb27);
+	delete (hb31);
+	delete (hb35);
+	delete (hb39);
+	delete (hb43);
+	delete (hb47);
+	delete (hb51);
+	delete (hb59);
 }
 
 //Halfband decimating filters are generated in Matlab with order = numTaps-1 and wPass
@@ -145,6 +283,9 @@ quint32 Decimator::HalfbandFilter::process(CPX *_in, CPX *_out, quint32 _numInSa
 void Decimator::initFilters()
 {
 	double *coeff;
+
+	//Passing NULL for coeff sets CIC3
+	cic3 = new HalfbandFilter(0, 0.0030, NULL);
 
 	coeff = new double[7] {
 			-0.03125208195057,                 0,   0.2812520818582,               0.5,
@@ -317,19 +458,3 @@ void Decimator::initFilters()
 	hb59 = new HalfbandFilter(59, 0.400, coeff);
 }
 
-void Decimator::deleteFilters()
-{
-	delete (hb7);
-	delete (hb11);
-	delete (hb15);
-	delete (hb19);
-	delete (hb23);
-	delete (hb27);
-	delete (hb31);
-	delete (hb35);
-	delete (hb39);
-	delete (hb43);
-	delete (hb47);
-	delete (hb51);
-	delete (hb59);
-}
