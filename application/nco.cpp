@@ -10,7 +10,7 @@ NCO::NCO(quint32 _sampleRate, quint32 _bufferSize) :
 NCO::~NCO(void)
 {
 }
-void NCO::SetFrequency(double f)
+void NCO::setFrequency(double f)
 {
 	//Eveeything related to frequency has to be set together, no interupts that could change freq 
 	//before step is set
@@ -30,15 +30,17 @@ void NCO::SetFrequency(double f)
 	//x[t] = cos(wt)
 	//NOTE: The only difference between a negative freq and a positive is the direction of the 'rotation'
 	//ie angularIncrement will be neg for neg freq and pos for pos freq
-	angularIncrement = TWOPI * frequency / sampleRate;
-	nextAngularFreq = 0;
+
+	//Only need to calculate these when freq changes, not in main generate loop
+	oscInc = TWOPI * frequency / sampleRate;
+	oscCos = cos(oscInc);
+	oscSin = sin(oscInc);
+	lastOsc.re = 1.0;
+	lastOsc.im = 0.0;
 
 	mutex.unlock();
 }
-void NCO::SetStartingPhase(double p)
-{
-	nextAngularFreq = p;
-}
+
 /*
 From Lynn 2nd ed pg 20
 x[n] = sin(n * 2 * Pi * f / fs)
@@ -57,41 +59,14 @@ At 48000 sps, this means we need 4800 samples for a complete cytle (sampleRate /
 So a 24khz signal will have 2 samples per cycle (48000/24000), which is the Nyquist limit
 -----------------
 */
-CPX * NCO::GenSamples()
+CPX * NCO::genSamples()
 {
-	mutex.lock();
+	//mutex.lock();
 
-	for (int i = 0; i < numSamples; i++)
-	{
-		//cos() is the real component
-		out[i].im = sin(nextAngularFreq);
-		//cos is 90% out of phase of sin
-		out[i].re = cos(nextAngularFreq);
-		nextAngularFreq += angularIncrement;
-		//We're basically plotting sin(x) where x can range from 0-360deg or 0 to 2pi radians
-		//x steps in angularIncrement increments, and we want to keep in the range or 0-2pi
-		if (nextAngularFreq >= TWOPI)
-			nextAngularFreq -= TWOPI;
-		else if (nextAngularFreq < 0.0)
-			nextAngularFreq += TWOPI;
+	for (int i = 0; i < numSamples; i++) {
+		nextSample(out[i]);
 	}
 	//next loop starts where we left off as if i=numSamples; i<numSamples*loop; ...
-	mutex.unlock();
+	//mutex.unlock();
 	return out;
-}
-//Returns next sample at specified freq and phase
-//Same logic as GenSample, just loop can be external to NCO
-CPX NCO::NextSample()
-{
-	CPX cx(cos(nextAngularFreq),sin(nextAngularFreq));
-	//DTTSP does an additional mult by cos and sin or increment, why?
-	//CPX cxDelta(cos(angularIncrement),sin(angularIncrement));
-
-	nextAngularFreq += angularIncrement;
-	if (nextAngularFreq >= TWOPI)
-		nextAngularFreq -= TWOPI;
-	else if (nextAngularFreq < 0)
-		nextAngularFreq += TWOPI;
-	//return cx * cxDelta;
-	return cx;
 }

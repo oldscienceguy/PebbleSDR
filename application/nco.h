@@ -19,17 +19,28 @@ class NCO : public ProcessStep
 public:
 	NCO(quint32 _sampleRate, quint32 _bufferSize);
 	~NCO(void);
-	void SetFrequency(double f);
-	void SetStartingPhase (double p);
+	void setFrequency(double f);
 	//Fills out buffer with samples
-	CPX * GenSamples();
+	CPX * genSamples();
+
 	//Returns next sample for use in continuous loops
-	CPX NextSample();
+	inline void nextSample(CPX &osc) {
+		//More efficient code that doesn't recalc expensive sin/cos over and over
+		double oscGn;
+		//We could make osc complex and use CPX::convolution method with gain, same code
+		osc.re = lastOsc.re * oscCos - lastOsc.im * oscSin;
+		osc.im = lastOsc.im * oscCos + lastOsc.re * oscSin;
+		oscGn = 1.95 - (lastOsc.re * lastOsc.re + lastOsc.im * lastOsc.im);
+		lastOsc.re = oscGn * osc.re;
+		lastOsc.im = oscGn * osc.im;
+	}
 
 private:
-	//Phase is always an increment of step
-	double nextAngularFreq;
-	double angularIncrement; //Angular frequency in radians
+	double oscInc;
+	double oscCos;
+	double oscSin;
+	CPX lastOsc;
+
 	QMutex mutex;
 
 	double frequency;

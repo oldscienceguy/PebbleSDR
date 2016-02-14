@@ -16,7 +16,7 @@ Mixer::~Mixer(void)
 //This sets the frequency we want to mix, typically -48k to +48k
 void Mixer::SetFrequency(double f)
 {
-	nco->SetFrequency(f);
+	nco->setFrequency(f);
 
 	//Bug: there's a problem if abs(f) is close to sampleRate which seems to be the same as f=0;
 	frequency = f;
@@ -36,18 +36,20 @@ CPX *Mixer::ProcessBlock(CPX *in)
 	}
 #if(0)
 	//Experiment: Does it make a difference if we do this in blocks or sample by sample?
-	mix = nco->GenSamples();
+	mix = nco->genSamples();
 	CPX::multCPX(out,in,mix,numSamples);
 #else
-	CPX cx;
+	CPX osc;
 	for (int i = 0; i < numSamples; i++)
 	{
-		cx = nco->NextSample();
+		nco->nextSample(osc);
 		//NOTE: sin(a+b) and cos(a+b) are handled by complex mult, see nco.cpp for more details
 		if (gain != 1)
-			out[i] = cx * in[i] * gain;
-		else
-			out[i] = cx * in[i];
+			out[i].convolution(osc, in[i], gain);
+		else {
+			//Complex mult
+			out[i].convolution(osc, in[i]);
+		}
 	}
 #endif
 	return out;

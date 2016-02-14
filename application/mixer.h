@@ -15,7 +15,7 @@ public:
 	void SetFrequency(double f);
 private:
 	double frequency;
-	int gain; //Adjust for mixer loss so we keep constant gain
+	double gain; //Adjust for mixer loss so we keep constant gain
 	NCO *nco;
 	//CPX *mix;
 
