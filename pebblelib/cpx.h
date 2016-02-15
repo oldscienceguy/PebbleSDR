@@ -79,35 +79,49 @@ public:
 	static CPX *memalign(int _numCPX);
 	//Just copies in to out
 	static void copyCPX(CPX *out, CPX *in, int size);
+	static void copyCPX(CPX *out, const CPX *in, int size);
+
 	//Clears buffer to zeros, equiv to CPX(0,0)
 	static void clearCPX(CPX *out, int size);
+
 	//scales in by a and returns in out, SIMD enabled
 	static void scaleCPX(CPX * out, CPX * in, double a, int size);
+	static void scaleCPX(CPX * out, const CPX * in, double a, int size);
+
 	static void multCPX(CPX * out, CPX * in, CPX *in2, int size);
+	static void multCPX(CPX * out, const CPX * in, const CPX *in2, int size);
+
 	//adds in + in2 and returns in out, SIMD enabled
 	static void addCPX(CPX * out, CPX * in, CPX *in2, int size);
-	//out.re = mag, out.im = original out.re SIMD enabled
-	static void magCPX(CPX *out, CPX *in, int size);
-	//out.re = sqrMag, out.im = original out.reSIMD enabled
-	static void sqrMagCPX(CPX *out, CPX *in, int size);
-	//Copy every N samples from in to out
-	static void decimateCPX(CPX *out, CPX *in, int by, int size);
-	//Hypot version of norm
-	static double normCPX(CPX *in, int size);
-	//Squared version of norm
-	static double normSqrCPX(CPX *in, int size);
-	//Return max mag()
-	static double peakCPX(CPX *in, int size);
-	static double peakPowerCPX(CPX *in, int size);
+	static void addCPX(CPX * out, const CPX * in, const CPX *in2, int size);
 
-	inline double real() { return re; }
+	//out.re = mag, out.im = original out.re SIMD enabled
+	static void magCPX(CPX *out, const CPX *in, int size);
+
+	//out.re = sqrMag, out.im = original out.reSIMD enabled
+	static void sqrMagCPX(CPX *out, const CPX *in, int size);
+
+	//Copy every N samples from in to out
+	static void decimateCPX(CPX *out, const CPX *in, int by, int size);
+
+	//Hypot version of norm
+	static double normCPX(const CPX *in, int size);
+
+	//Squared version of norm
+	static double normSqrCPX(const CPX *in, int size);
+
+	//Return max mag()
+	static double peakCPX(const CPX *in, int size);
+	static double peakPowerCPX(const CPX *in, int size);
+
+	inline double real() const { return re; }
 	inline void real(double R) {re=R;}
-	inline double imag() { return im; }
+	inline double imag() const { return im; }
 	inline void imag(double I) {im=I;}
 
     //For cases where we need consistent I/Q representation using complex
-	inline double i() {return re;} //In phase is typically in real
-	inline double q() {return im;} //Quad phase is typically in imag
+	inline double i() const {return re;} //In phase is typically in real
+	inline double q() const {return im;} //Quad phase is typically in imag
 
 	inline void clear() {re=0.0; im=0.0;}
 
@@ -120,7 +134,7 @@ public:
 	}
 
     //cpx1 = cpx2 + cpx3
-	inline CPX operator +(CPX a) {
+	inline CPX operator +(const CPX a) const {
         return CPX (re + a.re ,im + a.im);}
 
     inline CPX& operator+=(const CPX& a) {
@@ -130,7 +144,7 @@ public:
         }
 
     //cpx1 = cpx2 - cpx3
-    inline CPX operator -(const CPX &a) {
+	inline CPX operator -(const CPX &a) const {
         return CPX (re - a.re, im - a.im);}
 
     inline CPX& operator-=(const CPX& a) {
@@ -173,7 +187,7 @@ public:
     }
 
     //Same as '*'
-    inline CPX scale(double a) {
+	inline CPX scale (double a) const {
         return *this * a;
     }
 
@@ -220,7 +234,7 @@ public:
     }
 
     //Squared version of magnitudeMagnitude = re^2 + im^2
-    inline double sqrMag() {
+	inline double sqrMag() const {
         return re * re + im * im;
     }
 
@@ -241,16 +255,16 @@ public:
     */
 
 
-	inline bool operator ==(CPX a) {
+	inline bool operator ==(CPX a) const {
 		return re == a.re && im == a.im;
 	}
 
-	inline bool operator !=(CPX a) {
+	inline bool operator !=(CPX a) const {
 		return re != a.re || im != a.im;
 	}
 	
 	//Complex conjugate (see wikipedia).  im has opposite sign of original
-    inline CPX conj() {
+	inline CPX conj() const {
         return CPX(re,-im);
     }
 
@@ -263,17 +277,17 @@ public:
     }
 
 
-    double phase();
+	double phase() const;
 
 	//Convert Cartesion to Polar
 	//WARNING: CPX IS USED TO KEEP POLAR, BUT VALUES ARE NOT REAL/IMAGINARY, THEY ARE MAG/PHASE
 	//NAME VARS cpx... and pol... TO AVOID CONFUSION
-	inline CPX CartToPolar() {
+	inline CPX CartToPolar() const {
 		return CPX(mag(),phase());
 	}
 
 	//re has Mag, im has Phase
-	inline CPX PolarToCart() {
+	inline CPX PolarToCart() const {
 		return CPX(re * cos(im), re * sin(im));
 	}
 

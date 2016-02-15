@@ -14,7 +14,7 @@ extern void SSEMagCPX(CPX * c, CPX * a, int size);
 extern void SSESqMagCPX(CPX * c, CPX * a, int size);
 
 
-double CPX::phase()
+double CPX::phase() const
 {
     double tmp;
 	//Special handling to avoid divide by 0
@@ -44,9 +44,20 @@ CPX *CPX::memalign(int _numCPX)
 	return (CPX*)buf;
 }
 
+//Todo: Remove non constant versions
 void CPX::copyCPX(CPX *out, CPX *in, int size)
 {
 	memcpy(out,in,sizeof(CPX) * size);
+}
+void CPX::copyCPX(CPX *out, const CPX *in, int size)
+{
+	memcpy(out,in,sizeof(CPX) * size);
+}
+
+void CPX::multCPX(CPX * out, const CPX * in, const CPX *in2, int size)
+{
+	for (int i=0; i<size; i++)
+		out[i] = in[i] * in2[i];
 }
 
 void CPX::multCPX(CPX * out, CPX * in, CPX *in2, int size)
@@ -58,6 +69,12 @@ void CPX::multCPX(CPX * out, CPX * in, CPX *in2, int size)
 		out[i] = in[i] * in2[i];
 }
 
+void CPX::scaleCPX(CPX *out, const CPX *in, double a, int size)
+{
+	for (int i=0; i<size; i++)
+		out[i] = in[i].scale(a);
+}
+
 void CPX::scaleCPX(CPX *out, CPX *in, double a, int size)
 {
 	if(SIMD)
@@ -65,6 +82,12 @@ void CPX::scaleCPX(CPX *out, CPX *in, double a, int size)
 
 	for (int i=0; i<size; i++)
 		out[i] = in[i].scale(a);
+}
+
+void CPX::addCPX(CPX * out, const CPX * in, const CPX *in2, int size)
+{
+	for (int i=0; i<size; i++)
+		out[i] = in[i] + in2[i];
 }
 
 void CPX::addCPX(CPX * out, CPX * in, CPX *in2, int size)
@@ -76,20 +99,16 @@ void CPX::addCPX(CPX * out, CPX * in, CPX *in2, int size)
 		out[i] = in[i] + in2[i];
 }
 
-void CPX::magCPX(CPX *out, CPX *in, int size)
+void CPX::magCPX(CPX *out, const CPX *in, int size)
 {
-	if (SIMD)
-		return SSEMagCPX(out, in, size);
 	for (int i=0; i<size; i++){
 		out[i].re = in[i].mag();
 		out[i].im = in[i].re;
 	}
 }
 
-void CPX::sqrMagCPX(CPX *out, CPX *in, int size)
+void CPX::sqrMagCPX(CPX *out, const CPX *in, int size)
 {
-	if (SIMD)
-		return SSESqMagCPX(out, in, size);
 	for (int i = 0; i < size; i++) {
 		out[i].re = in[i].sqrMag();
 		out[i].im = in[i].re; //Keet this for ref?
@@ -105,7 +124,7 @@ void CPX::clearCPX(CPX *out, int size)
 //Copy every 'by' samples from in to out
 //decimate(out,in,2,numSamples) //Copy 0,2,4... to in
 //decimate(out,in,3,numSamples) //COpy 0,3,6 ...
-void CPX::decimateCPX(CPX *out, CPX *in, int by, int size)
+void CPX::decimateCPX(CPX *out, const CPX *in, int by, int size)
 {
     for (int i = 0, j = 0; i < size; i+=by, j++)
     {
@@ -113,29 +132,31 @@ void CPX::decimateCPX(CPX *out, CPX *in, int by, int size)
     }  
 }
 //
-double CPX::normSqrCPX(CPX *in, int size)
+double CPX::normSqrCPX(const CPX *in, int size)
 {
     double sum = 0.0;
 	for (int i=0; i<size; i++)
 		sum += in[i].sqrMag();
 	return sum;
 }
-double CPX::normCPX(CPX *in, int size)
+
+double CPX::normCPX(const CPX *in, int size)
 {
     double sum = 0.0;
 	for (int i=0; i<size; i++)
 		sum += in[i].sqrMag();
 	return sqrt(sum/size);
 }
+
 //Returns max mag() in buffer
-double CPX::peakCPX(CPX *in, int size)
+double CPX::peakCPX(const CPX *in, int size)
 {
 	double maxMag=0.0;
 	for (int i=0; i<size; i++)
 		maxMag = std::max(in[i].mag(),maxMag);
 	return maxMag;
 }
-double CPX::peakPowerCPX(CPX *in, int size)
+double CPX::peakPowerCPX(const CPX *in, int size)
 {
 	double maxPower = 0.0;
 	for (int i=0; i<size; i++)
