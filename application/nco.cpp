@@ -37,7 +37,7 @@ void NCO::setFrequency(double f)
 	oscSin = sin(oscInc);
 	lastOsc.re = 1.0;
 	lastOsc.im = 0.0;
-
+	oscTime = 0.0;
 	mutex.unlock();
 }
 

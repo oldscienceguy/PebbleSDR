@@ -24,6 +24,7 @@ public:
 	CPX * genSamples();
 
 	//Returns next sample for use in continuous loops
+	//Quadrature oscillator
 	inline void nextSample(CPX &osc) {
 		//More efficient code that doesn't recalc expensive sin/cos over and over
 		double oscGn;
@@ -35,10 +36,20 @@ public:
 		lastOsc.im = oscGn * osc.im;
 	}
 
+	//Alternate implementation, much slower than quad oscillator because we recalc sin/cos every sample
+	inline void nextSampleAlt(CPX &osc) {
+		osc.re = cos(oscTime);
+		osc.im = sin(oscTime);
+		oscTime += oscInc;
+		oscTime = fmod(oscTime, TWOPI);	//Keep bounded
+
+	}
+
 private:
 	double oscInc;
 	double oscCos;
 	double oscSin;
+	double oscTime; //For alternate implementation
 	CPX lastOsc;
 
 	QMutex mutex;
