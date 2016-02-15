@@ -205,6 +205,7 @@ private:
 
 	quint32 decimatedSampleRate;
 	double maxBandWidth; //Protected bandwidth of signal of interest
+	bool useCuteCoeff; //Use cuteSDR coefficients vs our close MatLab generated ones
 
 	void initFilters();
 	void deleteFilters();
