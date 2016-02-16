@@ -1,15 +1,24 @@
 #include "decimator.h"
 
+//Use MatLab coefficients instead of cuteSDR
+#define USE_MATLAB
+
 Decimator::Decimator(quint32 _sampleRate, quint32 _bufferSize) :
 	ProcessStep(_sampleRate, _bufferSize)
 {
+	useVdsp = false;
 	decimatedSampleRate = _sampleRate;
 	decimationChain.clear();
-	//cuteSDR filter coefficients seem to be better than our close MatLab generated ones
-	//Difference is noticible on 162550 Noaa FMN, slight whine with ours, no whine with cuteSDR
-	//Todo: Eventually figure out what the difference is
-	useCuteCoeff = true;
 	initFilters();
+
+	if (useVdsp) {
+		//Testing vDSP
+		splitComplexIn.realp = new double[_bufferSize * 2];
+		splitComplexIn.imagp = new double[_bufferSize * 2];
+		splitComplexOut.realp = new double[_bufferSize * 2];
+		splitComplexOut.imagp = new double[_bufferSize * 2];
+	}
+
 }
 
 Decimator::~Decimator()
@@ -22,59 +31,69 @@ quint32 Decimator::buildDecimationChain(quint32 _sampleRate, quint32 _maxBandWid
 {
 	decimatedSampleRate = _sampleRate;
 	maxBandWidth = _maxBandWidth;
-
+	Decimator::HalfbandFilter *chain = NULL;
+	Decimator::HalfbandFilter *prevChain = NULL;
 	qDebug()<<"Building Decimator chain for sampleRate = "<<_sampleRate<<" max bw = "<<_maxBandWidth;
 	while (decimatedSampleRate > minDecimatedSampleRate) {
 		//Use cic3 for faster decimation
 #if 1
 		if(decimatedSampleRate >= (maxBandWidth / cic3->wPass) ) {		//See if can use CIC order 3
-			decimationChain.append(cic3);
+			//Passing NULL for coeff sets CIC3
+			chain = new HalfbandFilter(cic3);
 			qDebug()<<"cic3 = "<<decimatedSampleRate;
 #else
 		if(decimatedSampleRate >= (maxBandWidth / hb7->wPass) ) {		//See if can use CIC order 3
-			decimationChain.append(hb7);
+			chain = new HalfbandFilter(hb7);
 			qDebug()<<"hb7 = "<<decimatedSampleRate;
 #endif
 		} else if(decimatedSampleRate >= (maxBandWidth / hb11->wPass) ) {	//See if can use fixed 11 Tap Halfband
-			decimationChain.append(hb11);
+			chain = new HalfbandFilter(hb11);
 			qDebug()<<"hb11 = "<<decimatedSampleRate;
 		} else if(decimatedSampleRate >= (maxBandWidth / hb15->wPass) ) {	//See if can use Halfband 15 Tap
-			decimationChain.append(hb15);
+			chain = new HalfbandFilter(hb15);
 			qDebug()<<"hb15 = "<<decimatedSampleRate;
 		} else if(decimatedSampleRate >= (maxBandWidth / hb19->wPass) ) {	//See if can use Halfband 19 Tap
-			decimationChain.append(hb19);
+			chain = new HalfbandFilter(hb19);
 			qDebug()<<"hb19 = "<<decimatedSampleRate;
 		} else if(decimatedSampleRate >= (maxBandWidth / hb23->wPass) ) {	//See if can use Halfband 23 Tap
-			decimationChain.append(hb23);
+			chain = new HalfbandFilter(hb23);
 			qDebug()<<"hb23 = "<<decimatedSampleRate;
 		} else if(decimatedSampleRate >= (maxBandWidth / hb27->wPass) ) {	//See if can use Halfband 27 Tap
-			decimationChain.append(hb27);
+			chain = new HalfbandFilter(hb27);
 			qDebug()<<"hb27 = "<<decimatedSampleRate;
 		} else if(decimatedSampleRate >= (maxBandWidth / hb31->wPass) ) {	//See if can use Halfband 31 Tap
-			decimationChain.append(hb31);
+			chain = new HalfbandFilter(hb31);
 			qDebug()<<"hb31 = "<<decimatedSampleRate;
 		} else if(decimatedSampleRate >= (maxBandWidth / hb35->wPass) ) {	//See if can use Halfband 35 Tap
-			decimationChain.append(hb35);
+			chain = new HalfbandFilter(hb35);
 			qDebug()<<"hb35 = "<<decimatedSampleRate;
 		} else if(decimatedSampleRate >= (maxBandWidth / hb39->wPass) ) {	//See if can use Halfband 39 Tap
-			decimationChain.append(hb39);
+			chain = new HalfbandFilter(hb39);
 			qDebug()<<"hb39 = "<<decimatedSampleRate;
 		} else if(decimatedSampleRate >= (maxBandWidth / hb43->wPass) ) {	//See if can use Halfband 43 Tap
-			decimationChain.append(hb43);
+			chain = new HalfbandFilter(hb43);
 			qDebug()<<"hb43 = "<<decimatedSampleRate;
 		} else if(decimatedSampleRate >= (maxBandWidth / hb47->wPass) ) {	//See if can use Halfband 47 Tap
-			decimationChain.append(hb47);
+			chain = new HalfbandFilter(hb47);
 			qDebug()<<"hb47 = "<<decimatedSampleRate;
 		} else if(decimatedSampleRate >= (maxBandWidth / hb51->wPass) ) {	//See if can use Halfband 51 Tap
-			decimationChain.append(hb51);
+			chain = new HalfbandFilter(hb51);
 			qDebug()<<"hb51 = "<<decimatedSampleRate;
 		} else if(decimatedSampleRate >= (maxBandWidth / hb59->wPass) ) {	//See if can use Halfband 51 Tap
-			decimationChain.append(hb59);
+			chain = new HalfbandFilter(hb59);
 			qDebug()<<"hb59 = "<<decimatedSampleRate;
 		} else {
 			qDebug()<<"Ran out of filters before minDecimatedSampleRate";
 			break; //out of while
 		}
+
+		decimationChain.append(chain);
+		//Each chain knows what the next chain needs
+		if (prevChain != NULL)
+			prevChain->delayBufSizeNextStage = chain->numTaps-1;
+		prevChain = chain;
+		chain->delayBufSizeNextStage = 0; //Stop flag
+
 		decimatedSampleRate /= 2.0;
 	}
 	qDebug()<<"Decimated sample rate = "<<decimatedSampleRate;
@@ -85,17 +104,59 @@ quint32 Decimator::buildDecimationChain(quint32 _sampleRate, quint32 _maxBandWid
 quint32 Decimator::process(CPX *_in, CPX *_out, quint32 _numSamples)
 {
 	quint32 remainingSamples = _numSamples;
-	for (int i=0; i<decimationChain.length(); i++) {
-		//Decimate in place is ok
-		remainingSamples = decimationChain[i]->process(_in, _in, remainingSamples);
+	if (useVdsp) {
+		//Stride for CPX must be 2 for vDsp legacy reasons
+		int cpxStride = 2;
+		int splitCpxStride = 1;
+
+		//Leave space for delay buffer in first chain
+		quint32 delaySize = decimationChain[0]->numTaps - 1;
+		DSPDoubleSplitComplex tmp;
+		tmp.realp = &splitComplexIn.realp[delaySize];
+		tmp.imagp = &splitComplexIn.imagp[delaySize];
+		vDSP_ctozD((DSPDoubleComplex*)_in,cpxStride,&tmp,splitCpxStride,_numSamples);
+
+		HalfbandFilter *chain = NULL;
+		for (int i=0; i<decimationChain.length(); i++) {
+			chain = decimationChain[i];
+			remainingSamples = chain->processVDsp(&splitComplexIn, &splitComplexOut, remainingSamples);
+			//Copy out samples to in for next loop.  Inplace decimation not supported for vDsp
+			if (chain->delayBufSizeNextStage != 0) {
+				vDSP_zvmovD(&splitComplexOut,splitCpxStride,
+							&splitComplexIn,splitCpxStride,remainingSamples);
+			}
+		}
+		//Convert back to CPX*, skipping last chain delayBuffer
+		tmp.realp = &splitComplexOut.realp[chain->numTaps-1];
+		tmp.imagp = &splitComplexOut.imagp[chain->numTaps-1];
+		vDSP_ztocD(&tmp,splitCpxStride,(DSPDoubleComplex*)_out,cpxStride,remainingSamples);
+	} else {
+		HalfbandFilter *chain = NULL;
+		for (int i=0; i<decimationChain.length(); i++) {
+			chain = decimationChain[i];
+			//Decimate in place is ok
+			remainingSamples = chain->process(_in, _in, remainingSamples);
+		}
+		CPX::copyCPX(_out, _in, remainingSamples);
+
 	}
-	CPX::copyCPX(_out, _in, remainingSamples);
 	return remainingSamples;
+}
+
+Decimator::HalfbandFilterDesign::HalfbandFilterDesign(quint16 _numTaps, double _wPass, double *_coeff) :
+	numTaps(_numTaps), wPass(_wPass), coeff(_coeff)
+{
+}
+
+Decimator::HalfbandFilter::HalfbandFilter(Decimator::HalfbandFilterDesign *_design) :
+	HalfbandFilter(_design->numTaps, _design->wPass, _design->coeff)
+{
 }
 
 Decimator::HalfbandFilter::HalfbandFilter(quint16 _numTaps, double _wPass, double *_coeff)
 {
 	numTaps = _numTaps;
+	delayBufSize = numTaps - 1;
 	wPass = _wPass;
 	coeff = _coeff;
 	//Big enough for 2x max samples we will handle
@@ -108,6 +169,9 @@ Decimator::HalfbandFilter::HalfbandFilter(quint16 _numTaps, double _wPass, doubl
 		useCIC3 = false;
 	xOdd = 0;
 	xEven = 0;
+
+	splitComplexAcc.realp = new double;
+	splitComplexAcc.imagp = new double;
 }
 
 Decimator::HalfbandFilter::~HalfbandFilter()
@@ -126,7 +190,7 @@ Decimator::HalfbandFilter::~HalfbandFilter()
 //Then we add the non-zero middle term that was skipped
 // H(z) += h(5)z-5
 
-quint32 Decimator::HalfbandFilter::process(CPX *_in, CPX *_out, quint32 _numInSamples)
+quint32 Decimator::HalfbandFilter::process(const CPX *_in, CPX *_out, quint32 _numInSamples)
 {
 	if (useCIC3) {
 		return processCIC3(_in, _out, _numInSamples);
@@ -136,11 +200,10 @@ quint32 Decimator::HalfbandFilter::process(CPX *_in, CPX *_out, quint32 _numInSa
 
 	quint32 numInSamples = _numInSamples;
 	quint32 numOutSamples = 0;
-	CPX* inBuffer = _in;
+	const CPX* inBuffer = _in;
 	CPX *outBuffer = _out;
 	CPX *cpxDelay;
-	quint32 numDelaySamples = numTaps - 1; //10 for 11 tap filter
-	quint32 midPoint = numDelaySamples / 2; //5 for 11 tap filter
+	quint32 midPoint = delayBufSize / 2; //5 for 11 tap filter
 
 	//Not sure what good this does, since output is unchanged?
 	if(numInSamples < numTaps)	//safety net to make sure numInSamples is large enough to process
@@ -150,7 +213,7 @@ quint32 Decimator::HalfbandFilter::process(CPX *_in, CPX *_out, quint32 _numInSa
 	//Copy input samples into 2nd half of delay buffer starting at position numTaps-1
 	//1st half of delay buffer has samples from last call
 	//Faster, using memcpy
-	CPX::copyCPX(&delayBuffer[numDelaySamples], inBuffer, numInSamples);
+	CPX::copyCPX(&delayBuffer[delayBufSize], inBuffer, numInSamples);
 
 	//perform decimation FIR filter on even samples
 	CPX acc;
@@ -165,20 +228,31 @@ quint32 Decimator::HalfbandFilter::process(CPX *_in, CPX *_out, quint32 _numInSa
 		acc.clear();
 #endif
 		cpxDelay = &delayBuffer[i]; //Oldest sample
+#if 0
+		acc = sse_dot(numInSamples,cpxDelay,coeff);
+#else
+		//Calculate dot-product (MAC)
 		//only use even coefficients since odd are zero(except center point)
 		for(int j=0; j<numTaps; j+=2) {
+
+			//Fused multiply accumulate is actually slower than simple code
+			//acc.re = fma(cpxDelay[j].re, coeff[j], acc.re);
+			//acc.im = fma(cpxDelay[j].im, coeff[j], acc.im);
 			acc.re += ( cpxDelay[j].re * coeff[j] );
 			acc.im += ( cpxDelay[j].im * coeff[j] );
 		}
+#endif
 		//now multiply the center coefficient
 		acc.re += ( delayBuffer[i + midPoint].re * coeff[midPoint] );
 		acc.im += ( delayBuffer[i + midPoint].im * coeff[midPoint] );
-		outBuffer[numOutSamples++] = acc;	//put output buffer
+		outBuffer[numOutSamples].re = acc.re;	//put output buffer
+		outBuffer[numOutSamples].im = acc.im;	//put output buffer
+		numOutSamples++;
 
 	}
 	//need to copy last numTapSamples input samples in buffer to beginning of buffer
 	// for FIR wrap around management
-	CPX::copyCPX(delayBuffer,&inBuffer[numInSamples - numDelaySamples], numDelaySamples);
+	CPX::copyCPX(delayBuffer,&inBuffer[numInSamples - delayBufSize], delayBufSize);
 
 	//global->perform.StopPerformance(numInSamples);
 	return numOutSamples;
@@ -192,11 +266,11 @@ quint32 Decimator::HalfbandFilter::process(CPX *_in, CPX *_out, quint32 _numInSa
 // implemetation of a CIC N=3 filter.
 // InLength must be an even number
 //returns number of output samples processed
-quint32 Decimator::HalfbandFilter::processCIC3(CPX *_in, CPX *_out, quint32 _numInSamples)
+quint32 Decimator::HalfbandFilter::processCIC3(const CPX *_in, CPX *_out, quint32 _numInSamples)
 {
 	quint32 numInSamples = _numInSamples;
 	quint32 numOutSamples = 0;
-	CPX* inBuffer = _in;
+	const CPX* inBuffer = _in;
 	CPX *outBuffer = _out;
 
 	CPX even,odd;
@@ -216,6 +290,44 @@ quint32 Decimator::HalfbandFilter::processCIC3(CPX *_in, CPX *_out, quint32 _num
 
 }
 
+//Experiment using vDsp dot product functions
+//_in has empty space at the beginning of the buffer that we use for delay samples
+//Actual input samples start at _in[numDelaySamples]
+quint32 Decimator::HalfbandFilter::processVDsp(const DSPDoubleSplitComplex *_in,
+		DSPDoubleSplitComplex *_out, quint32 _numInSamples)
+{
+	quint32 numInSamples = _numInSamples;
+	quint32 numOutSamples = 0;
+
+	DSPDoubleSplitComplex tmp;
+	//Copy delay samples to _in so we have continuous buffer
+	//Todo: Switch delayBuffer to splitComplex so we can use vDsp for speed
+	for (int i=0; i<delayBufSize; i++) {
+		_in->realp[i] = delayBuffer[i].re;
+		_in->imagp[i] = delayBuffer[i].im;
+	}
+
+	for (int i=0; i<numInSamples; i+=2) {
+		//Multiply every other sample in _in (decimate by 2) * every coefficient
+
+		tmp.realp = &_in->realp[i];
+		tmp.imagp = &_in->imagp[i];
+		//Brute force for all coeff, does not know or take advantage of zero coefficients
+		vDSP_zrdotprD(&tmp,1,coeff,1,&splitComplexAcc,numTaps);
+		//Leave room in next stage for delay samples
+		_out->realp[numOutSamples + delayBufSizeNextStage] = *splitComplexAcc.realp;
+		_out->imagp[numOutSamples + delayBufSizeNextStage] = *splitComplexAcc.imagp;
+		numOutSamples++;
+	}
+
+	//Copy last numDelaySamples to delayBuffer for next iteration
+	for (int i=0; i<delayBufSize; i++) {
+		delayBuffer[i].re = _in->realp[i + numInSamples];
+		delayBuffer[i].im = _in->imagp[i + numInSamples];
+	}
+	return numOutSamples;
+}
+
 //Experimental improvement over cuteSDR code which processes 1st coeff twice?
 //Avoids copying entire inbuffer into delay buffer, we just need numTaps delay buffer
 //Status: Not filtering correctly and takes longer than just copying in buffer each time
@@ -233,11 +345,11 @@ quint32 Decimator::HalfbandFilter::processCIC3(CPX *_in, CPX *_out, quint32 _num
 	10				0,2,4,6,8,10	ib[5]
 	12				2,4,6,8,10,12	ib[7]
 */
-quint32 Decimator::HalfbandFilter::processExp(CPX *_in, CPX *_out, quint32 _numInSamples)
+quint32 Decimator::HalfbandFilter::processExp(const CPX *_in, CPX *_out, quint32 _numInSamples)
 {
 	quint32 numInSamples = _numInSamples;
 	quint32 numOutSamples = 0;
-	CPX* inBuffer = _in;
+	const CPX* inBuffer = _in;
 	CPX *outBuffer = _out;
 
 	//Step 1: Process samples in delay buffer
@@ -256,16 +368,15 @@ quint32 Decimator::HalfbandFilter::processExp(CPX *_in, CPX *_out, quint32 _numI
 	//Avoid CPX copy from using local CPX and put directly in outBuffer
 	CPX acc;
 	quint32 delayIndex;
-	quint32 numDelaySamples = numTaps - 1; //10 for 11 tap filter
-	quint32 midPoint = numDelaySamples / 2; //5 for 11 tap filter
+	quint32 midPoint = delayBufSize / 2; //5 for 11 tap filter
 	//Process all but the last numTap samples, which get put in delay buffer for next time
 	for(int i=0; i<numInSamples ; i+=2) {
 		acc.clear();
 		//only use even coefficients since odd are zero(except center point)
 		for(int j=0; j<numTaps; j+=2) {
-			if (i < numDelaySamples) {
+			if (i < delayBufSize) {
 				//Oldest sample is in delay buffer, so we have to split the process
-				if (i+j < numDelaySamples) {
+				if (i+j < delayBufSize) {
 					delayIndex = i+j; // Oldest sample in delay buffer
 					//qDebug()<<"1-delayBuffer "<<delayIndex;
 					//First N samples are in delay buffer
@@ -273,14 +384,14 @@ quint32 Decimator::HalfbandFilter::processExp(CPX *_in, CPX *_out, quint32 _numI
 					acc.im += ( delayBuffer[delayIndex].im * coeff[j] );
 				} else {
 					//Remaining samples are in inBuffer
-					delayIndex = (i+j) - numDelaySamples;
+					delayIndex = (i+j) - delayBufSize;
 					//qDebug()<<"2-inBuffer "<<delayIndex;
 					acc.re += ( inBuffer[delayIndex].re * coeff[j] );
 					acc.im += ( inBuffer[delayIndex].im * coeff[j] );
 				}
 			} else {
 				//All of the delay samples are in inBuffer, delayBuffer not used
-				delayIndex = (i+j) - numDelaySamples;
+				delayIndex = (i+j) - delayBufSize;
 				//qDebug()<<"3-inBuffer "<<delayIndex;
 				acc.re += ( inBuffer[delayIndex].re * coeff[j] );
 				acc.im += ( inBuffer[delayIndex].im * coeff[j] );
@@ -288,7 +399,7 @@ quint32 Decimator::HalfbandFilter::processExp(CPX *_in, CPX *_out, quint32 _numI
 		} //end j<numTaps
 
 		//Add midpoint
-		if (i < numDelaySamples) {
+		if (i < delayBufSize) {
 			//midpoint can be in delayBuffer or inBuffer
 			if (i < midPoint) {
 				delayIndex = i + midPoint;
@@ -317,7 +428,7 @@ quint32 Decimator::HalfbandFilter::processExp(CPX *_in, CPX *_out, quint32 _numI
 
 	}
 	//Copy last numTapSamples from in buffer to delay buffer
-	CPX::copyCPX(delayBuffer,&inBuffer[numInSamples - numDelaySamples], numDelaySamples);
+	CPX::copyCPX(delayBuffer,&inBuffer[numInSamples - delayBufSize], delayBufSize);
 
 	//global->perform.StopPerformance(numInSamples);
 	return numOutSamples;
@@ -340,6 +451,9 @@ void Decimator::deleteFilters()
 	delete (hb47);
 	delete (hb51);
 	delete (hb59);
+	for (int i=0; i<decimationChain.length(); i++) {
+		delete decimationChain[i];
+	}
 }
 
 //Halfband decimating filters are generated in Matlab with order = numTaps-1 and wPass
@@ -349,17 +463,15 @@ void Decimator::initFilters()
 {
 	double *coeff;
 
-	//Passing NULL for coeff sets CIC3
-	cic3 = new HalfbandFilter(0, 0.0030, NULL);
+	cic3 = new HalfbandFilterDesign(0, 0.0030, NULL);
 
-	coeff = new double[7] {
+	hb7 = new HalfbandFilterDesign(7, 0.0030, new double[7] {
 			-0.03125208195057,                 0,   0.2812520818582,               0.5,
 			  0.2812520818582,                 0, -0.03125208195057
-	};
-	hb7 = new HalfbandFilter(7, 0.0030, coeff);
+	});
 
-	if (useCuteCoeff)
-		coeff = new double[11] {
+#ifndef USE_MATLAB
+	coeff = new double[11] {
 			0.0060431029837374152,
 			0.0,
 			-0.049372515458761493,
@@ -372,16 +484,17 @@ void Decimator::initFilters()
 			0.0,
 			0.0060431029837374152,
 		};
-	else
+#else
 		coeff = new double[11] {
 			0.006043102983737,                 0, -0.04937251545876,                 0,
 			  0.2933294495205,               0.5,   0.2933294495205,                 0,
 			-0.04937251545876,                 0, 0.006043102983737
 		};
+#endif
 
-	hb11 = new HalfbandFilter(11, 0.0500, coeff);
+	hb11 = new HalfbandFilterDesign(11, 0.0500, coeff);
 
-	if (useCuteCoeff)
+#ifndef USE_MATLAB
 		coeff = new double[15] {
 			-0.001442203300285281,
 			0.0,
@@ -399,16 +512,17 @@ void Decimator::initFilters()
 			0.0,
 			-0.001442203300285281
 		};
-	else
+#else
 		coeff = new double[15] {
 			-0.001442203300197,                 0,  0.01301751280274,                 0,
 			 -0.06165327860496,                 0,   0.3000779231603,               0.5,
 			   0.3000779231603,                 0, -0.06165327860496,                 0,
 			  0.01301751280274,                 0,-0.001442203300197
 		};
-	hb15 = new HalfbandFilter(15, 0.0980, coeff);
+#endif
+	hb15 = new HalfbandFilterDesign(15, 0.0980, coeff);
 
-	if (useCuteCoeff)
+#ifndef USE_MATLAB
 		coeff = new double[19] {
 			0.00042366527106480427,
 			0.0,
@@ -430,7 +544,7 @@ void Decimator::initFilters()
 			0.0,
 			0.00042366527106480427
 		};
-	else
+#else
 		coeff = new double[19] {
 			0.0004236652712401,                 0, -0.00407173333702,                 0,
 				0.019895653882,                 0, -0.07074003441233,                 0,
@@ -438,9 +552,10 @@ void Decimator::initFilters()
 			 -0.07074003441233,                 0,    0.019895653882,                 0,
 			 -0.00407173333702,                 0,0.0004236652712401
 		};
-	hb19 = new HalfbandFilter(19, 0.1434, coeff);
+#endif
+	hb19 = new HalfbandFilterDesign(19, 0.1434, coeff);
 
-	if (useCuteCoeff)
+#ifndef USE_MATLAB
 		coeff = new double[23] {
 			-0.00014987651418332164,
 			0.0,
@@ -466,7 +581,7 @@ void Decimator::initFilters()
 			0.0,
 			-0.00014987651418332164
 		};
-	else
+#else
 		coeff = new double[23] {
 			-0.0001498765142888,                 0, 0.001474863328452,                 0,
 			-0.007441694499077,                 0,  0.02616352273205,                 0,
@@ -475,9 +590,10 @@ void Decimator::initFilters()
 			  0.02616352273205,                 0,-0.007441694499077,                 0,
 			 0.001474863328452,                 0,-0.0001498765142888
 	};
-	hb23 = new HalfbandFilter(23, 0.1820, coeff);
+#endif
+	hb23 = new HalfbandFilterDesign(23, 0.1820, coeff);
 
-	if (useCuteCoeff)
+#ifndef USE_MATLAB
 		coeff = new double[27] {
 			0.000063730426952664685,
 			0.0,
@@ -507,7 +623,7 @@ void Decimator::initFilters()
 			0.0,
 			0.000063730426952664685
 		};
-	else
+#else
 		coeff = new double[27] {
 			6.373042719017e-05,                 0,-0.0006198519400048,                 0,
 			 0.003151250478532,                 0, -0.01117315134303,                 0,
@@ -517,9 +633,10 @@ void Decimator::initFilters()
 			 -0.01117315134303,                 0, 0.003151250478532,                 0,
 			-0.0006198519400048,                 0,6.373042719017e-05
 	};
-	hb27 = new HalfbandFilter(27, 0.2160, coeff);
+#endif
+	hb27 = new HalfbandFilterDesign(27, 0.2160, coeff);
 
-	if (useCuteCoeff)
+#ifndef USE_MATLAB
 		coeff = new double[31] {
 			-0.000030957335326552226,
 			0.0,
@@ -553,7 +670,7 @@ void Decimator::initFilters()
 			0.0,
 			-0.000030957335326552226
 		};
-	else
+#else
 		coeff = new double[31] {
 			-3.095733538676e-05,                 0, 0.000292719928498,                 0,
 			-0.001477038112406,                 0, 0.005253908899031,                 0,
@@ -564,9 +681,10 @@ void Decimator::initFilters()
 			 0.005253908899031,                 0,-0.001477038112406,                 0,
 			 0.000292719928498,                 0,-3.095733538676e-05
 	};
-	hb31 = new HalfbandFilter(31, 0.2440, coeff);
+#endif
+	hb31 = new HalfbandFilterDesign(31, 0.2440, coeff);
 
-	if (useCuteCoeff)
+#ifndef USE_MATLAB
 		coeff = new double[35] {
 			0.000017017718072971716,
 			0.0,
@@ -604,7 +722,7 @@ void Decimator::initFilters()
 			0.0,
 			0.000017017718072971716
 		};
-	else
+#else
 		coeff = new double[35] {
 			1.70177181004e-05,                 0,-0.0001542504284999,                 0,
 		   0.0007621968574243,                 0,-0.002691614694624,                 0,
@@ -616,9 +734,10 @@ void Decimator::initFilters()
 		   -0.002691614694624,                 0,0.0007621968574243,                 0,
 		   -0.0001542504284999,                 0, 1.70177181004e-05
 	};
-	hb35 = new HalfbandFilter(35, 0.2680, coeff);
+#endif
+	hb35 = new HalfbandFilterDesign(35, 0.2680, coeff);
 
-	if (useCuteCoeff)
+#ifndef USE_MATLAB
 		coeff = new double[39] {
 			-0.000010175082832074367,
 			0.0,
@@ -660,7 +779,7 @@ void Decimator::initFilters()
 			0.0,
 			-0.000010175082832074367
 		};
-	else
+#else
 		coeff = new double[39] {
 			-1.017508271229e-05,                 0,8.803641592052e-05,                 0,
 			-0.0004237083555277,                 0, 0.001477255741435,                 0,
@@ -673,9 +792,10 @@ void Decimator::initFilters()
 			 0.001477255741435,                 0,-0.0004237083555277,                 0,
 			8.803641592052e-05,                 0,-1.017508271229e-05
 	};
-	hb39 = new HalfbandFilter(39, 0.2880, coeff);
+#endif
+	hb39 = new HalfbandFilterDesign(39, 0.2880, coeff);
 
-	if (useCuteCoeff)\
+#ifndef USE_MATLAB
 		coeff = new double[43] {
 			0.0000067666739082756387,
 			0.0,
@@ -721,7 +841,7 @@ void Decimator::initFilters()
 			0.0,
 			0.0000067666739082756387
 		};
-	else
+#else
 		coeff = new double[43] {
 			6.766673911034e-06,                 0,-5.527522154637e-05,                 0,
 			0.0002565407457896,                 0,-0.0008748125689126,                 0,
@@ -735,9 +855,10 @@ void Decimator::initFilters()
 			-0.0008748125689126,                 0,0.0002565407457896,                 0,
 			-5.527522154637e-05,                 0,6.766673911034e-06
 	};
-	hb43 = new HalfbandFilter(43, 0.3060, coeff);
+#endif
+	hb43 = new HalfbandFilterDesign(43, 0.3060, coeff);
 
-	if (useCuteCoeff)
+#ifndef USE_MATLAB
 		coeff = new double[47] {
 			-0.0000045298314172004251,
 			0.0,
@@ -787,7 +908,7 @@ void Decimator::initFilters()
 			0.0,
 			-0.0000045298314172004251
 		};
-	else
+#else
 		coeff = new double[47] {
 			-4.529831444832e-06,                 0,3.533370457971e-05,                 0,
 			-0.0001593477643404,                 0,0.0005340788065404,                 0,
@@ -802,9 +923,10 @@ void Decimator::initFilters()
 			0.0005340788065404,                 0,-0.0001593477643404,                 0,
 			3.533370457971e-05,                 0,-4.529831444832e-06
 	};
-	hb47 = new HalfbandFilter(47, 0.3200, coeff);
+#endif
+	hb47 = new HalfbandFilterDesign(47, 0.3200, coeff);
 
-	if (useCuteCoeff)
+#ifndef USE_MATLAB
 		coeff = new double[51] {
 			0.0000033359253688981639,
 			0.0,
@@ -858,7 +980,7 @@ void Decimator::initFilters()
 			0.0,
 			0.0000033359253688981639
 		};
-	else
+#else
 		coeff = new double[51] {
 			3.335925497904e-06,                 0,-2.458415527314e-05,                 0,
 			 0.000106777774933,                 0,-0.0003489072315249,                 0,
@@ -874,7 +996,8 @@ void Decimator::initFilters()
 			-0.0003489072315249,                 0, 0.000106777774933,                 0,
 			-2.458415527314e-05,                 0,3.335925497904e-06
 	};
-	hb51 = new HalfbandFilter(51, 0.3332, coeff);
+#endif
+	hb51 = new HalfbandFilterDesign(51, 0.3332, coeff);
 
 	//Testing
 	coeff = new double[59] {
@@ -895,6 +1018,5 @@ void Decimator::initFilters()
 			-0.000121561534634,                 0,3.506682689989e-05
 
 	};
-	hb59 = new HalfbandFilter(59, 0.400, coeff);
+	hb59 = new HalfbandFilterDesign(59, 0.400, coeff);
 }
-

@@ -2,6 +2,7 @@
 #define DECIMATOR_H
 
 #include "processstep.h"
+#include <Accelerate/Accelerate.h>
 
 /*
 	This class implements a decimation (anti-alias filter + downsampling) step.
@@ -183,50 +184,74 @@ public:
 
 private:
 	const quint32 minDecimatedSampleRate = 15000; //Review
+	bool useVdsp;
+
+	class HalfbandFilterDesign {
+	public:
+		HalfbandFilterDesign(quint16 _numTaps, double _wPass, double * _coeff);
+		quint32 numTaps;
+		double wPass;
+		double *coeff;
+	};
 
 	class HalfbandFilter {
 	public:
+		HalfbandFilter(HalfbandFilterDesign *_design);
 		HalfbandFilter(quint16 _numTaps, double _wPass, double * _coeff);
 		~HalfbandFilter();
-		quint32 process(CPX *_in, CPX *_out, quint32 _numInSamples);
-		quint32 processCIC3(CPX *_in, CPX *_out, quint32 _numInSamples);
-		quint32 processExp(CPX *_in, CPX *_out, quint32 _numInSamples);
+		quint32 process(const CPX *_in, CPX *_out, quint32 _numInSamples);
+		quint32 processCIC3(const CPX *_in, CPX *_out, quint32 _numInSamples);
+		quint32 processVDsp(const DSPDoubleSplitComplex *_in, DSPDoubleSplitComplex *_out, quint32 _numInSamples);
+		quint32 processExp(const CPX *_in, CPX *_out, quint32 _numInSamples);
 
 		quint32 numTaps;
+		quint32 delayBufSize;
 		CPX *delayBuffer;
 		double wPass; //For reference
+
+		//Testing leaving room for next stage delay in output to avoid extra copy
+		quint32 delayBufSizeNextStage;
+
 		//CIC3 implemenation for early stages
 		bool useCIC3;
 		CPX xOdd;
 		CPX xEven;
 		//double has 15 decimal digit precision, so we truncate Matlab results
-		double *coeff;
+		const double *coeff;
+	private:
+		DSPDoubleSplitComplex splitComplexAcc;	//Accumulator
+
 	};
 
 	quint32 decimatedSampleRate;
 	double maxBandWidth; //Protected bandwidth of signal of interest
-	bool useCuteCoeff; //Use cuteSDR coefficients vs our close MatLab generated ones
 
 	void initFilters();
 	void deleteFilters();
 
 	//Halfband filters (order n) designed with Matlab using parameters in comments
-	HalfbandFilter *cic3; //Faster than hb7 for early stages of decimation
-	HalfbandFilter *hb7;
-	HalfbandFilter *hb11;
-	HalfbandFilter *hb15;
-	HalfbandFilter *hb19;
-	HalfbandFilter *hb23;
-	HalfbandFilter *hb27;
-	HalfbandFilter *hb31;
-	HalfbandFilter *hb35;
-	HalfbandFilter *hb39;
-	HalfbandFilter *hb43;
-	HalfbandFilter *hb47;
-	HalfbandFilter *hb51;
-	HalfbandFilter *hb59; //Testing
+
+	HalfbandFilterDesign *cic3; //Faster than hb7 for early stages of decimation
+	HalfbandFilterDesign *hb7;
+	HalfbandFilterDesign *hb11;
+	HalfbandFilterDesign *hb15;
+	HalfbandFilterDesign *hb19;
+	HalfbandFilterDesign *hb23;
+	HalfbandFilterDesign *hb27;
+	HalfbandFilterDesign *hb31;
+	HalfbandFilterDesign *hb35;
+	HalfbandFilterDesign *hb39;
+	HalfbandFilterDesign *hb43;
+	HalfbandFilterDesign *hb47;
+	HalfbandFilterDesign *hb51;
+	HalfbandFilterDesign *hb59; //Testing
 
 	QVector<HalfbandFilter*> decimationChain;
+
+	//Accelerate fw doesn't work with interleaved CPX (re,im,re,im,...).
+	//Instead is uses Split Complex which is an array of reals and an array of imag
+	DSPDoubleSplitComplex splitComplexIn;
+	DSPDoubleSplitComplex splitComplexOut;
 
 };
 
