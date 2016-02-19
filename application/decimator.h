@@ -17,6 +17,7 @@
 	http://www.dsprelated.com/showarticle/903.php (Lyons, 1/4/16 important)
 	http://www.dsprelated.com/showarticle/761.php (Lyons)
 	Understanding DSP 3rd edition (Lyons) 10.12 - Sample rate conversion with halfband filters
+	http://hamiltonkibbe.com/ 3 articles on using vDsp (Accelerate) for FIR filters
 	....TBD....
 
 	The aliasing theorem states that downsampling in time corresponds to aliasing in the frequency domain.
@@ -168,6 +169,59 @@
 	** - Added to Pebble to support lower sample rates, still above minimum sample rate
 
 */
+
+class HalfbandFilterDesign {
+public:
+	HalfbandFilterDesign(quint16 _numTaps, double _wPass, double * _coeff);
+	quint32 numTaps;
+	double wPass;
+	double *coeff;
+};
+
+class HalfbandFilter {
+public:
+	HalfbandFilter(HalfbandFilterDesign *_design);
+	HalfbandFilter(quint16 _numTaps, double _wPass, double * _coeff);
+	~HalfbandFilter();
+	quint32 process(CPX *_in, CPX *_out, quint32 _numInSamples);
+	quint32 process2(CPX *_in, CPX *_out, quint32 _numInSamples);
+	quint32 process3(CPX *_in, CPX *_out, quint32 _numInSamples);
+	quint32 processCIC3(const CPX *_in, CPX *_out, quint32 _numInSamples);
+	quint32 processVDsp(const DSPDoubleSplitComplex *_in, DSPDoubleSplitComplex *_out, quint32 _numInSamples);
+	quint32 processExp(const CPX *_in, CPX *_out, quint32 _numInSamples);
+
+	const quint32 maxResultLen = 32768;
+
+	quint32 numTaps;
+	quint32 delayBufSize;
+	CPX *delayBuffer;
+	double wPass; //For reference
+
+	//Testing leaving room for next stage delay in output to avoid extra copy
+	quint32 delayBufSizeNextStage;
+
+	//CIC3 implemenation for early stages
+	bool useCIC3;
+	CPX xOdd;
+	CPX xEven;
+	//double has 15 decimal digit precision, so we truncate Matlab results
+	const double *coeff;
+	quint32 convolve(const double x[], quint32 xLen, const double h[], quint32 hLen, double y[]);
+	quint32 convolve(const CPX x[], quint32 xLen, const double h[], quint32 hLen, CPX y[],
+		quint32 decimate = 1);
+private:
+	DSPDoubleSplitComplex splitComplexAcc;	//Accumulator
+
+	//Testing overlap add
+	CPX *overflow;
+
+	//For generic convolve
+	CPX *lastX;
+	CPX *tmpX;
+
+
+};
+
 class Decimator : public ProcessStep
 {
 public:
@@ -186,42 +240,7 @@ private:
 	const quint32 minDecimatedSampleRate = 15000; //Review
 	bool useVdsp;
 
-	class HalfbandFilterDesign {
-	public:
-		HalfbandFilterDesign(quint16 _numTaps, double _wPass, double * _coeff);
-		quint32 numTaps;
-		double wPass;
-		double *coeff;
-	};
 
-	class HalfbandFilter {
-	public:
-		HalfbandFilter(HalfbandFilterDesign *_design);
-		HalfbandFilter(quint16 _numTaps, double _wPass, double * _coeff);
-		~HalfbandFilter();
-		quint32 process(const CPX *_in, CPX *_out, quint32 _numInSamples);
-		quint32 processCIC3(const CPX *_in, CPX *_out, quint32 _numInSamples);
-		quint32 processVDsp(const DSPDoubleSplitComplex *_in, DSPDoubleSplitComplex *_out, quint32 _numInSamples);
-		quint32 processExp(const CPX *_in, CPX *_out, quint32 _numInSamples);
-
-		quint32 numTaps;
-		quint32 delayBufSize;
-		CPX *delayBuffer;
-		double wPass; //For reference
-
-		//Testing leaving room for next stage delay in output to avoid extra copy
-		quint32 delayBufSizeNextStage;
-
-		//CIC3 implemenation for early stages
-		bool useCIC3;
-		CPX xOdd;
-		CPX xEven;
-		//double has 15 decimal digit precision, so we truncate Matlab results
-		const double *coeff;
-	private:
-		DSPDoubleSplitComplex splitComplexAcc;	//Accumulator
-
-	};
 
 	quint32 decimatedSampleRate;
 	double maxBandWidth; //Protected bandwidth of signal of interest
@@ -247,6 +266,9 @@ private:
 	HalfbandFilterDesign *hb59; //Testing
 
 	QVector<HalfbandFilter*> decimationChain;
+
+	CPX* workingBuf1;
+	CPX* workingBuf2;
 
 	//Accelerate fw doesn't work with interleaved CPX (re,im,re,im,...).
 	//Instead is uses Split Complex which is an array of reals and an array of imag
