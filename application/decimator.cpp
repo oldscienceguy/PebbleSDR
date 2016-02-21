@@ -1,4 +1,5 @@
 #include "decimator.h"
+#include "testbench.h"
 
 //Use MatLab coefficients instead of cuteSDR
 #define USE_MATLAB
@@ -21,6 +22,8 @@ Decimator::Decimator(quint32 _sampleRate, quint32 _bufferSize) :
 		splitComplexOut.realp = new double[_bufferSize * 2];
 		splitComplexOut.imagp = new double[_bufferSize * 2];
 	}
+
+	combineStages = false;
 
 }
 
@@ -90,14 +93,25 @@ quint32 Decimator::buildDecimationChain(quint32 _sampleRate, quint32 _maxBandWid
 			break; //out of while
 		}
 
-		decimationChain.append(chain);
-		//Each chain knows what the next chain needs
-		if (prevChain != NULL)
-			prevChain->delayBufSizeNextStage = chain->numTaps-1;
-		prevChain = chain;
-		chain->delayBufSizeNextStage = 0; //Stop flag
+		if (!combineStages || prevChain == NULL || prevChain->numTaps != chain->numTaps) {
+			//New filter, add to chain
+			decimationChain.append(chain);
+			//Each chain knows what the next chain needs
+			if (prevChain != NULL)
+				prevChain->delayBufSizeNextStage = chain->numTaps-1;
+			chain->sampleRateIn = decimatedSampleRate;
+			prevChain = chain;
+			chain->delayBufSizeNextStage = 0; //Stop flag
+		} else {
+			//If we're using the same filter for more than one step, we can save significant time
+			//By doing all the decimation in the same stage, rather than calling the stage repeatedly
+			//For a 2.048e6 sample rate and 20khz bandwidth, this reduced time almost 50%
+			//From 223us to 123us by reusing hb11
+			prevChain->decimate *= 2;
+			prevChain->sampleRateIn /= 2;
+		}
 
-		decimatedSampleRate /= 2.0;
+		decimatedSampleRate /= 2;
 	}
 	qDebug()<<"Decimated sample rate = "<<decimatedSampleRate;
 	return decimatedSampleRate;
@@ -106,6 +120,8 @@ quint32 Decimator::buildDecimationChain(quint32 _sampleRate, quint32 _maxBandWid
 //Should return CPX* to decimated buffer and number of samples in buffer
 quint32 Decimator::process(CPX *_in, CPX *_out, quint32 _numSamples)
 {
+	//mutex.lock();
+
 	quint32 remainingSamples = _numSamples;
 	//Leave space for delay buffer in first chain
 	quint32 delaySize = decimationChain[0]->delayBufSize;
@@ -147,17 +163,21 @@ quint32 Decimator::process(CPX *_in, CPX *_out, quint32 _numSamples)
 		for (int i=0; i<decimationChain.length(); i++) {
 			chain = decimationChain[i];
 
-			remainingSamples = chain->process(nextIn, nextOut, remainingSamples);
-			//remainingSamples = chain->process2(nextIn, nextOut, remainingSamples);
+			//remainingSamples = chain->process(nextIn, nextOut, remainingSamples);
+			remainingSamples = chain->process2(nextIn, nextOut, remainingSamples);
 			//Swap in and out
 			lastOut = nextOut;
 			nextOut = nextIn;
 			nextIn = lastOut;
 			//remainingSamples = chain->process3(_in, _in, remainingSamples);
+			if (i == 4)
+				global->testBench->DisplayData(remainingSamples,lastOut,chain->sampleRateIn,5);
+
 		}
 		CPX::copyCPX(_out, lastOut, remainingSamples);
 
 	}
+	//mutex.unlock();
 	return remainingSamples;
 }
 
@@ -196,7 +216,10 @@ HalfbandFilter::HalfbandFilter(quint16 _numTaps, double _wPass, double *_coeff)
 
 	//Testing
 	lastX = CPX::memalign(maxResultLen);
+	CPX::clearCPX(lastX, maxResultLen);
 	tmpX = CPX::memalign(maxResultLen); //Largest output size we'll see
+	CPX::clearCPX(tmpX,maxResultLen);
+	decimate = 2;
 }
 
 HalfbandFilter::~HalfbandFilter()
@@ -233,7 +256,7 @@ HalfbandFilter::~HalfbandFilter()
 quint32 HalfbandFilter::convolve(const double x[], quint32 xLen, const double h[],
 	quint32 hLen, double y[])
 {
-	quint32 yLen = xLen + hLen - 1;
+	quint32 yLen = xLen + hLen;
 
 	quint32 kmin, kmax;
 	for (quint32 n = 0; n < yLen; n++) {
@@ -252,11 +275,22 @@ quint32 HalfbandFilter::convolve(const double x[], quint32 xLen, const double h[
 	return yLen;
 }
 //We have last samples in , buffer management #1 above
-quint32 HalfbandFilter::convolve(const CPX x[], quint32 xLen, const double h[],
-	quint32 hLen, CPX y[], quint32 decimate)
+//Overlap/Save
+quint32 HalfbandFilter::convolveOS(const CPX x[], quint32 xLen, const double h[],
+	quint32 hLen, CPX y[], quint32 yLen, quint32 decimate)
 {
 	//Must have at least hLen samples
-	Q_ASSERT(xLen >= hLen);
+	if (xLen < hLen) {
+		//Not enough samples to process with this number of taps
+		//We can get to this case when we have a very high initial sample rate like 10msps with 2048 samples
+		//The last stage may only have 16 samples for a 35 tap filter
+		//Brute force, just return 1/2 the samples without filtering
+		//qWarning()<<"xLen < hLen in convolve";
+		for (int i=0, j=0; i<xLen/decimate; i++, j+=decimate) {
+			y[i] = x[j];
+		}
+		return xLen / decimate;
+	}
 
 	//Create a unified buffer with lastX[] and x[]
 	//First part of lastX already has last hLen samples;
@@ -284,6 +318,115 @@ quint32 HalfbandFilter::convolve(const CPX x[], quint32 xLen, const double h[],
 	return yCnt;
 }
 
+//Overlap/add version
+//First hLen samples are partially convolved because we don't have a delay buffer with previous samples
+//Last hLen results of convolution come after xLen samples and are saved
+//These saved results are then added to the first hLen samples of the next pass
+/*
+	Diagram
+	(TBD)
+*/
+quint32 HalfbandFilter::convolveOA(const CPX x[], quint32 xLen, const double h[],
+	quint32 hLen, CPX y[], quint32 ySize, quint32 decimate)
+{
+	quint32 dLen = hLen - 1; //Size of delay buffer
+	quint32 yLen = xLen + dLen; //Size of result buffer
+
+	//Must have at least hLen samples
+	if (xLen < hLen) {
+		//Not enough samples to process with this number of taps
+		//We can get to this case when we have a very high initial sample rate like 10msps with 2048 samples
+		//The last stage may only have 16 samples for a 35 tap filter
+		//Brute force, just return 1/2 the samples without filtering
+		//qWarning()<<"xLen < hLen in convolve";
+		for (int i=0, j=0; i<xLen/decimate; i++, j+=decimate) {
+			y[i] = x[j];
+		}
+		return xLen / decimate;
+	}
+
+	quint32 yCnt = 0; //#of samples in y[], needed if decimate != 1
+	CPX *yOut = tmpX;
+#if 0
+	if (yLen <= ySize) {
+		//Use temporary buffer to convolve because we need xLen + hLen - 1 output samples
+		//y[] may not be large enough
+		yOut = y;
+	}
+#endif
+
+	for (quint32 n = 0; n < yLen; n += decimate) {
+		yOut[yCnt].clear();
+
+/*
+	For hLen = 3, dLen = 2 (hLen - 1), xLen = 8, yLen = 10 (xLen + dLen)
+	h(0) h(1) h(2)	x(0)..x(7)
+
+	n =     0    1    2 //Special handling #1, missing older samples at beginning of x
+	d0 d1 x(0) x(1) x(2) x(3)
+		  y(0) = x(0) * h(2) //missing d(0) d(1)
+			   y(1) = x(0) * h(1) + x(1) * h(2) //missing d(0)
+					y(2) = x(0) * h(0) + x(1) * h(1) + x(2) * h(2) //normal delay = 2 pattern
+
+	n =     4    5    6 //Default handling, we have older samples in x
+
+	n =         7    8    9 //Special handling, conjugation at end of x in prep for next loop
+	x(5) x(6) x(7) d(0) d(1)
+			  y(7) = x(5) * h(0) + x(6) * h(1) + x(7) * h(2) //Last normal pattern
+				   d(0) = x(6) * h(0) + x(7) * h(1) //Last 2 samples
+						d(1) = x(7) * h(0) // Last sample
+
+	Next loop, d(0) and d(1) have convolve from previous samples
+	y(0) += last d(0) // add missing 2 delay samples
+	y(1) += last d(1) // add missing 1 delay sample
+
+*/
+		//Default handling, older samples are in x
+		quint32 xOld = n - dLen;
+		quint32 kMin = 0; //First coefficient to use
+		quint32 kMax = dLen; //Last coefficient index
+		if (n < dLen) {
+			//Special handling #1
+			xOld = 0;
+			kMin = dLen - n;
+			//kMax not changed
+			//qDebug()<<n<<" "<<xOld<<" "<<kMin<<" "<<kMax;
+		} else if (n >= xLen) {
+			//Special handling #2
+			//kMin not changed
+			kMax = dLen - (n-xLen) - 1;
+			//qDebug()<<n<<" "<<xOld<<" "<<kMin<<" "<<kMax;
+		}
+
+		const CPX *oldest = &x[xOld];
+		for (quint32 k = kMin, j=0; k <= kMax; k++,j++) {
+			//qDebug()<<n<<"x["<<xOld+j<<"]*h["<<k<<"] yCnt="<<yCnt;
+
+			if (h[k] != 0) {
+				//Skip zero coefficients since they won't add anything to accumulator
+				yOut[yCnt].re += oldest[j].re * h[k];
+				yOut[yCnt].im += oldest[j].im * h[k];
+			}
+		}
+		yCnt++;
+	}
+
+	//Add overlap from last run
+	for (int i=0; i<dLen; i++) {
+		yOut[i].re += lastX[i].re;
+		yOut[i].im += lastX[i].im;
+	}
+
+	//Save last overlap results, remember we're decimated
+	CPX::copyCPX(lastX,&yOut[xLen / decimate], dLen);
+
+	//And return in out
+	if (yOut != y)
+		CPX::copyCPX(y,tmpX,yCnt);
+
+	return xLen / decimate; //yCnt will have extra results that we save to lastX
+}
+
 //Brute force convolution
 quint32 HalfbandFilter::process(CPX *_in, CPX *_out, quint32 _numInSamples)
 {
@@ -298,10 +441,12 @@ quint32 HalfbandFilter::process(CPX *_in, CPX *_out, quint32 _numInSamples)
 	const CPX *cpxDelay;
 	quint32 midPoint = delayBufSize / 2; //5 for 11 tap filter
 
-	//Not sure what good this does, since output is unchanged?
-	if(numInSamples < numTaps)	//safety net to make sure numInSamples is large enough to process
-		return numInSamples / 2;
 
+	if(numInSamples < numTaps) {	//safety net to make sure numInSamples is large enough to process
+		for (int i=0, j=0; i<numInSamples/2; i++, j+=2)
+			_out[i] = _in[j];
+		return numInSamples / 2;
+	}
 	//global->perform.StartPerformance();
 	//Copy input samples into 2nd half of delay buffer starting at position numTaps-1
 	//1st half of delay buffer has samples from last call
@@ -310,7 +455,7 @@ quint32 HalfbandFilter::process(CPX *_in, CPX *_out, quint32 _numInSamples)
 
 	//perform decimation FIR filter on even samples
 	CPX acc;
-	for(int i=0; i<numInSamples; i+=2) {
+	for(int i=0; i<numInSamples; i+=decimate) {
 		//Todo: This looks like a bug in cuteSDR (1.19) that double processes delayBuffer[i]
 		// Here and in first [i+j] loop where j=0 and i+j = i
 		// cuteSDR 1.0 started j loop with j=2 which didn't have this problem
@@ -355,8 +500,21 @@ quint32 HalfbandFilter::process2(CPX *_in, CPX *_out, quint32 _numInSamples)
 	if (useCIC3) {
 		return processCIC3(_in, _out, _numInSamples);
 	}
+	quint32 outLen;
 
-	return convolve(_in,_numInSamples,coeff,numTaps,_out, 2);
+	outLen = convolveOA(_in,_numInSamples,coeff,numTaps,_out, maxResultLen, decimate);
+#if 0
+	//Compare results
+	outLen = convolveOS(_in,_numInSamples,coeff,numTaps,delayBuffer, decimate);
+	for (int i=0; i<outLen; i++) {
+		if (delayBuffer[i] != _out[i]) {
+			qDebug()<<"i = "<<i<<" "<<delayBuffer[i].re<<" != "<<_out[i].re;
+			qDebug()<<"i = "<<i<<" "<<delayBuffer[i].im<<" != "<<_out[i].im;
+		}
+	}
+#endif
+
+	return outLen;
 
 	quint32 numInSamples = _numInSamples;
 	quint32 numOutSamples = 0;
@@ -535,7 +693,7 @@ quint32 HalfbandFilter::processCIC3(const CPX *_in, CPX *_out, quint32 _numInSam
 
 	CPX even,odd;
 	//StartPerformance();
-	for(int i=0; i<numInSamples; i+=2)
+	for(int i=0; i<numInSamples; i += decimate)
 	{	//mag gn=8
 		even = inBuffer[i];
 		odd = inBuffer[i+1];

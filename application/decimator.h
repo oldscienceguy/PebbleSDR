@@ -196,6 +196,7 @@ public:
 	quint32 delayBufSize;
 	CPX *delayBuffer;
 	double wPass; //For reference
+	quint32 sampleRateIn;
 
 	//Testing leaving room for next stage delay in output to avoid extra copy
 	quint32 delayBufSizeNextStage;
@@ -207,8 +208,13 @@ public:
 	//double has 15 decimal digit precision, so we truncate Matlab results
 	const double *coeff;
 	quint32 convolve(const double x[], quint32 xLen, const double h[], quint32 hLen, double y[]);
-	quint32 convolve(const CPX x[], quint32 xLen, const double h[], quint32 hLen, CPX y[],
+	//Last Sample version
+	quint32 convolveOS(const CPX x[], quint32 xLen, const double h[], quint32 hLen, CPX y[], quint32 yLen,
 		quint32 decimate = 1);
+	//Overlap/Add version
+	quint32 convolveOA(const CPX x[], quint32 xLen, const double h[], quint32 hLen, CPX y[], quint32 ySize, quint32 decimate);
+	//Testing decimate by more than 2
+	quint32 decimate;
 private:
 	DSPDoubleSplitComplex splitComplexAcc;	//Accumulator
 
@@ -218,6 +224,7 @@ private:
 	//For generic convolve
 	CPX *lastX;
 	CPX *tmpX;
+
 
 
 };
@@ -239,8 +246,7 @@ public:
 private:
 	const quint32 minDecimatedSampleRate = 15000; //Review
 	bool useVdsp;
-
-
+	bool combineStages;
 
 	quint32 decimatedSampleRate;
 	double maxBandWidth; //Protected bandwidth of signal of interest
