@@ -6,8 +6,8 @@
 
 Decimator::Decimator(quint32 _sampleRate, quint32 _bufferSize)
 {
-	//Comparing convolution options
-	useVdsp = false;
+	//Comparing convolution options, vDsp with combining stages works best
+	useVdsp = true;
 	combineStages = true;
 	if (combineStages)
 		qDebug()<<"Decimator is combining stages when the same filter is re-used";
@@ -289,7 +289,7 @@ quint32 HalfbandFilter::convolveOS(const CPX x[], quint32 xLen, const double h[]
 	quint32 hLen, CPX y[], quint32 ySize, quint32 decimate)
 {
 	//Must have at least hLen samples
-	if (xLen < hLen) {
+	if (xLen < hLen || hLen < decimate) {
 		//Not enough samples to process with this number of taps
 		//We can get to this case when we have a very high initial sample rate like 10msps with 2048 samples
 		//The last stage may only have 16 samples for a 35 tap filter
@@ -301,9 +301,11 @@ quint32 HalfbandFilter::convolveOS(const CPX x[], quint32 xLen, const double h[]
 		return xLen / decimate;
 	}
 
+	quint32 dLen = hLen - 1; //Size of delay buffer
+
 	//Create a unified buffer with lastX[] and x[]
 	//First part of lastX already has last hLen samples;
-	CPX::copyCPX(&lastX[hLen-1], x, xLen);
+	CPX::copyCPX(&lastX[dLen], x, xLen);
 
 	quint32 yCnt = 0; //#of samples in y[], needed if decimate != 1
 	for (quint32 n = 0; n < xLen; n += decimate) {
@@ -322,7 +324,7 @@ quint32 HalfbandFilter::convolveOS(const CPX x[], quint32 xLen, const double h[]
 		yCnt++;
 	}
 	//Save the last hLen -1 samples for next call
-	CPX::copyCPX(lastX, &x[xLen - hLen - 1], hLen - 1);
+	CPX::copyCPX(lastX, &x[xLen - dLen], dLen);
 
 	return yCnt;
 }
