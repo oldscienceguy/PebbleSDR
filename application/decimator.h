@@ -185,10 +185,8 @@ public:
 	~HalfbandFilter();
 	quint32 process(CPX *_in, CPX *_out, quint32 _numInSamples);
 	quint32 process2(CPX *_in, CPX *_out, quint32 _numInSamples);
-	quint32 process3(CPX *_in, CPX *_out, quint32 _numInSamples);
 	quint32 processCIC3(const CPX *_in, CPX *_out, quint32 _numInSamples);
 	quint32 processVDsp(const DSPDoubleSplitComplex *_in, DSPDoubleSplitComplex *_out, quint32 _numInSamples);
-	quint32 processExp(const CPX *_in, CPX *_out, quint32 _numInSamples);
 
 	const quint32 maxResultLen = 32768;
 
@@ -209,14 +207,17 @@ public:
 	const double *coeff;
 	quint32 convolve(const double x[], quint32 xLen, const double h[], quint32 hLen, double y[]);
 	//Last Sample version
-	quint32 convolveOS(const CPX x[], quint32 xLen, const double h[], quint32 hLen, CPX y[], quint32 yLen,
-		quint32 decimate = 1);
+	quint32 convolveOS(const CPX x[], quint32 xLen, const double h[], quint32 hLen, CPX y[],
+		quint32 ySize, quint32 decimate = 1);
 	//Overlap/Add version
-	quint32 convolveOA(const CPX x[], quint32 xLen, const double h[], quint32 hLen, CPX y[], quint32 ySize, quint32 decimate);
+	quint32 convolveOA(const CPX x[], quint32 xLen, const double h[], quint32 hLen, CPX y[],
+		quint32 ySize,	quint32 decimate = 1);
+	quint32 convolveVDsp(const DSPDoubleSplitComplex x[], quint32 xLen, const double h[], quint32 hLen, DSPDoubleSplitComplex y[],
+		quint32 ySize,	quint32 decimate = 1);
 	//Testing decimate by more than 2
 	quint32 decimate;
 private:
-	DSPDoubleSplitComplex splitComplexAcc;	//Accumulator
+	DSPDoubleSplitComplex lastXVDsp; //Working buffer if we need it
 
 	//Testing overlap add
 	CPX *overflow;

@@ -7,7 +7,7 @@
 Decimator::Decimator(quint32 _sampleRate, quint32 _bufferSize) :
 	ProcessStep(_sampleRate, _bufferSize)
 {
-	useVdsp = false;
+	useVdsp = true;
 	decimatedSampleRate = _sampleRate;
 	decimationChain.clear();
 	initFilters();
@@ -23,7 +23,7 @@ Decimator::Decimator(quint32 _sampleRate, quint32 _bufferSize) :
 		splitComplexOut.imagp = new double[_bufferSize * 2];
 	}
 
-	combineStages = false;
+	combineStages = true;
 
 }
 
@@ -132,28 +132,43 @@ quint32 Decimator::process(CPX *_in, CPX *_out, quint32 _numSamples)
 		int splitCpxStride = 1;
 
 		DSPDoubleSplitComplex tmp;
-		tmp.realp = &splitComplexIn.realp[delaySize];
-		tmp.imagp = &splitComplexIn.imagp[delaySize];
-		vDSP_ctozD((DSPDoubleComplex*)_in,cpxStride,&tmp,splitCpxStride,_numSamples);
+		//Convert CPX to DoubleSplitComplex
+		vDSP_ctozD((DSPDoubleComplex*)_in,cpxStride, &splitComplexIn, splitCpxStride, _numSamples);
+#if 0
+		//Test conversion
+		for (int i=0; i<_numSamples; i++) {
+			if (_in[i].re != splitComplexIn.realp[i])
+				qDebug()<<"Real pointers !=";
+			if (_in[i].im != splitComplexIn.imagp[i])
+				qDebug()<<"Imag pointers !=";
+		}
+#endif
 
 		HalfbandFilter *chain = NULL;
+		DSPDoubleSplitComplex* nextIn = &splitComplexIn;
+		DSPDoubleSplitComplex* nextOut = &splitComplexOut;
+		DSPDoubleSplitComplex* lastOut;
+
 		for (int i=0; i<decimationChain.length(); i++) {
 			chain = decimationChain[i];
-			remainingSamples = chain->processVDsp(&splitComplexIn, &splitComplexOut, remainingSamples);
-			//Copy out samples to in for next loop.  Inplace decimation not supported for vDsp
-			if (chain->delayBufSizeNextStage != 0) {
-				//Swap pointers
-				DSPDoubleSplitComplex d = splitComplexIn;
-				splitComplexOut = splitComplexIn;
-				splitComplexIn = d;
-				//vDSP_zvmovD(&splitComplexOut,splitCpxStride,
-				//			&tmp,splitCpxStride,remainingSamples);
-			}
+			remainingSamples = chain->processVDsp(nextIn, nextOut, remainingSamples);
+			//Swap in and out
+			lastOut = nextOut;
+			nextOut = nextIn;
+			nextIn = lastOut;
 		}
-		//Convert back to CPX*, skipping last chain delayBuffer
-		//tmp.realp = &splitComplexOut.realp[chain->delayBufSize];
-		//tmp.imagp = &splitComplexOut.imagp[chain->delayBufSize];
-		vDSP_ztocD(&splitComplexOut,splitCpxStride,(DSPDoubleComplex*)_out,cpxStride,remainingSamples);
+		//Convert back to CPX*
+		vDSP_ztocD(lastOut,splitCpxStride,(DSPDoubleComplex*)_out,cpxStride,remainingSamples);
+#if 0
+		//Test conversion
+		for (int i=0; i<remainingSamples; i++) {
+			if (_out[i].re != splitComplexOut.realp[i])
+				qDebug()<<"Real pointers !=";
+			if (_out[i].im != splitComplexOut.imagp[i])
+				qDebug()<<"Imag pointers !=";
+		}
+#endif
+
 	} else {
 		HalfbandFilter *chain = NULL;
 		CPX::copyCPX(workingBuf1, _in, numSamples);
@@ -208,8 +223,8 @@ HalfbandFilter::HalfbandFilter(quint16 _numTaps, double _wPass, double *_coeff)
 	xOdd = 0;
 	xEven = 0;
 
-	splitComplexAcc.realp = new double;
-	splitComplexAcc.imagp = new double;
+	lastXVDsp.realp = new double[maxResultLen];
+	lastXVDsp.imagp = new double[maxResultLen];
 
 	overflow = CPX::memalign(numTaps);
 	CPX::clearCPX(overflow,numTaps);
@@ -277,7 +292,7 @@ quint32 HalfbandFilter::convolve(const double x[], quint32 xLen, const double h[
 //We have last samples in , buffer management #1 above
 //Overlap/Save
 quint32 HalfbandFilter::convolveOS(const CPX x[], quint32 xLen, const double h[],
-	quint32 hLen, CPX y[], quint32 yLen, quint32 decimate)
+	quint32 hLen, CPX y[], quint32 ySize, quint32 decimate)
 {
 	//Must have at least hLen samples
 	if (xLen < hLen) {
@@ -427,6 +442,65 @@ quint32 HalfbandFilter::convolveOA(const CPX x[], quint32 xLen, const double h[]
 	return xLen / decimate; //yCnt will have extra results that we save to lastX
 }
 
+quint32 HalfbandFilter::convolveVDsp(const DSPDoubleSplitComplex x[], quint32 xLen, const double h[],
+		quint32 hLen, DSPDoubleSplitComplex y[], quint32 ySize, quint32 decimate)
+{
+	quint32 dLen = hLen - 1; //Size of delay buffer
+
+	quint32 yCnt = 0;
+
+	//We can't index split complex directly, but we can create temp ptr to position in realp and imagp
+	DSPDoubleSplitComplex tmpIn;
+	DSPDoubleSplitComplex tmpOut;
+
+	//Create continuous buffer in lastXVDsp
+	tmpOut.realp = &lastXVDsp.realp[dLen];
+	tmpOut.imagp = &lastXVDsp.imagp[dLen];
+	vDSP_zvmovD(x,1,&tmpOut,1,xLen);
+#if 0
+		//Test conversion
+		for (int i=0; i<xLen; i++) {
+			if (x->realp[i] != lastXVDsp.realp[i+dLen])
+				qDebug()<<"Real pointers !=";
+			if (x->imagp[i] != lastXVDsp.imagp[i+dLen])
+				qDebug()<<"Imag pointers !=";
+		}
+#endif
+
+	for (int n=0; n<xLen; n+=decimate) {
+		//Multiply every other sample in _in (decimate by 2) * every coefficient
+		tmpIn.realp = &lastXVDsp.realp[n];
+		tmpIn.imagp = &lastXVDsp.imagp[n];
+		tmpOut.realp = &y->realp[yCnt];
+		tmpOut.imagp = &y->imagp[yCnt];
+		//Brute force for all coeff, does not know or take advantage of zero coefficients
+		vDSP_zrdotprD(&tmpIn,1,coeff,1,&tmpOut,hLen);
+#if 0
+		//Checking dot product results, ok
+		CPX acc;
+		acc.clear();
+		for (int i=0; i<hLen; i++) {
+			acc.re += tmpIn.realp[i] * coeff[i];
+			acc.im += tmpIn.imagp[i] * coeff[i];
+		}
+		if (acc.re != tmpOut.realp[0])
+			qDebug()<<"RE"<<acc.re<<" "<<tmpOut.realp[0];
+		if (acc.im != tmpOut.imagp[0])
+			qDebug()<<"IM"<<acc.im<<" "<<tmpOut.imagp[0];
+#endif
+		yCnt++;
+	}
+
+	//Copy last dLen samples to lastX for next iteration
+	tmpIn.realp = &x->realp[xLen - dLen];
+	tmpIn.imagp = &x->imagp[xLen - dLen];
+
+	vDSP_zvmovD(&tmpIn, 1, &lastXVDsp, 1, dLen);
+
+	return yCnt;
+
+}
+
 //Brute force convolution
 quint32 HalfbandFilter::process(CPX *_in, CPX *_out, quint32 _numInSamples)
 {
@@ -493,17 +567,17 @@ quint32 HalfbandFilter::process(CPX *_in, CPX *_out, quint32 _numInSamples)
 	return numOutSamples;
 }
 
-//Using overlapp/add pattern.  See HAMILTON KIBBE article
-//Not working yet, review to make sure we can use halfband filter with FIR overlap/add
 quint32 HalfbandFilter::process2(CPX *_in, CPX *_out, quint32 _numInSamples)
 {
 	if (useCIC3) {
 		return processCIC3(_in, _out, _numInSamples);
 	}
 	quint32 outLen;
-
+	//outLen = convolveOS(_in,_numInSamples,coeff,numTaps,_out, maxResultLen, decimate);
 	outLen = convolveOA(_in,_numInSamples,coeff,numTaps,_out, maxResultLen, decimate);
+
 #if 0
+	//Todo: Results between OS and OA don't compare yet
 	//Compare results
 	outLen = convolveOS(_in,_numInSamples,coeff,numTaps,delayBuffer, decimate);
 	for (int i=0; i<outLen; i++) {
@@ -516,164 +590,6 @@ quint32 HalfbandFilter::process2(CPX *_in, CPX *_out, quint32 _numInSamples)
 
 	return outLen;
 
-	quint32 numInSamples = _numInSamples;
-	quint32 numOutSamples = 0;
-	CPX* inBuffer = _in;
-	CPX *outBuffer = _out;
-
-	//global->perform.StartPerformance();
-	// Create buffer to store overflow across calls
-	//Convert to CPX and move to private
-	//static CPX *overflow = new CPX[100]; //Largest # taps we support
-
-	// The length of the result from linear convolution is one less than the
-	// sum of the lengths of the two inputs.
-	unsigned result_length = numInSamples + delayBufSize;
-
-	// Create a temporary buffer to store the entire convolution result
-	//Use delayBuffer
-	//float temp_buffer[result_length];
-
-	// Loop over the sample index m
-	//for (unsigned n = 0; n < result_length; ++n)
-	for (int n = 0; n < result_length; n++)
-	{
-		// Clamp summation index so we don't try to index outside of x or h
-#if 1
-		int m_min = (n >= (numTaps - 1)) ? n - (numTaps - 1) : 0;
-		int m_max = (n < numInSamples - 1) ? n : numInSamples - 1;
-		//qDebug()<<m_min<<" "<<m_max;
-
-		//First numTaps - 1 samples don't have full history in buffer, so we just add what we have
-		//in this loop, then we add back the overlap history from the previous loop
-#else
-		int oldestSample = n - delayBufSize;
-		int newestSample = n;
-		if (n < numTaps) {
-			//Special case for the first samples where we don't have full delayBufSize previous samples
-			oldestSample = 0;
-		} else if (n >= numInSamples) {
-			//Special case for the last delayBufSize entries where we don't have complete samples
-			newestSample = numInSamples-1;
-		}
-#endif
-		Q_ASSERT(m_max - m_min < numTaps);
-		//qDebug()<<oldestSample<<" " <<newestSample;
-
-		// Initialize the output sample to 0
-		//delayBuffer[n] = 0;
-		delayBuffer[n].clear();
-
-		//point product of coeff
-		// And accumulate the sum of the weighted filter taps
-		for (int h=0, m = m_min; m <= m_max; ++m, h++) {
-			//delayBuffer[n] += inBuffer[n - m] * coeff[m];
-			//inBuffer[n] is the sample, inBuffer[n-m] are the previous m samples
-			delayBuffer[n].re += inBuffer[n - m].re * coeff[h];
-			delayBuffer[n].im += inBuffer[n - m].im * coeff[h];
-		}
-	}
-
-	//Note: numOutSamples includes the overlap area at the end of delayBuffer
-	//It should be 1/2 of the result_length
-	//Q_ASSERT(numOutSamples*2 == result_length);
-
-	// Now we need to add the overlap from the previous run,
-	// and store the overlap from this run for next time.
-	for (int i = 0; i < delayBufSize; i++)
-	{
-		//delayBuffer[i] += overflow[i]; //Check CPX operators, should be same result, but not
-		delayBuffer[i].re += overflow[i].re;
-		delayBuffer[i].im += overflow[i].im;
-		//overflow[i] = delayBuffer[numInSamples + i];
-		overflow[i].re = delayBuffer[numInSamples + i].re;
-		overflow[i].im = delayBuffer[numInSamples + i].im;
-	}
-
-	numOutSamples = numInSamples / 2;
-
-	// write the final result to the output
-	for (int i=0, j = 0; i < numOutSamples; i++, j+=2)
-	{
-		outBuffer[i] = delayBuffer[j]; //Decimate
-	}
-	//global->perform.StopPerformance(numInSamples);
-	return numOutSamples;
-}
-
-//Testing overlap/add
-quint32 HalfbandFilter::process3(CPX *_in, CPX *_out, quint32 _numInSamples)
-{
-	if (useCIC3) {
-		return processCIC3(_in, _out, _numInSamples);
-	}
-
-	quint32 numInSamples = _numInSamples;
-	quint32 numOutSamples = 0;
-	CPX* inBuffer = _in;
-	CPX *outBuffer = _out;
-	const CPX *cpxDelay;
-	quint32 midPoint = delayBufSize / 2; //5 for 11 tap filter
-
-	//Not sure what good this does, since output is unchanged?
-	if(numInSamples < numTaps)	//safety net to make sure numInSamples is large enough to process
-		return numInSamples / 2;
-
-	//global->perform.StartPerformance();
-	//Copy input samples into 2nd half of delay buffer starting at position numTaps-1
-	//1st half of delay buffer has samples from last call
-	//Faster, using memcpy
-	CPX::copyCPX(delayBuffer, inBuffer, numInSamples);
-
-	//perform decimation FIR filter on even samples
-	CPX acc;
-	for(int i=0; i<numInSamples; i+=2) {
-		//Todo: This looks like a bug in cuteSDR (1.19) that double processes delayBuffer[i]
-		// Here and in first [i+j] loop where j=0 and i+j = i
-		// cuteSDR 1.0 started j loop with j=2 which didn't have this problem
-#if 0
-		acc.re = ( delayBuffer[i].re * coeff[0] );
-		acc.im = ( delayBuffer[i].im * coeff[0] );
-#else
-		acc.clear();
-#endif
-		cpxDelay = &delayBuffer[i]; //Oldest sample
-		//Calculate dot-product (MAC)
-		//only use even coefficients since odd are zero(except center point)
-		for(int j=0; j<numTaps; j+=2) {
-
-			//Fused multiply accumulate is actually slower than simple code
-			//acc.re = fma(cpxDelay[j].re, coeff[j], acc.re);
-			//acc.im = fma(cpxDelay[j].im, coeff[j], acc.im);
-			acc.re += ( cpxDelay[j].re * coeff[j] );
-			acc.im += ( cpxDelay[j].im * coeff[j] );
-		}
-
-		//now multiply the center coefficient
-		acc.re += ( cpxDelay[midPoint].re * coeff[midPoint] );
-		acc.im += ( cpxDelay[midPoint].im * coeff[midPoint] );
-		outBuffer[numOutSamples].re = acc.re;	//put output buffer
-		outBuffer[numOutSamples].im = acc.im;	//put output buffer
-		numOutSamples++;
-	}
-
-	//Add last overflow samples
-	for (int i=0; i<delayBufSize; i++) {
-		delayBuffer[i].re += overflow[i].re;
-		delayBuffer[i].im += overflow[i].im;
-		overflow[i].re = inBuffer[numInSamples + i].re;
-		overflow[i].im = inBuffer[numInSamples + i].im;
-	}
-	//need to copy last numTapSamples input samples in buffer to beginning of buffer
-	// for FIR wrap around management
-	//CPX::copyCPX(delayBuffer,&inBuffer[numInSamples - delayBufSize], delayBufSize);
-	//CPX::copyCPX(overflow,&inBuffer[numInSamples - delayBufSize], delayBufSize);
-
-	//If _in != _out, copy to out
-	CPX::copyCPX(outBuffer,delayBuffer,numOutSamples);
-
-	//global->perform.StopPerformance(numInSamples);
-	return numOutSamples;
 }
 
 //From cuteSDR
@@ -714,6 +630,8 @@ quint32 HalfbandFilter::processCIC3(const CPX *_in, CPX *_out, quint32 _numInSam
 quint32 HalfbandFilter::processVDsp(const DSPDoubleSplitComplex *_in,
 		DSPDoubleSplitComplex *_out, quint32 _numInSamples)
 {
+	return convolveVDsp(_in, _numInSamples, coeff, numTaps, _out, maxResultLen, decimate);
+#if 0
 	quint32 numInSamples = _numInSamples;
 	quint32 numOutSamples = 0;
 
@@ -743,113 +661,7 @@ quint32 HalfbandFilter::processVDsp(const DSPDoubleSplitComplex *_in,
 		delayBuffer[i].im = _in->imagp[i + numInSamples];
 	}
 	return numOutSamples;
-}
-
-//Experimental improvement over cuteSDR code which processes 1st coeff twice?
-//Avoids copying entire inbuffer into delay buffer, we just need numTaps delay buffer
-//Status: Not filtering correctly and takes longer than just copying in buffer each time
-//Todo: Debug just to see what we have wrong in algorithm
-/*
-	For numTaps = 11
-		samples in	samples in
-	I	delayBuf	inBuf			midPoint
-	---------------------------------------
-	0	0,2,4,6,8	0				db[5]
-	2	2,4,6,8		0,2				db[7]
-	4	4,6,8		0,2,4			db[9]
-	6	6,8			0,2,4,6			ib[1]
-	8	8			0,2,4,6,8		ib[3]
-	10				0,2,4,6,8,10	ib[5]
-	12				2,4,6,8,10,12	ib[7]
-*/
-quint32 HalfbandFilter::processExp(const CPX *_in, CPX *_out, quint32 _numInSamples)
-{
-	quint32 numInSamples = _numInSamples;
-	quint32 numOutSamples = 0;
-	const CPX* inBuffer = _in;
-	CPX *outBuffer = _out;
-
-	//Step 1: Process samples in delay buffer
-	//For numTaps = 11, will process delay[0] to delay[8]
-
-	//Step 2: Process samples in input buffer, except for final numTap samples.
-	//	Total samples processed will be same as numInSamples
-
-	//Step 3: Copy last numTap input samples to delay buffer
-	//global->perform.StartPerformance();
-	//Copy input samples into 2nd half of delay buffer starting at position numTaps-1
-
-	//Delay buffer has samples from last call
-
-	//perform decimation FIR filter on even samples
-	//Avoid CPX copy from using local CPX and put directly in outBuffer
-	CPX acc;
-	quint32 delayIndex;
-	quint32 midPoint = delayBufSize / 2; //5 for 11 tap filter
-	//Process all but the last numTap samples, which get put in delay buffer for next time
-	for(int i=0; i<numInSamples ; i+=2) {
-		acc.clear();
-		//only use even coefficients since odd are zero(except center point)
-		for(int j=0; j<numTaps; j+=2) {
-			if (i < delayBufSize) {
-				//Oldest sample is in delay buffer, so we have to split the process
-				if (i+j < delayBufSize) {
-					delayIndex = i+j; // Oldest sample in delay buffer
-					//qDebug()<<"1-delayBuffer "<<delayIndex;
-					//First N samples are in delay buffer
-					acc.re += ( delayBuffer[delayIndex].re * coeff[j] );
-					acc.im += ( delayBuffer[delayIndex].im * coeff[j] );
-				} else {
-					//Remaining samples are in inBuffer
-					delayIndex = (i+j) - delayBufSize;
-					//qDebug()<<"2-inBuffer "<<delayIndex;
-					acc.re += ( inBuffer[delayIndex].re * coeff[j] );
-					acc.im += ( inBuffer[delayIndex].im * coeff[j] );
-				}
-			} else {
-				//All of the delay samples are in inBuffer, delayBuffer not used
-				delayIndex = (i+j) - delayBufSize;
-				//qDebug()<<"3-inBuffer "<<delayIndex;
-				acc.re += ( inBuffer[delayIndex].re * coeff[j] );
-				acc.im += ( inBuffer[delayIndex].im * coeff[j] );
-			}
-		} //end j<numTaps
-
-		//Add midpoint
-		if (i < delayBufSize) {
-			//midpoint can be in delayBuffer or inBuffer
-			if (i < midPoint) {
-				delayIndex = i + midPoint;
-				//qDebug()<<"4-mid delayBuffer "<<delayIndex;
-				//now multiply the center coefficient
-				acc.re += ( delayBuffer[delayIndex].re * coeff[midPoint] );
-				acc.im += ( delayBuffer[delayIndex].im * coeff[midPoint] );
-
-			} else {
-				delayIndex = i - midPoint;
-				//qDebug()<<"5-mid inBuffer "<<delayIndex;
-				//now multiply the center coefficient
-				acc.re += ( inBuffer[delayIndex].re * coeff[midPoint] );
-				acc.im += ( inBuffer[delayIndex].im * coeff[midPoint] );
-			}
-		} else {
-			//midPoint is in inBuffer
-			delayIndex = i - midPoint;
-			//qDebug()<<"6-mid inBuffer "<<delayIndex;
-			//now multiply the center coefficient
-			acc.re += ( inBuffer[delayIndex].re * coeff[midPoint] );
-			acc.im += ( inBuffer[delayIndex].im * coeff[midPoint] );
-		}
-
-		outBuffer[numOutSamples++] = acc;	//put output buffer
-
-	}
-	//Copy last numTapSamples from in buffer to delay buffer
-	CPX::copyCPX(delayBuffer,&inBuffer[numInSamples - delayBufSize], delayBufSize);
-
-	//global->perform.StopPerformance(numInSamples);
-	return numOutSamples;
-
+#endif
 }
 
 void Decimator::deleteFilters()
