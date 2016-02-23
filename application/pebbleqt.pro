@@ -71,6 +71,9 @@ macx {
         LIBS += -framework QtMultimedia
         LIBS += -framework QtNetwork
 
+        #Only include if USE_FFTACCELERATE is defined
+        LIBS += -framework Accelerate
+
 	#INSTALLS is called when we manually make -install or add it to the Qt project build steps
         pebbleData.files += eibireadme.txt
         pebbleData.files += eibi.csv
