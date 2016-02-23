@@ -54,7 +54,7 @@
 #define NCO_VCASM 0		//Visual C assembly call to floating point sin/cos instruction
 #define NCO_GCCASM 0	//GCC assembly call to floating point sin/cos instruction (100nS)
 
-//Where does this come from?  Limit of audio system or DSP?
+//Lowest pre-decimate rate, post decimate rate = * 2
 #define MIN_OUTPUT_RATE (7900.0*2.0)
 
 #define MAX_HALF_BAND_BUFSIZE 32768
@@ -146,50 +146,66 @@ TYPEREAL f = InRate;
 		m_Mutex.lock();
         DeleteFilters();
 		//loop until closest output rate is found and list of pointers to decimate by 2 stages is generated
+		qDebug()<<"Building CDownConvert filter chain for f = "<<f<<" max bw = "<<MaxBW;
 		while( (f > (m_MaxBW / HB51TAP_MAX) ) && (f > MIN_OUTPUT_RATE) )
 		{
-			if(f >= (m_MaxBW / CIC3_MAX) )		//See if can use CIC order 3
+			if(f >= (m_MaxBW / CIC3_MAX) ) {		//See if can use CIC order 3
 				m_pDecimatorPtrs[n++] =
 						new CCicN3DecimateBy2;
-			else if(f >= (m_MaxBW / HB11TAP_MAX) )	//See if can use fixed 11 Tap Halfband
+				qDebug()<<"CIC3-f = "<<f;
+			} else if(f >= (m_MaxBW / HB11TAP_MAX) ) {	//See if can use fixed 11 Tap Halfband
 				m_pDecimatorPtrs[n++] =
+						//Comparing performance
 						new CHalfBand11TapDecimateBy2();
-			else if(f >= (m_MaxBW / HB15TAP_MAX) )	//See if can use Halfband 15 Tap
+						//new CHalfBandDecimateBy2(HB11TAP_LENGTH, HB11TAP_H);
+				qDebug()<<"HB11-f = "<<f;
+			} else if(f >= (m_MaxBW / HB15TAP_MAX) ) {	//See if can use Halfband 15 Tap
 				m_pDecimatorPtrs[n++] =
 						new CHalfBandDecimateBy2(HB15TAP_LENGTH, HB15TAP_H);
-			else if(f >= (m_MaxBW / HB19TAP_MAX) )	//See if can use Halfband 19 Tap
+				qDebug()<<"HB15-f = "<<f;
+			} else if(f >= (m_MaxBW / HB19TAP_MAX) ) {	//See if can use Halfband 19 Tap
 				m_pDecimatorPtrs[n++] =
 						new CHalfBandDecimateBy2(HB19TAP_LENGTH, HB19TAP_H);
-			else if(f >= (m_MaxBW / HB23TAP_MAX) )	//See if can use Halfband 23 Tap
+				qDebug()<<"HB19-f = "<<f;
+			} else if(f >= (m_MaxBW / HB23TAP_MAX) ) {	//See if can use Halfband 23 Tap
 				m_pDecimatorPtrs[n++] =
 						new CHalfBandDecimateBy2(HB23TAP_LENGTH, HB23TAP_H);
-			else if(f >= (m_MaxBW / HB27TAP_MAX) )	//See if can use Halfband 27 Tap
+				qDebug()<<"HB23-f = "<<f;
+			} else if(f >= (m_MaxBW / HB27TAP_MAX) ) {	//See if can use Halfband 27 Tap
 				m_pDecimatorPtrs[n++] =
 						new CHalfBandDecimateBy2(HB27TAP_LENGTH, HB27TAP_H);
-			else if(f >= (m_MaxBW / HB31TAP_MAX) )	//See if can use Halfband 31 Tap
+				qDebug()<<"HB27-f = "<<f;
+			} else if(f >= (m_MaxBW / HB31TAP_MAX) ) {	//See if can use Halfband 31 Tap
 				m_pDecimatorPtrs[n++] =
 						new CHalfBandDecimateBy2(HB31TAP_LENGTH, HB31TAP_H);
-			else if(f >= (m_MaxBW / HB35TAP_MAX) )	//See if can use Halfband 35 Tap
+				qDebug()<<"HB31-f = "<<f;
+			} else if(f >= (m_MaxBW / HB35TAP_MAX) ) {	//See if can use Halfband 35 Tap
 				m_pDecimatorPtrs[n++] =
 						new CHalfBandDecimateBy2(HB35TAP_LENGTH, HB35TAP_H);
-			else if(f >= (m_MaxBW / HB39TAP_MAX) )	//See if can use Halfband 39 Tap
+				qDebug()<<"HB35-f = "<<f;
+			} else if(f >= (m_MaxBW / HB39TAP_MAX) ) {	//See if can use Halfband 39 Tap
 				m_pDecimatorPtrs[n++] =
 						new CHalfBandDecimateBy2(HB39TAP_LENGTH, HB39TAP_H);
-			else if(f >= (m_MaxBW / HB43TAP_MAX) )	//See if can use Halfband 43 Tap
+				qDebug()<<"HB39-f = "<<f;
+			} else if(f >= (m_MaxBW / HB43TAP_MAX) ) {	//See if can use Halfband 43 Tap
 				m_pDecimatorPtrs[n++] =
 						new CHalfBandDecimateBy2(HB43TAP_LENGTH, HB43TAP_H);
-			else if(f >= (m_MaxBW / HB47TAP_MAX) )	//See if can use Halfband 47 Tap
+				qDebug()<<"HB43-f = "<<f;
+			} else if(f >= (m_MaxBW / HB47TAP_MAX) ) {	//See if can use Halfband 47 Tap
 				m_pDecimatorPtrs[n++] =
 						new CHalfBandDecimateBy2(HB47TAP_LENGTH, HB47TAP_H);
-			else if(f >= (m_MaxBW / HB51TAP_MAX) )	//See if can use Halfband 51 Tap
+				qDebug()<<"HB47-f = "<<f;
+			} else if(f >= (m_MaxBW / HB51TAP_MAX) ) {	//See if can use Halfband 51 Tap
 				m_pDecimatorPtrs[n++] =
 						new CHalfBandDecimateBy2(HB51TAP_LENGTH, HB51TAP_H);
+				qDebug()<<"HB51-f = "<<f;
+			}
 			f /= 2.0;
 		}
+		qDebug()<<"Decimated sample rate = "<<f;
 		m_Mutex.unlock();
 		m_OutputRate = f;
 		SetFrequency(m_NcoFreq);
-		qDebug()<<"Filters "<<n<< " Fin="<<InRate<<" BW="<<m_MaxBW<<" fout="<<m_OutputRate;
 	}
 	return m_OutputRate;
 }
@@ -210,10 +226,12 @@ TYPEREAL f = InRate;
 		m_MaxBW = MaxBW;
 		DeleteFilters();
 		//loop until closest output rate is found and list of pointers to decimate by 2 stages is generated
-        while( (f > 400000.0)  )
+		qDebug()<<"Building CDownConvert WFM filter chain for f = "<<f<<" max bw = "<<MaxBW;
+		while( (f > 400000.0)  )
         {
 			m_pDecimatorPtrs[n++] = new CDownConvert::CHalfBandDecimateBy2(HB51TAP_LENGTH, HB51TAP_H);
 			f /= 2.0;
+			qDebug()<<"HB51-f = "<<f;
 		}
 		m_OutputRate = f;
 		SetFrequency(m_NcoFreq);
@@ -304,7 +322,7 @@ double*	pdSinAns  = &dASMSin;
 	{
 		n = m_pDecimatorPtrs[j++]->DecBy2(n, pInData, pInData);
 //if(1==j)
-//g_pTestBench->DisplayData(n, (TYPECPX*)pInData, 615385/2.0);
+//g_pTestBench->DisplayData(n, (TYPECPX*)pInData, 615385/2.0);		
 	}
 	m_Mutex.unlock();
 	for(i=0; i<n; i++)
@@ -365,7 +383,8 @@ int numoutsamples = 0;
 	}
 	//need to copy last m_FirLength - 1 input samples in buffer to beginning of buffer
 	// for FIR wrap around management
-	for(i=0,j = InLength-m_FirLength+1; i<m_FirLength - 1; i++)
+	//RL: Added parens since results differ (2036 vs 2038) if precedence not understood
+	for(i=0,j = (InLength - m_FirLength) + 1; i<m_FirLength - 1; i++)
 		m_pHBFirBuf[i] = pInData[j++];
 //StopPerformance(InLength);
 	return numoutsamples;
