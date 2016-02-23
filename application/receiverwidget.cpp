@@ -812,6 +812,10 @@ void ReceiverWidget::filterSelectionChanged(QString f)
 		break;
 	}
 
+	if (lo == 0 && hi==0) {
+		return; //Error
+	}
+
 	ui.spectrumWidget->SetFilter(lo,hi); //So we can display filter around cursor
 
 	receiver->SetFilter(lo,hi);
