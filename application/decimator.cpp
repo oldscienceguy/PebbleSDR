@@ -11,8 +11,12 @@ Decimator::Decimator(quint32 _sampleRate, quint32 _bufferSize)
 	combineStages = true;
 	if (combineStages)
 		qDebug()<<"Decimator is combining stages when the same filter is re-used";
+	else
+		qDebug()<<"Decimator is using fixed decimate-by-two for each stage";
 	if (useVdsp)
 		qDebug()<<"Decimator is using Apple vDSP functions";
+	else
+		qDebug()<<"Decimator is using internal convolution functions";
 
 	sampleRate = _sampleRate;
 	bufferSize = _bufferSize;
