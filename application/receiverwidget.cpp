@@ -38,9 +38,11 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     modes << "AM"<<"SAM"<<"FMN"<<"FM-Mono"<<"FM-Stereo"<<"DSB"<<"LSB"<<"USB"<<"CWL"<<"CWU"<<"DIGL"<<"DIGU"<<"NONE";
 	ui.modeBox->addItems(modes);
 
-	QStringList agcModes;
-    agcModes << "FAST" << "MED" << "SLOW" << "LONG" << "OFF";
-	ui.agcBox->addItems(agcModes);
+	ui.agcBox->addItem("Off",AGC::OFF);
+	ui.agcBox->addItem("Fast",AGC::FAST);
+	ui.agcBox->addItem("Med",AGC::MED);
+	ui.agcBox->addItem("Slow",AGC::SLOW);
+	ui.agcBox->addItem("Long",AGC::LONG);
 
 #if 0
 	QMenu *settingsMenu = new QMenu();
@@ -566,7 +568,12 @@ void ReceiverWidget::powerToggled(bool on)
 		receiver->SetSquelch(DB::minDb);
 
 		//Set default AGC mode
-		agcBoxChanged(AGC::FAST);
+		//agcBoxChanged(AGC::FAST);
+		int agcIndex = ui.agcBox->findData(AGC::OFF);
+		ui.agcBox->blockSignals(true);
+		ui.agcBox->setCurrentIndex(agcIndex);
+		ui.agcBox->blockSignals(false);
+		agcBoxChanged(agcIndex);
 
         //Set squelch to default
 
@@ -685,7 +692,8 @@ void ReceiverWidget::agcBoxChanged(int item)
 {
     if (!powerOn)
         return;
-	int threshold = receiver->SetAgcMode((AGC::AGCMODE)item);
+	AGC::AGCMODE agcMode = (AGC::AGCMODE)ui.agcBox->currentData().toInt();
+	int threshold = receiver->SetAgcMode(agcMode);
 	ui.agcSlider->setValue(threshold);
 
 }

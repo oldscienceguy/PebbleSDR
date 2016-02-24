@@ -8,8 +8,7 @@ class AGC :
 	public ProcessStep
 {
 public:
-    //Keep in sync with order of selection box in receiverWidget
-    enum AGCMODE {FAST, MED, SLOW, LONG, OFF};
+	enum AGCMODE {OFF, FAST, MED, SLOW, LONG};
 
 	AGC(quint32 _sampleRate, quint32 _bufferSize);
 	~AGC(void);
