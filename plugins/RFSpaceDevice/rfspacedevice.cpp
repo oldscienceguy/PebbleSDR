@@ -1,7 +1,7 @@
 #include "rfspacedevice.h"
 #include "rfsfilters.h"
 #include <QMessageBox>
-
+#include "db.h"
 //Mac native socket API, needed for UDP buffer
 #ifndef Q_OS_WIN
 #include <sys/socket.h>
@@ -89,17 +89,25 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback,
 		//SR * 2 bytes for I * 2 bytes for Q .  dataBlockSize is 8192
 		producerConsumer.SetProducerInterval(sampleRate,framesPerBuffer);
 		producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
-		normalizeIQGain = 0.10;
+		//Normalizes signal +/- db. -10 will decrease signal by 10db, +10 will increase by 10db
+		//Use 10mhz signal generator with .0005vpp (Red Pitaya) should result in approx -60db signal
+		//Test with normalizeGain = 1 to get baseline, then calculate db gain/loss adjustment
+		//Compare with other programs to verify
+		normalizeIQGain = DB::dbToAmplitude(-9.5);
+
 	} else if(deviceNumber == SDR_IP) {
 		//Get get UDP datagrams of 1024 bytes, 4bytes per CPX or 256 CPX samples
 		producerConsumer.SetProducerInterval(sampleRate,udpBlockSize / 4);
 		//Consumer only has to run once every 2048 CPX samples
 		producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
-		normalizeIQGain = 0.75;
+		//normalizeIQGain = 1.0; //-72db
+		normalizeIQGain = DB::dbToAmplitude(7);
+
 	} else if (deviceNumber == AFEDRI_USB) {
 		DeviceInterfaceBase::Initialize(_callback, NULL, NULL, _framesPerBuffer); //Handle audio input
 		afedri->Initialize(); //HID
-		normalizeIQGain = 0.02; //Runs hotter than sdr-iq
+		//normalizeIQGain = 1; //-47db
+		normalizeIQGain = DB::dbToAmplitude(-23);
 	}
 
 	readBufferIndex = 0;
