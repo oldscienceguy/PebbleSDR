@@ -43,7 +43,7 @@ Decimator::~Decimator()
 }
 
 
-quint32 Decimator::buildDecimationChain(quint32 _sampleRate, quint32 _maxBandWidth)
+float Decimator::buildDecimationChain(quint32 _sampleRate, quint32 _maxBandWidth)
 {
 	decimatedSampleRate = _sampleRate;
 	maxBandWidth = _maxBandWidth;
@@ -129,7 +129,11 @@ quint32 Decimator::buildDecimationChain(quint32 _sampleRate, quint32 _maxBandWid
 quint32 Decimator::process(CPX *_in, CPX *_out, quint32 _numSamples)
 {
 	//mutex.lock();
-
+	if (decimationChain.isEmpty()) {
+		//No decimation, just return
+		CPX::copyCPX(_out,_in,_numSamples);
+		return _numSamples;
+	}
 	quint32 remainingSamples = _numSamples;
 
 	if (useVdsp) {

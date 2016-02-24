@@ -230,7 +230,7 @@ public:
 	//Builds a decimation chain to get from incoming sample rate to lowest sample rate that protects
 	//maxBandWidth
 	//_maxBandwidth is the full bandwith (wPass) ie not 1/2 bw as in cuteSDR.  Compared to wPass
-	quint32 buildDecimationChain(quint32 _sampleRate, quint32 _maxBandWidth);
+	float buildDecimationChain(quint32 _sampleRate, quint32 _maxBandWidth);
 
 	//Overload virtual method in ProcessStep
 	quint32 process(CPX *_in, CPX* _out, quint32 _numSamples);
@@ -243,7 +243,7 @@ private:
 	bool useVdsp;
 	bool combineStages;
 
-	quint32 decimatedSampleRate;
+	float decimatedSampleRate;
 	double maxBandWidth; //Protected bandwidth of signal of interest
 
 	void initFilters();
