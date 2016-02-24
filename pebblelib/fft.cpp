@@ -390,12 +390,17 @@ bool FFT::MapFFTToScreen(double *inBuf,
 				powerdB = DB::minDb;
 			} else if (lastFftBin > 0 && fftBin != lastFftBin + 1) {
 				//Lowest freq is in fftBin[0]
+#if 0
 				//We skipped some bins, average the ones we skipped - including this one
 				qint32 skippedBins = fftBin - lastFftBin;
 				for (int j=0; j<skippedBins; j++) {
 					totalBinPower += inBuf[lastFftBin + j] - maxdB;
 				}
 				powerdB = totalBinPower / skippedBins;
+#else
+				//Just pick up 1 bin, averages were resulting in db errors in specra display
+				powerdB = inBuf[fftBin] - maxdB;
+#endif
 			} else {
 				powerdB = inBuf[fftBin] - maxdB;
 			}
