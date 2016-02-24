@@ -89,6 +89,13 @@ double DB::powerToDbAdjusted(double power)
 	return  qBound(DB::minDb, DB::powerToDb(power + DB::pwrOffset + ALMOSTZERO) + DB::dbOffset, DB::maxDb);
 }
 
+//Inverse of powerToDbAdjusted
+double DB::dbToPowerAdjusted(double db) {
+	double adjDb = db - DB::dbOffset;
+	double power = dbToPower(adjDb);
+	return power - DB::pwrOffset;
+}
+
 //Std equation for decibles is A(db) = 10 * log10(P2/P1) where P1 is measured power and P2 is compared power
 double DB::powerRatioToDb(double measuredPower, double comparedPower)
 {

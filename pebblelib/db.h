@@ -24,6 +24,7 @@ public:
 
     //db conversion functions from Steven Smith book
 	static double powerToDbAdjusted(double power);
+	static double dbToPowerAdjusted(double db);
 	static double powerRatioToDb(double measuredPower, double comparedPower);
 	static double dbToPower(double db);
 	static double powerToDb(double power);
