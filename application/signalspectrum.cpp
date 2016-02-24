@@ -63,6 +63,24 @@ void SignalSpectrum::SetSampleRate(quint32 _sampleRate, quint32 _hiResSampleRate
     emitFftCounter = 0;
 }
 
+//Find hi, lo, avg, median, etc
+//Dump to debug for now
+void SignalSpectrum::analyzeSpectrum()
+{
+	//Find avg around LO for use in calibration
+	double totalPower = 0;
+	double maxPower = -120; //db
+	double avgPower;
+	for (int i=0; i<numSamples; i++) {
+		totalPower += unprocessedSpectrum[i];
+		if (unprocessedSpectrum[i] > maxPower) {
+			maxPower = unprocessedSpectrum[i];
+		}
+	}
+	avgPower = totalPower / numSamples;
+	qDebug()<<"maxPower "<<maxPower<<" avgPower "<<avgPower;
+}
+
 void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double outUnder, double outOver, int _numSamples)
 {	
 	if (!spectrumTimer.isValid()) {

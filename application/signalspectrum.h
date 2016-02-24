@@ -54,6 +54,7 @@ public:
 
     qint32 emitFftCounter; //Testing to see if we're getting more paints than signals
 
+	void analyzeSpectrum();
 public slots:
 
 signals:
