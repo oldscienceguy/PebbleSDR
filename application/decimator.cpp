@@ -31,14 +31,29 @@ Decimator::Decimator(quint32 _sampleRate, quint32 _bufferSize)
 	if (useVdsp) {
 		//Testing vDSP
 		splitComplexIn.realp = new double[_bufferSize * 2];
+		memset(splitComplexIn.realp,0,_bufferSize * 2);
+
 		splitComplexIn.imagp = new double[_bufferSize * 2];
+		memset(splitComplexIn.imagp,0,_bufferSize * 2);
+
 		splitComplexOut.realp = new double[_bufferSize * 2];
+		memset(splitComplexOut.realp,0,_bufferSize * 2);
+
 		splitComplexOut.imagp = new double[_bufferSize * 2];
+		memset(splitComplexOut.imagp,0,_bufferSize * 2);
 	}
 }
 
 Decimator::~Decimator()
 {
+	delete workingBuf1;
+	delete workingBuf2;
+	if (useVdsp) {
+		free (splitComplexIn.realp);
+		free (splitComplexIn.imagp);
+		free (splitComplexOut.realp);
+		free (splitComplexOut.imagp);
+	}
 	deleteFilters();
 }
 
@@ -230,6 +245,9 @@ HalfbandFilter::HalfbandFilter(quint16 _numTaps, double _wPass, double *_coeff)
 
 	lastXVDsp.realp = new double[maxResultLen];
 	lastXVDsp.imagp = new double[maxResultLen];
+	//Make sure at least numTaps is set to zero before first call or we can get nan errors from garbage in the buffer
+	memset(lastXVDsp.realp,0,maxResultLen);
+	memset(lastXVDsp.imagp,0,maxResultLen);
 
 
 	lastX = CPX::memalign(maxResultLen);
@@ -241,7 +259,10 @@ HalfbandFilter::HalfbandFilter(quint16 _numTaps, double _wPass, double *_coeff)
 
 HalfbandFilter::~HalfbandFilter()
 {
-	delete coeff;
+	free (lastXVDsp.realp);
+	free (lastXVDsp.imagp);
+	delete lastX;
+	delete tmpX;
 }
 
 //Derived from cuteSdr, refactored and modified for Pebble
