@@ -1,5 +1,6 @@
 #include "softrocksdrdevice.h"
 #include <QMessageBox>
+#include "db.h"
 
 SoftrockSDRDevice::SoftrockSDRDevice():DeviceInterfaceBase()
 {
@@ -196,8 +197,9 @@ void SoftrockSDRDevice::ReadSettings()
 			//highFrequency = 30000000;
 			highFrequency = 150000000; //Test
 			startupDemodMode = dmAM;
-			//FiFi runs hot, even at lowest device setting, reduce gain
-			normalizeIQGain = 0.25;
+			//normalizeIQGain = 1;
+			normalizeIQGain = DB::dbToAmplitude(-18);
+
 			//Default input device
 #ifdef USE_PORT_AUDIO
 			inputDeviceName = "CoreAudio:UDA1361 Input";
