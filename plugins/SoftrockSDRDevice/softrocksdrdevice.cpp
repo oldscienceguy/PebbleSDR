@@ -197,8 +197,6 @@ void SoftrockSDRDevice::ReadSettings()
 			//highFrequency = 30000000;
 			highFrequency = 150000000; //Test
 			startupDemodMode = dmAM;
-			//normalizeIQGain = 1;
-			normalizeIQGain = DB::dbToAmplitude(-18);
 
 			//Default input device
 #ifdef USE_PORT_AUDIO
