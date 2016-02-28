@@ -108,7 +108,7 @@ void ProducerConsumer::SetConsumerInterval(quint32 _sampleRate, quint16 _samples
 	if (nsConsumerInterval == 0)
 		qDebug()<<"Warning: Consumer running as fast as possible, high CPU";
 	else
-		qDebug()<<"Consumer checks every "<<nsConsumerInterval<<" ns "<<"SampleRate | SamplesPerBuffer"<<_sampleRate<<_samplesPerBuffer;
+		qDebug()<<"Consumer: fillBuffer= "<<nsToFillBuffer/1000000.0<<"ms, interval="<<nsConsumerInterval/1000000.0<<" ms, sr="<<_sampleRate<<" ,spb="<<_samplesPerBuffer;
 	if (consumerWorker != NULL)
 		consumerWorker->SetPollingInterval(nsConsumerInterval);
 
@@ -126,7 +126,7 @@ void ProducerConsumer::SetProducerInterval(quint32 _sampleRate, quint16 _samples
 	if (nsProducerInterval == 0)
 		qDebug()<<"Warning: Producer running as fast as possible, high CPU";
 	else
-		qDebug()<<"Producer checks every "<<nsProducerInterval<<" ns "<<"SampleRate | SamplesPerBuffer"<<_sampleRate<<_samplesPerBuffer;;
+		qDebug()<<"Producer: fillBuffer= "<<nsToFillBuffer/1000000.0<<"ms, interval="<<nsProducerInterval/1000000.0<<" ms, sr="<<_sampleRate<<" ,spb="<<_samplesPerBuffer;
 	if (producerWorker != NULL)
 		producerWorker->SetPollingInterval(nsProducerInterval);
 }
