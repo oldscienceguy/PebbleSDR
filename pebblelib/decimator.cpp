@@ -1,5 +1,4 @@
 #include "decimator.h"
-#include "testbench.h"
 
 //Use MatLab coefficients instead of cuteSDR
 #define USE_MATLAB
@@ -156,7 +155,6 @@ quint32 Decimator::process(CPX *_in, CPX *_out, quint32 _numSamples)
 		int cpxStride = 2;
 		int splitCpxStride = 1;
 
-		DSPDoubleSplitComplex tmp;
 		//Convert CPX to DoubleSplitComplex
 		vDSP_ctozD((DSPDoubleComplex*)_in,cpxStride, &splitComplexIn, splitCpxStride, _numSamples);
 #if 0
@@ -208,9 +206,6 @@ quint32 Decimator::process(CPX *_in, CPX *_out, quint32 _numSamples)
 			lastOut = nextOut;
 			nextOut = nextIn;
 			nextIn = lastOut;
-				if (i == 4)
-				global->testBench->DisplayData(remainingSamples,lastOut,chain->sampleRateIn,5);
-
 		}
 		CPX::copyCPX(_out, lastOut, remainingSamples);
 
@@ -317,6 +312,8 @@ quint32 HalfbandFilter::convolve(const double x[], quint32 xLen, const double h[
 quint32 HalfbandFilter::convolveOS(const CPX x[], quint32 xLen, const double h[],
 	quint32 hLen, CPX y[], quint32 ySize, quint32 decimate)
 {
+	Q_UNUSED(ySize);
+
 	//Must have at least hLen samples
 	if (xLen < hLen || hLen < decimate) {
 		//Not enough samples to process with this number of taps
@@ -324,7 +321,7 @@ quint32 HalfbandFilter::convolveOS(const CPX x[], quint32 xLen, const double h[]
 		//The last stage may only have 16 samples for a 35 tap filter
 		//Brute force, just return 1/2 the samples without filtering
 		//qWarning()<<"xLen < hLen in convolve";
-		for (int i=0, j=0; i<xLen/decimate; i++, j+=decimate) {
+		for (quint32 i=0, j=0; i<xLen/decimate; i++, j+=decimate) {
 			y[i] = x[j];
 		}
 		return xLen / decimate;
@@ -369,6 +366,8 @@ quint32 HalfbandFilter::convolveOS(const CPX x[], quint32 xLen, const double h[]
 quint32 HalfbandFilter::convolveOA(const CPX x[], quint32 xLen, const double h[],
 	quint32 hLen, CPX y[], quint32 ySize, quint32 decimate)
 {
+	Q_UNUSED(ySize);
+
 	quint32 dLen = hLen - 1; //Size of delay buffer
 	quint32 yLen = xLen + dLen; //Size of result buffer
 
@@ -379,7 +378,7 @@ quint32 HalfbandFilter::convolveOA(const CPX x[], quint32 xLen, const double h[]
 		//The last stage may only have 16 samples for a 35 tap filter
 		//Brute force, just return 1/2 the samples without filtering
 		//qWarning()<<"xLen < hLen in convolve";
-		for (int i=0, j=0; i<xLen/decimate; i++, j+=decimate) {
+		for (quint32 i=0, j=0; i<xLen/decimate; i++, j+=decimate) {
 			y[i] = x[j];
 		}
 		return xLen / decimate;
@@ -452,7 +451,7 @@ quint32 HalfbandFilter::convolveOA(const CPX x[], quint32 xLen, const double h[]
 	}
 
 	//Add overlap from last run
-	for (int i=0; i<dLen; i++) {
+	for (quint32 i=0; i<dLen; i++) {
 		yOut[i].re += lastX[i].re;
 		yOut[i].im += lastX[i].im;
 	}
@@ -470,6 +469,8 @@ quint32 HalfbandFilter::convolveOA(const CPX x[], quint32 xLen, const double h[]
 quint32 HalfbandFilter::convolveVDsp1(const DSPDoubleSplitComplex x[], quint32 xLen, const double h[],
 		quint32 hLen, DSPDoubleSplitComplex y[], quint32 ySize, quint32 decimate)
 {
+	Q_UNUSED(ySize);
+
 	quint32 dLen = hLen - 1; //Size of delay buffer
 
 	quint32 yCnt = 0;
@@ -481,7 +482,7 @@ quint32 HalfbandFilter::convolveVDsp1(const DSPDoubleSplitComplex x[], quint32 x
 		//The last stage may only have 16 samples for a 35 tap filter
 		//Brute force, just return 1/2 the samples without filtering
 		//qWarning()<<"xLen < hLen in convolve";
-		for (int i=0, j=0; i<xLen/decimate; i++, j+=decimate) {
+		for (quint32 i=0, j=0; i<xLen/decimate; i++, j+=decimate) {
 			y[i] = x[j];
 		}
 		return xLen / decimate;
@@ -505,14 +506,14 @@ quint32 HalfbandFilter::convolveVDsp1(const DSPDoubleSplitComplex x[], quint32 x
 		}
 #endif
 
-	for (int n=0; n<xLen; n+=decimate) {
+	for (quint32 n=0; n<xLen; n+=decimate) {
 		//Multiply every other sample in _in (decimate by 2) * every coefficient
 		tmpIn.realp = &lastXVDsp.realp[n];
 		tmpIn.imagp = &lastXVDsp.imagp[n];
 		tmpOut.realp = &y->realp[yCnt];
 		tmpOut.imagp = &y->imagp[yCnt];
 		//Brute force for all coeff, does not know or take advantage of zero coefficients
-		vDSP_zrdotprD(&tmpIn,1,coeff,1,&tmpOut,hLen);
+		vDSP_zrdotprD(&tmpIn,1,h,1,&tmpOut,hLen);
 #if 0
 		//Checking dot product results, ok
 		CPX acc;
@@ -543,6 +544,8 @@ quint32 HalfbandFilter::convolveVDsp1(const DSPDoubleSplitComplex x[], quint32 x
 quint32 HalfbandFilter::convolveVDsp2(const DSPDoubleSplitComplex x[], quint32 xLen, const double h[], quint32 hLen,
 		DSPDoubleSplitComplex y[], quint32 ySize, quint32 decimate)
 {
+	Q_UNUSED(ySize);
+
 	quint32 dLen = hLen - 1; //Size of delay buffer
 	//yLen is the final size of the decimated and filtered output
 	quint32 yLen = xLen / decimate;
@@ -554,7 +557,7 @@ quint32 HalfbandFilter::convolveVDsp2(const DSPDoubleSplitComplex x[], quint32 x
 		//The last stage may only have 16 samples for a 35 tap filter
 		//Brute force, just return 1/2 the samples without filtering
 		//qWarning()<<"xLen < hLen in convolve";
-		for (int i=0, j=0; i<xLen/decimate; i++, j+=decimate) {
+		for (quint32 i=0, j=0; i<xLen/decimate; i++, j+=decimate) {
 			y[i] = x[j];
 		}
 		return xLen / decimate;
@@ -636,7 +639,7 @@ quint32 HalfbandFilter::processCIC3(const CPX *_in, CPX *_out, quint32 _numInSam
 
 	CPX even,odd;
 	//StartPerformance();
-	for(int i=0; i<numInSamples; i += decimate)
+	for(quint32 i=0; i<numInSamples; i += decimate)
 	{	//mag gn=8
 		even = inBuffer[i];
 		odd = inBuffer[i+1];
