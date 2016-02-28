@@ -11,6 +11,7 @@
 
 class AudioQT : public Audio
 {
+	Q_OBJECT
 public:
 	AudioQT(cbAudioProducer cb, int fpb);
     ~AudioQT();
