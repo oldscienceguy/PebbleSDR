@@ -17,6 +17,12 @@ AudioQT::AudioQT(cbAudioProducer cb, int fpb):Audio()
     cpxOutBuffer = new CPX[framesPerBuffer];
     outStreamBuffer = new float[framesPerBuffer * 2]; //Max we'll ever see
     inStreamBuffer = new float[framesPerBuffer * 2 * 2]; //Max we'll ever see
+
+	quint32 numProducerBuffers = 50;
+	quint32 readBufferSize = framesPerBuffer * 4;
+	producerConsumer.Initialize(std::bind(&AudioQT::producerWorker, this, std::placeholders::_1),
+		std::bind(&AudioQT::consumerWorker, this, std::placeholders::_1),numProducerBuffers, readBufferSize);
+
 }
 
 AudioQT::~AudioQT()
@@ -48,20 +54,27 @@ int AudioQT::StartInput(QString inputDeviceName, int _inputSampleRate)
         return -1;
     }
 
-    //set notify interval and connect to notify signal, calls us back whenever n ms of data is available
     qaAudioInput = new QAudioInput(qaInputDevice, qaFormat, this);
 
-    //Want to get called back whenever there's a buffer full of data
-	int notifyInterval = (float)framesPerBuffer / ((float)inputSampleRate * 1.5)* 1000.0;
-    qaAudioInput->setNotifyInterval(notifyInterval);  //Experiment with this, has to be fast enough to keep up with sample rate
-    //Set up our call back
+	//set notify interval and connect to notify signal, calls us back whenever n ms of data is available
+	//Want to get called back whenever there's a buffer full of data
+	//int notifyInterval = (float)framesPerBuffer / ((float)inputSampleRate * 1.5)* 1000.0;
+	//qaAudioInput->setNotifyInterval(notifyInterval);  //Experiment with this, has to be fast enough to keep up with sample rate
+	//qDebug()<<"audioqt notifiy interval "<<notifyInterval;
+	//Set up our call back
+	//notify is not used if we are using producer thread.
+	//producer thread will check for new data in the same way that notify does
     //connect(qaAudioInput,SIGNAL(notify()),this,SLOT(ProcessInputData()));
     //New QT5 connect syntax for compile time checking
-    connect(qaAudioInput,&QAudioInput::notify,this,&AudioQT::ProcessInputData);
+	//connect(qaAudioInput,&QAudioInput::notify,this,&AudioQT::ProcessInputData);
+
     //This sets the max # of samples and is in units of sampleformat
     //So 2048 float samples will return 8192 bytes
     qaAudioInput->setBufferSize(framesPerBuffer*2*2); //2x Extra room
 	qaAudioInput->setVolume(5); //Default is 1
+
+	producerConsumer.SetProducerInterval(inputSampleRate, framesPerBuffer);
+	producerConsumer.Start(true,false);
     //We should start seeing callbacks after start
     inputDataSource = qaAudioInput->start();
 
@@ -133,8 +146,10 @@ int AudioQT::Stop()
 {
     if (qaAudioOutput)
         qaAudioOutput->stop();
-    if (qaAudioInput)
+	if (qaAudioInput) {
         qaAudioInput->stop();
+		producerConsumer.Stop();
+	}
 
 	return 0;
 }
@@ -318,4 +333,31 @@ void AudioQT::DumpDeviceInfo(QAudioDeviceInfo device)
 	//foreach (int s,device.supportedFrequencies())
 	//	qDebug()<<s;
 #endif
+}
+
+void AudioQT::producerWorker(cbProducerConsumerEvents _event)
+{
+	switch (_event) {
+		case cbProducerConsumerEvents::Start:
+			break;
+		case cbProducerConsumerEvents::Run:
+			ProcessInputData();
+			break;
+		case cbProducerConsumerEvents::Stop:
+			break;
+	}
+}
+
+//Not used, could be used for audio output
+void AudioQT::consumerWorker(cbProducerConsumerEvents _event)
+{
+	switch (_event) {
+		case cbProducerConsumerEvents::Start:
+			break;
+		case cbProducerConsumerEvents::Run:
+			break;
+		case cbProducerConsumerEvents::Stop:
+			break;
+	}
+
 }

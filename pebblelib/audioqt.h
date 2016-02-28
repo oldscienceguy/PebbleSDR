@@ -7,6 +7,7 @@
 #include <QAudioInput>
 #include <QAudioOutput>
 #include <QAudioFormat>
+#include "producerconsumer.h"
 
 class AudioQT : public Audio
 {
@@ -50,6 +51,10 @@ private:
 	QMutex mutex;
 
 	void DumpDeviceInfo(QAudioDeviceInfo device);
+
+	ProducerConsumer producerConsumer;
+	void producerWorker(cbProducerConsumerEvents _event);
+	void consumerWorker(cbProducerConsumerEvents _event);
 
 
 };
