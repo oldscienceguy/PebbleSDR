@@ -282,8 +282,7 @@ HEADERS += \
     plugins.h \
     sdroptions.h \
     dcremoval.h \
-    bandpassfilter.h \
-    decimator.h
+    bandpassfilter.h
 
 SOURCES += \
     spectrumwidget.cpp \
@@ -316,8 +315,7 @@ SOURCES += \
     plugins.cpp \
     sdroptions.cpp \
     dcremoval.cpp \
-    bandpassfilter.cpp \
-    decimator.cpp
+    bandpassfilter.cpp
 
 FORMS += \
     spectrumwidget.ui \

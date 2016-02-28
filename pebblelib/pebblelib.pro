@@ -125,7 +125,8 @@ SOURCES += pebblelib.cpp \
     fractresampler.cpp \
     butterworth.cpp \
     windowfunction.cpp \
-    fastfir.cpp
+    fastfir.cpp \
+    decimator.cpp
 
 HEADERS += pebblelib.h\
     pebblelib_global.h \
@@ -161,7 +162,8 @@ HEADERS += pebblelib.h\
     fractresampler.h \
     butterworth.h \
     windowfunction.h \
-    fastfir.h
+    fastfir.h \
+    decimator.h
 
 DISTFILES += \
     gpl.html
