@@ -1,7 +1,8 @@
 #ifndef DECIMATOR_H
 #define DECIMATOR_H
-
-#include "processstep.h"
+//GPL license and attributions are in gpl.h and terms are included in this file by reference
+#include "gpl.h"
+#include "cpx.h"
 #include <Accelerate/Accelerate.h>
 
 /*
