@@ -15,9 +15,11 @@
 #define ONEPI	3.14159265358979323846264338328
 #define TWOPI   6.28318530717958647692528676656
 #define FOURPI 12.56637061435917295385057353312
+
+//For imported code compatibility
 #define TYPEREAL double
 #define TYPECPX	CPX
-#define TYPESTEREO16 CPXINT
+#define TYPESTEREO16 CPX16
 #define TYPEMONO16 qint16
 
 
@@ -25,17 +27,6 @@
 //Defined here because the bit mask logic may be confusing to some
 //Equivalent to ((A - 1) % B)
 #define DECMOD(A,B) ((A+B) & B)
-
-#if(0)
-    //min max causes all sorts of grief switching complilers and libraries
-    //Define locally in any file that needs it
-    #ifndef max
-        #define max(a,b) (((a) > (b)) ? (a) : (b))
-        #define min(a,b) (((a) < (b)) ? (a) : (b))
-    #endif
-#endif
-
-
 
 //Ignore warnings about C++ 11 features
 #pragma clang diagnostic ignored "-Wc++11-extensions"
@@ -51,12 +42,27 @@
 
 #include "pebblelib_global.h"
 
-//Integer version, used for compatibility
-class PEBBLELIBSHARED_EXPORT CPXINT
-{
+
+//HackRF format
+class CPX8 {
 public:
-    qint16 re;
-    qint16 im;
+	qint8 re;
+	qint8 im;
+};
+class CPXU8 {
+public:
+	quint8 re;
+	quint8 im;
+};
+class CPX16 {
+public:
+	qint16 re;
+	qint16 im;
+};
+class CPXU16 {
+public:
+	quint16 re;
+	quint16 im;
 };
 
 //Inline simple methods for performance
