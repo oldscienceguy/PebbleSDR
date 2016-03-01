@@ -90,7 +90,7 @@ void SdrOptions::ShowSdrOptions(DeviceInterface *_di, bool b)
 		connect(sd->iqEnableBalance,SIGNAL(toggled(bool)),this,SLOT(BalanceEnabledChanged(bool)));
 		connect(sd->iqBalanceReset,SIGNAL(clicked()),this,SLOT(BalanceReset()));
 
-		dcRemove = di->Get(DeviceInterface::DeviceSetting,"DCRemove").toBool();
+		dcRemove = di->Get(DeviceInterface::Setting,"DCRemove").toBool();
 		sd->dcRemoval->setChecked(dcRemove);
 		connect (sd->dcRemoval, SIGNAL(clicked(bool)),this,SLOT(dcRemovalChanged(bool)));
 
@@ -180,11 +180,11 @@ void SdrOptions::UpdateOptions()
 	sd->iqBalanceGain->blockSignals(false);
 
 	sd->converterMode->blockSignals(true);
-	sd->converterMode->setChecked(di->Get(DeviceInterface::DeviceConverterMode).toBool());
+	sd->converterMode->setChecked(di->Get(DeviceInterface::ConverterMode).toBool());
 	sd->converterMode->blockSignals(false);
 
 	sd->converterOffset->blockSignals(true);
-	sd->converterOffset->setText(di->Get(DeviceInterface::DeviceConverterOffset).toString());
+	sd->converterOffset->setText(di->Get(DeviceInterface::ConverterOffset).toString());
 	sd->converterOffset->blockSignals(false);
 
 	//Set up options and get allowable sampleRates from device
@@ -226,21 +226,21 @@ void SdrOptions::CloseOptions(bool b)
 
 void SdrOptions::ConverterModeChanged(bool b)
 {
-	di->Set(DeviceInterface::DeviceConverterMode,b);
+	di->Set(DeviceInterface::ConverterMode,b);
 	di->Command(DeviceInterface::CmdWriteSettings,0);
 }
 
 void SdrOptions::ConverterOffsetChanged()
 {
-	di->Set(DeviceInterface::DeviceConverterOffset, sd->converterOffset->text().toDouble());
+	di->Set(DeviceInterface::ConverterOffset, sd->converterOffset->text().toDouble());
 	di->Command(DeviceInterface::CmdWriteSettings,0);
 }
 
 void SdrOptions::dcRemovalChanged(bool b)
 {
 	dcRemove = b;
-	global->receiver->dcRemoval->enableStep(b);
-	di->Set(DeviceInterface::DeviceSetting,"DCRemove",b);
+	global->receiver->dcRemove->enableStep(b);
+	di->Set(DeviceInterface::Setting,"DCRemove",b);
 	di->Command(DeviceInterface::CmdWriteSettings,0);
 }
 
@@ -366,7 +366,7 @@ void SdrOptions::ResetSettings(bool b)
 		//Disabled
 		emit Restart(); //Shut receiver off so current options aren't written to ini file
 		//fname gets absolute path
-		QString fname = di->Get(DeviceInterface::DeviceSettingsFile).toString();
+		QString fname = di->Get(DeviceInterface::SettingsFile).toString();
 		qDebug()<<"Device file name: "<<fname;
 		QFile::remove(fname);
 #if 0

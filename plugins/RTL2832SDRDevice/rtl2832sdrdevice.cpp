@@ -709,7 +709,7 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _op
 			else
 				return GetLowLimit();
 			break;
-		case FrequencyCorrection:
+		case DeviceFreqCorrectionPpm:
 			return rtlFreqencyCorrection; //int, may not be right format for all devices
 			break;
 		case StartupDemodMode:
@@ -783,7 +783,7 @@ bool RTL2832SDRDevice::Set(STANDARD_KEYS _key, QVariant _value, QVariant _option
 			}
 			break;
 		}
-		case FrequencyCorrection:
+		case DeviceFreqCorrectionPpm:
 			rtlFreqencyCorrection = _value.toInt();
 			break;
 		//Custom keys

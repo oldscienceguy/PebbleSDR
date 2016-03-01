@@ -39,28 +39,20 @@ typedef std::function<void(quint8 *, quint16)> cbProcessBandscopeData;
 //ProcessAudioData callback: Call with CPX buffer with left/right audio values and number of samples
 typedef std::function<void(CPX *, quint16)> cbProcessAudioData;
 
-class PEBBLELIBSHARED_EXPORT DeviceInterface
+//Device (HW) options are usually saved to device .ini file
+//Application (App) options may or may not be saved
+class DeviceInterface
 {
 public:
 	//These enums can only be extended, not changed, once released.  Otherwise will break existing plugins that are not rebuilt
 	enum STANDARD_KEYS {
-		PluginName = 0,				//RO QString Name of plugin device was found in
+		PluginName = 0,			//RO QString Name of plugin device was found in
 		PluginDescription,		//RO QString Description of plugin device was found in
 		PluginNumDevices,		//RO How many unique devices does plugin support, see DeviceNumber for correlation
-		DeviceName,				//RO QString Actual device name, may be more than one device per plugin
-		DeviceDescription,		//RO QString Actual device description
-		DeviceNumber,			//RW Optional index for plugins that support multiple devices
-		DeviceType,				//RO int (enum DEVICE_TYPE)
-		DeviceSampleRate,		//RW quint32
-		DeviceSampleRates,		//RO QStringList Sample rates supported by device
-		DeviceFrequency,		//RW double Device center (LO) frequency
-		DeviceHealthValue,		//RO quin16 0-100 where 0 = throwing away data and 100 = within expected tollerances
-		DeviceHealthString,		//RO QString explaining last DeviceHealth returned value
 		InputDeviceName,		//RW QString Plugins manage settings - OS name for selected Audio input device, if any
 		OutputDeviceName,		//RW QString
 		HighFrequency,			//RO Highest frequency device supports
 		LowFrequency,			//RO Lowest frequency device supports
-		FrequencyCorrection,	//RW ???What's the universal format for this?  int ppm?
 		IQGain,					//RW double User adjustable to normalize levels among devices
 		StartupType,			//RW int (enum STARTUP_TYPE)
 		StartupDemodMode,		//RO int (enum DeviceInterface::DEMODMODE) Default mode for device if not otherwise specified
@@ -76,21 +68,38 @@ public:
 		IQBalanceEnabled,		//bool
 		IQBalanceGain,			//double
 		IQBalancePhase,			//double
-		//Adding support for remote servers that control things like audio output rate
+
+		//Remote servers may control things like audio output rate
 		AudioOutputSampleRate,	//RO quint32
+
+		SettingsFile,			//RO returns .ini file name used by device
+		ConverterMode,			//RW returns whether device is using an up/down converter
+		ConverterOffset,		//RW Offset to device frequency to use if converter is active
+		Setting,				//RW Direct access to device settings file. Settings name in _option
+		DecimateFactor,			//RW If device plugin or device supports decimation
+		RemoveDC,				//RW Filter to remove dc component in device or plugin
+
+		//Hardware options
+		DeviceName,				//RO QString Actual device name, may be more than one device per plugin
+		DeviceDescription,		//RO QString Actual device description
+		DeviceNumber,			//RW Optional index for plugins that support multiple devices
+		DeviceType,				//RO int (enum DEVICE_TYPE)
+		DeviceSampleRate,		//RW quint32
+		DeviceSampleRates,		//RO QStringList Sample rates supported by device
+		DeviceFrequency,		//RW double Device center (LO) frequency
+		DeviceHealthValue,		//RO quin16 0-100 where 0 = throwing away data and 100 = within expected tollerances
+		DeviceHealthString,		//RO QString explaining last DeviceHealth returned value
 		DeviceDemodMode,		//RW quint16 enum DeviceInterface::DEMODMODE
-		DeviceOutputGain,				//RW quint16
+		DeviceOutputGain,		//RW quint16
 		DeviceFilter,			//RW QString "lowFilter:highFilter"
 		DeviceAGC,				//RW quint16
 		DeviceANF,				//RW quint16
 		DeviceNB,				//RW quint16
 		DeviceSlave,			//RO bool true if device is controled by somthing other than Pebble
-		DeviceSettingsFile,		//RO returns .ini file name used by device
-		DeviceConverterMode,	//RW returns whether device is using an up/down converter
-		DeviceConverterOffset,	//RW Offset to device frequency to use if converter is active
-		DeviceSetting,			//RW Direct access to device settings file. Settings name in _option
+		DeviceFreqCorrectionPpm,	//RW If device supports frequency correction in ppm
+
 		//Expansion room if needed
-		CustomKey1 = 100,		//Devices can implement custom keys, as long as they start with this
+		CustomKey1 = 200,		//Devices can implement custom keys, as long as they start with this
 		CustomKey2,
 		CustomKey3,
 		CustomKey4,

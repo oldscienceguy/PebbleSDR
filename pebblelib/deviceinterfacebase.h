@@ -111,7 +111,8 @@ protected:
 	bool converterMode;
 	double converterOffset;
 
-
+	quint32 decimateFactor;
+	bool removeDC;
 };
 
 #endif // DEVICEINTERFACEBASE_H

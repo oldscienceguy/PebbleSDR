@@ -195,7 +195,7 @@ QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, QVariant _option) {
 				return 0;
 			else
 				return lowFrequency;
-		case FrequencyCorrection:
+		case DeviceFreqCorrectionPpm:
 			return 0;
 			break;
 		case IQGain:
@@ -265,16 +265,22 @@ QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, QVariant _option) {
 			break;
 		case DeviceSlave:			//RO bool true if device is controled by somthing other than Pebble
 			return false;
-		case DeviceSettingsFile:
+		case SettingsFile:
 			if (qSettings != NULL)
 				return qSettings->fileName();
 			return false;
-		case DeviceConverterMode:
+		case ConverterMode:
 			return converterMode;
-		case DeviceConverterOffset:
+		case ConverterOffset:
 			return converterOffset;
-		case DeviceSetting:
+		case Setting:
 			return qSettings->value(_option.toString());
+			break;
+		case DecimateFactor:
+			return decimateFactor;
+			break;
+		case RemoveDC:
+			return removeDC;
 			break;
 		default:
 			break;
@@ -328,7 +334,7 @@ bool DeviceInterfaceBase::Set(STANDARD_KEYS _key, QVariant _value, QVariant _opt
 		case LowFrequency:
 			Q_UNREACHABLE();
 			break;
-		case FrequencyCorrection:
+		case DeviceFreqCorrectionPpm:
 			break;
 		case IQGain:
 			userIQGain = _value.toDouble();
@@ -393,16 +399,22 @@ bool DeviceInterfaceBase::Set(STANDARD_KEYS _key, QVariant _value, QVariant _opt
 		case DeviceSlave:			//RO bool true if device is controled by somthing other than Pebble
 			Q_UNREACHABLE();
 			break;
-		case DeviceConverterMode:
+		case ConverterMode:
 			converterMode = _value.toBool();
 			break;
-		case DeviceConverterOffset:
+		case ConverterOffset:
 			converterOffset = _value.toDouble();
 			break;
-		case DeviceSetting:
+		case Setting:
 			if (qSettings == NULL)
 				return false;
 			qSettings->setValue(_value.toString(), _option);
+			break;
+		case DecimateFactor:
+			decimateFactor = _value.toUInt();
+			break;
+		case RemoveDC:
+			removeDC = _value.toBool();
 			break;
 		default:
 			break;
@@ -455,6 +467,8 @@ void DeviceInterfaceBase::ReadSettings()
 	startupDemodMode = qSettings->value("StartupDemodMode",startupDemodMode).toInt();
 	converterMode = qSettings->value("ConverterMode", false).toBool();
 	converterOffset = qSettings->value("ConverterOffset", 0).toDouble();
+	decimateFactor = qSettings->value("DecimateFactor",1).toUInt();
+	removeDC = qSettings->value("RemoveDC",false).toBool();
 }
 
 void DeviceInterfaceBase::WriteSettings()
@@ -479,6 +493,8 @@ void DeviceInterfaceBase::WriteSettings()
 	qSettings->setValue("StartupDemodMode",startupDemodMode);
 	qSettings->setValue("ConverterMode",converterMode);
 	qSettings->setValue("ConverterOffset",converterOffset);
+	qSettings->setValue("DecimateFactor",decimateFactor);
+	qSettings->setValue("RemoveDC",removeDC);
 }
 
 
