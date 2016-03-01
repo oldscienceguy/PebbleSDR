@@ -185,6 +185,7 @@ public:
 	HalfbandFilter(quint16 _numTaps, double _wPass, double * _coeff);
 	~HalfbandFilter();
 	quint32 process(CPX *_in, CPX *_out, quint32 _numInSamples);
+
 	quint32 processCIC3(const CPX *_in, CPX *_out, quint32 _numInSamples);
 	quint32 processVDsp(const DSPDoubleSplitComplex *_in, DSPDoubleSplitComplex *_out, quint32 _numInSamples);
 
@@ -229,11 +230,10 @@ public:
 	~Decimator();
 
 	//Builds a decimation chain to get from incoming sample rate to lowest sample rate that protects
-	//maxBandWidth
-	//_maxBandwidth is the full bandwith (wPass) ie not 1/2 bw as in cuteSDR.  Compared to wPass
-	float buildDecimationChain(quint32 _sampleRate, quint32 _maxBandWidth);
+	//_protectBw
+	//_protectBw is the full bandwith (wPass) ie not 1/2 bw as in cuteSDR.  Compared to wPass
+	float buildDecimationChain(quint32 _sampleRateIn, quint32 _protectBw, quint32 _sampleRateOut = 0);
 
-	//Overload virtual method in ProcessStep
 	quint32 process(CPX *_in, CPX* _out, quint32 _numSamples);
 
 private:
@@ -245,7 +245,7 @@ private:
 	bool combineStages;
 
 	float decimatedSampleRate;
-	double maxBandWidth; //Protected bandwidth of signal of interest
+	double protectBandWidth; //Protected bandwidth of signal of interest
 
 	void initFilters();
 	void deleteFilters();

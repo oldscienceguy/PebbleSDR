@@ -47,6 +47,7 @@ Decimator::~Decimator()
 {
 	delete workingBuf1;
 	delete workingBuf2;
+
 	if (useVdsp) {
 		free (splitComplexIn.realp);
 		free (splitComplexIn.imagp);
@@ -56,65 +57,68 @@ Decimator::~Decimator()
 	deleteFilters();
 }
 
+//Return decimation rate and chain from sampleRateIn to sampleRateOut(if specified) that also protects bw
+//Testing sampleRateOut with hackrfdevice for higher sample rates
 
-float Decimator::buildDecimationChain(quint32 _sampleRate, quint32 _maxBandWidth)
+float Decimator::buildDecimationChain(quint32 _sampleRateIn, quint32 _protectBw, quint32 _sampleRateOut)
 {
-	decimatedSampleRate = _sampleRate;
-	maxBandWidth = _maxBandWidth;
+	decimatedSampleRate = _sampleRateIn;
+	protectBandWidth = _protectBw;
+	quint32 minSampleRateOut = _sampleRateOut > 0 ? _sampleRateOut : minDecimatedSampleRate;
 	HalfbandFilter *chain = NULL;
 	HalfbandFilter *prevChain = NULL;
-	qDebug()<<"Building Decimator chain for sampleRate = "<<_sampleRate<<" max bw = "<<_maxBandWidth;
-	while (decimatedSampleRate > minDecimatedSampleRate) {
+	qDebug()<<"Building Decimator chain for sampleRate = "<<_sampleRateIn<<" max bw = "<<_protectBw;
+	while (decimatedSampleRate > minSampleRateOut) {
 		//Use cic3 for faster decimation
 #if 1
-		if(decimatedSampleRate >= (maxBandWidth / cic3->wPass) ) {		//See if can use CIC order 3
+		if(decimatedSampleRate >= (protectBandWidth / cic3->wPass) ) {		//See if can use CIC order 3
 			//Passing NULL for coeff sets CIC3
 			chain = new HalfbandFilter(cic3);
 			qDebug()<<"cic3 = "<<decimatedSampleRate;
 #else
 		//Compare 7 tap halfband to cic for 1st stage
-		if(decimatedSampleRate >= (maxBandWidth / hb7->wPass) ) {		//See if can use CIC order 3
+		if(decimatedSampleRate >= (protectBandWidth / hb7->wPass) ) {		//See if can use CIC order 3
 			chain = new HalfbandFilter(hb7);
 			qDebug()<<"hb7 = "<<decimatedSampleRate;
 #endif
-		} else if(decimatedSampleRate >= (maxBandWidth / hb11->wPass) ) {	//See if can use fixed 11 Tap Halfband
+		} else if(decimatedSampleRate >= (protectBandWidth / hb11->wPass) ) {	//See if can use fixed 11 Tap Halfband
 			chain = new HalfbandFilter(hb11);
 			qDebug()<<"hb11 = "<<decimatedSampleRate;
-		} else if(decimatedSampleRate >= (maxBandWidth / hb15->wPass) ) {	//See if can use Halfband 15 Tap
+		} else if(decimatedSampleRate >= (protectBandWidth / hb15->wPass) ) {	//See if can use Halfband 15 Tap
 			chain = new HalfbandFilter(hb15);
 			qDebug()<<"hb15 = "<<decimatedSampleRate;
-		} else if(decimatedSampleRate >= (maxBandWidth / hb19->wPass) ) {	//See if can use Halfband 19 Tap
+		} else if(decimatedSampleRate >= (protectBandWidth / hb19->wPass) ) {	//See if can use Halfband 19 Tap
 			chain = new HalfbandFilter(hb19);
 			qDebug()<<"hb19 = "<<decimatedSampleRate;
-		} else if(decimatedSampleRate >= (maxBandWidth / hb23->wPass) ) {	//See if can use Halfband 23 Tap
+		} else if(decimatedSampleRate >= (protectBandWidth / hb23->wPass) ) {	//See if can use Halfband 23 Tap
 			chain = new HalfbandFilter(hb23);
 			qDebug()<<"hb23 = "<<decimatedSampleRate;
-		} else if(decimatedSampleRate >= (maxBandWidth / hb27->wPass) ) {	//See if can use Halfband 27 Tap
+		} else if(decimatedSampleRate >= (protectBandWidth / hb27->wPass) ) {	//See if can use Halfband 27 Tap
 			chain = new HalfbandFilter(hb27);
 			qDebug()<<"hb27 = "<<decimatedSampleRate;
-		} else if(decimatedSampleRate >= (maxBandWidth / hb31->wPass) ) {	//See if can use Halfband 31 Tap
+		} else if(decimatedSampleRate >= (protectBandWidth / hb31->wPass) ) {	//See if can use Halfband 31 Tap
 			chain = new HalfbandFilter(hb31);
 			qDebug()<<"hb31 = "<<decimatedSampleRate;
-		} else if(decimatedSampleRate >= (maxBandWidth / hb35->wPass) ) {	//See if can use Halfband 35 Tap
+		} else if(decimatedSampleRate >= (protectBandWidth / hb35->wPass) ) {	//See if can use Halfband 35 Tap
 			chain = new HalfbandFilter(hb35);
 			qDebug()<<"hb35 = "<<decimatedSampleRate;
-		} else if(decimatedSampleRate >= (maxBandWidth / hb39->wPass) ) {	//See if can use Halfband 39 Tap
+		} else if(decimatedSampleRate >= (protectBandWidth / hb39->wPass) ) {	//See if can use Halfband 39 Tap
 			chain = new HalfbandFilter(hb39);
 			qDebug()<<"hb39 = "<<decimatedSampleRate;
-		} else if(decimatedSampleRate >= (maxBandWidth / hb43->wPass) ) {	//See if can use Halfband 43 Tap
+		} else if(decimatedSampleRate >= (protectBandWidth / hb43->wPass) ) {	//See if can use Halfband 43 Tap
 			chain = new HalfbandFilter(hb43);
 			qDebug()<<"hb43 = "<<decimatedSampleRate;
-		} else if(decimatedSampleRate >= (maxBandWidth / hb47->wPass) ) {	//See if can use Halfband 47 Tap
+		} else if(decimatedSampleRate >= (protectBandWidth / hb47->wPass) ) {	//See if can use Halfband 47 Tap
 			chain = new HalfbandFilter(hb47);
 			qDebug()<<"hb47 = "<<decimatedSampleRate;
-		} else if(decimatedSampleRate >= (maxBandWidth / hb51->wPass) ) {	//See if can use Halfband 51 Tap
+		} else if(decimatedSampleRate >= (protectBandWidth / hb51->wPass) ) {	//See if can use Halfband 51 Tap
 			chain = new HalfbandFilter(hb51);
 			qDebug()<<"hb51 = "<<decimatedSampleRate;
-		} else if(decimatedSampleRate >= (maxBandWidth / hb59->wPass) ) {	//See if can use Halfband 51 Tap
+		} else if(decimatedSampleRate >= (protectBandWidth / hb59->wPass) ) {	//See if can use Halfband 51 Tap
 			chain = new HalfbandFilter(hb59);
 			qDebug()<<"hb59 = "<<decimatedSampleRate;
 		} else {
-			qDebug()<<"Ran out of filters before minDecimatedSampleRate";
+			qDebug()<<"Ran out of filters before minimum sample rate";
 			break; //out of while
 		}
 
@@ -243,7 +247,6 @@ HalfbandFilter::HalfbandFilter(quint16 _numTaps, double _wPass, double *_coeff)
 	//Make sure at least numTaps is set to zero before first call or we can get nan errors from garbage in the buffer
 	memset(lastXVDsp.realp,0,maxResultLen);
 	memset(lastXVDsp.imagp,0,maxResultLen);
-
 
 	lastX = CPX::memalign(maxResultLen);
 	CPX::clearCPX(lastX, maxResultLen);
