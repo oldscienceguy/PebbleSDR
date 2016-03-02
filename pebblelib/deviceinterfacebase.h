@@ -68,6 +68,7 @@ protected:
 	QString inputDeviceName;
 	QString outputDeviceName;
 	quint32 sampleRate;
+	quint32 deviceSampleRate;
 
 	double userIQGain; //Normalize device so incoming IQ levels are consistent
 	double normalizeIQGain; //Per device to normalize device levels at userGain == 1

@@ -15,6 +15,7 @@ DeviceInterfaceBase::DeviceInterfaceBase()
 	inputDeviceName = QString();
 	outputDeviceName = QString();
 	sampleRate = 48000;
+	deviceSampleRate = sampleRate;
 	userIQGain = 1.0;
 	iqOrder = IQ;
 	iqBalanceGain = 1.0;
@@ -163,8 +164,14 @@ QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, QVariant _option) {
 		case DeviceType:
 			return AUDIO_IQ_DEVICE;
 			break;
+		//Applications sets deviceSampleRate, which is the hardware sample rate
+		//Device returns sampleRate, which may be decimated by the device
+		//SampleRate is read only and defaults to deviceSampleRate
+		case SampleRate:
+			return deviceSampleRate;
+			break;
 		case DeviceSampleRate:
-			return sampleRate;
+			return deviceSampleRate;
 			break;
 		case DeviceSampleRates:
 			//We shouldn't know this, depends on audio device connected to receiver
@@ -313,8 +320,12 @@ bool DeviceInterfaceBase::Set(STANDARD_KEYS _key, QVariant _value, QVariant _opt
 		case DeviceType:
 			Q_UNREACHABLE();
 			break;
+		//SampleRate is read only and returned by device based on deviceSampleRate
+		case SampleRate:
+			Q_UNREACHABLE();
+			break;
 		case DeviceSampleRate:
-			sampleRate = _value.toInt();
+			deviceSampleRate = _value.toUInt();
 			break;
 		case DeviceSampleRates:
 			Q_UNREACHABLE();
@@ -451,7 +462,11 @@ void DeviceInterfaceBase::ReadSettings()
 	//Allow the device to specify a fixed inputDeviceName, see rfspacedevice for example
 	inputDeviceName = qSettings->value("InputDeviceName", inputDeviceName).toString();
 	outputDeviceName = qSettings->value("OutputDeviceName", outputDeviceName).toString();
-	sampleRate = qSettings->value("SampleRate", sampleRate).toInt();
+	//sampleRate is returned by device and not saved
+	//sampleRate = qSettings->value("SampleRate", sampleRate).toUInt();
+	deviceSampleRate = qSettings->value("DeviceSampleRate", deviceSampleRate).toUInt();
+	//Default sampleRate to deviceSampleRate for compatibility, device will override if necessary
+	sampleRate = deviceSampleRate;
 	userIQGain = qSettings->value("IQGain",userIQGain).toDouble();
 	iqOrder = (IQORDER)qSettings->value("IQOrder", iqOrder).toInt();
 	iqBalanceGain = qSettings->value("IQBalanceGain",iqBalanceGain).toDouble();
@@ -477,7 +492,9 @@ void DeviceInterfaceBase::WriteSettings()
 	qSettings->setValue("UserFrequency",userFrequency);
 	qSettings->setValue("InputDeviceName", inputDeviceName);
 	qSettings->setValue("OutputDeviceName", outputDeviceName);
-	qSettings->setValue("SampleRate",sampleRate);
+	//sampleRate is returned by device and not saved
+	//qSettings->setValue("SampleRate",sampleRate);
+	qSettings->setValue("DeviceSampleRate",deviceSampleRate);
 	qSettings->setValue("IQGain",userIQGain);
 	qSettings->setValue("IQOrder", iqOrder);
 	qSettings->setValue("IQBalanceGain", iqBalanceGain);

@@ -51,6 +51,7 @@ public:
 		PluginNumDevices,		//RO How many unique devices does plugin support, see DeviceNumber for correlation
 		InputDeviceName,		//RW QString Plugins manage settings - OS name for selected Audio input device, if any
 		OutputDeviceName,		//RW QString
+		SampleRate,				//RW Application I/Q processing sample rate
 		HighFrequency,			//RO Highest frequency device supports
 		LowFrequency,			//RO Lowest frequency device supports
 		IQGain,					//RW double User adjustable to normalize levels among devices
