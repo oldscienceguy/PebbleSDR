@@ -1178,7 +1178,7 @@ void FunCubeSDRDevice::ReadSettings()
 {
 	if (deviceNumber == FUNCUBE_PRO) {
 		qSettings = funCubeProSettings;
-		sampleRate = 96000;
+		deviceSampleRate = 96000;
 		startupFrequency = 162450000;
 		//FCD official range is 64 to 1.7 with no gaps
 		lowFrequency = 60000000;
@@ -1189,7 +1189,7 @@ void FunCubeSDRDevice::ReadSettings()
 		sVID = VID;
 	} else {
 		qSettings = funCubeProPlusSettings;
-		sampleRate = 192000;
+		deviceSampleRate = 192000;
 		startupFrequency = 10000000;
 		//FCDPlus 240mhz to 420mhz gap is not handled
 		lowFrequency = 150000;
