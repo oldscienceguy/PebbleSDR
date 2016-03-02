@@ -551,7 +551,7 @@ void ReceiverWidget::powerToggled(bool on)
 		}
 
 		//Limit tuning range and mixer range
-		int sampleRate = sdr->Get(DeviceInterface::DeviceSampleRate).toInt();
+		int sampleRate = sdr->Get(DeviceInterface::SampleRate).toInt();
 		SetLimits(sdr->Get(DeviceInterface::HighFrequency).toDouble(),
 					sdr->Get(DeviceInterface::LowFrequency).toDouble(),
 					sampleRate/2,-sampleRate/2);
