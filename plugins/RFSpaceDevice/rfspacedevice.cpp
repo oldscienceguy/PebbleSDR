@@ -87,8 +87,8 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback,
 
 	if (deviceNumber == SDR_IQ) {
 		//SR * 2 bytes for I * 2 bytes for Q .  dataBlockSize is 8192
-		producerConsumer.SetProducerInterval(sampleRate,framesPerBuffer);
-		producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
+		producerConsumer.SetProducerInterval(deviceSampleRate,framesPerBuffer);
+		producerConsumer.SetConsumerInterval(deviceSampleRate,framesPerBuffer);
 		//Normalizes signal +/- db. -10 will decrease signal by 10db, +10 will increase by 10db
 		//Use 10mhz signal generator with .0005vpp (Red Pitaya) should result in approx -60db signal
 		//Test with normalizeGain = 1 to get baseline, then calculate db gain/loss adjustment
@@ -97,9 +97,9 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback,
 
 	} else if(deviceNumber == SDR_IP) {
 		//Get get UDP datagrams of 1024 bytes, 4bytes per CPX or 256 CPX samples
-		producerConsumer.SetProducerInterval(sampleRate,udpBlockSize / 4);
+		producerConsumer.SetProducerInterval(deviceSampleRate,udpBlockSize / 4);
 		//Consumer only has to run once every 2048 CPX samples
-		producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
+		producerConsumer.SetConsumerInterval(deviceSampleRate,framesPerBuffer);
 		//normalizeIQGain = 1.0; //-72db
 		normalizeIQGain = DB::dbToAmplitude(7);
 
@@ -303,7 +303,7 @@ void RFSpaceDevice::ReadSettings()
 		return;
 	}
 
-	sampleRate = 196078; //Default if not previously set
+	deviceSampleRate = 196078; //Default if not previously set
 	lowFrequency = 150000;
 	highFrequency = 33000000;
 	DeviceInterfaceBase::ReadSettings();
@@ -314,7 +314,7 @@ void RFSpaceDevice::ReadSettings()
 	devicePort = qSettings->value("DevicePort",50000).toInt();
 	autoDiscover = qSettings->value("AutoDiscover",true).toBool();
 
-	sBandwidth = MapIQSampleRateToBandwidth(sampleRate);
+	sBandwidth = MapIQSampleRateToBandwidth(deviceSampleRate);
 }
 
 quint32 RFSpaceDevice::MapBWToIQSampleRate(AD6620::BANDWIDTH bw)
@@ -1043,7 +1043,7 @@ bool RFSpaceDevice::SetIQSampleRate()
 	unsigned char writeBuf[] = {0x09, 0x00, 0xb8, 0x00, 0x00, 0xa0, 0x86, 0x01, 0x00};
 	//Verified that this cast to quint32 puts things in right order by setting sampleRate = 100000 and comparing
 	if (deviceNumber == SDR_IP) {
-		*(quint32 *)&writeBuf[5] = sampleRate;
+		*(quint32 *)&writeBuf[5] = deviceSampleRate;
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
 	} else if (deviceNumber == SDR_IQ) {
 		//Setting AD6620 registers, takes a while and returns lots of garbage data
@@ -1051,11 +1051,11 @@ bool RFSpaceDevice::SetIQSampleRate()
 		//Replaced in firmware 1.4 with 0xb8 command
 		// ad6620->SetBandwidth(sBandwidth);
 
-		*(quint32 *)&writeBuf[5] = sampleRate;
+		*(quint32 *)&writeBuf[5] = deviceSampleRate;
 		return SendUsbCommand(writeBuf,sizeof(writeBuf));
 	} else if (deviceNumber == AFEDRI_USB) {
 		//afedri->Set_New_Sample_Rate(sampleRate);
-		afedri->Send_Sample_Rate(sampleRate);
+		afedri->Send_Sample_Rate(deviceSampleRate);
 	}
 	return false;
 }
