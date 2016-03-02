@@ -29,8 +29,8 @@ bool ExampleSDRDevice::Initialize(cbProcessIQData _callback,
 	producerConsumer.Initialize(std::bind(&ExampleSDRDevice::producerWorker, this, std::placeholders::_1),
 		std::bind(&ExampleSDRDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, readBufferSize);
 	//Must be called after Initialize
-	producerConsumer.SetProducerInterval(sampleRate,framesPerBuffer);
-	producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
+	producerConsumer.SetProducerInterval(deviceSampleRate,framesPerBuffer);
+	producerConsumer.SetConsumerInterval(deviceSampleRate,framesPerBuffer);
 
 	//Start this immediately, before connect, so we don't miss any data
 	producerConsumer.Start(true,true);

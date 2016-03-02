@@ -74,14 +74,14 @@ bool FileSDRDevice::Connect()
     if (!res)
         return false;
 
-	sampleRate = wavFileRead.GetSampleRate();
+	deviceSampleRate = wavFileRead.GetSampleRate();
 	//We have sample rate for file, set polling interval
 	//We don't use producer thread, sampleRateTimer and producerSlot() instead
-	producerConsumer.SetProducerInterval(sampleRate, framesPerBuffer);
-	producerConsumer.SetConsumerInterval(sampleRate, framesPerBuffer);
+	producerConsumer.SetProducerInterval(deviceSampleRate, framesPerBuffer);
+	producerConsumer.SetConsumerInterval(deviceSampleRate, framesPerBuffer);
 
     if (copyTest) {
-		res = wavFileWrite.OpenWrite(fileName + "2", sampleRate,0,0,0);
+		res = wavFileWrite.OpenWrite(fileName + "2", deviceSampleRate,0,0,0);
     }
     return true;
 }
@@ -96,7 +96,7 @@ bool FileSDRDevice::Disconnect()
 void FileSDRDevice::Start()
 {
 	//How often do we need to read samples from files to get framesPerBuffer at sampleRate
-	nsPerBuffer = (1000000000.0 / sampleRate) * framesPerBuffer;
+	nsPerBuffer = (1000000000.0 / deviceSampleRate) * framesPerBuffer;
 	//qDebug()<<"nsPerBuffer"<<nsPerBuffer;
 
 	producerConsumer.Start(true,true);
@@ -138,32 +138,30 @@ QVariant FileSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _optio
 			return "Plays back I/Q WAV file";
 			break;
 		case DeviceName:
-			return "SDRFile: " + QFileInfo(fileName).fileName() + "-" + QString::number(sampleRate);
+			return "SDRFile: " + QFileInfo(fileName).fileName() + "-" + QString::number(deviceSampleRate);
 		case DeviceType:
 			return IQ_DEVICE;
-		case DeviceSampleRate:
-			return sampleRate;
 		case StartupType:
 			return DeviceInterface::DEFAULTFREQ; //Fixed, can't change freq
 		case HighFrequency: {
 			quint32 loFreq = wavFileRead.GetLoFreq();
 			if (loFreq == 0)
-				return sampleRate;
+				return deviceSampleRate;
 			else
-				return loFreq + sampleRate / 2.0;
+				return loFreq + deviceSampleRate / 2.0;
 		}
 		case LowFrequency: {
 			quint32 loFreq = wavFileRead.GetLoFreq();
 			if (loFreq == 0)
 				return 0;
 			else
-				return loFreq - sampleRate / 2.0;
+				return loFreq - deviceSampleRate / 2.0;
 		}
 		case StartupFrequency: {
 			//If it's a pebble wav file, we should have LO freq
 			quint32 loFreq = wavFileRead.GetLoFreq();
 			if (loFreq == 0)
-				return sampleRate / 2.0; //Default
+				return deviceSampleRate / 2.0; //Default
 			else
 				return loFreq;
 			break;
