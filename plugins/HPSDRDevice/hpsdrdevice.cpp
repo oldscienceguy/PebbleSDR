@@ -79,12 +79,12 @@ bool HPSDRDevice::Initialize(cbProcessIQData _callback,
 	if (connectionType == OZY) {
 		//Must be called after Initialize
 		//Sample rate and size must be in consistent units - cpx samples
-		producerConsumer.SetProducerInterval(sampleRate,inputBufferSize / sizeof(CPX));
-		producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
+		producerConsumer.SetProducerInterval(deviceSampleRate,inputBufferSize / sizeof(CPX));
+		producerConsumer.SetConsumerInterval(deviceSampleRate,framesPerBuffer);
 	} else {
 		//Producer triggered by readyRead signal, so set polling for long time 1 sec
 		producerConsumer.SetProducerInterval(inputBufferSize,inputBufferSize);
-		producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
+		producerConsumer.SetConsumerInterval(deviceSampleRate,framesPerBuffer);
 	}
 	return true;
 }
@@ -288,8 +288,8 @@ void HPSDRDevice::ReadSettings()
 	startupDemodMode = dmAM;
 
 	DeviceInterfaceBase::ReadSettings();
-	//Determine sSpeed from sampleRate
-	switch (sampleRate) {
+	//Determine sSpeed from deviceSampleRate
+	switch (deviceSampleRate) {
 	case 48000:
 		sSpeed = C1_SPEED_48KHZ;
 		break;
