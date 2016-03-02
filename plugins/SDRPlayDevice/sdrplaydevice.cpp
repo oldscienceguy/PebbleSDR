@@ -40,13 +40,13 @@ bool SDRPlayDevice::Initialize(cbProcessIQData _callback,
 	producerConsumer.Initialize(std::bind(&SDRPlayDevice::producerWorker, this, std::placeholders::_1),
 		std::bind(&SDRPlayDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, readBufferSize);
 	//Must be called after Initialize
-	producerConsumer.SetProducerInterval(sampleRate,framesPerBuffer);
-	producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
+	producerConsumer.SetProducerInterval(deviceSampleRate,framesPerBuffer);
+	producerConsumer.SetConsumerInterval(deviceSampleRate,framesPerBuffer);
 
 #endif
 
 	//Other constructor like init
-	sampleRateMhz = sampleRate / 1000000.0; //Sample rate in Mhz, NOT Hz
+	sampleRateMhz = deviceSampleRate / 1000000.0; //Sample rate in Mhz, NOT Hz
 	producerFreeBufPtr = NULL;
 	return true;
 }
@@ -204,7 +204,7 @@ void SDRPlayDevice::ReadSettings()
 	lowFrequency = 100000;
 	highFrequency = 2000000000;
 	deviceFrequency = lastFreq = 10000000;
-	sampleRate = 2000000;
+	deviceSampleRate = 2000000;
 
 	DeviceInterfaceBase::ReadSettings();
 	dcCorrectionMode = qSettings->value("dcCorrectionMode",0).toInt(); //0 = off
@@ -228,8 +228,6 @@ void SDRPlayDevice::WriteSettings()
 	qSettings->setValue("agcEnabled",agcEnabled);
 	qSettings->setValue("dbFS",dbFS);
 
-	//Overwrite sampleRate, fragile code that depends on definitions in deviceInterfaceBase.cpp
-	qSettings->setValue("SampleRate",sampleRate);
 	qSettings->sync();
 }
 
@@ -261,7 +259,7 @@ void SDRPlayDevice::SetupOptionUi(QWidget *parent)
 	optionUi->sampleRate->addItem("8Mhz",8000000);
 	optionUi->sampleRate->addItem("9Mhz",9000000);
 	optionUi->sampleRate->addItem("10Mhz",10000000);
-	cur = optionUi->sampleRate->findData(sampleRate);
+	cur = optionUi->sampleRate->findData(deviceSampleRate);
 	optionUi->sampleRate->setCurrentIndex(cur);
 	connect(optionUi->sampleRate,SIGNAL(currentIndexChanged(int)),this,SLOT(sampleRateChanged(int)));
 
@@ -325,7 +323,7 @@ void SDRPlayDevice::IFBandwidthChanged(int _item)
 
 void SDRPlayDevice::sampleRateChanged(int _item)
 {
-	sampleRate = (quint32)optionUi->sampleRate->itemData(_item).toUInt();
+	deviceSampleRate = (quint32)optionUi->sampleRate->itemData(_item).toUInt();
 	//Update dependent bandwidth options
 	matchBandwidthToSampleRate(false);
 	matchIFModeToSRAndBW();
@@ -366,7 +364,7 @@ void SDRPlayDevice::IFModeChanged(int _item)
 void SDRPlayDevice::matchIFModeToSRAndBW()
 {
 	mir_sdr_If_kHzT newMode;
-	quint32 sampleRateKhz = sampleRate / 1000;
+	quint32 sampleRateKhz = deviceSampleRate / 1000;
 
 	optionUi->IFMode->blockSignals(true);
 	optionUi->IFMode->clear();
@@ -418,10 +416,10 @@ void SDRPlayDevice::matchBandwidthToSampleRate(bool preserveBandwidth)
 	optionUi->IFBw->addItem("0.600 Mhz",mir_sdr_BW_0_600);
 	//Only allow BW selections that are <= sampleRate
 	newBandwidth = bandwidthKhz;
-	if (sampleRate < 1536000) {
+	if (deviceSampleRate < 1536000) {
 		newBandwidth = mir_sdr_BW_0_600;
 	}
-	if (sampleRate >= 1536000 && sampleRate < 5000000) {
+	if (deviceSampleRate >= 1536000 && deviceSampleRate < 5000000) {
 		optionUi->IFBw->addItem("1.536 Mhz",mir_sdr_BW_1_536);
 		if (!preserveBandwidth) {
 			//Always set new bw to max for SR when SR changes
@@ -431,7 +429,7 @@ void SDRPlayDevice::matchBandwidthToSampleRate(bool preserveBandwidth)
 			newBandwidth = mir_sdr_BW_1_536;
 		}
 	}
-	if (sampleRate >= 5000000 && sampleRate < 6000000) {
+	if (deviceSampleRate >= 5000000 && deviceSampleRate < 6000000) {
 		optionUi->IFBw->addItem("1.536 Mhz",mir_sdr_BW_1_536);
 		optionUi->IFBw->addItem("5.000 Mhz",mir_sdr_BW_5_000);
 		if (!preserveBandwidth) {
@@ -442,7 +440,7 @@ void SDRPlayDevice::matchBandwidthToSampleRate(bool preserveBandwidth)
 			newBandwidth = mir_sdr_BW_5_000;
 		}
 	}
-	if (sampleRate >= 6000000 && sampleRate < 7000000) {
+	if (deviceSampleRate >= 6000000 && deviceSampleRate < 7000000) {
 		optionUi->IFBw->addItem("1.536 Mhz",mir_sdr_BW_1_536);
 		optionUi->IFBw->addItem("5.000 Mhz",mir_sdr_BW_5_000);
 		optionUi->IFBw->addItem("6.000 Mhz",mir_sdr_BW_6_000);
@@ -454,7 +452,7 @@ void SDRPlayDevice::matchBandwidthToSampleRate(bool preserveBandwidth)
 			newBandwidth = mir_sdr_BW_6_000;
 		}
 	}
-	if (sampleRate >= 7000000 && sampleRate < 8000000) {
+	if (deviceSampleRate >= 7000000 && deviceSampleRate < 8000000) {
 		optionUi->IFBw->addItem("1.536 Mhz",mir_sdr_BW_1_536);
 		optionUi->IFBw->addItem("5.000 Mhz",mir_sdr_BW_5_000);
 		optionUi->IFBw->addItem("6.000 Mhz",mir_sdr_BW_6_000);
@@ -467,7 +465,7 @@ void SDRPlayDevice::matchBandwidthToSampleRate(bool preserveBandwidth)
 			newBandwidth = mir_sdr_BW_7_000;
 		}
 	}
-	if (sampleRate >= 8000000) {
+	if (deviceSampleRate >= 8000000) {
 		optionUi->IFBw->addItem("1.536 Mhz",mir_sdr_BW_1_536);
 		optionUi->IFBw->addItem("5.000 Mhz",mir_sdr_BW_5_000);
 		optionUi->IFBw->addItem("6.000 Mhz",mir_sdr_BW_6_000);
