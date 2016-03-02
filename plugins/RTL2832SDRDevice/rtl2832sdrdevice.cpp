@@ -105,8 +105,8 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback,
     producerConsumer.Initialize(std::bind(&RTL2832SDRDevice::producerWorker, this, std::placeholders::_1),
 		std::bind(&RTL2832SDRDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, framesPerBuffer * sizeof(CPX));
 	//Must be called after Initialize
-	producerConsumer.SetProducerInterval(sampleRate,framesPerBuffer);
-	producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
+	producerConsumer.SetProducerInterval(deviceSampleRate,framesPerBuffer);
+	producerConsumer.SetConsumerInterval(deviceSampleRate,framesPerBuffer);
 
     readBufferIndex = 0;
 
@@ -349,7 +349,7 @@ void RTL2832SDRDevice::Start()
     //These have to be executed after we've done USB or TCP specific setup
     //Handles both USB and TCP
     SetRtlSampleMode(rtlSampleMode);
-	SetRtlSampleRate(sampleRate);
+	SetRtlSampleRate(deviceSampleRate);
     SetRtlAgcMode(rtlAgcMode);
     GetRtlValidTunerGains();
     SetRtlTunerMode(rtlTunerGainMode);
@@ -540,7 +540,7 @@ void RTL2832SDRDevice::ReadSettings()
 		qSettings = tcpSettings;
 
 	//Defaults for initial ini file
-	sampleRate = 2048000;
+	deviceSampleRate = 2048000;
 	startupDemodMode = dmFMN;
 	normalizeIQGain = 1/128.0;
 	DeviceInterfaceBase::ReadSettings();
@@ -576,9 +576,6 @@ void RTL2832SDRDevice::WriteSettings()
 	qSettings->setValue("RtlSampleMode",rtlSampleMode);
 	qSettings->setValue("RtlAgcMode",rtlAgcMode);
 	qSettings->setValue("RtlOffsetMode",rtlOffsetMode);
-
-	//Overwrite sampleRate, fragile code that depends on definitions in deviceInterfaceBase.cpp
-	qSettings->setValue("SampleRate",sampleRate);
 
 	qSettings->sync();
 
@@ -731,7 +728,7 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _op
 			break;
 		//Custom keys
 		case K_RTLSampleRate:
-			return sampleRate;
+			return deviceSampleRate;
 		case K_RTLTunerGainMode:
 			return rtlTunerGainMode;
 		case K_RTLTunerGain:
@@ -846,7 +843,7 @@ void RTL2832SDRDevice::SetupOptionUi(QWidget *parent)
 	optionUi->sampleRateSelector->addItem("2400 msps",(quint32)2400000);
 	optionUi->sampleRateSelector->addItem("2800 msps",(quint32)2800000);
 	optionUi->sampleRateSelector->addItem("3200 msps",(quint32)3200000);
-	int cur = optionUi->sampleRateSelector->findData(sampleRate);
+	int cur = optionUi->sampleRateSelector->findData(deviceSampleRate);
     optionUi->sampleRateSelector->setCurrentIndex(cur);
     connect(optionUi->sampleRateSelector,SIGNAL(currentIndexChanged(int)),this,SLOT(SampleRateChanged(int)));
 
@@ -904,7 +901,7 @@ void RTL2832SDRDevice::IPPortChanged()
 
 void RTL2832SDRDevice::SampleRateChanged(int _index)
 {
-	sampleRate = optionUi->sampleRateSelector->itemData(_index).toUInt();
+	deviceSampleRate = optionUi->sampleRateSelector->itemData(_index).toUInt();
     WriteSettings();
 }
 
