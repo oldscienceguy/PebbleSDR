@@ -108,6 +108,9 @@ protected:
 	void normalizeIQ(CPX *cpx, qint8 I, qint8 Q); //-127 to +127 samples
 	void normalizeIQ(CPX *cpx, CPX iq); //Already in cpx format, just swap and gain
 
+	void normalizeIQ(CPX *_out, CPX8 *_in, quint32 _numSamples, bool _reverse = false);
+	void normalizeIQ(CPX *_out, CPXU8 *_in, quint32 _numSamples, bool _reverse = false);
+
 	//Used for up or down converters
 	bool converterMode;
 	double converterOffset;
