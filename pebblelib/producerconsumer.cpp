@@ -167,13 +167,21 @@ bool ProducerConsumer::Stop()
     if (producerThreadIsRunning) {
 		producerWorker->stop();
 		producerWorkerThread->quit();
+		//Make sure thread has quit
+		if (!producerWorkerThread->wait(500)) {
+			qDebug()<<"Producer thread did not terminate";
+		}
         producerThreadIsRunning = false;
     }
 
     if (consumerThreadIsRunning) {
 		consumerWorker->stop();
 		consumerWorkerThread->quit();
-        consumerThreadIsRunning = false;
+		//Make sure thread has quit
+		if (!consumerWorkerThread->wait(500)) {
+			qDebug()<<"Consumer thread did not terminate";
+		}
+		consumerThreadIsRunning = false;
     }
 	return true;
 }
