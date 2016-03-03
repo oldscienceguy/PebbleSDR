@@ -202,8 +202,9 @@ private:
 	QMutex mutex;
 	CPX *inBuffer;
 	int inBufferSize;
-	unsigned char *readBuf;
-	unsigned char *usbReadBuf; //Exclusively for producer thread to avoid possible buffer contention with main thread
+	CPX16 *readBuf;
+	CPX16 *usbReadBuf; //Exclusively for producer thread to avoid possible buffer contention with main thread
+	unsigned char usbHeaderBuf[2];
 	unsigned char *udpReadBuf;
 	unsigned char *tcpReadBuf;
 

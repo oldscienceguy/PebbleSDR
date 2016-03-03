@@ -22,8 +22,8 @@ RFSpaceDevice::RFSpaceDevice():DeviceInterfaceBase()
 	inBufferSize = 2048; //settings->framesPerBuffer;
 	inBuffer = CPX::memalign(inBufferSize);
 	//Max data block we will ever read is dataBlockSize
-	readBuf = new unsigned char[dataBlockSize];
-	usbReadBuf = new unsigned char[dataBlockSize];
+	readBuf = (CPX16*) new unsigned char[dataBlockSize];
+	usbReadBuf = (CPX16*) new unsigned char[dataBlockSize];
 	//Separate buffers for tcp/udp
 	udpReadBuf = new unsigned char[dataBlockSize];
 	tcpReadBuf = new unsigned char[dataBlockSize];
@@ -700,9 +700,9 @@ void RFSpaceDevice::DoUSBProducer()
 		//We need 2 bytes for header
 		if (bytesAvailable < 2)
 			return;
-		if (!usbUtil->Read(usbReadBuf,2))
+		if (!usbUtil->Read(usbHeaderBuf,2))
 			return;
-		UnpackHeader(usbReadBuf[0], usbReadBuf[1], &header);
+		UnpackHeader(usbHeaderBuf[0], usbHeaderBuf[1], &header);
 		header.gotHeader = true;
 		bytesAvailable -= 2;
 	}
@@ -724,11 +724,8 @@ void RFSpaceDevice::DoUSBProducer()
 			producerConsumer.ReleaseFreeBuffer(); //Put back what we acquired
 			return;
 		}
-		qint16 *usbShortBuf = (qint16*)usbReadBuf;
-		for (int i=0, j=0; i<framesPerBuffer; i++, j+=2) {
-			//IQ are reversed for SDR-IQ
-			normalizeIQ(&producerFreeBufPtr[i], usbShortBuf[j+1], usbShortBuf[j] );
-		}
+		//IQ are reversed for SDR-IQ
+		normalizeIQ(producerFreeBufPtr, usbReadBuf, framesPerBuffer, true);
 		//Increment the number of data buffers that are filled so consumer thread can access
 		producerConsumer.ReleaseFilledBuffer();
 		return;
@@ -738,10 +735,10 @@ void RFSpaceDevice::DoUSBProducer()
 		return;
 	} else {
 		//Adj for 2 bytes already read
-		if (usbUtil->Read(usbReadBuf,header.length-2)) {
+		if (usbUtil->Read(usbHeaderBuf,header.length-2)) {
 			header.gotHeader = false;
 			//qDebug()<<"Type ="<<type<<" ItemCode = "<<itemCode;
-			processControlItem(header, usbReadBuf);
+			processControlItem(header, usbHeaderBuf);
 			return;
 		}
 		return;
@@ -894,12 +891,9 @@ void RFSpaceDevice::UDPSocketNewData()
 		readBufferIndex += udpBlockSize;
 
 		if (readBufferIndex == dataBlockSize) {
-			qint16 *readShortBuf = (qint16*)readBuf;
 			readBufferIndex = 0;
-			for (int i=0, j=0; i<framesPerBuffer; i++, j+=2) {
-				//Reverse IQ order
-				normalizeIQ(&producerFreeBufPtr[i],readShortBuf[j+1],readShortBuf[j]);
-			}
+			//Reverse IQ order
+			normalizeIQ(producerFreeBufPtr, readBuf, framesPerBuffer, true);
 			//Increment the number of data buffers that are filled so consumer thread can access
 			producerConsumer.ReleaseFilledBuffer();
 		}
@@ -1170,7 +1164,7 @@ void RFSpaceDevice::FlushDataBlocks()
 		return;
 	} else if (deviceNumber == SDR_IQ) {
 		do
-			result = usbUtil->Read(readBuf, 1);
+			result = usbUtil->Read(usbHeaderBuf, 1);
 		while (result);
 	} else  if (deviceNumber == AFEDRI_USB)
 		return;
