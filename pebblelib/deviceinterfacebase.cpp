@@ -760,6 +760,44 @@ void DeviceInterfaceBase::normalizeIQ(CPX *_out, CPX16 *_in, quint32 _numSamples
 	}
 }
 
+void DeviceInterfaceBase::normalizeIQ(CPX *_out, CPX *_in, quint32 _numSamples, bool _reverse)
+{
+	//Runs at full device sample rate, optimize loop invariants like scale, object copies and switches
+	double scale = userIQGain * normalizeIQGain;
+	//Only check iqOrder once per loop instead of every sample
+	IQORDER tmpOrder = iqOrder;
+	if (iqOrder == IQ && _reverse)
+		tmpOrder = QI;
+	else if (iqOrder == QI && _reverse)
+		tmpOrder = IQ;
+	switch(tmpOrder) {
+		case DeviceInterface::IQ:
+			for (quint32 i=0; i < _numSamples; i++) {
+				_out[i].re = _in[i].re * scale;
+				_out[i].im = _in[i].im * scale;
+			}
+			break;
+		case DeviceInterface::QI:
+			for (quint32 i=0; i < _numSamples; i++) {
+				_out[i].re = _in[i].im * scale;
+				_out[i].im = _in[i].re * scale;
+			}
+			break;
+		case DeviceInterface::IONLY:
+			for (quint32 i=0; i < _numSamples; i++) {
+				_out[i].re = _in[i].re * scale;
+				_out[i].im = _out[i].re;
+			}
+			break;
+		case DeviceInterface::QONLY:
+			for (quint32 i=0; i < _numSamples; i++) {
+				_out[i].im = _in[i].im * scale;
+				_out[i].re = _out[i].im;
+			}
+			break;
+	}
+}
+
 void DeviceInterfaceBase::normalizeIQ(CPX *cpx, CPX iq)
 {
 	double tmp;

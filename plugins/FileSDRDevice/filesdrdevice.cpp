@@ -254,9 +254,7 @@ void FileSDRDevice::producerSlot()
 		return;
 
 	samplesRead = wavFileRead.ReadSamples(producerBuf,framesPerBuffer);
-	for (int i=0; i<framesPerBuffer; i++) {
-		normalizeIQ(&producerBuf[i],producerBuf[i]);
-	}
+	normalizeIQ(producerBuf, producerBuf,framesPerBuffer,false);
 
 	//ProcessIQData(producerBuf,framesPerBuffer);
 
