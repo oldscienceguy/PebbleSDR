@@ -12,6 +12,9 @@ Core receiver logic, coordinates soundcard, fft, demod, etc
 */
 Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 {
+	useDemodDecimator = true;
+	useDemodWfmDecimator = true;
+
 	//Read ini file or set defaults if no ini file exists
 	settings = global->settings;
 
@@ -67,6 +70,8 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	sampleBuf = NULL;
 	audioBuf = NULL;
 	dbSpectrumBuf = NULL;
+	demodDecimator = NULL;
+	demodWfmDecimator = NULL;
 
 	sdrOptions = new SdrOptions();
 	connect(sdrOptions,SIGNAL(Restart()),this,SLOT(Restart()));
@@ -121,7 +126,7 @@ bool Receiver::On()
 		return false;
 	}
 
-	sampleRate = demodSampleRate = sdr->Get(DeviceInterface::DeviceSampleRate).toInt();
+	sampleRate = demodSampleRate = sdr->Get(DeviceInterface::SampleRate).toInt();
     framesPerBuffer = demodFrames = settings->framesPerBuffer;
     //These steps work on full sample rates
     noiseBlanker = new NoiseBlanker(sampleRate,framesPerBuffer);
@@ -132,16 +137,9 @@ bool Receiver::On()
 	iqBalance->setGainFactor(sdr->Get(DeviceInterface::IQBalanceGain).toDouble());
 	iqBalance->setPhaseFactor(sdr->Get(DeviceInterface::IQBalancePhase).toDouble());
 
-	dcRemoval = new DCRemoval(sampleRate, framesPerBuffer);
-	QVariant tmp = sdr->Get(DeviceInterface::DeviceSetting,"DCRemove");
-	if (!tmp.isNull())
-		dcRemoval->enableStep(tmp.toBool());
-	else {
-		//Not found in settings file, set default
-		dcRemoval->enableStep(false);
-		sdr->Set(DeviceInterface::DeviceSetting,"DCRemove",false);
-		sdr->Command(DeviceInterface::STANDARD_COMMANDS::CmdWriteSettings,0);
-	}
+	dcRemove = new DCRemoval(sampleRate, framesPerBuffer);
+	dcRemoveMode = sdr->Get(DeviceInterface::RemoveDC).toBool();
+	dcRemove->enableStep(dcRemoveMode);
 
     /*
      * Decimation strategy
@@ -165,15 +163,37 @@ bool Receiver::On()
     //Calculates the number of decimation states and returns converted sample rate
     //SetDataRate() doesn't downsample below 256k?
 
+
+    //SetDataRate MaxBW should be driven by our filter selection, ie width of filter
+	//For now just set to widest filter, 30k for FMN or 15k bw
+	//qint32 maxBw = Demod::demodInfo[DeviceInterface::dmFMN].maxOutputBandWidth;
+	if (useDemodDecimator) {
+		//One rate for am, cw, nfm modes.  Eventually we can get more refined for each mode
+		demodDecimator = new Decimator(sampleRate,framesPerBuffer);
+		demodSampleRate = demodDecimator->buildDecimationChain(sampleRate, 30000);
+	} else {
+		//bw is 1/2 of total bw, so 10k for 20k am
+		demodSampleRate = downConvert1.SetDataRate(sampleRate, 15000);
+
+	}
+
 	//audioOutRate can be fixed by remote devices, default to 11025 which is a rate supported by QTAudio and PortAudio on Mac
 	audioOutRate = sdr->Get(DeviceInterface::AudioOutputSampleRate).toUInt();
-    //SetDataRate MaxBW should be driven by our filter selection, ie width of filter
-    //For now just set to widest filter, which is 20k for AM, 30k for FMN
-	demodSampleRate = downConvert1.SetDataRate(sampleRate, Demod::demodInfo[DeviceInterface::dmFMN].maxOutputBandWidth);
+	//audioOutRate = demodSampleRate;
 
-    //For FMStereo, initial rate should be close to 300k
+	//For FMStereo, sample rate should be close to 300k
     //Different decimation technique than SetDataRate
-	demodWfmSampleRate = downConvertWfm1.SetDataRateSimple(sampleRate, Demod::demodInfo[DeviceInterface::dmFMS].maxOutputBandWidth);
+	//MaxBw = 1/2 band pass filter, ie if 30kbp, then maxBw will be 15k.
+	//maxBw = Demod::demodInfo[DeviceInterface::dmFMS].maxOutputBandWidth;
+
+	if (useDemodWfmDecimator) {
+		demodWfmDecimator = new Decimator(sampleRate, framesPerBuffer);
+		demodWfmSampleRate = demodWfmDecimator->buildDecimationChain(sampleRate,200000);
+	} else {
+		//downConvert is hard wired to only use 51 tap filters and stop as soon as decimated
+		//sample rate is less than 400k
+		demodWfmSampleRate = downConvertWfm1.SetDataRateSimple(sampleRate, 200000);
+	}
 
     //We need original sample rate, and post mixer sample rate for zoomed spectrum
 	signalSpectrum = new SignalSpectrum(sampleRate, demodSampleRate, framesPerBuffer);
@@ -219,12 +239,13 @@ bool Receiver::On()
 
 	mixerFrequency = 0;
 
+	converterMode = sdr->Get(DeviceInterface::ConverterMode).toBool();
+	converterOffset = sdr->Get(DeviceInterface::ConverterOffset).toDouble();
+
 	//This should always be last because it starts samples flowing through the processBlocks
 	audioOutput->StartOutput(sdr->Get(DeviceInterface::OutputDeviceName).toString(), audioOutRate);
 	sdr->Command(DeviceInterface::CmdStart,0);
 
-	converterMode = sdr->Get(DeviceInterface::DeviceConverterMode).toBool();
-	converterOffset = sdr->Get(DeviceInterface::DeviceConverterOffset).toDouble();
 
     //Don't set title until we connect and start.
     //Some drivers handle multiple devices (RTL2832) and we need connection data
@@ -258,6 +279,7 @@ void Receiver::openTestBench()
 	testBench->AddProfile("Post Mixer",testBenchPostMixer);
 	testBench->AddProfile("Post Bandpass",testBenchPostBandpass);
 	testBench->AddProfile("Post Demod",testBenchPostDemod);
+	testBench->AddProfile("Post Decimator",testBenchPostDecimator);
 
 	testBench->setVisible(true);
 
@@ -386,7 +408,17 @@ bool Receiver::Off()
 		sdr->Command(DeviceInterface::CmdWriteSettings,0); //Always save last mode, last freq, etc
 
 		sdr->Command(DeviceInterface::CmdDisconnect,0);
+		//Active SDR object survives on/off and is kept in global.  Do not delete
+		//delete sdr;
         sdr = NULL;
+	}
+	if (demodDecimator != NULL) {
+		delete demodDecimator;
+		demodDecimator = NULL;
+	}
+	if (demodWfmDecimator != NULL) {
+		delete demodWfmDecimator;
+		demodWfmDecimator = NULL;
 	}
 	if (demod != NULL) {
 		delete demod;
@@ -441,19 +473,19 @@ bool Receiver::Off()
 #endif
 
     if (workingBuf != NULL) {
-        delete workingBuf;
+		free (workingBuf);
         workingBuf = NULL;
     }
     if (sampleBuf != NULL) {
-        delete sampleBuf;
+		free (sampleBuf);
         sampleBuf = NULL;
     }
     if (audioBuf != NULL) {
-        delete audioBuf;
+		free (audioBuf);
         audioBuf = NULL;
     }
 	if (dbSpectrumBuf != NULL) {
-		delete [] dbSpectrumBuf;
+		free (dbSpectrumBuf);
 		dbSpectrumBuf = NULL;
 	}
     return true;
@@ -648,17 +680,18 @@ void Receiver::SetSquelch(int s)
 //Called by ReceiverWidget
 void Receiver::SetMixer(int f)
 {
-#if 1
 	mixerFrequency = f;
-	demod->ResetDemod();
-#else
-	//mixer no longer used
-	if (mixer != NULL) {
-        mixerFrequency = f;
+
+	if (useDemodDecimator && mixer != NULL) {
 		mixer->SetFrequency(f);
 		demod->ResetDemod();
-    }
-#endif
+	} else {
+		//Only if using downConvert
+		downConvert1.SetFrequency(mixerFrequency);
+		downConvertWfm1.SetFrequency(mixerFrequency);
+		demod->ResetDemod();
+	}
+
 }
 
 void Receiver::SdrOptionsPressed()
@@ -749,8 +782,8 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
       4. Decimate to final audio
     */
 
-	if (dcRemoval->isEnabled()) {
-		nextStep = dcRemoval->process(nextStep, numSamples);
+	if (dcRemove->isEnabled()) {
+		nextStep = dcRemove->process(nextStep, numSamples);
 	}
 
 	//Adj IQ to get 90deg phase and I==Q gain
@@ -771,6 +804,9 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 		numSamples);
 	//audio->ClearCounts();
     //global->perform.StopPerformance(100);
+
+	//Dump data about current spectrum, used when calibrating normalizeIQGain
+	//signalSpectrum->analyzeSpectrum();
 
 	//Signal (Specific frequency) processing
 
@@ -796,11 +832,19 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
         //These steps are at demodWfmSampleRate NOT demodSampleRate
         //Special handling for wide band fm
 
-        //Replaces Mixer.cpp and mixes and decimates
-        downConvertWfm1.SetFrequency(mixerFrequency);
-        // InLength must be a multiple of 2^N where N is the maximum decimation by 2 stages expected.
-        //We need a separated input/output buffer for downConvert
-		numStepSamples = downConvertWfm1.ProcessData(numStepSamples,nextStep,workingBuf);
+		//global->perform.StartPerformance("wfm decimator");
+		if (!useDemodWfmDecimator) {
+			//Replaces Mixer.cpp and mixes and decimates
+			// InLength must be a multiple of 2^N where N is the maximum decimation by 2 stages expected.
+			//We need a separated input/output buffer for downConvert
+			numStepSamples = downConvertWfm1.ProcessData(numStepSamples,nextStep,workingBuf);
+		} else {
+			nextStep = mixer->ProcessBlock(nextStep);
+			numStepSamples = demodWfmDecimator->process(nextStep, workingBuf, numStepSamples);
+		}
+
+		//global->perform.StopPerformance(1000);
+
         //We are always decimating by a factor of 2
         //so we know we can accumulate a full fft buffer at this lower sample rate
 		for (int i=0; i<numStepSamples; i++) {
@@ -825,12 +869,18 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 
     } else {
 
-        //Replaces Mixer.cpp
 		//global->perform.StartPerformance();
-        downConvert1.SetFrequency(mixerFrequency);
-		numStepSamples = downConvert1.ProcessData(numStepSamples, nextStep,workingBuf);
-		//global->perform.StopPerformance(100);
-        //This is a significant change from the way we used to process post downconvert
+		if (!useDemodDecimator) {
+        //Replaces Mixer.cpp
+			numStepSamples = downConvert1.ProcessData(numStepSamples, nextStep,workingBuf);
+		} else {
+			nextStep = mixer->ProcessBlock(nextStep);
+			numStepSamples = demodDecimator->process(nextStep, workingBuf, numStepSamples);
+		}
+		//global->perform.StopPerformance(1000);
+		//global->testBench->DisplayData(numStepSamples,workingBuf,demodSampleRate,testBenchPostDecimator);
+
+		//This is a significant change from the way we used to process post downconvert
         //We used to process every downConvertLen samples, 32 for a 2m sdr sample rate
         //Which didn't work when we added zoomed spectrum, we need full framesPerBuffer to get same fidelity as unprocessed
         //One that worked, it didn't make any sense to process smaller chunks through the rest of the chain!
@@ -848,12 +898,13 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 		numStepSamples = framesPerBuffer;
 		sampleBufLen = 0;
 #endif
-        //Create zoomed spectrum
+		nextStep = sampleBuf;
+
+		//Create zoomed spectrum
 		//global->perform.StartPerformance("Signal Spectrum Zoomed");
-		signalSpectrum->Zoomed(sampleBuf, numStepSamples);
+		signalSpectrum->Zoomed(nextStep, numStepSamples);
 		//global->perform.StopPerformance(100);
 
-        nextStep = sampleBuf;
 
         //Mixer shows no loss in testing
         //nextStep = mixer->ProcessBlock(nextStep);
@@ -871,8 +922,6 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 		//Crude AGC, too much fluctuation
 		//CPX::scaleCPX(nextStep,nextStep,pre/post,frameCount);
 		global->testBench->DisplayData(numStepSamples,nextStep,demodSampleRate,testBenchPostBandpass);
-
-
 
         //If squelch is set, and we're below threshold and should set output to zero
         //Do this in SignalStrength, since that's where we're calculating average signal strength anyway
@@ -914,7 +963,10 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 
 	//Fractional resampler is very expensive, 1000 to 1500ms
 	//global->perform.StartPerformance("Fract Resampler");
-	numStepSamples = fractResampler.Resample(numStepSamples,resampRate,nextStep,audioBuf);
+	if (resampRate != 1)
+		numStepSamples = fractResampler.Resample(numStepSamples,resampRate,nextStep,audioBuf);
+	else
+		CPX::copyCPX(audioBuf,nextStep,numStepSamples);
 	//global->perform.StopPerformance(100);
 
 	//global->perform.StartPerformance("Process Audio");

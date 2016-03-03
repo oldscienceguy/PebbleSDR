@@ -29,6 +29,7 @@
 #include "sdroptions.h"
 #include "fft.h"
 #include "dcremoval.h"
+#include "decimator.h"
 
 #include "plugins.h"
 #include <QMenuBar>
@@ -108,7 +109,8 @@ private:
         testBenchRawIQ = 1,
         testBenchPostMixer,
         testBenchPostBandpass,
-        testBenchPostDemod
+		testBenchPostDemod,
+		testBenchPostDecimator
     };
 
 	bool mute;
@@ -146,6 +148,12 @@ private:
     CFractResampler fractResampler; //To get to final audio rate
     CDownConvert downConvert1; //Get to reasonable rate for demod and following
     CDownConvert downConvertWfm1; //Special to get to 300k
+	//Trying new Decimator code
+	Decimator *demodDecimator;
+	Decimator *demodWfmDecimator;
+	bool useDemodDecimator;
+	bool useDemodWfmDecimator;
+
     int audioOutRate;
     int demodSampleRate;
     int demodWfmSampleRate;
@@ -175,6 +183,7 @@ private:
 
 	bool converterMode;
 	double converterOffset;
-	DCRemoval *dcRemoval;
+	bool dcRemoveMode;
+	DCRemoval *dcRemove;
 
 };
