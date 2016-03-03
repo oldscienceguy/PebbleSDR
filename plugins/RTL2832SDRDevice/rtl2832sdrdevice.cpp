@@ -24,7 +24,7 @@ RTL2832SDRDevice::~RTL2832SDRDevice()
     Stop();
     Disconnect();
     if (inBuffer != NULL)
-        delete (inBuffer);
+		free (inBuffer);
 }
 
 bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback,
@@ -87,8 +87,8 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback,
 */
 	//1 byte per I + 1 byte per Q
 	//This is set so we always get framesPerBuffer samples after decimating to lower sampleRate
-	readBufferSize = framesPerBuffer * 2;
-	inBuffer = (quint8 *)malloc(readBufferSize);
+	readBufferSize = framesPerBuffer * sizeof(CPXU8);
+	inBuffer = (CPXU8 *)malloc(readBufferSize);
 
     haveDongleInfo = false; //Look for first bytes
     tcpDongleInfo.magic[0] = 0x0;
@@ -298,10 +298,8 @@ void RTL2832SDRDevice::TCPSocketNewData()
         readBufferIndex += bytesRead;
         readBufferIndex %= readBufferSize;
         if (readBufferIndex == 0) {
-			for (int i=0, j=0; i<framesPerBuffer; i++, j+=2) {
-				//IQ normally reversed
-				normalizeIQ(&producerFreeBufPtr[i], inBuffer[j+1], inBuffer[j]);
-			}
+			//IQ normally reversed
+			normalizeIQ(producerFreeBufPtr, inBuffer, framesPerBuffer, true);
             producerConsumer.ReleaseFilledBuffer();
             producerFreeBufPtr = NULL; //Trigger new Acquire next loop
 		}
@@ -1073,11 +1071,10 @@ void RTL2832SDRDevice::producerWorker(cbProducerConsumerEvents _event)
 				//Then scale by 2^n where n is # extra bits of resolution to get back to original signal level
 				//See http://www.actel.com/documents/Improve_ADC_WP.pdf as one example
 
-				for (int i=0, j=0; i<framesPerBuffer; i++, j+=2) {
-					//rtl data is 0-255, we need to normalize to -1 to +1
-					//I/Q are normally reversed
-					normalizeIQ(&producerFreeBufPtr[i],inBuffer[j+1],inBuffer[j]);
-				}
+				//rtl data is 0-255, we need to normalize to -1 to +1
+				//I/Q are normally reversed
+				normalizeIQ(producerFreeBufPtr, inBuffer, framesPerBuffer, true);
+
                 producerConsumer.ReleaseFilledBuffer();
 			} //End while(running)
                 return;

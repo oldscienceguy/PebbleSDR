@@ -168,7 +168,7 @@ private:
 
     SAMPLING_MODES rtlSampleMode;
 
-	quint8 *inBuffer;
+	CPXU8 *inBuffer;
 
     RTLSDR_TUNERS rtlTunerType;
     int rtlTunerGainCount;
