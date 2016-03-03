@@ -64,6 +64,11 @@ public:
 	quint16 re;
 	quint16 im;
 };
+class CPXFLOAT {
+public:
+	float re;
+	float im;
+};
 
 //Inline simple methods for performance
 class PEBBLELIBSHARED_EXPORT CPX
