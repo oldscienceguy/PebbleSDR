@@ -8,6 +8,7 @@
 #include "ui_hackrfoptions.h"
 #include "hackrf.h"
 #include "../d2xx/libusb/libusb/libusb.h"
+#include "decimator.h"
 
 //From hackrf.c
 struct hackrf_device {
@@ -95,7 +96,8 @@ private:
 	void consumerWorker(cbProducerConsumerEvents _event);
 
 	//Work buffer for producer to convert device format data to CPX Pebble format data
-	qint8 *producerBuf;
+	CPX8 *producerBuf;
+	CPX *decimatorBuf;
 
 	Ui::HackRFOptions *optionUi;
 	hackrf_device* hackrfDevice;
@@ -114,12 +116,13 @@ private:
 
 	bool useSynchronousAPI; //Testing to see if more even performance than asynchronous API
 	bool useSignals; //Testing to see if producer signals consumer is better than consumer process
-	quint32 sampleRateDecimate;
-	quint32 deviceSampleRate;
 
 	bool synchronousStartRx();
 	int hackrf_set_transceiver_mode(hackrf_transceiver_mode value);
 	bool synchronousStopRx();
-	bool synchronousRead(qint8 *data);
+	bool synchronousRead(CPX8 *_buf, int _bufLen);
+
+	Decimator *decimator;  //Decimator with lp filter
+	quint32 deviceSamplesPerBuffer;
 };
 #endif // HACKRFDEVICE_H
