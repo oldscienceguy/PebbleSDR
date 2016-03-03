@@ -45,8 +45,8 @@ Decimator::Decimator(quint32 _sampleRate, quint32 _bufferSize)
 
 Decimator::~Decimator()
 {
-	delete workingBuf1;
-	delete workingBuf2;
+	free (workingBuf1);
+	free (workingBuf2);
 
 	if (useVdsp) {
 		free (splitComplexIn.realp);
