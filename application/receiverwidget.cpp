@@ -597,7 +597,6 @@ void ReceiverWidget::powerToggled(bool on)
 
 		ui.spectrumWidget->Run(true);
         ui.sMeterWidget->start();
-		setLoMode(true);
 
 		//Set startup frequency last
 		DeviceInterface::STARTUP_TYPE startupType = (DeviceInterface::STARTUP_TYPE)sdr->Get(DeviceInterface::StartupType).toInt();
@@ -622,6 +621,8 @@ void ReceiverWidget::powerToggled(bool on)
 			SetFrequency(frequency);
 			SetMode(DeviceInterface::dmAM);
 		}
+		//Also sets loFreq
+		setLoMode(true);
 
 
 	} else {
