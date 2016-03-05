@@ -21,7 +21,8 @@ AudioQT::AudioQT(cbAudioProducer cb, int fpb):Audio()
 	quint32 numProducerBuffers = 50;
 	quint32 readBufferSize = framesPerBuffer * 4;
 	producerConsumer.Initialize(std::bind(&AudioQT::producerWorker, this, std::placeholders::_1),
-		std::bind(&AudioQT::consumerWorker, this, std::placeholders::_1),numProducerBuffers, readBufferSize);
+		std::bind(&AudioQT::consumerWorker, this, std::placeholders::_1),
+		numProducerBuffers, readBufferSize, ProducerConsumer::POLL);
 
 }
 
