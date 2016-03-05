@@ -113,6 +113,8 @@ protected:
 	void normalizeIQ(CPX *_out, CPX16 *_in, quint32 _numSamples, bool _reverse = false);
 	void normalizeIQ(CPX *_out, CPX *_in, quint32 _numSamples, bool _reverse = false);
 	void normalizeIQ(CPX *_out, CPXFLOAT *_in, quint32 _numSamples, bool _reverse = false);
+	//SDRPlay uses separate arrays of I and Q, like splitComplex in vDSP
+	void normalizeIQ(CPX *_out, short *_inI, short *_inQ, quint32 _numSamples, bool _reverse = false);
 
 	//Used for up or down converters
 	bool converterMode;
