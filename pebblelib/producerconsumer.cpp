@@ -19,6 +19,10 @@
  * QTimer only has ms intervals and poor accuracy, making it impossible to use reliably at higher sample rates
  * We now use QIntervalTimer, which has ns resolution and high accuracy
  * Then we use nanonsleep() to wait for the next sampling interval.
+
+ 3/4/16: Producer can now run in two modes, POLL or NOTIFY.  NOTIFY uses a newDataNotification signal to
+	trigger the producer worker function.
+	Thread stop() worker functions are now correctly called by the thread
  */
 
 ProducerConsumer::ProducerConsumer()
@@ -42,7 +46,8 @@ ProducerConsumer::ProducerConsumer()
 
 //This can get called on an existing ProducerConsumer object
 //Make sure we reset everything
-void ProducerConsumer::Initialize(cbProducerConsumer _producerWorker, cbProducerConsumer _consumerWorker, int _numDataBufs, int _producerBufferSize)
+void ProducerConsumer::Initialize(cbProducerConsumer _producerWorker, cbProducerConsumer _consumerWorker,
+		int _numDataBufs, int _producerBufferSize, PRODUCER_MODE _mode)
 {
     //Defensive
     if (_producerBufferSize == 0)
@@ -52,6 +57,7 @@ void ProducerConsumer::Initialize(cbProducerConsumer _producerWorker, cbProducer
     cbConsumerWorker = _consumerWorker;
 
     numDataBufs = _numDataBufs;
+	producerMode = _mode;
 
     //2 bytes per sample, framesPerBuffer samples after decimate
     producerBufferSize = _producerBufferSize;
@@ -82,8 +88,12 @@ void ProducerConsumer::Initialize(cbProducerConsumer _producerWorker, cbProducer
 		producerWorkerThread->setObjectName("PebbleProducer");
     }
     if (producerWorker == NULL) {
-		producerWorker = new ProducerWorker(cbProducerWorker);
-		connect(producerWorkerThread,&QThread::started,producerWorker,&ProducerWorker::start);
+		producerWorker = new ProducerWorker(cbProducerWorker, producerMode);
+		connect(producerWorkerThread,&QThread::started, producerWorker, &ProducerWorker::start);
+		connect(producerWorkerThread,&QThread::finished, producerWorker, &ProducerWorker::finished);
+		connect(this,SIGNAL(newDataNotification()),
+				producerWorker,SLOT(newDataNotification()));
+
 	}
     if (consumerWorkerThread == NULL) {
 		consumerWorkerThread = new QThread(this);
@@ -91,7 +101,8 @@ void ProducerConsumer::Initialize(cbProducerConsumer _producerWorker, cbProducer
     }
     if (consumerWorker == NULL) {
 		consumerWorker = new ConsumerWorker(cbConsumerWorker);
-		connect(consumerWorkerThread,&QThread::started,consumerWorker,&ConsumerWorker::start);
+		connect(consumerWorkerThread,&QThread::started, consumerWorker, &ConsumerWorker::start);
+		connect(consumerWorkerThread,&QThread::finished, consumerWorker, &ConsumerWorker::finished);
 	}
 
 }
@@ -155,7 +166,7 @@ bool ProducerConsumer::Start(bool _producer, bool _consumer)
 		producerWorkerThread->start();
 		producerWorkerThread->setPriority(QThread::NormalPriority);
         producerThreadIsRunning = true;
-    }
+	}
     return true;
 }
 
@@ -165,22 +176,14 @@ bool ProducerConsumer::Stop()
         return false; //Init has not been called
 
     if (producerThreadIsRunning) {
+		//stop() sets isRunning to false and calls quit() on the thread
+		//quit() triggers the finished() signal which then handles any thread local destructors
 		producerWorker->stop();
-		producerWorkerThread->quit();
-		//Make sure thread has quit
-		if (!producerWorkerThread->wait(500)) {
-			qDebug()<<"Producer thread did not terminate";
-		}
         producerThreadIsRunning = false;
     }
 
     if (consumerThreadIsRunning) {
 		consumerWorker->stop();
-		consumerWorkerThread->quit();
-		//Make sure thread has quit
-		if (!consumerWorkerThread->wait(500)) {
-			qDebug()<<"Consumer thread did not terminate";
-		}
 		consumerThreadIsRunning = false;
     }
 	return true;
@@ -293,41 +296,62 @@ quint16 ProducerConsumer::GetPercentageFree()
 }
 
 //SDRThreads
-ProducerWorker::ProducerWorker(cbProducerConsumer _worker)
+ProducerWorker::ProducerWorker(cbProducerConsumer _worker, ProducerConsumer::PRODUCER_MODE _mode)
 {
 	worker = _worker;
 	isRunning = false;
 	nsInterval = 1;
+	producerMode = _mode;
 }
 
 void ProducerWorker::start()
 {
 	//Do any construction here so it's in the thread
+	producerThread = this->thread();
+	//We should be in PebbleProducerThread
+	//qDebug()<<producerThread->objectName();
 	worker(cbProducerConsumerEvents::Start);
 	isRunning = true;
-	timespec req, rem;
-	qint64 nsRemaining;
-	elapsedTimer.start();
-	while (isRunning) {
-		nsRemaining = nsInterval - elapsedTimer.nsecsElapsed();
-		if (nsRemaining > 0) {
-			req.tv_sec = 0;
-			//We want to get close to exact time, but not go over
-			req.tv_nsec = nsRemaining;
-			if (nanosleep(&req,&rem) < 0) {
-				qDebug()<<"nanosleep failed";
+	if (producerMode == ProducerConsumer::POLL) {
+		timespec req, rem;
+		qint64 nsRemaining;
+		elapsedTimer.start();
+		while (isRunning) {
+			nsRemaining = nsInterval - elapsedTimer.nsecsElapsed();
+			if (nsRemaining > 0) {
+				req.tv_sec = 0;
+				//We want to get close to exact time, but not go over
+				req.tv_nsec = nsRemaining;
+				if (nanosleep(&req,&rem) < 0) {
+					qDebug()<<"nanosleep failed";
+				}
 			}
+			elapsedTimer.start(); //Restart elapsed timer
+			worker(cbProducerConsumerEvents::Run);
+			//If we don't do this, all events like signals are blocked while we are in a continuous loop
+			//QCoreApplication::processEvents();
 		}
-		elapsedTimer.start(); //Restart elapsed timer
-		worker(cbProducerConsumerEvents::Run);
 	}
+	//This does not terminate the thread, just returns from the start() signal
 	return;
 }
 void ProducerWorker::stop()
 {
 	isRunning = false;
+	producerThread->quit();
+}
+
+void ProducerWorker::finished()
+{
 	//Do any worker destruction here
 	worker(cbProducerConsumerEvents::Stop);
+}
+
+//We've received a new data notification, process now
+void ProducerWorker::newDataNotification()
+{
+	if (producerMode == ProducerConsumer::NOTIFY)
+		worker(cbProducerConsumerEvents::Run);
 }
 
 ConsumerWorker::ConsumerWorker(cbProducerConsumer _worker)
@@ -340,6 +364,7 @@ ConsumerWorker::ConsumerWorker(cbProducerConsumer _worker)
 void ConsumerWorker::start()
 {
 	//Do any construction here so it's in the thread
+	consumerThread = this->thread();
 	worker(cbProducerConsumerEvents::Start);
 	isRunning = true;
 	timespec req, rem;
@@ -357,6 +382,8 @@ void ConsumerWorker::start()
 		}
 		elapsedTimer.start(); //Restart elapsed timer
 		worker(cbProducerConsumerEvents::Run);
+		//If we don't do this, all events like signals are blocked while we are in a continuous loop
+		//QCoreApplication::processEvents();
 	}
 	return;
 }
@@ -364,6 +391,11 @@ void ConsumerWorker::start()
 void ConsumerWorker::stop()
 {
 	isRunning = false;
+	consumerThread->quit();
+}
+
+void ConsumerWorker::finished()
+{
 	//Do any worker destruction here
 	worker(cbProducerConsumerEvents::Stop);
 }

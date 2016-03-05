@@ -19,9 +19,12 @@ class ProducerConsumer : public QObject
 {
     Q_OBJECT
 public:
+	enum PRODUCER_MODE {POLL, NOTIFY};
+
     ProducerConsumer();
 
-    void Initialize(cbProducerConsumer _producerWorker, cbProducerConsumer _consumerWorker, int _numDataBufs, int _producerBufferSize);
+	void Initialize(cbProducerConsumer _producerWorker, cbProducerConsumer _consumerWorker, int _numDataBufs,
+					int _producerBufferSize, PRODUCER_MODE _mode = POLL);
 
 	//When producer is in polling mode, we need to sleep in between polls in order to avoid excessive CPU usage
 	//This method calculates how many buffers per second we need to handle and a 'safe' sleep interval
@@ -51,7 +54,10 @@ public:
     quint16 GetNumFreeBufs() {return semNumFreeBuffers->available();}
     quint16 GetNumFilledBufs() {return semNumFilledBuffers->available();}
 
+public slots:
+
 signals:
+	void newDataNotification();
 
 private:
     //Experiment using blocking acquire() vs checking for available first
@@ -85,6 +91,8 @@ private:
 	qint64 nsProducerInterval;
 	qint64 nsConsumerInterval;
 
+	PRODUCER_MODE producerMode;
+
 };
 
 //Alternative thread model using Worker objects and no QThread subclass
@@ -92,12 +100,15 @@ class ProducerWorker: public QObject
 {
     Q_OBJECT
 public:
-	ProducerWorker(cbProducerConsumer _worker);
+	ProducerWorker(cbProducerConsumer _worker,
+		ProducerConsumer::PRODUCER_MODE _mode = ProducerConsumer::POLL);
 	void SetPollingInterval(qint64 _nsInterval) {nsInterval = _nsInterval;}
 
 public slots:
     void start();
     void stop();
+	void finished();
+	void newDataNotification();
 
 private:
     cbProducerConsumer worker;
@@ -105,6 +116,8 @@ private:
 	QElapsedTimer elapsedTimer;
 	qint64 nsInterval;
 	bool isRunning;
+	QThread *producerThread;
+	ProducerConsumer::PRODUCER_MODE producerMode;
 };
 class ConsumerWorker: public QObject
 {
@@ -116,6 +129,7 @@ public:
 public slots:
 	void start();
 	void stop();
+	void finished();
 
 private:
 	cbProducerConsumer worker;
@@ -123,6 +137,7 @@ private:
 	QElapsedTimer elapsedTimer;
 	qint64 nsInterval;
 	bool isRunning;
+	QThread *consumerThread;
 };
 
 #endif // PRODUCERCONSUMER_H
