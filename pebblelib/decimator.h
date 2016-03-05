@@ -187,6 +187,7 @@ public:
 	quint32 process(CPX *_in, CPX *_out, quint32 _numInSamples);
 
 	quint32 processCIC3(const CPX *_in, CPX *_out, quint32 _numInSamples);
+	quint32 processCIC3(const DSPDoubleSplitComplex *_in, DSPDoubleSplitComplex *_out, quint32 _numInSamples);
 	quint32 processVDsp(const DSPDoubleSplitComplex *_in, DSPDoubleSplitComplex *_out, quint32 _numInSamples);
 
 	const quint32 maxResultLen = 32768;

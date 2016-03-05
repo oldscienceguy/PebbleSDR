@@ -548,7 +548,6 @@ quint32 HalfbandFilter::convolveVDsp2(const DSPDoubleSplitComplex x[], quint32 x
 		DSPDoubleSplitComplex y[], quint32 ySize, quint32 decimate)
 {
 	Q_UNUSED(ySize);
-
 	quint32 dLen = hLen - 1; //Size of delay buffer
 	//yLen is the final size of the decimated and filtered output
 	quint32 yLen = xLen / decimate;
@@ -657,12 +656,36 @@ quint32 HalfbandFilter::processCIC3(const CPX *_in, CPX *_out, quint32 _numInSam
 
 }
 
+quint32 HalfbandFilter::processCIC3(const DSPDoubleSplitComplex *_in, DSPDoubleSplitComplex *_out, quint32 _numInSamples)
+{
+	quint32 numOutSamples = 0;
+
+	CPX even,odd;
+	for(quint32 i=0; i<_numInSamples; i += decimate)
+	{	//mag gn=8
+		even.re = _in->realp[i];
+		even.im = _in->imagp[i];
+		odd.re = _in->realp[i+1];
+		odd.im = _in->imagp[i+1];
+		_out->realp[numOutSamples] = .125*( odd.re + xEven.re + 3.0*(xOdd.re + even.re) );
+		_out->imagp[numOutSamples] = .125*( odd.im + xEven.im + 3.0*(xOdd.im + even.im) );
+		xOdd = odd;
+		xEven = even;
+		numOutSamples++;
+	}
+	return numOutSamples;
+}
+
 //Experiment using vDsp dot product functions
 //_in has empty space at the beginning of the buffer that we use for delay samples
 //Actual input samples start at _in[numDelaySamples]
 quint32 HalfbandFilter::processVDsp(const DSPDoubleSplitComplex *_in,
 		DSPDoubleSplitComplex *_out, quint32 _numInSamples)
 {
+	if (useCIC3) {
+		return processCIC3(_in, _out, _numInSamples);
+	}
+
 	//VDSP Dot Product
 	//return convolveVDsp1(_in, _numInSamples, coeff, numTaps, _out, maxResultLen, decimate);
 	//VDSP filter
