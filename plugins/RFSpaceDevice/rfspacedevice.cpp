@@ -13,14 +13,10 @@ RFSpaceDevice::RFSpaceDevice():DeviceInterfaceBase()
 	ReadSettings();
 
 	optionUi = NULL;
-	inBuffer = NULL;
 	readBuf = usbReadBuf = NULL;
 	usbUtil = NULL;
 	ad6620 = NULL;
 	afedri = NULL;
-	//Todo: SDR-IQ has fixed block size 2048, are we going to support variable size or just force
-	inBufferSize = 2048; //settings->framesPerBuffer;
-	inBuffer = CPX::memalign(inBufferSize);
 	//Max data block we will ever read is dataBlockSize
 	readBuf = (CPX16*) new unsigned char[dataBlockSize];
 	usbReadBuf = (CPX16*) new unsigned char[dataBlockSize];
@@ -39,8 +35,6 @@ RFSpaceDevice::~RFSpaceDevice()
 	if (usbUtil != NULL)
 		usbUtil->CloseDevice();
 
-	if (inBuffer != NULL)
-		free(inBuffer);
 	if (readBuf != NULL)
 		delete [] readBuf;
 	if (usbReadBuf != NULL)
@@ -74,10 +68,7 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback,
 							   cbProcessBandscopeData _callbackBandscope,
 							   cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
-	DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
 	numProducerBuffers = 50;
-	producerConsumer.Initialize(std::bind(&RFSpaceDevice::producerWorker, this, std::placeholders::_1),
-		std::bind(&RFSpaceDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, framesPerBuffer * sizeof(CPX));
 
 	usbUtil = new USBUtil(USBUtil::FTDI_D2XX);
 	ad6620 = new AD6620(usbUtil);
@@ -86,6 +77,10 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback,
 
 
 	if (deviceNumber == SDR_IQ) {
+		DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
+		producerConsumer.Initialize(std::bind(&RFSpaceDevice::producerWorker, this, std::placeholders::_1),
+			std::bind(&RFSpaceDevice::consumerWorker, this, std::placeholders::_1),
+			numProducerBuffers, framesPerBuffer * sizeof(CPX), ProducerConsumer::PRODUCER_MODE::POLL);
 		//SR * 2 bytes for I * 2 bytes for Q .  dataBlockSize is 8192
 		producerConsumer.SetProducerInterval(deviceSampleRate,framesPerBuffer);
 		producerConsumer.SetConsumerInterval(deviceSampleRate,framesPerBuffer);
@@ -96,17 +91,23 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback,
 		normalizeIQGain = DB::dbToAmplitude(-9.5);
 
 	} else if(deviceNumber == SDR_IP) {
+		DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
+		//Run Producer in NOTIFY mode which only calls worker when we have new UDP datagrams
+		//More efficient and robust compared with POLL, but either one works
+		producerConsumer.Initialize(std::bind(&RFSpaceDevice::producerWorker, this, std::placeholders::_1),
+			std::bind(&RFSpaceDevice::consumerWorker, this, std::placeholders::_1),
+			numProducerBuffers, framesPerBuffer * sizeof(CPX), ProducerConsumer::PRODUCER_MODE::NOTIFY);
 		//Get get UDP datagrams of 1024 bytes, 4bytes per CPX or 256 CPX samples
-		producerConsumer.SetProducerInterval(deviceSampleRate,udpBlockSize / 4);
+		//Not needed if producer is running in NOTIFY mode
+		producerConsumer.SetProducerInterval(deviceSampleRate,udpBlockSize / sizeof(CPX16));
+
 		//Consumer only has to run once every 2048 CPX samples
 		producerConsumer.SetConsumerInterval(deviceSampleRate,framesPerBuffer);
-		//normalizeIQGain = 1.0; //-72db
 		normalizeIQGain = DB::dbToAmplitude(7);
 
 	} else if (deviceNumber == AFEDRI_USB) {
 		DeviceInterfaceBase::Initialize(_callback, NULL, NULL, _framesPerBuffer); //Handle audio input
 		afedri->Initialize(); //HID
-		//normalizeIQGain = 1; //-47db
 		normalizeIQGain = DB::dbToAmplitude(-23);
 	}
 
@@ -631,9 +632,10 @@ void RFSpaceDevice::processControlItem(ControlHeader header, unsigned char *buf)
 
 void RFSpaceDevice::producerWorker(cbProducerConsumerEvents _event)
 {
+	bool result;
 	switch (_event) {
 		//Thread local constuction.  All tcp and udp port access must be kept within thread
-		case cbProducerConsumerEvents::Start: {
+		case cbProducerConsumerEvents::Start:
 			if (deviceNumber == SDR_IQ || deviceNumber == AFEDRI_USB)
 				return;
 			//Construct UDP sockets in thread local
@@ -650,7 +652,7 @@ void RFSpaceDevice::producerWorker(cbProducerConsumerEvents _event)
 			//So this binds our socket to accept datagrams from any IP, as long as port matches
 			//We could add an explicit setup where we tell SDR-IP what IP/Port to use for datagrams, but not needed I think
 			// ie SetUDPAddressAndPort(QHostAddress("192.168.0.255"),1234);
-			bool result = udpSocket->bind(devicePort);
+			result = udpSocket->bind(devicePort);
 			if (result) {
 				//Note: QUdpSocket uses native buffering per Qt documentation and ignores this.  Use native mac api
 				//udpSocket->setReadBufferSize(1028000);
@@ -663,10 +665,8 @@ void RFSpaceDevice::producerWorker(cbProducerConsumerEvents _event)
 				::setsockopt(udpSocket->socketDescriptor(), SOL_SOCKET, SO_RCVBUF, (char *)&v, sizeof(v));
 				//Remember we're being called from thread and signal needs to go to something in our thread
 				//In this case, we translate the udpSocket signal to a producerConsumer signal
-				connect(udpSocket, SIGNAL(readyRead()), &producerConsumer, SIGNAL(ProcessNewData()));
-
+				connect(udpSocket, SIGNAL(readyRead()), &producerConsumer, SIGNAL(newDataNotification()));
 			}
-		}
 			break;
 		case cbProducerConsumerEvents::Stop:
 			if (deviceNumber == SDR_IQ || deviceNumber == AFEDRI_USB)
@@ -764,7 +764,7 @@ void RFSpaceDevice::consumerWorker(cbProducerConsumerEvents _event)
 				//SendAck();
 
 				//perform.StartPerformance("ProcessIQ");
-				ProcessIQData(consumerFilledBufPtr,inBufferSize);
+				ProcessIQData(consumerFilledBufPtr,framesPerBuffer);
 				//perform.StopPerformance(100);
 
 				//Update lastDataBuf & release dataBuf
@@ -849,6 +849,7 @@ void RFSpaceDevice::TCPSocketNewData()
 }
 
 //UDP is all IQ data
+//Can be called by Signal on udpSocket ReadyRead in notify mode, or producer worker in poll mode
 void RFSpaceDevice::UDPSocketNewData()
 {
 	QHostAddress sender;
@@ -856,6 +857,8 @@ void RFSpaceDevice::UDPSocketNewData()
 	qint16 actual;
 	qint64 dataGramSize;
 	quint16 sequenceNumer;
+
+	mutex.lock();
 	//We have to process all the data we have, won't get a second signal for same data
 	while (udpSocket->hasPendingDatagrams()) {
 		dataGramSize = udpSocket->pendingDatagramSize();
@@ -863,10 +866,12 @@ void RFSpaceDevice::UDPSocketNewData()
 		actual = udpSocket->readDatagram((char*)udpReadBuf,dataGramSize, &sender, &senderPort);
 		if (actual != dataGramSize) {
 			qDebug()<<"ReadDatagram size error";
+			mutex.unlock();
 			return;
 		}
 		//The only datagrams we handle are IQ
 		if (dataGramSize != 1028 || udpReadBuf[0] != TargetDataItem0 || udpReadBuf[1] != 0x84) {
+			mutex.unlock();
 			return; //Invalid
 		}
 
@@ -881,16 +886,18 @@ void RFSpaceDevice::UDPSocketNewData()
 		if (readBufferIndex == 0) {
 			//qDebug()<<producerConsumer.GetNumFreeBufs();
 			//Starting a new producer buffer
-			if ((producerFreeBufPtr = (CPX *)producerConsumer.AcquireFreeBuffer()) == NULL)
+			if ((producerFreeBufPtr = (CPX *)producerConsumer.AcquireFreeBuffer()) == NULL) {
+				mutex.unlock();
 				return;
+			}
 		}
 
 		//USB gets 2048 I and 2048 Q samples at a time, or 8192 bytes
 		//We need to build over 8 datagrams
 		memcpy(&readBuf[readBufferIndex], &udpReadBuf[4], udpBlockSize); //256 I/Q samples
-		readBufferIndex += udpBlockSize;
+		readBufferIndex += udpBlockSize / sizeof(CPX16);
 
-		if (readBufferIndex == dataBlockSize) {
+		if (readBufferIndex == framesPerBuffer) {
 			readBufferIndex = 0;
 			//Reverse IQ order
 			normalizeIQ(producerFreeBufPtr, readBuf, framesPerBuffer, true);
@@ -898,6 +905,7 @@ void RFSpaceDevice::UDPSocketNewData()
 			producerConsumer.ReleaseFilledBuffer();
 		}
 	}
+	mutex.unlock();
 	return;
 }
 

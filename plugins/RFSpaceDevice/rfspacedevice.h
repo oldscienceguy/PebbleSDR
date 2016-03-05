@@ -200,11 +200,9 @@ private:
 	Ui::SdrIqOptions *optionUi;
 
 	QMutex mutex;
-	CPX *inBuffer;
-	int inBufferSize;
 	CPX16 *readBuf;
 	CPX16 *usbReadBuf; //Exclusively for producer thread to avoid possible buffer contention with main thread
-	unsigned char usbHeaderBuf[2];
+	unsigned char usbHeaderBuf[256];
 	unsigned char *udpReadBuf;
 	unsigned char *tcpReadBuf;
 
