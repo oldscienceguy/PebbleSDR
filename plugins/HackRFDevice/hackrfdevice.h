@@ -81,6 +81,7 @@ private slots:
 	void rfGainChanged(bool _value);
 	void lnaGainChanged(int _value);
 	void vgaGainChanged(int _value);
+	void decimationChanged(int _index);
 	void consumerSlot();
 
 signals:

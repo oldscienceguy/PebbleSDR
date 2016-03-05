@@ -9,6 +9,8 @@ HackRFDevice::HackRFDevice():DeviceInterfaceBase()
 	useSignals = false;
 	producerBuf = NULL;
 	decimatorBuf = NULL;
+	hackrfDevice = NULL;
+	decimator = NULL;
 }
 
 HackRFDevice::~HackRFDevice()
@@ -28,13 +30,11 @@ bool HackRFDevice::Initialize(cbProcessIQData _callback,
 {
 	DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
 	//If we are decimating, we need to collect more samples
-	//Todo: review
 	deviceSamplesPerBuffer = framesPerBuffer * decimateFactor;
 	producerBuf = (CPX8*)new qint8[deviceSamplesPerBuffer * sizeof(CPX8)];
 	decimatorBuf = CPX::memalign(deviceSamplesPerBuffer);
 
 	decimator = new Decimator(deviceSampleRate, deviceSamplesPerBuffer);
-	decimateFactor = 4; //Fixed for now
 	setSampleRate(deviceSampleRate); //Builds decimation chain
 
 	if (useSynchronousAPI)
@@ -74,7 +74,7 @@ void HackRFDevice::ReadSettings()
 	lowFrequency = 500000;
 	sampleRate = 8000000;
 	deviceSampleRate = sampleRate;
-	//decimateFactor = 2;
+	decimateFactor = 2; //We can't keep up with full device sample rate yet
 	DeviceInterfaceBase::ReadSettings();
 	//Recommended defaults from hackRf wiki
 	rfGain = qSettings->value("rfGain",false).toBool();
@@ -95,7 +95,7 @@ void HackRFDevice::WriteSettings()
 void HackRFDevice::setSampleRate(quint32 _sampleRate)
 {
 	deviceSampleRate = _sampleRate;
-	//Todo: Fixed 2x decimation, replace with selection from UI
+
 	if (decimateFactor == 1) {
 		sampleRate = deviceSampleRate;
 	} else {
@@ -149,6 +149,9 @@ bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _ar
 
 		case CmdDisconnect:
 			DeviceInterfaceBase::Disconnect();
+			if (hackrfDevice == NULL)
+				return true;
+
 			//Device specific code follows
 			if (!apiCheck(hackrf_close(hackrfDevice),"close"))
 				return false;
@@ -256,6 +259,15 @@ bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _ar
 			optionUi->vgaValue->setText(QString::number(vgaGain)+"dB");
 			connect(optionUi->vgaSlider,SIGNAL(valueChanged(int)),this,SLOT(vgaGainChanged(int)));
 
+			optionUi->decimationBox->addItem("Off",1);
+			optionUi->decimationBox->addItem("2",2);
+			optionUi->decimationBox->addItem("4",4);
+			optionUi->decimationBox->addItem("8",8);
+			optionUi->decimationBox->addItem("16",16);
+			int item = optionUi->decimationBox->findData(decimateFactor);
+			optionUi->decimationBox->setCurrentIndex(item);
+			connect(optionUi->decimationBox,SIGNAL(currentIndexChanged(int)),this,SLOT(
+						decimationChanged(int)));
 			return true;
 		}
 		default:
@@ -429,6 +441,13 @@ void HackRFDevice::vgaGainChanged(int _value)
 	qSettings->sync();
 }
 
+void HackRFDevice::decimationChanged(int _index)
+{
+	Q_UNUSED(_index);
+	decimateFactor = optionUi->decimationBox->currentData().toUInt();
+	qSettings->sync();
+}
+
 //typedef int(*hackrf_sample_block_cb_fn)(hackrf_transfer*transfer)
 //static callback function
 int HackRFDevice::rx_callback(hackrf_transfer*transfer)
@@ -497,16 +516,11 @@ void HackRFDevice::producerWorker(cbProducerConsumerEvents _event)
 				}
 
 				if (decimateFactor > 1) {
-					for (quint32 i=0; i<deviceSamplesPerBuffer; i++) {
-						normalizeIQ(&decimatorBuf[i], producerBuf[i].re, producerBuf[i].im);
-					}
+					normalizeIQ(decimatorBuf, producerBuf, deviceSamplesPerBuffer);
 					numDecimatedSamples = decimator->process(decimatorBuf, producerFreeBufPtr, deviceSamplesPerBuffer);
 				} else {
-					//No decimation
-					for (int i=0; i<framesPerBuffer; i++) {
-						normalizeIQ(&producerFreeBufPtr[i], producerBuf[i].re, producerBuf[i].im);
-					}
-
+					//No decimation, direct to producer/consumer buffer
+					normalizeIQ(producerFreeBufPtr, producerBuf, framesPerBuffer);
 				}
 
 				producerConsumer.ReleaseFilledBuffer();

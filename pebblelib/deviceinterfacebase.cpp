@@ -41,6 +41,7 @@ DeviceInterfaceBase::DeviceInterfaceBase()
 	normalizeIQGain = 1.0; //Will be overridden by specific devices if needed
 	converterMode = false;
 	converterOffset = 0;
+	decimateFactor = 1;
 }
 
 //Implement pure virtual destructor from interface, otherwise we don't link
@@ -482,7 +483,7 @@ void DeviceInterfaceBase::ReadSettings()
 	startupDemodMode = qSettings->value("StartupDemodMode",startupDemodMode).toInt();
 	converterMode = qSettings->value("ConverterMode", false).toBool();
 	converterOffset = qSettings->value("ConverterOffset", 0).toDouble();
-	decimateFactor = qSettings->value("DecimateFactor",1).toUInt();
+	decimateFactor = qSettings->value("DecimateFactor",decimateFactor).toUInt();
 	removeDC = qSettings->value("RemoveDC",false).toBool();
 }
 
