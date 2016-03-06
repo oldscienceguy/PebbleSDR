@@ -85,6 +85,7 @@ macx {
         pebbleData.files += beep-07.wav
         pebbleData.files += "Pebble Buttons.pdf"
         pebbleData.files += Pebble.shuttleSettings
+        pebbleData.files += unload_osx_ftdi_driver.scpt
 
 	#We want this to be whatever the release or debug directory is or added to bundle
 	#This will copy the files into the app bundle, same place ini files go
