@@ -28,18 +28,19 @@ Decimator::Decimator(quint32 _sampleRate, quint32 _bufferSize)
 	workingBuf2 = CPX::memalign(bufferSize * 2);
 
 	if (useVdsp) {
-		//Testing vDSP
-		splitComplexIn.realp = new double[_bufferSize * 2];
-		memset(splitComplexIn.realp,0,_bufferSize * 2);
+		//Use osX Accelerate vector library
+		quint32 splitBufSize = bufferSize * 2;
+		splitComplexIn.realp = new double[splitBufSize];
+		memset(splitComplexIn.realp,0,splitBufSize);
 
-		splitComplexIn.imagp = new double[_bufferSize * 2];
-		memset(splitComplexIn.imagp,0,_bufferSize * 2);
+		splitComplexIn.imagp = new double[splitBufSize];
+		memset(splitComplexIn.imagp,0,splitBufSize);
 
-		splitComplexOut.realp = new double[_bufferSize * 2];
-		memset(splitComplexOut.realp,0,_bufferSize * 2);
+		splitComplexOut.realp = new double[splitBufSize];
+		memset(splitComplexOut.realp,0,splitBufSize);
 
-		splitComplexOut.imagp = new double[_bufferSize * 2];
-		memset(splitComplexOut.imagp,0,_bufferSize * 2);
+		splitComplexOut.imagp = new double[splitBufSize];
+		memset(splitComplexOut.imagp,0,splitBufSize);
 	}
 }
 
@@ -49,10 +50,10 @@ Decimator::~Decimator()
 	free (workingBuf2);
 
 	if (useVdsp) {
-		free (splitComplexIn.realp);
-		free (splitComplexIn.imagp);
-		free (splitComplexOut.realp);
-		free (splitComplexOut.imagp);
+		delete [] splitComplexIn.realp;
+		delete [] splitComplexIn.imagp;
+		delete [] splitComplexOut.realp;
+		delete [] splitComplexOut.imagp;
 	}
 	deleteFilters();
 }
@@ -68,6 +69,7 @@ float Decimator::buildDecimationChain(quint32 _sampleRateIn, quint32 _protectBw,
 	HalfbandFilter *chain = NULL;
 	HalfbandFilter *prevChain = NULL;
 	qDebug()<<"Building Decimator chain for sampleRate = "<<_sampleRateIn<<" max bw = "<<_protectBw;
+	decimationChain.clear(); //in case we're called more than once
 	while (decimatedSampleRate > minSampleRateOut) {
 		//Use cic3 for faster decimation
 #if 1
@@ -146,10 +148,11 @@ float Decimator::buildDecimationChain(quint32 _sampleRateIn, quint32 _protectBw,
 //Should return CPX* to decimated buffer and number of samples in buffer
 quint32 Decimator::process(CPX *_in, CPX *_out, quint32 _numSamples)
 {
-	//mutex.lock();
+	mutex.lock();
 	if (decimationChain.isEmpty()) {
 		//No decimation, just return
 		CPX::copyCPX(_out,_in,_numSamples);
+		mutex.unlock();
 		return _numSamples;
 	}
 	quint32 remainingSamples = _numSamples;
@@ -178,6 +181,7 @@ quint32 Decimator::process(CPX *_in, CPX *_out, quint32 _numSamples)
 
 		for (int i=0; i<decimationChain.length(); i++) {
 			chain = decimationChain[i];
+			//qDebug()<<"Remaining Samples "<<remainingSamples<<" decimate "<<chain->decimate<<" taps "<<chain->numTaps;
 			remainingSamples = chain->processVDsp(nextIn, nextOut, remainingSamples);
 			//Swap in and out
 			lastOut = nextOut;
@@ -214,7 +218,7 @@ quint32 Decimator::process(CPX *_in, CPX *_out, quint32 _numSamples)
 		CPX::copyCPX(_out, lastOut, remainingSamples);
 
 	}
-	//mutex.unlock();
+	mutex.unlock();
 	return remainingSamples;
 }
 
@@ -257,10 +261,10 @@ HalfbandFilter::HalfbandFilter(quint16 _numTaps, double _wPass, double *_coeff)
 
 HalfbandFilter::~HalfbandFilter()
 {
-	free (lastXVDsp.realp);
-	free (lastXVDsp.imagp);
-	delete lastX;
-	delete tmpX;
+	delete [] lastXVDsp.realp;
+	delete [] lastXVDsp.imagp;
+	free (lastX);
+	free (tmpX);
 }
 
 //Derived from cuteSdr, refactored and modified for Pebble
@@ -289,8 +293,8 @@ HalfbandFilter::~HalfbandFilter()
 */
 //Convolution utility functions for reference, move to CPX
 //Basic algorithm from many texts and sources, no delay buffer from last x[]
-quint32 HalfbandFilter::convolve(const double x[], quint32 xLen, const double h[],
-	quint32 hLen, double y[])
+quint32 HalfbandFilter::convolve(const double *x, quint32 xLen, const double *h,
+	quint32 hLen, double *y)
 {
 	quint32 yLen = xLen + hLen;
 
@@ -310,33 +314,45 @@ quint32 HalfbandFilter::convolve(const double x[], quint32 xLen, const double h[
 	}
 	return yLen;
 }
+
 //We have last samples in , buffer management #1 above
 //Overlap/Save
-quint32 HalfbandFilter::convolveOS(const CPX x[], quint32 xLen, const double h[],
-	quint32 hLen, CPX y[], quint32 ySize, quint32 decimate)
+quint32 HalfbandFilter::convolveOS(const CPX *x, quint32 xLen, const double *h,
+	quint32 hLen, CPX *y, quint32 ySize, quint32 decimate)
 {
 	Q_UNUSED(ySize);
-
-	//Must have at least hLen samples
-	if (xLen < hLen || hLen < decimate) {
-		//Not enough samples to process with this number of taps
+	quint32 dLen = hLen - 1; //Size of delay buffer
+	quint32 yCnt = 0;
+	if (xLen < hLen) {
+		//We must have at least enough delayed samples in x to process 1 convolution
 		//We can get to this case when we have a very high initial sample rate like 10msps with 2048 samples
 		//The last stage may only have 16 samples for a 35 tap filter
-		//Brute force, just return 1/2 the samples without filtering
-		//qWarning()<<"xLen < hLen in convolve";
-		for (quint32 i=0, j=0; i<xLen/decimate; i++, j+=decimate) {
-			y[i] = x[j];
+		//Filter won't work, so simple decimate
+		for (quint32 i=0; i<xLen; i+=decimate) {
+			y[yCnt].re = x[i].re;
+			y[yCnt].im = x[i].im;
+			yCnt++;
 		}
-		return xLen / decimate;
+		//We don't have enough samples to fill all of lastX
+		//So make sure the samples we do have are at the end of lastX and zero anything earlier
+		quint32 saveSamples = dLen - xLen; //# x samples to save in lastX
+		for (quint32 i=0; i<hLen; i++) {
+			if (i < saveSamples) {
+				lastX[i].re = 0;
+				lastX[i].im = 0;
+			} else {
+				lastX[i].re = x[i].re;
+				lastX[i].im = x[i].im;
+			}
+		}
+		return yCnt;
 	}
 
-	quint32 dLen = hLen - 1; //Size of delay buffer
 
 	//Create a unified buffer with lastX[] and x[]
 	//First part of lastX already has last hLen samples;
 	CPX::copyCPX(&lastX[dLen], x, xLen);
 
-	quint32 yCnt = 0; //#of samples in y[], needed if decimate != 1
 	for (quint32 n = 0; n < xLen; n += decimate) {
 		y[yCnt].clear();
 
@@ -366,28 +382,40 @@ quint32 HalfbandFilter::convolveOS(const CPX x[], quint32 xLen, const double h[]
 	Diagram
 	(TBD)
 */
-quint32 HalfbandFilter::convolveOA(const CPX x[], quint32 xLen, const double h[],
-	quint32 hLen, CPX y[], quint32 ySize, quint32 decimate)
+quint32 HalfbandFilter::convolveOA(const CPX *x, quint32 xLen, const double *h,
+	quint32 hLen, CPX *y, quint32 ySize, quint32 decimate)
 {
 	Q_UNUSED(ySize);
 
 	quint32 dLen = hLen - 1; //Size of delay buffer
 	quint32 yLen = xLen + dLen; //Size of result buffer
 
-	//Must have at least hLen samples
-	if (xLen < hLen || hLen < decimate) {
-		//Not enough samples to process with this number of taps
+	quint32 yCnt = 0; //#of samples in y[], needed if decimate != 1
+	if (xLen < hLen) {
+		//We must have at least enough delayed samples in x to process 1 convolution
 		//We can get to this case when we have a very high initial sample rate like 10msps with 2048 samples
 		//The last stage may only have 16 samples for a 35 tap filter
-		//Brute force, just return 1/2 the samples without filtering
-		//qWarning()<<"xLen < hLen in convolve";
-		for (quint32 i=0, j=0; i<xLen/decimate; i++, j+=decimate) {
-			y[i] = x[j];
+		//Filter won't work, so simple decimate
+		for (quint32 i=0; i<xLen; i+=decimate) {
+			y[yCnt].re = x[i].re;
+			y[yCnt].im = x[i].im;
+			yCnt++;
 		}
-		return xLen / decimate;
+		//We don't have enough samples to fill all of lastX
+		//So make sure the samples we do have are at the end of lastX and zero anything earlier
+		quint32 saveSamples = dLen - xLen; //# x samples to save in lastX
+		for (quint32 i=0; i<hLen; i++) {
+			if (i < saveSamples) {
+				lastX[i].re = 0;
+				lastX[i].im = 0;
+			} else {
+				lastX[i].re = x[i].re;
+				lastX[i].im = x[i].im;
+			}
+		}
+		return yCnt;
 	}
 
-	quint32 yCnt = 0; //#of samples in y[], needed if decimate != 1
 	CPX *yOut = tmpX;
 #if 0
 	if (yLen <= ySize) {
@@ -469,26 +497,41 @@ quint32 HalfbandFilter::convolveOA(const CPX x[], quint32 xLen, const double h[]
 	return xLen / decimate; //yCnt will have extra results that we save to lastX
 }
 
-quint32 HalfbandFilter::convolveVDsp1(const DSPDoubleSplitComplex x[], quint32 xLen, const double h[],
-		quint32 hLen, DSPDoubleSplitComplex y[], quint32 ySize, quint32 decimate)
+quint32 HalfbandFilter::convolveVDsp1(const DSPDoubleSplitComplex *x, quint32 xLen, const double *h,
+		quint32 hLen, DSPDoubleSplitComplex *y, quint32 ySize, quint32 decimate)
 {
 	Q_UNUSED(ySize);
 
 	quint32 dLen = hLen - 1; //Size of delay buffer
+	//yLen is the final size of the decimated and filtered output
+	quint32 yLen = xLen / decimate;
+	Q_UNUSED(yLen);
 
 	quint32 yCnt = 0;
 
-	//Must have at least hLen samples
-	if (xLen < hLen || hLen < decimate) {
-		//Not enough samples to process with this number of taps
+	if (xLen < hLen) {
+		//We must have at least enough delayed samples in x to process 1 convolution
 		//We can get to this case when we have a very high initial sample rate like 10msps with 2048 samples
 		//The last stage may only have 16 samples for a 35 tap filter
-		//Brute force, just return 1/2 the samples without filtering
-		//qWarning()<<"xLen < hLen in convolve";
-		for (quint32 i=0, j=0; i<xLen/decimate; i++, j+=decimate) {
-			y[i] = x[j];
+		//Filter won't work, so simple decimate
+		for (quint32 i=0; i<xLen; i+=decimate) {
+			y->realp[yCnt] = x->realp[i];
+			y->imagp[yCnt] = x->imagp[i];
+			yCnt++;
 		}
-		return xLen / decimate;
+		//We don't have enough samples to fill all of lastX
+		//So make sure the samples we do have are at the end of lastX and zero anything earlier
+		quint32 saveSamples = dLen - xLen; //# x samples to save in lastX
+		for (quint32 i=0; i<hLen; i++) {
+			if (i < saveSamples) {
+				lastXVDsp.realp[i] = 0;
+				lastXVDsp.imagp[i] = 0;
+			} else {
+				lastXVDsp.realp[i] = x->realp[i];
+				lastXVDsp.imagp[i] = x->imagp[i];
+			}
+		}
+		return yCnt;
 	}
 
 	//We can't index split complex directly, but we can create temp ptr to position in realp and imagp
@@ -543,27 +586,41 @@ quint32 HalfbandFilter::convolveVDsp1(const DSPDoubleSplitComplex x[], quint32 x
 
 }
 
-//Try vDSP_zrdesampD() to do complete filtering
-quint32 HalfbandFilter::convolveVDsp2(const DSPDoubleSplitComplex x[], quint32 xLen, const double h[], quint32 hLen,
-		DSPDoubleSplitComplex y[], quint32 ySize, quint32 decimate)
+//Use vDSP_zrdesampD() to do complete filtering
+quint32 HalfbandFilter::convolveVDsp2(const DSPDoubleSplitComplex *x, quint32 xLen, const double *h, quint32 hLen,
+		DSPDoubleSplitComplex *y, quint32 ySize, quint32 decimate)
 {
 	Q_UNUSED(ySize);
 	quint32 dLen = hLen - 1; //Size of delay buffer
 	//yLen is the final size of the decimated and filtered output
 	quint32 yLen = xLen / decimate;
+	quint32 yCnt = 0;
 
-	//Must have at least hLen samples and hLen must be >= to the decimate increment
-	if (xLen < hLen || hLen < decimate) {
-		//Not enough samples to process with this number of taps
+	if (xLen < hLen) {
+		//We must have at least enough delayed samples in x to process 1 convolution
 		//We can get to this case when we have a very high initial sample rate like 10msps with 2048 samples
 		//The last stage may only have 16 samples for a 35 tap filter
-		//Brute force, just return 1/2 the samples without filtering
-		//qWarning()<<"xLen < hLen in convolve";
-		for (quint32 i=0, j=0; i<xLen/decimate; i++, j+=decimate) {
-			y[i] = x[j];
+		//Filter won't work, so simple decimate
+		for (quint32 i=0; i<xLen; i+=decimate) {
+			y->realp[yCnt] = x->realp[i];
+			y->imagp[yCnt] = x->imagp[i];
+			yCnt++;
 		}
-		return xLen / decimate;
+		//We don't have enough samples to fill all of lastX
+		//So make sure the samples we do have are at the end of lastX and zero anything earlier
+		quint32 saveSamples = dLen - xLen; //# x samples to save in lastX
+		for (quint32 i=0; i<hLen; i++) {
+			if (i < saveSamples) {
+				lastXVDsp.realp[i] = 0;
+				lastXVDsp.imagp[i] = 0;
+			} else {
+				lastXVDsp.realp[i] = x->realp[i];
+				lastXVDsp.imagp[i] = x->imagp[i];
+			}
+		}
+		return yCnt;
 	}
+
 
 	//We can't index split complex directly, but we can create temp ptr to position in realp and imagp
 	DSPDoubleSplitComplex tmpIn;
@@ -587,10 +644,10 @@ quint32 HalfbandFilter::convolveVDsp2(const DSPDoubleSplitComplex x[], quint32 x
 */
 	vDSP_zrdesampD(&lastXVDsp, decimate, h, y, yLen, hLen);
 
+	//We make sure we have enough samples to copy to lastX delay buffer before we get here
 	//Copy last dLen samples to lastX for next iteration
 	tmpIn.realp = &x->realp[xLen - dLen];
 	tmpIn.imagp = &x->imagp[xLen - dLen];
-
 	vDSP_zvmovD(&tmpIn, 1, &lastXVDsp, 1, dLen);
 
 	return yLen;

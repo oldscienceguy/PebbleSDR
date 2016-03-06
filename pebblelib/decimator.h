@@ -203,16 +203,16 @@ public:
 	CPX xEven;
 	//double has 15 decimal digit precision, so we truncate Matlab results
 	const double *coeff;
-	quint32 convolve(const double x[], quint32 xLen, const double h[], quint32 hLen, double y[]);
+	quint32 convolve(const double *x, quint32 xLen, const double *h, quint32 hLen, double *y);
 	//Last Sample version
-	quint32 convolveOS(const CPX x[], quint32 xLen, const double h[], quint32 hLen, CPX y[],
+	quint32 convolveOS(const CPX *x, quint32 xLen, const double *h, quint32 hLen, CPX *y,
 		quint32 ySize, quint32 decimate = 1);
 	//Overlap/Add version
-	quint32 convolveOA(const CPX x[], quint32 xLen, const double h[], quint32 hLen, CPX y[],
+	quint32 convolveOA(const CPX *x, quint32 xLen, const double *h, quint32 hLen, CPX *y,
 		quint32 ySize,	quint32 decimate = 1);
-	quint32 convolveVDsp1(const DSPDoubleSplitComplex x[], quint32 xLen, const double h[], quint32 hLen, DSPDoubleSplitComplex y[],
+	quint32 convolveVDsp1(const DSPDoubleSplitComplex *x, quint32 xLen, const double *h, quint32 hLen, DSPDoubleSplitComplex *y,
 		quint32 ySize,	quint32 decimate = 1);
-	quint32 convolveVDsp2(const DSPDoubleSplitComplex x[], quint32 xLen, const double h[], quint32 hLen, DSPDoubleSplitComplex y[],
+	quint32 convolveVDsp2(const DSPDoubleSplitComplex *x, quint32 xLen, const double *h, quint32 hLen, DSPDoubleSplitComplex *y,
 		quint32 ySize,	quint32 decimate = 1);
 	//Testing decimate by more than 2
 	quint32 decimate;
@@ -278,6 +278,7 @@ private:
 	DSPDoubleSplitComplex splitComplexIn;
 	DSPDoubleSplitComplex splitComplexOut;
 
+	QMutex mutex;
 };
 
 #endif // DECIMATOR_H
