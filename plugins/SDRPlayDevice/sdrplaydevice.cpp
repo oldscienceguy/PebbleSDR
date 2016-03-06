@@ -516,13 +516,19 @@ bool SDRPlayDevice::reinitMirics(double newFrequency)
 //syncUpdate = 0 Immedate, syncUpdate = 1 synchronous
 bool SDRPlayDevice::setGainReduction(int gRdb, int abs, int syncUpdate)
 {
+	int newGainReduction;
 	if (abs == 1)
 		//Abs
-		totalGainReduction = gRdb;
+		newGainReduction = gRdb;
 	else
 		//Offset
-		totalGainReduction += gRdb;
+		newGainReduction = totalGainReduction + gRdb;
 
+	//If didn't change
+	if (newGainReduction == totalGainReduction)
+		return true; //Nothing to do
+	totalGainReduction = newGainReduction;
+	Q_ASSERT(totalGainReduction < 100);
 	if (errorCheck(mir_sdr_SetGr(gRdb, abs, syncUpdate))) {
 		pendingGainReduction = true;
 		//Update UI with new AGC values
@@ -664,49 +670,78 @@ void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 					continue;
 				}
 #endif
+				if (producerFreeBufPtr == NULL) {
+					if ((producerFreeBufPtr = (CPX *)producerConsumer.AcquireFreeBuffer()) == NULL) {
+						qDebug()<<"No free buffers available.  producerIndex = "<<producerIndex <<
+								  "samplesPerPacket = "<<samplesPerPacket;
+						return;
+					}
+					producerIndex = 0;
+					totalPwrInPacket = 0;
+				}
 				//Save in producerBuffer (sized to handle overflow
 				//Make sure samplesPerPacket is initialized before producer starts
-				for (int i=0; i<samplesPerPacket; i++) {
-					if (producerFreeBufPtr == NULL) {
+				//I/Q is reversed from Pebble norm, correct here so user sees normal order
+
+				qint32 samplesNeeded = framesPerBuffer - producerIndex;
+				samplesNeeded = samplesPerPacket <= samplesNeeded ? samplesPerPacket : samplesNeeded;
+				qint32 samplesExtra = samplesPerPacket - samplesNeeded;
+
+				normalizeIQ(&producerFreeBufPtr[producerIndex], packetQBuf, packetIBuf, samplesNeeded, true);
+				producerIndex += samplesNeeded;
+
+				if (producerIndex >= framesPerBuffer) {
+					double avgPwrInPacket = 0;
+					//AGC Logic
+					//Todo: AGC not working, review logic
+#if 0
+					if (agcEnabled && !pendingGainReduction) {
+						totalPwrInPacket = 0;
+						for (int i=0; i<framesPerBuffer; i++) {
+							//I^2 + Q^2
+							totalPwrInPacket += producerFreeBufPtr[i].sqrMag();
+						}
+						avgPwrInPacket = totalPwrInPacket / framesPerBuffer;
+						if (avgPwrInPacket < agcPwrSetpointLow || avgPwrInPacket > agcPwrSetpointHigh) {
+							//Adjust gain reduction to get measured power into setpoint range
+							double pwrDelta = agcPwrSetpoint - avgPwrInPacket;
+							double dbDelta;
+							if (pwrDelta < 0)
+								//less power = more gain reduction
+								dbDelta = DB::powerToDb(fabs(pwrDelta));
+							else
+								//More power = less gain reduction
+								dbDelta = -DB::powerToDb(pwrDelta);
+
+#if 0
+							qDebug()<<"AGC low: "<<agcPwrSetpointLow<<
+									  "AGC high: "<<agcPwrSetpointHigh<<
+									  "AGC Avg: "<<avgPwrInPacket<<
+									  "AGC GR: "<<newGainReduction;
+#endif
+							//Set in offset mode, driver keeps track of what prev setting was and will reduce GR accordingly
+							setGainReduction(dbDelta,0,0);
+						}
+					}
+#endif
+					//Process any remaining samples in packet if any
+					producerIndex = 0;
+					producerFreeBufPtr = NULL;
+					producerConsumer.ReleaseFilledBuffer();
+
+					if (samplesExtra > 0) {
+						//Start a new producer buffer
 						if ((producerFreeBufPtr = (CPX *)producerConsumer.AcquireFreeBuffer()) == NULL) {
 							qDebug()<<"No free buffers available.  producerIndex = "<<producerIndex <<
 									  "samplesPerPacket = "<<samplesPerPacket;
 							return;
 						}
-						producerIndex = 0;
-						totalPwrInPacket = 0;
+						normalizeIQ(&producerFreeBufPtr[producerIndex], &packetQBuf[samplesNeeded],
+									&packetIBuf[samplesNeeded], samplesExtra, true);
+						producerIndex += samplesExtra;
 					}
-					//I/Q is reversed from Pebble norm, correct here so user sees normal order
-					normalizeIQ(&producerFreeBufPtr[producerIndex], packetQBuf[i], packetIBuf[i]);
-					//I^2 + Q^2
-					totalPwrInPacket += producerFreeBufPtr[producerIndex].sqrMag();
-					producerIndex++;
+				}
 
-					if (producerIndex >= framesPerBuffer) {
-
-						double avgPwrInPacket = 0;
-						//AGC Logic
-						if (agcEnabled && !pendingGainReduction) {
-							avgPwrInPacket = totalPwrInPacket / framesPerBuffer;
-							if (avgPwrInPacket < agcPwrSetpointLow || avgPwrInPacket > agcPwrSetpointHigh) {
-								//Adjust gain reduction to get measured power into setpoint range
-								int newGainReduction = DB::powerRatioToDb(agcPwrSetpoint, avgPwrInPacket);
-								qDebug()<<"AGC low: "<<agcPwrSetpointLow<<
-										  "AGC high: "<<agcPwrSetpointHigh<<
-										  "AGC Avg: "<<avgPwrInPacket<<
-										  "AGC GR: "<<newGainReduction;
-								//Set in offset mode, driver keeps track of what prev setting was and will reduce GR accordingly
-								setGainReduction(newGainReduction,0,0);
-							}
-
-						}
-						//Process any remaining samples in packet if any
-						producerIndex = 0;
-						totalPwrInPacket = 0;
-						producerFreeBufPtr = NULL;
-						producerConsumer.ReleaseFilledBuffer();
-					}
-				} //for(;i<samplesPerPacket;)
 			} //while(running)
 			return;
 
