@@ -205,6 +205,7 @@ void SDRPlayDevice::ReadSettings()
 	highFrequency = 2000000000;
 	deviceFrequency = lastFreq = 10000000;
 	deviceSampleRate = 2000000;
+	normalizeIQGain = DB::dbToAmplitude(7.0);
 
 	DeviceInterfaceBase::ReadSettings();
 	dcCorrectionMode = qSettings->value("dcCorrectionMode",0).toInt(); //0 = off
