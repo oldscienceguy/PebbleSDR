@@ -35,33 +35,41 @@ void WindowFunction::regenerate(WindowFunction::WINDOWTYPE _type)
 	switch (_type)
 	{
 		case RECTANGULAR: // RECTANGULAR_WINDOW
+			coherentGain = 1.0;
 			for (i = 0; i < numSamples; i++) {
 				window[i] = 1.0;
 				windowCpx[i] = 1.0;
 			}
 			break;
 		case HANNING:	// HANNING_WINDOW
+			coherentGain = 0.50;
 			for (i = 0, j = numSamples - 1, angle = 0.0; i <= midn; i++, j--, angle += freq) {
 				window[j] = (window[i] = 0.5 - 0.5 * cos(angle));
 				windowCpx[i] = window[i];
 				windowCpx[j] = window[j];
 			}
 			break;
+		//http://www.recordingblogs.com/sa/tabid/88/Default.aspx?topic=Welch+window
 		case WELCH: // WELCH_WINDOW
+			coherentGain = 0.67;
 			for (i = 0, j = numSamples - 1; i <= midn; i++, j--) {
 				window[j] = (window[i] = 1.0 - (float)sqrt((float)((i - midm1) / midp1)));
 				windowCpx[i] = window[i];
 				windowCpx[j] = window[j];
 			}
 			break;
+		//http://www.recordingblogs.com/sa/tabid/88/Default.aspx?topic=Parzen+window
 		case PARZEN: // PARZEN_WINDOW
+			coherentGain = 0.69;
 			for (i = 0, j = numSamples - 1; i <= midn; i++, j--) {
 				window[j] = (window[i] = 1.0 - ((float)fabs((float)(i - midm1) / midp1)));
 				windowCpx[i] = window[i];
 				windowCpx[j] = window[j];
 			}
 			break;
+		//http://www.recordingblogs.com/sa/tabid/88/Default.aspx?topic=Coherent+gain
 		case BARTLETT: // BARTLETT_WINDOW
+			coherentGain = 0.50;
 			for (i = 0, j = numSamples - 1, angle = 0.0; i <= midn; i++, j--, angle += rate) {
 				window[j] = (window[i] = angle);
 				windowCpx[i] = window[i];
@@ -72,8 +80,9 @@ void WindowFunction::regenerate(WindowFunction::WINDOWTYPE _type)
 		//Lynn forumula 5.22 shows 0.54 + 0.46, online reference show 0.54 - 0.46
 		//Error in Lynn forumula, see Widipedia reference for all window functions
 		case HAMMING: // HAMMING_WINDOW
+			coherentGain = 0.54;
 			for (i = 0, j = numSamples - 1, angle = 0.0; i <= midn; i++, j--, angle += freq) {
-				window[j] = (window[i] = 0.54F - 0.46 * cos(angle));
+				window[j] = (window[i] = coherentGain - 0.46 * cos(angle));
 				windowCpx[i] = window[i];
 				windowCpx[j] = window[j];
 			}
@@ -81,12 +90,14 @@ void WindowFunction::regenerate(WindowFunction::WINDOWTYPE _type)
 		//Window function Blackman
 		//RL: Used this algorithm effectively with DSPGUIDE code
 		case BLACKMAN:
+			coherentGain = 0.42;
 			for (i = 0; i<numSamples; i++) {
-				window[i] = 0.42 - 0.5 * cos((TWOPI * i) / midm1) + 0.08 * cos((FOURPI * i) / midm1);
+				window[i] = coherentGain - 0.5 * cos((TWOPI * i) / midm1) + 0.08 * cos((FOURPI * i) / midm1);
 				windowCpx[i] = window[i];
 			}
 			break;
 		case BLACKMAN2:	// BLACKMAN2_WINDOW
+			coherentGain = 0.42;//???
 			for (i = 0, j = numSamples - 1, angle = 0.0; i <= midn; i++, j--, angle += freq) {
 				cx = cos(angle);
 				window[j] = (window[i] = (.34401 + (cx * (-.49755 + (cx * .15844)))));
@@ -95,6 +106,7 @@ void WindowFunction::regenerate(WindowFunction::WINDOWTYPE _type)
 			}
 			break;
 		case BLACKMAN3: // BLACKMAN3_WINDOW
+			coherentGain = 0.42;//???
 			for (i = 0, j = numSamples - 1, angle = 0.0; i <= midn; i++, j--, angle += freq) {
 				cx = cos(angle);
 				window[j] = (window[i] = (.21747 + (cx * (-.45325 + (cx * (.28256 - (cx * .04672)))))));
@@ -103,6 +115,7 @@ void WindowFunction::regenerate(WindowFunction::WINDOWTYPE _type)
 			}
 			break;
 		case BLACKMAN4: // BLACKMAN4_WINDOW
+			coherentGain = 0.42;//???
 			for (i = 0, j = numSamples - 1, angle = 0.0; i <= midn; i++, j--, angle += freq)
 			{
 				cx = cos(angle);
@@ -117,6 +130,7 @@ void WindowFunction::regenerate(WindowFunction::WINDOWTYPE _type)
 			}
 			break;
 		case EXPONENTIAL: // EXPONENTIAL_WINDOW
+			coherentGain = 1.0; //???
 			for (i = 0, j = numSamples - 1; i <= midn; i++, j--) {
 				window[j] = (window[i] = expsum - 1.0);
 				windowCpx[i] = window[i];
@@ -125,6 +139,7 @@ void WindowFunction::regenerate(WindowFunction::WINDOWTYPE _type)
 			}
 			break;
 		case RIEMANN: // RIEMANN_WINDOW
+			coherentGain = 1.0; //???
 			sr1 = two_pi / numSamples;
 			for (i = 0, j = numSamples - 1; i <= midn; i++, j--) {
 				if (i == midn) window[j] = (window[i] = 1.0);
@@ -138,6 +153,7 @@ void WindowFunction::regenerate(WindowFunction::WINDOWTYPE _type)
 			}
 			break;
 		case BLACKMANHARRIS: // BLACKMANHARRIS_WINDOW
+			coherentGain = 0.36;
 			{
 				float
 						a0 = 0.35875F,

@@ -18,6 +18,11 @@ public:
 	void regenerate(WINDOWTYPE _type);
 
 	double *window;
+
+	//Each window type has a different gain factor that has to be used in db normalization
+	//aka coherent power gain
+	double coherentGain;
+
 	CPX *windowCpx; //CPX version, same coefficients in re and im
 	int numSamples;
 	WINDOWTYPE windowType;
