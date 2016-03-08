@@ -88,7 +88,7 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback,
 		//Use 10mhz signal generator with .0005vpp (Red Pitaya) should result in approx -60db signal
 		//Test with normalizeGain = 1 to get baseline, then calculate db gain/loss adjustment
 		//Compare with other programs to verify
-		normalizeIQGain = DB::dbToAmplitude(-9.5);
+		normalizeIQGain = DB::dBToAmplitude(-9.5);
 
 	} else if(deviceNumber == SDR_IP) {
 		DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
@@ -103,12 +103,12 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback,
 
 		//Consumer only has to run once every 2048 CPX samples
 		producerConsumer.SetConsumerInterval(deviceSampleRate,framesPerBuffer);
-		normalizeIQGain = DB::dbToAmplitude(7);
+		normalizeIQGain = DB::dBToAmplitude(7);
 
 	} else if (deviceNumber == AFEDRI_USB) {
 		DeviceInterfaceBase::Initialize(_callback, NULL, NULL, _framesPerBuffer); //Handle audio input
 		afedri->Initialize(); //HID
-		normalizeIQGain = DB::dbToAmplitude(-23);
+		normalizeIQGain = DB::dBToAmplitude(-23);
 	}
 
 	readBufferIndex = 0;

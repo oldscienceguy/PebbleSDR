@@ -12,25 +12,20 @@ public:
     DB();
 
     //Useful conversion functions
-	static double cpxToWatts(CPX cx); //Returns power (watts) for sample c
+	static double amplitude(CPX cx);
+	static double power(CPX cx);
+	static double fftPower(CPX cx, quint32 fftBinWidth);
+
+	static double dBToAmplitude(double db);
+	static double amplitudeTodB(double amplitude);
 
     //Calculates the total power of all samples in buffer
 	static double totalPower(CPX *in, int bsize);
 
-	static double dBm_2_Watts(double dBm);
-	static double watts_2_dBm(double watts);
-	static double dBm_2_RMSVolts(double dBm, double impedance);
-	static double rmsVolts_2_dBm(double volts, double impedance);
-
     //db conversion functions from Steven Smith book
-	static double powerToDbAdjusted(double power);
-	static double dbToPowerAdjusted(double db);
 	static double powerRatioToDb(double measuredPower, double comparedPower);
-	static double dbToPower(double db);
-	static double powerToDb(double power);
-
-	static double amplitudeToDb(double a);
-	static double dbToAmplitude(double db);
+	static double dBToPower(double dB);
+	static double powerTodB(double power);
 
 	static int dbToSUnit(double db);
 
@@ -38,10 +33,13 @@ public:
 	static double minDb;
 	static double maxDb;
 
-	//Adjustments to normalize db with fft
-	static double pwrOffset;
-	static double dbOffset;
-
+	//For reference
+	static double uv(CPX cx);
+	static double mw(CPX cx);
+	static double uvTodBuv(double uv);
+	static double dBuvTouv(double dBuv);
+	static double mwTodBm(double mw);
+	static double dBmTomw(double dBm);
 };
 
 #endif // DB_H

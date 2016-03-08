@@ -44,7 +44,7 @@ void ExampleSDRDevice::ReadSettings()
 {
 	// +/- db gain required to normalize to fixed level input
 	// Default is 0db gain, or a factor of 1.0
-	normalizeIQGain = DB::dbToAmplitude(0);
+	normalizeIQGain = DB::dBToAmplitude(0);
 
 	//Set defaults before calling DeviceInterfaceBase
 	DeviceInterfaceBase::ReadSettings();
