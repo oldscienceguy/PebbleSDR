@@ -5,7 +5,8 @@
 #include <QLibrary>
 #include "../d2xx/bin/ftd2xx.h"
 #include "../d2xx/libusb/libusb/libusb.h"
-
+//For future use with iokit implementation to fix ftdi driver conflicts
+//#include <IOKit/usb/IOUSBLib.h>
 /*
   FTDI Devices
     - Elektor SDR
