@@ -22,6 +22,8 @@ public:
 	//Each window type has a different gain factor that has to be used in db normalization
 	//aka coherent power gain
 	double coherentGain;
+	//NOTE enbw figures may not be accurate, tables differ and don't include all window types.  Review
+	double equivalentNoiseBW; //Units are bins, rect windows has enbw of 1.0 bin
 
 	CPX *windowCpx; //CPX version, same coefficients in re and im
 	int numSamples;
