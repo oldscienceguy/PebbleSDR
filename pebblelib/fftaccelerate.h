@@ -28,6 +28,7 @@ private:
 	//Accelerate fw doesn't work with interleaved CPX (re,im,re,im,...).
 	//Instead is uses Split Complex which is an array of reals and an array of imag
 	DSPDoubleSplitComplex splitComplex;
+	DSPDoubleSplitComplex splitComplexTemp; //For faster FFT
 };
 
 #endif // FFTACCELERATE_H

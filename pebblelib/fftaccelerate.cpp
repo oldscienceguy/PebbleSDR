@@ -13,6 +13,10 @@ FFTAccelerate::~FFTAccelerate()
 		delete splitComplex.realp;
 	if (splitComplex.imagp != NULL)
 		delete splitComplex.imagp;
+	if (splitComplexTemp.realp != NULL)
+		delete splitComplexTemp.realp;
+	if (splitComplexTemp.imagp != NULL)
+		delete splitComplexTemp.imagp;
 }
 
 void FFTAccelerate::FFTParams(quint32 _size, double _dBCompensation, double _sampleRate, int _samplesPerBuffer,
@@ -29,6 +33,10 @@ void FFTAccelerate::FFTParams(quint32 _size, double _dBCompensation, double _sam
 	//Set up splitComplex buffers
 	splitComplex.realp = new double[_size];
 	splitComplex.imagp = new double[_size];
+	quint32 tempMinSize = 16384;
+	quint32 tempSize = qMax(4*_size, tempMinSize);
+	splitComplexTemp.realp = new double[tempSize]; //min 16384
+	splitComplexTemp.imagp = new double[tempSize];
 }
 
 void FFTAccelerate::FFTForward(CPX *in, CPX *out, int numSamples)
@@ -60,8 +68,12 @@ void FFTAccelerate::FFTForward(CPX *in, CPX *out, int numSamples)
 	vDSP_ctozD((DSPDoubleComplex *)timeDomain, ic, &splitComplex, iz, fftSize);
 
 	vDSP_Stride stride = 1; //1=Process every element
-	//In place !D complex
-	vDSP_fft_zipD(fftSetupD,&splitComplex, stride, fftSizeLog2n, kFFTDirection_Forward);
+	//OSX 10 and later
+	//In place 1D complex
+	//Todo: Try vDSP_DFT_Execute with vDSP_DFT_zop_CreateSetup for faster performance
+	//vDSP_fft_zipD(fftSetupD, &splitComplex, stride, fftSizeLog2n, kFFTDirection_Forward);
+	//Uses temporary buffers for faster performance
+	vDSP_fft_ziptD(fftSetupD, &splitComplex, stride, &splitComplexTemp, fftSizeLog2n, kFFTDirection_Forward);
 
 	//Maintain freqDomain with results by copying from splitComplex back to our CPX*
 	vDSP_ztocD(&splitComplex,iz,(DSPDoubleComplex *)freqDomain,ic,fftSize);
