@@ -103,8 +103,10 @@ void FFTAccelerate::FFTInverse(CPX *in, CPX *out, int numSamples)
 	vDSP_ctozD((DSPDoubleComplex *)freqDomain, ic, &splitComplex, iz, fftSize);
 
 	vDSP_Stride stride = 1; //1=Process every element
-	//In place !D complex
-	vDSP_fft_zipD(fftSetupD,(DSPDoubleSplitComplex *) &splitComplex, stride, fftSizeLog2n, kFFTDirection_Inverse);
+	//In place 1D complex
+	//vDSP_fft_zipD(fftSetupD, &splitComplex, stride, fftSizeLog2n, kFFTDirection_Inverse);
+	//Uses temporary buffers for faster performance
+	vDSP_fft_ziptD(fftSetupD, &splitComplex, stride, &splitComplexTemp, fftSizeLog2n, kFFTDirection_Inverse);
 
 	//Maintain timeDomain with results by copying from splitComplex back to our CPX*
 	vDSP_ztocD(&splitComplex,iz,(DSPDoubleComplex *)timeDomain,ic,fftSize);
