@@ -2,10 +2,12 @@
 #include "gpl.h"
 #include "db.h"
 #include <QDebug>
+#include <float.h> //Floating point limits
 
 
 #if 0
 	Naming confusion.  There are different usages of dB that get used interchangeably
+	http://www.ap.com/kb/show/170
 	See http://www.microvolt.com/table.html
 	Lyons Appendix E p885
 	dB is a relative power relationship between two signals (S1w / S2w)
@@ -81,7 +83,7 @@
 	linear, because you're just doing a greater-than comparison. The only critical component is that you
 	start with I^2+Q^2 (as opposed to, say, I+Q, which would be just plain wrong).
 
-	Note on bandwidth
+	(Accelerate FFT handles this adjustment internally)
 	It may also be relevant to note that if you filter a signal, you are by definition removing some of
 	the signal power, so the measurement will be smaller.
 
@@ -105,115 +107,120 @@ DB::DB()
 {
 }
 
-//Move to inline where possible
-//See notes above for detailed explanation
-double DB::amplitude(CPX cx)
+void DB::test()
 {
-	return sqrt(cx.re*cx.re + cx.im*cx.im);
+	//Test
+	CPX cx(0.3,0.4);
+	double pwr = DB::power(cx);
+	double db = DB::powerTodB(pwr);
+	Q_ASSERT(DB::dBToPower(db) == pwr);
 }
 
-//Power same as cpx.mag(), use this for clarity
-double DB::power(CPX cx)
+//Prints useful stats about a CPX buffer
+//Special handling if the CPX buffer is an FFT result
+void DB::analyzeCPX(CPX* in, quint32 numSamples, const char* label, bool isFftOutput, double windowGain, double maxBinPower)
 {
-	return cx.re*cx.re + cx.im+cx.im;
-}
+	double maxRe = -DBL_MAX;
+	quint32 maxReIndex = 0;
 
-//Returns power adjusted for loss due to filters in FFT process (see above)
-//Use this before calculating db from fft to get dB power spectral density
-//fftBinWidth = sampleRate / fftSize
-double DB::fftPower(CPX cx, quint32 fftBinWidth)
-{
-	return DB::power(cx) / fftBinWidth;
-}
+	double minRe = DBL_MAX;
+	quint32 minReIndex = 0;
 
-//Returns the total power in the sample buffer, using Lynn formula
-double DB::totalPower(CPX *in, int bsize)
-{
-    float tmp = 0.0;
-    //sum(re^2 + im^2)
-    for (int i = 0; i < bsize; i++) {
-        //Total power of this sample pair
-		tmp += power(in[i]);
-    }
-    return tmp;
-}
+	double maxIm = -DBL_MAX;
+	quint32 maxImIndex = 0;
 
-//Std equation for decibles is A(db) = 10 * log10(P2/P1) where P1 is measured power and P2 is compared power
-double DB::powerRatioToDb(double measuredPower, double comparedPower)
-{
-	double db = 10.0 * log10(comparedPower / measuredPower);
-	return qBound(DB::minDb, db, DB::maxDb);
-}
+	double minIm = DBL_MAX;
+	quint32 minImIndex = 0;
 
-// Positive db returns power = 1.0 and up
-// Zero db return power = 1.0 (1:1 ratio)
-// Negative db returns power = 0.0 to 1.0
-double DB::dBToPower(double dB)
-{
-	//Note pow(10, db/10.0) is the same as antilog(db/10.0) which is shown in some texts.
-	return pow(10, dB/10.0);
-}
+	double cxPower = 0;
 
-// d = powerToDb(x) followed by dbToPower(d) should return same x
-// Returns dBm, ratio of watts to 1 milliwatt
-double DB::powerTodB(double power)
-{
-	double db = 10 * log10(power);
-	return qBound(DB::minDb, db, DB::maxDb);
-}
+	double maxPower = 0;
+	quint32 maxPowerIndex = 0;
 
-//Steven Smith pg 264
-double DB::dBToAmplitude(double db)
-{
-	return pow(10, db/20.0);
-}
+	double minPower = DBL_MAX;
+	quint32 minPowerIndex = 0;
 
-//Steven Smith pg 264
-//Use powerTodB where possible to avoid extra sqrt() needed to calculate amplitude
-double DB::amplitudeTodB(double amplitude)
-{
-	double db = 20 * log10(amplitude);
-	return qBound(DB::minDb, db, DB::maxDb);
-}
+	double totalPower = 0;
+	double meanPower = 0;
+	double medianPower; //Future use for noise floor
 
-/*
-   Convert db to linear S-Unit approx for use in S-Meter
-    One S unit = 6db
-    s0 = -127, s1=-121, s2=-115, ... s9 = -73db (-93dbVHF)
-	+10 = -63db, +20 = -53, ... +60 = -13db
-*/
-int DB::dbToSUnit(double db)
-{
-	double aboveSZero = fabs(-127 - db);
-	return aboveSZero / 6.0;
-}
+	double cxAmplitude = 0;
+	double maxAmplitude = 0;
+	double minAmplitude = DBL_MAX;
+	double totalAmplitude = 0;
+	double meanAmplitude = 0;
 
-//Here for reference
-//microvolts == amplitude
-double DB::uv(CPX cx)
-{
-	return sqrt(cx.re*cx.re + cx.im*cx.im);
-}
-double DB::mw(CPX cx)
-{
-	return cx.re*cx.re + cx.im*cx.im;
-}
-double DB::uvTodBuv(double uv)
-{
-	return 20 * log10 (uv);
-}
-double DB::dBuvTouv(double dBuv)
-{
-	return pow(10, dBuv / 20);
-}
-//milliwatts == power
-double DB::mwTodBm (double mw)
-{
-	return 10 * log10(mw);
-}
-double DB::dBmTomw (double dBm)
-{
-	return pow(10, dBm/10);
+	Q_UNUSED(medianPower);
+
+	for( quint32 i = 0; i < numSamples; i++){
+		if (in[i].re > maxRe) {
+			maxRe = in[i].re;
+			maxReIndex = i;
+		}
+		if (in[i].re < minRe) {
+			minRe = in[i].re;
+			minReIndex = i;
+		}
+		if (in[i].im > maxIm) {
+			maxIm = in[i].im;
+			maxImIndex = i;
+		}
+		if (in[i].im < minIm) {
+			minIm = in[i].im;
+			minImIndex = i;
+		}
+
+
+		if (isFftOutput) {
+			//Accelerate fft returns amplitude in re/im
+			//Compensate for window function loss etc if used to analyze fft results
+			cxAmplitude = DB::amplitude(in[i]) / windowGain;
+			//Normalize to 0-1
+			cxAmplitude /= maxBinPower;
+			cxPower = DB::amplitudeToPower(cxAmplitude);
+		} else {
+			cxPower = DB::power(in[i]);
+			cxAmplitude = DB::amplitude(in[i]);
+		}
+
+		if (cxPower > maxPower) {
+			maxPower = cxPower;
+			maxPowerIndex = i;
+		}
+		if (cxPower < minPower) {
+			minPower = cxPower;
+			minPowerIndex = i;
+		}
+		totalPower += cxPower;
+
+		if (cxAmplitude > maxAmplitude) {
+			maxAmplitude = cxAmplitude;
+		}
+		if (cxAmplitude < minAmplitude) {
+			minAmplitude = cxAmplitude;
+		}
+		totalAmplitude += cxAmplitude;
+	}
+
+	meanPower = totalPower / numSamples;
+	meanAmplitude = totalAmplitude / numSamples;
+	if (isFftOutput) {
+		qDebug()<<label<<" numSamples="<<numSamples<<" windowGain="<<windowGain<<" maxBinPower="<<maxBinPower;
+	} else {
+		qDebug()<<label<<" numSamples="<<numSamples;
+	}
+	qDebug()<<" Re: max="<<maxRe<<" @"<<maxReIndex<<" min="<<minRe<<" @"<<minReIndex;
+	qDebug()<<" Im: max="<<maxIm<<" @"<<maxImIndex<<" min="<<minIm<<" @"<<minImIndex;
+	qDebug()<<" Power: max="<<maxPower<<" @"<<maxPowerIndex<<" min="<<minPower<<" @"<<minPowerIndex
+		   <<" total="<<totalPower<<" mean="<<meanPower;
+	qDebug()<<" Power db: max="<<DB::powerTodB(maxPower)<<"db min="<<DB::powerTodB(minPower)<<"db total="
+		<<DB::powerTodB(totalPower)<<"db mean="<<DB::powerTodB(meanPower)<<"db";
+	qDebug()<<" Amplitude: max="<<maxAmplitude<<" min="<<minAmplitude<<" total="
+		   <<totalAmplitude<<" mean="<<meanAmplitude;
+	qDebug()<<" Amplitude db: max="<<DB::powerTodB(maxAmplitude)<<"db min="<<DB::powerTodB(minAmplitude)<<"db total="
+		<<DB::powerTodB(totalAmplitude)<<"db mean="<<DB::powerTodB(meanAmplitude)<<"db";
+	qDebug()<<"-";
+
 }
 
 
