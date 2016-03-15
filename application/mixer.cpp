@@ -8,6 +8,8 @@ Mixer::Mixer(quint32 _sampleRate, quint32 _bufferSize):ProcessStep(_sampleRate,_
 	//nco = new NCO(_sampleRate,_bufferSize);
 	SetFrequency(0);
 	gain = 1; //Testing shows no loss
+	oscTime = 0.0;
+
 }
 
 Mixer::~Mixer(void)
@@ -43,14 +45,24 @@ CPX *Mixer::ProcessBlock(CPX *in)
 	CPX osc;
 	double oscGn = 1;
 	for (int i = 0; i < numSamples; i++) {
+#if 1
 		//nco->nextSample(osc);
 		//This is executed at the highest sample rate and every usec counts
 		//Pulled code from NCO for performance gain
 		osc.re = lastOsc.re * oscCos - lastOsc.im * oscSin;
 		osc.im = lastOsc.im * oscCos + lastOsc.re * oscSin;
+		//oscGn is used to account for variations in the amplitude output as time increases
+		//Since oscillator variables are not bounded as they are in alternate implementation (fmod(...))
 		oscGn = 1.95 - (lastOsc.re * lastOsc.re + lastOsc.im * lastOsc.im);
 		lastOsc.re = oscGn * osc.re;
 		lastOsc.im = oscGn * osc.im;
+#else
+		osc.re = cos(oscTime);
+		osc.im = sin(oscTime);
+		oscTime += oscInc;
+		oscTime = fmod(oscTime, TWOPI);	//Keep bounded
+
+#endif
 
 		out[i].convolution(osc, in[i]); //Inline code
 	}

@@ -26,4 +26,6 @@ private:
 	double oscSin;
 	CPX lastOsc;
 
+	double oscTime; //For alternate implementation
+
 };
