@@ -912,10 +912,10 @@ void DeviceInterfaceBase::AudioProducer(float *samples, quint16 numSamples)
 	//NormalizeIQGain is determined by the audio library we're using, not the SDR
 	//Set to -60db at 10mhz .0005v signal generator input
 #ifdef USE_QT_AUDIO
-	normalizeIQGain = DB::dbToAmplitude(-18.00);
+	normalizeIQGain = DB::dBToAmplitude(-18.00);
 #endif
 #ifdef USE_PORT_AUDIO
-	normalizeIQGain = DB::dbToAmplitude(-4.00);
+	normalizeIQGain = DB::dBToAmplitude(-4.00);
 #endif
 	if (numSamples / 2 != framesPerBuffer) {
 		qDebug()<<"Invalid number of audio samples";
