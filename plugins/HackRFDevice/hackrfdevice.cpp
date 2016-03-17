@@ -67,7 +67,7 @@ void HackRFDevice::ReadSettings()
 {
 	//Set defaults before calling DeviceInterfaceBase
 	//Set for LNA 24db and VGA 6db
-	normalizeIQGain = DB::dbToAmplitude(15); //qint8 format
+	normalizeIQGain = DB::dBToAmplitude(15); //qint8 format
 	highFrequency = 6000000000;
 	//lowFrequency = 1000000;
 	//1mHz is spec, but rest of AM band seems ok
