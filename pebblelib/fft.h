@@ -18,12 +18,11 @@ public:
     virtual ~FFT();
 	static FFT* Factory(QString _label); //Returns instance based on USE_FFT, USE_FFTCUTE, etc
 
-    const bool useIntegerFFT; //Used as we switch cuteSDR code to +/-1
-
 	const quint32 maxFFTSize = 65535;
-	const quint32 minFFTSize = 512;
-    double ampMax;	//maximum sin wave Pk for 16 bit input data
-    double overLimit;	//limit for detecting over ranging inputs
+	const quint32 minFFTSize = 2048;
+	//Maximum value of input samples -1 to +1
+	const double ampMax = 1.0;
+	const double overLimit = 0.9;	//limit for detecting over ranging inputs
 
     //Keep separate from constructor so we can change on the fly eventually
     //cutesdr usage
@@ -49,7 +48,6 @@ public:
     //WIP Calculate m_pFFTPwrAveBuf for any FFT.  Heavily embedded in cuteSDR
     //Compare with cuteSDR to see if we got it right
 	void CalcPowerAverages(CPX* in, double *out, int numSamples);
-	void SetMovingAvgLimit(quint32 ave);
 
 	bool MapFFTToScreen(double *inBuf, qint32 yPixels, qint32 xPixels,
 									double maxdB, double mindB,
@@ -60,7 +58,7 @@ public:
     CPX *getFreqDomain() {return freqDomain;}
     CPX *getTimeDomain() {return timeDomain;}
 	//Fractional bin width in hz
-	double getBinWidth() {return sampleRate / fftSize;}
+	double getBinWidth() {return binWidth;}
 
 protected:
     //Utility
@@ -72,25 +70,25 @@ protected:
 
     qint32 fftSize;
     double sampleRate;
+	double binWidth;
 
     bool fftInputOverload;
 
     //For calculating power averages
-	quint32 movingAvgLimit; //How many time to do moving avg before exponential avg
-    quint32 bufferCnt; //# buffers we've processed
-    quint16 averageCnt;
-    double* FFTPwrAvgBuf;
-    double* FFTAvgBuf;
-    double* FFTPwrSumBuf;
-    double dBCompensation;
+	bool isAveraged;
 
     //This should replace m_mutex in fftcute
     QMutex fftMutex; //Used to sync threads calling FFT and display calling Screen mapping
 
-	void unfoldInOrder(CPX *inBuf, CPX *outBuf, bool bitReversed = true);
+	void unfoldInOrder(CPX *inBuf, CPX *outBuf);
 	WindowFunction *windowFunction;
 	WindowFunction::WINDOWTYPE windowType;
 	int samplesPerBuffer; //Not the same as fftSize, which may be larger than sample buffers
+	double maxBinPower; //Maximum value we should see in any bin, maxAmp * samplesPerBuffer
+
+	double *fftPower; //Raw power calc
+	double *fftAmplitude;
+	double *fftPhase; //Calculate phase for future plotting
 
 };
 

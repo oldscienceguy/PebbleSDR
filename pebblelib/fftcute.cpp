@@ -26,11 +26,6 @@ CFft::CFft() :FFT()
 	m_pWorkArea = NULL;
 	m_pSinCosTbl = NULL;
 	m_pWindowTbl = NULL;
-
-	//1/20/16: Not sure why we initialize this in constructor, should be initialized with actual FFT size
-	//by receiver or other classes
-	//FFTParams( 2048, false ,0.0, 1000);
-    SetMovingAvgLimit( 1);
 }
 
 CFft::~CFft()
@@ -256,7 +251,7 @@ void CFft::FFTSpectrum(CPX *in, double *out, int numSamples)
 
     //We to unfold here because CalcPowerAverages expects things in most neg to most pos order
 	//See fftooura for spectrum folding model, cuteSDR uses same
-	unfoldInOrder(workingBuf, freqDomain, true);
+	unfoldInOrder(workingBuf, freqDomain);
 
 	CalcPowerAverages(freqDomain, out, numSamples);
 }

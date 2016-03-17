@@ -122,7 +122,7 @@ void FFTOoura::FFTSpectrum(CPX *in, double *out, int numSamples)
 
 	FFTForward(in,workingBuf,numSamples); //No need to copy to out, leave in freqBuf
 
-	unfoldInOrder(workingBuf, freqDomain, true);
+	unfoldInOrder(workingBuf, freqDomain);
 
 	CalcPowerAverages(freqDomain, out, numSamples);
 }

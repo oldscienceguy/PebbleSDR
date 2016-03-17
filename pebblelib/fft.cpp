@@ -10,18 +10,8 @@
 #include "fftooura.h"
 #include "fftaccelerate.h"
 
-FFT::FFT() :
-    useIntegerFFT(false)
+FFT::FFT()
 {
-    if (useIntegerFFT) {
-        ampMax = 32767.0;	//maximum sin wave Pk for 16 bit input data
-        overLimit = 32000.0;	//limit for detecting over ranging inputs
-    } else {
-        ampMax = 1.0; //+/- 1 format
-        overLimit = 0.9;
-    }
-
-
     timeDomain = NULL;
     freqDomain = NULL;
     workingBuf = NULL;
@@ -30,16 +20,9 @@ FFT::FFT() :
 
     fftParamsSet = false; //Only set to true in FFT::FFTParams(...)
 
-	dBCompensation = DB::maxDb;
-
-    //These will be init on first use in CalcAverages
-    bufferCnt = 0;
-    averageCnt = 0;
-    FFTPwrAvgBuf = NULL;
-    FFTAvgBuf = NULL;
-    FFTPwrSumBuf = NULL;
-    movingAvgLimit = 2;
-
+	fftPower = NULL;
+	fftAmplitude = NULL;
+	fftPhase = NULL;
 
 }
 FFT::~FFT()
@@ -48,42 +31,43 @@ FFT::~FFT()
 	if (freqDomain) free(freqDomain);
 	if (workingBuf) free(workingBuf);
 	if (overlap) free(overlap);
-    if (FFTPwrAvgBuf != NULL)
-        delete FFTPwrAvgBuf;
-    if (FFTAvgBuf != NULL)
-        delete FFTAvgBuf;
-    if (FFTPwrSumBuf != NULL)
-        delete FFTPwrSumBuf;
 	if (windowFunction != NULL)
 		delete windowFunction;
+	if (fftPower != NULL)
+		delete[] fftPower;
+	if (fftAmplitude != NULL)
+		delete[] fftAmplitude;
+	if (fftPhase != NULL)
+		delete[] fftPhase;
 }
 
 FFT* FFT::Factory(QString _label)
 {
-#ifdef USE_FFTW
+	FFT *fft = NULL;
+#if defined USE_FFTW
 	qDebug()<<"Using FFTW for "<<_label;
-	return new FFTfftw();
-#endif
-#ifdef USE_FFTCUTE
+	fft = new FFTfftw();
+#elif defined USE_FFTCUTE
 	qDebug()<<"Using FFT CUTE for "<<_label;
-	return new CFft();
-#endif
-#ifdef USE_FFTOOURA
+	fft = new CFft();
+#elif defined USE_FFTOOURA
 	qDebug()<<"Using FFT Ooura for "<<_label;
-	return new FFTOoura();
-#endif
-#ifdef USE_FFTACCELERATE
+	fft = new FFTOoura();
+#elif defined USE_FFTACCELERATE
 	qDebug()<<"Using FFT Accelerate for "<<_label;
-	return new FFTAccelerate();
+	fft = new FFTAccelerate();
+#else
+	qDebug()<<"Error in FFT configuration";
 #endif
 
-	qDebug()<<"Error in FFT configuration";
-	return NULL;
+	return fft;
 }
 
 void FFT::FFTParams(quint32 _fftSize, double _dBCompensation, double _sampleRate, int _samplesPerBuffer,
 					WindowFunction::WINDOWTYPE _windowType)
 {
+	Q_UNUSED(_dBCompensation); //Remove?, not used anywhere.  Maybe use for db to dbm calibration?
+
 	if (_fftSize == 0)
         return; //Error
 	else if( _fftSize < minFFTSize )
@@ -93,14 +77,13 @@ void FFT::FFTParams(quint32 _fftSize, double _dBCompensation, double _sampleRate
     else
 		fftSize = _fftSize;
 
+	binWidth = sampleRate / fftSize;
+
 	samplesPerBuffer = _samplesPerBuffer;
+	maxBinPower = ampMax * samplesPerBuffer;
+
 	windowType = _windowType;
 
-	//Reset to actual fft size
-	DB::dbOffset = DB::maxDb - 20 * log10(fftSize * 1.0 / 2.0);
-	DB::pwrOffset = pow(10, (DB::minDb - DB::dbOffset) / 10.0);
-
-    dBCompensation = _dBCompensation;
     sampleRate = _sampleRate;
 
 	timeDomain = CPX::memalign(fftSize);
@@ -109,49 +92,33 @@ void FFT::FFTParams(quint32 _fftSize, double _dBCompensation, double _sampleRate
 	overlap = CPX::memalign(fftSize);
 	CPX::clearCPX(overlap, fftSize);
 
-    if (FFTPwrAvgBuf != NULL)
-        delete FFTPwrAvgBuf;
-    FFTPwrAvgBuf = new double[fftSize];
-    for (int i=0; i<fftSize; i++)
-        FFTPwrAvgBuf[i] = 0.0;
-
-    if (FFTAvgBuf != NULL)
-        delete FFTAvgBuf;
-    FFTAvgBuf = new double[fftSize];
-    for (int i=0; i<fftSize; i++)
-        FFTAvgBuf[i] = 0.0;
-
-    if (FFTPwrSumBuf != NULL)
-        delete FFTPwrSumBuf;
-    FFTPwrSumBuf = new double[fftSize];
-    for (int i=0; i<fftSize; i++)
-        FFTPwrSumBuf[i] = 0.0;
-
 	if (windowFunction != NULL) {
 		delete windowFunction;
 		windowFunction = NULL;
 	}
+
 	if (_windowType != WindowFunction::NONE) {
 		//Window are sized to expected samples per buffer, which may be smaller than fftSize
 		windowFunction = new WindowFunction(windowType,samplesPerBuffer);
+	} else {
+		//Default to rectangular
+		windowFunction = new WindowFunction(WindowFunction::RECTANGULAR, samplesPerBuffer);
 	}
 
-    fftParamsSet = true;
-}
+	//Todo: Add UI to switch
+	isAveraged = true;
 
-///////////////////////////////////////////////////////////////////
-//FFT initialization and parameter setup function
-///////////////////////////////////////////////////////////////////
-void FFT::SetMovingAvgLimit( quint32 ave)
-{
-    if(movingAvgLimit != ave)
-    {
-        if(ave>0)
-            movingAvgLimit = ave;
-        else
-            movingAvgLimit = 1;
-    }
-    ResetFFT();
+	if (fftPower != NULL)
+		delete[] fftPower;
+	fftPower = new double[fftSize];
+	if (fftAmplitude != NULL)
+		delete[] fftAmplitude;
+	fftAmplitude = new double[fftSize];
+	if (fftPhase != NULL)
+		delete[] fftPhase;
+	fftPhase = new double[fftSize];
+
+    fftParamsSet = true;
 }
 
 //Subclasses should call in case we need to do anything
@@ -170,13 +137,6 @@ void FFT::ResetFFT()
  and the negative frequencies are stored in backwards order in the second half of the output.
  (The frequency -k/n is the same as the frequency (n-k)/n.)
 
- But!
-
- What's not well documented is that the normal output of most FFT's is in bit-reversed order
- output[n] is reversed with output [fftSize -n]
- So we have to handle this as well for -f - 0 - +f spectrum displays
-
-
  (from FFTW doc, alternative to unfolding output by pre-processing input)
  For human viewing of a spectrum, it is often convenient to put the origin in
  frequency space at the center of the output array, rather than in the zero-th
@@ -191,25 +151,35 @@ void FFT::ResetFFT()
 	}
 
 */
-void FFT::unfoldInOrder(CPX *inBuf, CPX *outBuf, bool bitReversed)
+void FFT::unfoldInOrder(CPX *inBuf, CPX *outBuf)
 {
-	CPX tmp;
 	int fftMid = fftSize/2;
-	//Not sure if we reverse before or after unfolding or if it makes a difference
-	if (bitReversed) {
-		for (int i=0, j=fftSize-1; i<fftMid; i++, j--) {
-			tmp = inBuf[i];
-			inBuf[i] = inBuf[j];
-			inBuf[j] = tmp;
-		}
+
+	//In Accelerate, the DC bin has a special purpose, check other implementations.  From gerrybeauregard ...
+	// Bins 0 and N/2 both necessarily have zero phase, so in the packed format
+	// only the real values are output, and these are stuffed into the real/imag components
+	// of the first complex value (even though they are both in fact real values).
+	//bin.re = magnitude at 0
+	//bin.im = magnitude at n/2 (instead of phase at 0)
+	//out[0] = in[0].re / windowFunction->coherentGain;
+	//out[0] /= maxBinPower;
+	//Todo: Not sure if this above is really true, for future research
+#if 0
+	if (inBuf[0].im != 0) {
+		//qDebug()<<inBuf[0].re<<" "<<inBuf[0].im<<" "<<inBuf[fftMid].re<<" "<<inBuf[fftMid].im;
+		inBuf[0].im = 0;
 	}
+#endif
+
 
 #if 1
 	//For fftSize 2048, fftMid=1024
 	// move in[0] to in[1023] to out[1024] to out[2047]
 	// move in[1024] to in[2047] to out[0] to out[1023]
+
 	CPX::copyCPX(&outBuf[fftMid], &inBuf[0], fftMid);
 	CPX::copyCPX(&outBuf[0], &inBuf[fftMid], fftMid);
+
 #else
 	// FFT output index 0 to N/2-1 - frequency output 0 to +Fs/2 Hz  ( 0 Hz DC term, positive frequencies )
 	// This puts 0 to size/2 into size/2 to size-1 position
@@ -235,7 +205,7 @@ void FFT::FreqDomainToMagnitude(CPX * freqBuf, double baseline, double correctio
 
 	unfoldInOrder(freqBuf,workingBuf);
 	for (int i=0; i<fftSize; i++) {
-		fbr[i] = DB::amplitudeToDb(workingBuf[i].mag() + baseline) + correction;
+		fbr[i] = DB::powerTodB(DB::power(workingBuf[i]) + baseline) + correction;
 	}
 }
 
@@ -252,66 +222,151 @@ void FFT::OverlapAdd(CPX *out, int numSamples)
 
 }
 
+/*
+
+ All SDR devices are normalized to produce an output of -1.0 to +1.0, so the max sample value (maxSamp) of
+	x in any sample is 1 and the min value is -1.
+ The largest theoretical CPX is therefore CPX(1,1)
+
+ The max power (maxPower) in any one sample is therefore cx.re^2 + cx.im^2 = 1^2 + 1^2 = 2;
+ The max amplitude (maxAmp) in any one sample is therefore sqrt(maxPower) = 1.414213562
+
+ Assume a pure sine wave input where each sample.re = maxAmp*cos(x) & sample.im = maxAmp*sin(x) and
+	there are no other signals present, just the single sine wave.
+
+ For maxAmp = 1, fullscale, and any value of x (ie any freq)
+	the power in that sample is 1 since since 1*cos(x)^2 + 1*sin(x)^2 is always equal to 1.
+ The amplitude of that sample is also 1 (sqrt(power))
+
+ If we analyze a time domain buffer that contains the pure sine wave (typically generated by TestBench),
+ the total power in the buffer is therefore 1 * numSamples or 2048 for a 2048 frames per buffer configuration
+
+ This is the largest power value we will ever see and equates to 0db (full scale)
+ dB = 10*log10(power) = 10*log10(1) = 0db
+
+
+ According to Parseval's theorem, the energy in the time domain must be equal to the energy in the frequency domain.
+ Since we have a single frequency in this example, all of the power in the input signal should be represented
+ in a single fft bin (freq of our sin wave) with the same power.
+ The rest of the bins should be close to zero.
+
+ The maximum power value for any FFT bin maxBinPower = ampMax * samplesPerBuffer and is our normalizing factor
+ Note that this is based on the number of samples, NOT the number of bins.  We normalize to the input buffer.
+
+ The input signal is pre-processed by a window function which has the effect of reducing the power before being
+ handled by the FFT.  We need to compensate for this.
+ For example, a BlackmanHarris window has a gain factor of 0.36.
+ This means that our FFT power should be scaled up by this amount (power / window gain)
+ So the expected uncompensated power in our 1 bin should be 2048 * 0.36 = 737.28
+ Any variation from this is due to other fft losses such as fftSize and scalloping, which we can calculate or just plug.
+
+ Finally, we take the output of the fft, which represents  amplitude, and convert it using DB::amplitude();
+ One we have the amplitude, we can also get the power using DB::amplitudeToPower()
+
+ Examples with our standard 2048 sample buffer size (fpb). Full scale reduced by 10% (10db) each step
+ Power = 2048, normalized = 2048/2048 = 1, 10*log10(1) = 0dB (our maxdB limit)
+ Power = 204.8, normalized = 204.8/2048 = 0.1, 10*log10(0.1) = -10dB
+ Power = 20.48, normalized = 20.48/2048 = 0.01, 10*log10(0.01) = -20dB
+ ...
+ Power = 2.048e-12, normalized = 2.048e-12/2048 = 1e-12, 10*log10(1e-12) = -120db (our mindB limit)
+
+ Example of a -10db signal generated by testbench and reported by DB::analyzeCPX()
+ The first result is the timedomain, the second is the unprocessed fft output
+ Note powerMax is -10db in the timedomain, and also -10db in the freq domain
+	Spectrum In  numSamples= 2048
+	 Re: max= 0.316228  @ 240  min= -0.316228  @ 740
+	 Im: max= 0.316228  @ 990  min= -0.316228  @ 490
+	 Power: max= 0.1  @ 1214  min= 0.1  @ 15  total= 204.8  mean= 0.1
+	 Power db: max= -10 db min= -10 db total= 23.1133 db mean= -10 db
+	 Amplitude: max= 0.316228  min= 0.316228  total= 647.634  mean= 0.316228
+	 Amplitude db: max= -5 db min= -5 db total= 28.1133 db mean= -5 db
+	-
+	Spectrum Out  numSamples= 32768  windowGain= 0.35875  maxBinPower= 2048
+	 Re: max= 226.854  @ 15962  min= -188.98  @ 15947
+	 Im: max= 226.763  @ 15954  min= -191.332  @ 15969
+	 Power: max= 0.0999999  @ 15958  min= 2.31081e-24  @ 16294  total= 3.20696  mean= 9.78688e-05
+	 Power db: max= -10 db min= -236.362 db total= 5.06094 db mean= -40.0936 db
+	 Amplitude: max= 0.316228  min= 1.52014e-12  total= 14.1056  mean= 0.00043047
+	 Amplitude db: max= -5 db min= -118.181 db total= 11.4939 db mean= -33.6606 db
+
+
+*/
+
 void FFT::CalcPowerAverages(CPX* in, double *out, int numSamples)
 {
 
-	numSamples = fftSize; //Remove arg
-#if 0
-
-
-    // FFT output index 0 to N/2-1
-    // is frequency output 0 to +Fs/2 Hz  ( 0 Hz DC term )
-    for( l=0,j=n/2; j<n; l+=2,j++)
-    {
-        x0r = (a[l]*a[l]) + (a[l+1]*a[l+1]);
-        //perform moving average on power up to m_AveSize then do exponential averaging after that
-        if(m_TotalCount <= m_AveSize)
-            m_pFFTSumBuf[j] = m_pFFTSumBuf[j] + x0r;
-        else
-            m_pFFTSumBuf[j] = m_pFFTSumBuf[j] - m_pFFTPwrAveBuf[j] + x0r;
-
-        m_pFFTPwrAveBuf[j] = m_pFFTSumBuf[j]/(double)m_AveCount;
-
-        m_pFFTAveBuf[j] = log10( m_pFFTPwrAveBuf[j] + m_K_C) + m_K_B;
-    }
-
-#endif
+	numSamples = fftSize; //Todo: Remove arg
 
     //This is called from code that is locked with fftMutex, don't re-lock or will hang
-
-    double samplePwr;
-
-    bufferCnt++;
-    if(averageCnt < movingAvgLimit)
-        averageCnt++;
+	double binPower;
+	double binAmp;
+	double binPowerdB;
+	double binAmpdB;
+	double psd;
+	double asd;
 
     // FFT output index 0 to N/2-1
     // is frequency output 0 to +Fs/2 Hz  ( 0 Hz DC term )
     // Buffer is already unfolded, unlike in cuteSDR implementation, so simple loop
+	// FFT results contain both amplitude and phase information (re/im)
+	// Without this, an inverse FFT would not be able to recreate the original signal (sine waves)
+
+	//DB::analyzeCPX(in, numSamples, "Spectrum Out", true, windowFunction->coherentGain, maxBinPower);
+
+	//Some texts say Accelerate fft results are in polar notation (re = mag and im = phase)
+	//But analyzing results shows that re varies +/-, so it can't be magnitude
+
 	for( int i = 0; i < numSamples; i++){
-        //re^2 + im^2
-        samplePwr = in[i].norm(); // or .sqrMag() = Power in sample
+		//Amplitude Spectral Density
+		//fft output is in amplitude, so calculate that first
+		asd = DB::amplitude(in[i]) / windowFunction->coherentGain;
+		//Power Spectral Density
+		//calculate power based on amplitude
+		psd = DB::amplitudeToPower(asd);
+		//We can also correct for effective noise bandwidth, scallop loss, etc if necessary
 
-        //perform moving average on power up to m_AveSize then do exponential averaging after that
-        if(bufferCnt <= movingAvgLimit)
-            FFTPwrSumBuf[i] = FFTPwrSumBuf[i] + samplePwr;
-        else
-            //Weighted by previous average
-            FFTPwrSumBuf[i] = FFTPwrSumBuf[i] - FFTPwrAvgBuf[i] + samplePwr;
+		//Normalize to 0 to 1, see detailed explanation above
+		psd /= maxBinPower;
 
-        //Average buffer = sum buffer / average counter
-        FFTPwrAvgBuf[i] = FFTPwrSumBuf[i]/(double)averageCnt;
+		asd /= maxBinPower;
 
-		//Convert to db
-		//FFTAvgBuf[i] = 10 * log10( FFTPwrAvgBuf[i] + K_C) + K_B;
-		FFTAvgBuf[i] = DB::powerToDbAdjusted(FFTPwrAvgBuf[i]);
+		//Normalize for fft size if necessary
+		//Tests with -10db testbench signal, 1msps, expected maxDB -10.00
+		//fftSize maxDB   binWidth
+		//  2048 -10.3044 488.28
+		//  4096 -10.1264 244.14
+		//  8192 -10.0096 122.07
+		// 16384 -10.0096  61.04
+		// 32768 -10.0002  30.52
+		//Smaller bins == less correction needed
+		//Smaller bins have fewer frequency peaks that are not centered in the bin, so more accurate
+		//Lyons ffr size correction: mag = sqrt((re^2 + im^2)) / (N * coherentGain))
+		//From http://www.ap.com/kb/show/170
+		//When fftSize is doubled, binWidth is halved, reducing the noise power of each bin by a factor of 2
+		//Factor of 2 equates to a 3db reduction every time we double
+		//Todo: correct for small error
 
-        //Skip copying to out if null
-        if (out != NULL)
-			out[i] = FFTAvgBuf[i];
-			//out[i] = DB::powerToDbAdjusted(in[i].norm()); //Raw, no average
+		//Can't average db, do average on power before conversion
+		if (isAveraged) {
+			binPower = (psd + fftPower[i]) / 2;
+			binAmp = (asd + fftAmplitude[i]) /2;
+		} else {
+			//Direct results
+			binPower = psd;
+			binAmp = asd;
+		}
+		//Keep unaveraged values for next pass
+		fftPower[i] = psd;
+		fftAmplitude[i] = asd;
+
+		binPowerdB = DB::clip(DB::powerTodB(binPower));
+		binAmpdB = DB::clip(DB::amplitudeTodB(binAmp));
+
+		//Todo: UI to switch between amplitude and power spectrum?
+		out[i] = binAmpdB;
+		//out[i] = binPowerdB;
+
     }
-
 }
 
 #if 0
@@ -390,17 +445,19 @@ bool FFT::MapFFTToScreen(double *inBuf,
 				powerdB = DB::minDb;
 			} else if (lastFftBin > 0 && fftBin != lastFftBin + 1) {
 				//Lowest freq is in fftBin[0]
-#if 0
+
 				//We skipped some bins, average the ones we skipped - including this one
 				qint32 skippedBins = fftBin - lastFftBin;
+				//dB can only be averaged directly if the differences are very small
+				//Otherwise we need to convert back to power, and then convert the average power back to dB
+				//Brute force, there may be faster algorithms
+				//Bug: Hires occasionally flickers with wierd display
+				double tmpPower = 0;
 				for (int j=0; j<skippedBins; j++) {
-					totalBinPower += inBuf[lastFftBin + j] - maxdB;
+					tmpPower += DB::dBToPower(inBuf[lastFftBin + j]);
 				}
-				powerdB = totalBinPower / skippedBins;
-#else
-				//Just pick up 1 bin, averages were resulting in db errors in specra display
-				powerdB = inBuf[fftBin] - maxdB;
-#endif
+				powerdB = DB::powerTodB(tmpPower/skippedBins) - maxdB;
+
 			} else {
 				powerdB = inBuf[fftBin] - maxdB;
 			}
@@ -434,190 +491,3 @@ bool FFT::MapFFTToScreen(double *inBuf,
 
 	return false; //True if y has to be truncated (overloaded)
 }
-
-#if 0
-//Save for reference, replaced 1/20/16
-//Private variables
-//qint32 binLow; //lowest frequency to be displayed
-//qint32 binHigh; //highest frequency to be displayed
-//qint32 plotStartFreq;
-//qint32 plotStopFreq;
-//qint32 plotWidth;
-
-//Common routine borrowed from cuteSDR
-//Scales X axis to fit more FFT data in fewer pixels or fewer FFT data in more pixels
-//For cah pixel bin, calculates the scaled db y value for FFTAvgBuf
-//After calling this, we can plot directly from OutBuf[0 to plotWidth]
-
-//////////////////////////////////////////////////////////////////////
-// The bin range is "start" to "stop" Hz.
-// The range of start to stop frequencies are mapped to the users
-// plot screen size so the users buffer will be filled with an array
-// of integers whos value is the pixel height and the index of the
-//  array is the x pixel coordinate.
-// The function returns true if the input is overloaded
-//   This routine converts the data to 32 bit integers and is useful
-//   when displaying fft data on the screen.
-//		MaxHeight = Plot height in pixels(zero is top and increases down)
-//		MaxWidth =  Plot width in pixels
-//		StartFreq = freq in Hz (relative to 0, should always be neg)
-//		StopFreq = freq in Hz (should always be pos)
-//		MaxdB = FFT dB level corresponding to output value == 0
-//			must be <= to K_MAXDB
-//		MindB = FFT dB level  corresponding to output value == MaxHeight
-//			must be >= to K_MINDB
-//////////////////////////////////////////////////////////////////////
-/// \brief FFT::MapFFTToScreen
-/// \param inBuf
-/// \param yPixels
-/// \param xPixels
-/// \param maxdB
-/// \param mindB
-/// \param startFreq
-/// \param stopFreq
-/// \param outBuf
-/// \return
-
-bool FFT::MapFFTToScreen(
-		double *inBuf,
-		qint32 yPixels, //Height
-		qint32 xPixels, //Width
-		double maxdB,
-		double mindB,
-		qint32 startFreq,
-		qint32 stopFreq,
-		qint32* outBuf )
-{
-
-    if (!fftParamsSet)
-        return false;
-
-	//Passed as arg so we can use with remote dsp servers
-	//double *inBuf = FFTAvgBuf;
-
-	qint32 y;
-	qint32 xCoord;
-    qint32 m;
-    qint32 ymax = -10000;
-    qint32 xprev = -1;
-	qint32 numPlotBins = binHigh - binLow;
-    const qint32 binMax = fftSize -1;
-	//dBmaxOffset is used to adjust inbound db up/down by fixed offset which can be set by user in Spectrum
-	double dBmaxOffset = maxdB;
-	//dbGainFactor is used to scale min/max db values so they fit in N vertical pixels
-	double dBGainFactor = -1/(maxdB-mindB);
-
-    //qDebug()<<"maxoffset dbgaindfact "<<dBmaxOffset << dBGainFactor;
-
-    fftMutex.lock();
-    //If zoom has changed (startFreq-stopFreq) or width of plot area (window resize)
-    //then recalculate
-	if( (plotStartFreq != startFreq) ||
-		(plotStopFreq != stopFreq) ||
-		(plotWidth != xPixels) ) {
-        //if something has changed need to redo translate table
-		plotStartFreq = startFreq;
-		plotStopFreq = stopFreq;
-		plotWidth = xPixels;
-
-		//Find the beginning and ending FFT bins that correspond to Start and StopFreq
-        //
-        //Ex: If no zoom, binLow will be 1/2 of fftSize or -1024
-		binLow = (qint32)((double)plotStartFreq*(double)fftSize/sampleRate);
-        //Ex: makes it zero relative, so will be 0
-        binLow += (fftSize/2);
-        //Ex: 1024 for full spectrum
-		binHigh = (qint32)((double)plotStopFreq*(double)fftSize/sampleRate);
-        //Ex: now 2048
-        binHigh += (fftSize/2);
-        if(binLow < 0)	//don't allow these go outside the translate table
-            binLow = 0;
-        if(binLow >= binMax)
-            binLow = binMax;
-        if(binHigh < 0)
-            binHigh = 0;
-        if(binHigh >= binMax)
-            binHigh = binMax;
-		numPlotBins = (binHigh - binLow);
-
-		//fftBinTable is the same size as FFT and each FFT index has a corresponding fftBinTable value
-		//fftBinTable[n] = fft bin to map to x-coordinate n
-		//To know where to plot fftBin[n] on plotFrame x axis, get the value from fftBinTable[n]
-        //Example where plot width 1/3 of FFT size
-		//FFT:			0   1   2   3   4   5   6   7   8   9   ...
-		//fftBinTable:	0   0   0   1   1   1   2   2   2   3   ...
-		//xCoord of 0,1,2 all map to FFT[0]
-
-		if( (numPlotBins) >= plotWidth )
-        {
-			//if more FFT bins than plot bins, map min to max FFT to plot
-			for(int i=binLow; i<=binHigh; i++)
-				fftBinToX[i] = ( (i-binLow)*plotWidth )/numPlotBins;
-        }
-        else
-        {
-			//if more plot bins than FFT bins, fft bins map to multiple x bins
-			for(int i=0; i<plotWidth; i++)
-				fftBinToX[i] = binLow + ( i*numPlotBins )/plotWidth;
-        }
-    } //End recalc after change in window size etc
-
-    m = fftSize - 1; //cuteSDR bug, in loop below if m=fftSize then m -i (when i==0) is outside of inBuf size
-	if( numPlotBins > plotWidth )
-    {
-		//if more FFT points than plot points, process every bin
-		//Some FFT bins will be skipped
-		for(int i=binLow; i<=binHigh; i++ )
-        {
-            if(invert)
-				y = (qint32)((double)yPixels * dBGainFactor * (inBuf[(m-i)] - dBmaxOffset));
-            else
-				y = (qint32)((double)yPixels * dBGainFactor * (inBuf[i] - dBmaxOffset));
-            if(y < 0)
-                y = 0;
-			if(y > yPixels)
-				y = yPixels;
-			xCoord = fftBinToX[i];	//get fft bin to plot x coordinate transform
-			if( xCoord == xprev )	// still mappped to same fft bin coordinate
-            {
-				//Each fft bin will map to multiple plot bins since we're throwing away some fft bins
-				//in order to fit.  Make sure the plot bin always has the largest y value for the
-				//set of fft bins that map to it
-				if(y > ymax) {		//store only if we have a new max value
-					outBuf[xCoord] = y;
-					ymax = y; //New yMax
-                }
-			} else {
-				//New x coord, reset yMax for this coord
-				outBuf[xCoord] = y;
-				xprev = xCoord;
-				ymax = y; //New yMax
-            }
-
-		}
-	} //End FFT bins > plot bins
-    else
-    {
-		//if more plot points than FFT points
-		//Map plot bin to fft Bin, ie iterate over plot bins
-		//We throw away fft bins, but could average to get a slightly better result
-		for( int i=0; i<plotWidth; i++ ) {
-			xCoord = fftBinToX[i];	//get plot to fft bin coordinate transform
-            if(invert)
-				y = (qint32)((double)yPixels * dBGainFactor * (inBuf[(m-xCoord)] - dBmaxOffset));
-            else
-				y = (qint32)((double)yPixels * dBGainFactor * (inBuf[xCoord] - dBmaxOffset));
-            if(y<0)
-                y = 0;
-			if(y > yPixels)
-				y = yPixels;
-			outBuf[i] = y;
-
-        }
-	} //End FFT bins <= plot bins
-    fftMutex.unlock();
-
-    //!!return m_Overload;
-    return false; //No overload
-}
-#endif
