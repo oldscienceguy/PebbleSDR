@@ -119,8 +119,8 @@ CTestBench::CTestBench(QWidget *parent) :
 	connect(this, SIGNAL(NewTimeData()), this,  SLOT( DrawTimePlot() ) );
 	connect( this, SIGNAL( SendTxt(QString)), this, SLOT( GotTxt(QString) ) );
 
-	m_Fft.FFTParams( 2048, 0.0, m_GenSampleRate, 2048, WindowFunction::NONE);
-    m_Fft.SetMovingAvgLimit(FFT_AVE);
+	m_Fft.FFTParams( 2048, 0.0, m_GenSampleRate, 2048, WindowFunction::BLACKMANHARRIS);
+
 	ui->setupUi(this);
     setWindowTitle("Pebble Test Bench");
 	ui->textEdit->clear();
@@ -622,7 +622,7 @@ int i;
     m_NoiseAmplitude = m_Fft.ampMax*pow(10.0, m_NoisePower/20.0);
 
 	//init FFT values
-	m_Fft.FFTParams(  TEST_FFTSIZE, 0.0, m_DisplaySampleRate, TEST_FFTSIZE, WindowFunction::NONE);
+	m_Fft.FFTParams(  TEST_FFTSIZE, 0.0, m_DisplaySampleRate, TEST_FFTSIZE, WindowFunction::BLACKMANHARRIS);
 	m_FftBufPos = 0;
 	m_Span = m_DisplaySampleRate;
 	m_Span = ( m_Span - (m_Span+5)%10 + 5);
