@@ -54,6 +54,8 @@ public:
 
     qint32 emitFftCounter; //Testing to see if we're getting more paints than signals
 
+	bool getOverload() {return isOverload;}
+
 public slots:
 
 signals:
@@ -62,6 +64,8 @@ signals:
 
 
 private:
+	bool isOverload;
+
 	quint32 hiResSampleRate;
 
 	QMutex mutex;

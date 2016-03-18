@@ -41,6 +41,8 @@ SignalSpectrum::SignalSpectrum(quint32 _sampleRate, quint32 _hiResSampleRate, qu
 
 	useHiRes = false;
 
+	isOverload = false;
+
 	SetSampleRate(sampleRate, hiResSampleRate);
 
 }
@@ -88,7 +90,9 @@ void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double 
 
     //Keep a copy raw I/Q to local buffer for display
 	//CPX::copyCPX(rawIQ, in, numSamples);
+	//global->perform.StartPerformance("MakeSpectrum");
 	MakeSpectrum(fftUnprocessed, in, unprocessedSpectrum, _numSamples);
+	//global->perform.StopPerformance(10);
 	displayUpdateComplete = false;
 	emit newFftData();
 }
@@ -116,7 +120,7 @@ void SignalSpectrum::Zoomed(CPX *in, int _numSamples)
 
 void SignalSpectrum::MakeSpectrum(FFT *fft, CPX *in, double *sOut, int _numSamples)
 {
-	fft->FFTSpectrum(in, sOut, _numSamples);
+	isOverload = fft->FFTSpectrum(in, sOut, _numSamples);
     //out now has the spectrum in db, -f..0..+f
 }
 

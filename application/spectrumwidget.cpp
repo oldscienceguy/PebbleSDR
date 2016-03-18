@@ -801,6 +801,13 @@ void SpectrumWidget::paintSpectrum(bool paintTopPanel, QPainter *painter)
 		cursorPos.setY(cursorPos.y() + metrics.height());
 		painter->drawText(cursorPos,dbLabel);
 	}
+	//Draw overload indicator
+	if (!paintTopPanel && signalSpectrum->getOverload()) {
+		cursorPos.setX(plotFr.width() - 50);
+		cursorPos.setY(10);
+		painter->setPen(Qt::red);
+		painter->drawText(cursorPos,"Overload");
+	}
 }
 
 void SpectrumWidget::paintEvent(QPaintEvent *e)

@@ -23,6 +23,7 @@ FFT::FFT()
 	fftPower = NULL;
 	fftAmplitude = NULL;
 	fftPhase = NULL;
+	isOverload = false;
 
 }
 FFT::~FFT()

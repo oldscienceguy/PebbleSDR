@@ -35,7 +35,7 @@ public:
     //If in==NULL, use whatever is in timeDomain buffer
     //If out==NULL, leave result in freqDomain buffer and don't copy to out
 	virtual void FFTForward(CPX * in, CPX * out, int numSamples) = 0;
-	virtual void FFTSpectrum(CPX *in, double * out, int numSamples) = 0; //Replacing FFTMagnForward in most uses
+	virtual bool FFTSpectrum(CPX *in, double * out, int numSamples) = 0; //Replacing FFTMagnForward in most uses
 
     //If in==NULL, use whatever is in freqDomain buffer
     //If out==NULL, then leave result in timeDomain buffer and don't copy to out
@@ -59,6 +59,7 @@ public:
     CPX *getTimeDomain() {return timeDomain;}
 	//Fractional bin width in hz
 	double getBinWidth() {return binWidth;}
+	bool getOverload() {return isOverload;}
 
 protected:
     //Utility
@@ -76,6 +77,7 @@ protected:
 
     //For calculating power averages
 	bool isAveraged;
+	bool isOverload; //True if any input values exceed overloadLimit
 
     //This should replace m_mutex in fftcute
     QMutex fftMutex; //Used to sync threads calling FFT and display calling Screen mapping
@@ -90,6 +92,7 @@ protected:
 	double *fftAmplitude;
 	double *fftPhase; //Calculate phase for future plotting
 
+	bool applyWindow(const CPX *in, int numSamples);
 };
 
 #endif // FFT_H
