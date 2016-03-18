@@ -35,21 +35,7 @@ void FFTfftw::FFTForward(CPX * in, CPX * out, int numSamples)
 
     //If in==NULL, use whatever is in timeDomain buffer
     if (in != NULL ) {
-		if (windowType != WindowFunction::NONE && numSamples == samplesPerBuffer) {
-			//Smooth the input data with our window
-			CPX::multCPX(timeDomain, in, windowFunction->windowCpx, samplesPerBuffer);
-			//Zero pad remainder of buffer if needed
-			for (int i = samplesPerBuffer; i<fftSize; i++) {
-				timeDomain[i] = 0;
-			}
-		} else {
-			//Make sure that buffer which does not have samples is zero'd out
-			//We can pad samples in the time domain because it does not impact frequency results in FFT
-			CPX::clearCPX(timeDomain,fftSize);
-			//Put the data in properly aligned FFTW buffer
-			CPX::copyCPX(timeDomain, in, numSamples);
-		}
-
+		applyWindow(in,numSamples);
     }
 
     fftw_execute(plan_fwd);
@@ -81,17 +67,17 @@ void FFTfftw::FFTInverse(CPX * in, CPX * out, int numSamples)
 }
 
 //size is the number of samples, not the size of fft
-void FFTfftw::FFTSpectrum(CPX *in, double *out, int numSamples)
+bool FFTfftw::FFTSpectrum(CPX *in, double *out, int numSamples)
 {
     if (!fftParamsSet)
-        return;
+		return false;
 	FFTForward(in,workingBuf,numSamples);
 
 	unfoldInOrder(workingBuf, freqDomain);
 
 	CalcPowerAverages(freqDomain, out, fftSize);
 
-
+	return isOverload;
 }
 
 

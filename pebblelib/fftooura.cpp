@@ -76,20 +76,7 @@ void FFTOoura::FFTForward(CPX *in, CPX *out, int numSamples)
 
 	if (in!=NULL) {
 
-		if (windowType != WindowFunction::NONE && numSamples == samplesPerBuffer) {
-			//Smooth the input data with our window
-			CPX::multCPX(timeDomain, in, windowFunction->windowCpx, samplesPerBuffer);
-			//Zero pad remainder of buffer if needed
-			for (int i = samplesPerBuffer; i<fftSize; i++) {
-				timeDomain[i] = 0;
-			}
-		} else {
-			//Make sure that buffer which does not have samples is zero'd out
-			//We can pad samples in the time domain because it does not impact frequency results in FFT
-			CPX::clearCPX(timeDomain,fftSize);
-			//Put the data in properly aligned FFTW buffer
-			CPX::copyCPX(timeDomain, in, numSamples);
-		}
+		applyWindow(in,numSamples);
 
 		//CuteSDR swapped I/Q here
 		//11/14 Spectrum is reversed compared to FFTW, so IQ swap is necessary
@@ -115,16 +102,18 @@ void FFTOoura::FFTForward(CPX *in, CPX *out, int numSamples)
 
 }
 
-void FFTOoura::FFTSpectrum(CPX *in, double *out, int numSamples)
+bool FFTOoura::FFTSpectrum(CPX *in, double *out, int numSamples)
 {
     if (!fftParamsSet)
-        return;
+		return false;
 
 	FFTForward(in,workingBuf,numSamples); //No need to copy to out, leave in freqBuf
 
 	unfoldInOrder(workingBuf, freqDomain);
 
 	CalcPowerAverages(freqDomain, out, numSamples);
+
+	return isOverload;
 }
 
 void FFTOoura::FFTInverse(CPX *in, CPX *out, int numSamples)

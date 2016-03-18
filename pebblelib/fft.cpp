@@ -127,6 +127,39 @@ void FFT::ResetFFT()
     //Clear buffers?
 }
 
+//Common function used in FFTForward by all fft versions
+//Applies window function and checks for overload
+//Returns windowed data, padded to fftSize in timeDomain
+bool FFT::applyWindow(const CPX *in, int numSamples)
+{
+	//If in==NULL, use whatever is in timeDomain buffer
+	if (in != NULL ) {
+		if (windowType != WindowFunction::NONE && numSamples == samplesPerBuffer) {
+			//Smooth the input data with our window
+			isOverload = false;
+			//CPX::multCPX(timeDomain, in, windowFunction->windowCpx, samplesPerBuffer);
+			for (int i=0; i<samplesPerBuffer; i++) {
+				if (fabs(in[i].re) > overLimit || fabs(in[i].im) > overLimit) {
+					isOverload = true;
+					//Don't do anything, just flag that we're in the danger zone so UI can display it
+				}
+				timeDomain[i] = in[i] * windowFunction->windowCpx[i];
+			}
+			//Zero pad remainder of buffer if needed
+			for (int i = samplesPerBuffer; i<fftSize; i++) {
+				timeDomain[i] = 0;
+			}
+		} else {
+			//Make sure that buffer which does not have samples is zero'd out
+			//We can pad samples in the time domain because it does not impact frequency results in FFT
+			CPX::clearCPX(timeDomain,fftSize);
+			//Put the data in properly aligned FFTW buffer
+			CPX::copyCPX(timeDomain, in, numSamples);
+		}
+	}
+	return isOverload;
+}
+
 // Unfolds output of fft to -f to +f order
 /*
  (From FFTW documentation)

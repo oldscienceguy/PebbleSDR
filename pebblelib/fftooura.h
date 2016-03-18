@@ -15,7 +15,7 @@ public:
 				   WindowFunction::WINDOWTYPE _windowType);
 	void FFTForward(CPX * in, CPX * out, int numSamples);
 	void FFTInverse(CPX * in, CPX * out, int numSamples);
-	void FFTSpectrum(CPX *in, double *out, int numSamples);
+	bool FFTSpectrum(CPX *in, double *out, int numSamples);
 
 protected:
     //Complex DFT isgn indicates forward or inverse
