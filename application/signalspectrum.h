@@ -19,7 +19,7 @@ public:
 	~SignalSpectrum(void);
 	void SetHiRes(bool _on) {useHiRes = _on;}
 	//Pass in soundcard buffer under/overflow counts for display
-	void Unprocessed(CPX * in, double inUnder, double inOver, double outUnder, double outOver, int _numSamples);
+	void Unprocessed(CPX * in, int _numSamples);
 	void MakeSpectrum(FFT *fft, CPX *in, double *out, int _numSamples); //Use if we just have CPX samples
 
 	//Used when we already have spectrum, typically from dsp server or device
@@ -38,12 +38,6 @@ public:
 	void Zoomed(CPX *in, int _numSamples);
     CPX *RawIQ() {return rawIQ;}
 
-	double inBufferUnderflowCount;
-	double inBufferOverflowCount;
-	double outBufferUnderflowCount;
-	double outBufferOverflowCount;
-
-    //New technique from CuteSdr to ignore spectrum data between updates
     void SetUpdatesPerSec(int updatespersec);
     bool displayUpdateComplete; //Wrap in access func after testing
     int displayUpdateOverrun; //temp counter

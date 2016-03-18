@@ -65,7 +65,7 @@ void SignalSpectrum::SetSampleRate(quint32 _sampleRate, quint32 _hiResSampleRate
     emitFftCounter = 0;
 }
 
-void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double outUnder, double outOver, int _numSamples)
+void SignalSpectrum::Unprocessed(CPX * in, int _numSamples)
 {	
 	if (!spectrumTimer.isValid()) {
 		spectrumTimer.start(); //First time
@@ -80,13 +80,6 @@ void SignalSpectrum::Unprocessed(CPX * in, double inUnder, double inOver,double 
 		//qDebug()<<"Display update overrun counter "<<displayUpdateOverrun;
         displayUpdateOverrun++;
     }
-
-    inBufferUnderflowCount = inUnder;
-	inBufferOverflowCount = inOver;
-	outBufferUnderflowCount = outUnder;
-	outBufferOverflowCount = outOver;
-
-	//DB::analyzeCPX(in, _numSamples, "Spectrum In");
 
     //Keep a copy raw I/Q to local buffer for display
 	//CPX::copyCPX(rawIQ, in, numSamples);
