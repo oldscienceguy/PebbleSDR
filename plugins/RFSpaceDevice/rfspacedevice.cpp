@@ -724,8 +724,7 @@ void RFSpaceDevice::DoUSBProducer()
 			producerConsumer.ReleaseFreeBuffer(); //Put back what we acquired
 			return;
 		}
-		//IQ are reversed for SDR-IQ
-		normalizeIQ(producerFreeBufPtr, usbReadBuf, framesPerBuffer, true);
+		normalizeIQ(producerFreeBufPtr, usbReadBuf, framesPerBuffer, false);
 		//Increment the number of data buffers that are filled so consumer thread can access
 		producerConsumer.ReleaseFilledBuffer();
 		return;
