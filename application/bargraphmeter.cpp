@@ -20,18 +20,8 @@ BargraphMeter::BargraphMeter(QWidget *parent) :
     showLabels = true;
     showTicks = true;
 
-
-    //Get our widget boundaries
-    QRect meterFr = ui->plotFrame->geometry(); //relative to parent
-
-    plotArea = QPixmap(meterFr.width(),meterFr.height());
-    plotArea.fill(Qt::black);
-
-    plotOverlay = QPixmap(meterFr.width(),meterFr.height());
-    plotOverlay.fill(Qt::black);
-
-    plotLabel = QPixmap(ui->labelFrame->width(),ui->labelFrame->height());
-    plotLabel.fill(Qt::black);
+	//Initial display
+	resizeEvent(NULL);
     //Thread safe display update
     connect(this, SIGNAL(newData()), this, SLOT(refreshMeter()));
 
@@ -69,7 +59,31 @@ void BargraphMeter::setLabels(QStringList _labels)
 {
     //Ticks and labels must be same size
     numTicks = _labels.size();
-    labels = _labels;
+	labels = _labels;
+}
+
+//See spectrumwidget.cpp for similar logic
+void BargraphMeter::resizePixmaps()
+{
+	QRect plotFr = ui->plotFrame->rect(); //We just need width and height
+	QRect plotLabelFr = ui->labelFrame->rect();
+	plotArea = QPixmap(plotFr.width(),plotFr.height());
+	plotArea.fill(Qt::black);
+
+	plotOverlay = QPixmap(plotFr.width(),plotFr.height());
+	plotOverlay.fill(Qt::black);
+
+	plotLabel = QPixmap(plotLabelFr.width(),plotLabelFr.height());
+	plotLabel.fill(Qt::black);
+}
+
+//Redraw scale on re-size
+void BargraphMeter::resizeEvent(QResizeEvent * _event)
+{
+	Q_UNUSED(_event);
+	//Reset pixmap sizes
+	resizePixmaps();
+	refreshMeter();
 }
 
 void BargraphMeter::setNumTicks(quint16 _ticks)
@@ -95,23 +109,24 @@ void BargraphMeter::drawLabels()
         return;
     }
     plotLabel.fill((Qt::black));
-    if (numTicks == 0)
-        return;
+	if (numTicks == 0)
+		return;
     QPainter painter(&plotLabel);
     painter.setPen(QPen(Qt::white, 1,Qt::SolidLine));
 
-    quint16 plotHeight = plotLabel.height();
+	//quint16 plotHeight = plotLabel.height();
     quint16 plotWidth = plotLabel.width();
 
     //Evenly split ticks
     //numTicks are the visible ticks, each with a potential label
-    quint16 tickInc = plotWidth / (numTicks+1);
+	quint16 tickInc = plotWidth / (numTicks + 1);
 	//quint16 tickPix = plotHeight * 0.20;
 
-    QFont overlayFont("Arial");
-    overlayFont.setPointSize(7);
-    overlayFont.setWeight(QFont::Normal);
-    painter.setFont(overlayFont);
+	QFont overlayFont("Arial");
+	//overlayFont.setPointSize(8);
+	overlayFont.setPixelSize(10);
+	//overlayFont.setFixedPitch(true);
+	painter.setFont(overlayFont);
 
     QFontMetrics metrics(overlayFont);
 
@@ -130,7 +145,7 @@ void BargraphMeter::drawLabels()
         //adjust x to account for width so text is centered. will depend on hpix per char
         if (i < labels.size()) {
             ctr = x - (labels[i].length() * metrics.averageCharWidth() / 2);  //Offset left 1/2 label pix width
-            painter.drawText(ctr, plotHeight-2,labels[i]);
+			painter.drawText(ctr, metrics.height() + 2,labels[i]);
         }
 
     }
@@ -193,10 +208,7 @@ void BargraphMeter::paintEvent(QPaintEvent * event)
     QRect labelFr = ui->labelFrame->geometry();
 
     painter.drawPixmap(plotFr, plotArea); //Includes plotOverlay which was copied to plotArea
-    if (labels.size() == 0)
-        ui->labelFrame->setVisible(false);
-    else
-        painter.drawPixmap(labelFr, plotLabel); //Includes plotOverlay which was copied to plotArea
+	painter.drawPixmap(labelFr, plotLabel); //Includes plotOverlay which was copied to plotArea
 
 #if 0
     QPainter painter(this);

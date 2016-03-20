@@ -15,7 +15,8 @@ class BargraphMeter;
 class BargraphMeter : public QWidget
 {
     Q_OBJECT
-    
+
+	void resizePixmaps();
 public:
     explicit BargraphMeter(QWidget *parent = 0);
     ~BargraphMeter();
@@ -29,6 +30,7 @@ public:
     void setColor(QColor _color);
     void setLabels(QStringList _labels);
 
+	void resizeEvent(QResizeEvent *_event);
     void paintEvent(QPaintEvent *event);
     void drawOverlay();
     void drawLabels();
