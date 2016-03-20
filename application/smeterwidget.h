@@ -11,14 +11,14 @@
 #include "signalspectrum.h"
 #include "bargraphmeter.h"
 
-class SMeterWidgetThread;
-
 //Derive from QFrame instead of QWidget so we get full stylesheet support
 class SMeterWidget : public QFrame
 {
 	Q_OBJECT
 
 public:
+	enum UNITS {DB, S_UNITS, SNR, NONE};
+
 	SMeterWidget(QWidget *parent = 0);
 	~SMeterWidget();
 	
@@ -31,13 +31,16 @@ public:
 private:
 	Ui::SMeterWidgetClass ui;
 	SignalStrength *signalStrength; //Where we get data from
-    //void paintEvent(QPaintEvent *e);
+	void resizeEvent(QResizeEvent * _event);
     int src; //Inst, Average, External
+	UNITS units;
 
-	private slots:
+	void updateLabels();
+private slots:
 		void updateMeter();
         void instButtonClicked();
         void avgButtonClicked();
+		void unitBoxChanged(int item);
 };
 
 #endif // SMeterWidget_H
