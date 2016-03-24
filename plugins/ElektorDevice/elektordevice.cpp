@@ -19,7 +19,7 @@ ElektorDevice::ElektorDevice():DeviceInterfaceBase()
 
 ElektorDevice::~ElektorDevice()
 {
-	//WriteSettings();
+	WriteSettings();
 }
 
 bool ElektorDevice::Initialize(cbProcessIQData _callback,

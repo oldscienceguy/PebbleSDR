@@ -6,7 +6,18 @@
 
 DigitalModemExample::DigitalModemExample()
 {
-    dataUi = NULL;
+	dataUi = NULL;
+}
+
+//Implement pure virtual destructor from interface, otherwise we don't link
+DigitalModemInterface::~DigitalModemInterface()
+{
+
+}
+
+DigitalModemExample::~DigitalModemExample()
+{
+
 }
 
 void DigitalModemExample::SetSampleRate(int _sampleRate, int _sampleCount)

@@ -187,6 +187,11 @@ void Morse::SetSampleRate(int _sampleRate, int _sampleCount)
 
 }
 
+//Implement pure virtual destructor from interface, otherwise we don't link
+DigitalModemInterface::~DigitalModemInterface()
+{
+
+}
 
 Morse::~Morse()
 {

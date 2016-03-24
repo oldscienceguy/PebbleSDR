@@ -32,11 +32,13 @@ PebbleII::PebbleII(QWidget *parent, Qt::WindowFlags flags)
 
 PebbleII::~PebbleII()
 {
+	delete receiver; //Trigger shutdown via destructors
+	delete global->testBench;
+	delete global->settings;
 	delete global;
 }
  void PebbleII::closeEvent(QCloseEvent *event)
  {
 	 receiver->Close();
-	 delete receiver; //Trigger shutdown via destructors
  }
 

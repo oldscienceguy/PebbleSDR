@@ -19,6 +19,7 @@ class RttyDigitalModem  : public QObject, public DigitalModemInterface
 public:
 
     RttyDigitalModem();
+	~RttyDigitalModem();
 
     void SetSampleRate(int _sampleRate, int _sampleCount);
 

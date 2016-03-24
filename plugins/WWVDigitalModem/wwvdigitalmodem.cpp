@@ -355,6 +355,12 @@ void WWVDigitalModem::SetSampleRate(int _sampleRate, int _sampleCount)
     ms800 = new MatchedFilter(modemSampleRate, 800, 1000);
 }
 
+//Implement pure virtual destructor from interface, otherwise we don't link
+DigitalModemInterface::~DigitalModemInterface()
+{
+
+}
+
 WWVDigitalModem::~WWVDigitalModem()
 {
 }

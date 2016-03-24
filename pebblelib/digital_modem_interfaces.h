@@ -11,6 +11,7 @@ class PEBBLELIBSHARED_EXPORT DigitalModemInterface
 {
 public:
     //Interface must be all pure virtual functions
+	virtual ~DigitalModemInterface() = 0;
 
     virtual void SetSampleRate(int _sampleRate, int _sampleCount) = 0;
 

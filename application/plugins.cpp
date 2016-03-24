@@ -11,7 +11,17 @@ Plugins::Plugins(Receiver *_receiver, Settings *_settings)
 {
     receiver = _receiver;
     settings = _settings;
-    findPlugins();
+	findPlugins();
+}
+
+Plugins::~Plugins()
+{
+	foreach(PluginInfo p, pluginInfoList) {
+		if (p.type == PluginInfo::MODEM_PLUGIN)
+			delete p.modemInterface;
+		else if (p.type == PluginInfo::DEVICE_PLUGIN)
+			delete p.deviceInterface;
+	}
 }
 
 QList<PluginInfo> Plugins::GetModemPluginInfo()
@@ -81,6 +91,8 @@ void Plugins::findPlugins()
         //qDebug()<<fileName;
 
         QPluginLoader loader(pluginsDir.absoluteFilePath(fileName));
+		//loader.instance() will call the plugin's constructor
+		//plugin destructor is called in ~Plugins()
         QObject *plugin = loader.instance();
         if (plugin == NULL) {
             //Dump error string if having problems loading, for example can't find pebblelib

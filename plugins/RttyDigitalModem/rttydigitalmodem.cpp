@@ -6,6 +6,17 @@ RttyDigitalModem::RttyDigitalModem()
 {
 }
 
+//Implement pure virtual destructor from interface, otherwise we don't link
+DigitalModemInterface::~DigitalModemInterface()
+{
+
+}
+
+RttyDigitalModem::~RttyDigitalModem()
+{
+
+}
+
 void RttyDigitalModem::SetSampleRate(int _sampleRate, int _sampleCount)
 {
     Q_UNUSED(_sampleRate);

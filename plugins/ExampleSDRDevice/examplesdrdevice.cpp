@@ -1,12 +1,16 @@
 #include "examplesdrdevice.h"
 #include "db.h"
 
+//Plugin constructors are called indirectly when the plugin is loaded in Receiver
+//Be careful not to access objects that are not initialized yet, do that in Initialize()
 ExampleSDRDevice::ExampleSDRDevice():DeviceInterfaceBase()
 {
 	InitSettings("ExampleSDR");
 	optionUi = NULL;
 }
 
+//Called when the plugins object is deleted in the ~Receiver()
+//Be careful not to access objects that may already be destroyed
 ExampleSDRDevice::~ExampleSDRDevice()
 {
 

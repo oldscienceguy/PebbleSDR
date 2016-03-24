@@ -19,6 +19,7 @@ class DigitalModemExample  : public QObject, public DigitalModemInterface
 public:
 
     DigitalModemExample();
+	~DigitalModemExample();
 
     void SetSampleRate(int _sampleRate, int _sampleCount);
 

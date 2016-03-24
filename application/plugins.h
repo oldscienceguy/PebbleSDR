@@ -32,6 +32,8 @@ class Plugins
 {
 public:
     Plugins(Receiver *_receiver, Settings *_settings);
+	~Plugins();
+
     //For menus
     QList<PluginInfo> GetModemPluginInfo();
     QList<PluginInfo> GetDevicePluginInfo();
