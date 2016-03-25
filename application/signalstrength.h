@@ -11,20 +11,31 @@ class SignalStrength :
 public:
 	SignalStrength(quint32 _sampleRate, quint32 _bufferSize);
 	~SignalStrength(void);
-	float instFValue();
-	float avgFValue();
-    float extFValue();
-    void setExtValue(float v);
-	char instCValue(); //Char representing db?
-	char avgCValue();
-	void setCorrection(const float value);
-    CPX * ProcessBlock(CPX *in, int downConvertLen, int squelch);
+	inline double peakdB() {return m_peakdB;}
+	inline double peakPower() {return m_peakPower;}
+	inline double avgdB() {return m_avgdB;}
+	inline double avgPower() {return m_avgPower;}
+	inline double snr() {return m_snr;}
+
+	inline double extValue() {return m_extValue;}
+
+	void setExtValue(double v);
+
+	CPX * ProcessBlock(CPX *in, int numSamples, double squelchdB);
 
 
 private:
-	float instValue; //Instantaneous value
-    float avgValue; //90/10 weighted average
-    float extValue; //Used for other power readings, like goretzel (cw) output
-	float correction; //Constant value to make things fit
+	double m_peakdB;
+	double m_avgdB;
+
+	double m_peakPower;
+	double m_avgPower;
+
+	double m_rms;
+	double m_rmsdB;
+
+	double m_snr;
+
+	double m_extValue; //Used for other power readings, like goretzel (cw) output
 
 };

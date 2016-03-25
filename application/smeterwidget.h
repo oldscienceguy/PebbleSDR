@@ -17,7 +17,7 @@ class SMeterWidget : public QFrame
 	Q_OBJECT
 
 public:
-	enum UNITS {DB, S_UNITS, SNR, NONE};
+	enum UNITS {PEAK_DB, AVG_DB, S_UNITS, SNR, EXT, NONE};
 
 	SMeterWidget(QWidget *parent = 0);
 	~SMeterWidget();
@@ -32,14 +32,11 @@ private:
 	Ui::SMeterWidgetClass ui;
 	SignalStrength *signalStrength; //Where we get data from
 	void resizeEvent(QResizeEvent * _event);
-    int src; //Inst, Average, External
 	UNITS units;
 
 	void updateLabels();
 private slots:
 		void updateMeter();
-        void instButtonClicked();
-        void avgButtonClicked();
 		void unitBoxChanged(int item);
 };
 

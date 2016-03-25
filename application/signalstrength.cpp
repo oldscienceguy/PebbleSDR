@@ -5,15 +5,13 @@
 SignalStrength::SignalStrength(quint32 _sampleRate, quint32 _bufferSize):
 	ProcessStep(_sampleRate,_bufferSize)
 {
-	instValue = DB::minDb;
-	avgValue = DB::minDb;
-	extValue = DB::minDb;
-	//Todo: This should be adj per receiver and user should be able to calibrate with known signal
-	//SRV9 -40
-	//SREnsemble 
-    //Set this using testbench signal to fixed db output and make sure instDb is same
-    correction = 0.0;
-
+	m_peakdB = DB::minDb;
+	m_peakPower = 0;
+	m_avgdB = DB::minDb;
+	m_avgPower = 0;
+	m_rms = 0;
+	m_rmsdB = DB::minDb;
+	m_extValue = DB::minDb;
 }
 
 SignalStrength::~SignalStrength(void)
@@ -29,103 +27,101 @@ Total power = mean square value of time domain waveform
 RMS (Root Mean Square) = sqrt(mean of the squares)
 
 ProcessBlock is called after we've mixed and filtered our samples, so *in contains desired signal
-Compute the total power of all the samples, convert to dB save
+Compute the total power of all the samples, convert to dB and save
 Background thread will pick up instValue or avgValue and display
 */
 
-#if 0
-if(SampleRate != m_SampleRate)
-{	//need to recalculate any values dependent on sample rate
-    m_SampleRate = SampleRate;
-    m_AttackAlpha = (1.0-exp(-1.0/(m_SampleRate*ATTACK_TIMECONST)) );
-    m_DecayAlpha = (1.0-exp(-1.0/(m_SampleRate*DECAY_TIMECONST)) );
-//qDebug()<<"SMeter vals "<<m_AttackAlpha << m_DecayAlpha << SampleRate;
-}
-for(int i=0; i<length; i++)
-{
-    //calculate instantaeous power magnitude of pInData which is I*I + Q*Q
-    TYPECPX in = pInData[i];
-    //convert I/Q magnitude to dB power
-    TYPEREAL mag = 10.0*log10((in.re*in.re+in.im*in.im)/ MAX_PWR + 1e-50);
-    //calculate attack and decay average
-    m_AttackAve = (1.0-m_AttackAlpha)*m_AttackAve + m_AttackAlpha*mag;
-    m_DecayAve = (1.0-m_DecayAlpha)*m_DecayAve + m_DecayAlpha*mag;
-    if(m_AttackAve>m_DecayAve)
-    {	//if attack average is greater then must be increasing signal
-        m_AverageMag = m_AttackAve;	//use attack average value
-        m_DecayAve = m_AttackAve;	//force decay average to attack average
-    }
-    else
-    {	//is decreasing strength so use decay average
-        m_AverageMag = m_DecayAve;	//use decay average value
-    }
-    if(mag > m_PeakMag)
-        m_PeakMag = mag;		//save new peak (reset when read )
-}
-
-
-#endif
-
-CPX * SignalStrength::ProcessBlock(CPX *in, int downConvertLen, int squelch)
+CPX * SignalStrength::ProcessBlock(CPX *in, int numSamples, double squelchdB)
 {
     //Squelch values are global->mindB to global->maxdB
 
-	//Same as TotalPower, except here we modify out if below squelch
-    float pwr = 0.0;
-	//double squelchWatts = dBm_2_Watts(squelch);
-	//sum(re^2 + im^2)
-    for (int i = 0; i < downConvertLen; i++) {
+	double pwr = 0;
+	m_peakPower = 0;
+	double totalPwr = 0;
+
+	m_peakdB = DB::minDb;
+
+	//Testing standard dev
+	double mean = 0;
+	double prevMean = 0;
+	double S = 0;
+	double prevS = 0;
+	double stdDev = 0;
+	double variance = 0;
+
+	for (int i = 0, k=1; i < numSamples; i++,k++) {
 		//Total power of this sample pair
-		pwr = DB::power(in[i]); //Power in watts
-        //Verified 8/13 comparing testbench gen output at all db levels
-		instValue = DB::clip(DB::powerTodB(pwr)); //Watts to db
-        //Weighted average 90/10
-        avgValue = 0.99 * avgValue + 0.01 * instValue;
+		pwr = DB::power(in[i]);
+		if (pwr > m_peakPower)
+			m_peakPower = pwr;
 
-		//we clearing whole buffer so audio is either on or off
-		//Sample by sample gives us gradual threshold, which sounds strange
-        if (avgValue < squelch) {
-		//if (watts < squelchWatts) {
-			out[i].re = 0;
-			out[i].im = 0;
+		totalPwr += pwr;
+
+		//Running mean, variance & standard deviation.  Needed for SNR calculations
+		//Knuth algorithm which handles a standard deviation which is a small fraction of the mean
+		//See Knuth TAOCP vol 2, 3rd edition, page 232
+		//for each incoming sample x:
+		//    prev_mean = m;
+		//    n = n + 1;
+		//    m = m + (x-m)/n;
+		//    S = S + (x-m)*(x-prev_mean);
+		//	standardDev = sqrt(S/n) or sqrt(S/n-1) depending on who you listen to
+#if 0
+		prevMean = mean;
+		mean = mean + (pwr - mean) / j; //no divide by 0
+		S = S + (pwr - mean) * (pwr - prevMean);
+#else
+		//Map to Knuth p216 2nd edition
+		//mean = M(k)
+		//prevMean = M(k-1)
+		//prevS = S(k-1)
+		if (k > 1) {
+			mean = prevMean + ((pwr - prevMean) / k);
+			S = prevS + ((pwr - prevMean) * (pwr - mean));
 		} else {
-            out[i] = in[i]; //Just copy
+			//Special case for first sample, mean and pwr are the same
+			mean = pwr;
+			S = 0;
 		}
-    }
-	
-	return out;
-}
-float SignalStrength::instFValue() {
-    float temp = instValue + correction;
-	temp = temp > DB::maxDb ? DB::maxDb : temp;
-	temp = temp < DB::minDb ? DB::minDb : temp;
-    return temp;
-}
+		prevMean = mean;
+		prevS = S;
+#endif
+		variance = S / k;
+		stdDev = sqrt(variance);
 
-float SignalStrength::avgFValue() {
-    float temp = avgValue + correction;
-	temp = temp > DB::maxDb ? DB::maxDb : temp;
-	temp = temp < DB::minDb ? DB::minDb : temp;
-    return temp;
+        //Verified 8/13 comparing testbench gen output at all db levels
+		//instValue = DB::clip(DB::powerTodB(pwr)); //Watts to db
+		//instValue = DB::clip(DB::amplitudeTodB(DB::amplitude(in[i])));
+        //Weighted average 90/10
+		//avgValue = 0.99 * avgValue + 0.01 * instValue;
+
+    }
+	m_peakdB = DB::powerTodB(peakPower());
+
+	//Test SNR
+	//SNR is the power of the wanted signal divided by the noise power.
+	m_snr = DB::powerTodB(mean / stdDev);
+	//m_snr = DB::powerRatioToDb(mean, stdDev); //Same as powerTodB(mean/stdDev)
+
+	//Todo: peak db and average db are 10db different when looking at noise, why?
+	m_avgPower = totalPwr/numSamples;
+	m_avgdB = DB::powerTodB(m_avgPower); //Same as rmsdB
+	m_rms = sqrt(m_avgPower);
+	m_rmsdB = DB::amplitudeTodB(m_rms); //Same as avgdB
+
+	//squelch is a form of AGC and should have an attack/decay component to smooth out the response
+	//we fudge that by just looking at the average of the entire buffer
+	if (m_avgdB < squelchdB) {
+		CPX::clearCPX(out,numSamples);
+	} else {
+		CPX::copyCPX(out, in, numSamples);
+	}
+
+	return out;
 }
 
 //Used for testing with other values
-float SignalStrength::extFValue(){
-    return extValue;
-}
-void SignalStrength::setExtValue(float v)
+void SignalStrength::setExtValue(double v)
 {
-    extValue = v;
-}
-
-char SignalStrength::instCValue() {
-    return (char)(instValue + correction + (float)SPECDBMOFFSET);
-}
-
-char SignalStrength::avgCValue() {
-    return (char)(avgValue + correction + (float)SPECDBMOFFSET);
-}
-
-void SignalStrength::setCorrection(const float value) {
-    correction = value;
+	m_extValue = v;
 }
