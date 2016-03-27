@@ -19,7 +19,6 @@ ElektorDevice::ElektorDevice():DeviceInterfaceBase()
 
 ElektorDevice::~ElektorDevice()
 {
-	WriteSettings();
 }
 
 bool ElektorDevice::Initialize(cbProcessIQData _callback,
@@ -105,6 +104,8 @@ bool ElektorDevice::Connect()
 
 bool ElektorDevice::Disconnect()
 {
+	WriteSettings();
+
 	// Close the USB link
 	usbUtil->CloseDevice();
 

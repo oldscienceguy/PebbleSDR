@@ -17,8 +17,6 @@ FunCubeSDRDevice::FunCubeSDRDevice():DeviceInterfaceBase()
 
 FunCubeSDRDevice::~FunCubeSDRDevice()
 {
-	WriteSettings();
-	Disconnect();
 	hid_exit();
 }
 
@@ -63,6 +61,8 @@ bool FunCubeSDRDevice::Connect()
 
 bool FunCubeSDRDevice::Disconnect()
 {
+	WriteSettings();
+
 	//Mac sometimes crashes when hid_close is called, but we need it
 	if (hidDev != NULL)
 		hid_close(hidDev);

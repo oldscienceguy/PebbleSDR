@@ -42,8 +42,6 @@ HPSDRDevice::HPSDRDevice():DeviceInterfaceBase()
 
 HPSDRDevice::~HPSDRDevice()
 {
-	WriteSettings();
-
 	if (connectionType == OZY && usbUtil.IsUSBLoaded()) {
 		usbUtil.ReleaseInterface(0);
 		usbUtil.CloseDevice();
@@ -240,6 +238,8 @@ bool HPSDRDevice::Connect()
 
 bool HPSDRDevice::Disconnect()
 {
+	WriteSettings();
+
 	if (connectionType == METIS) {
 		connected = false;
 		connectionType = UNKNOWN;

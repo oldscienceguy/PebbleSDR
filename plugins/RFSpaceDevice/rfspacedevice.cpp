@@ -31,10 +31,6 @@ RFSpaceDevice::RFSpaceDevice():DeviceInterfaceBase()
 
 RFSpaceDevice::~RFSpaceDevice()
 {
-	WriteSettings();
-	if (usbUtil != NULL)
-		usbUtil->CloseDevice();
-
 	if (readBuf != NULL)
 		delete [] readBuf;
 	if (usbReadBuf != NULL)
@@ -88,7 +84,7 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback,
 		//Use 10mhz signal generator with .0005vpp (Red Pitaya) should result in approx -60db signal
 		//Test with normalizeGain = 1 to get baseline, then calculate db gain/loss adjustment
 		//Compare with other programs to verify
-		normalizeIQGain = DB::dBToAmplitude(-9.5);
+		//normalizeIQGain = DB::dBToAmplitude(-9.5);
 
 	} else if(deviceNumber == SDR_IP) {
 		DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
@@ -216,6 +212,8 @@ bool RFSpaceDevice::Connect()
 
 bool RFSpaceDevice::Disconnect()
 {
+	WriteSettings();
+
 	if (!connected)
 		return false;
 

@@ -205,7 +205,8 @@ void SDRPlayDevice::ReadSettings()
 	highFrequency = 2000000000;
 	deviceFrequency = lastFreq = 10000000;
 	deviceSampleRate = 2000000;
-	normalizeIQGain = DB::dbToAmplitude(7.0);
+	normalizeIQGain = 1.0;
+	//normalizeIQGain = DB::dbToAmplitude(-14.0);
 
 	DeviceInterfaceBase::ReadSettings();
 	dcCorrectionMode = qSettings->value("dcCorrectionMode",0).toInt(); //0 = off
@@ -342,15 +343,15 @@ void SDRPlayDevice::dbFSChanged(int _value)
 	dbFS = _value;
 	//Convert dBfs to power
 	//pow(10, db/10.0); //From numerous references in DB class
-	agcPwrSetpoint = DB::dbToPower(dbFS);
+	agcPwrSetpoint = DB::dBToPower(dbFS);
 	//Mirics AGC note
 	//power = Antilog(dbFS/10)
 	//Antilog = log(n)^10
 	//double dbFSPower = pow(10, log10(dbFS/10); //reduces to just dbFS/10
 
 	//Define agc window
-	agcPwrSetpointHigh = DB::dbToPower(dbFS + 2);
-	agcPwrSetpointLow = DB::dbToPower(dbFS - 2);
+	agcPwrSetpointHigh = DB::dBToPower(dbFS + 2);
+	agcPwrSetpointLow = DB::dBToPower(dbFS - 2);
 }
 
 void SDRPlayDevice::IFModeChanged(int _item)
@@ -625,6 +626,7 @@ void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 	int gainReductionChanged;
 	int rfFreqChanged;
 	int sampleFreqChanged;
+	bool reverseIQ = false; //Normally reversed from normal
 
 #if 0
 	static short maxSample = 0;
@@ -682,20 +684,19 @@ void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 				}
 				//Save in producerBuffer (sized to handle overflow
 				//Make sure samplesPerPacket is initialized before producer starts
-				//I/Q is reversed from Pebble norm, correct here so user sees normal order
 
 				qint32 samplesNeeded = framesPerBuffer - producerIndex;
 				samplesNeeded = samplesPerPacket <= samplesNeeded ? samplesPerPacket : samplesNeeded;
 				qint32 samplesExtra = samplesPerPacket - samplesNeeded;
 
-				normalizeIQ(&producerFreeBufPtr[producerIndex], packetQBuf, packetIBuf, samplesNeeded, true);
+				normalizeIQ(&producerFreeBufPtr[producerIndex], packetIBuf, packetQBuf, samplesNeeded, reverseIQ);
 				producerIndex += samplesNeeded;
 
 				if (producerIndex >= framesPerBuffer) {
+#if 0
 					double avgPwrInPacket = 0;
 					//AGC Logic
 					//Todo: AGC not working, review logic
-#if 0
 					if (agcEnabled && !pendingGainReduction) {
 						totalPwrInPacket = 0;
 						for (int i=0; i<framesPerBuffer; i++) {
@@ -737,8 +738,8 @@ void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 									  "samplesPerPacket = "<<samplesPerPacket;
 							return;
 						}
-						normalizeIQ(&producerFreeBufPtr[producerIndex], &packetQBuf[samplesNeeded],
-									&packetIBuf[samplesNeeded], samplesExtra, true);
+						normalizeIQ(&producerFreeBufPtr[producerIndex], &packetIBuf[samplesNeeded],
+									&packetQBuf[samplesNeeded], samplesExtra, reverseIQ);
 						producerIndex += samplesExtra;
 					}
 				}
