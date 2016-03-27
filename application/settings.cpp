@@ -41,11 +41,12 @@ void Settings::ReadSettings()
 	//Restore efault or last window size and position
 	QRect pos = global->primaryScreen->availableGeometry();
 	//Default position is upper right corner of screen
+	//There are no valid defaults for height and width when we're creating pebble.ini first time, set to invalid value
 	windowHeight = qSettings->value("windowHeight", -1).toInt();
 	windowWidth = qSettings->value("windowWidth", -1).toInt();
 	//bump tight to right
-	windowXPos = qSettings->value("windowXPos",pos.right() - global->mainWindow->width()).toInt();
-	windowYPos = qSettings->value("windowYPos", 0).toInt();
+	windowXPos = qSettings->value("windowXPos",pos.right() - global->mainWindow->minimumWidth()).toInt();
+	windowYPos = qSettings->value("windowYPos", pos.top()).toInt();
 
     sdrDeviceFilename = qSettings->value("sdrDeviceFilename", "SR_V9").toString();
     sdrDeviceNumber = qSettings->value("sdrDeviceNumber",0).toUInt();
