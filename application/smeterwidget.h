@@ -17,7 +17,7 @@ class SMeterWidget : public QFrame
 	Q_OBJECT
 
 public:
-	enum UNITS {PEAK_DB, AVG_DB, S_UNITS, SNR, EXT, NONE};
+	enum UNITS {PEAK_DB, AVG_DB, S_UNITS, SNR, FLOOR, EXT, NONE};
 
 	SMeterWidget(QWidget *parent = 0);
 	~SMeterWidget();

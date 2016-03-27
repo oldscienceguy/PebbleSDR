@@ -13,6 +13,7 @@ SMeterWidget::SMeterWidget(QWidget *parent) :QFrame(parent)
 	ui.unitBox->addItem("Peak",PEAK_DB);
 	ui.unitBox->addItem("Average",AVG_DB);
 	ui.unitBox->addItem("SNR",SNR);
+	ui.unitBox->addItem("Floor",FLOOR);
 	ui.unitBox->addItem("S-UNITS",S_UNITS);
 	ui.unitBox->addItem("Ext",EXT);
 	ui.unitBox->addItem("None",NONE);
@@ -42,6 +43,8 @@ void SMeterWidget::updateLabels()
 		case PEAK_DB:
 			//Fall through
 		case AVG_DB:
+			//Fall through
+		case FLOOR:
 			//Fall through
 		case SNR:
 			//dB labels, 10db per tick
@@ -150,6 +153,9 @@ void SMeterWidget::updateMeter()
 				break;
 			case SNR:
 				db = signalStrength->snr();
+				break;
+			case FLOOR:
+				db = signalStrength->floor();
 				break;
 			case S_UNITS:
 				db = signalStrength->avgdB();
