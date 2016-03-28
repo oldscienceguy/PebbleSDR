@@ -7,7 +7,6 @@
 SMeterWidget::SMeterWidget(QWidget *parent) :QFrame(parent)
 {
 	ui.setupUi(this);
-	signalStrength = NULL;
 
 	units = PEAK_DB; //First item in box until we get from setings
 	ui.unitBox->addItem("Peak",PEAK_DB);
@@ -107,17 +106,6 @@ void SMeterWidget::updateLabels()
 	ui.barGraph->setLabels(labels);
 }
 
-
-void SMeterWidget::SetSignalSpectrum(SignalSpectrum *s)
-{
-    //We only need to update smeter when we have new spectrum data to display
-    //Use newFftData signal to trigger repaint instead of thread
-    //signalSpectrum = s;
-    if (s!=NULL) {
-		connect(s,SIGNAL(newFftData()),this,SLOT(updateMeter()));
-    }
-}
-
 void SMeterWidget::start()
 {
     ui.barGraph->start();
@@ -135,43 +123,33 @@ void SMeterWidget::resizeEvent(QResizeEvent *_event)
 	ui.barGraph->resizeEvent(_event);
 }
 
-void SMeterWidget::setSignalStrength(SignalStrength *ss)
-{
-	signalStrength = ss;
-}
-
-void SMeterWidget::updateMeter()
+void SMeterWidget::newSignalStrength(double peakDb, double avgDb, double snrDb, double floorDb, double extValue)
 {
 	float db = DB::minDb;
-    if (signalStrength != NULL) {
-		switch (units) {
-			case PEAK_DB:
-				db = signalStrength->peakdB(); //Peak
-				break;
-			case AVG_DB:
-				db = signalStrength->avgdB();
-				break;
-			case SNR:
-				db = signalStrength->snr();
-				break;
-			case FLOOR:
-				db = signalStrength->floor();
-				break;
-			case S_UNITS:
-				db = signalStrength->avgdB();
-				break;
-			case NONE:
-				break;
-			case EXT:
-				db = signalStrength->extValue();
-				break;
-			default:
-				db = DB::minDb;
-				break;
-		}
-    }
-	else {
-		db = DB::minDb;
+	switch (units) {
+		case PEAK_DB:
+			db = peakDb; //Peak
+			break;
+		case AVG_DB:
+			db = avgDb;
+			break;
+		case SNR:
+			db = snrDb;
+			break;
+		case FLOOR:
+			db = floorDb;
+			break;
+		case S_UNITS:
+			db = avgDb;
+			break;
+		case NONE:
+			break;
+		case EXT:
+			db = extValue;
+			break;
+		default:
+			db = DB::minDb;
+			break;
 	}
 	ui.barGraph->setValue(db);
 	ui.value->setText(QString::number(db,'f',0));

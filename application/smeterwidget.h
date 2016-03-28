@@ -22,21 +22,20 @@ public:
 	SMeterWidget(QWidget *parent = 0);
 	~SMeterWidget();
 	
-	void setSignalStrength (SignalStrength *ss);
-
-    void SetSignalSpectrum(SignalSpectrum *s);
     void start();
     void stop();
 
+	//Called by ReceiverWidget when new data is available
+	void newSignalStrength(double peakDb, double avgDb, double snrDb, double floorDb, double extValue);
+
 private:
 	Ui::SMeterWidgetClass ui;
-	SignalStrength *signalStrength; //Where we get data from
 	void resizeEvent(QResizeEvent * _event);
 	UNITS units;
 
 	void updateLabels();
+
 private slots:
-		void updateMeter();
 		void unitBoxChanged(int item);
 };
 
