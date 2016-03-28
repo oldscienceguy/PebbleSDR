@@ -77,6 +77,7 @@ public:
 
     DigitalModemInterface *getDigitalModem() {return iDigitalModem;}
     void SetDigitalModem(QString _name, QWidget *_parent);
+
     QList<PluginInfo> getModemPluginInfo() {return plugins->GetModemPluginInfo();}
     QList<PluginInfo> getDevicePluginInfo() {return plugins->GetDevicePluginInfo();}
 
@@ -137,6 +138,9 @@ private:
 
 	double frequency; //Current LO frequency (not mixed)
     double mixerFrequency;
+	double demodFrequency; //frequency + mixerFrequency
+	double lastDemodFrequency;
+
 	int sampleRate;
 	int framesPerBuffer; //#samples in each callback
 	//sample rate and buffer size after down sampling step

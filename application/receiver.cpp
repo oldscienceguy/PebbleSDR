@@ -17,8 +17,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 
 	//Read ini file or set defaults if no ini file exists
 	settings = global->settings;
-
-    plugins = new Plugins(this,settings);
+	plugins = new Plugins(this,settings);
 
     mainWindow = main;
     receiverWidget = rw;
@@ -28,7 +27,13 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	pos.setY(settings->windowYPos);
 	pos.setWidth(settings->windowWidth);
 	pos.setHeight(settings->windowHeight);
-	mainWindow->setGeometry(pos);
+	//setGeometry breaks in QT 5.6 and doesn't adjust invalid width and height values
+	if (settings->windowWidth < 1 || settings->windowHeight < 1) {
+		//Just move window and accept default width and height
+		mainWindow->move(pos.x(),pos.y());
+	} else {
+		mainWindow->setGeometry(pos);
+	}
 
 	recordingPath = global->appDirPath;
     //Make sure directory exists, else will get file error
@@ -230,6 +235,10 @@ bool Receiver::On()
     //Calls to ProcessBlock will pass post decimation len
     signalStrength = new SignalStrength(demodSampleRate,framesPerBuffer);
 
+	//Testing, will update too fast, need to sync with new fft data
+	connect(signalStrength, SIGNAL(newSignalStrength(double,double,double,double,double)),
+			receiverWidget, SLOT(newSignalStrength(double,double,double,double,double)));
+
     iDigitalModem = NULL;
 
 	bpFilter = new BandPassFilter(demodSampleRate, demodFrames);
@@ -238,6 +247,8 @@ bool Receiver::On()
     agc = new AGC(demodSampleRate, demodFrames);
 
 	mixerFrequency = 0;
+	demodFrequency = 0;
+	lastDemodFrequency = 0;
 
 	converterMode = sdr->Get(DeviceInterface::ConverterMode).toBool();
 	converterOffset = sdr->Get(DeviceInterface::ConverterOffset).toDouble();
@@ -272,7 +283,7 @@ void Receiver::openTestBench()
 
 	testBench->Init(); //Sets up last device settings used
 	//Anchor in upper left
-	testBench->setGeometry(0,0,-1,-1);
+	testBench->move(0,0);
 
 	testBench->ResetProfiles();
 	testBench->AddProfile("Incoming",testBenchRawIQ);
@@ -382,7 +393,8 @@ bool Receiver::Off()
         app->setWindowTitle("Pebble II");
 	}
 
-	sdrOptions->ShowSdrOptions(sdr, false);
+	if (sdrOptions != NULL)
+		sdrOptions->ShowSdrOptions(sdr, false);
 
     if (isRecording) {
         recordingFile.Close();
@@ -408,6 +420,7 @@ bool Receiver::Off()
 		sdr->Command(DeviceInterface::CmdWriteSettings,0); //Always save last mode, last freq, etc
 
 		sdr->Command(DeviceInterface::CmdDisconnect,0);
+		//Make sure SDR threads are fully stopped, otherwise processIQ objects below will crash in destructor
 		//Active SDR object survives on/off and is kept in global.  Do not delete
 		//delete sdr;
         sdr = NULL;
@@ -493,21 +506,21 @@ bool Receiver::Off()
 void Receiver::Close()
 {
     Off();
-    settings->WriteSettings();
-}
-Receiver::~Receiver(void)
-{
 	if (global->testBench->isVisible())
 		global->testBench->setVisible(false);
 	if (readmeView != NULL && readmeView->isVisible())
 		readmeView->setVisible(false);
 	if (gplView != NULL && gplView->isVisible())
 		gplView->setVisible(false);
-
-	if (settings != NULL)
-		delete settings;
-    if (sdr != NULL)
-        delete sdr;
+	settings->WriteSettings();
+}
+Receiver::~Receiver(void)
+{
+	//Delete all the plugins
+	if (plugins != NULL)
+		delete plugins;
+	//settings is deleted by pebbleii
+	//plugins (sdr) are deleted by ~Plugins()
 }
 
 //Connected to ReceiverWidget REC button
@@ -590,20 +603,18 @@ double Receiver::SetSDRFrequency(double fRequested, double fCurrent)
 	}
 #endif
 	if (converterMode) {
-		if (sdr->Set(DeviceInterface::DeviceFrequency,fRequested + converterOffset)) {
-			frequency = fRequested;
-			return fRequested;
-		} else {
-			return fCurrent;
-		}
-	} else {
-		if (sdr->Set(DeviceInterface::DeviceFrequency,fRequested)) {
-			frequency = fRequested;
-			return fRequested;
-		} else {
-			return fCurrent;
-		}
+		fRequested += converterOffset;
 	}
+	if (sdr->Set(DeviceInterface::DeviceFrequency,fRequested)) {
+		frequency = fRequested;
+	} else {
+		//Failed, return current freq without change
+		fRequested =  fCurrent;
+	}
+
+	lastDemodFrequency = demodFrequency;
+	demodFrequency = frequency + mixerFrequency;
+	return fRequested;
 }
 
 //Called by ReceiverWidget to sets demod mode and default bandpass filter for each mode
@@ -691,7 +702,8 @@ void Receiver::SetMixer(int f)
 		downConvertWfm1.SetFrequency(mixerFrequency);
 		demod->ResetDemod();
 	}
-
+	lastDemodFrequency = demodFrequency;
+	demodFrequency = frequency + mixerFrequency;
 }
 
 void Receiver::SdrOptionsPressed()
@@ -794,19 +806,8 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
     nextStep = noiseBlanker->ProcessBlock2(nextStep);
 
     //Spectrum display, in buffer is not modified
-    //Spectrum is displayed before mixer, so that changes in mixer don't change spectrum
-    //
-    signalSpectrum->Unprocessed(nextStep,
-        0,//audio->inBufferUnderflowCount,
-        0,//audio->inBufferOverflowCount,
-        0,//audio->outBufferUnderflowCount,
-		0,//audio->outBufferOverflowCount);
-		numSamples);
-	//audio->ClearCounts();
+	signalSpectrum->Unprocessed(nextStep, numSamples);
     //global->perform.StopPerformance(100);
-
-	//Dump data about current spectrum, used when calibrating normalizeIQGain
-	//signalSpectrum->analyzeSpectrum();
 
 	//Signal (Specific frequency) processing
 
@@ -861,14 +862,14 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 		signalSpectrum->Zoomed(sampleBuf, numStepSamples);
         nextStep = sampleBuf;
 
-		nextStep = signalStrength->ProcessBlock(nextStep, numStepSamples, squelch);
+		nextStep = signalStrength->processBlock(nextStep, numStepSamples, squelch);
 
 		nextStep = demod->ProcessBlock(nextStep, numStepSamples);
 
         resampRate = (demodWfmSampleRate*1.0) / (audioOutRate*1.0);
 
     } else {
-
+		//DB::analyzeCPX(nextStep,numStepSamples,"Pre-Decimate");
 		//global->perform.StartPerformance();
 		if (!useDemodDecimator) {
         //Replaces Mixer.cpp
@@ -891,14 +892,14 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
             sampleBuf[sampleBufLen++] = workingBuf[i];
         }
 
-#if 1
 		//Build full frame buffer
         if (sampleBufLen < framesPerBuffer)
             return; //Nothing to do until we have full buffer
 		numStepSamples = framesPerBuffer;
 		sampleBufLen = 0;
-#endif
 		nextStep = sampleBuf;
+
+		//DB::analyzeCPX(nextStep,numStepSamples,"Post-Decimate");
 
 		//Create zoomed spectrum
 		//global->perform.StartPerformance("Signal Spectrum Zoomed");
@@ -926,7 +927,12 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
         //If squelch is set, and we're below threshold and should set output to zero
         //Do this in SignalStrength, since that's where we're calculating average signal strength anyway
 		//global->perform.StartPerformance("Signal Strength");
-		nextStep = signalStrength->ProcessBlock(nextStep, numStepSamples, squelch);
+
+		if (lastDemodFrequency != demodFrequency) {
+			signalStrength->reset(); //Start new averages
+			lastDemodFrequency = demodFrequency;
+		}
+		nextStep = signalStrength->processBlock(nextStep, numStepSamples, squelch);
 		//global->perform.StopPerformance(100);
 
         //Tune only mode, no demod or output
