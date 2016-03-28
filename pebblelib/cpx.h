@@ -284,9 +284,13 @@ public:
 	//Convert to Polar mag()
     // n = |Z|
     inline double mag() const {
-        return sqrt(norm());
+		return sqrt(sqrMag());
     }
 
+	//Used in GNURadio and some texts
+	inline double abs() const {
+		return sqrt(re*re + im*im);
+	}
 
 	double phase() const;
 
