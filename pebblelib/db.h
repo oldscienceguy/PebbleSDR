@@ -55,7 +55,7 @@ public:
 
     //db conversion functions from Steven Smith book
 	//Std equation for decibles is A(db) = 10 * log10(P2/P1) where P1 is measured power and P2 is compared power
-	static inline double powerRatioToDb(double measuredPower, double comparedPower) {
+	static inline double powerRatioToDb(double comparedPower, double measuredPower) {
 		if (measuredPower==0 || comparedPower==0)
 			return DB::minDb;
 		return 10.0 * log10(comparedPower / measuredPower);
@@ -96,6 +96,8 @@ public:
 	}
 
 	//Here for reference
+	static inline double rmsdB(CPX *in, quint32 numSamples);
+
 	//microvolts == amplitude
 	static inline double uv(CPX cx) {
 		return sqrt(cx.re*cx.re + cx.im*cx.im);

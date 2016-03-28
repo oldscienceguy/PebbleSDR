@@ -96,6 +96,30 @@
 	than one bin (e.g. a wideband modulated signal); if they are narrower (e.g. pure tones) then the
 	power value is more useful.
 
+	3/21/16: To show how inconsistent SDR programs are.  Using Red Pitaya signal generator at 10mhz with Amplitude (Vpp).
+	|          SDR IQ, RF Gain 0dB, IF Gain 18dB, SR 196k (Elad SW using Elad FDM-S2)
+	|          SpectraVue      SDR#            SDR-Radio        Elad
+	|          Units: dB       Units: dbFS     Units: dBm       Units: dBm
+	Amplitude  Peak RMS Floor  Peak SNR Floor  dBm  S  Floor     dBm    S
+	.00025     -67  -73 -110   -27  58  -85    -56              -66.5  S9
+	.00050     -62  -67        -22  63  -85    -52              -61.5  +10
+	.00500     -41  -47        -1   83  -85    -34              -41.0  +30
+	9.950mhz
+	Noise
+
+	|SDR-Play LNA off, RFGain -50db, VisualGain -10db?
+	Amplitude  Peak RMS Floor  Peak SNR Floor  dBm  S  Floor     dBm    S
+	.00025                                     -59     -112
+	.00050
+	.00500
+	9.950mhz                                   -55
+	Noise                                      -102
+
+	Note that SpectraVue Peak dB and Elad dBm are approx the same.  SV has a default -5.4db FFT correction which is
+	  included in the above results.  Without this correction, the peak is -63dB at .00025 vpp
+	SDR# uses db Full Scale and is a consistent 40db different
+	SDR-Radio is consistently 10db different
+
 #endif
 
 //Init static class variables
@@ -105,6 +129,26 @@ double DB::minDb = -120.0;
 
 DB::DB()
 {
+}
+
+//Returns the root mean square (average power) in buffer
+double DB::rmsdB(CPX *in, quint32 numSamples)
+{
+	double totalSquared = 0;
+	double rms = 0;
+	for (quint32 i=0; i<numSamples; i++) {
+		totalSquared += in[i].re*in[i].re + in[i].im*in[i].im;
+	}
+	rms = sqrt(totalSquared / numSamples);
+	return DB::amplitudeTodB(rms); //20 * log10(rms);
+#if 0
+	//Same results, with power, but slightly faster since no sqrt
+	double totalPower = 0;
+	for (quint32 i=0; i<numSamples; i++) {
+		totalPower += DB::power(in[i]);
+	}
+	return DB::powerTodB(totalPower/numSamples); //10*log10(power)
+#endif
 }
 
 void DB::test()
