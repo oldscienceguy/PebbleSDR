@@ -50,6 +50,7 @@ public slots:
         void directEntryCanceled();
         void showDataFrame(bool b);
         void setMixerLimits(int highM, int lowM);
+		void newSignalStrength(double peakDb, double avgDb, double snrDb, double floorDb, double extValue);
 
 
 signals:

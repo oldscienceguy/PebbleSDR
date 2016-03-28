@@ -437,7 +437,13 @@ void ReceiverWidget::SetLimits(double highF,double lowF,int highM,int lowM)
 void ReceiverWidget::setMixerLimits(int highM, int lowM)
 {
     highMixer = highM;
-    lowMixer = lowM;
+	lowMixer = lowM;
+}
+
+//Receiver connection when new data is available
+void ReceiverWidget::newSignalStrength(double peakDb, double avgDb, double snrDb, double floorDb, double extValue)
+{
+	ui.sMeterWidget->newSignalStrength(peakDb, avgDb, snrDb, floorDb, extValue);
 }
 
 //Set frequency by changing LO or Mixer, depending on radio button chosen
@@ -587,9 +593,6 @@ void ReceiverWidget::powerToggled(bool on)
         //Presets are only loaded when receiver is on
         presets = receiver->GetPresets();
 
-		//Give SMeter access to signal strength SignalProcessing block
-		ui.sMeterWidget->setSignalStrength(receiver->GetSignalStrength());
-        ui.sMeterWidget->SetSignalSpectrum(receiver->GetSignalSpectrum());
         ui.spectrumWidget->SetSignalSpectrum(receiver->GetSignalSpectrum());
 
 		ui.spectrumWidget->plotSelectionChanged((SpectrumWidget::DISPLAYMODE)sdr->Get(DeviceInterface::LastSpectrumMode).toInt());
