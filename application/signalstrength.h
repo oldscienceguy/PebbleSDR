@@ -2,40 +2,62 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include "processstep.h"
-
-#define SPECDBMOFFSET 100.50
+#include <QElapsedTimer>
 
 class SignalStrength :
 	public ProcessStep
 {
+	//This needs to included in any class that uses signals or slots
+	Q_OBJECT
 public:
 	SignalStrength(quint32 _sampleRate, quint32 _bufferSize);
 	~SignalStrength(void);
-	inline double peakdB() {return m_peakdB;}
+	void reset(); //Initialize all running mean variables
+
+	inline double peakDb() {return m_peakDb;}
 	inline double peakPower() {return m_peakPower;}
-	inline double avgdB() {return m_avgdB;}
+	inline double avgDb() {return m_avgDb;}
 	inline double avgPower() {return m_avgPower;}
-	inline double snr() {return m_snr;}
+	inline double snrDb() {return m_snrDb;}
+	inline double floorDb() {return m_floorDb;}
 
 	inline double extValue() {return m_extValue;}
 
 	void setExtValue(double v);
 
-	CPX * ProcessBlock(CPX *in, int numSamples, double squelchdB);
+	CPX * processBlock(CPX *in, int numSamples, double squelchDb);
 
+signals:
+	void newSignalStrength(double peakDb, double avgDb, double snrDb, double floorDb, double extValue);
 
 private:
-	double m_peakdB;
-	double m_avgdB;
+	//ms between updates
+	const quint32 updateInterval = 100; //10 updates per sec
+	QElapsedTimer updateTimer;
+
+	double m_peakDb;
+	double m_avgDb;
 
 	double m_peakPower;
 	double m_avgPower;
 
 	double m_rms;
-	double m_rmsdB;
+	double m_rmsDb;
 
-	double m_snr;
+	double m_snrDb;
+	double m_floorDb; //Noise floor
 
 	double m_extValue; //Used for other power readings, like goretzel (cw) output
+
+	//For running mean, variance, stdDev
+	double m_runningMean;
+	quint32 m_meanCounter;
+	double m_prevMean;
+	double m_prevS;
+	double m_stdDev;
+	double m_variance;
+	double m_signal;
+	double m_noise;
+
 
 };
