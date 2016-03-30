@@ -9,9 +9,13 @@ class SignalStrength :
 {
 	//This needs to included in any class that uses signals or slots
 	Q_OBJECT
+
 public:
 	SignalStrength(quint32 _sampleRate, quint32 _bufferSize);
 	~SignalStrength(void);
+
+	void setSquelch(int squelchDb) {m_squelchDb = squelchDb;}
+
 	void reset(); //Initialize all running mean variables
 
 	inline double peakDb() {return m_peakDb;}
@@ -25,12 +29,14 @@ public:
 
 	void setExtValue(double v);
 
-	CPX * processBlock(CPX *in, int numSamples, double squelchDb);
+	CPX *process(CPX *in, quint32 numSamples);
 
 signals:
 	void newSignalStrength(double peakDb, double avgDb, double snrDb, double floorDb, double extValue);
 
 private:
+	int m_squelchDb;
+
 	//ms between updates
 	const quint32 updateInterval = 100; //10 updates per sec
 	QElapsedTimer updateTimer;

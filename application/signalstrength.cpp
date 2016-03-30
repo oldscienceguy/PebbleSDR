@@ -5,6 +5,7 @@
 SignalStrength::SignalStrength(quint32 _sampleRate, quint32 _bufferSize):
 	ProcessStep(_sampleRate,_bufferSize)
 {
+	m_squelchDb = DB::minDb;
 	reset();
 }
 
@@ -41,12 +42,35 @@ Total power = mean square value of time domain waveform
 
 RMS (Root Mean Square) = sqrt(mean of the squares)
 
-ProcessBlock is called after we've mixed and filtered our samples, so *in contains desired signal
+From Rhodes&Schwartz (Spectrum Analyzer) application notes
+https://www.rohde-schwarz.com/us/applications/importing-data-in-arb-custom-digital-modulation-and-rf-list-mode-application-note_56280-15778.html
+https://www.tablix.org/~avian/blog/archives/2015/04/correcting_the_gnu_radio_power_measurements/
+The RMS, Peak and Crest Factor of a complex signal buffer is defined as
+follows:
+rms = sqrt(1/n * sum(0:n-1) (I[n]^2 + Q[n]^2))
+peak = max(0:n-1)sqrt(I[n]^2 + Q[n]^2)
+crest=20*log10 (Peak/RMS)
+
+For complex signals with a constant envelope (vector length) the peak and RMS
+value is identical. In this case the crest factor becomes zero. If the envelope
+is exactly 1.0, which means that the full signal range is used, both numbers of
+the level tag need to be set to zero. However, it is possible to use other
+values that will either scale down the signal or lead to clipping. Both
+situations might be desirable under certain circumstances. An example could be
+a signal that generally uses low levels. Once in a while high peaks exist where
+a clipping situation can be tolerated. Under these circumstances a negative
+value for the peak offset will scale up the signal and result in a higher
+resolution of the low level signal sections.
+
+FullScale = 1, but can be changed to scale the signal for better resolution of low level signals
+peakDbOffset = 20*log10(FullScale/Peak)
+rmsDbOffset = 20*log10(FullScale/RMS)
+
+
 Compute the total power of all the samples, convert to dB and save
-Background thread will pick up instValue or avgValue and display
 */
 
-CPX * SignalStrength::processBlock(CPX *in, int numSamples, double squelchDb)
+CPX *SignalStrength::process(CPX *in, quint32 numSamples)
 {
 	if (!updateTimer.isValid()) {
 		updateTimer.start();
@@ -68,7 +92,7 @@ CPX * SignalStrength::processBlock(CPX *in, int numSamples, double squelchDb)
 
 	for (int i = 0; i < numSamples; i++) {
 		//Total power of this sample pair
-		pwr = DB::power(in[i]);
+		pwr = DB::power(in[i]); //I^2 + Q^2
 		totalPwr += pwr;
 
 		if (pwr > m_peakPower)
@@ -173,7 +197,7 @@ CPX * SignalStrength::processBlock(CPX *in, int numSamples, double squelchDb)
 
 	//squelch is a form of AGC and should have an attack/decay component to smooth out the response
 	//we fudge that by just looking at the average of the entire buffer
-	if (m_avgDb < squelchDb) {
+	if (m_avgDb < m_squelchDb) {
 		CPX::clearCPX(out,numSamples);
 	} else {
 		CPX::copyCPX(out, in, numSamples);
