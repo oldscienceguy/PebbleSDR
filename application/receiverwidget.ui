@@ -249,8 +249,14 @@
               <height>40</height>
              </size>
             </property>
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
             <property name="digitCount">
              <number>1</number>
+            </property>
+            <property name="segmentStyle">
+             <enum>QLCDNumber::Flat</enum>
             </property>
            </widget>
           </widget>
@@ -401,8 +407,14 @@
               <height>40</height>
              </size>
             </property>
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
             <property name="digitCount">
              <number>1</number>
+            </property>
+            <property name="segmentStyle">
+             <enum>QLCDNumber::Flat</enum>
             </property>
            </widget>
           </widget>
@@ -494,8 +506,14 @@
               <height>40</height>
              </size>
             </property>
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
             <property name="digitCount">
              <number>1</number>
+            </property>
+            <property name="segmentStyle">
+             <enum>QLCDNumber::Flat</enum>
             </property>
            </widget>
            <widget class="QPushButton" name="nixie10mDown">
@@ -630,8 +648,14 @@
               <height>40</height>
              </size>
             </property>
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
             <property name="digitCount">
              <number>1</number>
+            </property>
+            <property name="segmentStyle">
+             <enum>QLCDNumber::Flat</enum>
             </property>
            </widget>
            <widget class="QPushButton" name="nixie1mDown">
@@ -779,8 +803,14 @@
               <height>40</height>
              </size>
             </property>
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
             <property name="digitCount">
              <number>1</number>
+            </property>
+            <property name="segmentStyle">
+             <enum>QLCDNumber::Flat</enum>
             </property>
            </widget>
            <widget class="QPushButton" name="nixie100kDown">
@@ -915,8 +945,14 @@
               <height>40</height>
              </size>
             </property>
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
             <property name="digitCount">
              <number>1</number>
+            </property>
+            <property name="segmentStyle">
+             <enum>QLCDNumber::Flat</enum>
             </property>
            </widget>
            <widget class="QPushButton" name="nixie10kDown">
@@ -1051,8 +1087,14 @@
               <height>40</height>
              </size>
             </property>
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
             <property name="digitCount">
              <number>1</number>
+            </property>
+            <property name="segmentStyle">
+             <enum>QLCDNumber::Flat</enum>
             </property>
            </widget>
            <widget class="QPushButton" name="nixie1kDown">
@@ -1200,8 +1242,14 @@
               <height>40</height>
              </size>
             </property>
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
             <property name="digitCount">
              <number>1</number>
+            </property>
+            <property name="segmentStyle">
+             <enum>QLCDNumber::Flat</enum>
             </property>
            </widget>
            <widget class="QPushButton" name="nixie100Down">
@@ -1336,8 +1384,14 @@
               <height>40</height>
              </size>
             </property>
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
             <property name="digitCount">
              <number>1</number>
+            </property>
+            <property name="segmentStyle">
+             <enum>QLCDNumber::Flat</enum>
             </property>
            </widget>
            <widget class="QPushButton" name="nixie10Down">
@@ -1472,8 +1526,14 @@
               <height>0</height>
              </size>
             </property>
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
             <property name="digitCount">
              <number>1</number>
+            </property>
+            <property name="segmentStyle">
+             <enum>QLCDNumber::Flat</enum>
             </property>
            </widget>
            <widget class="QPushButton" name="nixie1Down">

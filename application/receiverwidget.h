@@ -106,6 +106,8 @@ private:
 	void updateClock();
 	void updateHealth();
 	void updateSlaveInfo();
+	void powerStyle(bool on);
+
 private slots:
         void ReceiverChanged(int i);
 

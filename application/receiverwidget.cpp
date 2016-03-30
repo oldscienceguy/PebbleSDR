@@ -189,6 +189,8 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 
     connect(ui.spectrumWidget,SIGNAL(mixerLimitsChanged(int,int)),this,SLOT(setMixerLimits(int,int)));
 
+	powerStyle(powerOn);
+
 }
 
 ReceiverWidget::~ReceiverWidget(void)
@@ -540,6 +542,30 @@ DeviceInterface::DEMODMODE ReceiverWidget::GetMode()
 {
 	return mode;
 }
+
+//Applies style sheet to controls that toggle on/off
+void ReceiverWidget::powerStyle(bool on) {
+	//Changes the stylesheet for QLCDNumber in tunerFrame, see pebble.qss to change
+	if (on)
+		ui.nixieFrame->setProperty("power","on");
+	else
+		ui.nixieFrame->setProperty("power","off");
+
+	//Re-apply the updated style sheets
+	ui.nixieFrame->style()->polish(ui.nixie1);
+	ui.nixieFrame->style()->polish(ui.nixie10);
+	ui.nixieFrame->style()->polish(ui.nixie100);
+	ui.nixieFrame->style()->polish(ui.nixie1k);
+	ui.nixieFrame->style()->polish(ui.nixie10k);
+	ui.nixieFrame->style()->polish(ui.nixie100k);
+	ui.nixieFrame->style()->polish(ui.nixie1m);
+	ui.nixieFrame->style()->polish(ui.nixie10m);
+	ui.nixieFrame->style()->polish(ui.nixie100m);
+	ui.nixieFrame->style()->polish(ui.nixie1g);
+	ui.nixieFrame->update();
+
+}
+
 //Slots
 
 //Note: Pushbutton text color is changed with a style sheet in deigner
@@ -555,6 +581,8 @@ void ReceiverWidget::powerToggled(bool on)
 			ui.powerButton->setChecked(false); //Turn power button back off
 			return; //Error setting up receiver
 		}
+
+		powerStyle(powerOn);
 
 		//Limit tuning range and mixer range
 		int sampleRate = sdr->Get(DeviceInterface::SampleRate).toInt();
@@ -634,6 +662,8 @@ void ReceiverWidget::powerToggled(bool on)
         //Make sure we reset data frame
         SetDataMode(0);
         powerOn = false;
+
+		powerStyle(powerOn);
 
         //Don't allow SDR changes when receiver is on
         ui.sdrSelector->setEnabled(true);
