@@ -19,7 +19,7 @@ class ProcessStep : public QObject
 
 public:
 	ProcessStep(quint32 _sampleRate, quint32 _bufferSize);
-	~ProcessStep(void);
+	virtual ~ProcessStep(void);
 
 	virtual CPX *process(CPX *in, quint32 _numSamples);
 
