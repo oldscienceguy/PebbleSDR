@@ -194,18 +194,15 @@ LCD segment 'on' color
 rgb(255,225,0) bright orange
 */
 
-QLCDNumber{
-    color: white;
-    background-color: #708090;
-}
-
 /*ui id selector with property.  All QLCDNumber elements with a #tunerFrame[power="on"] ancestor*/
-#nixieFrame[power="off"] QLCDNumber{
+#nixieFrame[power="off"] QLCDNumber,
+#clockFrame[power="off"] QLCDNumber{
     color: #A0A0A0;
     background-color: #708090;
 }
 
-#nixieFrame[power="on"] QLCDNumber{
+#nixieFrame[power="on"] QLCDNumber,
+#clockFrame[power="on"] QLCDNumber{
     color: rgb(255,225,0);
     /*
     Use http://www.colorzilla.com/gradient-editor/ for gradient editing and preview
@@ -218,5 +215,4 @@ QLCDNumber{
         stop:0 #353B43,
         stop:0.5 #BF4609,
         stop:1 #353B43);
-
 }

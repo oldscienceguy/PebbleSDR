@@ -546,10 +546,13 @@ DeviceInterface::DEMODMODE ReceiverWidget::GetMode()
 //Applies style sheet to controls that toggle on/off
 void ReceiverWidget::powerStyle(bool on) {
 	//Changes the stylesheet for QLCDNumber in tunerFrame, see pebble.qss to change
-	if (on)
+	if (on) {
 		ui.nixieFrame->setProperty("power","on");
-	else
+		ui.clockFrame->setProperty("power","on");
+	} else {
 		ui.nixieFrame->setProperty("power","off");
+		ui.clockFrame->setProperty("power","off");
+	}
 
 	//Re-apply the updated style sheets
 	ui.nixieFrame->style()->polish(ui.nixie1);
@@ -563,6 +566,9 @@ void ReceiverWidget::powerStyle(bool on) {
 	ui.nixieFrame->style()->polish(ui.nixie100m);
 	ui.nixieFrame->style()->polish(ui.nixie1g);
 	ui.nixieFrame->update();
+
+	ui.clockFrame->style()->polish(ui.clockWidget);
+	ui.clockFrame->update();
 
 }
 

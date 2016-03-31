@@ -1661,7 +1661,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QFrame" name="frame_2">
+             <widget class="QFrame" name="clockFrame">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                 <horstretch>0</horstretch>
@@ -1766,13 +1766,16 @@
                 </size>
                </property>
                <property name="frameShape">
-                <enum>QFrame::Box</enum>
+                <enum>QFrame::StyledPanel</enum>
                </property>
                <property name="smallDecimalPoint">
                 <bool>false</bool>
                </property>
                <property name="digitCount">
                 <number>5</number>
+               </property>
+               <property name="segmentStyle">
+                <enum>QLCDNumber::Flat</enum>
                </property>
                <property name="value" stdset="0">
                 <double>12345.000000000000000</double>
