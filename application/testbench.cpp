@@ -46,6 +46,7 @@
 #include "testbench.h"
 #include "ui_testbench.h"
 #include <QDebug>
+#include "nco.h"
 
 #define USE_FILE 0
 //#define FILE_NAME "SSB-7210000Hz_001.wav"
@@ -507,6 +508,13 @@ void CTestBench::MixNoiseSamples(int length, TYPECPX* pBuf, double samplerate)
     if(!m_Active || !noiseOn)
         return;
 
+#if 0
+	if (noiseOn) {
+		NCO::genNoise(pBuf, length, m_NoiseAmplitude, true);
+		//DB::analyzeCPX(pBuf,length,"Noise Gen");
+	}
+#else
+
     double u1;
     double u2;
     double rad;
@@ -525,12 +533,14 @@ void CTestBench::MixNoiseSamples(int length, TYPECPX* pBuf, double samplerate)
                 u2 = 1.0 - 2.0 * (double)rand()/(double)RAND_MAX ;
                 r = u1*u1 + u2*u2;
             } while(r >= 1.0 || r == 0.0);
-            rad = sqrt(-2.0*log(r)/r);
+			rad = sqrt(-2.0*log(r)/r);
             //add noise samples to generator output
-            pBuf[i].re += (m_NoiseAmplitude*u1*rad) * m_Fft.ampMax;
-            pBuf[i].im += (m_NoiseAmplitude*u2*rad) * m_Fft.ampMax;
+			pBuf[i].re += (m_NoiseAmplitude*u1*rad) * m_Fft.ampMax;
+			pBuf[i].im += (m_NoiseAmplitude*u2*rad) * m_Fft.ampMax;
         }
     }
+#endif
+
 }
 
 
@@ -610,7 +620,10 @@ if( (m_SweepFrequency>-31250) && (m_SweepFrequency<31250) )
 //////////////////////////////////////////////////////////////////////
 void CTestBench::Reset()
 {
-int i;
+	//Prevent display from updating while we're changing values
+	displayMutex.lock();
+
+	int i;
 	//initialize sweep generator values
 	m_SweepFrequency = m_SweepStartFrequency;
     m_SweepFreqNorm = TWOPI/m_GenSampleRate;
@@ -663,6 +676,7 @@ int i;
 	m_Fft.ResetFFT();
 	m_DisplaySkipCounter = -2;
 	m_PulseTimer = 0.0;
+	displayMutex.unlock();
  }
 
 //////////////////////////////////////////////////////////////////////
@@ -680,6 +694,8 @@ void CTestBench::DisplayData(int length, TYPECPX* pBuf, double samplerate, int p
 		emit ResetSignal();
 		return;
 	}
+
+	displayMutex.lock();
 
 	m_NewDataIsCpx = true;
 	if(! m_TimeDisplay)
@@ -726,6 +742,7 @@ void CTestBench::DisplayData(int length, TYPECPX* pBuf, double samplerate, int p
 			}
 		}
 	}
+	displayMutex.unlock();
 }
 
 //////////////////////////////////////////////////////////////////////

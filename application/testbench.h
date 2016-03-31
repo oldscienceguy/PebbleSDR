@@ -231,6 +231,8 @@ private:
 	QFile m_File;
     //CWFmMod* m_pWFmMod;
 
+	//Display is updated from producer thread and needs to be protected if we make changes via TB UI
+	QMutex displayMutex;
 };
 
 #endif // TESTBENCH_H
