@@ -174,9 +174,9 @@
 class HalfbandFilterDesign {
 public:
 	HalfbandFilterDesign(quint16 _numTaps, double _wPass, double * _coeff);
-	quint32 numTaps;
-	double wPass;
-	double *coeff;
+	quint32 m_numTaps;
+	double m_wPass;
+	double *m_coeff;
 };
 
 class HalfbandFilter {
@@ -192,17 +192,17 @@ public:
 
 	const quint32 maxResultLen = 32768;
 
-	quint32 numTaps;
+	quint32 m_numTaps;
 
-	double wPass; //For reference
-	quint32 sampleRateIn;
+	double m_wPass; //For reference
+	quint32 m_sampleRateIn;
 
 	//CIC3 implemenation for early stages
-	bool useCIC3;
-	CPX xOdd;
-	CPX xEven;
+	bool m_useCIC3;
+	CPX m_xOdd;
+	CPX m_xEven;
 	//double has 15 decimal digit precision, so we truncate Matlab results
-	const double *coeff;
+	const double *m_coeff;
 	quint32 convolve(const double *x, quint32 xLen, const double *h, quint32 hLen, double *y);
 	//Last Sample version
 	quint32 convolveOS(const CPX *x, quint32 xLen, const double *h, quint32 hLen, CPX *y,
@@ -215,13 +215,13 @@ public:
 	quint32 convolveVDsp2(const DSPDoubleSplitComplex *x, quint32 xLen, const double *h, quint32 hLen, DSPDoubleSplitComplex *y,
 		quint32 ySize,	quint32 decimate = 1);
 	//Testing decimate by more than 2
-	quint32 decimate;
+	quint32 m_decimate;
 private:
-	DSPDoubleSplitComplex lastXVDsp; //Working buffer if we need it
+	DSPDoubleSplitComplex m_lastXVDsp; //Working buffer if we need it
 
 	//For generic convolve
-	CPX *lastX;
-	CPX *tmpX;
+	CPX *m_lastX;
+	CPX *m_tmpX;
 };
 
 class Decimator
@@ -238,47 +238,47 @@ public:
 	quint32 process(CPX *_in, CPX* _out, quint32 _numSamples);
 
 private:
-	quint32 sampleRate;
-	quint32 bufferSize;
+	quint32 m_sampleRate;
+	quint32 m_bufferSize;
 
 	const quint32 minDecimatedSampleRate = 15000; //Review
-	bool useVdsp;
-	bool combineStages;
+	bool m_useVdsp;
+	bool m_combineStages;
 
-	float decimatedSampleRate;
-	double protectBandWidth; //Protected bandwidth of signal of interest
+	float m_decimatedSampleRate;
+	double m_protectBandWidth; //Protected bandwidth of signal of interest
 
 	void initFilters();
 	void deleteFilters();
 
 	//Halfband filters (order n) designed with Matlab using parameters in comments
 
-	HalfbandFilterDesign *cic3; //Faster than hb7 for early stages of decimation
-	HalfbandFilterDesign *hb7;
-	HalfbandFilterDesign *hb11;
-	HalfbandFilterDesign *hb15;
-	HalfbandFilterDesign *hb19;
-	HalfbandFilterDesign *hb23;
-	HalfbandFilterDesign *hb27;
-	HalfbandFilterDesign *hb31;
-	HalfbandFilterDesign *hb35;
-	HalfbandFilterDesign *hb39;
-	HalfbandFilterDesign *hb43;
-	HalfbandFilterDesign *hb47;
-	HalfbandFilterDesign *hb51;
-	HalfbandFilterDesign *hb59; //Testing
+	HalfbandFilterDesign *m_cic3; //Faster than hb7 for early stages of decimation
+	HalfbandFilterDesign *m_hb7;
+	HalfbandFilterDesign *m_hb11;
+	HalfbandFilterDesign *m_hb15;
+	HalfbandFilterDesign *m_hb19;
+	HalfbandFilterDesign *m_hb23;
+	HalfbandFilterDesign *m_hb27;
+	HalfbandFilterDesign *m_hb31;
+	HalfbandFilterDesign *m_hb35;
+	HalfbandFilterDesign *m_hb39;
+	HalfbandFilterDesign *m_hb43;
+	HalfbandFilterDesign *m_hb47;
+	HalfbandFilterDesign *m_hb51;
+	HalfbandFilterDesign *m_hb59; //Testing
 
-	QVector<HalfbandFilter*> decimationChain;
+	QVector<HalfbandFilter*> m_decimationChain;
 
-	CPX* workingBuf1;
-	CPX* workingBuf2;
+	CPX* m_workingBuf1;
+	CPX* m_workingBuf2;
 
 	//Accelerate fw doesn't work with interleaved CPX (re,im,re,im,...).
 	//Instead is uses Split Complex which is an array of reals and an array of imag
-	DSPDoubleSplitComplex splitComplexIn;
-	DSPDoubleSplitComplex splitComplexOut;
+	DSPDoubleSplitComplex m_splitComplexIn;
+	DSPDoubleSplitComplex m_splitComplexOut;
 
-	QMutex mutex;
+	QMutex m_mutex;
 };
 
 #endif // DECIMATOR_H
