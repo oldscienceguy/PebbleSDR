@@ -75,98 +75,98 @@ typedef union
 
 
 namespace Ui {
-    class CTestBench;
+	class TestBench;
 }
 
-class CTestBench : public QDialog
+class TestBench : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit CTestBench(QWidget *parent = 0);
-    ~CTestBench();
-	void Init();	//called to initialize controls after setting all class variables
+	explicit TestBench(QWidget *parent = 0);
+	~TestBench();
+	void init();	//called to initialize controls after setting all class variables
 
-	void CreateGeneratorSamples(int length, TYPECPX* pBuf, double samplerate);
-	void CreateGeneratorSamples(int length, TYPEREAL* pBuf, double samplerate);
+	void createGeneratorSamples(int length, TYPECPX* pBuf, double samplerate);
+	void createGeneratorSamples(int length, TYPEREAL* pBuf, double samplerate);
 
-	void SendDebugTxt(QString Str){ if(m_Active) emit SendTxt(Str);}
+	void sendDebugTxt(QString Str){ if(m_active) emit sendTxt(Str);}
 
 	//Exposed Dialog Class variables for persistant saving/restoring by parent
-	bool m_TimeDisplay;
-	bool m_GenOn;
-	bool m_PeakOn;
-	bool m_NewDataIsCpx;
-	bool m_CurrentDataIsCpx;
-	bool m_UseFmGen;
-	int m_Profile;
-	int m_TrigIndex;
-	int m_DisplayRate;
-	int m_HorzSpan;
-	int m_VertRange;
-	int m_TrigLevel;
-	double m_PulseWidth;
-	double m_PulsePeriod;
-	double m_SignalPower;
-	double m_NoisePower;
-	double m_SweepStartFrequency;
-	double m_SweepStopFrequency;
-	double m_SweepRate;
+	bool m_timeDisplay;
+	bool m_genOn;
+	bool m_peakOn;
+	bool m_newDataIsCpx;
+	bool m_currentDataIsCpx;
+	bool m_useFmGen;
+	int m_profile;
+	int m_trigIndex;
+	int m_displayRate;
+	int m_horzSpan;
+	int m_vertRange;
+	int m_trigLevel;
+	double m_pulseWidth;
+	double m_pulsePeriod;
+	double m_signalPower;
+	double m_noisePower;
+	double m_sweepStartFrequency;
+	double m_sweepStopFrequency;
+	double m_sweepRate;
 
     //Added by RAL
     //These variables are controlled by testbench UI and can be used anywhere we need a temporary control
     //Example would be an adjustable gain somewhere we don't have a UI to change.
     double testBenchValue;
-    bool debugOn;
-    bool noiseOn;
+	bool m_debugOn;
+	bool m_noiseOn;
 
-    void ResetProfiles(); //Delete all profiles
+	void resetProfiles(); //Delete all profiles
 
-    void MixNoiseSamples(int length, CPX *pBuf, double samplerate);
+	void mixNoiseSamples(int length, CPX *pBuf, double samplerate);
 
 public slots:
     bool AddProfile(QString profileName, int profileNumber); //false if profilenumber already exists
-    void RemoveProfile(quint16 profileNumber);
+	void removeProfile(quint16 profileNumber);
 
     // overloaded data display routines
-    void DisplayData(int n, TYPECPX* pBuf, double samplerate, int profile);
-    void DisplayData(int n, TYPEREAL* pBuf, double samplerate, int profile);
-    void DisplayData(int n, TYPEMONO16* pBuf, double samplerate, int profile);
-    void DisplayData(int n, TYPESTEREO16* pBuf, double samplerate, int profile);
+	void displayData(int n, TYPECPX* pBuf, double samplerate, int profile);
+	void displayData(int n, TYPEREAL* pBuf, double samplerate, int profile);
+	void displayData(int n, TYPEMONO16* pBuf, double samplerate, int profile);
+	void displayData(int n, TYPESTEREO16* pBuf, double samplerate, int profile);
 
-	void Reset();		//called by GUI Reset button
-	void DrawFftPlot();	//called to draw new fft data onto screen plot
-	void DrawTimePlot();	//called to draw new Time data onto screen plot
-	void GotTxt(QString);
-	void OnTimer();
+	void reset();		//called by GUI Reset button
+	void drawFftPlot();	//called to draw new fft data onto screen plot
+	void drawTimePlot();	//called to draw new Time data onto screen plot
+	void gotTxt(QString);
+	void onTimer();
 
-	void OnGenOn(bool On);
-	void OnFmGen(bool On);
-	void OnTimeDisplay(bool timemode);
-	void OnEnablePeak(bool enablepeak);
-	void OnSweepStart(int start);
-	void OnSweepStop(int stop);
-	void OnSweepRate(int rate);
-	void OnDisplayRate(int rate);
-	void OnVertRange(int range);
-	void OnHorzSpan(int span);
-	void OnTrigLevel(int level);
-	void OnTriggerMode(int trigindex);
-	void OnProfile(int profindex);
-	void OnPulseWidth(int pwidth);
-	void OnPulsePeriod(int pperiod);
-	void OnSignalPwr(int pwr);
-	void OnNoisePwr(int pwr);
-	void OnTestSlider1(int val);
-    void OnDebugBox(bool b);
-    void OnDebugClear(bool b);
-    void OnNoiseBox(bool b);
+	void onGenOn(bool On);
+	void onFmGen(bool On);
+	void onTimeDisplay(bool timemode);
+	void onEnablePeak(bool enablepeak);
+	void onSweepStart(int start);
+	void onSweepStop(int stop);
+	void onSweepRate(int rate);
+	void onDisplayRate(int rate);
+	void onVertRange(int range);
+	void onHorzSpan(int span);
+	void onTrigLevel(int level);
+	void onTriggerMode(int trigindex);
+	void onProfile(int profindex);
+	void onPulseWidth(int pwidth);
+	void onPulsePeriod(int pperiod);
+	void onSignalPwr(int pwr);
+	void onNoisePwr(int pwr);
+	void onTestSlider1(int val);
+	void onDebugBox(bool b);
+	void onDebugClear(bool b);
+	void onNoiseBox(bool b);
 
 signals:
-	void ResetSignal();		//internal signals from worker thread called functions
-	void NewFftData();
-	void NewTimeData();
-	void SendTxt(QString);
+	void resetSignal();		//internal signals from worker thread called functions
+	void newFftData();
+	void newTimeData();
+	void sendTxt(QString);
 
 protected:
 		//re-implemented widget event handlers
@@ -176,63 +176,63 @@ protected:
 	void showEvent(QShowEvent *event);
 
 private:
-    Ui::CTestBench *ui;
-	void DrawFreqOverlay();
-	void DrawTimeOverlay();
-	void MakeFrequencyStrs();
-	void ChkForTrigger(qint32 sample);
-	quint64 rdtsctime();
+	Ui::TestBench *ui;
+	void drawFreqOverlay();
+	void drawTimeOverlay();
+	void makeFrequencyStrs();
+	void chkForTrigger(qint32 sample);
+	quint64 m_rdtsctime();
 	QPixmap m_2DPixmap;
-	QPixmap m_OverlayPixmap;
-	QSize m_Size;
-	QRect m_Rect;
+	QPixmap m_overlayPixmap;
+	QSize m_size;
+	QRect m_rect;
 	QTimer *m_pTimer;
-	bool m_Active;
-	qint32 m_Span;
-	qint32 m_MaxdB;
-	qint32 m_MindB;
+	bool m_active;
+	qint32 m_span;
+	qint32 m_maxDb;
+	qint32 m_minDb;
 	qint32 m_dBStepSize;
-	qint32 m_FreqUnits;
-	qint64 m_CenterFreq;
-	double m_GenSampleRate;
-	double m_DisplaySampleRate;
-	QString m_Str;
-	QString m_HDivText[TB_HORZ_DIVS+1];
-	TYPECPX m_FftInBuf[TEST_FFTSIZE];
-	qint32 m_FftPkBuf[TB_MAX_SCREENSIZE];
-	qint32 m_TimeBuf1[TB_MAX_SCREENSIZE];
-	qint32 m_TimeBuf2[TB_MAX_SCREENSIZE];
-	qint32 m_TimeScrnBuf1[TB_MAX_SCREENSIZE];
-	qint32 m_TimeScrnBuf2[TB_MAX_SCREENSIZE];
-	qint32 m_PreviousSample;
+	qint32 m_freqUnits;
+	qint64 m_centerFreq;
+	double m_genSampleRate;
+	double m_displaySampleRate;
+	QString m_str;
+	QString m_hDivText[TB_HORZ_DIVS+1];
+	TYPECPX m_fftInBuf[TEST_FFTSIZE];
+	qint32 m_fftPkBuf[TB_MAX_SCREENSIZE];
+	qint32 m_timeBuf1[TB_MAX_SCREENSIZE];
+	qint32 m_timeBuf2[TB_MAX_SCREENSIZE];
+	qint32 m_timeScrnBuf1[TB_MAX_SCREENSIZE];
+	qint32 m_timeScrnBuf2[TB_MAX_SCREENSIZE];
+	qint32 m_previousSample;
 
-	int m_FftBufPos;
-	qint32 m_DisplaySkipValue;
-	qint32 m_DisplaySkipCounter;
-	int m_TimeScrnPos;
-	int m_TimeInPos;
-	int m_TrigBufPos;
-	int m_TrigState;
-	int m_TrigCounter;
-	int m_PostScrnCaptureLength;
-	double m_TimeScrnPixel;
+	int m_fftBufPos;
+	qint32 m_displaySkipValue;
+	qint32 m_displaySkipCounter;
+	int m_timeScrnPos;
+	int m_timeInPos;
+	int m_trigBufPos;
+	int m_trigState;
+	int m_trigCounter;
+	int m_postScrnCaptureLength;
+	double m_timeScrnPixel;
 
-	double m_SweepFrequency;
-	double m_SweepFreqNorm;
-	double m_SweepAcc;
-	double m_SweepRateInc;
-	double m_SignalAmplitude;
-	double m_NoiseAmplitude;
-	double m_PulseTimer;
+	double m_sweepFrequency;
+	double m_sweepFreqNorm;
+	double m_sweepAcc;
+	double m_sweepRateInc;
+	double m_signalAmplitude;
+	double m_noiseAmplitude;
+	double m_pulseTimer;
 
-	CFft m_Fft;
-	double spectrumBuf[TEST_FFTSIZE];
+	CFft m_fft;
+	double m_spectrumBuf[TEST_FFTSIZE];
 
-	QFile m_File;
+	QFile m_file;
     //CWFmMod* m_pWFmMod;
 
 	//Display is updated from producer thread and needs to be protected if we make changes via TB UI
-	QMutex displayMutex;
+	QMutex m_displayMutex;
 };
 
 #endif // TESTBENCH_H

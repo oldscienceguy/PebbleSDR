@@ -16,7 +16,7 @@
 
 class Receiver;
 class Settings;
-class CTestBench;
+class TestBench;
 class DeviceInterface;
 
 class Global
@@ -31,7 +31,7 @@ public:
     char *revision;
     Settings *settings;
     Perform perform;
-    CTestBench* testBench;
+    TestBench* testBench;
     QSize defaultWindowSize;
     QMainWindow *mainWindow;
 	QSoundEffect beep;

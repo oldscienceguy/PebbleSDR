@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>CTestBench</class>
- <widget class="QDialog" name="CTestBench">
+ <class>TestBench</class>
+ <widget class="QDialog" name="TestBench">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -1013,7 +1013,7 @@
   <connection>
    <sender>spinBoxRate</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>CTestBench</receiver>
+   <receiver>TestBench</receiver>
    <slot>OnDisplayRate(int)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1029,7 +1029,7 @@
   <connection>
    <sender>spinBoxVertRange</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>CTestBench</receiver>
+   <receiver>TestBench</receiver>
    <slot>OnVertRange(int)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1045,7 +1045,7 @@
   <connection>
    <sender>spinBoxHorzSpan</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>CTestBench</receiver>
+   <receiver>TestBench</receiver>
    <slot>OnHorzSpan(int)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1061,7 +1061,7 @@
   <connection>
    <sender>comboBoxTrig</sender>
    <signal>currentIndexChanged(int)</signal>
-   <receiver>CTestBench</receiver>
+   <receiver>TestBench</receiver>
    <slot>OnTriggerMode(int)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1077,7 +1077,7 @@
   <connection>
    <sender>pushButtonReset</sender>
    <signal>clicked()</signal>
-   <receiver>CTestBench</receiver>
+   <receiver>TestBench</receiver>
    <slot>Reset()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1093,7 +1093,7 @@
   <connection>
    <sender>spinBoxStart</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>CTestBench</receiver>
+   <receiver>TestBench</receiver>
    <slot>OnSweepStart(int)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1109,7 +1109,7 @@
   <connection>
    <sender>spinBoxStop</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>CTestBench</receiver>
+   <receiver>TestBench</receiver>
    <slot>OnSweepStop(int)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1125,7 +1125,7 @@
   <connection>
    <sender>spinBoxSweep</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>CTestBench</receiver>
+   <receiver>TestBench</receiver>
    <slot>OnSweepRate(int)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1141,7 +1141,7 @@
   <connection>
    <sender>spinBoxThresh</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>CTestBench</receiver>
+   <receiver>TestBench</receiver>
    <slot>OnTrigLevel(int)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1157,7 +1157,7 @@
   <connection>
    <sender>comboBoxProfile</sender>
    <signal>currentIndexChanged(int)</signal>
-   <receiver>CTestBench</receiver>
+   <receiver>TestBench</receiver>
    <slot>OnProfile(int)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1173,7 +1173,7 @@
   <connection>
    <sender>spinBoxAmp</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>CTestBench</receiver>
+   <receiver>TestBench</receiver>
    <slot>OnSignalPwr(int)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1189,7 +1189,7 @@
   <connection>
    <sender>spinBoxNoise</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>CTestBench</receiver>
+   <receiver>TestBench</receiver>
    <slot>OnNoisePwr(int)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1205,7 +1205,7 @@
   <connection>
    <sender>spinBoxPulseWidth</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>CTestBench</receiver>
+   <receiver>TestBench</receiver>
    <slot>OnPulseWidth(int)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1221,7 +1221,7 @@
   <connection>
    <sender>spinBoxPulsePeriod</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>CTestBench</receiver>
+   <receiver>TestBench</receiver>
    <slot>OnPulsePeriod(int)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1237,7 +1237,7 @@
   <connection>
    <sender>checkBoxPeak</sender>
    <signal>toggled(bool)</signal>
-   <receiver>CTestBench</receiver>
+   <receiver>TestBench</receiver>
    <slot>OnEnablePeak(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1253,7 +1253,7 @@
   <connection>
    <sender>horizontalSliderTest</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>CTestBench</receiver>
+   <receiver>TestBench</receiver>
    <slot>OnTestSlider1(int)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1269,7 +1269,7 @@
   <connection>
    <sender>checkBoxFm</sender>
    <signal>toggled(bool)</signal>
-   <receiver>CTestBench</receiver>
+   <receiver>TestBench</receiver>
    <slot>OnFmGen(bool)</slot>
    <hints>
     <hint type="sourcelabel">

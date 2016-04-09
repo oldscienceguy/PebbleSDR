@@ -12,8 +12,8 @@ PebbleII::PebbleII(QWidget *parent, Qt::WindowFlags flags)
 {
     global = new Global(); //We need globals in constructors, so must be first thing we do
     //Setup test bench here, not in global constructor or we get circular use with global constants
-    global->testBench = new CTestBench();
-    global->testBench->Init();
+    global->testBench = new TestBench();
+    global->testBench->init();
 
 	global->mainWindow = this; //mainWindow is used in Settings()
 	global->settings = new Settings(); //We need these early in startup
