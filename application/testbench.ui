@@ -1014,7 +1014,7 @@
    <sender>spinBoxRate</sender>
    <signal>valueChanged(int)</signal>
    <receiver>TestBench</receiver>
-   <slot>OnDisplayRate(int)</slot>
+   <slot>onDisplayRate(int)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>375</x>
@@ -1030,7 +1030,7 @@
    <sender>spinBoxVertRange</sender>
    <signal>valueChanged(int)</signal>
    <receiver>TestBench</receiver>
-   <slot>OnVertRange(int)</slot>
+   <slot>onVertRange(int)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>613</x>
@@ -1046,7 +1046,7 @@
    <sender>spinBoxHorzSpan</sender>
    <signal>valueChanged(int)</signal>
    <receiver>TestBench</receiver>
-   <slot>OnHorzSpan(int)</slot>
+   <slot>onHorzSpan(int)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>613</x>
@@ -1062,7 +1062,7 @@
    <sender>comboBoxTrig</sender>
    <signal>currentIndexChanged(int)</signal>
    <receiver>TestBench</receiver>
-   <slot>OnTriggerMode(int)</slot>
+   <slot>onTriggerMode(int)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>613</x>
@@ -1078,7 +1078,7 @@
    <sender>pushButtonReset</sender>
    <signal>clicked()</signal>
    <receiver>TestBench</receiver>
-   <slot>Reset()</slot>
+   <slot>reset()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>456</x>
@@ -1094,7 +1094,7 @@
    <sender>spinBoxStart</sender>
    <signal>valueChanged(int)</signal>
    <receiver>TestBench</receiver>
-   <slot>OnSweepStart(int)</slot>
+   <slot>onSweepStart(int)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>120</x>
@@ -1110,7 +1110,7 @@
    <sender>spinBoxStop</sender>
    <signal>valueChanged(int)</signal>
    <receiver>TestBench</receiver>
-   <slot>OnSweepStop(int)</slot>
+   <slot>onSweepStop(int)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>89</x>
@@ -1126,7 +1126,7 @@
    <sender>spinBoxSweep</sender>
    <signal>valueChanged(int)</signal>
    <receiver>TestBench</receiver>
-   <slot>OnSweepRate(int)</slot>
+   <slot>onSweepRate(int)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>62</x>
@@ -1142,7 +1142,7 @@
    <sender>spinBoxThresh</sender>
    <signal>valueChanged(int)</signal>
    <receiver>TestBench</receiver>
-   <slot>OnTrigLevel(int)</slot>
+   <slot>onTrigLevel(int)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>613</x>
@@ -1158,7 +1158,7 @@
    <sender>comboBoxProfile</sender>
    <signal>currentIndexChanged(int)</signal>
    <receiver>TestBench</receiver>
-   <slot>OnProfile(int)</slot>
+   <slot>onProfile(int)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>622</x>
@@ -1174,7 +1174,7 @@
    <sender>spinBoxAmp</sender>
    <signal>valueChanged(int)</signal>
    <receiver>TestBench</receiver>
-   <slot>OnSignalPwr(int)</slot>
+   <slot>onSignalPwr(int)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>189</x>
@@ -1190,7 +1190,7 @@
    <sender>spinBoxNoise</sender>
    <signal>valueChanged(int)</signal>
    <receiver>TestBench</receiver>
-   <slot>OnNoisePwr(int)</slot>
+   <slot>onNoisePwr(int)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>112</x>
@@ -1206,7 +1206,7 @@
    <sender>spinBoxPulseWidth</sender>
    <signal>valueChanged(int)</signal>
    <receiver>TestBench</receiver>
-   <slot>OnPulseWidth(int)</slot>
+   <slot>onPulseWidth(int)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>281</x>
@@ -1222,7 +1222,7 @@
    <sender>spinBoxPulsePeriod</sender>
    <signal>valueChanged(int)</signal>
    <receiver>TestBench</receiver>
-   <slot>OnPulsePeriod(int)</slot>
+   <slot>onPulsePeriod(int)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>236</x>
@@ -1238,7 +1238,7 @@
    <sender>checkBoxPeak</sender>
    <signal>toggled(bool)</signal>
    <receiver>TestBench</receiver>
-   <slot>OnEnablePeak(bool)</slot>
+   <slot>onEnablePeak(bool)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>225</x>
@@ -1254,7 +1254,7 @@
    <sender>horizontalSliderTest</sender>
    <signal>valueChanged(int)</signal>
    <receiver>TestBench</receiver>
-   <slot>OnTestSlider1(int)</slot>
+   <slot>onTestSlider1(int)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>271</x>
@@ -1270,7 +1270,7 @@
    <sender>checkBoxFm</sender>
    <signal>toggled(bool)</signal>
    <receiver>TestBench</receiver>
-   <slot>OnFmGen(bool)</slot>
+   <slot>onFmGen(bool)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>299</x>
@@ -1284,27 +1284,27 @@
   </connection>
  </connections>
  <slots>
-  <slot>ResetGenerator(int)</slot>
-  <slot>Reset()</slot>
-  <slot>OnTimeDisplay(bool)</slot>
-  <slot>OnDisplayRate(int)</slot>
-  <slot>OnVertRange(int)</slot>
-  <slot>OnHorzSpan(int)</slot>
-  <slot>OnTriggerMode(int)</slot>
-  <slot>OnSweepStart(int)</slot>
-  <slot>OnSweepStop(int)</slot>
-  <slot>OnSweepRate(int)</slot>
-  <slot>OnTrigLevel(int)</slot>
-  <slot>OnProfile(int)</slot>
-  <slot>OnGenSelect(int)</slot>
-  <slot>OnSignalPwr(int)</slot>
-  <slot>OnGenOn(bool)</slot>
-  <slot>OnNoisePwr(int)</slot>
-  <slot>OnPulseWidth(int)</slot>
-  <slot>OnPulsePeriod(int)</slot>
-  <slot>OnEnablePeak(bool)</slot>
-  <slot>OnTestSlider1()</slot>
-  <slot>OnTestSlider1(int)</slot>
-  <slot>OnFmGen(bool)</slot>
+  <slot>resetGenerator(int)</slot>
+  <slot>reset()</slot>
+  <slot>onTimeDisplay(bool)</slot>
+  <slot>onDisplayRate(int)</slot>
+  <slot>onVertRange(int)</slot>
+  <slot>onHorzSpan(int)</slot>
+  <slot>onTriggerMode(int)</slot>
+  <slot>onSweepStart(int)</slot>
+  <slot>onSweepStop(int)</slot>
+  <slot>onSweepRate(int)</slot>
+  <slot>onTrigLevel(int)</slot>
+  <slot>onProfile(int)</slot>
+  <slot>onGenSelect(int)</slot>
+  <slot>onSignalPwr(int)</slot>
+  <slot>onGenOn(bool)</slot>
+  <slot>onNoisePwr(int)</slot>
+  <slot>onPulseWidth(int)</slot>
+  <slot>onPulsePeriod(int)</slot>
+  <slot>onEnablePeak(bool)</slot>
+  <slot>onTestSlider1()</slot>
+  <slot>onTestSlider1(int)</slot>
+  <slot>onFmGen(bool)</slot>
  </slots>
 </ui>

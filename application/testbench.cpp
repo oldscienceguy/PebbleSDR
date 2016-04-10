@@ -247,6 +247,8 @@ void TestBench::init()
 	ui->signalGeneratorGroup->setChecked(m_genOn);
 	connect(ui->signalGeneratorGroup, SIGNAL(toggled(bool)),this,SLOT(onGenOn(bool)));
 
+	ui->noiseGeneratorGroup->setChecked(m_noiseOn);
+
 	ui->checkBoxFm->setChecked(m_useFmGen);
 	ui->checkBoxPeak->setChecked(m_peakOn);
 	ui->spinBoxAmp->setValue((int)m_signalPower);
@@ -258,7 +260,7 @@ void TestBench::init()
 }
 
 //Profile # starts with 1, 0 means no profiles
-bool TestBench::AddProfile(QString profileName, int profileNumber)
+bool TestBench::addProfile(QString profileName, int profileNumber)
 {
     //See if profileNumber already exists in menu and remove
 	removeProfile(profileNumber);

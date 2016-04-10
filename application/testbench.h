@@ -125,7 +125,7 @@ public:
 	void mixNoiseSamples(int length, CPX *pBuf, double samplerate);
 
 public slots:
-    bool AddProfile(QString profileName, int profileNumber); //false if profilenumber already exists
+	bool addProfile(QString profileName, int profileNumber); //false if profilenumber already exists
 	void removeProfile(quint16 profileNumber);
 
     // overloaded data display routines
