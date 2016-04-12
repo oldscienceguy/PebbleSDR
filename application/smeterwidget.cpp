@@ -45,7 +45,6 @@ void SMeterWidget::updateLabels()
 			//Fall through
 		case FLOOR:
 			//Fall through
-		case SNR:
 			//dB labels, 10db per tick
 			ui.barGraph->setMax(DB::maxDb);
 			ui.barGraph->setMin(DB::minDb);
@@ -65,12 +64,33 @@ void SMeterWidget::updateLabels()
 			if (width>widthTest) labels.append("-10");
 			//labels.append("0"); //Assumed at end of graph
 			break;
+		case SNR:
+			//dB labels, 10db per tick
+			ui.barGraph->setMax(120);
+			ui.barGraph->setMin(0);
+			ui.barGraph->setValue(0);
+
+			//labels.append("0"); //Assumed at end of graph
+			if (width>widthTest) labels.append("10");
+			labels.append("20");
+			if (width>widthTest) labels.append("30");
+			labels.append("40");
+			if (width>widthTest) labels.append("50");
+			labels.append("60");
+			if (width>widthTest) labels.append("70");
+			labels.append("80");
+			if (width>widthTest) labels.append("90");
+			labels.append("100");
+			if (width>widthTest) labels.append("110");
+			//labels.append("120"); //Assumed at end of graph
+			break;
+
 		case S_UNITS:
 			//S labels (6db per S-Unit)
 			// s-unit range is S1 (-121) to S+34 (-37)
 			// so we need to adjust scale accordingly, different than raw db
-			ui.barGraph->setMax(-37);
-			ui.barGraph->setMin(-121);
+			ui.barGraph->setMax(DB::maxDb);
+			ui.barGraph->setMin(DB::minDb);
 			ui.barGraph->setValue(DB::minDb);
 
 			//S1 is left most and not labeled
