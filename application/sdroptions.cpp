@@ -90,7 +90,7 @@ void SdrOptions::ShowSdrOptions(DeviceInterface *_di, bool b)
 		connect(sd->iqEnableBalance,SIGNAL(toggled(bool)),this,SLOT(BalanceEnabledChanged(bool)));
 		connect(sd->iqBalanceReset,SIGNAL(clicked()),this,SLOT(BalanceReset()));
 
-		dcRemove = di->Get(DeviceInterface::Setting,"DCRemove").toBool();
+		dcRemove = di->Get(DeviceInterface::RemoveDC).toBool();
 		sd->dcRemoval->setChecked(dcRemove);
 		connect (sd->dcRemoval, SIGNAL(clicked(bool)),this,SLOT(dcRemovalChanged(bool)));
 
@@ -239,9 +239,12 @@ void SdrOptions::ConverterOffsetChanged()
 void SdrOptions::dcRemovalChanged(bool b)
 {
 	dcRemove = b;
-	global->receiver->dcRemove->enableStep(b);
-	di->Set(DeviceInterface::Setting,"DCRemove",b);
+	di->Set(DeviceInterface::RemoveDC,b);
 	di->Command(DeviceInterface::CmdWriteSettings,0);
+	if (!global->receiver->GetPowerOn())
+		return;
+	global->receiver->dcRemove->enableStep(b);
+
 }
 
 void SdrOptions::DeviceSelectionChanged(int i) {
