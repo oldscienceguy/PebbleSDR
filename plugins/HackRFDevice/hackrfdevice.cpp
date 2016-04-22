@@ -66,8 +66,6 @@ bool HackRFDevice::Initialize(cbProcessIQData _callback,
 void HackRFDevice::ReadSettings()
 {
 	//Set defaults before calling DeviceInterfaceBase
-	//Set for LNA 24db and VGA 6db
-	normalizeIQGain = DB::dBToAmplitude(15); //qint8 format
 	highFrequency = 6000000000;
 	//lowFrequency = 1000000;
 	//1mHz is spec, but rest of AM band seems ok
@@ -114,7 +112,6 @@ bool HackRFDevice::apiCheck(int result, const char* api)
 
 bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _arg)
 {
-	quint32 baseband_filter_bw_hz = hackrf_compute_baseband_filter_bw(deviceSampleRate);
 
 	switch (_cmd) {
 		case CmdConnect: {
@@ -158,7 +155,8 @@ bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _ar
 			hackrf_exit();
 			return true;
 
-		case CmdStart:
+		case CmdStart: {
+
 			DeviceInterfaceBase::Start();
 			//Device specific code follows
 
@@ -168,6 +166,8 @@ bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _ar
 
 			//5000000 default filter bandwidth 1750000 to 28000000
 			//1.75/2.5/3.5/5/5.5/6/7/8/9/10/12/14/15/20/24/28MHz
+			//Auto calc filter, we can add manual selection later if needed
+			quint32 baseband_filter_bw_hz = hackrf_compute_baseband_filter_bw(deviceSampleRate);
 			if (!apiCheck(hackrf_set_baseband_filter_bandwidth(hackrfDevice,baseband_filter_bw_hz),"set_filter_bandwidth"))
 				return false;
 			//baseband rx gain 0-62dB, 2dB steps
@@ -177,6 +177,12 @@ bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _ar
 			if (!apiCheck(hackrf_set_lna_gain(hackrfDevice, lnaGain),"set_lan_gain"))
 				return false;
 			if (!apiCheck(hackrf_set_amp_enable(hackrfDevice,rfGain),"set amp_enable"))
+				return false;
+
+			//Antenna bias enable on/off
+			//WARNING: If we don't set this explicitly, it seems to default to on
+			//Symptom is high noise and I/Q are offset from each other in Testbench time display
+			if (!apiCheck(hackrf_set_antenna_enable(hackrfDevice,false),"set antenna_enable"))
 				return false;
 
 			if (useSignals)
@@ -195,7 +201,7 @@ bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _ar
 
 			running = true;
 			return true;
-
+		}
 		case CmdStop:
 			DeviceInterfaceBase::Stop();
 			//Device specific code follows
