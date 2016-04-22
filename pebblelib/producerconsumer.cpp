@@ -42,6 +42,9 @@ ProducerConsumer::ProducerConsumer()
 	//Interval of 0 will run as fast as possible
 	nsProducerInterval = 1;
 	nsConsumerInterval = 1;
+
+	producerThreadIsRunning = false;
+	consumerThreadIsRunning = false;
 }
 
 //This can get called on an existing ProducerConsumer object
