@@ -158,6 +158,14 @@ TestBench::TestBench(QWidget *parent) :
 	ui->noiseGeneratorGroup->setChecked(m_noiseOn);
 	connect(ui->noiseGeneratorGroup,SIGNAL(toggled(bool)),this,SLOT(onNoiseBox(bool)));
 
+	//Vertical range is peak to peak
+	//Divide by 32768 to convert to +/- 1.0 CPX
+	ui->spinBoxVertRange->setMaximum(65536); //2.0 peak to peak, +/- 1.0
+	ui->spinBoxVertRange->setMinimum(2048); // .000001 1e-6
+	ui->spinBoxVertRange->setSingleStep(2048);
+	ui->spinBoxThresh->setMaximum(32768); //Was +30000
+	ui->spinBoxThresh->setMinimum(-32768); //Was -30000
+	ui->spinBoxThresh->setSingleStep(1024); //Was 10
 }
 
 TestBench::~TestBench()
@@ -1281,7 +1289,7 @@ QRect rect;
 	for( int i=0; i<TB_TIMEVERT_DIVS-1; i++)
 	{
 		y = (int)( (float)i*pixperdiv );
-		painter.drawStaticText(5, y-1, QString::number(yval));
+		painter.drawStaticText(5, y-1, QString::number(yval/32768.0,'f',4));
 		yval -= (m_vertRange/10);
 	}
 	//copy into 2Dbitmap the overlay bitmap.
