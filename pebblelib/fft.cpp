@@ -98,13 +98,8 @@ void FFT::FFTParams(quint32 _fftSize, double _dBCompensation, double _sampleRate
 		windowFunction = NULL;
 	}
 
-	if (_windowType != WindowFunction::NONE) {
-		//Window are sized to expected samples per buffer, which may be smaller than fftSize
-		windowFunction = new WindowFunction(windowType,samplesPerBuffer);
-	} else {
-		//Default to rectangular
-		windowFunction = new WindowFunction(WindowFunction::RECTANGULAR, samplesPerBuffer);
-	}
+	//Window are sized to expected samples per buffer, which may be smaller than fftSize
+	windowFunction = new WindowFunction(windowType,samplesPerBuffer);
 
 	//Todo: Add UI to switch
 	isAveraged = true;
