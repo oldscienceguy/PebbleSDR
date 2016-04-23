@@ -19,9 +19,8 @@ public:
 	void reset(); //Initialize all running mean variables
 
 	inline double peakDb() {return m_peakDb;}
-	inline double peakPower() {return m_peakPower;}
+	inline double peakPower() {return m_peakAmplitude;}
 	inline double avgDb() {return m_avgDb;}
-	inline double avgPower() {return m_avgPower;}
 	inline double snrDb() {return m_snrDb;}
 	inline double floorDb() {return m_floorDb;}
 
@@ -29,7 +28,7 @@ public:
 
 	void setExtValue(double v);
 
-	CPX *process(CPX *in, quint32 numSamples);
+	CPX *estimate(CPX *in, quint32 numSamples, bool estNoise = false, bool estSignal = false);
 
 signals:
 	void newSignalStrength(double peakDb, double avgDb, double snrDb, double floorDb, double extValue);
@@ -41,11 +40,12 @@ private:
 	const quint32 updateInterval = 100; //10 updates per sec
 	QElapsedTimer updateTimer;
 
+	double m_peakAmplitude;
 	double m_peakDb;
-	double m_avgDb;
 
-	double m_peakPower;
-	double m_avgPower;
+	//For running mean, variance, stdDev
+	double m_runningMean;
+	double m_avgDb;
 
 	double m_rms;
 	double m_rmsDb;
@@ -55,11 +55,7 @@ private:
 
 	double m_extValue; //Used for other power readings, like goretzel (cw) output
 
-	//For running mean, variance, stdDev
-	double m_runningMean;
-	quint32 m_meanCounter;
-	double m_prevMean;
-	double m_prevS;
+
 	double m_stdDev;
 	double m_variance;
 	double m_signal;
