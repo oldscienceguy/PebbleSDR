@@ -4,6 +4,9 @@
 #include <QDebug>
 #include <float.h> //Floating point limits
 
+const double DB::fullScale = 1.0;
+const double DB::minDb = -120.0;
+const double DB::maxDb = 0.0;
 
 #if 0
 	Naming confusion.  There are different usages of dB that get used interchangeably
@@ -122,17 +125,8 @@
 
 #endif
 
-//Init static class variables
-double DB::maxDb = 0;
-//Same as SpectraVue & CuteSDR;
-double DB::minDb = -120.0;
-
-DB::DB()
-{
-}
-
 //Returns the root mean square (average power) in buffer
-double DB::rmsdB(CPX *in, quint32 numSamples)
+double DB::rms(CPX *in, quint32 numSamples)
 {
 	double totalSquared = 0;
 	double rms = 0;
@@ -140,6 +134,7 @@ double DB::rmsdB(CPX *in, quint32 numSamples)
 		totalSquared += in[i].re*in[i].re + in[i].im*in[i].im;
 	}
 	rms = sqrt(totalSquared / numSamples);
+	return rms;
 	return DB::amplitudeTodB(rms); //20 * log10(rms);
 #if 0
 	//Same results, with power, but slightly faster since no sqrt

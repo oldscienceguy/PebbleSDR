@@ -9,11 +9,14 @@
 class PEBBLELIBSHARED_EXPORT DB
 {
 public:
-    DB();
+	//DB(); //All static, no constructor
 
-	//Smallest db we'll return from FFT
-	static double minDb;
-	static double maxDb;
+	//All samples are -1 to +1.
+	static const double fullScale;
+
+	//min/max db we'll return from FFT, use in power calculations, plotting, etc
+	static const double minDb;
+	static const double maxDb;
 
     //Useful conversion functions
 	static inline double clip(double db) {
@@ -96,7 +99,10 @@ public:
 	}
 
 	//Here for reference
-	static inline double rmsdB(CPX *in, quint32 numSamples);
+	static inline double rms(CPX *in, quint32 numSamples);
+	static inline double rmsToDb(double rms) {
+		return 20*log10(DB::fullScale / rms);
+	}
 
 	//microvolts == amplitude
 	static inline double uv(CPX cx) {
