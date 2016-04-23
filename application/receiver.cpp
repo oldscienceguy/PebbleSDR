@@ -279,18 +279,18 @@ void Receiver::SetWindowTitle()
 
 void Receiver::openTestBench()
 {
-	CTestBench *testBench = global->testBench;
+	TestBench *testBench = global->testBench;
 
-	testBench->Init(); //Sets up last device settings used
+	testBench->init(); //Sets up last device settings used
 	//Anchor in upper left
 	testBench->move(0,0);
 
-	testBench->ResetProfiles();
-	testBench->AddProfile("Incoming",testBenchRawIQ);
-	testBench->AddProfile("Post Mixer",testBenchPostMixer);
-	testBench->AddProfile("Post Bandpass",testBenchPostBandpass);
-	testBench->AddProfile("Post Demod",testBenchPostDemod);
-	testBench->AddProfile("Post Decimator",testBenchPostDecimator);
+	testBench->resetProfiles();
+	testBench->addProfile("Incoming",testBenchRawIQ);
+	testBench->addProfile("Post Mixer",testBenchPostMixer);
+	testBench->addProfile("Post Bandpass",testBenchPostBandpass);
+	testBench->addProfile("Post Demod",testBenchPostDemod);
+	testBench->addProfile("Post Decimator",testBenchPostDecimator);
 
 	testBench->setVisible(true);
 
@@ -687,6 +687,7 @@ void Receiver::SetGain(int g)
 void Receiver::SetSquelch(int s)
 {
 	squelch = s;
+	signalStrength->setSquelch(s);
 }
 //Called by ReceiverWidget
 void Receiver::SetMixer(int f)
@@ -777,13 +778,13 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 	//	audio->inBufferUnderflowCount++; //Treat like in buffer underflow
 
     //Inject signals from test bench if desired
-	global->testBench->CreateGeneratorSamples(numSamples, nextStep, sampleRate);
-	global->testBench->MixNoiseSamples(numSamples, nextStep, sampleRate);
+	global->testBench->createGeneratorSamples(numSamples, nextStep, sampleRate);
+	global->testBench->mixNoiseSamples(numSamples, nextStep, sampleRate);
 
     if (isRecording)
 		recordingFile.WriteSamples(nextStep,numSamples);
 
-    global->testBench->DisplayData(numSamples,nextStep,sampleRate,testBenchRawIQ);
+	global->testBench->displayData(numSamples,nextStep,sampleRate,testBenchRawIQ);
 
     //global->perform.StartPerformance();
     /*
@@ -828,6 +829,11 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
     */
     double resampRate;
 
+	if (lastDemodFrequency != demodFrequency) {
+		signalStrength->reset(); //Start new averages
+		lastDemodFrequency = demodFrequency;
+	}
+
     //global->perform.StartPerformance();
 	if (demod->DemodMode() == DeviceInterface::dmFMM || demod->DemodMode() == DeviceInterface::dmFMS) {
         //These steps are at demodWfmSampleRate NOT demodSampleRate
@@ -862,7 +868,7 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 		signalSpectrum->Zoomed(sampleBuf, numStepSamples);
         nextStep = sampleBuf;
 
-		nextStep = signalStrength->processBlock(nextStep, numStepSamples, squelch);
+		nextStep = signalStrength->estimate(nextStep, numStepSamples,true,true);
 
 		nextStep = demod->ProcessBlock(nextStep, numStepSamples);
 
@@ -899,7 +905,7 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 		sampleBufLen = 0;
 		nextStep = sampleBuf;
 
-		//DB::analyzeCPX(nextStep,numStepSamples,"Post-Decimate");
+		nextStep = signalStrength->estimate(nextStep,numStepSamples, true, false);
 
 		//Create zoomed spectrum
 		//global->perform.StartPerformance("Signal Spectrum Zoomed");
@@ -910,7 +916,7 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
         //Mixer shows no loss in testing
         //nextStep = mixer->ProcessBlock(nextStep);
         //float post = SignalProcessing::TotalPower(nextStep,frameCount);
-		global->testBench->DisplayData(numStepSamples,nextStep,demodSampleRate,testBenchPostMixer);
+		global->testBench->displayData(numStepSamples,nextStep,demodSampleRate,testBenchPostMixer);
 
         //global->perform.StopPerformance(100);
 
@@ -922,17 +928,14 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 		//global->perform.StopPerformance(100);
 		//Crude AGC, too much fluctuation
 		//CPX::scaleCPX(nextStep,nextStep,pre/post,frameCount);
-		global->testBench->DisplayData(numStepSamples,nextStep,demodSampleRate,testBenchPostBandpass);
+		global->testBench->displayData(numStepSamples,nextStep,demodSampleRate,testBenchPostBandpass);
 
         //If squelch is set, and we're below threshold and should set output to zero
         //Do this in SignalStrength, since that's where we're calculating average signal strength anyway
 		//global->perform.StartPerformance("Signal Strength");
 
-		if (lastDemodFrequency != demodFrequency) {
-			signalStrength->reset(); //Start new averages
-			lastDemodFrequency = demodFrequency;
-		}
-		nextStep = signalStrength->processBlock(nextStep, numStepSamples, squelch);
+		nextStep = signalStrength->estimate(nextStep,numStepSamples, false, true);
+
 		//global->perform.StopPerformance(100);
 
         //Tune only mode, no demod or output
@@ -961,7 +964,7 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 		nextStep = demod->ProcessBlock(nextStep, numStepSamples);
 		//global->perform.StopPerformance(100);
 
-		global->testBench->DisplayData(numStepSamples,nextStep,demodSampleRate,testBenchPostDemod);
+		global->testBench->displayData(numStepSamples,nextStep,demodSampleRate,testBenchPostDemod);
 
         resampRate = (demodSampleRate*1.0) / (audioOutRate*1.0);
 
