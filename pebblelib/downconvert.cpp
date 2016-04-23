@@ -101,7 +101,9 @@ void CDownConvert::DeleteFilters()
 //This is the mixer component used for tuning and completely replaces previous Pebble mixers
 void CDownConvert::SetFrequency(TYPEREAL NcoFreq)
 {
-TYPEREAL tmpf = NcoFreq + m_CW_Offset;
+	//Frequency is reversed for some reason, see mixer.cpp.  Here for consistency in switching for testing
+	NcoFreq = -NcoFreq;
+	TYPEREAL tmpf = NcoFreq + m_CW_Offset;
 
 	m_NcoFreq = tmpf;
     m_NcoInc = TWOPI*m_NcoFreq/m_InRate;
