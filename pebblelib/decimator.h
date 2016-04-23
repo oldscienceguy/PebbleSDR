@@ -236,6 +236,7 @@ public:
 	float buildDecimationChain(quint32 _sampleRateIn, quint32 _protectBw, quint32 _sampleRateOut = 0);
 
 	quint32 process(CPX *_in, CPX* _out, quint32 _numSamples);
+	quint32 decBy2Stages(){return m_decBy2Stages;}
 
 private:
 	quint32 m_sampleRate;
@@ -279,6 +280,7 @@ private:
 	DSPDoubleSplitComplex m_splitComplexOut;
 
 	QMutex m_mutex;
+	quint32 m_decBy2Stages; //Each dec by 2 stage reduces noise by 3db, keep count so SignalStrength can compensate
 };
 
 #endif // DECIMATOR_H

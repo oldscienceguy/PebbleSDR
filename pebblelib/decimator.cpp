@@ -68,6 +68,7 @@ float Decimator::buildDecimationChain(quint32 _sampleRateIn, quint32 _protectBw,
 	quint32 minSampleRateOut = _sampleRateOut > 0 ? _sampleRateOut : minDecimatedSampleRate;
 	HalfbandFilter *chain = NULL;
 	HalfbandFilter *prevChain = NULL;
+	m_decBy2Stages = 0;
 	qDebug()<<"Building Decimator chain for sampleRate = "<<_sampleRateIn<<" max bw = "<<_protectBw;
 	m_decimationChain.clear(); //in case we're called more than once
 	while (m_decimatedSampleRate > minSampleRateOut) {
@@ -123,6 +124,8 @@ float Decimator::buildDecimationChain(quint32 _sampleRateIn, quint32 _protectBw,
 			qDebug()<<"Ran out of filters before minimum sample rate";
 			break; //out of while
 		}
+
+		m_decBy2Stages++;
 
 		if (!m_combineStages || prevChain == NULL || prevChain->m_numTaps != chain->m_numTaps) {
 			//New filter, add to chain
@@ -223,12 +226,12 @@ quint32 Decimator::process(CPX *_in, CPX *_out, quint32 _numSamples)
 }
 
 HalfbandFilterDesign::HalfbandFilterDesign(quint16 _numTaps, double _wPass, double *_coeff) :
-	numTaps(_numTaps), m_wPass(_wPass), m_coeff(_coeff)
+	m_numTaps(_numTaps), m_wPass(_wPass), m_coeff(_coeff)
 {
 }
 
 HalfbandFilter::HalfbandFilter(HalfbandFilterDesign *_design) :
-	HalfbandFilter(_design->numTaps, _design->m_wPass, _design->m_coeff)
+	HalfbandFilter(_design->m_numTaps, _design->m_wPass, _design->m_coeff)
 {
 }
 
