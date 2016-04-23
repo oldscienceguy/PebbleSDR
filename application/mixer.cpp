@@ -26,7 +26,7 @@ void Mixer::SetFrequency(double f)
 	frequency = -f;
 	//nco->setFrequency(f);
 
-	oscInc = (TWOPI / sampleRate) * frequency;
+	oscInc = TWOPI * frequency / sampleRate;
 	oscCos = cos(oscInc);
 	oscSin = sin(oscInc);
 	lastOsc.re = 1.0;
