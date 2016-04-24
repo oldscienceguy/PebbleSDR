@@ -11,44 +11,44 @@ class SdrOptions:public QObject
 public:
 	SdrOptions();
 	~SdrOptions();
-	void ShowSdrOptions(DeviceInterface *_di, bool b);
+	void showSdrOptions(DeviceInterface *_di, bool b);
 
 public slots:
-	void DeviceSelectionChanged(int i);
+	void deviceSelectionChanged(int i);
 private slots:
-	void InputChanged(int i);
-	void OutputChanged(int i);
-	void StartupChanged(int i);
-	void StartupFrequencyChanged();
-	void SampleRateChanged(int i);
-	void IQGainChanged(double i);
-	void IQOrderChanged(int i);
-	void BalancePhaseChanged(int v);
-	void BalanceGainChanged(int v);
-	void BalanceEnabledChanged(bool b);
-	void BalanceReset();
-	void ResetSettings(bool b);
-	void CloseOptions(bool b);
-	void ConverterModeChanged(bool b);
-	void ConverterOffsetChanged();
+	void inputChanged(int i);
+	void outputChanged(int i);
+	void startupChanged(int i);
+	void startupFrequencyChanged();
+	void sampleRateChanged(int i);
+	void iqGainChanged(double i);
+	void iqOrderChanged(int i);
+	void balancePhaseChanged(int v);
+	void balanceGainChanged(int v);
+	void balanceEnabledChanged(bool b);
+	void balanceReset();
+	void resetSettings(bool b);
+	void closeOptions(bool b);
+	void converterModeChanged(bool b);
+	void converterOffsetChanged();
 	void dcRemovalChanged(bool b);
 
 signals:
 	void restart();
 
 private:
-	DeviceInterface *di;
+	DeviceInterface *m_di;
 
-	QDialog *sdrOptionsDialog;
-	Ui::SdrOptions *sd;
+	QDialog *m_sdrOptionsDialog;
+	Ui::SdrOptions *m_sd;
 
 
-	QStringList inputDevices;
-	QStringList outputDevices;
+	QStringList m_inputDevices;
+	QStringList m_outputDevices;
 
-	void UpdateOptions();
+	void updateOptions();
 
-	bool dcRemove;
+	bool m_dcRemove;
 };
 
 #endif // SDROPTIONS_H

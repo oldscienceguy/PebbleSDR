@@ -396,7 +396,7 @@ bool Receiver::turnPowerOff()
 	}
 
 	if (m_sdrOptions != NULL)
-		m_sdrOptions->ShowSdrOptions(m_sdr, false);
+		m_sdrOptions->showSdrOptions(m_sdr, false);
 
 	if (m_isRecording) {
 		m_recordingFile.Close();
@@ -717,13 +717,13 @@ void Receiver::sdrOptionsPressed()
         //Power is off, create temporary one so we can set settings
 		m_sdr = global->sdr;
     }
-	m_sdrOptions->ShowSdrOptions(m_sdr, true);
+	m_sdrOptions->showSdrOptions(m_sdr, true);
 }
 //Called by receiver widget with device selection changes to make sure any open options ui is closed
 void Receiver::closeSdrOptions()
 {
 	if (m_sdr != NULL) {
-		m_sdrOptions->ShowSdrOptions(m_sdr, false);
+		m_sdrOptions->showSdrOptions(m_sdr, false);
 		m_sdr = NULL;
     }
 }
