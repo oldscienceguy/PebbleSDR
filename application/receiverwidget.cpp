@@ -30,9 +30,9 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 
 	slaveMode = false;
 
-    QFont smFont = receiver->GetSettings()->smFont;
-    QFont medFont = receiver->GetSettings()->medFont;
-    QFont lgFont = receiver->GetSettings()->lgFont;
+    QFont smFont = receiver->getSettings()->smFont;
+    QFont medFont = receiver->getSettings()->medFont;
+    QFont lgFont = receiver->getSettings()->lgFont;
 
 	QStringList modes;
     modes << "AM"<<"SAM"<<"FMN"<<"FM-Mono"<<"FM-Stereo"<<"DSB"<<"LSB"<<"USB"<<"CWL"<<"CWU"<<"DIGL"<<"DIGU"<<"NONE";
@@ -480,11 +480,11 @@ void ReceiverWidget::SetFrequency(double f)
 	{
 		//Ask the receiver if requested freq is within limits and step size
 		//Set actual frequency to next higher or lower step
-		loFrequency = receiver->SetSDRFrequency(f, frequency );
+		loFrequency = receiver->setSDRFrequency(f, frequency );
         frequency = loFrequency;
 		mixer = 0;
         //Mixer is actually set including modeOffset so we hear tone, but display shows actual freq
-        receiver->SetMixer(mixer + modeOffset);
+        receiver->setMixer(mixer + modeOffset);
 
 	} else {
 		//Mixer is delta between what's displayed and last LO Frequency
@@ -500,16 +500,16 @@ void ReceiverWidget::SetFrequency(double f)
 			//Temporarily switch to LO mode
 			loMode = true;
             //Set LO to new freq and contine
-			loFrequency = receiver->SetSDRFrequency(loFrequency + mixerDelta, loFrequency );
+			loFrequency = receiver->setSDRFrequency(loFrequency + mixerDelta, loFrequency );
 			mixer = f - loFrequency;
 			frequency = loFrequency + mixer;  //Should be the same as f
             //Back to Mixer mode
 			loMode = false;
-			receiver->SetMixer(mixer + modeOffset);
+			receiver->setMixer(mixer + modeOffset);
         } else {
             //LoFreq not changing, just displayed freq
             frequency = loFrequency + mixer;
-            receiver->SetMixer(mixer + modeOffset);
+            receiver->setMixer(mixer + modeOffset);
         }
 	}
 	//frequency is what's displayed, ie combination of loFrequency and mixer (if any)
@@ -583,7 +583,7 @@ void ReceiverWidget::powerToggled(bool on)
 
 	if (on) {
         powerOn = true;
-        if (!receiver->Power(true)) {
+        if (!receiver->togglePower(true)) {
 			ui.powerButton->setChecked(false); //Turn power button back off
 			return; //Error setting up receiver
 		}
@@ -601,11 +601,11 @@ void ReceiverWidget::powerToggled(bool on)
 		ui.gainSlider->setMinimum(0);
 		ui.gainSlider->setMaximum(100);
 		ui.gainSlider->setValue(30);
-		receiver->SetGain(30);
+		receiver->setGain(30);
 
 		//Setup Squelch
 		ui.squelchSlider->setValue(DB::minDb);
-		receiver->SetSquelch(DB::minDb);
+		receiver->setSquelch(DB::minDb);
 
 		//Set default AGC mode
 		//agcBoxChanged(AGC::FAST);
@@ -625,9 +625,9 @@ void ReceiverWidget::powerToggled(bool on)
         ui.recButton->setChecked(false);
 
         //Presets are only loaded when receiver is on
-        presets = receiver->GetPresets();
+        presets = receiver->getPresets();
 
-        ui.spectrumWidget->SetSignalSpectrum(receiver->GetSignalSpectrum());
+        ui.spectrumWidget->SetSignalSpectrum(receiver->getSignalSpectrum());
 
 		ui.spectrumWidget->plotSelectionChanged((SpectrumWidget::DISPLAYMODE)sdr->Get(DeviceInterface::LastSpectrumMode).toInt());
         ui.bandType->setCurrentIndex(Band::HAM);
@@ -684,7 +684,7 @@ void ReceiverWidget::powerToggled(bool on)
 		ui.spectrumWidget->Run(false);
         ui.sMeterWidget->stop();
 		//We have to make sure that widgets are stopped before cleaning up supporting objects
-		receiver->Power(false);
+		receiver->togglePower(false);
 
 	}
 }
@@ -702,7 +702,7 @@ void ReceiverWidget::setLoMode(bool b)
         //LO Mode
         ui.loButton->setChecked(true); //Make sure button is toggled if called from presets
         mixer=0;
-        receiver->SetMixer(mixer + modeOffset);
+        receiver->setMixer(mixer + modeOffset);
 		SetFrequency(loFrequency);
 	} else {
 		//Mixer Mode
@@ -714,26 +714,26 @@ void ReceiverWidget::anfButtonToggled(bool b)
     if (!powerOn)
         return;
 
-	receiver->SetAnfEnabled(b);
+	receiver->setAnfEnabled(b);
 }
 void ReceiverWidget::nbButtonToggled(bool b)
 {
     if (!powerOn)
         return;
-	receiver->SetNbEnabled(b);
+	receiver->setNbEnabled(b);
 }
 void ReceiverWidget::nb2ButtonToggled(bool b)
 {
     if (!powerOn)
         return;
-	receiver->SetNb2Enabled(b);
+	receiver->setNb2Enabled(b);
 }
 void ReceiverWidget::agcBoxChanged(int item)
 {
     if (!powerOn)
         return;
 	AGC::AGCMODE agcMode = (AGC::AGCMODE)ui.agcBox->currentData().toInt();
-	int threshold = receiver->SetAgcMode(agcMode);
+	int threshold = receiver->setAgcMode(agcMode);
 	ui.agcSlider->setValue(threshold);
 
 }
@@ -741,7 +741,7 @@ void ReceiverWidget::muteButtonToggled(bool b)
 {
     if (!powerOn)
         return;
-    receiver->SetMute(b);
+    receiver->setMute(b);
 }
 
 void ReceiverWidget::addMemoryButtonClicked()
@@ -866,7 +866,7 @@ void ReceiverWidget::filterSelectionChanged(QString f)
 
 	ui.spectrumWidget->SetFilter(lo,hi); //So we can display filter around cursor
 
-	receiver->SetFilter(lo,hi);
+	receiver->setFilter(lo,hi);
 }
 
 void ReceiverWidget::dataSelectionChanged(int s)
@@ -885,7 +885,7 @@ void ReceiverWidget::dataSelectionChanged(int s)
     } else if (dataSelection.fileName == "No_Data") {
     } else {
            //Reset decoder
-            receiver->SetDigitalModem(NULL,NULL);
+            receiver->setDigitalModem(NULL,NULL);
             //Delete all children
             foreach (QObject *obj, ui.dataFrame->children()) {
                 //Normally we get a grid layout object, uiFrame, dataFrame
@@ -912,7 +912,7 @@ void ReceiverWidget::dataSelectionChanged(int s)
             receiver->getDemod()->SetupDataUi(ui.dataFrame);
             ui.dataFrame->setVisible(true);
     } else {
-            receiver->SetDigitalModem(ui.dataSelectionBox->currentText(), ui.dataFrame);
+            receiver->setDigitalModem(ui.dataSelectionBox->currentText(), ui.dataFrame);
             ui.dataFrame->setVisible(true);
     }
 }
@@ -952,7 +952,7 @@ void ReceiverWidget::modeSelectionChanged(QString m)
     ui.filterBox->setCurrentIndex(Demod::demodInfo[mode].defaultFilter);
 
     ui.spectrumWidget->SetMode(mode, modeOffset);
-	receiver->SetMode(mode);
+	receiver->setMode(mode);
 	ui.filterBox->blockSignals(false);
 	this->filterSelectionChanged(ui.filterBox->currentText());
 }
@@ -961,7 +961,7 @@ void ReceiverWidget::agcSliderChanged(int g)
 {
 	if (!powerOn)
 		return;
-	receiver->SetAgcThreshold(g);
+	receiver->setAgcThreshold(g);
 }
 
 void ReceiverWidget::gainSliderChanged(int g) 
@@ -969,14 +969,14 @@ void ReceiverWidget::gainSliderChanged(int g)
     if (!powerOn)
         return;
 	gain=g; 
-	receiver->SetGain(g);
+	receiver->setGain(g);
 }
 void ReceiverWidget::squelchSliderChanged(int s)
 {
     if (!powerOn)
         return;
 	squelch = s;
-	receiver->SetSquelch(s);
+	receiver->setSquelch(s);
 }
 void ReceiverWidget::nixie1UpClicked() {SetFrequency(frequency+1);}
 void ReceiverWidget::nixie1DownClicked(){SetFrequency(frequency-1);}
@@ -1048,7 +1048,7 @@ void ReceiverWidget::updateSlaveInfo()
 	DeviceInterface::DEMODMODE dm = (DeviceInterface::DEMODMODE)sdr->Get(DeviceInterface::DeviceDemodMode).toInt();
 	SetMode(dm);
 
-	receiver->SetWindowTitle();
+	receiver->setWindowTitle();
 
 	//Ask the device to return new info
 	sdr->Set(DeviceInterface::DeviceSlave,0);
@@ -1117,7 +1117,7 @@ void ReceiverWidget::ReceiverChanged(int i)
 	sdr = p.deviceInterface;
 	global->sdr = sdr;
     //Close the sdr option window if open
-    receiver->CloseSdrOptions();
+    receiver->closeSdrOptions();
 }
 
 //Updates all the nixies to display a number

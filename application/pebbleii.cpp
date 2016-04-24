@@ -39,6 +39,6 @@ PebbleII::~PebbleII()
 }
  void PebbleII::closeEvent(QCloseEvent *event)
  {
-	 receiver->Close();
+	 receiver->close();
  }
 

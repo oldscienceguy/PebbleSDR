@@ -79,7 +79,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	demodWfmDecimator = NULL;
 
 	sdrOptions = new SdrOptions();
-	connect(sdrOptions,SIGNAL(Restart()),this,SLOT(Restart()));
+	connect(sdrOptions,SIGNAL(restart()),this,SLOT(restart()));
 
     //qDebug()<<plugins->GetPluginNames();
 
@@ -98,7 +98,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	readmeView = NULL;
 	gplView = NULL;
 }
-bool Receiver::On()
+bool Receiver::turnPowerOn()
 {
 	powerOn = true;
 
@@ -117,17 +117,17 @@ bool Receiver::On()
     //bind(Method ptr, object, arg1, ... argn)
 
 	sdr->Command(DeviceInterface::CmdReadSettings,0); //Always start with most current
-	if (!sdr->Initialize(std::bind(&Receiver::ProcessIQData, this, _1, _2),
-						 std::bind(&Receiver::ProcessBandscopeData, this, _1, _2),
-						 std::bind(&Receiver::ProcessAudioData, this, _1, _2),
+	if (!sdr->Initialize(std::bind(&Receiver::processIQData, this, _1, _2),
+						 std::bind(&Receiver::processBandscopeData, this, _1, _2),
+						 std::bind(&Receiver::processAudioData, this, _1, _2),
 						 settings->framesPerBuffer)) {
-		Off();
+		turnPowerOff();
 		return false;
 	}
 
 	if (!sdr->Command(DeviceInterface::CmdConnect,0)){
         QMessageBox::information(NULL,"Pebble","SDR device is not connected");
-		Off();
+		turnPowerOff();
 		return false;
 	}
 
@@ -262,11 +262,11 @@ bool Receiver::On()
 
     //Don't set title until we connect and start.
     //Some drivers handle multiple devices (RTL2832) and we need connection data
-	QTimer::singleShot(200,this,SLOT(SetWindowTitle()));
+	QTimer::singleShot(200,this,SLOT(setWindowTitle()));
 	return true;
 }
 
-void Receiver::SetWindowTitle()
+void Receiver::setWindowTitle()
 {
     if (sdr == NULL)
         return;
@@ -288,11 +288,11 @@ void Receiver::openTestBench()
 	testBench->move(0,0);
 
 	testBench->resetProfiles();
-	testBench->addProfile("Incoming",testBenchRawIQ);
-	testBench->addProfile("Post Mixer",testBenchPostMixer);
-	testBench->addProfile("Post Bandpass",testBenchPostBandpass);
-	testBench->addProfile("Post Demod",testBenchPostDemod);
-	testBench->addProfile("Post Decimator",testBenchPostDecimator);
+	testBench->addProfile("Incoming",TB_RAW_IQ);
+	testBench->addProfile("Post Mixer",TB_POST_MIXER);
+	testBench->addProfile("Post Bandpass",TB_POST_BP);
+	testBench->addProfile("Post Demod",TB_POST_DEMOD);
+	testBench->addProfile("Post Decimator",TB_POST_DECIMATE);
 
 	testBench->setVisible(true);
 
@@ -383,7 +383,7 @@ void Receiver::openGPLWindow()
 
 //Delete everything that's based on settings, so we can change receivers, sound cards, etc
 //ReceiverWidget initiates the power off and call us
-bool Receiver::Off()
+bool Receiver::turnPowerOff()
 {
 
 	powerOn = false;
@@ -505,9 +505,9 @@ bool Receiver::Off()
 	}
     return true;
 }
-void Receiver::Close()
+void Receiver::close()
 {
-    Off();
+	turnPowerOff();
 	if (global->testBench->isVisible())
 		global->testBench->setVisible(false);
 	if (readmeView != NULL && readmeView->isVisible())
@@ -531,7 +531,7 @@ Receiver::~Receiver(void)
  * If file exists, appends number until finds one that doesn't
  * Simple, no prompt for file name, can be instantly toggled on/off
  */
-void Receiver::RecToggled(bool on)
+void Receiver::recToggled(bool on)
 {
     if (!powerOn)
         return;
@@ -560,20 +560,20 @@ void Receiver::RecToggled(bool on)
     }
 }
 
-bool Receiver::Power(bool on)
+bool Receiver::togglePower(bool _on)
 {
 
-	if (on)
+	if (_on)
 	{
-		return On();
+		return turnPowerOn();
 	}else {
 		//return Off();
-		Close(); //Same as Off but writes settings
+		close(); //Same as Off but writes settings
 		return true;
 	}
 }
 //Triggered by settings change or something else that requires us to reset all objects
-void Receiver::Restart()
+void Receiver::restart()
 {
 	//If power off, do nothing
 	if (powerOn) {
@@ -584,7 +584,7 @@ void Receiver::Restart()
         //receiverWidget->powerToggled(true);
 	}
 }
-double Receiver::SetSDRFrequency(double fRequested, double fCurrent)
+double Receiver::setSDRFrequency(double fRequested, double fCurrent)
 {
 	if (sdr==NULL)
 		return 0;
@@ -620,7 +620,7 @@ double Receiver::SetSDRFrequency(double fRequested, double fCurrent)
 }
 
 //Called by ReceiverWidget to sets demod mode and default bandpass filter for each mode
-void Receiver::SetMode(DeviceInterface::DEMODMODE m)
+void Receiver::setMode(DeviceInterface::DEMODMODE m)
 {
 	if(demod != NULL) {
 		if (m == DeviceInterface::dmFMM || m == DeviceInterface::dmFMS)
@@ -638,7 +638,7 @@ void Receiver::SetMode(DeviceInterface::DEMODMODE m)
     }
 }
 //Called by ReceiverWidget when UI changes filter settings
-void Receiver::SetFilter(int lo, int hi)
+void Receiver::setFilter(int lo, int hi)
 {
 	if (demod == NULL)
 		return;
@@ -646,39 +646,39 @@ void Receiver::SetFilter(int lo, int hi)
     demod->SetBandwidth(hi - lo);
 }
 //Called by ReceiverWidget when UI changes ANF
-void Receiver::SetAnfEnabled(bool b)
+void Receiver::setAnfEnabled(bool b)
 {
 	noiseFilter->enableStep(b);
 }
 //Called by ReceiverWidget when UI changes NB
-void Receiver::SetNbEnabled(bool b)
+void Receiver::setNbEnabled(bool b)
 {
 	noiseBlanker->setNbEnabled(b);
 }
 //Called by ReceiverWidget when UI changed NB2
-void Receiver::SetNb2Enabled(bool b)
+void Receiver::setNb2Enabled(bool b)
 {
 	noiseBlanker->setNb2Enabled(b);
 }
 //Called by ReceiverWidget when UI changes AGC, returns new threshold for display
-int Receiver::SetAgcMode(AGC::AGCMODE m)
+int Receiver::setAgcMode(AGC::AGCMODE m)
 {
 	agc->setAgcMode(m);
 	//AGC sets a default gain with mode
 	return agc->getAgcThreshold();
 }
 //Called by ReceiverWidget
-void Receiver::SetAgcThreshold(int g)
+void Receiver::setAgcThreshold(int g)
 {
     agc->setAgcThreshold(g);
 }
 //Called by ReceiverWidget
-void Receiver::SetMute(bool b)
+void Receiver::setMute(bool b)
 {
 	mute = b;
 }
 //Called by ReceiverWidget
-void Receiver::SetGain(int g)
+void Receiver::setGain(int g)
 {
 	//Convert dbGain to amplitude so we can use it to scale
 	//No magic DSP math, just found something that sounds right to convert slider 0-100 reasonable vol
@@ -686,13 +686,13 @@ void Receiver::SetGain(int g)
 	gain = g; //Adjust in audio classes
 }
 //Called by ReceiverWidget
-void Receiver::SetSquelch(int s)
+void Receiver::setSquelch(int s)
 {
 	squelch = s;
 	signalStrength->setSquelch(s);
 }
 //Called by ReceiverWidget
-void Receiver::SetMixer(int f)
+void Receiver::setMixer(int f)
 {
 	mixerFrequency = f;
 
@@ -709,7 +709,7 @@ void Receiver::SetMixer(int f)
 	demodFrequency = frequency + mixerFrequency;
 }
 
-void Receiver::SdrOptionsPressed()
+void Receiver::sdrOptionsPressed()
 {
     //2 states, power on and off
     //If power on, use active sdr to make changes
@@ -720,7 +720,7 @@ void Receiver::SdrOptionsPressed()
 	sdrOptions->ShowSdrOptions(sdr, true);
 }
 //Called by receiver widget with device selection changes to make sure any open options ui is closed
-void Receiver::CloseSdrOptions()
+void Receiver::closeSdrOptions()
 {
     if (sdr != NULL) {
 		sdrOptions->ShowSdrOptions(sdr, false);
@@ -741,7 +741,7 @@ that is disabled and not do a useless copy from IN to OUT.
 */
 
 //New ProcessBlock for device plugins
-void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
+void Receiver::processIQData(CPX *in, quint16 numSamples)
 {
 	if (sdr == NULL || !powerOn)
 		return;
@@ -786,7 +786,7 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
     if (isRecording)
 		recordingFile.WriteSamples(nextStep,numSamples);
 
-	global->testBench->displayData(numSamples,nextStep,sampleRate,testBenchRawIQ);
+	global->testBench->displayData(numSamples,nextStep,sampleRate,TB_RAW_IQ);
 
     //global->perform.StartPerformance();
     /*
@@ -918,7 +918,7 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
         //Mixer shows no loss in testing
         //nextStep = mixer->ProcessBlock(nextStep);
         //float post = SignalProcessing::TotalPower(nextStep,frameCount);
-		global->testBench->displayData(numStepSamples,nextStep,demodSampleRate,testBenchPostMixer);
+		global->testBench->displayData(numStepSamples,nextStep,demodSampleRate,TB_POST_MIXER);
 
         //global->perform.StopPerformance(100);
 
@@ -930,7 +930,7 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 		//global->perform.StopPerformance(100);
 		//Crude AGC, too much fluctuation
 		//CPX::scaleCPX(nextStep,nextStep,pre/post,frameCount);
-		global->testBench->displayData(numStepSamples,nextStep,demodSampleRate,testBenchPostBandpass);
+		global->testBench->displayData(numStepSamples,nextStep,demodSampleRate,TB_POST_BP);
 
         //If squelch is set, and we're below threshold and should set output to zero
         //Do this in SignalStrength, since that's where we're calculating average signal strength anyway
@@ -966,7 +966,7 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 		nextStep = demod->ProcessBlock(nextStep, numStepSamples);
 		//global->perform.StopPerformance(100);
 
-		global->testBench->displayData(numStepSamples,nextStep,demodSampleRate,testBenchPostDemod);
+		global->testBench->displayData(numStepSamples,nextStep,demodSampleRate,TB_POST_DEMOD);
 
         resampRate = (demodSampleRate*1.0) / (audioOutRate*1.0);
 
@@ -981,14 +981,14 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 	//global->perform.StopPerformance(100);
 
 	//global->perform.StartPerformance("Process Audio");
-	ProcessAudioData(audioBuf,numStepSamples);
+	processAudioData(audioBuf,numStepSamples);
 	//global->perform.StopPerformance(100);
 }
 
 //Should be ProcessSpectrumData, using it for now
 //Will expect values from 0 to 255 equivalent to -255db to 0db
 //But smallest expected value would be -120db
-void Receiver::ProcessBandscopeData(quint8 *in, quint16 numPoints)
+void Receiver::processBandscopeData(quint8 *in, quint16 numPoints)
 {
 	if (sdr == NULL || !powerOn)
 		return;
@@ -1003,7 +1003,7 @@ void Receiver::ProcessBandscopeData(quint8 *in, quint16 numPoints)
 }
 
 //Called by devices and other call backs to output audio data
-void Receiver::ProcessAudioData(CPX *in, quint16 numSamples)
+void Receiver::processAudioData(CPX *in, quint16 numSamples)
 {
 	// apply volume setting, mute and output
 	//global->perform.StartPerformance();
@@ -1059,7 +1059,7 @@ void Receiver::ProcessBlockFreqDomain(CPX *in, CPX *out, int frameCount)
 }
 #endif
 
-void Receiver::SetDigitalModem(QString _name, QWidget *_parent)
+void Receiver::setDigitalModem(QString _name, QWidget *_parent)
 {
     if (_name == NULL || _parent == NULL) {
         if (iDigitalModem != NULL)

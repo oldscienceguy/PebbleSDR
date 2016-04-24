@@ -241,7 +241,7 @@ void SdrOptions::dcRemovalChanged(bool b)
 	dcRemove = b;
 	di->Set(DeviceInterface::RemoveDC,b);
 	di->Command(DeviceInterface::CmdWriteSettings,0);
-	if (!global->receiver->GetPowerOn())
+	if (!global->receiver->getPowerOn())
 		return;
 	global->receiver->dcRemove->enableStep(b);
 
@@ -320,9 +320,9 @@ void SdrOptions::BalancePhaseChanged(int v)
 	sd->iqBalancePhaseLabel->setText("Phase: " + QString::number(newValue));
 	di->Set(DeviceInterface::IQBalancePhase, newValue);
 
-	if (!global->receiver->GetPowerOn())
+	if (!global->receiver->getPowerOn())
 		return;
-	global->receiver->GetIQBalance()->setPhaseFactor(newValue);
+	global->receiver->getIQBalance()->setPhaseFactor(newValue);
 	di->Command(DeviceInterface::CmdWriteSettings,0);
 }
 
@@ -334,18 +334,18 @@ void SdrOptions::BalanceGainChanged(int v)
 	di->Set(DeviceInterface::IQBalanceGain, newValue);
 	di->Command(DeviceInterface::CmdWriteSettings,0);
 	//Update in realtime
-	if (!global->receiver->GetPowerOn())
+	if (!global->receiver->getPowerOn())
 		return;
-	global->receiver->GetIQBalance()->setGainFactor(newValue);
+	global->receiver->getIQBalance()->setGainFactor(newValue);
 }
 
 void SdrOptions::BalanceEnabledChanged(bool b)
 {
 	di->Set(DeviceInterface::IQBalanceEnabled, b);
 	di->Command(DeviceInterface::CmdWriteSettings,0);
-	if (!global->receiver->GetPowerOn())
+	if (!global->receiver->getPowerOn())
 		return;
-	global->receiver->GetIQBalance()->enableStep(b);
+	global->receiver->getIQBalance()->enableStep(b);
 }
 
 void SdrOptions::BalanceReset()

@@ -43,40 +43,41 @@ class Receiver:public QObject
 public:
 	Receiver(ReceiverWidget *rw, QMainWindow *main);
 	~Receiver(void);
-	bool On();
-	bool Off();
-	void Close(); //Shutdown, just before destructor
-	bool Power(bool on);
+	bool turnPowerOn();
+	bool turnPowerOff();
+	bool togglePower(bool _on);
+
+	void close(); //Shutdown, just before destructor
 	//Called with a requested frequency and the last frequency
 	//Calculates next higher or lower (actual), sets it and return to widget for display
-	double SetSDRFrequency(double fRequested, double fCurrent);
-	void SetMode(DeviceInterface::DEMODMODE m);
-	void SetGain(int g);
-	void SetAgcThreshold(int g);
-	void SetSquelch(int s);
-	void SetMixer(int f);
-	void SetFilter(int lo, int hi);
-	void SetAnfEnabled(bool b);
-	void SetNbEnabled(bool b);
-	void SetNb2Enabled(bool b);
-	int SetAgcMode(AGC::AGCMODE m);
-	void SetMute(bool b);
-	void ShowPresets();
-    Presets *GetPresets() {return presets;}
-    bool GetPowerOn() {return powerOn;}
+	double setSDRFrequency(double fRequested, double fCurrent);
+	void setMode(DeviceInterface::DEMODMODE m);
+	void setGain(int g);
+	void setAgcThreshold(int g);
+	void setSquelch(int s);
+	void setMixer(int f);
+	void setFilter(int lo, int hi);
+	void setAnfEnabled(bool b);
+	void setNbEnabled(bool b);
+	void setNb2Enabled(bool b);
+	int setAgcMode(AGC::AGCMODE m);
+	void setMute(bool b);
+	void showPresets();
+	Presets *getPresets() {return presets;}
+	bool getPowerOn() {return powerOn;}
 
-	Settings * GetSettings() {return settings;}
-    void ProcessIQData(CPX *in, quint16 numSamples);
-	void ProcessBandscopeData(quint8 *in, quint16 numPoints);
-	void ProcessAudioData(CPX *in, quint16 numSamples);
-	SignalStrength *GetSignalStrength() {return signalStrength;}
-	SignalSpectrum *GetSignalSpectrum() {return signalSpectrum;}
-	IQBalance *GetIQBalance(){return iqBalance;}
+	Settings * getSettings() {return settings;}
+	void processIQData(CPX *in, quint16 numSamples);
+	void processBandscopeData(quint8 *in, quint16 numPoints);
+	void processAudioData(CPX *in, quint16 numSamples);
+	SignalStrength *getSignalStrength() {return signalStrength;}
+	SignalSpectrum *getSignalSpectrum() {return signalSpectrum;}
+	IQBalance *getIQBalance(){return iqBalance;}
 
     ReceiverWidget *receiverWidget;
 
     DigitalModemInterface *getDigitalModem() {return iDigitalModem;}
-    void SetDigitalModem(QString _name, QWidget *_parent);
+	void setDigitalModem(QString _name, QWidget *_parent);
 
     QList<PluginInfo> getModemPluginInfo() {return plugins->GetModemPluginInfo();}
     QList<PluginInfo> getDevicePluginInfo() {return plugins->GetDevicePluginInfo();}
@@ -85,11 +86,11 @@ public:
 
 
     public slots:
-		void Restart();
-        void RecToggled(bool on);
-        void SdrOptionsPressed();
-        void CloseSdrOptions();
-        void SetWindowTitle();
+		void restart();
+		void recToggled(bool on);
+		void sdrOptionsPressed();
+		void closeSdrOptions();
+		void setWindowTitle();
 		void openTestBench();
 		void openAboutBox();
 		void openDeviceAboutBox();
@@ -107,11 +108,11 @@ private:
 
     //Test bench profiles we can output data to test bench
     enum TestBenchProfiles {
-        testBenchRawIQ = 1,
-        testBenchPostMixer,
-        testBenchPostBandpass,
-		testBenchPostDemod,
-		testBenchPostDecimator
+		TB_RAW_IQ = 1,
+		TB_POST_MIXER,
+		TB_POST_BP,
+		TB_POST_DEMOD,
+		TB_POST_DECIMATE
     };
 
 	bool mute;
