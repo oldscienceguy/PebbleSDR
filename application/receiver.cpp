@@ -133,6 +133,8 @@ bool Receiver::On()
 
 	sampleRate = demodSampleRate = sdr->Get(DeviceInterface::SampleRate).toInt();
     framesPerBuffer = demodFrames = settings->framesPerBuffer;
+	global->testBench->initProcessSteps(sampleRate, framesPerBuffer);
+
     //These steps work on full sample rates
     noiseBlanker = new NoiseBlanker(sampleRate,framesPerBuffer);
 	//Todo: Don't need Mixer anymore
@@ -778,8 +780,8 @@ void Receiver::ProcessIQData(CPX *in, quint16 numSamples)
 	//	audio->inBufferUnderflowCount++; //Treat like in buffer underflow
 
     //Inject signals from test bench if desired
-	global->testBench->createGeneratorSamples(numSamples, nextStep, sampleRate);
-	global->testBench->mixNoiseSamples(numSamples, nextStep, sampleRate);
+	global->testBench->genSweep(numSamples, nextStep);
+	global->testBench->genNoise(numSamples, nextStep);
 
     if (isRecording)
 		recordingFile.WriteSamples(nextStep,numSamples);

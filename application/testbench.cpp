@@ -511,7 +511,7 @@ void TestBench::onEnablePeak(bool enablepeak)
 //and place in users pBuf.
 //Called by thread so no GUI calls!
 //////////////////////////////////////////////////////////////////////
-void TestBench::createGeneratorSamples(int length, TYPECPX* pBuf, double samplerate)
+void TestBench::genSweep(int length, TYPECPX* pBuf)
 {
 	int i;
 	bool mix = ui->genMixBox->checkState();
@@ -530,7 +530,7 @@ void TestBench::createGeneratorSamples(int length, TYPECPX* pBuf, double sampler
 	//		m_pWFmMod->GenerateData(length, m_SignalAmplitude, pBuf);
 }
 
-void TestBench::mixNoiseSamples(int length, TYPECPX* pBuf, double samplerate)
+void TestBench::genNoise(int length, TYPECPX* pBuf)
 {
 	if(!m_active || !m_noiseOn || m_nco == NULL)
         return;

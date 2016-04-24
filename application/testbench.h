@@ -91,8 +91,8 @@ public:
 	//Initialize any process steps that may be called by receiver IQ chain
 	void initProcessSteps(double _sampleRate, quint32 _bufferSize);
 
-	void createGeneratorSamples(int length, TYPECPX* pBuf, double samplerate);
-	void createGeneratorSamples(int length, TYPEREAL* pBuf, double samplerate);
+	void genSweep(int length, TYPECPX* pBuf);
+	void genNoise(int length, CPX *pBuf);
 
 	void sendDebugTxt(QString Str){ if(m_active) emit sendTxt(Str);}
 
@@ -126,8 +126,6 @@ public:
 	bool m_noiseOn;
 
 	void resetProfiles(); //Delete all profiles
-
-	void mixNoiseSamples(int length, CPX *pBuf, double samplerate);
 
 public slots:
 	bool addProfile(QString profileName, int profileNumber); //false if profilenumber already exists
