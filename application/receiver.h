@@ -63,26 +63,26 @@ public:
 	int setAgcMode(AGC::AGCMODE m);
 	void setMute(bool b);
 	void showPresets();
-	Presets *getPresets() {return presets;}
-	bool getPowerOn() {return powerOn;}
+	Presets *getPresets() {return m_presets;}
+	bool getPowerOn() {return m_powerOn;}
 
-	Settings * getSettings() {return settings;}
+	Settings * getSettings() {return m_settings;}
 	void processIQData(CPX *in, quint16 numSamples);
 	void processBandscopeData(quint8 *in, quint16 numPoints);
 	void processAudioData(CPX *in, quint16 numSamples);
-	SignalStrength *getSignalStrength() {return signalStrength;}
-	SignalSpectrum *getSignalSpectrum() {return signalSpectrum;}
-	IQBalance *getIQBalance(){return iqBalance;}
+	SignalStrength *getSignalStrength() {return m_signalStrength;}
+	SignalSpectrum *getSignalSpectrum() {return m_signalSpectrum;}
+	IQBalance *getIQBalance(){return m_iqBalance;}
 
     ReceiverWidget *receiverWidget;
 
-    DigitalModemInterface *getDigitalModem() {return iDigitalModem;}
+	DigitalModemInterface *getDigitalModem() {return m_iDigitalModem;}
 	void setDigitalModem(QString _name, QWidget *_parent);
 
-    QList<PluginInfo> getModemPluginInfo() {return plugins->GetModemPluginInfo();}
-    QList<PluginInfo> getDevicePluginInfo() {return plugins->GetDevicePluginInfo();}
+	QList<PluginInfo> getModemPluginInfo() {return m_plugins->GetModemPluginInfo();}
+	QList<PluginInfo> getDevicePluginInfo() {return m_plugins->GetDevicePluginInfo();}
 
-    Demod *getDemod() {return demod;}
+	Demod *getDemod() {return m_demod;}
 
 
     public slots:
@@ -98,13 +98,13 @@ public:
 		void openGPLWindow();
 
 private:
-    Plugins *plugins;
-	SdrOptions *sdrOptions;
-	QMenuBar *mainMenu;
-	QMenu *developerMenu;
-	QMenu *helpMenu;
-	QWebEngineView *readmeView;
-	QWebEngineView *gplView;
+	Plugins *m_plugins;
+	SdrOptions *m_sdrOptions;
+	QMenuBar *m_mainMenu;
+	QMenu *m_developerMenu;
+	QMenu *m_helpMenu;
+	QWebEngineView *m_readmeView;
+	QWebEngineView *m_gplView;
 
     //Test bench profiles we can output data to test bench
     enum TestBenchProfiles {
@@ -115,80 +115,80 @@ private:
 		TB_POST_DECIMATE
     };
 
-	bool mute;
-	QMutex mutex;
-	bool powerOn;
-	Settings *settings;
-	Presets *presets;
-	QMainWindow *mainWindow;
-	DeviceInterface *sdr;
-	Audio *audioOutput;
-	Demod *demod;
-	Mixer *mixer;
-	NoiseBlanker *noiseBlanker;
-	NoiseFilter *noiseFilter;
-	SignalStrength *signalStrength;
-	SignalSpectrum *signalSpectrum;
-	AGC *agc;
-	IQBalance *iqBalance;
-    DigitalModemInterface *iDigitalModem; //Active digital modem if any
-    bool isRecording;
-    QString recordingFileName;
-    QString recordingPath;
-    WavFile recordingFile;
+	bool m_mute;
+	QMutex m_mutex;
+	bool m_powerOn;
+	Settings *m_settings;
+	Presets *m_presets;
+	QMainWindow *m_mainWindow;
+	DeviceInterface *m_sdr;
+	Audio *m_audioOutput;
+	Demod *m_demod;
+	Mixer *m_mixer;
+	NoiseBlanker *m_noiseBlanker;
+	NoiseFilter *m_noiseFilter;
+	SignalStrength *m_signalStrength;
+	SignalSpectrum *m_signalSpectrum;
+	AGC *m_agc;
+	IQBalance *m_iqBalance;
+	DigitalModemInterface *m_iDigitalModem; //Active digital modem if any
+	bool m_isRecording;
+	QString m_recordingFileName;
+	QString m_recordingPath;
+	WavFile m_recordingFile;
 
-	double frequency; //Current LO frequency (not mixed)
-    double mixerFrequency;
-	double demodFrequency; //frequency + mixerFrequency
-	double lastDemodFrequency;
+	double m_frequency; //Current LO frequency (not mixed)
+	double m_mixerFrequency;
+	double m_demodFrequency; //frequency + mixerFrequency
+	double m_lastDemodFrequency;
 
-	int sampleRate;
-	int framesPerBuffer; //#samples in each callback
+	int m_sampleRate;
+	int m_framesPerBuffer; //#samples in each callback
 	//sample rate and buffer size after down sampling step
-    int demodFrames;
-    int downSample2Frames;
-    FIRFilter *downSampleFilter;
+	int m_demodFrames;
+	int m_downSample2Frames;
+	FIRFilter *m_downSampleFilter;
 
     //Trying cuteSdr downsample code
-    CFractResampler fractResampler; //To get to final audio rate
-    CDownConvert downConvert1; //Get to reasonable rate for demod and following
-    CDownConvert downConvertWfm1; //Special to get to 300k
+	CFractResampler m_fractResampler; //To get to final audio rate
+	CDownConvert m_downConvert1; //Get to reasonable rate for demod and following
+	CDownConvert m_downConvertWfm1; //Special to get to 300k
 	//Trying new Decimator code
-	Decimator *demodDecimator;
-	Decimator *demodWfmDecimator;
-	bool useDemodDecimator;
-	bool useDemodWfmDecimator;
+	Decimator *m_demodDecimator;
+	Decimator *m_demodWfmDecimator;
+	bool m_useDemodDecimator;
+	bool m_useDemodWfmDecimator;
 
-    int audioOutRate;
-    int demodSampleRate;
-    int demodWfmSampleRate;
-    CPX *workingBuf;
-    CPX *sampleBuf; //Used to accumulate post mixer/downconvert samples to get a full buffer
-    CPX *audioBuf; //Used for final audio output processing
-    quint16 sampleBufLen;
+	int m_audioOutRate;
+	int m_demodSampleRate;
+	int m_demodWfmSampleRate;
+	CPX *m_workingBuf;
+	CPX *m_sampleBuf; //Used to accumulate post mixer/downconvert samples to get a full buffer
+	CPX *m_audioBuf; //Used for final audio output processing
+	quint16 m_sampleBufLen;
 
-	double *dbSpectrumBuf; //Used when spectrum is set by remote
+	double *m_dbSpectrumBuf; //Used when spectrum is set by remote
 
     //Use CuteSDR decimation filters for downsampling
-    CDecimateBy2 *decimate1;
-    int decimate2SampleRate;
-    CDecimateBy2 *decmiate2;
-    int decimate3SampleRate;
-    CDecimateBy2 *decimate3;
-    int decimate4SampleRate;
-    CDecimateBy2 *decimate4;
+	CDecimateBy2 *m_decimate1;
+	int m_decimate2SampleRate;
+	CDecimateBy2 *m_decmiate2;
+	int m_decimate3SampleRate;
+	CDecimateBy2 *m_decimate3;
+	int m_decimate4SampleRate;
+	CDecimateBy2 *m_decimate4;
 
-	float gain;
-	int squelch;
+	float m_gain;
+	int m_squelch;
 
-	BandPassFilter *bpFilter; //Current BandPass filter
-	FIRFilter *usbFilter;
-	FIRFilter *lsbFilter;
-	FIRFilter *amFilter;
+	BandPassFilter *m_bpFilter; //Current BandPass filter
+	FIRFilter *m_usbFilter;
+	FIRFilter *m_lsbFilter;
+	FIRFilter *m_amFilter;
 
-	bool converterMode;
-	double converterOffset;
-	bool dcRemoveMode;
-	DCRemoval *dcRemove;
+	bool m_converterMode;
+	double m_converterOffset;
+	bool m_dcRemoveMode;
+	DCRemoval *m_dcRemove;
 
 };

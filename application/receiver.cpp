@@ -12,34 +12,34 @@ Core receiver logic, coordinates soundcard, fft, demod, etc
 */
 Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 {
-	useDemodDecimator = true;
-	useDemodWfmDecimator = true;
+	m_useDemodDecimator = true;
+	m_useDemodWfmDecimator = true;
 
 	//Read ini file or set defaults if no ini file exists
-	settings = global->settings;
-	plugins = new Plugins(this,settings);
+	m_settings = global->settings;
+	m_plugins = new Plugins(this,m_settings);
 
-    mainWindow = main;
+	m_mainWindow = main;
     receiverWidget = rw;
 
 	QRect pos;
-	pos.setX(settings->windowXPos);
-	pos.setY(settings->windowYPos);
-	pos.setWidth(settings->windowWidth);
-	pos.setHeight(settings->windowHeight);
+	pos.setX(m_settings->windowXPos);
+	pos.setY(m_settings->windowYPos);
+	pos.setWidth(m_settings->windowWidth);
+	pos.setHeight(m_settings->windowHeight);
 	//setGeometry breaks in QT 5.6 and doesn't adjust invalid width and height values
-	if (settings->windowWidth < 1 || settings->windowHeight < 1) {
+	if (m_settings->windowWidth < 1 || m_settings->windowHeight < 1) {
 		//Just move window and accept default width and height
-		mainWindow->move(pos.x(),pos.y());
+		m_mainWindow->move(pos.x(),pos.y());
 	} else {
-		mainWindow->setGeometry(pos);
+		m_mainWindow->setGeometry(pos);
 	}
 
-	recordingPath = global->appDirPath;
+	m_recordingPath = global->appDirPath;
     //Make sure directory exists, else will get file error
-    QDir dir(recordingPath);
+	QDir dir(m_recordingPath);
     dir.mkdir("PebbleRecordings");
-	recordingPath += "/PebbleRecordings/";
+	m_recordingPath += "/PebbleRecordings/";
 
 	//ReceiverWidget link back
 	receiverWidget->SetReceiver(this);
@@ -53,62 +53,62 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 
 	receiverWidget->SetMessage( welcome);
 
-	powerOn = false;
-	mute = false;
-    isRecording = false;
+	m_powerOn = false;
+	m_mute = false;
+	m_isRecording = false;
 
-	presets = NULL;
+	m_presets = NULL;
 
-	sdr = NULL;
-	mixer = NULL;
-	demod = NULL;
-	audioOutput = NULL;
-	bpFilter = NULL;
-	noiseBlanker = NULL;
-	noiseFilter = NULL;
-	signalStrength = NULL;
-	signalSpectrum = NULL;
-	agc = NULL;
-	iqBalance = NULL;
-    iDigitalModem = NULL;
-	workingBuf = NULL;
-	sampleBuf = NULL;
-	audioBuf = NULL;
-	dbSpectrumBuf = NULL;
-	demodDecimator = NULL;
-	demodWfmDecimator = NULL;
+	m_sdr = NULL;
+	m_mixer = NULL;
+	m_demod = NULL;
+	m_audioOutput = NULL;
+	m_bpFilter = NULL;
+	m_noiseBlanker = NULL;
+	m_noiseFilter = NULL;
+	m_signalStrength = NULL;
+	m_signalSpectrum = NULL;
+	m_agc = NULL;
+	m_iqBalance = NULL;
+	m_iDigitalModem = NULL;
+	m_workingBuf = NULL;
+	m_sampleBuf = NULL;
+	m_audioBuf = NULL;
+	m_dbSpectrumBuf = NULL;
+	m_demodDecimator = NULL;
+	m_demodWfmDecimator = NULL;
 
-	sdrOptions = new SdrOptions();
-	connect(sdrOptions,SIGNAL(restart()),this,SLOT(restart()));
+	m_sdrOptions = new SdrOptions();
+	connect(m_sdrOptions,SIGNAL(restart()),this,SLOT(restart()));
 
     //qDebug()<<plugins->GetPluginNames();
 
 	//mainMenu = main->menuBar(); //This gives us a menuBar, but only in the main window
-	mainMenu = new QMenuBar(); //When parent = 0 this gives us a menuBar that can be used in any window
-	developerMenu = new QMenu("Developer");
-	developerMenu->addAction("TestBench",this,SLOT(openTestBench()));
-	developerMenu->addAction("Device Info",this,SLOT(openDeviceAboutBox()));
-	mainMenu->addAction(developerMenu->menuAction());
-	helpMenu = new QMenu("Help");
-	helpMenu->addAction("About",this,SLOT(openAboutBox())); //This will be auto-merged with Application menu on Mac
-	helpMenu->addAction("Readme",this,SLOT(openReadMeWindow()));
-	helpMenu->addAction("Credits", this, SLOT(openGPLWindow()));
-	mainMenu->addAction(helpMenu->menuAction());
+	m_mainMenu = new QMenuBar(); //When parent = 0 this gives us a menuBar that can be used in any window
+	m_developerMenu = new QMenu("Developer");
+	m_developerMenu->addAction("TestBench",this,SLOT(openTestBench()));
+	m_developerMenu->addAction("Device Info",this,SLOT(openDeviceAboutBox()));
+	m_mainMenu->addAction(m_developerMenu->menuAction());
+	m_helpMenu = new QMenu("Help");
+	m_helpMenu->addAction("About",this,SLOT(openAboutBox())); //This will be auto-merged with Application menu on Mac
+	m_helpMenu->addAction("Readme",this,SLOT(openReadMeWindow()));
+	m_helpMenu->addAction("Credits", this, SLOT(openGPLWindow()));
+	m_mainMenu->addAction(m_helpMenu->menuAction());
 
-	readmeView = NULL;
-	gplView = NULL;
+	m_readmeView = NULL;
+	m_gplView = NULL;
 }
 bool Receiver::turnPowerOn()
 {
-	powerOn = true;
+	m_powerOn = true;
 
 	//We need SDR* for transition
-	sdr = global->sdr;
-    if (sdr == NULL)
+	m_sdr = global->sdr;
+	if (m_sdr == NULL)
         return false; //Means something is wrong with plugins,
 
 	//If plugin has multiple devices, we need to set the last one used
-	sdr->Set(DeviceInterface::DeviceNumber,global->settings->sdrDeviceNumber);
+	m_sdr->Set(DeviceInterface::DeviceNumber,global->settings->sdrDeviceNumber);
 
     //Setup callback for device plugins to use when they have new IQ data
     using namespace std::placeholders;
@@ -116,37 +116,37 @@ bool Receiver::turnPowerOn()
     //std::function<void(CPX *, quint16)> cb = std::bind(&Receiver::ProcessIQData, _receiver, std::placeholders::_1, std::placeholders::_2);
     //bind(Method ptr, object, arg1, ... argn)
 
-	sdr->Command(DeviceInterface::CmdReadSettings,0); //Always start with most current
-	if (!sdr->Initialize(std::bind(&Receiver::processIQData, this, _1, _2),
+	m_sdr->Command(DeviceInterface::CmdReadSettings,0); //Always start with most current
+	if (!m_sdr->Initialize(std::bind(&Receiver::processIQData, this, _1, _2),
 						 std::bind(&Receiver::processBandscopeData, this, _1, _2),
 						 std::bind(&Receiver::processAudioData, this, _1, _2),
-						 settings->framesPerBuffer)) {
+						 m_settings->framesPerBuffer)) {
 		turnPowerOff();
 		return false;
 	}
 
-	if (!sdr->Command(DeviceInterface::CmdConnect,0)){
+	if (!m_sdr->Command(DeviceInterface::CmdConnect,0)){
         QMessageBox::information(NULL,"Pebble","SDR device is not connected");
 		turnPowerOff();
 		return false;
 	}
 
-	sampleRate = demodSampleRate = sdr->Get(DeviceInterface::SampleRate).toInt();
-    framesPerBuffer = demodFrames = settings->framesPerBuffer;
-	global->testBench->initProcessSteps(sampleRate, framesPerBuffer);
+	m_sampleRate = m_demodSampleRate = m_sdr->Get(DeviceInterface::SampleRate).toInt();
+	m_framesPerBuffer = m_demodFrames = m_settings->framesPerBuffer;
+	global->testBench->initProcessSteps(m_sampleRate, m_framesPerBuffer);
 
     //These steps work on full sample rates
-    noiseBlanker = new NoiseBlanker(sampleRate,framesPerBuffer);
+	m_noiseBlanker = new NoiseBlanker(m_sampleRate,m_framesPerBuffer);
 	//Todo: Don't need Mixer anymore
-    mixer = new Mixer(sampleRate, framesPerBuffer);
-    iqBalance = new IQBalance(sampleRate,framesPerBuffer);
-	iqBalance->enableStep(sdr->Get(DeviceInterface::IQBalanceEnabled).toBool());
-	iqBalance->setGainFactor(sdr->Get(DeviceInterface::IQBalanceGain).toDouble());
-	iqBalance->setPhaseFactor(sdr->Get(DeviceInterface::IQBalancePhase).toDouble());
+	m_mixer = new Mixer(m_sampleRate, m_framesPerBuffer);
+	m_iqBalance = new IQBalance(m_sampleRate,m_framesPerBuffer);
+	m_iqBalance->enableStep(m_sdr->Get(DeviceInterface::IQBalanceEnabled).toBool());
+	m_iqBalance->setGainFactor(m_sdr->Get(DeviceInterface::IQBalanceGain).toDouble());
+	m_iqBalance->setPhaseFactor(m_sdr->Get(DeviceInterface::IQBalancePhase).toDouble());
 
-	dcRemove = new DCRemoval(sampleRate, framesPerBuffer);
-	dcRemoveMode = sdr->Get(DeviceInterface::RemoveDC).toBool();
-	dcRemove->enableStep(dcRemoveMode);
+	m_dcRemove = new DCRemoval(m_sampleRate, m_framesPerBuffer);
+	m_dcRemoveMode = m_sdr->Get(DeviceInterface::RemoveDC).toBool();
+	m_dcRemove->enableStep(m_dcRemoveMode);
 
     /*
      * Decimation strategy
@@ -166,7 +166,7 @@ bool Receiver::turnPowerOn()
      * audioOutputRate = same as above
      */
 
-    fractResampler.Init(framesPerBuffer);
+	m_fractResampler.Init(m_framesPerBuffer);
     //Calculates the number of decimation states and returns converted sample rate
     //SetDataRate() doesn't downsample below 256k?
 
@@ -174,18 +174,18 @@ bool Receiver::turnPowerOn()
     //SetDataRate MaxBW should be driven by our filter selection, ie width of filter
 	//For now just set to widest filter, 30k for FMN or 15k bw
 	//qint32 maxBw = Demod::demodInfo[DeviceInterface::dmFMN].maxOutputBandWidth;
-	if (useDemodDecimator) {
+	if (m_useDemodDecimator) {
 		//One rate for am, cw, nfm modes.  Eventually we can get more refined for each mode
-		demodDecimator = new Decimator(sampleRate,framesPerBuffer);
-		demodSampleRate = demodDecimator->buildDecimationChain(sampleRate, 30000);
+		m_demodDecimator = new Decimator(m_sampleRate,m_framesPerBuffer);
+		m_demodSampleRate = m_demodDecimator->buildDecimationChain(m_sampleRate, 30000);
 	} else {
 		//bw is 1/2 of total bw, so 10k for 20k am
-		demodSampleRate = downConvert1.SetDataRate(sampleRate, 15000);
+		m_demodSampleRate = m_downConvert1.SetDataRate(m_sampleRate, 15000);
 
 	}
 
 	//audioOutRate can be fixed by remote devices, default to 11025 which is a rate supported by QTAudio and PortAudio on Mac
-	audioOutRate = sdr->Get(DeviceInterface::AudioOutputSampleRate).toUInt();
+	m_audioOutRate = m_sdr->Get(DeviceInterface::AudioOutputSampleRate).toUInt();
 	//audioOutRate = demodSampleRate;
 
 	//For FMStereo, sample rate should be close to 300k
@@ -193,71 +193,71 @@ bool Receiver::turnPowerOn()
 	//MaxBw = 1/2 band pass filter, ie if 30kbp, then maxBw will be 15k.
 	//maxBw = Demod::demodInfo[DeviceInterface::dmFMS].maxOutputBandWidth;
 
-	if (useDemodWfmDecimator) {
-		demodWfmDecimator = new Decimator(sampleRate, framesPerBuffer);
-		demodWfmSampleRate = demodWfmDecimator->buildDecimationChain(sampleRate,200000);
+	if (m_useDemodWfmDecimator) {
+		m_demodWfmDecimator = new Decimator(m_sampleRate, m_framesPerBuffer);
+		m_demodWfmSampleRate = m_demodWfmDecimator->buildDecimationChain(m_sampleRate,200000);
 	} else {
 		//downConvert is hard wired to only use 51 tap filters and stop as soon as decimated
 		//sample rate is less than 400k
-		demodWfmSampleRate = downConvertWfm1.SetDataRateSimple(sampleRate, 200000);
+		m_demodWfmSampleRate = m_downConvertWfm1.SetDataRateSimple(m_sampleRate, 200000);
 	}
 
     //We need original sample rate, and post mixer sample rate for zoomed spectrum
-	signalSpectrum = new SignalSpectrum(sampleRate, demodSampleRate, framesPerBuffer);
+	m_signalSpectrum = new SignalSpectrum(m_sampleRate, m_demodSampleRate, m_framesPerBuffer);
 
     //Init demod with defaults
     //Demod uses variable frame size, up to framesPerBuffer
     //Demod can also run at different sample rates, high for FMW and lower for rest
     //Todo: How to handle this for filters which need explicit sample rate
     //demod = new Demod(downSampleRate,framesPerBuffer);
-    demod = new Demod(demodSampleRate, demodWfmSampleRate,framesPerBuffer); //Can't change rate later, fix
+	m_demod = new Demod(m_demodSampleRate, m_demodWfmSampleRate,m_framesPerBuffer); //Can't change rate later, fix
 
     //demodFrames = demodSampleRate / (1.0 * sampleRate) * framesPerBuffer; //Temp Hack
     //post mixer/downconvert frames are now the same as pre
-    demodFrames = framesPerBuffer;
+	m_demodFrames = m_framesPerBuffer;
 
     //Sets the Mixer NCO frequency
     //downConvert.SetFrequency(-RDS_FREQUENCY);
 
-	workingBuf = CPX::memalign(framesPerBuffer);
-	sampleBuf = CPX::memalign(framesPerBuffer);
-	audioBuf = CPX::memalign(framesPerBuffer);
-    sampleBufLen = 0;
-	dbSpectrumBuf = new double[framesPerBuffer];
+	m_workingBuf = CPX::memalign(m_framesPerBuffer);
+	m_sampleBuf = CPX::memalign(m_framesPerBuffer);
+	m_audioBuf = CPX::memalign(m_framesPerBuffer);
+	m_sampleBufLen = 0;
+	m_dbSpectrumBuf = new double[m_framesPerBuffer];
 
-    presets = new Presets(receiverWidget);
+	m_presets = new Presets(receiverWidget);
 
     //These steps work on demodSampleRate rates
 
     //WIP, testing QT audio as alternative to PortAudio
-	audioOutput = Audio::Factory(NULL, demodFrames);
+	m_audioOutput = Audio::Factory(NULL, m_demodFrames);
 
-    noiseFilter = new NoiseFilter(demodSampleRate,demodFrames);
+	m_noiseFilter = new NoiseFilter(m_demodSampleRate,m_demodFrames);
     //signalStrength is used by normal demod and wfm, so buffer len needs to be max
     //Calls to ProcessBlock will pass post decimation len
-    signalStrength = new SignalStrength(demodSampleRate,framesPerBuffer);
+	m_signalStrength = new SignalStrength(m_demodSampleRate,m_framesPerBuffer);
 
 	//Testing, will update too fast, need to sync with new fft data
-	connect(signalStrength, SIGNAL(newSignalStrength(double,double,double,double,double)),
+	connect(m_signalStrength, SIGNAL(newSignalStrength(double,double,double,double,double)),
 			receiverWidget, SLOT(newSignalStrength(double,double,double,double,double)));
 
-    iDigitalModem = NULL;
+	m_iDigitalModem = NULL;
 
-	bpFilter = new BandPassFilter(demodSampleRate, demodFrames);
-	bpFilter->enableStep(true);
+	m_bpFilter = new BandPassFilter(m_demodSampleRate, m_demodFrames);
+	m_bpFilter->enableStep(true);
 	
-    agc = new AGC(demodSampleRate, demodFrames);
+	m_agc = new AGC(m_demodSampleRate, m_demodFrames);
 
-	mixerFrequency = 0;
-	demodFrequency = 0;
-	lastDemodFrequency = 0;
+	m_mixerFrequency = 0;
+	m_demodFrequency = 0;
+	m_lastDemodFrequency = 0;
 
-	converterMode = sdr->Get(DeviceInterface::ConverterMode).toBool();
-	converterOffset = sdr->Get(DeviceInterface::ConverterOffset).toDouble();
+	m_converterMode = m_sdr->Get(DeviceInterface::ConverterMode).toBool();
+	m_converterOffset = m_sdr->Get(DeviceInterface::ConverterOffset).toDouble();
 
 	//This should always be last because it starts samples flowing through the processBlocks
-	audioOutput->StartOutput(sdr->Get(DeviceInterface::OutputDeviceName).toString(), audioOutRate);
-	sdr->Command(DeviceInterface::CmdStart,0);
+	m_audioOutput->StartOutput(m_sdr->Get(DeviceInterface::OutputDeviceName).toString(), m_audioOutRate);
+	m_sdr->Command(DeviceInterface::CmdStart,0);
 
 
     //Don't set title until we connect and start.
@@ -268,10 +268,10 @@ bool Receiver::turnPowerOn()
 
 void Receiver::setWindowTitle()
 {
-    if (sdr == NULL)
+	if (m_sdr == NULL)
         return;
-	qint16 number = sdr->Get(DeviceInterface::DeviceNumber).toInt();
-	QString devName = sdr->Get(DeviceInterface::DeviceName,number).toString();
+	qint16 number = m_sdr->Get(DeviceInterface::DeviceNumber).toInt();
+	QString devName = m_sdr->Get(DeviceInterface::DeviceName,number).toString();
     //In some cases, unknown, activeWindow() can return NULL
     QWidget *win = QApplication::activeWindow();
     if (win != NULL)
@@ -297,9 +297,9 @@ void Receiver::openTestBench()
 	testBench->setVisible(true);
 
 	//Keep focus on us
-	mainWindow->activateWindow(); //Makes main active
-	mainWindow->raise(); //Brings it to the top
-	mainWindow->setFocus(); //Makes sure it has keyboard focus
+	m_mainWindow->activateWindow(); //Makes main active
+	m_mainWindow->raise(); //Brings it to the top
+	m_mainWindow->setFocus(); //Makes sure it has keyboard focus
 
 }
 
@@ -334,50 +334,50 @@ void Receiver::openAboutBox()
 	welcome += "\nAUDIO = Port Audio";
 #endif
 
-	QMessageBox::about(this->mainWindow,"About Pebble",welcome);
+	QMessageBox::about(this->m_mainWindow,"About Pebble",welcome);
 }
 
 void Receiver::openDeviceAboutBox()
 {
-	if (!powerOn)
+	if (!m_powerOn)
 		return;
 	QString about;
 	about += "\nAbout Device\n\n";
-	about += sdr->Get(DeviceInterface::DeviceName).toString();
+	about += m_sdr->Get(DeviceInterface::DeviceName).toString();
 	about += "\n";
-	about += sdr->Get(DeviceInterface::DeviceDescription).toString();
+	about += m_sdr->Get(DeviceInterface::DeviceDescription).toString();
 	about += "\nFrequency Range ";
-	about += QString::number(sdr->Get(DeviceInterface::LowFrequency).toDouble()/1000000.0);
+	about += QString::number(m_sdr->Get(DeviceInterface::LowFrequency).toDouble()/1000000.0);
 	about += " to ";
-	about += QString::number(sdr->Get(DeviceInterface::HighFrequency).toDouble()/1000000.0);
+	about += QString::number(m_sdr->Get(DeviceInterface::HighFrequency).toDouble()/1000000.0);
 	about += " mHz\n";
-	if (sdr->Get(DeviceInterface::DeviceSlave).toBool()) {
+	if (m_sdr->Get(DeviceInterface::DeviceSlave).toBool()) {
 		about += "Device is in Slave mode to server";
 	}
 
-	QMessageBox::about(this->mainWindow,"About Device",about);
+	QMessageBox::about(this->m_mainWindow,"About Device",about);
 
 }
 
 void Receiver::openReadMeWindow()
 {
-	if (readmeView == NULL)
-		readmeView = new QWebEngineView(0);
+	if (m_readmeView == NULL)
+		m_readmeView = new QWebEngineView(0);
 	//readmeView->load(QUrl("http://amazon.com"));
 
-	readmeView->load(QUrl::fromLocalFile(global->pebbleDataPath+"readme.html"));
-	readmeView->show();
+	m_readmeView->load(QUrl::fromLocalFile(global->pebbleDataPath+"readme.html"));
+	m_readmeView->show();
 }
 
 void Receiver::openGPLWindow()
 {
-	if (gplView == NULL)
-		gplView = new QWebEngineView(0);
+	if (m_gplView == NULL)
+		m_gplView = new QWebEngineView(0);
 	//readmeView->load(QUrl("http://amazon.com"));
 
-	gplView->load(QUrl::fromLocalFile(global->pebbleDataPath+"gpl.html"));
+	m_gplView->load(QUrl::fromLocalFile(global->pebbleDataPath+"gpl.html"));
 	//gplView->setGeometry(0,0,100,100);
-	gplView->show();
+	m_gplView->show();
 
 }
 
@@ -386,7 +386,7 @@ void Receiver::openGPLWindow()
 bool Receiver::turnPowerOff()
 {
 
-	powerOn = false;
+	m_powerOn = false;
 
     //If we're closing app, don't bother to set title, crashes sometime
     QWidget *app = QApplication::activeWindow();
@@ -395,86 +395,86 @@ bool Receiver::turnPowerOff()
         app->setWindowTitle("Pebble II");
 	}
 
-	if (sdrOptions != NULL)
-		sdrOptions->ShowSdrOptions(sdr, false);
+	if (m_sdrOptions != NULL)
+		m_sdrOptions->ShowSdrOptions(m_sdr, false);
 
-    if (isRecording) {
-        recordingFile.Close();
-        isRecording = false;
+	if (m_isRecording) {
+		m_recordingFile.Close();
+		m_isRecording = false;
     }
 	//Carefull with order of shutting down
 	//if (settings->sdrDevice == DeviceInterface::SDR_IQ_USB) {
     //}
 
 	//Stop incoming samples first
-    if (sdr != NULL) {
-		sdr->Command(DeviceInterface::CmdStop,0);
+	if (m_sdr != NULL) {
+		m_sdr->Command(DeviceInterface::CmdStop,0);
     }
-	if (audioOutput != NULL)
-		audioOutput->Stop();
+	if (m_audioOutput != NULL)
+		m_audioOutput->Stop();
 
-    iDigitalModem = NULL;
+	m_iDigitalModem = NULL;
 
 	//Now clean up rest
-	if (sdr != NULL){
+	if (m_sdr != NULL){
         //Save any run time settings
-		sdr->Set(DeviceInterface::LastFrequency,frequency);
-		sdr->Command(DeviceInterface::CmdWriteSettings,0); //Always save last mode, last freq, etc
+		m_sdr->Set(DeviceInterface::LastFrequency,m_frequency);
+		m_sdr->Command(DeviceInterface::CmdWriteSettings,0); //Always save last mode, last freq, etc
 
-		sdr->Command(DeviceInterface::CmdDisconnect,0);
+		m_sdr->Command(DeviceInterface::CmdDisconnect,0);
 		//Make sure SDR threads are fully stopped, otherwise processIQ objects below will crash in destructor
 		//Active SDR object survives on/off and is kept in global.  Do not delete
 		//delete sdr;
-        sdr = NULL;
+		m_sdr = NULL;
 	}
-	if (demodDecimator != NULL) {
-		delete demodDecimator;
-		demodDecimator = NULL;
+	if (m_demodDecimator != NULL) {
+		delete m_demodDecimator;
+		m_demodDecimator = NULL;
 	}
-	if (demodWfmDecimator != NULL) {
-		delete demodWfmDecimator;
-		demodWfmDecimator = NULL;
+	if (m_demodWfmDecimator != NULL) {
+		delete m_demodWfmDecimator;
+		m_demodWfmDecimator = NULL;
 	}
-	if (demod != NULL) {
-		delete demod;
-		demod = NULL;
+	if (m_demod != NULL) {
+		delete m_demod;
+		m_demod = NULL;
 	}
-	if (mixer != NULL) {
-		delete mixer;
-		mixer = NULL;
+	if (m_mixer != NULL) {
+		delete m_mixer;
+		m_mixer = NULL;
 	}
-	if (bpFilter != NULL) {
-		delete bpFilter;
-		bpFilter = NULL;
+	if (m_bpFilter != NULL) {
+		delete m_bpFilter;
+		m_bpFilter = NULL;
 	}
-	if (noiseBlanker != NULL) {
-		delete noiseBlanker;
-		noiseBlanker = NULL;
+	if (m_noiseBlanker != NULL) {
+		delete m_noiseBlanker;
+		m_noiseBlanker = NULL;
 	}
-	if (noiseFilter != NULL) {
-		delete noiseFilter;
-		noiseFilter = NULL;
+	if (m_noiseFilter != NULL) {
+		delete m_noiseFilter;
+		m_noiseFilter = NULL;
 	}
-	if (signalStrength != NULL) {
-		delete signalStrength;
-		signalStrength = NULL;
+	if (m_signalStrength != NULL) {
+		delete m_signalStrength;
+		m_signalStrength = NULL;
 	}
-	if (signalSpectrum != NULL) {
-		delete signalSpectrum;
-		signalSpectrum = NULL;
+	if (m_signalSpectrum != NULL) {
+		delete m_signalSpectrum;
+		m_signalSpectrum = NULL;
 	}
-	if (agc != NULL) {
-		delete agc;
-		agc = NULL;
+	if (m_agc != NULL) {
+		delete m_agc;
+		m_agc = NULL;
 	}
-	if(iqBalance != NULL) {
-		delete iqBalance;
-		iqBalance=NULL;
+	if(m_iqBalance != NULL) {
+		delete m_iqBalance;
+		m_iqBalance=NULL;
 	}
     //Making this last to work around a shut down order problem with consumer threads
-    if (audioOutput != NULL) {
-        delete audioOutput;
-        audioOutput = NULL;
+	if (m_audioOutput != NULL) {
+		delete m_audioOutput;
+		m_audioOutput = NULL;
     }
 
 #if(0)
@@ -487,21 +487,21 @@ bool Receiver::turnPowerOff()
 	}
 #endif
 
-    if (workingBuf != NULL) {
-		free (workingBuf);
-        workingBuf = NULL;
+	if (m_workingBuf != NULL) {
+		free (m_workingBuf);
+		m_workingBuf = NULL;
     }
-    if (sampleBuf != NULL) {
-		free (sampleBuf);
-        sampleBuf = NULL;
+	if (m_sampleBuf != NULL) {
+		free (m_sampleBuf);
+		m_sampleBuf = NULL;
     }
-    if (audioBuf != NULL) {
-		free (audioBuf);
-        audioBuf = NULL;
+	if (m_audioBuf != NULL) {
+		free (m_audioBuf);
+		m_audioBuf = NULL;
     }
-	if (dbSpectrumBuf != NULL) {
-		free (dbSpectrumBuf);
-		dbSpectrumBuf = NULL;
+	if (m_dbSpectrumBuf != NULL) {
+		free (m_dbSpectrumBuf);
+		m_dbSpectrumBuf = NULL;
 	}
     return true;
 }
@@ -510,17 +510,17 @@ void Receiver::close()
 	turnPowerOff();
 	if (global->testBench->isVisible())
 		global->testBench->setVisible(false);
-	if (readmeView != NULL && readmeView->isVisible())
-		readmeView->setVisible(false);
-	if (gplView != NULL && gplView->isVisible())
-		gplView->setVisible(false);
-	settings->WriteSettings();
+	if (m_readmeView != NULL && m_readmeView->isVisible())
+		m_readmeView->setVisible(false);
+	if (m_gplView != NULL && m_gplView->isVisible())
+		m_gplView->setVisible(false);
+	m_settings->WriteSettings();
 }
 Receiver::~Receiver(void)
 {
 	//Delete all the plugins
-	if (plugins != NULL)
-		delete plugins;
+	if (m_plugins != NULL)
+		delete m_plugins;
 	//settings is deleted by pebbleii
 	//plugins (sdr) are deleted by ~Plugins()
 }
@@ -533,30 +533,30 @@ Receiver::~Receiver(void)
  */
 void Receiver::recToggled(bool on)
 {
-    if (!powerOn)
+	if (!m_powerOn)
         return;
 
     if (on) {
         //We could use QTemporaryFile to get a unique file name, but need more control
 		QString baseName = "PebbleIQ_";
-		baseName += QString::number(frequency/1000,'f',0);
+		baseName += QString::number(m_frequency/1000,'f',0);
 		baseName +="kHz_";
-		baseName += QString::number(sampleRate/1000);
+		baseName += QString::number(m_sampleRate/1000);
 		baseName += "kSps_";
         QFileInfo fInfo;
         for (int i=1; i<1000; i++) {
-            recordingFileName = recordingPath + baseName + QString::number(i) + ".wav";
-            fInfo.setFile(recordingFileName);
+			m_recordingFileName = m_recordingPath + baseName + QString::number(i) + ".wav";
+			fInfo.setFile(m_recordingFileName);
             if (!fInfo.exists())
                 break; //Got a unique name
             //When we overrun counter, last filename will be continually overwritten
         }
 
-        recordingFile.OpenWrite(recordingFileName, sampleRate, frequency, demod->DemodMode(), 0);
-        isRecording = true;
+		m_recordingFile.OpenWrite(m_recordingFileName, m_sampleRate, m_frequency, m_demod->DemodMode(), 0);
+		m_isRecording = true;
     } else {
-        recordingFile.Close();
-        isRecording = false;
+		m_recordingFile.Close();
+		m_isRecording = false;
     }
 }
 
@@ -576,7 +576,7 @@ bool Receiver::togglePower(bool _on)
 void Receiver::restart()
 {
 	//If power off, do nothing
-	if (powerOn) {
+	if (m_powerOn) {
 		//Tell receiver widget to power off, then on.
 		//Receiver widget controls logic and will call receiver as necessary
 		receiverWidget->powerToggled(false);
@@ -586,9 +586,9 @@ void Receiver::restart()
 }
 double Receiver::setSDRFrequency(double fRequested, double fCurrent)
 {
-	if (sdr==NULL)
+	if (m_sdr==NULL)
 		return 0;
-    demod->ResetDemod();
+	m_demod->ResetDemod();
 
 	//There's a problem with 'popping' when we are scrolling freq up and down
 	//Especially in large increments
@@ -604,78 +604,78 @@ double Receiver::setSDRFrequency(double fRequested, double fCurrent)
 		restart = true;
 	}
 #endif
-	if (converterMode) {
-		fRequested += converterOffset;
+	if (m_converterMode) {
+		fRequested += m_converterOffset;
 	}
-	if (sdr->Set(DeviceInterface::DeviceFrequency,fRequested)) {
-		frequency = fRequested;
+	if (m_sdr->Set(DeviceInterface::DeviceFrequency,fRequested)) {
+		m_frequency = fRequested;
 	} else {
 		//Failed, return current freq without change
 		fRequested =  fCurrent;
 	}
 
-	lastDemodFrequency = demodFrequency;
-	demodFrequency = frequency + mixerFrequency;
+	m_lastDemodFrequency = m_demodFrequency;
+	m_demodFrequency = m_frequency + m_mixerFrequency;
 	return fRequested;
 }
 
 //Called by ReceiverWidget to sets demod mode and default bandpass filter for each mode
 void Receiver::setMode(DeviceInterface::DEMODMODE m)
 {
-	if(demod != NULL) {
+	if(m_demod != NULL) {
 		if (m == DeviceInterface::dmFMM || m == DeviceInterface::dmFMS)
-            signalSpectrum->SetSampleRate(sampleRate, demodWfmSampleRate);
+			m_signalSpectrum->SetSampleRate(m_sampleRate, m_demodWfmSampleRate);
         else
-            signalSpectrum->SetSampleRate(sampleRate, demodSampleRate);
+			m_signalSpectrum->SetSampleRate(m_sampleRate, m_demodSampleRate);
 
         //Demod will return new demo
-        demod->SetDemodMode(m, sampleRate, demodSampleRate);
-		sdr->Set(DeviceInterface::LastDemodMode,m);
-        sampleBufLen = 0;
+		m_demod->SetDemodMode(m, m_sampleRate, m_demodSampleRate);
+		m_sdr->Set(DeviceInterface::LastDemodMode,m);
+		m_sampleBufLen = 0;
 	}
-    if (iDigitalModem != NULL) {
-        iDigitalModem->SetDemodMode(m);
+	if (m_iDigitalModem != NULL) {
+		m_iDigitalModem->SetDemodMode(m);
     }
 }
 //Called by ReceiverWidget when UI changes filter settings
 void Receiver::setFilter(int lo, int hi)
 {
-	if (demod == NULL)
+	if (m_demod == NULL)
 		return;
-	bpFilter->setBandPass(lo,hi);
-    demod->SetBandwidth(hi - lo);
+	m_bpFilter->setBandPass(lo,hi);
+	m_demod->SetBandwidth(hi - lo);
 }
 //Called by ReceiverWidget when UI changes ANF
 void Receiver::setAnfEnabled(bool b)
 {
-	noiseFilter->enableStep(b);
+	m_noiseFilter->enableStep(b);
 }
 //Called by ReceiverWidget when UI changes NB
 void Receiver::setNbEnabled(bool b)
 {
-	noiseBlanker->setNbEnabled(b);
+	m_noiseBlanker->setNbEnabled(b);
 }
 //Called by ReceiverWidget when UI changed NB2
 void Receiver::setNb2Enabled(bool b)
 {
-	noiseBlanker->setNb2Enabled(b);
+	m_noiseBlanker->setNb2Enabled(b);
 }
 //Called by ReceiverWidget when UI changes AGC, returns new threshold for display
 int Receiver::setAgcMode(AGC::AGCMODE m)
 {
-	agc->setAgcMode(m);
+	m_agc->setAgcMode(m);
 	//AGC sets a default gain with mode
-	return agc->getAgcThreshold();
+	return m_agc->getAgcThreshold();
 }
 //Called by ReceiverWidget
 void Receiver::setAgcThreshold(int g)
 {
-    agc->setAgcThreshold(g);
+	m_agc->setAgcThreshold(g);
 }
 //Called by ReceiverWidget
 void Receiver::setMute(bool b)
 {
-	mute = b;
+	m_mute = b;
 }
 //Called by ReceiverWidget
 void Receiver::setGain(int g)
@@ -683,48 +683,48 @@ void Receiver::setGain(int g)
 	//Convert dbGain to amplitude so we can use it to scale
 	//No magic DSP math, just found something that sounds right to convert slider 0-100 reasonable vol
 	//gain = DB::dbToAmplitude(25 + g * 0.35);
-	gain = g; //Adjust in audio classes
+	m_gain = g; //Adjust in audio classes
 }
 //Called by ReceiverWidget
 void Receiver::setSquelch(int s)
 {
-	squelch = s;
-	signalStrength->setSquelch(s);
+	m_squelch = s;
+	m_signalStrength->setSquelch(s);
 }
 //Called by ReceiverWidget
 void Receiver::setMixer(int f)
 {
-	mixerFrequency = f;
+	m_mixerFrequency = f;
 
-	if (useDemodDecimator && mixer != NULL) {
-		mixer->SetFrequency(f);
-		demod->ResetDemod();
+	if (m_useDemodDecimator && m_mixer != NULL) {
+		m_mixer->SetFrequency(f);
+		m_demod->ResetDemod();
 	} else {
 		//Only if using downConvert
-		downConvert1.SetFrequency(mixerFrequency);
-		downConvertWfm1.SetFrequency(mixerFrequency);
-		demod->ResetDemod();
+		m_downConvert1.SetFrequency(m_mixerFrequency);
+		m_downConvertWfm1.SetFrequency(m_mixerFrequency);
+		m_demod->ResetDemod();
 	}
-	lastDemodFrequency = demodFrequency;
-	demodFrequency = frequency + mixerFrequency;
+	m_lastDemodFrequency = m_demodFrequency;
+	m_demodFrequency = m_frequency + m_mixerFrequency;
 }
 
 void Receiver::sdrOptionsPressed()
 {
     //2 states, power on and off
     //If power on, use active sdr to make changes
-    if (sdr == NULL) {
+	if (m_sdr == NULL) {
         //Power is off, create temporary one so we can set settings
-		sdr = global->sdr;
+		m_sdr = global->sdr;
     }
-	sdrOptions->ShowSdrOptions(sdr, true);
+	m_sdrOptions->ShowSdrOptions(m_sdr, true);
 }
 //Called by receiver widget with device selection changes to make sure any open options ui is closed
 void Receiver::closeSdrOptions()
 {
-    if (sdr != NULL) {
-		sdrOptions->ShowSdrOptions(sdr, false);
-        sdr = NULL;
+	if (m_sdr != NULL) {
+		m_sdrOptions->ShowSdrOptions(m_sdr, false);
+		m_sdr = NULL;
     }
 }
 
@@ -743,7 +743,7 @@ that is disabled and not do a useless copy from IN to OUT.
 //New ProcessBlock for device plugins
 void Receiver::processIQData(CPX *in, quint16 numSamples)
 {
-	if (sdr == NULL || !powerOn)
+	if (m_sdr == NULL || !m_powerOn)
 		return;
 
 	CPX *nextStep = in;
@@ -783,10 +783,10 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 	global->testBench->genSweep(numSamples, nextStep);
 	global->testBench->genNoise(numSamples, nextStep);
 
-    if (isRecording)
-		recordingFile.WriteSamples(nextStep,numSamples);
+	if (m_isRecording)
+		m_recordingFile.WriteSamples(nextStep,numSamples);
 
-	global->testBench->displayData(numSamples,nextStep,sampleRate,TB_RAW_IQ);
+	global->testBench->displayData(numSamples,nextStep,m_sampleRate,TB_RAW_IQ);
 
     //global->perform.StartPerformance();
     /*
@@ -797,19 +797,19 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
       4. Decimate to final audio
     */
 
-	if (dcRemove->isEnabled()) {
-		nextStep = dcRemove->process(nextStep, numSamples);
+	if (m_dcRemove->isEnabled()) {
+		nextStep = m_dcRemove->process(nextStep, numSamples);
 	}
 
 	//Adj IQ to get 90deg phase and I==Q gain
-    nextStep = iqBalance->ProcessBlock(nextStep);
+	nextStep = m_iqBalance->ProcessBlock(nextStep);
 
 	//Noise blankers
-    nextStep = noiseBlanker->ProcessBlock(nextStep);
-    nextStep = noiseBlanker->ProcessBlock2(nextStep);
+	nextStep = m_noiseBlanker->ProcessBlock(nextStep);
+	nextStep = m_noiseBlanker->ProcessBlock2(nextStep);
 
     //Spectrum display, in buffer is not modified
-	signalSpectrum->Unprocessed(nextStep, numSamples);
+	m_signalSpectrum->Unprocessed(nextStep, numSamples);
     //global->perform.StopPerformance(100);
 
 	//Signal (Specific frequency) processing
@@ -831,25 +831,25 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
     */
     double resampRate;
 
-	if (lastDemodFrequency != demodFrequency) {
-		signalStrength->reset(); //Start new averages
-		lastDemodFrequency = demodFrequency;
+	if (m_lastDemodFrequency != m_demodFrequency) {
+		m_signalStrength->reset(); //Start new averages
+		m_lastDemodFrequency = m_demodFrequency;
 	}
 
     //global->perform.StartPerformance();
-	if (demod->DemodMode() == DeviceInterface::dmFMM || demod->DemodMode() == DeviceInterface::dmFMS) {
+	if (m_demod->DemodMode() == DeviceInterface::dmFMM || m_demod->DemodMode() == DeviceInterface::dmFMS) {
         //These steps are at demodWfmSampleRate NOT demodSampleRate
         //Special handling for wide band fm
 
 		//global->perform.StartPerformance("wfm decimator");
-		if (!useDemodWfmDecimator) {
+		if (!m_useDemodWfmDecimator) {
 			//Replaces Mixer.cpp and mixes and decimates
 			// InLength must be a multiple of 2^N where N is the maximum decimation by 2 stages expected.
 			//We need a separated input/output buffer for downConvert
-			numStepSamples = downConvertWfm1.ProcessData(numStepSamples,nextStep,workingBuf);
+			numStepSamples = m_downConvertWfm1.ProcessData(numStepSamples,nextStep,m_workingBuf);
 		} else {
-			nextStep = mixer->ProcessBlock(nextStep);
-			numStepSamples = demodWfmDecimator->process(nextStep, workingBuf, numStepSamples);
+			nextStep = m_mixer->ProcessBlock(nextStep);
+			numStepSamples = m_demodWfmDecimator->process(nextStep, m_workingBuf, numStepSamples);
 		}
 
 		//global->perform.StopPerformance(1000);
@@ -857,34 +857,34 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
         //We are always decimating by a factor of 2
         //so we know we can accumulate a full fft buffer at this lower sample rate
 		for (int i=0; i<numStepSamples; i++) {
-            sampleBuf[sampleBufLen++] = workingBuf[i];
+			m_sampleBuf[m_sampleBufLen++] = m_workingBuf[i];
         }
 
 #if 1
-        if (sampleBufLen < framesPerBuffer)
+		if (m_sampleBufLen < m_framesPerBuffer)
             return; //Nothing to do until we have full buffer
-		numStepSamples = framesPerBuffer;
+		numStepSamples = m_framesPerBuffer;
 #endif
-        sampleBufLen = 0;
+		m_sampleBufLen = 0;
         //Create zoomed spectrum
-		signalSpectrum->Zoomed(sampleBuf, numStepSamples);
-        nextStep = sampleBuf;
+		m_signalSpectrum->Zoomed(m_sampleBuf, numStepSamples);
+		nextStep = m_sampleBuf;
 
-		nextStep = signalStrength->estimate(nextStep, numStepSamples,true,true);
+		nextStep = m_signalStrength->estimate(nextStep, numStepSamples,true,true);
 
-		nextStep = demod->ProcessBlock(nextStep, numStepSamples);
+		nextStep = m_demod->ProcessBlock(nextStep, numStepSamples);
 
-        resampRate = (demodWfmSampleRate*1.0) / (audioOutRate*1.0);
+		resampRate = (m_demodWfmSampleRate*1.0) / (m_audioOutRate*1.0);
 
     } else {
 		//DB::analyzeCPX(nextStep,numStepSamples,"Pre-Decimate");
 		//global->perform.StartPerformance();
-		if (!useDemodDecimator) {
+		if (!m_useDemodDecimator) {
         //Replaces Mixer.cpp
-			numStepSamples = downConvert1.ProcessData(numStepSamples, nextStep,workingBuf);
+			numStepSamples = m_downConvert1.ProcessData(numStepSamples, nextStep,m_workingBuf);
 		} else {
-			nextStep = mixer->ProcessBlock(nextStep);
-			numStepSamples = demodDecimator->process(nextStep, workingBuf, numStepSamples);
+			nextStep = m_mixer->ProcessBlock(nextStep);
+			numStepSamples = m_demodDecimator->process(nextStep, m_workingBuf, numStepSamples);
 		}
 		//global->perform.StopPerformance(1000);
 		//global->testBench->DisplayData(numStepSamples,workingBuf,demodSampleRate,testBenchPostDecimator);
@@ -897,28 +897,28 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
         //We are always decimating by a factor of 2
         //so we know we can accumulate a full fft buffer at this lower sample rate
 		for (int i=0; i<numStepSamples; i++) {
-            sampleBuf[sampleBufLen++] = workingBuf[i];
+			m_sampleBuf[m_sampleBufLen++] = m_workingBuf[i];
         }
 
 		//Build full frame buffer
-        if (sampleBufLen < framesPerBuffer)
+		if (m_sampleBufLen < m_framesPerBuffer)
             return; //Nothing to do until we have full buffer
-		numStepSamples = framesPerBuffer;
-		sampleBufLen = 0;
-		nextStep = sampleBuf;
+		numStepSamples = m_framesPerBuffer;
+		m_sampleBufLen = 0;
+		nextStep = m_sampleBuf;
 
-		nextStep = signalStrength->estimate(nextStep,numStepSamples, true, false);
+		nextStep = m_signalStrength->estimate(nextStep,numStepSamples, true, false);
 
 		//Create zoomed spectrum
 		//global->perform.StartPerformance("Signal Spectrum Zoomed");
-		signalSpectrum->Zoomed(nextStep, numStepSamples);
+		m_signalSpectrum->Zoomed(nextStep, numStepSamples);
 		//global->perform.StopPerformance(100);
 
 
         //Mixer shows no loss in testing
         //nextStep = mixer->ProcessBlock(nextStep);
         //float post = SignalProcessing::TotalPower(nextStep,frameCount);
-		global->testBench->displayData(numStepSamples,nextStep,demodSampleRate,TB_POST_MIXER);
+		global->testBench->displayData(numStepSamples,nextStep,m_demodSampleRate,TB_POST_MIXER);
 
         //global->perform.StopPerformance(100);
 
@@ -926,62 +926,62 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 
         //float pre = SignalProcessing::TotalPower(nextStep,frameCount);
 		//global->perform.StartPerformance("Band Pass Filter");
-		nextStep = bpFilter->process(nextStep, numStepSamples);
+		nextStep = m_bpFilter->process(nextStep, numStepSamples);
 		//global->perform.StopPerformance(100);
 		//Crude AGC, too much fluctuation
 		//CPX::scaleCPX(nextStep,nextStep,pre/post,frameCount);
-		global->testBench->displayData(numStepSamples,nextStep,demodSampleRate,TB_POST_BP);
+		global->testBench->displayData(numStepSamples,nextStep,m_demodSampleRate,TB_POST_BP);
 
         //If squelch is set, and we're below threshold and should set output to zero
         //Do this in SignalStrength, since that's where we're calculating average signal strength anyway
 		//global->perform.StartPerformance("Signal Strength");
 
-		nextStep = signalStrength->estimate(nextStep,numStepSamples, false, true);
+		nextStep = m_signalStrength->estimate(nextStep,numStepSamples, false, true);
 
 		//global->perform.StopPerformance(100);
 
         //Tune only mode, no demod or output
-		if (demod->DemodMode() == DeviceInterface::dmNONE){
-			CPX::clearCPX(audioBuf,framesPerBuffer);
+		if (m_demod->DemodMode() == DeviceInterface::dmNONE){
+			CPX::clearCPX(m_audioBuf,m_framesPerBuffer);
             return;
         }
 
 		//global->perform.StartPerformance("Noise Filter");
-		nextStep = noiseFilter->ProcessBlock(nextStep);
+		nextStep = m_noiseFilter->ProcessBlock(nextStep);
 		//global->perform.StopPerformance(100);
 
         //nr->ProcessBlock(out, in, size);
         //float post = SignalProcessing::totalPower(nextStep,framesPerBuffer);
 
 		//global->perform.StartPerformance("AGC");
-		nextStep = agc->ProcessBlock(nextStep);
+		nextStep = m_agc->ProcessBlock(nextStep);
 		//global->perform.StopPerformance(100);
 
 
         //Data decoders come before demod
-        if (iDigitalModem != NULL)
-            nextStep = iDigitalModem->ProcessBlock(nextStep);
+		if (m_iDigitalModem != NULL)
+			nextStep = m_iDigitalModem->ProcessBlock(nextStep);
 
 		//global->perform.StartPerformance("Demod");
-		nextStep = demod->ProcessBlock(nextStep, numStepSamples);
+		nextStep = m_demod->ProcessBlock(nextStep, numStepSamples);
 		//global->perform.StopPerformance(100);
 
-		global->testBench->displayData(numStepSamples,nextStep,demodSampleRate,TB_POST_DEMOD);
+		global->testBench->displayData(numStepSamples,nextStep,m_demodSampleRate,TB_POST_DEMOD);
 
-        resampRate = (demodSampleRate*1.0) / (audioOutRate*1.0);
+		resampRate = (m_demodSampleRate*1.0) / (m_audioOutRate*1.0);
 
     }
 
 	//Fractional resampler is very expensive, 1000 to 1500ms
 	//global->perform.StartPerformance("Fract Resampler");
 	if (resampRate != 1)
-		numStepSamples = fractResampler.Resample(numStepSamples,resampRate,nextStep,audioBuf);
+		numStepSamples = m_fractResampler.Resample(numStepSamples,resampRate,nextStep,m_audioBuf);
 	else
-		CPX::copyCPX(audioBuf,nextStep,numStepSamples);
+		CPX::copyCPX(m_audioBuf,nextStep,numStepSamples);
 	//global->perform.StopPerformance(100);
 
 	//global->perform.StartPerformance("Process Audio");
-	processAudioData(audioBuf,numStepSamples);
+	processAudioData(m_audioBuf,numStepSamples);
 	//global->perform.StopPerformance(100);
 }
 
@@ -990,16 +990,16 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 //But smallest expected value would be -120db
 void Receiver::processBandscopeData(quint8 *in, quint16 numPoints)
 {
-	if (sdr == NULL || !powerOn)
+	if (m_sdr == NULL || !m_powerOn)
 		return;
 
-	if (numPoints > framesPerBuffer)
-		numPoints = framesPerBuffer;
+	if (numPoints > m_framesPerBuffer)
+		numPoints = m_framesPerBuffer;
 
 	for (int i=0; i<numPoints; i++) {
-		dbSpectrumBuf[i] = -in[i] * 1.0;
+		m_dbSpectrumBuf[i] = -in[i] * 1.0;
 	}
-	signalSpectrum->SetSpectrum(dbSpectrumBuf);
+	m_signalSpectrum->SetSpectrum(m_dbSpectrumBuf);
 }
 
 //Called by devices and other call backs to output audio data
@@ -1007,7 +1007,7 @@ void Receiver::processAudioData(CPX *in, quint16 numSamples)
 {
 	// apply volume setting, mute and output
 	//global->perform.StartPerformance();
-	audioOutput->SendToOutput(in,numSamples, gain, mute);
+	m_audioOutput->SendToOutput(in,numSamples, m_gain, m_mute);
 	//global->perform.StopPerformance(100);
 }
 
@@ -1062,27 +1062,27 @@ void Receiver::ProcessBlockFreqDomain(CPX *in, CPX *out, int frameCount)
 void Receiver::setDigitalModem(QString _name, QWidget *_parent)
 {
     if (_name == NULL || _parent == NULL) {
-        if (iDigitalModem != NULL)
-            iDigitalModem->SetupDataUi(NULL);
+		if (m_iDigitalModem != NULL)
+			m_iDigitalModem->SetupDataUi(NULL);
 
-        iDigitalModem = NULL;
+		m_iDigitalModem = NULL;
         return;
     }
-    iDigitalModem = plugins->GetModemInterface(_name);
-    if (iDigitalModem != NULL) {
+	m_iDigitalModem = m_plugins->GetModemInterface(_name);
+	if (m_iDigitalModem != NULL) {
 
         //Display array of CPX data in TestBench
-        connect(iDigitalModem->asQObject(), SIGNAL(Testbench(int, CPX*, double, int)),global->testBench,SLOT(DisplayData(int, CPX*, double, int)));
+		connect(m_iDigitalModem->asQObject(), SIGNAL(Testbench(int, CPX*, double, int)),global->testBench,SLOT(DisplayData(int, CPX*, double, int)));
 
         //Display array of double data in TestBench
-        connect(iDigitalModem->asQObject(), SIGNAL(Testbench(int, double*, double, int)),global->testBench,SLOT(DisplayData(int, double*, double, int)));
+		connect(m_iDigitalModem->asQObject(), SIGNAL(Testbench(int, double*, double, int)),global->testBench,SLOT(DisplayData(int, double*, double, int)));
 
-        connect(iDigitalModem->asQObject(), SIGNAL(AddProfile(QString,int)), global->testBench,SLOT(AddProfile(QString,int)));
+		connect(m_iDigitalModem->asQObject(), SIGNAL(AddProfile(QString,int)), global->testBench,SLOT(AddProfile(QString,int)));
 
-        connect(iDigitalModem->asQObject(), SIGNAL(RemoveProfile(quint16)), global->testBench,SLOT(RemoveProfile(quint16)));
+		connect(m_iDigitalModem->asQObject(), SIGNAL(RemoveProfile(quint16)), global->testBench,SLOT(RemoveProfile(quint16)));
 
-        iDigitalModem->SetSampleRate(demodSampleRate, demodFrames);
-        iDigitalModem->SetupDataUi(_parent);
+		m_iDigitalModem->SetSampleRate(m_demodSampleRate, m_demodFrames);
+		m_iDigitalModem->SetupDataUi(_parent);
     }
 
 }

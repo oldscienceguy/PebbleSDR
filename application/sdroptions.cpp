@@ -243,7 +243,7 @@ void SdrOptions::dcRemovalChanged(bool b)
 	di->Command(DeviceInterface::CmdWriteSettings,0);
 	if (!global->receiver->getPowerOn())
 		return;
-	global->receiver->dcRemove->enableStep(b);
+	global->receiver->m_dcRemove->enableStep(b);
 
 }
 
