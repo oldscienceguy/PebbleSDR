@@ -70,7 +70,6 @@ private:
 	CPX *rawIQ;
 	double *unprocessedSpectrum;
 	double *hiResSpectrum; //Post bandpass spectrum with more resolution around signal
-	WindowFunction *windowFunction;
 	bool useHiRes;
 
     CPX *tmp_cpx;

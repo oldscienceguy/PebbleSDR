@@ -22,10 +22,6 @@ SignalSpectrum::SignalSpectrum(quint32 _sampleRate, quint32 _hiResSampleRate, qu
 
 	tmp_cpx = CPX::memalign(numSpectrumBins);
 
-	//Create our window coefficients 
-	//windows are applied to numSamples, not the entire FFT bins
-	windowFunction = new WindowFunction(WindowFunction::BLACKMANHARRIS,numSamples);
-
 	//db calibration
 	dbOffset  = global->settings->dbOffset;
 
@@ -53,7 +49,6 @@ SignalSpectrum::~SignalSpectrum(void)
 	if (hiResSpectrum != NULL) {free (hiResSpectrum);}
 	if (tmp_cpx != NULL) {free(tmp_cpx);}
 	if (rawIQ != NULL) {free(rawIQ);}
-	if (windowFunction != NULL) {delete windowFunction;}
 }
 
 void SignalSpectrum::SetSampleRate(quint32 _sampleRate, quint32 _hiResSampleRate)
