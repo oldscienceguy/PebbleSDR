@@ -81,6 +81,7 @@ private:
 	double m_sweepRateInc;
 	double m_sweepFreqNorm;
 	SweepType m_sweepType;
+	bool m_sweepUp;
 
 	double m_sweepPulseWidth;
 	double m_sweepPulsePeriod;

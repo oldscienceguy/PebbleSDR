@@ -119,6 +119,9 @@ void NCO::initSweep(double _sweepStartFreq, double _sweepStopFreq, double _sweep
 	m_sweepPulseTimer = 0;
 	m_sweepType = _sweepType;
 	m_sweepInitialized = true;
+
+	//Sweep direction
+	m_sweepUp = (m_sweepStartFreq < m_sweepStopFreq);
 }
 
 //Modifies _in
@@ -140,6 +143,17 @@ void NCO::genSweep(CPX *_in, quint32 _numSamples, double _dbGain, bool _mix)
 				amp = 0.0; //Between pulses
 		}
 
+#if 0		//way to skip over passband for filter alias testing
+//Add skip passband to set up
+if( (m_SweepFrequency>-31250) && (m_SweepFrequency<31250) )
+{
+	m_SweepFrequency = 31250;
+	amp = 0.0;
+	m_Fft.ResetFFT();
+	m_DisplaySkipCounter = -2;
+}
+#endif
+
 		//create complex sin/cos signal
 		if (_mix) {
 			//Add signal to incoming
@@ -152,8 +166,13 @@ void NCO::genSweep(CPX *_in, quint32 _numSamples, double _dbGain, bool _mix)
 		}
 		//inc phase accummulator with normalized freqeuency step
 		m_sweepAcc += ( m_sweepFreq * m_sweepFreqNorm );
-		m_sweepFreq += m_sweepRateInc;	//inc sweep frequency
-		if(m_sweepFreq >= m_sweepStopFreq) {	//reached end of sweep?
+		if (m_sweepUp) {
+			m_sweepFreq += m_sweepRateInc;	//inc sweep frequency
+		} else {
+			m_sweepFreq -= m_sweepRateInc;	//dec sweep frequency
+		}
+		if((m_sweepUp && m_sweepFreq >= m_sweepStopFreq) ||
+				(!m_sweepUp && m_sweepFreq <= m_sweepStopFreq)) {	//reached end of sweep?
 			switch (m_sweepType) {
 				//3 choices: stop, start over, return in opposite direction
 				case SINGLE:
@@ -163,7 +182,12 @@ void NCO::genSweep(CPX *_in, quint32 _numSamples, double _dbGain, bool _mix)
 					m_sweepFreq = m_sweepStartFreq;	//restart sweep when end is reached
 					break;
 				case REPEAT_REVERSE:
-					//Todo: Implement reverse sweep
+					//Swap start/stop and reverse direction
+					m_sweepFreq = m_sweepStartFreq; //save
+					m_sweepStartFreq = m_sweepStopFreq;
+					m_sweepStopFreq = m_sweepFreq;
+					m_sweepUp = !m_sweepUp;
+					m_sweepFreq = m_sweepStartFreq; //save
 					break;
 			}
 
