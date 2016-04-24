@@ -20,19 +20,19 @@ ReceiverWidget::ReceiverWidget(QWidget *parent):QWidget(parent)
 	ui.setupUi(this);
 }
 //This does the actual setup and connections to receiver class
-void ReceiverWidget::SetReceiver(Receiver *r)
+void ReceiverWidget::setReceiver(Receiver *r)
 {
-	receiver = r;
-    presets = NULL;
+	m_receiver = r;
+    m_presets = NULL;
 
-	powerOn = false;
-	frequency = 0;
+	m_powerOn = false;
+	m_frequency = 0;
 
-	slaveMode = false;
+	m_slaveMode = false;
 
-    QFont smFont = receiver->getSettings()->smFont;
-    QFont medFont = receiver->getSettings()->medFont;
-    QFont lgFont = receiver->getSettings()->lgFont;
+    QFont smFont = m_receiver->getSettings()->smFont;
+    QFont medFont = m_receiver->getSettings()->medFont;
+    QFont lgFont = m_receiver->getSettings()->lgFont;
 
 	QStringList modes;
     modes << "AM"<<"SAM"<<"FMN"<<"FM-Mono"<<"FM-Stereo"<<"DSB"<<"LSB"<<"USB"<<"CWL"<<"CWU"<<"DIGL"<<"DIGU"<<"NONE";
@@ -58,19 +58,19 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	ui.filterBox->setCurrentIndex(Demod::demodInfo[DeviceInterface::dmAM].defaultFilter);
 
     QVariant v;
-    foreach (PluginInfo p, receiver->getModemPluginInfo()) {
+    foreach (PluginInfo p, m_receiver->getModemPluginInfo()) {
         v.setValue(p);
         ui.dataSelectionBox->addItem(p.name, v);
     }
 
     connect(ui.dataSelectionBox,SIGNAL(currentIndexChanged(int)),this,SLOT(dataSelectionChanged(int)));
-    SetDataMode(0);
+    setDataMode(0);
 
-	loMode = true;
+	m_loMode = true;
 	ui.gainSlider->setValue(0);
-	tunerStep=1000;
+	m_tunerStep=1000;
 
-	modeOffset = 0;
+	m_modeOffset = 0;
 
     //Band setup.  Presets must have already been read in
     ui.bandType->clear();
@@ -88,15 +88,15 @@ void ReceiverWidget::SetReceiver(Receiver *r)
 	ui.squelchSlider->setValue(DB::minDb);
     connect(ui.squelchSlider,SIGNAL(valueChanged(int)),this,SLOT(squelchSliderChanged(int)));
 
-    currentBandIndex = -1;
+    m_currentBandIndex = -1;
 
 	connect(ui.loButton,SIGNAL(toggled(bool)),this,SLOT(setLoMode(bool)));
     ui.powerButton->setCheckable(true); //Make it a toggle button
     ui.recButton->setCheckable(true);
     //ui.sdrOptions->setCheckable(true);
     connect(ui.powerButton,SIGNAL(toggled(bool)),this,SLOT(powerToggled(bool)));
-    connect(ui.recButton,SIGNAL(toggled(bool)),receiver,SLOT(RecToggled(bool)));
-    connect(ui.sdrOptions,SIGNAL(pressed()),receiver,SLOT(SdrOptionsPressed()));
+	connect(ui.recButton,SIGNAL(toggled(bool)),m_receiver,SLOT(recToggled(bool)));
+	connect(ui.sdrOptions,SIGNAL(pressed()),m_receiver,SLOT(sdrOptionsPressed()));
 
     connect(ui.anfButton,SIGNAL(toggled(bool)),this,SLOT(anfButtonToggled(bool)));
 	connect(ui.nbButton,SIGNAL(toggled(bool)),this,SLOT(nbButtonToggled(bool)));
@@ -150,46 +150,46 @@ void ReceiverWidget::SetReceiver(Receiver *r)
     utcClockButtonClicked();
 
     //Does clockTimer need to be a member?
-	masterClock = new QTimer(this);
-	connect(masterClock, SIGNAL(timeout()), this, SLOT(masterClockTicked()));
-	masterClockTicks = 0;
-	masterClock->start(MASTER_CLOCK_INTERVAL);
+	m_masterClock = new QTimer(this);
+	connect(m_masterClock, SIGNAL(timeout()), this, SLOT(masterClockTicked()));
+	m_masterClockTicks = 0;
+	m_masterClock->start(MASTER_CLOCK_INTERVAL);
 	updateClock();
 
     QComboBox *sdrSelector = ui.sdrSelector;
     //Add device plugins
     int cur;
-    foreach (PluginInfo p,receiver->getDevicePluginInfo()) {
+    foreach (PluginInfo p,m_receiver->getDevicePluginInfo()) {
         v.setValue(p);
         sdrSelector->addItem(p.name,v);
 		if (p.fileName == global->settings->sdrDeviceFilename &&
 			p.type == PluginInfo::DEVICE_PLUGIN) {
                 cur = sdrSelector->count()-1;
-				sdr = p.deviceInterface;
-				sdr->Command(DeviceInterface::CmdReadSettings,0);
-				global->sdr = sdr;
+				m_sdr = p.deviceInterface;
+				m_sdr->Command(DeviceInterface::CmdReadSettings,0);
+				global->sdr = m_sdr;
         }
     }
 
     sdrSelector->setCurrentIndex(cur);
-    connect(sdrSelector,SIGNAL(currentIndexChanged(int)),this,SLOT(ReceiverChanged(int)));
+    connect(sdrSelector,SIGNAL(currentIndexChanged(int)),this,SLOT(receiverChanged(int)));
 
     //Widget must have a parent
-    directInputWidget = new QWidget(this->window(), Qt::Popup);
-    directInputUi = new Ui::DirectInput;
-    directInputUi->setupUi(directInputWidget);
+    m_directInputWidget = new QWidget(this->window(), Qt::Popup);
+    m_directInputUi = new Ui::DirectInput;
+    m_directInputUi->setupUi(m_directInputWidget);
     //Direct input is modal to avoid any confusion with other UI
     //directInputWidget->setWindowModality(Qt::WindowModal);
     //directInputUi->directEntry->setInputMask("0000000"); //All digits, none required
-    connect(directInputUi->directEntry,SIGNAL(returnPressed()),this,SLOT(directEntryAccepted()));
-    connect(directInputUi->enterButton,SIGNAL(clicked()),this,SLOT(directEntryAccepted()));
-    connect(directInputUi->cancelButton,SIGNAL(clicked()),this,SLOT(directEntryCanceled()));
+    connect(m_directInputUi->directEntry,SIGNAL(returnPressed()),this,SLOT(directEntryAccepted()));
+    connect(m_directInputUi->enterButton,SIGNAL(clicked()),this,SLOT(directEntryAccepted()));
+    connect(m_directInputUi->cancelButton,SIGNAL(clicked()),this,SLOT(directEntryCanceled()));
 
     ui.dataFrame->setVisible(false);
 
     connect(ui.spectrumWidget,SIGNAL(mixerLimitsChanged(int,int)),this,SLOT(setMixerLimits(int,int)));
 
-	powerStyle(powerOn);
+	powerStyle(m_powerOn);
 
 }
 
@@ -205,36 +205,36 @@ void ReceiverWidget::showDataFrame(bool b)
 
 void ReceiverWidget::mixerChanged(qint32 m)
 {
-	if (loFrequency + m > 0)
-		SetFrequency(loFrequency + m);
+	if (m_loFrequency + m > 0)
+		setFrequency(m_loFrequency + m);
 }
 
 void ReceiverWidget::mixerChanged(qint32 m, bool b)
 {
-	if (loFrequency + m > 0) {
+	if (m_loFrequency + m > 0) {
 		setLoMode(b);
-		SetFrequency(loFrequency + m);
+		setFrequency(m_loFrequency + m);
 	}
 }
 
 //User hit enter, esc
 void ReceiverWidget::directEntryAccepted()
 {
-    double freq = QString(directInputUi->directEntry->text()).toDouble();
+    double freq = QString(m_directInputUi->directEntry->text()).toDouble();
     if (freq > 0) {
         //Freq is in kHx
         freq *= 1000.0;
         //Direct is always LO mode
         setLoMode(true);
-        SetFrequency(freq);
+        setFrequency(freq);
     }
 
-    directInputWidget->close();
+    m_directInputWidget->close();
 }
 
 void ReceiverWidget::directEntryCanceled()
 {
-    directInputWidget->close();
+    m_directInputWidget->close();
 }
 
 //Filters all application events, installed in constructor
@@ -257,7 +257,7 @@ bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
 				ui.muteButton->toggle();
 				return true;
 			case Qt::Key_L:
-				ui.loButton->toggled(!loMode);
+				ui.loButton->toggled(!m_loMode);
 				return true;
 			case Qt::Key_J:
 				freqChange = -1;
@@ -304,7 +304,7 @@ bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
 		}
 
 		if (freqChange != 0) {
-			SetFrequency(frequency + freqChange);
+			setFrequency(m_frequency + freqChange);
 			keyEvent->accept();
 			return true;
 		} else {
@@ -314,34 +314,34 @@ bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
 
     //If the event (any type) is in a nixie we may need to know which one
     if (o == ui.nixie1) {
-        tunerStep=1;
+        m_tunerStep=1;
     }
     else if (o == ui.nixie10) {
-        tunerStep=10;
+        m_tunerStep=10;
     }
     else if (o == ui.nixie100) {
-        tunerStep=100;
+        m_tunerStep=100;
     }
     else if (o == ui.nixie1k) {
-        tunerStep=1000;
+        m_tunerStep=1000;
     }
     else if (o == ui.nixie10k) {
-        tunerStep=10000;
+        m_tunerStep=10000;
     }
     else if (o == ui.nixie100k) {
-        tunerStep=100000;
+        m_tunerStep=100000;
     }
     else if (o == ui.nixie1m) {
-        tunerStep=1000000;
+        m_tunerStep=1000000;
     }
     else if (o == ui.nixie10m) {
-        tunerStep=10000000;
+        m_tunerStep=10000000;
     }
     else if (o == ui.nixie100m) {
-        tunerStep=100000000;
+        m_tunerStep=100000000;
     }
     else if (o == ui.nixie1g) {
-        tunerStep=1000000000;
+        m_tunerStep=1000000000;
     }
 
     if (o->inherits("QLCDNumber")) {
@@ -360,29 +360,29 @@ bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
             int key =  keyEvent->key();
             if (key >= '0' && key <= '9') {
                 QPoint pt = this->window()->pos();
-                directInputWidget->move(pt.x()+50,pt.y()+35);
-                directInputWidget->show();
-                directInputUi->directEntry->setFocus();
-                directInputUi->directEntry->setText(QString::number(key-'0'));
+                m_directInputWidget->move(pt.x()+50,pt.y()+35);
+                m_directInputWidget->show();
+                m_directInputUi->directEntry->setFocus();
+                m_directInputUi->directEntry->setText(QString::number(key-'0'));
                 //Modal direct entry window is now active until user completes edit with Enter
                 return true;
             } else if (key == Qt::Key_Up) {
                 int v = qBound(0.0, num->value() + 1, 9.0);
                 num->display(v);
-                double d = GetNixieNumber();
-                SetFrequency(d);
+                double d = getNixieNumber();
+                setFrequency(d);
                 return true;
             } else if (key == Qt::Key_Down) {
                 int v = qBound(0.0, num->value() - 1, 9.0);
                 num->display(v);
-                double d = GetNixieNumber();
-                SetFrequency(d);
+                double d = getNixieNumber();
+                setFrequency(d);
                 return true;
             }
         } else if (e->type() == QEvent::MouseButtonRelease) {
             //Clicking on a digit sets tuning step and resets lower digits to zero
-			frequency = (quint64)(frequency/tunerStep) * tunerStep;
-            SetFrequency(frequency);
+			m_frequency = (quint64)(m_frequency/m_tunerStep) * m_tunerStep;
+            setFrequency(m_frequency);
 
             return true;
         } else if (e->type() == QEvent::Wheel) {
@@ -396,13 +396,13 @@ bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
                 if ((angleDelta.rx() > 0) && (++scrollCounter > smoothing)) {
                     //Scroll Right
                     scrollCounter = 0;
-                    frequency += tunerStep;
-                    SetFrequency(frequency);
+                    m_frequency += m_tunerStep;
+                    setFrequency(m_frequency);
                 } else if ((angleDelta.rx() < 0) && (++scrollCounter > smoothing)) {
                     //Scroll Left
                     scrollCounter = 0;
-                    frequency -= tunerStep;
-                    SetFrequency(frequency);
+                    m_frequency -= m_tunerStep;
+                    setFrequency(m_frequency);
 
                 }
             } else if (angleDelta.rx() == 0) {
@@ -410,13 +410,13 @@ bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
                 if ((angleDelta.ry() > 0) && (++scrollCounter > smoothing)) {
                     //Scroll Down
                     scrollCounter = 0;
-                    frequency -= tunerStep;
-                    SetFrequency(frequency);
+                    m_frequency -= m_tunerStep;
+                    setFrequency(m_frequency);
                 } else if ((angleDelta.ry() < 0) && (++scrollCounter > smoothing)) {
                     //Scroll Up
                     scrollCounter = 0;
-                    frequency += tunerStep;
-                    SetFrequency(frequency);
+                    m_frequency += m_tunerStep;
+                    setFrequency(m_frequency);
                 }
             }
             return true;
@@ -428,18 +428,18 @@ bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
 	return QObject::eventFilter(o,e);
 }
 
-void ReceiverWidget::SetLimits(double highF,double lowF,int highM,int lowM)
+void ReceiverWidget::setLimits(double highF,double lowF,int highM,int lowM)
 {
-	highFrequency = highF;
-	lowFrequency = lowF;
-	highMixer = highM;
-	lowMixer = lowM;
+	m_highFrequency = highF;
+	m_lowFrequency = lowF;
+	m_highMixer = highM;
+	m_lowMixer = lowM;
 }
 
 void ReceiverWidget::setMixerLimits(int highM, int lowM)
 {
-    highMixer = highM;
-	lowMixer = lowM;
+    m_highMixer = highM;
+	m_lowMixer = lowM;
 }
 
 //Receiver connection when new data is available
@@ -450,97 +450,97 @@ void ReceiverWidget::newSignalStrength(double peakDb, double avgDb, double snrDb
 
 //Set frequency by changing LO or Mixer, depending on radio button chosen
 //Todo: disable digits that are below step value?
-void ReceiverWidget::SetFrequency(double f)
+void ReceiverWidget::setFrequency(double f)
 {
-	if (!powerOn)
+	if (!m_powerOn)
 		return;
 
 	//if low and high are 0 or -1, ignore for now
-	if (lowFrequency > 0 && f < lowFrequency) {
+	if (m_lowFrequency > 0 && f < m_lowFrequency) {
 		//qDebug()<<"Low Limit "<<lowFrequency<<" "<<f;
 		global->beep.play();
-		DisplayNixieNumber(frequency); //Restore display
+		displayNixieNumber(m_frequency); //Restore display
 		return;
 	}
-	if (highFrequency > 0 && f > highFrequency){
+	if (m_highFrequency > 0 && f > m_highFrequency){
 		//qDebug()<<"High Limit "<<highFrequency<<" "<<f;
 		global->beep.play();
-        DisplayNixieNumber(frequency);
+        displayNixieNumber(m_frequency);
 		return;
 	}
 
 	//If slave mode, just display frequency and return
-	if (slaveMode) {
-		frequency = f;
-		DisplayNixieNumber(frequency);
+	if (m_slaveMode) {
+		m_frequency = f;
+		displayNixieNumber(m_frequency);
 		return;
 	}
 
-	if (loMode)
+	if (m_loMode)
 	{
 		//Ask the receiver if requested freq is within limits and step size
 		//Set actual frequency to next higher or lower step
-		loFrequency = receiver->setSDRFrequency(f, frequency );
-        frequency = loFrequency;
-		mixer = 0;
+		m_loFrequency = m_receiver->setSDRFrequency(f, m_frequency );
+        m_frequency = m_loFrequency;
+		m_mixer = 0;
         //Mixer is actually set including modeOffset so we hear tone, but display shows actual freq
-        receiver->setMixer(mixer + modeOffset);
+        m_receiver->setMixer(m_mixer + m_modeOffset);
 
 	} else {
 		//Mixer is delta between what's displayed and last LO Frequency
-		qint32 oldMixer = mixer;
-		mixer = f - loFrequency;
+		qint32 oldMixer = m_mixer;
+		m_mixer = f - m_loFrequency;
 		//Check limits
         //mixer = mixer < lowMixer ? lowMixer : (mixer > highMixer ? highMixer : mixer);
-		if (mixer < lowMixer || mixer > highMixer) {
+		if (m_mixer < m_lowMixer || m_mixer > m_highMixer) {
 			//Testing auto- tune.
 			//When frequency is outside of mixer range, reset LO by difference between last freq and new freq
 			//Result should be smoothly scrolling spectrum (depending on freq diff)
-			qint32 mixerDelta = mixer - oldMixer;
+			qint32 mixerDelta = m_mixer - oldMixer;
 			//Temporarily switch to LO mode
-			loMode = true;
+			m_loMode = true;
             //Set LO to new freq and contine
-			loFrequency = receiver->setSDRFrequency(loFrequency + mixerDelta, loFrequency );
-			mixer = f - loFrequency;
-			frequency = loFrequency + mixer;  //Should be the same as f
+			m_loFrequency = m_receiver->setSDRFrequency(m_loFrequency + mixerDelta, m_loFrequency );
+			m_mixer = f - m_loFrequency;
+			m_frequency = m_loFrequency + m_mixer;  //Should be the same as f
             //Back to Mixer mode
-			loMode = false;
-			receiver->setMixer(mixer + modeOffset);
+			m_loMode = false;
+			m_receiver->setMixer(m_mixer + m_modeOffset);
         } else {
             //LoFreq not changing, just displayed freq
-            frequency = loFrequency + mixer;
-            receiver->setMixer(mixer + modeOffset);
+            m_frequency = m_loFrequency + m_mixer;
+            m_receiver->setMixer(m_mixer + m_modeOffset);
         }
 	}
 	//frequency is what's displayed, ie combination of loFrequency and mixer (if any)
-    DisplayNixieNumber(frequency);
-    ui.spectrumWidget->SetMixer(mixer,loFrequency); //Spectrum tracks mixer
+    displayNixieNumber(m_frequency);
+    ui.spectrumWidget->SetMixer(m_mixer,m_loFrequency); //Spectrum tracks mixer
     //Update band info
-    DisplayBand(frequency);
+    displayBand(m_frequency);
 
 
 }
-double ReceiverWidget::GetFrequency()
+double ReceiverWidget::getFrequency()
 {
-	return frequency;
+	return m_frequency;
 }
-void ReceiverWidget::SetMessage(QStringList s)
+void ReceiverWidget::setMessage(QStringList s)
 {
 	ui.spectrumWidget->SetMessage(s);
 }
-void ReceiverWidget::SetMode(DeviceInterface::DEMODMODE m)
+void ReceiverWidget::setMode(DeviceInterface::DEMODMODE m)
 {
 	QString text = Demod::ModeToString(m);
 	int i = ui.modeBox->findText(text);
 	if (i >= 0) {
 		ui.modeBox->setCurrentIndex(i);
-		mode = m;
+		m_mode = m;
 		modeSelectionChanged(text);
 	}
 }
-DeviceInterface::DEMODMODE ReceiverWidget::GetMode()
+DeviceInterface::DEMODMODE ReceiverWidget::getMode()
 {
-	return mode;
+	return m_mode;
 }
 
 //Applies style sheet to controls that toggle on/off
@@ -582,18 +582,18 @@ void ReceiverWidget::powerToggled(bool on)
 {
 
 	if (on) {
-        powerOn = true;
-        if (!receiver->togglePower(true)) {
+        m_powerOn = true;
+        if (!m_receiver->togglePower(true)) {
 			ui.powerButton->setChecked(false); //Turn power button back off
 			return; //Error setting up receiver
 		}
 
-		powerStyle(powerOn);
+		powerStyle(m_powerOn);
 
 		//Limit tuning range and mixer range
-		int sampleRate = sdr->Get(DeviceInterface::SampleRate).toInt();
-		SetLimits(sdr->Get(DeviceInterface::HighFrequency).toDouble(),
-					sdr->Get(DeviceInterface::LowFrequency).toDouble(),
+		int sampleRate = m_sdr->Get(DeviceInterface::SampleRate).toInt();
+		setLimits(m_sdr->Get(DeviceInterface::HighFrequency).toDouble(),
+					m_sdr->Get(DeviceInterface::LowFrequency).toDouble(),
 					sampleRate/2,-sampleRate/2);
 
 		//Set intial gain slider position and range
@@ -601,11 +601,11 @@ void ReceiverWidget::powerToggled(bool on)
 		ui.gainSlider->setMinimum(0);
 		ui.gainSlider->setMaximum(100);
 		ui.gainSlider->setValue(30);
-		receiver->setGain(30);
+		m_receiver->setGain(30);
 
 		//Setup Squelch
 		ui.squelchSlider->setValue(DB::minDb);
-		receiver->setSquelch(DB::minDb);
+		m_receiver->setSquelch(DB::minDb);
 
 		//Set default AGC mode
 		//agcBoxChanged(AGC::FAST);
@@ -625,38 +625,38 @@ void ReceiverWidget::powerToggled(bool on)
         ui.recButton->setChecked(false);
 
         //Presets are only loaded when receiver is on
-        presets = receiver->getPresets();
+        m_presets = m_receiver->getPresets();
 
-        ui.spectrumWidget->SetSignalSpectrum(receiver->getSignalSpectrum());
+        ui.spectrumWidget->SetSignalSpectrum(m_receiver->getSignalSpectrum());
 
-		ui.spectrumWidget->plotSelectionChanged((SpectrumWidget::DISPLAYMODE)sdr->Get(DeviceInterface::LastSpectrumMode).toInt());
+		ui.spectrumWidget->plotSelectionChanged((SpectrumWidget::DISPLAYMODE)m_sdr->Get(DeviceInterface::LastSpectrumMode).toInt());
         ui.bandType->setCurrentIndex(Band::HAM);
 
 		ui.spectrumWidget->Run(true);
         ui.sMeterWidget->start();
 
 		//Set startup frequency last
-		DeviceInterface::STARTUP_TYPE startupType = (DeviceInterface::STARTUP_TYPE)sdr->Get(DeviceInterface::StartupType).toInt();
+		DeviceInterface::STARTUP_TYPE startupType = (DeviceInterface::STARTUP_TYPE)m_sdr->Get(DeviceInterface::StartupType).toInt();
 		if (startupType == DeviceInterface::DEFAULTFREQ) {
-			frequency=sdr->Get(DeviceInterface::StartupFrequency).toDouble();
-			SetFrequency(frequency);
+			m_frequency=m_sdr->Get(DeviceInterface::StartupFrequency).toDouble();
+			setFrequency(m_frequency);
 			//This triggers indirect frequency set, so make sure we set widget first
-			SetMode((DeviceInterface::DEMODMODE)sdr->Get(DeviceInterface::StartupDemodMode).toInt());
+			setMode((DeviceInterface::DEMODMODE)m_sdr->Get(DeviceInterface::StartupDemodMode).toInt());
 		}
 		else if (startupType == DeviceInterface::SETFREQ) {
-			frequency = sdr->Get(DeviceInterface::UserFrequency).toDouble();
-			SetFrequency(frequency);
-			SetMode((DeviceInterface::DEMODMODE)sdr->Get(DeviceInterface::LastDemodMode).toInt());
+			m_frequency = m_sdr->Get(DeviceInterface::UserFrequency).toDouble();
+			setFrequency(m_frequency);
+			setMode((DeviceInterface::DEMODMODE)m_sdr->Get(DeviceInterface::LastDemodMode).toInt());
 		}
 		else if (startupType == DeviceInterface::LASTFREQ) {
-			frequency = sdr->Get(DeviceInterface::LastFrequency).toDouble();
-			SetFrequency(frequency);
-			SetMode((DeviceInterface::DEMODMODE)sdr->Get(DeviceInterface::LastDemodMode).toInt());
+			m_frequency = m_sdr->Get(DeviceInterface::LastFrequency).toDouble();
+			setFrequency(m_frequency);
+			setMode((DeviceInterface::DEMODMODE)m_sdr->Get(DeviceInterface::LastDemodMode).toInt());
 		}
 		else {
-			frequency = 10000000;
-			SetFrequency(frequency);
-			SetMode(DeviceInterface::dmAM);
+			m_frequency = 10000000;
+			setFrequency(m_frequency);
+			setMode(DeviceInterface::dmAM);
 		}
 		//Also sets loFreq
 		setLoMode(true);
@@ -666,10 +666,10 @@ void ReceiverWidget::powerToggled(bool on)
 		//Turning power off, shut down receiver widget display BEFORE telling receiver to clean up
 		//Objects
         //Make sure we reset data frame
-        SetDataMode(0);
-        powerOn = false;
+        setDataMode(0);
+        m_powerOn = false;
 
-		powerStyle(powerOn);
+		powerStyle(m_powerOn);
 
         //Don't allow SDR changes when receiver is on
         ui.sdrSelector->setEnabled(true);
@@ -679,31 +679,31 @@ void ReceiverWidget::powerToggled(bool on)
         ui.recButton->setChecked(false);
         ui.recButton->setEnabled(false);
 
-        presets = NULL;
+        m_presets = NULL;
 
 		ui.spectrumWidget->Run(false);
         ui.sMeterWidget->stop();
 		//We have to make sure that widgets are stopped before cleaning up supporting objects
-		receiver->togglePower(false);
+		m_receiver->togglePower(false);
 
 	}
 }
 
-void ReceiverWidget::SetDataMode(int _dataMode)
+void ReceiverWidget::setDataMode(int _dataMode)
 {
     ui.dataSelectionBox->setCurrentIndex(_dataMode);
 }
 //Tuning display can drive LO or Mixer depending on selection
 void ReceiverWidget::setLoMode(bool b)
 {
-	loMode = b;
-    if (loMode)
+	m_loMode = b;
+    if (m_loMode)
 	{
         //LO Mode
         ui.loButton->setChecked(true); //Make sure button is toggled if called from presets
-        mixer=0;
-        receiver->setMixer(mixer + modeOffset);
-		SetFrequency(loFrequency);
+        m_mixer=0;
+        m_receiver->setMixer(m_mixer + m_modeOffset);
+		setFrequency(m_loFrequency);
 	} else {
 		//Mixer Mode
         ui.mixButton->setChecked(true);
@@ -711,48 +711,48 @@ void ReceiverWidget::setLoMode(bool b)
 }
 void ReceiverWidget::anfButtonToggled(bool b)
 {
-    if (!powerOn)
+    if (!m_powerOn)
         return;
 
-	receiver->setAnfEnabled(b);
+	m_receiver->setAnfEnabled(b);
 }
 void ReceiverWidget::nbButtonToggled(bool b)
 {
-    if (!powerOn)
+    if (!m_powerOn)
         return;
-	receiver->setNbEnabled(b);
+	m_receiver->setNbEnabled(b);
 }
 void ReceiverWidget::nb2ButtonToggled(bool b)
 {
-    if (!powerOn)
+    if (!m_powerOn)
         return;
-	receiver->setNb2Enabled(b);
+	m_receiver->setNb2Enabled(b);
 }
 void ReceiverWidget::agcBoxChanged(int item)
 {
-    if (!powerOn)
+    if (!m_powerOn)
         return;
 	AGC::AGCMODE agcMode = (AGC::AGCMODE)ui.agcBox->currentData().toInt();
-	int threshold = receiver->setAgcMode(agcMode);
+	int threshold = m_receiver->setAgcMode(agcMode);
 	ui.agcSlider->setValue(threshold);
 
 }
 void ReceiverWidget::muteButtonToggled(bool b)
 {
-    if (!powerOn)
+    if (!m_powerOn)
         return;
-    receiver->setMute(b);
+    m_receiver->setMute(b);
 }
 
 void ReceiverWidget::addMemoryButtonClicked()
 {
-    if (!powerOn)
+    if (!m_powerOn)
         return;
 
-    if (presets == NULL)
+    if (m_presets == NULL)
         return;
 
-    if (presets->AddMemory(frequency,"????","Added from Pebble"))
+    if (m_presets->AddMemory(m_frequency,"????","Added from Pebble"))
         QMessageBox::information(NULL,"Add Memory","Frequency added to memories.csv. Edit file and toggle power to re-load");
     else
         QMessageBox::information(NULL,"Add Memory","Add Memory Failed!");
@@ -760,13 +760,13 @@ void ReceiverWidget::addMemoryButtonClicked()
 
 void ReceiverWidget::findStationButtonClicked()
 {
-    if (!powerOn)
+    if (!m_powerOn)
         return;
 
     quint16 range = 25;
     //Search all stations in current band looking for match or close (+/- N  khz)
     //Display in station box, message box, or band info area?
-    QList<Station> stationList = presets->FindStation(frequency,range); // +/- khz
+    QList<Station> stationList = m_presets->FindStation(m_frequency,range); // +/- khz
     QString str;
     if (!stationList.empty()) {
         Station s;
@@ -774,7 +774,7 @@ void ReceiverWidget::findStationButtonClicked()
             s = stationList[i];
             str += QString("%1 %2 %3\n").arg(QString::number(s.freq/1000.0,'f',3), s.station, s.remarks);
         }
-        receiver->getDemod()->OutputBandData("", "", QString().sprintf("Stations within %d kHz",range), str);
+        m_receiver->getDemod()->OutputBandData("", "", QString().sprintf("Stations within %d kHz",range), str);
     }
 
 
@@ -796,7 +796,7 @@ void ReceiverWidget::filterSelectionChanged(QString f)
 {
 	int filter = f.toInt();
 	int lo=0,hi=0;
-	switch (mode)
+	switch (m_mode)
 	{
 	case DeviceInterface::dmLSB:
 		lo=-filter;
@@ -832,14 +832,14 @@ void ReceiverWidget::filterSelectionChanged(QString f)
 	case DeviceInterface::dmCWU:
         //modeOffset = -1000 (so we can use it directly in other places without comparing cwu and cwl)
         //We want 500hz filter to run from 750 to 1250 so modeOffset is right in the middle
-        lo = -modeOffset - (filter/2); // --1000 - 250 = 750
-        hi = -modeOffset + (filter/2); // --1000 + 250 = 1250
+        lo = -m_modeOffset - (filter/2); // --1000 - 250 = 750
+        hi = -m_modeOffset + (filter/2); // --1000 + 250 = 1250
 		break;
 	case DeviceInterface::dmCWL:
         //modeOffset = +1000 (default)
         //We want 500hz filter to run from -1250 to -750 so modeOffset is right in the middle
-        lo = -modeOffset - (filter/2); // - +1000 - 250 = -1250
-        hi = -modeOffset + (filter/2); // +1000 + 250 = -750
+        lo = -m_modeOffset - (filter/2); // - +1000 - 250 = -1250
+        hi = -m_modeOffset + (filter/2); // +1000 + 250 = -750
         break;
     //Same as CW but with no offset tone, drop if not needed
 	case DeviceInterface::dmDIGU:
@@ -866,26 +866,26 @@ void ReceiverWidget::filterSelectionChanged(QString f)
 
 	ui.spectrumWidget->SetFilter(lo,hi); //So we can display filter around cursor
 
-	receiver->setFilter(lo,hi);
+	m_receiver->setFilter(lo,hi);
 }
 
 void ReceiverWidget::dataSelectionChanged(int s)
 {
-    if (!powerOn)
+    if (!m_powerOn)
         return;
 
     //Clear any previous data selection
-    if (dataSelection.fileName == "Band_Data") {
-            receiver->getDemod()->SetupDataUi(NULL);
+    if (m_dataSelection.fileName == "Band_Data") {
+            m_receiver->getDemod()->SetupDataUi(NULL);
             //Delete all children
             foreach (QObject *obj, ui.dataFrame->children()) {
                 //Normally we get a grid layout object, uiFrame, dataFrame
                 delete obj;
             }
-    } else if (dataSelection.fileName == "No_Data") {
+    } else if (m_dataSelection.fileName == "No_Data") {
     } else {
            //Reset decoder
-            receiver->setDigitalModem(NULL,NULL);
+            m_receiver->setDigitalModem(NULL,NULL);
             //Delete all children
             foreach (QObject *obj, ui.dataFrame->children()) {
                 //Normally we get a grid layout object, uiFrame, dataFrame
@@ -894,11 +894,11 @@ void ReceiverWidget::dataSelectionChanged(int s)
     }
 
     //enums are stored as user data with each menu item
-    dataSelection = ui.dataSelectionBox->itemData(s).value<PluginInfo>();
+    m_dataSelection = ui.dataSelectionBox->itemData(s).value<PluginInfo>();
 
     QWidget *parent;
 
-    if (dataSelection.fileName == "No_Data") {
+    if (m_dataSelection.fileName == "No_Data") {
             //Data frame is always open if we get here
             ui.dataFrame->setVisible(false);
             parent = ui.dataFrame;
@@ -908,11 +908,11 @@ void ReceiverWidget::dataSelectionChanged(int s)
                 parent = parent->parentWidget();
             }
             update();
-    } else if (dataSelection.fileName == "Band_Data") {
-            receiver->getDemod()->SetupDataUi(ui.dataFrame);
+    } else if (m_dataSelection.fileName == "Band_Data") {
+            m_receiver->getDemod()->SetupDataUi(ui.dataFrame);
             ui.dataFrame->setVisible(true);
     } else {
-            receiver->setDigitalModem(ui.dataSelectionBox->currentText(), ui.dataFrame);
+            m_receiver->setDigitalModem(ui.dataSelectionBox->currentText(), ui.dataFrame);
             ui.dataFrame->setVisible(true);
     }
 }
@@ -920,88 +920,88 @@ void ReceiverWidget::dataSelectionChanged(int s)
 
 void ReceiverWidget::modeSelectionChanged(QString m) 
 {
-	if (slaveMode)
+	if (m_slaveMode)
 		return;
 
-	mode = Demod::StringToMode(m);
+	m_mode = Demod::StringToMode(m);
 		//Adj to mode, ie we don't want to be exactly on cw, we want to be +/- 200hz
-	switch (mode)
+	switch (m_mode)
 	{
 	//Todo: Work on this, still not accurately reflecting click
 	case DeviceInterface::dmCWU:
         //Subtract modeOffset from actual freq so we hear upper tone
-        modeOffset = -global->settings->modeOffset; //Same as CW decoder
+        m_modeOffset = -global->settings->modeOffset; //Same as CW decoder
 		break;
 	case DeviceInterface::dmCWL:
         //Add modeOffset to actual tuned freq so we hear lower tone
-        modeOffset = global->settings->modeOffset;
+        m_modeOffset = global->settings->modeOffset;
 		break;
 	default:
-		modeOffset = 0;
+		m_modeOffset = 0;
 		break;
 	}
 	//Reset frequency to update any change in modeOffset
-	if (frequency !=0)
+	if (m_frequency !=0)
 		//This may get called during power on
-		SetFrequency(frequency);
+		setFrequency(m_frequency);
 
 	//Set filter options for this mode
 	ui.filterBox->blockSignals(true); //No signals while we're changing box
 	ui.filterBox->clear();
-    ui.filterBox->addItems(Demod::demodInfo[mode].filters);
-    ui.filterBox->setCurrentIndex(Demod::demodInfo[mode].defaultFilter);
+    ui.filterBox->addItems(Demod::demodInfo[m_mode].filters);
+    ui.filterBox->setCurrentIndex(Demod::demodInfo[m_mode].defaultFilter);
 
-    ui.spectrumWidget->SetMode(mode, modeOffset);
-	receiver->setMode(mode);
+    ui.spectrumWidget->SetMode(m_mode, m_modeOffset);
+	m_receiver->setMode(m_mode);
 	ui.filterBox->blockSignals(false);
 	this->filterSelectionChanged(ui.filterBox->currentText());
 }
 
 void ReceiverWidget::agcSliderChanged(int g)
 {
-	if (!powerOn)
+	if (!m_powerOn)
 		return;
-	receiver->setAgcThreshold(g);
+	m_receiver->setAgcThreshold(g);
 }
 
 void ReceiverWidget::gainSliderChanged(int g) 
 {
-    if (!powerOn)
+    if (!m_powerOn)
         return;
-	gain=g; 
-	receiver->setGain(g);
+	m_gain=g; 
+	m_receiver->setGain(g);
 }
 void ReceiverWidget::squelchSliderChanged(int s)
 {
-    if (!powerOn)
+    if (!m_powerOn)
         return;
-	squelch = s;
-	receiver->setSquelch(s);
+	m_squelch = s;
+	m_receiver->setSquelch(s);
 }
-void ReceiverWidget::nixie1UpClicked() {SetFrequency(frequency+1);}
-void ReceiverWidget::nixie1DownClicked(){SetFrequency(frequency-1);}
-void ReceiverWidget::nixie10UpClicked(){SetFrequency(frequency+10);}
-void ReceiverWidget::nixie10DownClicked(){SetFrequency(frequency-10);}
-void ReceiverWidget::nixie100UpClicked(){SetFrequency(frequency+100);}
-void ReceiverWidget::nixie100DownClicked(){SetFrequency(frequency-100);}
-void ReceiverWidget::nixie1kUpClicked(){SetFrequency(frequency+1000);}
-void ReceiverWidget::nixie1kDownClicked(){SetFrequency(frequency-1000);}
-void ReceiverWidget::nixie10kUpClicked(){SetFrequency(frequency+10000);}
-void ReceiverWidget::nixie10kDownClicked(){SetFrequency(frequency-10000);}
-void ReceiverWidget::nixie100kUpClicked(){SetFrequency(frequency+100000);}
-void ReceiverWidget::nixie100kDownClicked(){SetFrequency(frequency-100000);}
-void ReceiverWidget::nixie1mUpClicked(){SetFrequency(frequency+1000000);}
-void ReceiverWidget::nixie1mDownClicked(){SetFrequency(frequency-1000000);}
-void ReceiverWidget::nixie10mUpClicked(){SetFrequency(frequency+10000000);}
-void ReceiverWidget::nixie10mDownClicked(){SetFrequency(frequency-10000000);}
-void ReceiverWidget::nixie100mUpClicked(){SetFrequency(frequency+100000000);}
-void ReceiverWidget::nixie100mDownClicked(){SetFrequency(frequency-100000000);}
-void ReceiverWidget::nixie1gUpClicked(){SetFrequency(frequency+1000000000);}
-void ReceiverWidget::nixie1gDownClicked(){SetFrequency(frequency-1000000000);}
+void ReceiverWidget::nixie1UpClicked() {setFrequency(m_frequency+1);}
+void ReceiverWidget::nixie1DownClicked(){setFrequency(m_frequency-1);}
+void ReceiverWidget::nixie10UpClicked(){setFrequency(m_frequency+10);}
+void ReceiverWidget::nixie10DownClicked(){setFrequency(m_frequency-10);}
+void ReceiverWidget::nixie100UpClicked(){setFrequency(m_frequency+100);}
+void ReceiverWidget::nixie100DownClicked(){setFrequency(m_frequency-100);}
+void ReceiverWidget::nixie1kUpClicked(){setFrequency(m_frequency+1000);}
+void ReceiverWidget::nixie1kDownClicked(){setFrequency(m_frequency-1000);}
+void ReceiverWidget::nixie10kUpClicked(){setFrequency(m_frequency+10000);}
+void ReceiverWidget::nixie10kDownClicked(){setFrequency(m_frequency-10000);}
+void ReceiverWidget::nixie100kUpClicked(){setFrequency(m_frequency+100000);}
+void ReceiverWidget::nixie100kDownClicked(){setFrequency(m_frequency-100000);}
+void ReceiverWidget::nixie1mUpClicked(){setFrequency(m_frequency+1000000);}
+void ReceiverWidget::nixie1mDownClicked(){setFrequency(m_frequency-1000000);}
+void ReceiverWidget::nixie10mUpClicked(){setFrequency(m_frequency+10000000);}
+void ReceiverWidget::nixie10mDownClicked(){setFrequency(m_frequency-10000000);}
+void ReceiverWidget::nixie100mUpClicked(){setFrequency(m_frequency+100000000);}
+void ReceiverWidget::nixie100mDownClicked(){setFrequency(m_frequency-100000000);}
+void ReceiverWidget::nixie1gUpClicked(){setFrequency(m_frequency+1000000000);}
+void ReceiverWidget::nixie1gDownClicked(){setFrequency(m_frequency-1000000000);}
 
 void ReceiverWidget::utcClockButtonClicked()
 {
-   showUtcTime = true;
+   m_showUtcTime = true;
    ui.utcClockButton->setFlat(false);
    ui.localClockButton->setFlat(true);
    updateClock();
@@ -1009,7 +1009,7 @@ void ReceiverWidget::utcClockButtonClicked()
 
 void ReceiverWidget::localClockButtonClicked()
 {
-    showUtcTime = false;
+    m_showUtcTime = false;
     ui.utcClockButton->setFlat(true);
     ui.localClockButton->setFlat(false);
 	updateClock();
@@ -1018,12 +1018,12 @@ void ReceiverWidget::localClockButtonClicked()
 //Called every MASTER_CLOCK_INTERVAL (100ms)
 void ReceiverWidget::masterClockTicked()
 {
-	masterClockTicks++;
+	m_masterClockTicks++;
 
 	//Process once per tick actions
 
 	//Process once per second actions
-	if (masterClockTicks % (1000 / MASTER_CLOCK_INTERVAL) == 0) {
+	if (m_masterClockTicks % (1000 / MASTER_CLOCK_INTERVAL) == 0) {
 		updateClock();
 		updateHealth();
 		updateSlaveInfo();
@@ -1032,32 +1032,32 @@ void ReceiverWidget::masterClockTicked()
 //If device is in slave mode, then we get info from device and update display to track
 void ReceiverWidget::updateSlaveInfo()
 {
-	if (!powerOn || sdr==NULL)
+	if (!m_powerOn || m_sdr==NULL)
 		return;
 
-	if (!sdr->Get(DeviceInterface::DeviceSlave).toBool()) {
-		slaveMode = false;
+	if (!m_sdr->Get(DeviceInterface::DeviceSlave).toBool()) {
+		m_slaveMode = false;
 		return;
 	}
-	slaveMode = true;
+	m_slaveMode = true;
 
 	//Display last info fetched
-	double f = sdr->Get(DeviceInterface::DeviceFrequency).toDouble();
-	SetFrequency(f);
+	double f = m_sdr->Get(DeviceInterface::DeviceFrequency).toDouble();
+	setFrequency(f);
 
-	DeviceInterface::DEMODMODE dm = (DeviceInterface::DEMODMODE)sdr->Get(DeviceInterface::DeviceDemodMode).toInt();
-	SetMode(dm);
+	DeviceInterface::DEMODMODE dm = (DeviceInterface::DEMODMODE)m_sdr->Get(DeviceInterface::DeviceDemodMode).toInt();
+	setMode(dm);
 
-	receiver->setWindowTitle();
+	m_receiver->setWindowTitle();
 
 	//Ask the device to return new info
-	sdr->Set(DeviceInterface::DeviceSlave,0);
+	m_sdr->Set(DeviceInterface::DeviceSlave,0);
 }
 
 void ReceiverWidget::updateHealth()
 {
-	if (powerOn && sdr != NULL) {
-		quint16 freeBuf = sdr->Get(DeviceInterface::DeviceHealthValue).toInt();
+	if (m_powerOn && m_sdr != NULL) {
+		quint16 freeBuf = m_sdr->Get(DeviceInterface::DeviceHealthValue).toInt();
 		if (freeBuf >= 75)
 			ui.sdrOptions->setStyleSheet("background:green");
 		else if (freeBuf >= 25)
@@ -1074,7 +1074,7 @@ void ReceiverWidget::updateClock()
 {
 	//Add Day of the week
 	QDateTime time;
-	if (showUtcTime)
+	if (m_showUtcTime)
 		time = QDateTime::currentDateTimeUtc();
 	else
 		time = QDateTime::currentDateTime();
@@ -1087,7 +1087,7 @@ void ReceiverWidget::updateClock()
 }
 
 //Returns the number displayed by all the nixies
-double ReceiverWidget::GetNixieNumber()
+double ReceiverWidget::getNixieNumber()
 {
     double v = 0;
 
@@ -1105,7 +1105,7 @@ double ReceiverWidget::GetNixieNumber()
     return v;
 }
 
-void ReceiverWidget::ReceiverChanged(int i)
+void ReceiverWidget::receiverChanged(int i)
 {
     //Power is off when this is called
     int cur = ui.sdrSelector->currentIndex();
@@ -1114,14 +1114,14 @@ void ReceiverWidget::ReceiverChanged(int i)
     global->settings->sdrDeviceFilename = p.fileName;
     global->settings->sdrDeviceNumber = p.deviceNumber;
 
-	sdr = p.deviceInterface;
-	global->sdr = sdr;
+	m_sdr = p.deviceInterface;
+	global->sdr = m_sdr;
     //Close the sdr option window if open
-    receiver->closeSdrOptions();
+    m_receiver->closeSdrOptions();
 }
 
 //Updates all the nixies to display a number
-void ReceiverWidget::DisplayNixieNumber(double n)
+void ReceiverWidget::displayNixieNumber(double n)
 {
 	quint64 d = n;
 	ui.nixie1g->display( fmod(d / 1000000000,10));
@@ -1138,7 +1138,7 @@ void ReceiverWidget::DisplayNixieNumber(double n)
 
 void ReceiverWidget::bandTypeChanged(int s)
 {
-    if (!powerOn || presets==NULL)
+    if (!m_powerOn || m_presets==NULL)
         return; //bands aren't loaded until power on
 
     //enums are stored as user data with each menu item
@@ -1147,11 +1147,11 @@ void ReceiverWidget::bandTypeChanged(int s)
     //Turn off signals
     ui.bandCombo->blockSignals(true);
     ui.bandCombo->clear();
-    Band *bands = presets->GetBands();
+    Band *bands = m_presets->GetBands();
     if (bands == NULL)
         return;
 
-    int numBands = presets->GetNumBands();
+    int numBands = m_presets->GetNumBands();
     double freq;
     QString buf;
     for (int i=0; i<numBands; i++) {
@@ -1161,7 +1161,7 @@ void ReceiverWidget::bandTypeChanged(int s)
             if (freq == 0)
                 freq = bands[i].low;
             //Is freq within lo/hi range of SDR?  If not ignore
-            if (freq >= lowFrequency && freq < highFrequency) {
+            if (freq >= m_lowFrequency && freq < m_highFrequency) {
                 //What a ridiculous way to get to char* from QString for sprintf
                 buf.sprintf("%s : %.4f to %.4f",bands[i].name.toUtf8().constData(),bands[i].low/1000000,bands[i].high/1000000);
                 ui.bandCombo->addItem(buf,i);
@@ -1179,10 +1179,10 @@ void ReceiverWidget::bandTypeChanged(int s)
 
 void ReceiverWidget::bandChanged(int s)
 {
-    if (!powerOn || s==-1 || presets==NULL) //-1 means we're just clearing selection
+    if (!m_powerOn || s==-1 || m_presets==NULL) //-1 means we're just clearing selection
         return;
 
-    Band *bands = presets->GetBands();
+    Band *bands = m_presets->GetBands();
     if (bands == NULL)
         return;
 
@@ -1196,28 +1196,28 @@ void ReceiverWidget::bandChanged(int s)
     //Make sure we're in LO mode
     setLoMode(true);
 
-    SetFrequency(freq);
-    SetMode(mode);
+    setFrequency(freq);
+    setMode(mode);
 
 }
 
 void ReceiverWidget::stationChanged(int s)
 {
-    if (!powerOn || presets==NULL)
+    if (!m_powerOn || m_presets==NULL)
         return;
-    Station *stations = presets->GetStations();
+    Station *stations = m_presets->GetStations();
     int stationIndex = ui.stationCombo->itemData(s).toInt();
     double freq = stations[stationIndex].freq;
-    SetFrequency(freq);
+    setFrequency(freq);
     //SetMode(mode);
 }
 
-void ReceiverWidget::DisplayBand(double freq)
+void ReceiverWidget::displayBand(double freq)
 {
-    if (!powerOn || presets==NULL)
+    if (!m_powerOn || m_presets==NULL)
         return;
 
-    Band *band = presets->FindBand(freq);
+    Band *band = m_presets->FindBand(freq);
     if (band != NULL) {
         //Set bandType to match band, this will trigger bandChanged to load bands for type
         ui.bandType->setCurrentIndex(band->bType);
@@ -1229,12 +1229,12 @@ void ReceiverWidget::DisplayBand(double freq)
         ui.bandCombo->blockSignals(false);
 
         //If band has changed, update station list to match band
-        if (currentBandIndex != band->bandIndex) {
+        if (m_currentBandIndex != band->bandIndex) {
             //List of stations per band should be setup when we read eibi.csv
             ui.stationCombo->blockSignals(true); //Don't trigger stationChanged() every addItem
             ui.stationCombo->clear();
             int stationIndex;
-            Station *stations = presets->GetStations();
+            Station *stations = m_presets->GetStations();
             Station station;
             QString str;
             QString lastStation;
@@ -1253,11 +1253,11 @@ void ReceiverWidget::DisplayBand(double freq)
         }
 
         //Done, update currentBandIndex so we can see if it changed next time
-        currentBandIndex = band->bandIndex;
+        m_currentBandIndex = band->bandIndex;
 
     } else {
         ui.bandCombo->setCurrentIndex(-1); //no band selected
         ui.stationCombo->clear(); //No stations
-        currentBandIndex = -1;
+        m_currentBandIndex = -1;
     }
 }

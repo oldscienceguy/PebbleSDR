@@ -34,7 +34,7 @@ private slots:
 	void dcRemovalChanged(bool b);
 
 signals:
-	void Restart();
+	void restart();
 
 private:
 	DeviceInterface *di;

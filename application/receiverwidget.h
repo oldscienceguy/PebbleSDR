@@ -33,15 +33,15 @@ public:
 
 	ReceiverWidget(QWidget *parent =0);
 	~ReceiverWidget(void);
-	void SetReceiver (Receiver *r); //Our 'model'
-	void SetFrequency(double f);
-	double GetFrequency();
-	void SetMode(DeviceInterface::DEMODMODE m); 
-    void SetDataMode(int _dataMode);
-	DeviceInterface::DEMODMODE GetMode();
-	void SetMessage(QStringList s);
+	void setReceiver (Receiver *r); //Our 'model'
+	void setFrequency(double f);
+	double getFrequency();
+	void setMode(DeviceInterface::DEMODMODE m);
+	void setDataMode(int _dataMode);
+	DeviceInterface::DEMODMODE getMode();
+	void setMessage(QStringList s);
 
-    void DisplayBand(double freq);
+	void displayBand(double freq);
 
 public slots:
 		void setLoMode(bool b);
@@ -61,47 +61,47 @@ protected:
 private:
 	static const quint16 MASTER_CLOCK_INTERVAL = 100; //ms
 
-	DeviceInterface *sdr; //global->sdr is always updated whenever the user changes device selection
-	Receiver *receiver;
-    QWidget *directInputWidget;
-    Ui::DirectInput *directInputUi;
+	DeviceInterface *m_sdr; //global->sdr is always updated whenever the user changes device selection
+	Receiver *m_receiver;
+	QWidget *m_directInputWidget;
+	Ui::DirectInput *m_directInputUi;
 
 	//Master clock to update time, refresh status etc
-	QTimer *masterClock;
-	quint64 masterClockTicks;
+	QTimer *m_masterClock;
+	quint64 m_masterClockTicks;
 
 	//Set tuner limits
-	void SetLimits(double highF, double lowF, int highM, int lowM);
+	void setLimits(double highF, double lowF, int highM, int lowM);
 
-    void DisplayNixieNumber(double d);
-    double GetNixieNumber();
+	void displayNixieNumber(double d);
+	double getNixieNumber();
 
 	Ui::ReceiverWidget ui;
 	//Converts value to separate digits and updates display
-	int tunerStep;
-	int gain;
-	int squelch;
-	bool loMode;
-	double frequency; //Current frequency
-	double loFrequency;
-	int mixer; //Current mixer value
+	int m_tunerStep;
+	int m_gain;
+	int m_squelch;
+	bool m_loMode;
+	double m_frequency; //Current frequency
+	double m_loFrequency;
+	int m_mixer; //Current mixer value
 	//Frequency limits, tuner won't go beyond these
-	double highFrequency;
-	double lowFrequency;
-	int highMixer;
-	int lowMixer;
-	bool powerOn;
-	DeviceInterface::DEMODMODE mode;
-    int modeOffset; //make CW +- tone instead of actual freq
-    Presets *presets;
+	double m_highFrequency;
+	double m_lowFrequency;
+	int m_highMixer;
+	int m_lowMixer;
+	bool m_powerOn;
+	DeviceInterface::DEMODMODE m_mode;
+	int m_modeOffset; //make CW +- tone instead of actual freq
+	Presets *m_presets;
 
-    PluginInfo dataSelection;
+	PluginInfo m_dataSelection;
 
     //Band currently selected, used to detect when band changes as a result of freq change
-    int currentBandIndex;
+	int m_currentBandIndex;
 
-    bool showUtcTime;
-	bool slaveMode;
+	bool m_showUtcTime;
+	bool m_slaveMode;
 
 	void updateClock();
 	void updateHealth();
@@ -109,7 +109,7 @@ private:
 	void powerStyle(bool on);
 
 private slots:
-        void ReceiverChanged(int i);
+		void receiverChanged(int i);
 
         void stationChanged(int s);
         void bandTypeChanged(int s);

@@ -367,7 +367,7 @@ void SdrOptions::ResetSettings(bool b)
 		if (sdrOptionsDialog != NULL)
 			sdrOptionsDialog->close();
 		//Disabled
-		emit Restart(); //Shut receiver off so current options aren't written to ini file
+		emit restart(); //Shut receiver off so current options aren't written to ini file
 		//fname gets absolute path
 		QString fname = di->Get(DeviceInterface::SettingsFile).toString();
 		qDebug()<<"Device file name: "<<fname;

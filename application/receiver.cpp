@@ -42,7 +42,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	m_recordingPath += "/PebbleRecordings/";
 
 	//ReceiverWidget link back
-	receiverWidget->SetReceiver(this);
+	receiverWidget->setReceiver(this);
 	QStringList welcome;
 
 	welcome <<
@@ -51,7 +51,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 		"See PebbleGPL.txt for GPL license details" <<
 		"https://github.com/oldscienceguy/PebbleSDR.git";
 
-	receiverWidget->SetMessage( welcome);
+	receiverWidget->setMessage( welcome);
 
 	m_powerOn = false;
 	m_mute = false;
