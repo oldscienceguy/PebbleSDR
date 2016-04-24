@@ -47,6 +47,7 @@
 #include <QFrame>
 #include <QImage>
 
+#include "nco.h"
 #include "fftcute.h"
 #include "demod/demod_wfm.h"
 
@@ -87,6 +88,9 @@ public:
 	~TestBench();
 	void init();	//called to initialize controls after setting all class variables
 
+	//Initialize any process steps that may be called by receiver IQ chain
+	void initProcessSteps(double _sampleRate, quint32 _bufferSize);
+
 	void createGeneratorSamples(int length, TYPECPX* pBuf, double samplerate);
 	void createGeneratorSamples(int length, TYPEREAL* pBuf, double samplerate);
 
@@ -112,6 +116,7 @@ public:
 	double m_sweepStartFrequency;
 	double m_sweepStopFrequency;
 	double m_sweepRate;
+	NCO::SweepType m_sweepType;
 
     //Added by RAL
     //These variables are controlled by testbench UI and can be used anywhere we need a temporary control
@@ -161,6 +166,7 @@ public slots:
 	void onDebugBox(bool b);
 	void onDebugClear(bool b);
 	void onNoiseBox(bool b);
+	void onSweepType(int item);
 
 signals:
 	void resetSignal();		//internal signals from worker thread called functions
@@ -194,7 +200,6 @@ private:
 	qint32 m_dBStepSize;
 	qint32 m_freqUnits;
 	qint64 m_centerFreq;
-	double m_genSampleRate;
 	double m_displaySampleRate;
 	QString m_str;
 	QString m_hDivText[TB_HORZ_DIVS+1];
@@ -217,13 +222,8 @@ private:
 	int m_postScrnCaptureLength;
 	double m_timeScrnPixel;
 
-	double m_sweepFrequency;
-	double m_sweepFreqNorm;
-	double m_sweepAcc;
-	double m_sweepRateInc;
 	double m_signalAmplitude;
 	double m_noiseAmplitude;
-	double m_pulseTimer;
 
 	CFft m_fft;
 	double m_spectrumBuf[TEST_FFTSIZE];
@@ -233,6 +233,8 @@ private:
 
 	//Display is updated from producer thread and needs to be protected if we make changes via TB UI
 	QMutex m_displayMutex;
+
+	NCO *m_nco;
 };
 
 #endif // TESTBENCH_H

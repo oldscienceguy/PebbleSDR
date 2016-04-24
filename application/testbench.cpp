@@ -91,7 +91,6 @@ TestBench::TestBench(QWidget *parent) :
 	m_dBStepSize = 10;
 	m_freqUnits = 1;
 	m_centerFreq = 0;
-	m_genSampleRate = 1;
 	m_displaySampleRate = 1;
 	m_span = m_displaySampleRate/2;
 	m_fftBufPos = 0;
@@ -111,7 +110,6 @@ TestBench::TestBench(QWidget *parent) :
 
 	m_pulseWidth = .01;
 	m_pulsePeriod = .5;
-	m_pulseTimer = 0.0;
 
     //m_pWFmMod = NULL;
 
@@ -120,7 +118,7 @@ TestBench::TestBench(QWidget *parent) :
 	connect(this, SIGNAL(newTimeData()), this,  SLOT( drawTimePlot() ) );
 	connect( this, SIGNAL( sendTxt(QString)), this, SLOT( gotTxt(QString) ) );
 
-	m_fft.FFTParams( 2048, 0.0, m_genSampleRate, 2048, WindowFunction::BLACKMANHARRIS);
+	m_fft.FFTParams( 2048, 0.0, 1, 2048, WindowFunction::BLACKMANHARRIS);
 
 	ui->setupUi(this);
     setWindowTitle("Pebble Test Bench");
@@ -145,31 +143,99 @@ TestBench::TestBench(QWidget *parent) :
 
     //m_pWFmMod = new CWFmMod();
 
-	connect(ui->horizontalSliderTest,SIGNAL(valueChanged(int)),this,SLOT(onTestSlider1(int)));
-    testBenchValue = 0.0;
+	ui->comboBoxTrig->clear();
+	ui->comboBoxTrig->addItem("Free Run");
+	ui->comboBoxTrig->addItem("Pos Edge");
+	ui->comboBoxTrig->addItem("Pos Single");
+	ui->comboBoxTrig->addItem("Neg Edge");
+	ui->comboBoxTrig->addItem("Neg Single");
 
-	m_debugOn = true;
-	ui->debugOutputGroup->setChecked(m_debugOn);
-	connect(ui->debugOutputGroup,SIGNAL(toggled(bool)),this,SLOT(onDebugBox(bool)));
+	ui->comboBoxProfile->clear();
+	ui->comboBoxProfile->addItem("Off",0);
 
-	connect(ui->debugClearButton,SIGNAL(clicked(bool)),this,SLOT(onDebugClear(bool)));
-
-	m_noiseOn = false;
-	ui->noiseGeneratorGroup->setChecked(m_noiseOn);
-	connect(ui->noiseGeneratorGroup,SIGNAL(toggled(bool)),this,SLOT(onNoiseBox(bool)));
+	//Set when vertRange is changed
+	//ui->spinBoxThresh->setMaximum(32768); //Was +30000
+	//ui->spinBoxThresh->setMinimum(-32768); //Was -30000
+	//ui->spinBoxThresh->setSingleStep(1024); //Was 10
 
 	//Vertical range is peak to peak
 	//Divide by 32768 to convert to +/- 1.0 CPX
 	ui->spinBoxVertRange->setMaximum(65536); //2.0 peak to peak, +/- 1.0
 	ui->spinBoxVertRange->setMinimum(2048); // .000001 1e-6
 	ui->spinBoxVertRange->setSingleStep(2048);
-	ui->spinBoxThresh->setMaximum(32768); //Was +30000
-	ui->spinBoxThresh->setMinimum(-32768); //Was -30000
-	ui->spinBoxThresh->setSingleStep(1024); //Was 10
+
+	//in khz
+	ui->spinBoxStart->setMaximum(1000); //1000khz
+	ui->spinBoxStart->setMinimum(-1000); //-1000
+	ui->spinBoxStart->setSingleStep(1); //1
+
+	ui->spinBoxStop->setMaximum(1000);
+	ui->spinBoxStop->setMinimum(-1000);
+	ui->spinBoxStop->setSingleStep(1);
+
+	//Sweep rate
+	ui->spinBoxSweep->setMaximum(100000); //was 10000
+	ui->spinBoxSweep->setMinimum(0);
+	ui->spinBoxSweep->setSingleStep(100); //was 100
+
+	//in db
+	ui->spinBoxAmp->setMaximum(0);
+	ui->spinBoxAmp->setMinimum(-120);
+	ui->spinBoxAmp->setSingleStep(1);
+
+	//in ms
+	ui->spinBoxPulsePeriod->setMaximum(1000);
+	ui->spinBoxPulsePeriod->setMinimum(0);
+	ui->spinBoxPulsePeriod->setSingleStep(100);
+
+	ui->spinBoxPulseWidth->setMaximum(500);
+	ui->spinBoxPulseWidth->setMinimum(0);
+	ui->spinBoxPulseWidth->setSingleStep(1);
+
+	//In db
+	ui->spinBoxNoise->setMaximum(0);
+	ui->spinBoxNoise->setMinimum(-120);
+	ui->spinBoxNoise->setSingleStep(1);
+
+	ui->sweepType->addItem("Single",NCO::SINGLE);
+	ui->sweepType->addItem("Repeat", NCO::REPEAT);
+	ui->sweepType->addItem("Reverse",NCO::REPEAT_REVERSE);
+	m_sweepType = NCO::SINGLE;
+
+	//UI connect() moved from .ui file for easier mainenance and visibility
+	connect(ui->spinBoxVertRange,SIGNAL(valueChanged(int)),this,SLOT(onVertRange(int)));
+	connect(ui->spinBoxThresh,SIGNAL(valueChanged(int)),this,SLOT(onTrigLevel(int)));
+	connect(ui->spinBoxSweep,SIGNAL(valueChanged(int)),this,SLOT(onSweepRate(int)));
+	connect(ui->spinBoxStop,SIGNAL(valueChanged(int)),this,SLOT(onSweepStop(int)));
+	connect(ui->spinBoxStart,SIGNAL(valueChanged(int)),this,SLOT(onSweepStart(int)));
+	connect(ui->spinBoxRate,SIGNAL(valueChanged(int)),this,SLOT(onDisplayRate(int)));
+	connect(ui->spinBoxPulseWidth,SIGNAL(valueChanged(int)),this,SLOT(onPulseWidth(int)));
+	connect(ui->spinBoxPulsePeriod,SIGNAL(valueChanged(int)),this,SLOT(onPulsePeriod(int)));
+	connect(ui->spinBoxNoise,SIGNAL(valueChanged(int)),this,SLOT(onNoisePwr(int)));
+	connect(ui->spinBoxHorzSpan,SIGNAL(valueChanged(int)),this,SLOT(onHorzSpan(int)));
+	connect(ui->spinBoxAmp,SIGNAL(valueChanged(int)),this,SLOT(onSignalPwr(int)));
+	connect(ui->pushButtonReset,SIGNAL(clicked()),this,SLOT(reset()));
+	connect(ui->horizontalSliderTest,SIGNAL(valueChanged(int)),this,SLOT(onTestSlider1(int)));
+	connect(ui->comboBoxTrig,SIGNAL(currentIndexChanged(int)),this,SLOT(onTriggerMode(int)));
+	connect(ui->comboBoxProfile,SIGNAL(currentIndexChanged(int)),this,SLOT(onProfile(int)));
+	connect(ui->checkBoxPeak,SIGNAL(toggled(bool)),this,SLOT(onEnablePeak(bool)));
+	connect(ui->checkBoxFm,SIGNAL(toggled(bool)),this,SLOT(onFmGen(bool)));
+
+	connect(ui->horizontalSliderTest,SIGNAL(valueChanged(int)),this,SLOT(onTestSlider1(int)));
+	connect(ui->debugOutputGroup,SIGNAL(toggled(bool)),this,SLOT(onDebugBox(bool)));
+	connect(ui->debugClearButton,SIGNAL(clicked(bool)),this,SLOT(onDebugClear(bool)));
+	connect(ui->timeDomainGroup, SIGNAL(toggled(bool)),this,SLOT(onTimeDisplay(bool)));
+	connect(ui->signalGeneratorGroup, SIGNAL(toggled(bool)),this,SLOT(onGenOn(bool)));
+	connect(ui->noiseGeneratorGroup,SIGNAL(toggled(bool)),this,SLOT(onNoiseBox(bool)));
+	connect(ui->sweepType,SIGNAL(currentIndexChanged(int)),this,SLOT(onSweepType(int)));
+
+	m_nco = NULL;
 }
 
 TestBench::~TestBench()
 {
+	if (m_nco != NULL)
+		delete m_nco;
 	if(m_file.isOpen())
 		m_file.close();
 //	if(m_pWFmMod)
@@ -214,57 +280,52 @@ void TestBench::onNoiseBox(bool b)
 	m_noiseOn = b;
 }
 
+void TestBench::onSweepType(int item)
+{
+	m_sweepType = (NCO::SweepType)item; //Assume order is same as enum for now
+	reset();
+}
+
 //////////////////////////////////////////////////////////////////////
 // Called by parent to Initialize testbench controls after persistent
 // variables are initialized
 //////////////////////////////////////////////////////////////////////
 void TestBench::init()
-{
-	int tmp = m_trigIndex;	//save since adding items changes m_TrigIndex
-	ui->comboBoxTrig->clear();
-	ui->comboBoxTrig->addItem("Free Run");
-	ui->comboBoxTrig->addItem("Pos Edge");
-	ui->comboBoxTrig->addItem("Pos Single");
-	ui->comboBoxTrig->addItem("Neg Edge");
-	ui->comboBoxTrig->addItem("Neg Single");
-	m_trigIndex = tmp;
-	ui->comboBoxTrig->setCurrentIndex(m_trigIndex);
-
-    ui->comboBoxProfile->blockSignals(true);
-    ui->comboBoxProfile->clear();
-    ui->comboBoxProfile->addItem("Off",0);
-    ui->comboBoxProfile->blockSignals(false);
-    ui->comboBoxProfile->setCurrentIndex(0);
+{	
+	testBenchValue = 0.0;
+	m_debugOn = false;	
 	m_profile = 0;
-
+	ui->debugOutputGroup->setChecked(m_debugOn);
+	ui->comboBoxTrig->setCurrentIndex(m_trigIndex);
+    ui->comboBoxProfile->setCurrentIndex(0);
 	ui->spinBoxStart->setValue(m_sweepStartFrequency/1000.0);
 	ui->spinBoxStop->setValue(m_sweepStopFrequency/1000.0);
 	ui->spinBoxSweep->setValue(m_sweepRate);
-
-
 	ui->timeDomainGroup->setChecked(m_timeDisplay);
-	connect(ui->timeDomainGroup, SIGNAL(toggled(bool)),this,SLOT(onTimeDisplay(bool)));
-
-
 	ui->spinBoxHorzSpan->setValue(m_horzSpan);
-
 	ui->spinBoxThresh->setValue(m_trigLevel);
 	ui->spinBoxVertRange->setValue(m_vertRange);
 	ui->spinBoxRate->setValue(m_displayRate);
-
 	ui->signalGeneratorGroup->setChecked(m_genOn);
-	connect(ui->signalGeneratorGroup, SIGNAL(toggled(bool)),this,SLOT(onGenOn(bool)));
-
 	ui->noiseGeneratorGroup->setChecked(m_noiseOn);
-
 	ui->checkBoxFm->setChecked(m_useFmGen);
 	ui->checkBoxPeak->setChecked(m_peakOn);
 	ui->spinBoxAmp->setValue((int)m_signalPower);
 	ui->spinBoxNoise->setValue((int)m_noisePower);
 	ui->spinBoxPulseWidth->setValue((int)(1000.0*m_pulseWidth));
 	ui->spinBoxPulsePeriod->setValue((int)(1000.0*m_pulsePeriod));
+	ui->sweepType->setCurrentIndex(m_sweepType);
 
 	reset();
+}
+
+void TestBench::initProcessSteps(double _sampleRate, quint32 _bufferSize)
+{
+	if (m_nco != NULL) {
+		delete m_nco;
+	}
+	m_nco = new NCO(_sampleRate, _bufferSize);
+	m_nco->initSweep(m_sweepStartFrequency, m_sweepStopFrequency ,m_sweepRate, m_pulseWidth, m_pulsePeriod);
 }
 
 //Profile # starts with 1, 0 means no profiles
@@ -304,8 +365,7 @@ void TestBench::resetProfiles()
 void TestBench::onSweepStart(int start)
 {
 	m_sweepStartFrequency = (double)start*1000.0;
-	m_sweepFrequency = m_sweepStartFrequency;
-	m_sweepAcc = 0.0;
+	reset();
 //	if(m_UseFmGen)
 //		m_pWFmMod->SetSweep(m_SweepFreqNorm,m_SweepFrequency,m_SweepStopFrequency,m_SweepRateInc);
 }
@@ -313,8 +373,7 @@ void TestBench::onSweepStart(int start)
 void TestBench::onSweepStop(int stop)
 {
 	m_sweepStopFrequency = (double)stop*1000.0;
-	m_sweepFrequency = m_sweepStartFrequency;
-	m_sweepAcc = 0.0;
+	reset();
 //	if(m_UseFmGen)
 //		m_pWFmMod->SetSweep(m_SweepFreqNorm,m_SweepFrequency,m_SweepStopFrequency,m_SweepRateInc);
 }
@@ -322,13 +381,11 @@ void TestBench::onSweepStop(int stop)
 void TestBench::onSweepRate(int rate)
 {
 	m_sweepRate = (double)rate; // Hz/sec
-	m_sweepAcc = 0.0;
-	m_sweepRateInc = m_sweepRate/m_genSampleRate;
+	reset();
 //	if(m_UseFmGen)
 //		m_pWFmMod->SetSweep(m_SweepFreqNorm,m_SweepFrequency,m_SweepStopFrequency,m_SweepRateInc);
 
 }
-
 
 void TestBench::onDisplayRate(int rate)
 {
@@ -347,8 +404,16 @@ void TestBench::onDisplayRate(int rate)
 void TestBench::onVertRange(int range )
 {
 	m_vertRange = range;
-	ui->spinBoxThresh->setMaximum(m_vertRange/2);
-	ui->spinBoxThresh->setMinimum(-m_vertRange/2);
+	int maxThreshold = m_vertRange / 2;
+
+	ui->spinBoxThresh->setMaximum(maxThreshold);
+	ui->spinBoxThresh->setMinimum(-maxThreshold);
+	ui->spinBoxThresh->setSingleStep(maxThreshold/100);
+	if (m_trigLevel > maxThreshold)
+		m_trigLevel = maxThreshold;
+	else if (m_trigLevel < -maxThreshold)
+		m_trigLevel = -maxThreshold;
+
 	if(m_timeDisplay)
 		drawTimeOverlay();
 }
@@ -406,26 +471,26 @@ void TestBench::onFmGen(bool On)
 void TestBench::onPulseWidth(int pwidth)
 {
 	m_pulseWidth = (double)pwidth * .001;
+	reset();
 }
 
 void TestBench::onPulsePeriod(int pperiod)
 {
 	m_pulsePeriod = (double)pperiod * .001;
+	reset();
 }
 
 void TestBench::onSignalPwr(int pwr)
 {
 	m_signalPower = pwr;
-	//m_SignalAmplitude = m_Fft.ampMax*pow(10.0, m_SignalPower/20.0);
-	m_signalAmplitude = m_fft.ampMax * DB::dBToAmplitude(m_signalPower);
+	reset();
 }
 
 void TestBench::onNoisePwr(int pwr)
 {
-	//UI selection changed for noise power.  UI returns -160 to 0 in db
+	//UI selection changed for noise power.  UI returns -120 to 0 in db
 	m_noisePower = pwr;
-	//m_NoiseAmplitude = m_Fft.ampMax*pow(10.0, m_NoisePower/20.0);
-	m_noiseAmplitude = m_fft.ampMax * DB::dBToAmplitude(m_noisePower);
+	reset();
 }
 
 void TestBench::onEnablePeak(bool enablepeak)
@@ -448,184 +513,30 @@ void TestBench::onEnablePeak(bool enablepeak)
 //////////////////////////////////////////////////////////////////////
 void TestBench::createGeneratorSamples(int length, TYPECPX* pBuf, double samplerate)
 {
-int i;
-	if(!m_active || !m_genOn)
+	int i;
+	bool mix = ui->genMixBox->checkState();
+	if(!m_active || !m_genOn || m_nco == NULL)
 		return;
-	if(m_genSampleRate != samplerate)
-	{	//reset things if sample rate changes on the fly
-		m_genSampleRate = samplerate;
-//		if(m_UseFmGen)
-//		{
-//			m_pWFmMod->SetSampleRate(m_GenSampleRate);
-//			m_pWFmMod->SetSweep(m_SweepFreqNorm,m_SweepFrequency,m_SweepStopFrequency,m_SweepRateInc);
-//		}
-		emit resetSignal();
-	}
 
-//	if(m_UseFmGen)
-//		m_pWFmMod->GenerateData(length, m_SignalAmplitude, pBuf);
+	m_nco->genSweep(pBuf, length, m_signalAmplitude, mix);
+	return;
 
-    bool mix = ui->genMixBox->checkState();
-
-	for(i=0; i<length; i++)
-	{
-		double amp = m_signalAmplitude;
-		if(m_pulseWidth > 0.0)
-		{	//if pulse width is >0 create pulse modulation
-			m_pulseTimer += (1.0/m_genSampleRate);
-			if(m_pulseTimer > m_pulsePeriod)
-				m_pulseTimer = 0.0;
-			if(m_pulseTimer > m_pulseWidth)
-				amp = 0.0;
-		}
-
-#if 0		//way to skip over passband for filter alias testing
-if( (m_SweepFrequency>-31250) && (m_SweepFrequency<31250) )
-{
-	m_SweepFrequency = 31250;
-	amp = 0.0;
-	m_Fft.ResetFFT();
-	m_DisplaySkipCounter = -2;
-}
-#endif
-
-		if(!m_useFmGen)
-        {
-
-            //create complex sin/cos signal
-            if (mix) {
-                //Add signal to incoming
-				pBuf[i].re += amp*cos(m_sweepAcc);
-				pBuf[i].im += amp*sin(m_sweepAcc);
-            } else {
-                //Replace incoming signal with generator
-				pBuf[i].re = amp*cos(m_sweepAcc);
-				pBuf[i].im = amp*sin(m_sweepAcc);
-            }
-            //inc phase accummulator with normalized freqeuency step
-			m_sweepAcc += ( m_sweepFrequency*m_sweepFreqNorm );
-			m_sweepFrequency += m_sweepRateInc;	//inc sweep frequency
-			if(m_sweepFrequency >= m_sweepStopFrequency) {	//reached end of sweep?
-                //3 choices: stop, start over, return in opposite direction
-				m_sweepRateInc = 0.0;						//stop sweep when end is reached
-                //m_SweepFrequency = m_SweepStartFrequency;	//restart sweep when end is reached
-            }
-        }
-
-	}
-	m_sweepAcc = (double)fmod((double)m_sweepAcc, TWOPI);	//keep radian counter bounded
+	//		if(m_UseFmGen)
+	//		{
+	//			m_pWFmMod->SetSampleRate(m_GenSampleRate);
+	//			m_pWFmMod->SetSweep(m_SweepFreqNorm,m_SweepFrequency,m_SweepStopFrequency,m_SweepRateInc);
+	//		}
+	//	if(m_UseFmGen)
+	//		m_pWFmMod->GenerateData(length, m_SignalAmplitude, pBuf);
 }
 
 void TestBench::mixNoiseSamples(int length, TYPECPX* pBuf, double samplerate)
 {
-	if(!m_active || !m_noiseOn)
+	if(!m_active || !m_noiseOn || m_nco == NULL)
         return;
 
-#if 0
-	if (noiseOn) {
-		NCO::genNoise(pBuf, length, m_NoiseAmplitude, true);
-		//DB::analyzeCPX(pBuf,length,"Noise Gen");
-	}
-#else
-
-    double u1;
-    double u2;
-    double rad;
-    double r;
-
-    //Different types of noise generators
-    for(int i=0; i<length; i++) {
-
-        //////////////////  Gaussian Noise generator
-        // Generate two uniform random numbers between -1 and +1
-        // that are inside the unit circle
-		if(m_noiseOn && m_noisePower > -160.0)
-        {	//create and add noise samples to signal
-            do {
-                u1 = 1.0 - 2.0 * (double)rand()/(double)RAND_MAX ;
-                u2 = 1.0 - 2.0 * (double)rand()/(double)RAND_MAX ;
-                r = u1*u1 + u2*u2;
-            } while(r >= 1.0 || r == 0.0);
-			//0<r<1
-			rad = sqrt(-2.0*log(r)/r);
-            //add noise samples to generator output
-			pBuf[i].re += (m_noiseAmplitude*u1*rad) * m_fft.ampMax;
-			pBuf[i].im += (m_noiseAmplitude*u2*rad) * m_fft.ampMax;
-        }
-    }
-#endif
-
-}
-
-
-//////////////////////////////////////////////////////////////////////
-// Call to Create 'length' real sweep/pulse/noise generator samples
-//and place in users pBuf.
-//Called by thread so no GUI calls!
-//////////////////////////////////////////////////////////////////////
-void TestBench::createGeneratorSamples(int length, TYPEREAL* pBuf, double samplerate)
-{
-int i;
-double rad;
-double r;
-double u1;
-double u2;
-	if(!m_active || !m_genOn)
-		return;
-	if(m_genSampleRate != samplerate)
-	{	//reset things if sample rate changes on the fly
-		m_genSampleRate = samplerate;
-		emit resetSignal();
-	}
-	for(i=0; i<length; i++)
-	{
-		double amp = m_signalAmplitude;
-		if(m_pulseWidth > 0.0)
-		{	//if pulse width is >0 create pulse modulation
-			m_pulseTimer += (1.0/m_genSampleRate);
-			if(m_pulseTimer > m_pulsePeriod)
-				m_pulseTimer = 0.0;
-			if(m_pulseTimer > m_pulseWidth)
-				amp = 0.0;
-		}
-
-#if 0		//way to skip over passband for filter alias testing
-if( (m_SweepFrequency>-31250) && (m_SweepFrequency<31250) )
-{
-	m_SweepFrequency = 31250;
-	amp = 0.0;
-	m_Fft.ResetFFT();
-	m_DisplaySkipCounter = -2;
-}
-#endif
-
-		//create cos signal
-		pBuf[i] = 3.0*amp*cos(m_sweepAcc);
-		//inc phase accummulator with normalized freqeuency step
-
-
-		m_sweepAcc += ( m_sweepFrequency*m_sweepFreqNorm );
-		m_sweepFrequency += m_sweepRateInc;	//inc sweep frequency
-		if(m_sweepFrequency >= m_sweepStopFrequency)	//reached end of sweep?
-			m_sweepRateInc = 0.0;						//stop sweep when end is reached
-//			m_SweepFrequency = m_SweepStartFrequency;	//restart sweep when end is reached
-
-		//////////////////  Gaussian Noise generator
-		// Generate two uniform random numbers between -1 and +1
-		// that are inside the unit circle
-		if(m_noisePower > -160.0)
-		{	//create and add noise samples to signal
-			do {
-				u1 = 1.0 - 2.0 * (double)rand()/(double)RAND_MAX ;
-				u2 = 1.0 - 2.0 * (double)rand()/(double)RAND_MAX ;
-				r = u1*u1 + u2*u2;
-			} while(r >= 1.0 || r == 0.0);
-			rad = sqrt(-2.0*log(r)/r);
-			//add noise samples to generator output
-			pBuf[i] += (m_noiseAmplitude*u1*rad);
-		}
-	}
-	m_sweepAcc = (double)fmod((double)m_sweepAcc, TWOPI);	//keep radian counter bounded
+	m_nco->genNoise(pBuf, length, m_noiseAmplitude, true);
+	return;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -638,13 +549,12 @@ void TestBench::reset()
 	m_displayMutex.lock();
 
 	int i;
-	//initialize sweep generator values
-	m_sweepFrequency = m_sweepStartFrequency;
-	m_sweepFreqNorm = TWOPI/m_genSampleRate;
-	m_sweepAcc = 0.0;
-	m_sweepRateInc = m_sweepRate/m_genSampleRate;
-//	if(m_UseFmGen)
-//		m_pWFmMod->SetSweep(m_SweepFreqNorm,m_SweepFrequency,m_SweepStopFrequency,m_SweepRateInc);
+	if (m_nco != NULL)
+		m_nco->initSweep(m_sweepStartFrequency, m_sweepStopFrequency ,m_sweepRate,
+			m_pulseWidth, m_pulsePeriod, m_sweepType);
+		//	if(m_UseFmGen)
+		//		m_pWFmMod->SetSweep(m_SweepFreqNorm,m_SweepFrequency,m_SweepStopFrequency,m_SweepRateInc);
+
 	//m_SignalAmplitude = m_Fft.ampMax*pow(10.0, m_SignalPower/20.0);
 	m_signalAmplitude = m_fft.ampMax * DB::dBToAmplitude(m_signalPower);
 
@@ -692,7 +602,6 @@ void TestBench::reset()
 	ui->textEdit->clear();
 	m_fft.ResetFFT();
 	m_displaySkipCounter = -2;
-	m_pulseTimer = 0.0;
 	m_displayMutex.unlock();
  }
 
@@ -1042,7 +951,7 @@ void TestBench::gotTxt(QString Str)
 void TestBench::onTimer()
 {
 	//update current sweep frequency text
-	ui->labelFreq->setText(QString().setNum((int)m_sweepFrequency));
+	//ui->labelFreq->setText(QString().setNum((int)m_sweepFrequency));
 }
 
 //////////////////////////////////////////////////////////////////////
