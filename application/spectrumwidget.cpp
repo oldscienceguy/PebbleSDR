@@ -631,7 +631,7 @@ void SpectrumWidget::updatesPerSecChanged(int item)
 {
 	if (signalSpectrum == NULL)
 		return;
-	signalSpectrum->SetUpdatesPerSec(ui.updatesPerSec->value());
+	signalSpectrum->setUpdatesPerSec(ui.updatesPerSec->value());
 }
 
 void SpectrumWidget::splitterMoved(int x, int y)
@@ -642,7 +642,7 @@ void SpectrumWidget::splitterMoved(int x, int y)
 
 void SpectrumWidget::hiResClicked(bool _b)
 {
-	signalSpectrum->SetHiRes(_b); //Tell spectrum to start collecting hires data
+	signalSpectrum->setHiRes(_b); //Tell spectrum to start collecting hires data
 	topPanelHighResolution = _b;
 	ui.zoomSlider->blockSignals(true);
 	if (_b) {
@@ -927,7 +927,7 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 	}
 
     //Tell spectrum generator it ok to give us another one
-    signalSpectrum->displayUpdateComplete = true;
+    signalSpectrum->m_displayUpdateComplete = true;
 }
 
 void SpectrumWidget::displayChanged(int s)
@@ -1183,7 +1183,7 @@ void SpectrumWidget::newFftData()
 		case SPECTRUM:
 			//Convert to plot area coordinates
 			//This gets passed straight through to FFT MapFFTToScreen
-			signalSpectrum->MapFFTToScreen(
+			signalSpectrum->mapFFTToScreen(
 				plotArea.height(),
 				plotArea.width(),
 				//These are same as testbench
@@ -1201,7 +1201,7 @@ void SpectrumWidget::newFftData()
 			if (!topPanelHighResolution) {
 				//Convert to plot area coordinates
 				//This gets passed straight through to FFT MapFFTToScreen
-				signalSpectrum->MapFFTToScreen(
+				signalSpectrum->mapFFTToScreen(
 					topPanelPlotArea.height(),
 					topPanelPlotArea.width(),
 					//These are same as testbench
@@ -1211,7 +1211,7 @@ void SpectrumWidget::newFftData()
 					topPanelEndFreq, //sampleRate/2, //High frequency
 					topPanelFftMap );
 			} else {
-				signalSpectrum->MapFFTZoomedToScreen(
+				signalSpectrum->mapFFTZoomedToScreen(
 					topPanelPlotArea.height(),
 					topPanelPlotArea.width(),
 					//These are same as testbench
@@ -1224,7 +1224,7 @@ void SpectrumWidget::newFftData()
 			drawSpectrum(topPanelPlotArea, topPanelPlotOverlay, topPanelFftMap);
 
 			//Draw bottom spectrum
-			signalSpectrum->MapFFTToScreen(
+			signalSpectrum->mapFFTToScreen(
 				plotArea.height(),
 				plotArea.width(),
 				//These are same as testbench
@@ -1240,7 +1240,7 @@ void SpectrumWidget::newFftData()
 		case SPECTRUM_WATERFALL:
 			//Upper Spectrum
 			if (!topPanelHighResolution) {
-				signalSpectrum->MapFFTToScreen(
+				signalSpectrum->mapFFTToScreen(
 					topPanelPlotArea.height(),
 					topPanelPlotArea.width(),
 					//These are same as testbench
@@ -1250,7 +1250,7 @@ void SpectrumWidget::newFftData()
 					topPanelEndFreq, //sampleRate/2, //High frequency
 					topPanelFftMap );
 			} else {
-				signalSpectrum->MapFFTZoomedToScreen(
+				signalSpectrum->mapFFTZoomedToScreen(
 					topPanelPlotArea.height(),
 					topPanelPlotArea.width(),
 					//These are same as testbench
@@ -1263,7 +1263,7 @@ void SpectrumWidget::newFftData()
 			drawSpectrum(topPanelPlotArea, topPanelPlotOverlay, topPanelFftMap);
 
 			//Lower waterfall
-			signalSpectrum->MapFFTToScreen(
+			signalSpectrum->mapFFTToScreen(
 				255, //Equates to spectrumColor array
 				plotArea.width(),
 				//These are same as testbench
@@ -1279,7 +1279,7 @@ void SpectrumWidget::newFftData()
 		case WATERFALL_WATERFALL:
 			//Top waterfall
 			if (!topPanelHighResolution) {
-				signalSpectrum->MapFFTToScreen(
+				signalSpectrum->mapFFTToScreen(
 					255, //Equates to spectrumColor array
 					topPanelPlotArea.width(),
 					//These are same as testbench
@@ -1289,7 +1289,7 @@ void SpectrumWidget::newFftData()
 					topPanelEndFreq, //High frequency
 					topPanelFftMap );
 			} else {
-				signalSpectrum->MapFFTZoomedToScreen(
+				signalSpectrum->mapFFTZoomedToScreen(
 					255,
 					topPanelPlotArea.width(),
 					//These are same as testbench
@@ -1302,7 +1302,7 @@ void SpectrumWidget::newFftData()
 			drawWaterfall(topPanelPlotArea, topPanelPlotOverlay, topPanelFftMap);
 
 			//Lower waterfall
-			signalSpectrum->MapFFTToScreen(
+			signalSpectrum->mapFFTToScreen(
 				255, //Equates to spectrumColor array
 				plotArea.width(),
 				//These are same as testbench
@@ -1317,7 +1317,7 @@ void SpectrumWidget::newFftData()
 		case WATERFALL: {
 			//Instead of plot area coordinates we convert to screen color array
 			//Width is unchanged, but height is # colors we have for each db
-			signalSpectrum->MapFFTToScreen(
+			signalSpectrum->mapFFTToScreen(
 				255, //Equates to spectrumColor array
 				plotArea.width(),
 				//These are same as testbench

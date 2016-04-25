@@ -7,134 +7,134 @@ SignalSpectrum::SignalSpectrum(quint32 _sampleRate, quint32 _hiResSampleRate, qu
 	ProcessStep(_sampleRate,_bufferSize)
 {
 	//FFT bin size can be greater than sample size
-	numSpectrumBins = global->settings->numSpectrumBins;
-	numHiResSpectrumBins = global->settings->numHiResSpectrumBins;
+	m_numSpectrumBins = global->settings->numSpectrumBins;
+	m_numHiResSpectrumBins = global->settings->numHiResSpectrumBins;
 
-	hiResSampleRate = _hiResSampleRate;
+	m_hiResSampleRate = _hiResSampleRate;
 	//Output buffers
-	rawIQ = CPX::memalign(numSamples);
+	m_rawIQ = CPX::memalign(numSamples);
 
-	fftUnprocessed = FFT::factory("Unprocessed spectrum");
-	unprocessedSpectrum = new double[numSpectrumBins];
+	m_fftUnprocessed = FFT::factory("Unprocessed spectrum");
+	m_unprocessedSpectrum = new double[m_numSpectrumBins];
 
-	fftHiRes = FFT::factory("HiRes spectrum");
-	hiResSpectrum = new double[numHiResSpectrumBins];
+	m_fftHiRes = FFT::factory("HiRes spectrum");
+	m_hiResSpectrum = new double[m_numHiResSpectrumBins];
 
-	tmp_cpx = CPX::memalign(numSpectrumBins);
+	m_tmp_cpx = CPX::memalign(m_numSpectrumBins);
 
 	//db calibration
-	dbOffset  = global->settings->dbOffset;
+	m_dbOffset  = global->settings->dbOffset;
 
     //Spectrum refresh rate from 1 to 50 per second
     //Init here for now and add UI element to set, save with settings data
-	updatesPerSec = global->settings->updatesPerSecond; //Refresh rate per second
+	m_updatesPerSec = global->settings->updatesPerSecond; //Refresh rate per second
 	//Elapsed time in ms for use with QElapsedTimer
-	spectrumTimerUpdate = 1000 /updatesPerSec;
-	hiResTimerUpdate = 1000/ updatesPerSec;
+	m_spectrumTimerUpdate = 1000 /m_updatesPerSec;
+	m_hiResTimerUpdate = 1000/ m_updatesPerSec;
 
-    displayUpdateComplete = true;
-    displayUpdateOverrun = 0;
+	m_displayUpdateComplete = true;
+	m_displayUpdateOverrun = 0;
 
-	useHiRes = false;
+	m_useHiRes = false;
 
-	isOverload = false;
+	m_isOverload = false;
 
-	SetSampleRate(sampleRate, hiResSampleRate);
+	setSampleRate(sampleRate, m_hiResSampleRate);
 
 }
 
 SignalSpectrum::~SignalSpectrum(void)
 {
-	if (unprocessedSpectrum != NULL) {free (unprocessedSpectrum);}
-	if (hiResSpectrum != NULL) {free (hiResSpectrum);}
-	if (tmp_cpx != NULL) {free(tmp_cpx);}
-	if (rawIQ != NULL) {free(rawIQ);}
+	if (m_unprocessedSpectrum != NULL) {free (m_unprocessedSpectrum);}
+	if (m_hiResSpectrum != NULL) {free (m_hiResSpectrum);}
+	if (m_tmp_cpx != NULL) {free(m_tmp_cpx);}
+	if (m_rawIQ != NULL) {free(m_rawIQ);}
 }
 
-void SignalSpectrum::SetSampleRate(quint32 _sampleRate, quint32 _hiResSampleRate)
+void SignalSpectrum::setSampleRate(quint32 _sampleRate, quint32 _hiResSampleRate)
 {
     sampleRate = _sampleRate;
-	hiResSampleRate = _hiResSampleRate;
-	fftUnprocessed->fftParams(numSpectrumBins, DB::maxDb, sampleRate, numSamples, WindowFunction::BLACKMANHARRIS);
-	fftHiRes->fftParams(numHiResSpectrumBins, DB::maxDb, hiResSampleRate, numSamples, WindowFunction::BLACKMANHARRIS);
-    emitFftCounter = 0;
+	m_hiResSampleRate = _hiResSampleRate;
+	m_fftUnprocessed->fftParams(m_numSpectrumBins, DB::maxDb, sampleRate, numSamples, WindowFunction::BLACKMANHARRIS);
+	m_fftHiRes->fftParams(m_numHiResSpectrumBins, DB::maxDb, m_hiResSampleRate, numSamples, WindowFunction::BLACKMANHARRIS);
+	m_emitFftCounter = 0;
 }
 
-void SignalSpectrum::Unprocessed(CPX * in, int _numSamples)
+void SignalSpectrum::unprocessed(CPX * in, int _numSamples)
 {	
-	if (!spectrumTimer.isValid()) {
-		spectrumTimer.start(); //First time
+	if (!m_spectrumTimer.isValid()) {
+		m_spectrumTimer.start(); //First time
 		return;
 	}
-	if (updatesPerSec == 0 ||  spectrumTimer.elapsed() < spectrumTimerUpdate)
+	if (m_updatesPerSec == 0 ||  m_spectrumTimer.elapsed() < m_spectrumTimerUpdate)
 		return;
-	spectrumTimer.start(); //Reset
+	m_spectrumTimer.start(); //Reset
 
-    if (!displayUpdateComplete) {
+	if (!m_displayUpdateComplete) {
         //We're not keeping up with display for some reason
 		//qDebug()<<"Display update overrun counter "<<displayUpdateOverrun;
-        displayUpdateOverrun++;
+		m_displayUpdateOverrun++;
     }
 
     //Keep a copy raw I/Q to local buffer for display
 	//CPX::copyCPX(rawIQ, in, numSamples);
 	//global->perform.StartPerformance("MakeSpectrum");
-	MakeSpectrum(fftUnprocessed, in, unprocessedSpectrum, _numSamples);
+	makeSpectrum(m_fftUnprocessed, in, m_unprocessedSpectrum, _numSamples);
 	//global->perform.StopPerformance(10);
-	displayUpdateComplete = false;
+	m_displayUpdateComplete = false;
 	emit newFftData();
 }
 
 //http://www.arc.id.au/ZoomFFT.html
-void SignalSpectrum::Zoomed(CPX *in, int _numSamples)
+void SignalSpectrum::zoomed(CPX *in, int _numSamples)
 {
-	if (!useHiRes)
+	if (!m_useHiRes)
 		return; //Nothing to do
 
-	if (!hiResTimer.isValid()) {
-		hiResTimer.start(); //First time
+	if (!m_hiResTimer.isValid()) {
+		m_hiResTimer.start(); //First time
 		return;
 	}
-	if (updatesPerSec == 0 ||  hiResTimer.elapsed() < hiResTimerUpdate)
+	if (m_updatesPerSec == 0 ||  m_hiResTimer.elapsed() < m_hiResTimerUpdate)
 		return;
-	hiResTimer.start(); //Reset
+	m_hiResTimer.start(); //Reset
 
-	MakeSpectrum(fftHiRes, in, hiResSpectrum, _numSamples);
+	makeSpectrum(m_fftHiRes, in, m_hiResSpectrum, _numSamples);
 	//Updated HiRes fft data won't be available to SpectrumWidget untill Unprocessed() is called in next loop
 	//Should have no impact and avoids displaying spectrum 2x in each ProcessIQ loop
 	//This signal is for future use in case we want to do special handling in SpectrumWidget
 	emit newHiResFftData();
 }
 
-void SignalSpectrum::MakeSpectrum(FFT *fft, CPX *in, double *sOut, int _numSamples)
+void SignalSpectrum::makeSpectrum(FFT *fft, CPX *in, double *sOut, int _numSamples)
 {
-	isOverload = fft->fftSpectrum(in, sOut, _numSamples);
+	m_isOverload = fft->fftSpectrum(in, sOut, _numSamples);
     //out now has the spectrum in db, -f..0..+f
 }
 
-void SignalSpectrum::SetSpectrum(double *in)
+void SignalSpectrum::setSpectrum(double *in)
 {
-	for (int i=0; i< numSpectrumBins ;i++) {
-		unprocessedSpectrum[i] = in[i];
+	for (int i=0; i< m_numSpectrumBins ;i++) {
+		m_unprocessedSpectrum[i] = in[i];
 	}
-	displayUpdateComplete = false;
+	m_displayUpdateComplete = false;
 	emit newFftData();
 }
 
-void SignalSpectrum::SetUpdatesPerSec(int updatespersec)
+void SignalSpectrum::setUpdatesPerSec(int updatespersec)
 {
-    updatesPerSec = updatespersec;
-	global->settings->updatesPerSecond = updatesPerSec;
-	if (updatesPerSec > 0) {
+	m_updatesPerSec = updatespersec;
+	global->settings->updatesPerSecond = m_updatesPerSec;
+	if (m_updatesPerSec > 0) {
 		//Elapsed time in ms for use with QElapsedTimer
-		spectrumTimerUpdate = 1000 /updatesPerSec;
-		hiResTimerUpdate = 1000/ updatesPerSec;
+		m_spectrumTimerUpdate = 1000 /m_updatesPerSec;
+		m_hiResTimerUpdate = 1000/ m_updatesPerSec;
 	}
 }
 
 
 //See fft.cpp for details, this is here as a convenience so we don't have to expose FFT everywhere
-bool SignalSpectrum::MapFFTToScreen(qint32 maxHeight,
+bool SignalSpectrum::mapFFTToScreen(qint32 maxHeight,
                                 qint32 maxWidth,
                                 double maxdB,
                                 double mindB,
@@ -142,13 +142,13 @@ bool SignalSpectrum::MapFFTToScreen(qint32 maxHeight,
                                 qint32 stopFreq,
                                 qint32* outBuf )
 {
-    if (fftUnprocessed!=NULL)
-		return fftUnprocessed->mapFFTToScreen(unprocessedSpectrum, maxHeight,maxWidth,maxdB,mindB,startFreq,stopFreq,outBuf);
+	if (m_fftUnprocessed!=NULL)
+		return m_fftUnprocessed->mapFFTToScreen(m_unprocessedSpectrum, maxHeight,maxWidth,maxdB,mindB,startFreq,stopFreq,outBuf);
     else
         return false;
 }
 //See fft.cpp for details, this is here as a convenience so we don't have to expose FFT everywhere
-bool SignalSpectrum::MapFFTZoomedToScreen(qint32 maxHeight,
+bool SignalSpectrum::mapFFTZoomedToScreen(qint32 maxHeight,
                                 qint32 maxWidth,
                                 double maxdB,
                                 double mindB,
@@ -159,10 +159,10 @@ bool SignalSpectrum::MapFFTZoomedToScreen(qint32 maxHeight,
     //Zoomed spectrum is created AFTER mixer and downconvert and has modeOffset applied
     //So if unprocessed spectrum is centered on 10k, zoomed spectrum will be centered on 10k +/- mode offset
     //We correct for this by adjusting starting,ending frequency by mode offset
-	quint16 span = hiResSampleRate * zoom;
+	quint16 span = m_hiResSampleRate * zoom;
 
-	if (fftHiRes!=NULL)
-		return fftHiRes->mapFFTToScreen(hiResSpectrum,maxHeight,maxWidth,maxdB,mindB, -span/2 - modeOffset, span/2 - modeOffset, outBuf);
+	if (m_fftHiRes!=NULL)
+		return m_fftHiRes->mapFFTToScreen(m_hiResSpectrum,maxHeight,maxWidth,maxdB,mindB, -span/2 - modeOffset, span/2 - modeOffset, outBuf);
     else
         return false;
 }
