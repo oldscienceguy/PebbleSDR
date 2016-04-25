@@ -105,6 +105,12 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	connect(m_receiverWidget,SIGNAL(agcThresholdChanged(int)), this, SLOT(agcThresholdChanged(int)));
 	connect(m_receiverWidget,SIGNAL(squelchChanged(int)), this, SLOT(squelchChanged(int)));
 	connect(m_receiverWidget,SIGNAL(widgetMixerChanged(int)), this, SLOT(mixerChanged(int)));
+	connect(m_receiverWidget,SIGNAL(filterChanged(int, int)), this, SLOT(filterChanged(int, int)));
+	connect(m_receiverWidget,SIGNAL(anfChanged(bool)), this, SLOT(anfChanged(bool)));
+	connect(m_receiverWidget,SIGNAL(nb1Changed(bool)), this, SLOT(nb1Changed(bool)));
+	connect(m_receiverWidget,SIGNAL(nb2Changed(bool)), this, SLOT(nb2Changed(bool)));
+	connect(m_receiverWidget,SIGNAL(agcModeChanged(AGC::AGCMODE)), this, SLOT(agcModeChanged(AGC::AGCMODE)));
+	connect(m_receiverWidget,SIGNAL(muteChanged(bool)), this, SLOT(muteChanged(bool)));
 }
 bool Receiver::turnPowerOn()
 {
@@ -646,7 +652,7 @@ void Receiver::demodModeChanged(DeviceInterface::DEMODMODE _demodMode)
     }
 }
 //Called by ReceiverWidget when UI changes filter settings
-void Receiver::setFilter(int lo, int hi)
+void Receiver::filterChanged(int lo, int hi)
 {
 	if (m_demod == NULL)
 		return;
@@ -654,26 +660,26 @@ void Receiver::setFilter(int lo, int hi)
 	m_demod->SetBandwidth(hi - lo);
 }
 //Called by ReceiverWidget when UI changes ANF
-void Receiver::setAnfEnabled(bool b)
+void Receiver::anfChanged(bool b)
 {
 	m_noiseFilter->enableStep(b);
 }
 //Called by ReceiverWidget when UI changes NB
-void Receiver::setNbEnabled(bool b)
+void Receiver::nb1Changed(bool b)
 {
 	m_noiseBlanker->setNbEnabled(b);
 }
 //Called by ReceiverWidget when UI changed NB2
-void Receiver::setNb2Enabled(bool b)
+void Receiver::nb2Changed(bool b)
 {
 	m_noiseBlanker->setNb2Enabled(b);
 }
 //Called by ReceiverWidget when UI changes AGC, returns new threshold for display
-int Receiver::setAgcMode(AGC::AGCMODE m)
+void Receiver::agcModeChanged(AGC::AGCMODE _mode)
 {
-	m_agc->setAgcMode(m);
+	m_agc->setAgcMode(_mode);
 	//AGC sets a default gain with mode
-	return m_agc->getAgcThreshold();
+	//return m_agc->getAgcThreshold();
 }
 //Called by ReceiverWidget
 void Receiver::agcThresholdChanged(int g)
@@ -681,7 +687,7 @@ void Receiver::agcThresholdChanged(int g)
 	m_agc->setAgcThreshold(g);
 }
 //Called by ReceiverWidget
-void Receiver::setMute(bool b)
+void Receiver::muteChanged(bool b)
 {
 	m_mute = b;
 }

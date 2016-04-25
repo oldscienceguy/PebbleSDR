@@ -715,34 +715,33 @@ void ReceiverWidget::anfButtonToggled(bool b)
     if (!m_powerOn)
         return;
 
-	m_receiver->setAnfEnabled(b);
+	emit anfChanged(b);
 }
 void ReceiverWidget::nbButtonToggled(bool b)
 {
     if (!m_powerOn)
         return;
-	m_receiver->setNbEnabled(b);
+	emit nb1Changed(b);
 }
 void ReceiverWidget::nb2ButtonToggled(bool b)
 {
     if (!m_powerOn)
         return;
-	m_receiver->setNb2Enabled(b);
+	emit nb2Changed(b);
 }
 void ReceiverWidget::agcBoxChanged(int item)
 {
     if (!m_powerOn)
         return;
 	AGC::AGCMODE agcMode = (AGC::AGCMODE)ui.agcBox->currentData().toInt();
-	int threshold = m_receiver->setAgcMode(agcMode);
-	ui.agcSlider->setValue(threshold);
-
+	emit agcModeChanged(agcMode);
+	ui.agcSlider->setValue(30);
 }
 void ReceiverWidget::muteButtonToggled(bool b)
 {
     if (!m_powerOn)
         return;
-    m_receiver->setMute(b);
+	emit muteChanged(b);
 }
 
 void ReceiverWidget::addMemoryButtonClicked()
@@ -867,7 +866,7 @@ void ReceiverWidget::filterSelectionChanged(QString f)
 
 	ui.spectrumWidget->SetFilter(lo,hi); //So we can display filter around cursor
 
-	m_receiver->setFilter(lo,hi);
+	emit filterChanged(lo,hi);
 }
 
 void ReceiverWidget::dataSelectionChanged(int s)

@@ -51,13 +51,6 @@ public:
 	//Called with a requested frequency and the last frequency
 	//Calculates next higher or lower (actual), sets it and return to widget for display
 	double setSDRFrequency(double fRequested, double fCurrent);
-	void setFilter(int lo, int hi);
-	void setAnfEnabled(bool b);
-	void setNbEnabled(bool b);
-	void setNb2Enabled(bool b);
-	int setAgcMode(AGC::AGCMODE m);
-	void setMute(bool b);
-	void showPresets();
 	Presets *getPresets() {return m_presets;}
 	bool getPowerOn() {return m_powerOn;}
 
@@ -94,7 +87,12 @@ public:
 		void agcThresholdChanged(int g);
 		void squelchChanged(int s);
 		void mixerChanged(int f);
-
+		void filterChanged(int lo, int hi);
+		void anfChanged(bool b);
+		void nb1Changed(bool b);
+		void nb2Changed(bool b);
+		void agcModeChanged(AGC::AGCMODE _mode);
+		void muteChanged(bool b);
 
 private:
 	ReceiverWidget *m_receiverWidget;

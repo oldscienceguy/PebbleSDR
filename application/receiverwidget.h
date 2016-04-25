@@ -9,6 +9,7 @@
 #include "smeterwidget.h"
 #include "demod.h"
 #include "plugins.h"
+#include "agc.h"
 //#include "receiver.h" //Compiler error, maybe gets confused with ui_ReceiverWidget
 class Receiver; //include receiver.h in cpp file
 class Presets;
@@ -52,13 +53,18 @@ public slots:
         void setMixerLimits(int highM, int lowM);
 		void newSignalStrength(double peakDb, double avgDb, double snrDb, double floorDb, double extValue);
 
-
 signals:
-		void demodChanged(	DeviceInterface::DEMODMODE _demodMode);
+		void demodChanged(DeviceInterface::DEMODMODE _demodMode);
 		void audioGainChanged(int _audioGain);
 		void agcThresholdChanged(int _threshold);
 		void squelchChanged(int _squelch);
 		void widgetMixerChanged(int _mixer);
+		void filterChanged(int _lo, int _hi);
+		void anfChanged(bool _on);
+		void nb1Changed(bool _on);
+		void nb2Changed(bool _on);
+		void agcModeChanged(AGC::AGCMODE _mode);
+		void muteChanged(bool _on);
 
 protected:		
 	bool eventFilter(QObject *o, QEvent *e);
