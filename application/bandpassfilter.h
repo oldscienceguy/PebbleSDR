@@ -16,11 +16,15 @@ public:
 
 	void setBandPass(float _low, float _high);
 	CPX *process(CPX *in, quint32 _numSamples);
+	float lowFreq(){return m_lowFreq;}
+	float highFreq(){return m_highFreq;}
 
 private:
-	FIRFilter *bpFilter1; //Old implementation
-	CFastFIR *bpFilter2;
-	bool useFastFIR;
+	FIRFilter *m_bpFilter1; //Old implementation
+	CFastFIR *m_bpFilter2;
+	bool m_useFastFIR;
+	float m_lowFreq;
+	float m_highFreq;
 };
 
 #endif // BANDPASSFILTER_H
