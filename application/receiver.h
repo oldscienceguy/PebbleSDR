@@ -51,11 +51,6 @@ public:
 	//Called with a requested frequency and the last frequency
 	//Calculates next higher or lower (actual), sets it and return to widget for display
 	double setSDRFrequency(double fRequested, double fCurrent);
-	void setMode(DeviceInterface::DEMODMODE m);
-	void setGain(int g);
-	void setAgcThreshold(int g);
-	void setSquelch(int s);
-	void setMixer(int f);
 	void setFilter(int lo, int hi);
 	void setAnfEnabled(bool b);
 	void setNbEnabled(bool b);
@@ -73,8 +68,6 @@ public:
 	SignalStrength *getSignalStrength() {return m_signalStrength;}
 	SignalSpectrum *getSignalSpectrum() {return m_signalSpectrum;}
 	IQBalance *getIQBalance(){return m_iqBalance;}
-
-    ReceiverWidget *receiverWidget;
 
 	DigitalModemInterface *getDigitalModem() {return m_iDigitalModem;}
 	void setDigitalModem(QString _name, QWidget *_parent);
@@ -96,8 +89,16 @@ public:
 		void openDeviceAboutBox();
 		void openReadMeWindow();
 		void openGPLWindow();
+		void demodModeChanged(DeviceInterface::DEMODMODE _demodMode);
+		void audioGainChanged(int g);
+		void agcThresholdChanged(int g);
+		void squelchChanged(int s);
+		void mixerChanged(int f);
+
 
 private:
+	ReceiverWidget *m_receiverWidget;
+
 	Plugins *m_plugins;
 	SdrOptions *m_sdrOptions;
 	QMenuBar *m_mainMenu;

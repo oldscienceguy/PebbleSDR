@@ -20,7 +20,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	m_plugins = new Plugins(this,m_settings);
 
 	m_mainWindow = main;
-    receiverWidget = rw;
+	m_receiverWidget = rw;
 
 	QRect pos;
 	pos.setX(m_settings->windowXPos);
@@ -42,7 +42,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	m_recordingPath += "/PebbleRecordings/";
 
 	//ReceiverWidget link back
-	receiverWidget->setReceiver(this);
+	m_receiverWidget->setReceiver(this);
 	QStringList welcome;
 
 	welcome <<
@@ -51,7 +51,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 		"See PebbleGPL.txt for GPL license details" <<
 		"https://github.com/oldscienceguy/PebbleSDR.git";
 
-	receiverWidget->setMessage( welcome);
+	m_receiverWidget->setMessage( welcome);
 
 	m_powerOn = false;
 	m_mute = false;
@@ -97,6 +97,14 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 
 	m_readmeView = NULL;
 	m_gplView = NULL;
+
+	//ReceiverWidget connections
+	connect(m_receiverWidget,SIGNAL(demodChanged(DeviceInterface::DEMODMODE)), this,
+			SLOT(demodModeChanged(DeviceInterface::DEMODMODE)));
+	connect(m_receiverWidget,SIGNAL(audioGainChanged(int)), this, SLOT(audioGainChanged(int)));
+	connect(m_receiverWidget,SIGNAL(agcThresholdChanged(int)), this, SLOT(agcThresholdChanged(int)));
+	connect(m_receiverWidget,SIGNAL(squelchChanged(int)), this, SLOT(squelchChanged(int)));
+	connect(m_receiverWidget,SIGNAL(widgetMixerChanged(int)), this, SLOT(mixerChanged(int)));
 }
 bool Receiver::turnPowerOn()
 {
@@ -225,7 +233,7 @@ bool Receiver::turnPowerOn()
 	m_sampleBufLen = 0;
 	m_dbSpectrumBuf = new double[m_framesPerBuffer];
 
-	m_presets = new Presets(receiverWidget);
+	m_presets = new Presets(m_receiverWidget);
 
     //These steps work on demodSampleRate rates
 
@@ -239,7 +247,7 @@ bool Receiver::turnPowerOn()
 
 	//Testing, will update too fast, need to sync with new fft data
 	connect(m_signalStrength, SIGNAL(newSignalStrength(double,double,double,double,double)),
-			receiverWidget, SLOT(newSignalStrength(double,double,double,double,double)));
+			m_receiverWidget, SLOT(newSignalStrength(double,double,double,double,double)));
 
 	m_iDigitalModem = NULL;
 
@@ -579,7 +587,7 @@ void Receiver::restart()
 	if (m_powerOn) {
 		//Tell receiver widget to power off, then on.
 		//Receiver widget controls logic and will call receiver as necessary
-		receiverWidget->powerToggled(false);
+		m_receiverWidget->powerToggled(false);
         //Just power off for now
         //receiverWidget->powerToggled(true);
 	}
@@ -620,21 +628,21 @@ double Receiver::setSDRFrequency(double fRequested, double fCurrent)
 }
 
 //Called by ReceiverWidget to sets demod mode and default bandpass filter for each mode
-void Receiver::setMode(DeviceInterface::DEMODMODE m)
+void Receiver::demodModeChanged(DeviceInterface::DEMODMODE _demodMode)
 {
 	if(m_demod != NULL) {
-		if (m == DeviceInterface::dmFMM || m == DeviceInterface::dmFMS)
+		if (_demodMode == DeviceInterface::dmFMM || _demodMode == DeviceInterface::dmFMS)
 			m_signalSpectrum->SetSampleRate(m_sampleRate, m_demodWfmSampleRate);
         else
 			m_signalSpectrum->SetSampleRate(m_sampleRate, m_demodSampleRate);
 
         //Demod will return new demo
-		m_demod->SetDemodMode(m, m_sampleRate, m_demodSampleRate);
-		m_sdr->Set(DeviceInterface::LastDemodMode,m);
+		m_demod->SetDemodMode(_demodMode, m_sampleRate, m_demodSampleRate);
+		m_sdr->Set(DeviceInterface::LastDemodMode,_demodMode);
 		m_sampleBufLen = 0;
 	}
 	if (m_iDigitalModem != NULL) {
-		m_iDigitalModem->SetDemodMode(m);
+		m_iDigitalModem->SetDemodMode(_demodMode);
     }
 }
 //Called by ReceiverWidget when UI changes filter settings
@@ -668,7 +676,7 @@ int Receiver::setAgcMode(AGC::AGCMODE m)
 	return m_agc->getAgcThreshold();
 }
 //Called by ReceiverWidget
-void Receiver::setAgcThreshold(int g)
+void Receiver::agcThresholdChanged(int g)
 {
 	m_agc->setAgcThreshold(g);
 }
@@ -678,7 +686,7 @@ void Receiver::setMute(bool b)
 	m_mute = b;
 }
 //Called by ReceiverWidget
-void Receiver::setGain(int g)
+void Receiver::audioGainChanged(int g)
 {
 	//Convert dbGain to amplitude so we can use it to scale
 	//No magic DSP math, just found something that sounds right to convert slider 0-100 reasonable vol
@@ -686,13 +694,13 @@ void Receiver::setGain(int g)
 	m_gain = g; //Adjust in audio classes
 }
 //Called by ReceiverWidget
-void Receiver::setSquelch(int s)
+void Receiver::squelchChanged(int s)
 {
 	m_squelch = s;
 	m_signalStrength->setSquelch(s);
 }
 //Called by ReceiverWidget
-void Receiver::setMixer(int f)
+void Receiver::mixerChanged(int f)
 {
 	m_mixerFrequency = f;
 

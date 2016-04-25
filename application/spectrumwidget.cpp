@@ -416,23 +416,23 @@ void SpectrumWidget::wheelEvent(QWheelEvent *event)
         if (angleDelta.rx() > 0) {
             //Scroll Right
             freq+= 100;
-            emit mixerChanged(freq);
+			emit spectrumMixerChanged(freq);
         } else if (angleDelta.rx() < 0) {
             //Scroll Left
             freq-= 100;
-            emit mixerChanged(freq);
+			emit spectrumMixerChanged(freq);
 
         }
     } else if (angleDelta.rx() == 0) {
         if (angleDelta.ry() > 0) {
             //Scroll Down
             freq-= 1000;
-            emit mixerChanged(freq);
+			emit spectrumMixerChanged(freq);
 
         } else if (angleDelta.ry() < 0) {
             //Scroll Up
             freq+= 1000;
-            emit mixerChanged(freq);
+			emit spectrumMixerChanged(freq);
         }
     }
     // neg==left pos==right
@@ -466,26 +466,26 @@ void SpectrumWidget::keyPressEvent(QKeyEvent *event)
 	{
 	case Qt::Key_Up: //Bigger step
 		m += upDownIncrement;
-		emit mixerChanged(m);
+		emit spectrumMixerChanged(m);
 		event->accept();
 		return;
 	case Qt::Key_Right:
 		m += leftRightIncrement;
-		emit mixerChanged(m);
+		emit spectrumMixerChanged(m);
 		event->accept();
 		return;
 	case Qt::Key_Down:
 		m -= upDownIncrement;
-		emit mixerChanged(m);
+		emit spectrumMixerChanged(m);
 		event->accept();
 		return;
 	case Qt::Key_Left:
 		m -= leftRightIncrement;
-		emit mixerChanged(m);
+		emit spectrumMixerChanged(m);
 		event->accept();
 		return;
     case Qt::Key_Enter:
-        emit mixerChanged(m, true); //Change LO to current mixer freq
+		emit spectrumMixerChanged(m, true); //Change LO to current mixer freq
 		event->accept();
 		return;
 	}
@@ -513,13 +513,13 @@ void SpectrumWidget::mousePressEvent ( QMouseEvent * event )
 	}
     if (button == Qt::LeftButton) {
         if( modifiers == Qt::NoModifier)
-            emit mixerChanged(deltaFreq, false); //Mixer mode
+			emit spectrumMixerChanged(deltaFreq, false); //Mixer mode
         else if (modifiers == Qt::AltModifier)
-            emit mixerChanged(deltaFreq, true); //Mac Option same as Right Click
+			emit spectrumMixerChanged(deltaFreq, true); //Mac Option same as Right Click
 
     } else if (button == Qt::RightButton) {
         if (modifiers == Qt::NoModifier)
-            emit mixerChanged(deltaFreq, true); //LO mode
+			emit spectrumMixerChanged(deltaFreq, true); //LO mode
     }
     event->accept();
 }

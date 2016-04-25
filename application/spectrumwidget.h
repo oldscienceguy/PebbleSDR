@@ -44,16 +44,16 @@ public slots:
 
 signals:
 		//User clicked in spectrum
-		void mixerChanged(qint32 m);
-		void mixerChanged(qint32 m, bool changeLO);
+		void spectrumMixerChanged(qint32 m);
+		void spectrumMixerChanged(qint32 m, bool changeLO);
         void mixerLimitsChanged(int high, int low);
 
-		private slots:
-            void displayChanged(int item);
-            void maxDbChanged(int t);
-			void minDbChanged(int t);
-            void zoomChanged(int item);
-            void newFftData();
+private slots:
+	void displayChanged(int item);
+	void maxDbChanged(int t);
+	void minDbChanged(int t);
+	void zoomChanged(int item);
+	void newFftData();
 
 private:
 	SignalSpectrum *signalSpectrum; //Source of spectrum data

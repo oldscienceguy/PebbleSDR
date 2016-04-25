@@ -54,6 +54,11 @@ public slots:
 
 
 signals:
+		void demodChanged(	DeviceInterface::DEMODMODE _demodMode);
+		void audioGainChanged(int _audioGain);
+		void agcThresholdChanged(int _threshold);
+		void squelchChanged(int _squelch);
+		void widgetMixerChanged(int _mixer);
 
 protected:		
 	bool eventFilter(QObject *o, QEvent *e);

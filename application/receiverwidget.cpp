@@ -107,8 +107,8 @@ void ReceiverWidget::setReceiver(Receiver *r)
 	connect(ui.filterBox,SIGNAL(currentIndexChanged(QString)),this,SLOT(filterSelectionChanged(QString)));
 	connect(ui.gainSlider,SIGNAL(valueChanged(int)),this,SLOT(gainSliderChanged(int)));
 	connect(ui.agcSlider,SIGNAL(valueChanged(int)),this,SLOT(agcSliderChanged(int)));
-	connect(ui.spectrumWidget,SIGNAL(mixerChanged(qint32)),this,SLOT(mixerChanged(qint32)));
-	connect(ui.spectrumWidget,SIGNAL(mixerChanged(qint32,bool)),this,SLOT(mixerChanged(qint32,bool)));
+	connect(ui.spectrumWidget,SIGNAL(spectrumMixerChanged(qint32)),this,SLOT(mixerChanged(qint32)));
+	connect(ui.spectrumWidget,SIGNAL(spectrumMixerChanged(qint32,bool)),this,SLOT(mixerChanged(qint32,bool)));
     connect(ui.addMemoryButton,SIGNAL(clicked()),this,SLOT(addMemoryButtonClicked()));
     connect(ui.findStationButton,SIGNAL(clicked()),this,SLOT(findStationButtonClicked()));
 
@@ -203,6 +203,7 @@ void ReceiverWidget::showDataFrame(bool b)
     ui.dataFrame->setVisible(b);
 }
 
+//Mixer changed by another widget, like spectrum
 void ReceiverWidget::mixerChanged(qint32 m)
 {
 	if (m_loFrequency + m > 0)
@@ -484,7 +485,7 @@ void ReceiverWidget::setFrequency(double f)
         m_frequency = m_loFrequency;
 		m_mixer = 0;
         //Mixer is actually set including modeOffset so we hear tone, but display shows actual freq
-        m_receiver->setMixer(m_mixer + m_modeOffset);
+		emit widgetMixerChanged(m_mixer + m_modeOffset);
 
 	} else {
 		//Mixer is delta between what's displayed and last LO Frequency
@@ -505,11 +506,11 @@ void ReceiverWidget::setFrequency(double f)
 			m_frequency = m_loFrequency + m_mixer;  //Should be the same as f
             //Back to Mixer mode
 			m_loMode = false;
-			m_receiver->setMixer(m_mixer + m_modeOffset);
+			emit widgetMixerChanged(m_mixer + m_modeOffset);
         } else {
             //LoFreq not changing, just displayed freq
             m_frequency = m_loFrequency + m_mixer;
-            m_receiver->setMixer(m_mixer + m_modeOffset);
+			emit widgetMixerChanged(m_mixer + m_modeOffset);
         }
 	}
 	//frequency is what's displayed, ie combination of loFrequency and mixer (if any)
@@ -601,11 +602,11 @@ void ReceiverWidget::powerToggled(bool on)
 		ui.gainSlider->setMinimum(0);
 		ui.gainSlider->setMaximum(100);
 		ui.gainSlider->setValue(30);
-		m_receiver->setGain(30);
+		emit audioGainChanged(30);
 
 		//Setup Squelch
 		ui.squelchSlider->setValue(DB::minDb);
-		m_receiver->setSquelch(DB::minDb);
+		emit squelchChanged(DB::minDb);
 
 		//Set default AGC mode
 		//agcBoxChanged(AGC::FAST);
@@ -702,7 +703,7 @@ void ReceiverWidget::setLoMode(bool b)
         //LO Mode
         ui.loButton->setChecked(true); //Make sure button is toggled if called from presets
         m_mixer=0;
-        m_receiver->setMixer(m_mixer + m_modeOffset);
+		emit widgetMixerChanged(m_mixer + m_modeOffset);
 		setFrequency(m_loFrequency);
 	} else {
 		//Mixer Mode
@@ -952,7 +953,7 @@ void ReceiverWidget::modeSelectionChanged(QString m)
     ui.filterBox->setCurrentIndex(Demod::demodInfo[m_mode].defaultFilter);
 
     ui.spectrumWidget->SetMode(m_mode, m_modeOffset);
-	m_receiver->setMode(m_mode);
+	emit demodChanged(m_mode);
 	ui.filterBox->blockSignals(false);
 	this->filterSelectionChanged(ui.filterBox->currentText());
 }
@@ -961,7 +962,7 @@ void ReceiverWidget::agcSliderChanged(int g)
 {
 	if (!m_powerOn)
 		return;
-	m_receiver->setAgcThreshold(g);
+	emit agcThresholdChanged(g);
 }
 
 void ReceiverWidget::gainSliderChanged(int g) 
@@ -969,14 +970,14 @@ void ReceiverWidget::gainSliderChanged(int g)
     if (!m_powerOn)
         return;
 	m_gain=g; 
-	m_receiver->setGain(g);
+	emit audioGainChanged(g);
 }
 void ReceiverWidget::squelchSliderChanged(int s)
 {
     if (!m_powerOn)
         return;
 	m_squelch = s;
-	m_receiver->setSquelch(s);
+	emit squelchChanged(s);
 }
 void ReceiverWidget::nixie1UpClicked() {setFrequency(m_frequency+1);}
 void ReceiverWidget::nixie1DownClicked(){setFrequency(m_frequency-1);}
