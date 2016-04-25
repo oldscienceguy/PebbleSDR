@@ -11,11 +11,11 @@ public:
     FFTOoura();
     ~FFTOoura();
 
-	void FFTParams(quint32 _fftSize, double _dBCompensation, double _sampleRate, int _samplesPerBuffer,
+	void fftParams(quint32 _fftSize, double _dBCompensation, double _sampleRate, int _samplesPerBuffer,
 				   WindowFunction::WINDOWTYPE _windowType);
-	void FFTForward(CPX * in, CPX * out, int numSamples);
-	void FFTInverse(CPX * in, CPX * out, int numSamples);
-	bool FFTSpectrum(CPX *in, double *out, int numSamples);
+	void fftForward(CPX * in, CPX * out, int numSamples);
+	void fftInverse(CPX * in, CPX * out, int numSamples);
+	bool fftSpectrum(CPX *in, double *out, int numSamples);
 
 protected:
     //Complex DFT isgn indicates forward or inverse

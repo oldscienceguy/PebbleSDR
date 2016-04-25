@@ -135,8 +135,8 @@ int i;
 	}
 #endif
 	//m_Fft->FFTParams(CONV_FFT_SIZE, false, 0.0, 1.0);
-	m_Fft = FFT::Factory("FastFIR");
-	m_Fft->FFTParams(CONV_FFT_SIZE, 0, m_SampleRate, CONV_FIR_SIZE, WindowFunction::WINDOWTYPE::NONE);
+	m_Fft = FFT::factory("FastFIR");
+	m_Fft->fftParams(CONV_FFT_SIZE, 0, m_SampleRate, CONV_FIR_SIZE, WindowFunction::WINDOWTYPE::NONE);
 	m_FLoCut = -1.0;
 	m_FHiCut = 1.0;
 	m_Offset = 1.0;
@@ -264,7 +264,7 @@ int i;
 
 #endif
 	//convert FIR coefficients to frequency domain by taking forward FFT
-	m_Fft->FFTForward(m_pFilterCoef, m_pFilterCoef, CONV_FFT_SIZE);
+	m_Fft->fftForward(m_pFilterCoef, m_pFilterCoef, CONV_FFT_SIZE);
 	m_Mutex.unlock();
 
 
@@ -298,9 +298,9 @@ int outpos = 0;
 		m_pFFTBuf[m_InBufInPos++] = InBuf[i++];
 		if(m_InBufInPos >= CONV_FFT_SIZE)
 		{	//perform FFT -> complexMultiply by FIR coefficients -> inverse FFT on filled FFT input buffer
-			m_Fft->FFTForward(m_pFFTBuf, m_pFFTBuf, CONV_FFT_SIZE);
+			m_Fft->fftForward(m_pFFTBuf, m_pFFTBuf, CONV_FFT_SIZE);
 			CpxMpy(CONV_FFT_SIZE, m_pFilterCoef, m_pFFTBuf, m_pFFTBuf);
-			m_Fft->FFTInverse(m_pFFTBuf, m_pFFTBuf, CONV_FFT_SIZE);
+			m_Fft->fftInverse(m_pFFTBuf, m_pFFTBuf, CONV_FFT_SIZE);
 			for(j=(CONV_FIR_SIZE-1); j<CONV_FFT_SIZE; j++)
 			{	//copy FFT output into OutBuf minus CONV_FIR_SIZE-1 samples at beginning
 				OutBuf[outpos++] = m_pFFTBuf[j];

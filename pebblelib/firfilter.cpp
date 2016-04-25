@@ -93,10 +93,10 @@ FIRFilter::FIRFilter(int sr, int ns, bool _useFFT, int _numTaps, int _delay)
 		//to avoid circular convolution.
 		//Circular convolution appears as a ghost signal that does not show up in the spectrum at the
 		//mirror frequency of a signal in the lower part of the spectrum
-		fftFIR = FFT::Factory("FIR");
-		fftFIR->FFTParams(numSamplesX2, 0, sr, numSamples, WindowFunction::NONE);
-		fftSamples = FFT::Factory("FIR samples");
-		fftSamples->FFTParams(numSamplesX2, 0, sr, numSamples, WindowFunction::NONE);
+		fftFIR = FFT::factory("FIR");
+		fftFIR->fftParams(numSamplesX2, 0, sr, numSamples, WindowFunction::NONE);
+		fftSamples = FFT::factory("FIR samples");
+		fftSamples->fftParams(numSamplesX2, 0, sr, numSamples, WindowFunction::NONE);
 
 		//Time domain FIR coefficients
 		taps = CPX::memalign(numSamples);
@@ -159,16 +159,16 @@ CPX * FIRFilter::ProcessBlock(CPX *in)
 		//Convert in to freq domain
 		//DoFFTForward will copy in[numSamples] and pad with zeros to FFT size if necessary
 		//12/31/10: Avoid extra buffer copies and let FFT manage buffers
-        fftSamples->FFTForward(in, NULL, numSamples);// pass size of in buffer, NOT size of FFT
+        fftSamples->fftForward(in, NULL, numSamples);// pass size of in buffer, NOT size of FFT
 		//fftSamples->freqDomain is now in freq domain
 		//Mask freq domain by our filter
 		this->Convolution(fftSamples);
 		//freqDomain is now filtered in freq domain
 		//And return to time domain
-		fftSamples->FFTInverse(NULL, NULL, fftSamples->getFFTSize());
+		fftSamples->fftInverse(NULL, NULL, fftSamples->getFFTSize());
 		//tmp1 is time domain
 		//Do Overlap-Add to reduce from 2X numSamples to numSamples
-		fftSamples->OverlapAdd(out,numSamples);
+		fftSamples->overlapAdd(out,numSamples);
 
 	} else {
 		if (taps==NULL || delayLine == NULL)
@@ -463,7 +463,7 @@ void FIRFilter::MakeFFTTaps()
 	//Convert the time domain filter coefficients (taps[]) to frequency domain (fftTaps[])
 	//We then use the frequency domain (fftTaps[]) against the FFT we get from actual samples to apply the filter
 	//DoFFTForward will handle numSamples < fftSize and automatically pad with zeros
-    fftFIR->FFTForward(taps, NULL, numSamples); //
+    fftFIR->fftForward(taps, NULL, numSamples); //
 
     // Do compensation here instead of in inverse FFT
 	CPX::scaleCPX(fftFIR->getFreqDomain(), fftFIR->getFreqDomain(), one_over_norm, fftFIR->getFFTSize());

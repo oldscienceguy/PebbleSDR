@@ -19,11 +19,11 @@ FFTAccelerate::~FFTAccelerate()
 		delete splitComplexTemp.imagp;
 }
 
-void FFTAccelerate::FFTParams(quint32 _size, double _dBCompensation, double _sampleRate, int _samplesPerBuffer,
+void FFTAccelerate::fftParams(quint32 _size, double _dBCompensation, double _sampleRate, int _samplesPerBuffer,
 							  WindowFunction::WINDOWTYPE _windowType)
 {
 	//Must call FFT base to properly init
-	FFT::FFTParams(_size, _dBCompensation, _sampleRate, _samplesPerBuffer, _windowType);
+	FFT::fftParams(_size, _dBCompensation, _sampleRate, _samplesPerBuffer, _windowType);
 
 	fftSizeLog2n = log2f(_size);
 	//n = 1 << log2n; //???
@@ -39,19 +39,19 @@ void FFTAccelerate::FFTParams(quint32 _size, double _dBCompensation, double _sam
 	splitComplexTemp.imagp = new double[tempSize];
 }
 
-void FFTAccelerate::FFTForward(CPX *in, CPX *out, int numSamples)
+void FFTAccelerate::fftForward(CPX *in, CPX *out, int numSamples)
 {
-	if (!fftParamsSet)
+	if (!m_fftParamsSet)
 		return;
 
 	if (in != NULL) {
-		applyWindow(in,numSamples);
+		m_applyWindow(in,numSamples);
 	}
 
 	//Copy timeDomain to splitComplex
 	vDSP_Stride ic = 2; //Step factor/2 for in[i], must be multiple of 2
 	vDSP_Stride iz = 1; //Step factor for splitComplex[i]
-	vDSP_ctozD((DSPDoubleComplex *)timeDomain, ic, &splitComplex, iz, fftSize);
+	vDSP_ctozD((DSPDoubleComplex *)m_timeDomain, ic, &splitComplex, iz, m_fftSize);
 
 	vDSP_Stride stride = 1; //1=Process every element
 	//OSX 10 and later
@@ -62,31 +62,31 @@ void FFTAccelerate::FFTForward(CPX *in, CPX *out, int numSamples)
 	vDSP_fft_ziptD(fftSetupD, &splitComplex, stride, &splitComplexTemp, fftSizeLog2n, kFFTDirection_Forward);
 
 	//Maintain freqDomain with results by copying from splitComplex back to our CPX*
-	vDSP_ztocD(&splitComplex,iz,(DSPDoubleComplex *)freqDomain,ic,fftSize);
+	vDSP_ztocD(&splitComplex,iz,(DSPDoubleComplex *)m_freqDomain,ic,m_fftSize);
 
 	//If out == NULL, just leave result in freqDomain buffer and let caller get it
 	if (out != NULL)
-		CPX::copyCPX(out, freqDomain, fftSize);
+		CPX::copyCPX(out, m_freqDomain, m_fftSize);
 
 }
 
-void FFTAccelerate::FFTInverse(CPX *in, CPX *out, int numSamples)
+void FFTAccelerate::fftInverse(CPX *in, CPX *out, int numSamples)
 {
-	if (!fftParamsSet)
+	if (!m_fftParamsSet)
 		return;
 
 	//If in==NULL, use whatever is in freqDomain buffer
 	if (in != NULL ) {
-		if (numSamples < fftSize)
-			CPX::clearCPX(freqDomain,fftSize);
+		if (numSamples < m_fftSize)
+			CPX::clearCPX(m_freqDomain,m_fftSize);
 		//Put the data in properly aligned FFTW buffer
-		CPX::copyCPX(freqDomain, in, numSamples);
+		CPX::copyCPX(m_freqDomain, in, numSamples);
 	}
 
 	//Copy freqDomain to splitComplex
 	vDSP_Stride ic = 2; //Step factor/2 for in[i], must be multiple of 2
 	vDSP_Stride iz = 1; //Step factor for splitComplex[i]
-	vDSP_ctozD((DSPDoubleComplex *)freqDomain, ic, &splitComplex, iz, fftSize);
+	vDSP_ctozD((DSPDoubleComplex *)m_freqDomain, ic, &splitComplex, iz, m_fftSize);
 
 	vDSP_Stride stride = 1; //1=Process every element
 	//In place 1D complex
@@ -95,25 +95,25 @@ void FFTAccelerate::FFTInverse(CPX *in, CPX *out, int numSamples)
 	vDSP_fft_ziptD(fftSetupD, &splitComplex, stride, &splitComplexTemp, fftSizeLog2n, kFFTDirection_Inverse);
 
 	//Maintain timeDomain with results by copying from splitComplex back to our CPX*
-	vDSP_ztocD(&splitComplex,iz,(DSPDoubleComplex *)timeDomain,ic,fftSize);
+	vDSP_ztocD(&splitComplex,iz,(DSPDoubleComplex *)m_timeDomain,ic,m_fftSize);
 
 	//If out == NULL, just leave result in freqDomain buffer and let caller get it
 	if (out != NULL)
-		CPX::copyCPX(out, timeDomain, fftSize);
+		CPX::copyCPX(out, m_timeDomain, m_fftSize);
 
 }
 
-bool FFTAccelerate::FFTSpectrum(CPX *in, double *out, int numSamples)
+bool FFTAccelerate::fftSpectrum(CPX *in, double *out, int numSamples)
 {
-	if (!fftParamsSet)
+	if (!m_fftParamsSet)
 		return false;
 
-	FFTForward(in,workingBuf,numSamples); //No need to copy to out, leave in freqDomain
+	fftForward(in,m_workingBuf,numSamples); //No need to copy to out, leave in freqDomain
 
-	unfoldInOrder(workingBuf, freqDomain);
+	m_unfoldInOrder(m_workingBuf, m_freqDomain);
 
-	CalcPowerAverages(freqDomain, out, fftSize);
+	calcPowerAverages(m_freqDomain, out, m_fftSize);
 
-	return isOverload;
+	return m_isOverload;
 
 }

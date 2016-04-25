@@ -118,7 +118,7 @@ TestBench::TestBench(QWidget *parent) :
 	connect(this, SIGNAL(newTimeData()), this,  SLOT( drawTimePlot() ) );
 	connect( this, SIGNAL( sendTxt(QString)), this, SLOT( gotTxt(QString) ) );
 
-	m_fft.FFTParams( 2048, 0.0, 1, 2048, WindowFunction::BLACKMANHARRIS);
+	m_fft.fftParams( 2048, 0.0, 1, 2048, WindowFunction::BLACKMANHARRIS);
 
 	ui->setupUi(this);
     setWindowTitle("Pebble Test Bench");
@@ -556,13 +556,13 @@ void TestBench::reset()
 		//		m_pWFmMod->SetSweep(m_SweepFreqNorm,m_SweepFrequency,m_SweepStopFrequency,m_SweepRateInc);
 
 	//m_SignalAmplitude = m_Fft.ampMax*pow(10.0, m_SignalPower/20.0);
-	m_signalAmplitude = m_fft.ampMax * DB::dBToAmplitude(m_signalPower);
+	m_signalAmplitude = m_fft.m_ampMax * DB::dBToAmplitude(m_signalPower);
 
 	//m_NoiseAmplitude = m_Fft.ampMax*pow(10.0, m_NoisePower/20.0);
-	m_noiseAmplitude = m_fft.ampMax * DB::dBToAmplitude(m_noisePower);
+	m_noiseAmplitude = m_fft.m_ampMax * DB::dBToAmplitude(m_noisePower);
 
 	//init FFT values
-	m_fft.FFTParams(  TEST_FFTSIZE, 0.0, m_displaySampleRate, TEST_FFTSIZE, WindowFunction::BLACKMANHARRIS);
+	m_fft.fftParams(  TEST_FFTSIZE, 0.0, m_displaySampleRate, TEST_FFTSIZE, WindowFunction::BLACKMANHARRIS);
 	m_fftBufPos = 0;
 	m_span = m_displaySampleRate;
 	m_span = ( m_span - (m_span+5)%10 + 5);
@@ -600,7 +600,7 @@ void TestBench::reset()
 		m_displaySkipValue = m_displaySampleRate/(TEST_FFTSIZE*m_displayRate);
 	}
 	ui->textEdit->clear();
-	m_fft.ResetFFT();
+	m_fft.resetFFT();
 	m_displaySkipCounter = -2;
 	m_displayMutex.unlock();
  }
@@ -637,7 +637,7 @@ void TestBench::displayData(int length, TYPECPX* pBuf, double samplerate, int pr
 				if(++m_displaySkipCounter >= m_displaySkipValue )
 				{
 					m_displaySkipCounter = 0;
-					m_fft.FFTSpectrum(m_fftInBuf,m_spectrumBuf, TEST_FFTSIZE);
+					m_fft.fftSpectrum(m_fftInBuf,m_spectrumBuf, TEST_FFTSIZE);
 					emit newFftData();
 				}
 			}
@@ -700,7 +700,7 @@ void TestBench::displayData(int length, TYPEREAL* pBuf, double samplerate, int p
 				if(++m_displaySkipCounter >= m_displaySkipValue )
 				{
 					m_displaySkipCounter = 0;
-					m_fft.FFTSpectrum(m_fftInBuf, m_spectrumBuf, TEST_FFTSIZE);
+					m_fft.fftSpectrum(m_fftInBuf, m_spectrumBuf, TEST_FFTSIZE);
 
 					emit newFftData();
 				}
@@ -760,7 +760,7 @@ void TestBench::displayData(int length, TYPEMONO16* pBuf, double samplerate, int
 				if(++m_displaySkipCounter >= m_displaySkipValue )
 				{
 					m_displaySkipCounter = 0;
-					m_fft.FFTSpectrum(m_fftInBuf, m_spectrumBuf, TEST_FFTSIZE);
+					m_fft.fftSpectrum(m_fftInBuf, m_spectrumBuf, TEST_FFTSIZE);
 
 					emit newFftData();
 				}
@@ -820,7 +820,7 @@ void TestBench::displayData(int length, TYPESTEREO16* pBuf, double samplerate, i
 				if(++m_displaySkipCounter >= m_displaySkipValue )
 				{
 					m_displaySkipCounter = 0;
-					m_fft.FFTSpectrum(m_fftInBuf, m_spectrumBuf, TEST_FFTSIZE);
+					m_fft.fftSpectrum(m_fftInBuf, m_spectrumBuf, TEST_FFTSIZE);
 
 					emit newFftData();
 				}
@@ -1066,7 +1066,7 @@ QPoint LineBuf[TB_MAX_SCREENSIZE];
 
 	if(m_currentDataIsCpx)
 	{
-		m_fft.MapFFTToScreen( m_spectrumBuf, h, w,
+		m_fft.mapFFTToScreen( m_spectrumBuf, h, w,
 							m_maxDb,
 							m_minDb,
 							-m_span/2,
@@ -1075,7 +1075,7 @@ QPoint LineBuf[TB_MAX_SCREENSIZE];
 	}
 	else
 	{
-		m_fft.MapFFTToScreen( m_spectrumBuf, h, w,
+		m_fft.mapFFTToScreen( m_spectrumBuf, h, w,
 							m_maxDb,
 							m_minDb,
 							0.0,

@@ -12,37 +12,37 @@
 
 FFT::FFT()
 {
-    timeDomain = NULL;
-    freqDomain = NULL;
-    workingBuf = NULL;
-    overlap = NULL;
-	windowFunction = NULL;
+	m_timeDomain = NULL;
+	m_freqDomain = NULL;
+	m_workingBuf = NULL;
+	m_overlap = NULL;
+	m_windowFunction = NULL;
 
-    fftParamsSet = false; //Only set to true in FFT::FFTParams(...)
+	m_fftParamsSet = false; //Only set to true in FFT::FFTParams(...)
 
-	fftPower = NULL;
-	fftAmplitude = NULL;
-	fftPhase = NULL;
-	isOverload = false;
+	m_fftPower = NULL;
+	m_fftAmplitude = NULL;
+	m_fftPhase = NULL;
+	m_isOverload = false;
 
 }
 FFT::~FFT()
 {
-	if (timeDomain) free(timeDomain);
-	if (freqDomain) free(freqDomain);
-	if (workingBuf) free(workingBuf);
-	if (overlap) free(overlap);
-	if (windowFunction != NULL)
-		delete windowFunction;
-	if (fftPower != NULL)
-		delete[] fftPower;
-	if (fftAmplitude != NULL)
-		delete[] fftAmplitude;
-	if (fftPhase != NULL)
-		delete[] fftPhase;
+	if (m_timeDomain) free(m_timeDomain);
+	if (m_freqDomain) free(m_freqDomain);
+	if (m_workingBuf) free(m_workingBuf);
+	if (m_overlap) free(m_overlap);
+	if (m_windowFunction != NULL)
+		delete m_windowFunction;
+	if (m_fftPower != NULL)
+		delete[] m_fftPower;
+	if (m_fftAmplitude != NULL)
+		delete[] m_fftAmplitude;
+	if (m_fftPhase != NULL)
+		delete[] m_fftPhase;
 }
 
-FFT* FFT::Factory(QString _label)
+FFT* FFT::factory(QString _label)
 {
 	FFT *fft = NULL;
 #if defined USE_FFTW
@@ -64,61 +64,61 @@ FFT* FFT::Factory(QString _label)
 	return fft;
 }
 
-void FFT::FFTParams(quint32 _fftSize, double _dBCompensation, double _sampleRate, int _samplesPerBuffer,
+void FFT::fftParams(quint32 _fftSize, double _dBCompensation, double _sampleRate, int _samplesPerBuffer,
 					WindowFunction::WINDOWTYPE _windowType)
 {
 	Q_UNUSED(_dBCompensation); //Remove?, not used anywhere.  Maybe use for db to dbm calibration?
 
 	if (_fftSize == 0)
         return; //Error
-	else if( _fftSize < minFFTSize )
-        fftSize = minFFTSize;
-	else if( _fftSize > maxFFTSize )
-        fftSize = maxFFTSize;
+	else if( _fftSize < m_minFFTSize )
+		m_fftSize = m_minFFTSize;
+	else if( _fftSize > m_maxFFTSize )
+		m_fftSize = m_maxFFTSize;
     else
-		fftSize = _fftSize;
+		m_fftSize = _fftSize;
 
-	binWidth = sampleRate / fftSize;
+	m_binWidth = m_sampleRate / m_fftSize;
 
-	samplesPerBuffer = _samplesPerBuffer;
-	maxBinPower = ampMax * samplesPerBuffer;
+	m_samplesPerBuffer = _samplesPerBuffer;
+	m_maxBinPower = m_ampMax * m_samplesPerBuffer;
 
-	windowType = _windowType;
+	m_windowType = _windowType;
 
-    sampleRate = _sampleRate;
+	m_sampleRate = _sampleRate;
 
-	timeDomain = CPX::memalign(fftSize);
-	freqDomain = CPX::memalign(fftSize);
-	workingBuf = CPX::memalign(fftSize);
-	overlap = CPX::memalign(fftSize);
-	CPX::clearCPX(overlap, fftSize);
+	m_timeDomain = CPX::memalign(m_fftSize);
+	m_freqDomain = CPX::memalign(m_fftSize);
+	m_workingBuf = CPX::memalign(m_fftSize);
+	m_overlap = CPX::memalign(m_fftSize);
+	CPX::clearCPX(m_overlap, m_fftSize);
 
-	if (windowFunction != NULL) {
-		delete windowFunction;
-		windowFunction = NULL;
+	if (m_windowFunction != NULL) {
+		delete m_windowFunction;
+		m_windowFunction = NULL;
 	}
 
 	//Window are sized to expected samples per buffer, which may be smaller than fftSize
-	windowFunction = new WindowFunction(windowType,samplesPerBuffer);
+	m_windowFunction = new WindowFunction(m_windowType,m_samplesPerBuffer);
 
 	//Todo: Add UI to switch
-	isAveraged = true;
+	m_isAveraged = true;
 
-	if (fftPower != NULL)
-		delete[] fftPower;
-	fftPower = new double[fftSize];
-	if (fftAmplitude != NULL)
-		delete[] fftAmplitude;
-	fftAmplitude = new double[fftSize];
-	if (fftPhase != NULL)
-		delete[] fftPhase;
-	fftPhase = new double[fftSize];
+	if (m_fftPower != NULL)
+		delete[] m_fftPower;
+	m_fftPower = new double[m_fftSize];
+	if (m_fftAmplitude != NULL)
+		delete[] m_fftAmplitude;
+	m_fftAmplitude = new double[m_fftSize];
+	if (m_fftPhase != NULL)
+		delete[] m_fftPhase;
+	m_fftPhase = new double[m_fftSize];
 
-    fftParamsSet = true;
+	m_fftParamsSet = true;
 }
 
 //Subclasses should call in case we need to do anything
-void FFT::ResetFFT()
+void FFT::resetFFT()
 {
     //Clear buffers?
 }
@@ -126,34 +126,34 @@ void FFT::ResetFFT()
 //Common function used in FFTForward by all fft versions
 //Applies window function and checks for overload
 //Returns windowed data, padded to fftSize in timeDomain
-bool FFT::applyWindow(const CPX *in, int numSamples)
+bool FFT::m_applyWindow(const CPX *in, int numSamples)
 {
 	//If in==NULL, use whatever is in timeDomain buffer
 	if (in != NULL ) {
-		if (windowType != WindowFunction::NONE && numSamples == samplesPerBuffer) {
+		if (m_windowType != WindowFunction::NONE && numSamples == m_samplesPerBuffer) {
 			//Smooth the input data with our window
-			isOverload = false;
+			m_isOverload = false;
 			//CPX::multCPX(timeDomain, in, windowFunction->windowCpx, samplesPerBuffer);
-			for (int i=0; i<samplesPerBuffer; i++) {
-				if (fabs(in[i].re) > overLimit || fabs(in[i].im) > overLimit) {
-					isOverload = true;
+			for (int i=0; i<m_samplesPerBuffer; i++) {
+				if (fabs(in[i].re) > m_overLimit || fabs(in[i].im) > m_overLimit) {
+					m_isOverload = true;
 					//Don't do anything, just flag that we're in the danger zone so UI can display it
 				}
-				timeDomain[i] = in[i] * windowFunction->windowCpx[i];
+				m_timeDomain[i] = in[i] * m_windowFunction->windowCpx[i];
 			}
 			//Zero pad remainder of buffer if needed
-			for (int i = samplesPerBuffer; i<fftSize; i++) {
-				timeDomain[i] = 0;
+			for (int i = m_samplesPerBuffer; i<m_fftSize; i++) {
+				m_timeDomain[i] = 0;
 			}
 		} else {
 			//Make sure that buffer which does not have samples is zero'd out
 			//We can pad samples in the time domain because it does not impact frequency results in FFT
-			CPX::clearCPX(timeDomain,fftSize);
+			CPX::clearCPX(m_timeDomain,m_fftSize);
 			//Put the data in properly aligned FFTW buffer
-			CPX::copyCPX(timeDomain, in, numSamples);
+			CPX::copyCPX(m_timeDomain, in, numSamples);
 		}
 	}
-	return isOverload;
+	return m_isOverload;
 }
 
 // Unfolds output of fft to -f to +f order
@@ -180,9 +180,9 @@ bool FFT::applyWindow(const CPX *in, int numSamples)
 	}
 
 */
-void FFT::unfoldInOrder(CPX *inBuf, CPX *outBuf)
+void FFT::m_unfoldInOrder(CPX *inBuf, CPX *outBuf)
 {
-	int fftMid = fftSize/2;
+	int fftMid = m_fftSize/2;
 
 	//In Accelerate, the DC bin has a special purpose, check other implementations.  From gerrybeauregard ...
 	// Bins 0 and N/2 both necessarily have zero phase, so in the packed format
@@ -227,27 +227,27 @@ void FFT::unfoldInOrder(CPX *inBuf, CPX *outBuf)
 //!!Compare with cuteSDR logic, replace if necessary
 //This can be called directly if we've already done FFT
 //WARNING:  fbr must be large enough to hold 'fftSize' values
-void FFT::FreqDomainToMagnitude(CPX * freqBuf, double baseline, double correction, double *fbr)
+void FFT::freqDomainToMagnitude(CPX * freqBuf, double baseline, double correction, double *fbr)
 {
     //calculate the magnitude of your complex frequency domain data (magnitude = sqrt(re^2 + im^2))
     //convert magnitude to a log scale (dB) (magnitude_dB = 20*log10(magnitude))
 
-	unfoldInOrder(freqBuf,workingBuf);
-	for (int i=0; i<fftSize; i++) {
-		fbr[i] = DB::powerTodB(DB::power(workingBuf[i]) + baseline) + correction;
+	m_unfoldInOrder(freqBuf,m_workingBuf);
+	for (int i=0; i<m_fftSize; i++) {
+		fbr[i] = DB::powerTodB(DB::power(m_workingBuf[i]) + baseline) + correction;
 	}
 }
 
 //Utility to handle overlap/add using FFT buffers
-void FFT::OverlapAdd(CPX *out, int numSamples)
+void FFT::overlapAdd(CPX *out, int numSamples)
 {
     //Do Overlap-Add to reduce from 1/2 fftSize
 
     //Add the samples in 'in' to last overlap
-	CPX::addCPX(out, timeDomain, overlap, numSamples);
+	CPX::addCPX(out, m_timeDomain, m_overlap, numSamples);
 
     //Save the upper 50% samples to  overlap for next run
-	CPX::copyCPX(overlap, (timeDomain+numSamples), numSamples);
+	CPX::copyCPX(m_overlap, (m_timeDomain+numSamples), numSamples);
 
 }
 
@@ -321,10 +321,10 @@ void FFT::OverlapAdd(CPX *out, int numSamples)
 
 */
 
-void FFT::CalcPowerAverages(CPX* in, double *out, int numSamples)
+void FFT::calcPowerAverages(CPX* in, double *out, int numSamples)
 {
 
-	numSamples = fftSize; //Todo: Remove arg
+	numSamples = m_fftSize; //Todo: Remove arg
 
     //This is called from code that is locked with fftMutex, don't re-lock or will hang
 	double binPower;
@@ -348,16 +348,16 @@ void FFT::CalcPowerAverages(CPX* in, double *out, int numSamples)
 	for( int i = 0; i < numSamples; i++){
 		//Amplitude Spectral Density
 		//fft output is in amplitude, so calculate that first
-		asd = DB::amplitude(in[i]) / windowFunction->coherentGain;
+		asd = DB::amplitude(in[i]) / m_windowFunction->coherentGain;
 		//Power Spectral Density
 		//calculate power based on amplitude
 		psd = DB::amplitudeToPower(asd);
 		//We can also correct for effective noise bandwidth, scallop loss, etc if necessary
 
 		//Normalize to 0 to 1, see detailed explanation above
-		psd /= maxBinPower;
+		psd /= m_maxBinPower;
 
-		asd /= maxBinPower;
+		asd /= m_maxBinPower;
 
 		//Normalize for fft size if necessary
 		//Tests with -10db testbench signal, 1msps, expected maxDB -10.00
@@ -376,17 +376,17 @@ void FFT::CalcPowerAverages(CPX* in, double *out, int numSamples)
 		//Todo: correct for small error
 
 		//Can't average db, do average on power before conversion
-		if (isAveraged) {
-			binPower = (psd + fftPower[i]) / 2;
-			binAmp = (asd + fftAmplitude[i]) /2;
+		if (m_isAveraged) {
+			binPower = (psd + m_fftPower[i]) / 2;
+			binAmp = (asd + m_fftAmplitude[i]) /2;
 		} else {
 			//Direct results
 			binPower = psd;
 			binAmp = asd;
 		}
 		//Keep unaveraged values for next pass
-		fftPower[i] = psd;
-		fftAmplitude[i] = asd;
+		m_fftPower[i] = psd;
+		m_fftAmplitude[i] = asd;
 
 		binPowerdB = DB::clip(DB::powerTodB(binPower));
 		binAmpdB = DB::clip(DB::amplitudeTodB(binAmp));
@@ -408,7 +408,7 @@ Also handles the case where there are not enough fft bins to fill pixels availab
 If startFreq or endFreq are outside the FFT range, maps the pixels to DB::minDb ie no signal
 #endif
 
-bool FFT::MapFFTToScreen(double *inBuf,
+bool FFT::mapFFTToScreen(double *inBuf,
 
 		qint32 yPixels, //Height of the plot area
 		qint32 xPixels, //Width of the plot area
@@ -422,7 +422,7 @@ bool FFT::MapFFTToScreen(double *inBuf,
 	qint32 binLow;
 	qint32 binHigh;
 	//float hzPerBin = (float)sampleRate / (float)fftSize; //hZ per fft bin
-	float binsPerHz = (float)fftSize / (float)sampleRate;
+	float binsPerHz = (float)m_fftSize / (float)m_sampleRate;
 	//
 	//qint32 fftLowFreq = -sampleRate / 2;
 	//qint32 fftHighFreq = sampleRate / 2;
@@ -432,11 +432,11 @@ bool FFT::MapFFTToScreen(double *inBuf,
 	//Ex: If no zoom, binLow will be 1/2 of fftSize or -1024
 	binLow = (qint32)(startFreq * binsPerHz);
 	//Ex: makes it zero relative, so will be 0
-	binLow += (fftSize/2);
+	binLow += (m_fftSize/2);
 	//Ex: 1024 for full spectrum
 	binHigh = (qint32)(stopFreq * binsPerHz);
 	//Ex: now 2048
-	binHigh += (fftSize/2);
+	binHigh += (m_fftSize/2);
 
 	//Note: binLow can be less than zero, indicating we have plots that are below fft
 	//binHigh can be greater than fftSize for the same reason, indicating invalid fft bins
@@ -456,7 +456,7 @@ bool FFT::MapFFTToScreen(double *inBuf,
 	qint32 totalBinPower = 0;
 	qint32 powerdB = 0;
 
-	fftMutex.lock();
+	m_fftMutex.lock();
 
 	qint32 lastFftBin = -1; //Flag as invalid
 	//if more FFT bins than plot bins, averge skipped fftBins to match plots bins
@@ -470,7 +470,7 @@ bool FFT::MapFFTToScreen(double *inBuf,
 			//If freq for this pixel is outside fft range, output 0 until we are in range
 			if (fftBin < 0) {
 				powerdB = DB::minDb; //Out of bin range
-			} else if (fftBin >= fftSize) {
+			} else if (fftBin >= m_fftSize) {
 				powerdB = DB::minDb;
 			} else if (lastFftBin > 0 && fftBin != lastFftBin + 1) {
 				//Lowest freq is in fftBin[0]
@@ -505,7 +505,7 @@ bool FFT::MapFFTToScreen(double *inBuf,
 			//Check fftBin before we look for invert, otherwise won't be negative
 			if (fftBin < 0) {
 				powerdB = DB::minDb; //Out of bin range
-			} else if (fftBin >= fftSize) {
+			} else if (fftBin >= m_fftSize) {
 				powerdB = DB::minDb;
 			} else {
 				powerdB = inBuf[fftBin] - maxdB;
@@ -516,7 +516,7 @@ bool FFT::MapFFTToScreen(double *inBuf,
 		} //End xPixel loop
 	}
 
-	fftMutex.unlock();
+	m_fftMutex.unlock();
 
 	return false; //True if y has to be truncated (overloaded)
 }

@@ -14,70 +14,70 @@ FFTfftw::~FFTfftw()
 	if (buf) free(buf);
 }
 
-void FFTfftw::FFTParams(quint32 _size, double _dBCompensation, double _sampleRate, int _samplesPerBuffer,
+void FFTfftw::fftParams(quint32 _size, double _dBCompensation, double _sampleRate, int _samplesPerBuffer,
 						WindowFunction::WINDOWTYPE _windowType)
 {
     //Must call FFT base to properly init
-	FFT::FFTParams(_size, _dBCompensation, _sampleRate, _samplesPerBuffer, _windowType);
+	FFT::fftParams(_size, _dBCompensation, _sampleRate, _samplesPerBuffer, _windowType);
 
-    half_sz = fftSize / 2;
-	plan_fwd = fftw_plan_dft_1d(fftSize , (fftw_complex*)timeDomain, (fftw_complex*)freqDomain, FFTW_FORWARD, FFTW_MEASURE);
-	plan_rev = fftw_plan_dft_1d(fftSize , (fftw_complex*)freqDomain, (fftw_complex*)timeDomain, FFTW_BACKWARD, FFTW_MEASURE);
-	buf = CPX::memalign(fftSize);
-	CPX::clearCPX(buf, fftSize);
+    half_sz = m_fftSize / 2;
+	plan_fwd = fftw_plan_dft_1d(m_fftSize , (fftw_complex*)m_timeDomain, (fftw_complex*)m_freqDomain, FFTW_FORWARD, FFTW_MEASURE);
+	plan_rev = fftw_plan_dft_1d(m_fftSize , (fftw_complex*)m_freqDomain, (fftw_complex*)m_timeDomain, FFTW_BACKWARD, FFTW_MEASURE);
+	buf = CPX::memalign(m_fftSize);
+	CPX::clearCPX(buf, m_fftSize);
 }
 
 //NOTE: size= # samples in 'in' buffer, 'out' must be == fftSize (set on construction) which is #bins
-void FFTfftw::FFTForward(CPX * in, CPX * out, int numSamples)
+void FFTfftw::fftForward(CPX * in, CPX * out, int numSamples)
 {
-    if (!fftParamsSet)
+    if (!m_fftParamsSet)
         return;
 
     //If in==NULL, use whatever is in timeDomain buffer
     if (in != NULL ) {
-		applyWindow(in,numSamples);
+		m_applyWindow(in,numSamples);
     }
 
     fftw_execute(plan_fwd);
 
     //If out == NULL, just leave result in freqDomain buffer and let caller get it
     if (out != NULL)
-		CPX::copyCPX(out, freqDomain, fftSize);
+		CPX::copyCPX(out, m_freqDomain, m_fftSize);
 }
 
 //NOTE: size= # samples in 'in' buffer, 'out' must be == fftSize (set on construction) which is #bins
-void FFTfftw::FFTInverse(CPX * in, CPX * out, int numSamples)
+void FFTfftw::fftInverse(CPX * in, CPX * out, int numSamples)
 {
-    if (!fftParamsSet)
+    if (!m_fftParamsSet)
         return;
 
     //If in==NULL, use whatever is in freqDomain buffer
     if (in != NULL) {
-		if (numSamples < fftSize)
+		if (numSamples < m_fftSize)
             //Make sure that buffer which does not have samples is zero'd out
-			CPX::clearCPX(freqDomain,fftSize);
+			CPX::clearCPX(m_freqDomain,m_fftSize);
 
-		CPX::copyCPX(freqDomain, in, numSamples);
+		CPX::copyCPX(m_freqDomain, in, numSamples);
     }
     fftw_execute(plan_rev);
 
     if (out != NULL)
-		CPX::copyCPX(out, timeDomain, fftSize);
+		CPX::copyCPX(out, m_timeDomain, m_fftSize);
 
 }
 
 //size is the number of samples, not the size of fft
-bool FFTfftw::FFTSpectrum(CPX *in, double *out, int numSamples)
+bool FFTfftw::fftSpectrum(CPX *in, double *out, int numSamples)
 {
-    if (!fftParamsSet)
+    if (!m_fftParamsSet)
 		return false;
-	FFTForward(in,workingBuf,numSamples);
+	fftForward(in,m_workingBuf,numSamples);
 
-	unfoldInOrder(workingBuf, freqDomain);
+	m_unfoldInOrder(m_workingBuf, m_freqDomain);
 
-	CalcPowerAverages(freqDomain, out, fftSize);
+	calcPowerAverages(m_freqDomain, out, m_fftSize);
 
-	return isOverload;
+	return m_isOverload;
 }
 
 

@@ -14,10 +14,10 @@ SignalSpectrum::SignalSpectrum(quint32 _sampleRate, quint32 _hiResSampleRate, qu
 	//Output buffers
 	rawIQ = CPX::memalign(numSamples);
 
-	fftUnprocessed = FFT::Factory("Unprocessed spectrum");
+	fftUnprocessed = FFT::factory("Unprocessed spectrum");
 	unprocessedSpectrum = new double[numSpectrumBins];
 
-	fftHiRes = FFT::Factory("HiRes spectrum");
+	fftHiRes = FFT::factory("HiRes spectrum");
 	hiResSpectrum = new double[numHiResSpectrumBins];
 
 	tmp_cpx = CPX::memalign(numSpectrumBins);
@@ -55,8 +55,8 @@ void SignalSpectrum::SetSampleRate(quint32 _sampleRate, quint32 _hiResSampleRate
 {
     sampleRate = _sampleRate;
 	hiResSampleRate = _hiResSampleRate;
-	fftUnprocessed->FFTParams(numSpectrumBins, DB::maxDb, sampleRate, numSamples, WindowFunction::BLACKMANHARRIS);
-	fftHiRes->FFTParams(numHiResSpectrumBins, DB::maxDb, hiResSampleRate, numSamples, WindowFunction::BLACKMANHARRIS);
+	fftUnprocessed->fftParams(numSpectrumBins, DB::maxDb, sampleRate, numSamples, WindowFunction::BLACKMANHARRIS);
+	fftHiRes->fftParams(numHiResSpectrumBins, DB::maxDb, hiResSampleRate, numSamples, WindowFunction::BLACKMANHARRIS);
     emitFftCounter = 0;
 }
 
@@ -108,7 +108,7 @@ void SignalSpectrum::Zoomed(CPX *in, int _numSamples)
 
 void SignalSpectrum::MakeSpectrum(FFT *fft, CPX *in, double *sOut, int _numSamples)
 {
-	isOverload = fft->FFTSpectrum(in, sOut, _numSamples);
+	isOverload = fft->fftSpectrum(in, sOut, _numSamples);
     //out now has the spectrum in db, -f..0..+f
 }
 
@@ -143,7 +143,7 @@ bool SignalSpectrum::MapFFTToScreen(qint32 maxHeight,
                                 qint32* outBuf )
 {
     if (fftUnprocessed!=NULL)
-		return fftUnprocessed->MapFFTToScreen(unprocessedSpectrum, maxHeight,maxWidth,maxdB,mindB,startFreq,stopFreq,outBuf);
+		return fftUnprocessed->mapFFTToScreen(unprocessedSpectrum, maxHeight,maxWidth,maxdB,mindB,startFreq,stopFreq,outBuf);
     else
         return false;
 }
@@ -162,7 +162,7 @@ bool SignalSpectrum::MapFFTZoomedToScreen(qint32 maxHeight,
 	quint16 span = hiResSampleRate * zoom;
 
 	if (fftHiRes!=NULL)
-		return fftHiRes->MapFFTToScreen(hiResSpectrum,maxHeight,maxWidth,maxdB,mindB, -span/2 - modeOffset, span/2 - modeOffset, outBuf);
+		return fftHiRes->mapFFTToScreen(hiResSpectrum,maxHeight,maxWidth,maxdB,mindB, -span/2 - modeOffset, span/2 - modeOffset, outBuf);
     else
         return false;
 }

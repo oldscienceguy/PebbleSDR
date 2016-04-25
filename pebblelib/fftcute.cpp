@@ -20,9 +20,9 @@
 //////////////////////////////////////////////////////////////////////
 CFft::CFft() :FFT()
 {
-    fftInputOverload = false;
+    m_fftInputOverload = false;
 	m_LastFFTSize = 0;
-    fftSize = 1024;
+    m_fftSize = 1024;
 	m_pWorkArea = NULL;
 	m_pSinCosTbl = NULL;
 	m_pWindowTbl = NULL;
@@ -55,24 +55,24 @@ void CFft::FreeMemory()
 ///////////////////////////////////////////////////////////////////
 //FFT initialization and parameter setup function
 ///////////////////////////////////////////////////////////////////
-void CFft::FFTParams(quint32 _size, double _dBCompensation, double _sampleRate, int _samplesPerBuffer,
+void CFft::fftParams(quint32 _size, double _dBCompensation, double _sampleRate, int _samplesPerBuffer,
 					 WindowFunction::WINDOWTYPE _windowType)
 {
     //Must call FFT base to properly init
-	FFT::FFTParams(_size, _dBCompensation, _sampleRate, _samplesPerBuffer, _windowType);
+	FFT::fftParams(_size, _dBCompensation, _sampleRate, _samplesPerBuffer, _windowType);
 
     qint32 i;
-    fftMutex.lock();
+    m_fftMutex.lock();
 
-    if(m_LastFFTSize != fftSize)
+    if(m_LastFFTSize != m_fftSize)
 	{
-        m_LastFFTSize = fftSize;
+        m_LastFFTSize = m_fftSize;
 		FreeMemory();
-        m_pWindowTbl = new double[fftSize];
-        m_pSinCosTbl = new double[fftSize/2];
-        m_pWorkArea = new qint32[ (qint32)sqrt((double)fftSize)+2];
+        m_pWindowTbl = new double[m_fftSize];
+        m_pSinCosTbl = new double[m_fftSize/2];
+        m_pWorkArea = new qint32[ (qint32)sqrt((double)m_fftSize)+2];
 		m_pWorkArea[0] = 0;
-        makewt(fftSize/2, m_pWorkArea, m_pSinCosTbl);
+        makewt(m_fftSize/2, m_pWorkArea, m_pSinCosTbl);
 
 double WindowGain;
 #if 0
@@ -82,8 +82,8 @@ double WindowGain;
 #endif
 #if 1
 		WindowGain = 2.0;
-		for(i=0; i<fftSize; i++)	//Hann
-            m_pWindowTbl[i] = WindowGain*(.5  - .5 *cos( (TWOPI*i)/(fftSize-1) ));
+		for(i=0; i<m_fftSize; i++)	//Hann
+            m_pWindowTbl[i] = WindowGain*(.5  - .5 *cos( (TWOPI*i)/(m_fftSize-1) ));
 #endif
 #if 0
 		WindowGain = 1.852;
@@ -126,18 +126,18 @@ double WindowGain;
 
 #endif
 	}
-    fftMutex.unlock();
-	ResetFFT();
+    m_fftMutex.unlock();
+	resetFFT();
 }
 
 ///////////////////////////////////////////////////////////////////
 //  Resets the FFT buffers and averaging variables.
 ///////////////////////////////////////////////////////////////////
-void CFft::ResetFFT()
+void CFft::resetFFT()
 {
-    fftMutex.lock();
-    FFT::ResetFFT();
-    fftMutex.unlock();
+    m_fftMutex.lock();
+    FFT::resetFFT();
+    m_fftMutex.unlock();
 }
 
 #if 0
@@ -180,38 +180,38 @@ qint32 CFft::PutInDisplayFFT(qint32 n, TYPECPX* InBuf)
 
 //This should be called by Pebble, returns FP and unfolds
 //CuteSDR should call CPXFFT
-void CFft::FFTForward(CPX * in, CPX * out, int numSamples)
+void CFft::fftForward(CPX * in, CPX * out, int numSamples)
 {
-    if (!fftParamsSet)
+    if (!m_fftParamsSet)
         return;
 
-    fftInputOverload = false;
-    fftMutex.lock();
+    m_fftInputOverload = false;
+    m_fftMutex.lock();
 
 	if (in != NULL) {
-		applyWindow(in,numSamples);
+		m_applyWindow(in,numSamples);
 
 		//CuteSDR swapped I/Q here
 		//11/14 Spectrum is reversed compared to FFTW, so IQ swap is necessary
 		double tmp;
-		for (int i=0; i<fftSize; i++) {
-			tmp = timeDomain[i].re;
-			timeDomain[i].re = timeDomain[i].im;
-			timeDomain[i].im = tmp;
+		for (int i=0; i<m_fftSize; i++) {
+			tmp = m_timeDomain[i].re;
+			m_timeDomain[i].re = m_timeDomain[i].im;
+			m_timeDomain[i].im = tmp;
 		}
 
 	}
 	//Ooura is inplace, so copy to working dir so timedomain is intact
-	CPX::copyCPX(workingBuf,timeDomain,fftSize);
+	CPX::copyCPX(m_workingBuf,m_timeDomain,m_fftSize);
 
-    bitrv2(fftSize*2, m_pWorkArea + 2, (TYPEREAL*)workingBuf);
-    CpxFFT(fftSize*2, (TYPEREAL*)workingBuf, m_pSinCosTbl);
+    bitrv2(m_fftSize*2, m_pWorkArea + 2, (TYPEREAL*)m_workingBuf);
+    CpxFFT(m_fftSize*2, (TYPEREAL*)m_workingBuf, m_pSinCosTbl);
 
-	CPX::copyCPX(freqDomain,workingBuf,fftSize) ;
+	CPX::copyCPX(m_freqDomain,m_workingBuf,m_fftSize) ;
 
     //If out == NULL, just leave result in freqDomain buffer and let caller get it
     if (out != NULL)
-		CPX::copyCPX(out, freqDomain, fftSize);
+		CPX::copyCPX(out, m_freqDomain, m_fftSize);
 
 #if 0
     //Test Pebble restuls with original cuteSDR calculations
@@ -226,50 +226,50 @@ void CFft::FFTForward(CPX * in, CPX * out, int numSamples)
     }
 #endif
 
-    fftMutex.unlock();
+    m_fftMutex.unlock();
 
 }
 
-bool CFft::FFTSpectrum(CPX *in, double *out, int numSamples)
+bool CFft::fftSpectrum(CPX *in, double *out, int numSamples)
 {
-    if (!fftParamsSet)
+    if (!m_fftParamsSet)
 		return false;
-	FFTForward(in,workingBuf,numSamples); //No need to copy to out, leave in freqDomain
+	fftForward(in,m_workingBuf,numSamples); //No need to copy to out, leave in freqDomain
 
     //We to unfold here because CalcPowerAverages expects things in most neg to most pos order
 	//See fftooura for spectrum folding model, cuteSDR uses same
-	unfoldInOrder(workingBuf, freqDomain);
+	m_unfoldInOrder(m_workingBuf, m_freqDomain);
 
-	CalcPowerAverages(freqDomain, out, numSamples);
+	calcPowerAverages(m_freqDomain, out, numSamples);
 
-	return isOverload;
+	return m_isOverload;
 }
 
-void CFft::FFTInverse(CPX * in, CPX * out, int numSamples)
+void CFft::fftInverse(CPX * in, CPX * out, int numSamples)
 {
-    if (!fftParamsSet)
+    if (!m_fftParamsSet)
         return;
 
 	//If in==NULL, use whatever is in freqDomain buffer
 	if (in != NULL) {
-		if (numSamples < fftSize)
+		if (numSamples < m_fftSize)
 			//Make sure that buffer which does not have samples is zero'd out
-			CPX::clearCPX(freqDomain,fftSize);
+			CPX::clearCPX(m_freqDomain,m_fftSize);
 
-		CPX::copyCPX(freqDomain,in, numSamples);  //In-place functions, use workingBuf to keep other buffers intact
+		CPX::copyCPX(m_freqDomain,in, numSamples);  //In-place functions, use workingBuf to keep other buffers intact
 
 	}
 	//Ooura is inplace, so copy to working dir so freqdomain is intact
-	CPX::copyCPX(workingBuf,freqDomain,fftSize);
+	CPX::copyCPX(m_workingBuf,m_freqDomain,m_fftSize);
 
-    bitrv2conj(fftSize*2, m_pWorkArea + 2, (TYPEREAL*)workingBuf);
-	cftbsub(fftSize*2, (TYPEREAL*)workingBuf, m_pSinCosTbl);
+    bitrv2conj(m_fftSize*2, m_pWorkArea + 2, (TYPEREAL*)m_workingBuf);
+	cftbsub(m_fftSize*2, (TYPEREAL*)m_workingBuf, m_pSinCosTbl);
 
     //in and out are same buffer so we need to copy to freqDomain buffer to be consistent
-	CPX::copyCPX(timeDomain, workingBuf, fftSize);
+	CPX::copyCPX(m_timeDomain, m_workingBuf, m_fftSize);
 
     if (out != NULL)
-		CPX::copyCPX(out, timeDomain, fftSize);
+		CPX::copyCPX(out, m_timeDomain, m_fftSize);
 
 }
 

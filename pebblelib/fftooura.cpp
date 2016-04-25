@@ -57,89 +57,89 @@ FFTOoura::~FFTOoura()
 {
 }
 
-void FFTOoura::FFTParams( quint32 _size, double _dBCompensation, double _sampleRate, int _samplesPerBuffer,
+void FFTOoura::fftParams( quint32 _size, double _dBCompensation, double _sampleRate, int _samplesPerBuffer,
 						  WindowFunction::WINDOWTYPE _windowType)
 {
     //Must call FFT base to properly init
-	FFT::FFTParams(_size, _dBCompensation, _sampleRate, _samplesPerBuffer, _windowType);
+	FFT::fftParams(_size, _dBCompensation, _sampleRate, _samplesPerBuffer, _windowType);
 
     //These are inplace transforms,ie out = in, of 1 dimensional data (dft_1d)
-	offtWorkArea = new int[fftSize]; //Work buffer for bit reversal, size at least 2+sqrt(n)
+	offtWorkArea = new int[m_fftSize]; //Work buffer for bit reversal, size at least 2+sqrt(n)
     offtWorkArea[0] = 0; //Initializes w with sine/cosine values.  Only do this once
-    offtSinCosTable = new double[fftSize * 5 / 4]; //sine/cosine table.  Check size
+    offtSinCosTable = new double[m_fftSize * 5 / 4]; //sine/cosine table.  Check size
 }
 
-void FFTOoura::FFTForward(CPX *in, CPX *out, int numSamples)
+void FFTOoura::fftForward(CPX *in, CPX *out, int numSamples)
 {
-    if (!fftParamsSet)
+    if (!m_fftParamsSet)
         return;
 
 	if (in!=NULL) {
 
-		applyWindow(in,numSamples);
+		m_applyWindow(in,numSamples);
 
 		//CuteSDR swapped I/Q here
 		//11/14 Spectrum is reversed compared to FFTW, so IQ swap is necessary
 		double tmp;
-		for (int i=0; i<fftSize; i++) {
-			tmp = timeDomain[i].re;
-			timeDomain[i].re = timeDomain[i].im;
-			timeDomain[i].im = tmp;
+		for (int i=0; i<m_fftSize; i++) {
+			tmp = m_timeDomain[i].re;
+			m_timeDomain[i].re = m_timeDomain[i].im;
+			m_timeDomain[i].im = tmp;
 		}
 
 	}
 	//Ooura is inplace, so copy to working dir so timedomain is intact
-	CPX::copyCPX(workingBuf,timeDomain,fftSize);
+	CPX::copyCPX(m_workingBuf,m_timeDomain,m_fftSize);
 
 	//Size is 2x fftSize because offt works on double[] re-im-re-im etc
-	cdft(2*fftSize, +1, (double*)workingBuf, offtWorkArea, offtSinCosTable);
+	cdft(2*m_fftSize, +1, (double*)m_workingBuf, offtWorkArea, offtSinCosTable);
 
-	CPX::copyCPX(freqDomain,workingBuf,fftSize) ;
+	CPX::copyCPX(m_freqDomain,m_workingBuf,m_fftSize) ;
 
     //If out == NULL, just leave result in freqDomain buffer and let caller get it
     if (out != NULL)
-		CPX::copyCPX(out, freqDomain, fftSize);
+		CPX::copyCPX(out, m_freqDomain, m_fftSize);
 
 }
 
-bool FFTOoura::FFTSpectrum(CPX *in, double *out, int numSamples)
+bool FFTOoura::fftSpectrum(CPX *in, double *out, int numSamples)
 {
-    if (!fftParamsSet)
+    if (!m_fftParamsSet)
 		return false;
 
-	FFTForward(in,workingBuf,numSamples); //No need to copy to out, leave in freqBuf
+	fftForward(in,m_workingBuf,numSamples); //No need to copy to out, leave in freqBuf
 
-	unfoldInOrder(workingBuf, freqDomain);
+	m_unfoldInOrder(m_workingBuf, m_freqDomain);
 
-	CalcPowerAverages(freqDomain, out, numSamples);
+	calcPowerAverages(m_freqDomain, out, numSamples);
 
-	return isOverload;
+	return m_isOverload;
 }
 
-void FFTOoura::FFTInverse(CPX *in, CPX *out, int numSamples)
+void FFTOoura::fftInverse(CPX *in, CPX *out, int numSamples)
 {
-    if (!fftParamsSet)
+    if (!m_fftParamsSet)
         return;
 
 	//If in==NULL, use whatever is in freqDomain buffer
 	if (in != NULL) {
-		if (numSamples < fftSize)
+		if (numSamples < m_fftSize)
 			//Make sure that buffer which does not have samples is zero'd out
-			CPX::clearCPX(freqDomain,fftSize);
+			CPX::clearCPX(m_freqDomain,m_fftSize);
 
-		CPX::copyCPX(freqDomain,in, numSamples);  //In-place functions, use workingBuf to keep other buffers intact
+		CPX::copyCPX(m_freqDomain,in, numSamples);  //In-place functions, use workingBuf to keep other buffers intact
 	}
 
 	//Ooura is inplace, so copy to working dir so freqdomain is intact
-	CPX::copyCPX(workingBuf,freqDomain,fftSize);
+	CPX::copyCPX(m_workingBuf,m_freqDomain,m_fftSize);
 
     //Size is 2x fftSize because offt works on double[] re-im-re-im et
-	cdft(2*fftSize, -1, (double*)workingBuf, offtWorkArea, offtSinCosTable);
+	cdft(2*m_fftSize, -1, (double*)m_workingBuf, offtWorkArea, offtSinCosTable);
 
-	CPX::copyCPX(timeDomain, workingBuf, fftSize);
+	CPX::copyCPX(m_timeDomain, m_workingBuf, m_fftSize);
 
     if (out != NULL)
-		CPX::copyCPX(out, timeDomain, fftSize);
+		CPX::copyCPX(out, m_timeDomain, m_fftSize);
 }
 
 
