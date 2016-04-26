@@ -351,7 +351,7 @@ void SignalStrength::fdEstimate(double *spectrum, int spectrumBins, quint32 spec
 		if (i >= noiseHighBin)
 			break; //Out of for, no need to check samples above noiseBinHigh
 	}
-	bpAvgPwr = bpPeakPwr / bpBins;
+	bpAvgPwr = bpTotalPwr / bpBins;
 	noiseBinsAvgPwr = noiseBinsTotalPwr / noiseBins;
 
 	m_peakDb = DB::powerTodB(bpPeakPwr);
