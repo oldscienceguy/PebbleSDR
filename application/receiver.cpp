@@ -638,9 +638,9 @@ void Receiver::demodModeChanged(DeviceInterface::DEMODMODE _demodMode)
 {
 	if(m_demod != NULL) {
 		if (_demodMode == DeviceInterface::dmFMM || _demodMode == DeviceInterface::dmFMS)
-			m_signalSpectrum->SetSampleRate(m_sampleRate, m_demodWfmSampleRate);
+			m_signalSpectrum->setSampleRate(m_sampleRate, m_demodWfmSampleRate);
         else
-			m_signalSpectrum->SetSampleRate(m_sampleRate, m_demodSampleRate);
+			m_signalSpectrum->setSampleRate(m_sampleRate, m_demodSampleRate);
 
         //Demod will return new demo
 		m_demod->SetDemodMode(_demodMode, m_sampleRate, m_demodSampleRate);
@@ -823,7 +823,7 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 	nextStep = m_noiseBlanker->ProcessBlock2(nextStep);
 
     //Spectrum display, in buffer is not modified
-	m_signalSpectrum->Unprocessed(nextStep, numSamples);
+	m_signalSpectrum->unprocessed(nextStep, numSamples);
     //global->perform.StopPerformance(100);
 
 	//Signal (Specific frequency) processing
@@ -881,10 +881,15 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 #endif
 		m_sampleBufLen = 0;
         //Create zoomed spectrum
-		m_signalSpectrum->Zoomed(m_sampleBuf, numStepSamples);
+		m_signalSpectrum->zoomed(m_sampleBuf, numStepSamples);
 		nextStep = m_sampleBuf;
 
-		nextStep = m_signalStrength->estimate(nextStep, numStepSamples,true,true);
+		//nextStep = m_signalStrength->tdEstimate(nextStep, numStepSamples,true,true);
+		//Calc this here, at lower sample rate, for efficiency
+		//Uses original unprocessed spectrum data
+		//There is no bandpass filter for FM, so hi and low are hard coded
+		nextStep = m_signalStrength->fdEstimate(nextStep, m_signalSpectrum->getUnprocessed(),m_signalSpectrum->binCount(),
+				m_signalSpectrum->getSampleRate(),-100000, 100000, m_mixerFrequency);
 
 		nextStep = m_demod->ProcessBlock(nextStep, numStepSamples);
 
@@ -921,11 +926,9 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 		m_sampleBufLen = 0;
 		nextStep = m_sampleBuf;
 
-		nextStep = m_signalStrength->estimate(nextStep,numStepSamples, true, false);
-
 		//Create zoomed spectrum
 		//global->perform.StartPerformance("Signal Spectrum Zoomed");
-		m_signalSpectrum->Zoomed(nextStep, numStepSamples);
+		m_signalSpectrum->zoomed(nextStep, numStepSamples);
 		//global->perform.StopPerformance(100);
 
 
@@ -948,11 +951,11 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 
         //If squelch is set, and we're below threshold and should set output to zero
         //Do this in SignalStrength, since that's where we're calculating average signal strength anyway
-		//global->perform.StartPerformance("Signal Strength");
+		//Calc this here, at lower sample rate, for efficiency
+		//Uses original unprocessed spectrum data
+		nextStep = m_signalStrength->fdEstimate(nextStep, m_signalSpectrum->getUnprocessed(),m_signalSpectrum->binCount(),
+				m_signalSpectrum->getSampleRate(),m_bpFilter->lowFreq(), m_bpFilter->highFreq(), m_mixerFrequency);
 
-		nextStep = m_signalStrength->estimate(nextStep,numStepSamples, false, true);
-
-		//global->perform.StopPerformance(100);
 
         //Tune only mode, no demod or output
 		if (m_demod->DemodMode() == DeviceInterface::dmNONE){
@@ -1013,7 +1016,7 @@ void Receiver::processBandscopeData(quint8 *in, quint16 numPoints)
 	for (int i=0; i<numPoints; i++) {
 		m_dbSpectrumBuf[i] = -in[i] * 1.0;
 	}
-	m_signalSpectrum->SetSpectrum(m_dbSpectrumBuf);
+	m_signalSpectrum->setSpectrum(m_dbSpectrumBuf);
 }
 
 //Called by devices and other call backs to output audio data

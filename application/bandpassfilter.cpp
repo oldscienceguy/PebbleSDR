@@ -5,6 +5,9 @@ BandPassFilter::BandPassFilter(quint32 _sampleRate, quint32 _bufferSize):
 {
 	m_useFastFIR = true;
 
+	m_lowFreq = 0;
+	m_highFreq = 0;
+
 	if (!m_useFastFIR) {
 		//Testing, time intensive for large # taps, ie @512 we lose chunks of signal
 		//Check post-bandpass spectrum and make just large enough to be effective
