@@ -191,7 +191,8 @@ Adding a 3rd, 4th etc signal should show similar RMS increases
 
 //Called post decimate, but pre bandpass, so we can get a reasonable floor either side of the bandpass filtered buffer
 //Then called post bandpass to get signal estimate
-CPX* SignalStrength::estimate(CPX *in, quint32 numSamples, bool estNoise, bool estSignal)
+//Freq domain estimate (fdEstimate) is preferred for accuracy and sync with spectrum
+CPX* SignalStrength::tdEstimate(CPX *in, quint32 numSamples, bool estNoise, bool estSignal)
 {
 
 	if (!updateTimer.isValid()) {
@@ -282,6 +283,99 @@ CPX* SignalStrength::estimate(CPX *in, quint32 numSamples, bool estNoise, bool e
 
 	return in; //No buffer change
 }
+
+//Calculate signal strength in the frequency domain
+//More accurate, matches user expectation that it sync with spectrum and preferred method
+void SignalStrength::fdEstimate(double *spectrum, int spectrumBins, quint32 spectrumSampleRate,
+		float bpLowFreq, float bpHighFreq, double mixerFreq)
+{
+	if (!updateTimer.isValid()) {
+		updateTimer.start(); //First time we're called
+	}
+
+	if (bpLowFreq ==0 || bpHighFreq == 0)
+		return;
+
+	//Testing FFT based signal strength
+	double bpPeakPwr = 0; //Peak signal in bandwidth
+	double bpAvgPwr = 0;
+	double bpTotalPwr = 0;
+	double noiseBinsAvgPwr =0;
+	double noiseBinsTotalPwr = 0;
+	double binWidth = spectrumSampleRate / spectrumBins;
+	double binFreq; //Center freq for spectrum[i]
+	int centerBin = spectrumBins / 2; //Mixer = 0, LO freq
+	int bpLowBin;
+	int bpHighBin;
+	int bpBins;
+	int mixerBin;
+	int noiseLowBin;
+	int noiseHighBin;
+	//Calculate the bin indicies that correspond to the band pass filter etc
+	//Freq: -SR -------------------- bpLowFreq -- mixerFreq -- bpHighFreq ----------------- +sampleRate
+	//Bins: bin[0] -- noiseLowBin -- bpLowBin  -- mixerBin  -- bpHighBin -- noiseHighBin -- bin[numBins-1]
+
+	mixerBin = centerBin + (mixerFreq/binWidth);
+	mixerBin = qBound(0, mixerBin, spectrumBins);
+	bpLowBin = mixerBin + (bpLowFreq / binWidth); //bpLowFreq is negative
+	bpLowBin = qBound(0, bpLowBin, spectrumBins);
+	bpHighBin = mixerBin + (bpHighFreq / binWidth);
+	bpHighBin = qBound(0, bpHighBin, spectrumBins);
+	bpBins = bpHighBin - bpLowBin;
+
+	//Since we may be looking at a large spectrum, ie 2mhz or greater, limit the noise calculation
+	//to signals around our bandpass.
+	//Assume that bandpass is aligned with signal spacing, and check 1 bandpass below and above actual bandpass
+	noiseLowBin = bpLowBin - bpBins;
+	noiseLowBin = qBound(0, noiseLowBin, spectrumBins);
+	noiseHighBin = bpHighBin + bpBins;
+	noiseHighBin = qBound(0, noiseHighBin, spectrumBins);
+	int noiseBins = 0;
+	double pwr;
+	for (int i=0; i< spectrumBins; i++) {
+		if (i < noiseLowBin)
+			continue; //No need to check bins below noiseBinLow
+		//Spectrum is in db, we need to work with power inorder to average
+		pwr = DB::dBToPower(spectrum[i]);
+		binFreq = i * binWidth;
+		if (i >= bpLowBin && i<= bpHighBin) {
+			//If i is in the bandpass, calc bpPeak and bpAvg
+			bpTotalPwr += pwr;
+			if (pwr > bpPeakPwr)
+				bpPeakPwr = pwr;
+		} else if (i >= noiseLowBin && i<= noiseHighBin){
+			//Outside of bandpass, but in noise window, calc average
+			noiseBinsTotalPwr += pwr;
+			noiseBins++;
+		}
+		if (i >= noiseHighBin)
+			break; //Out of for, no need to check samples above noiseBinHigh
+	}
+	bpAvgPwr = bpPeakPwr / bpBins;
+	noiseBinsAvgPwr = noiseBinsTotalPwr / noiseBins;
+
+	m_peakDb = DB::powerTodB(bpPeakPwr);
+	m_peakDb = DB::clip(m_peakDb);
+
+	m_avgDb = DB::powerTodB(bpAvgPwr);
+	m_avgDb = DB::clip(m_avgDb);
+
+	m_signal = bpPeakPwr;
+	m_noise = noiseBinsAvgPwr;
+
+	m_floorDb = DB::powerTodB(noiseBinsAvgPwr);
+	m_floorDb = DB::clip(m_floorDb);
+
+	m_snrDb = DB::powerRatioToDb(m_signal, m_noise); //Same as powerTodB(m_signal/m_noise)
+	m_snrDb = qBound(0.0,m_snrDb,120.0);
+
+	if (updateTimer.elapsed() > updateInterval) {
+		//Only update when we have new signal, not noise
+		emit newSignalStrength(m_peakDb, m_avgDb, m_snrDb, m_floorDb, m_extValue);
+		updateTimer.start(); //Reset
+	}
+}
+
 
 //Used for testing with other values
 void SignalStrength::setExtValue(double v)

@@ -28,8 +28,10 @@ public:
 
 	void setExtValue(double v);
 
-	CPX *estimate(CPX *in, quint32 numSamples, bool estNoise = false, bool estSignal = false);
+	CPX *tdEstimate(CPX *in, quint32 numSamples, bool estNoise = false, bool estSignal = false);
 
+	void fdEstimate(double *spectrum, int spectrumBins, quint32 spectrumSampleRate,
+		float bpLowFreq, float bpHighFreq, double mixerFreq);
 signals:
 	void newSignalStrength(double peakDb, double avgDb, double snrDb, double floorDb, double extValue);
 
