@@ -293,6 +293,18 @@ CPX* SignalStrength::fdEstimate(CPX *in, double *spectrum, int spectrumBins, qui
 		updateTimer.start(); //First time we're called
 	}
 
+	//We don't need to calculate signal strength unless we're updating display
+	if (updateTimer.elapsed() < updateInterval) {
+		//Squelch based on last avgerages
+		if (m_avgDb < m_squelchDb) {
+			CPX::clearCPX(out,numSamples);
+			return out;
+		} else {
+			return in;
+		}
+	}
+	updateTimer.start(); //Reset
+
 	if (bpLowFreq ==0 || bpHighFreq == 0)
 		return in; //No buffer change
 
@@ -369,21 +381,16 @@ CPX* SignalStrength::fdEstimate(CPX *in, double *spectrum, int spectrumBins, qui
 	m_snrDb = DB::powerRatioToDb(m_signal, m_noise); //Same as powerTodB(m_signal/m_noise)
 	m_snrDb = qBound(0.0,m_snrDb,120.0);
 
+	emit newSignalStrength(m_peakDb, m_avgDb, m_snrDb, m_floorDb, m_extValue);
+
 	//squelch is a form of AGC and should have an attack/decay component to smooth out the response
 	//we fudge that by just looking at the average of the entire buffer
 	if (m_avgDb < m_squelchDb) {
 		CPX::clearCPX(out,numSamples);
+		return out;
 	} else {
-		CPX::copyCPX(out, in, numSamples);
+		return in;
 	}
-
-	if (updateTimer.elapsed() > updateInterval) {
-		//Only update when we have new signal, not noise
-		emit newSignalStrength(m_peakDb, m_avgDb, m_snrDb, m_floorDb, m_extValue);
-		updateTimer.start(); //Reset
-	}
-
-	return out;
 }
 
 
