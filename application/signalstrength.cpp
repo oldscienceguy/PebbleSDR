@@ -286,7 +286,7 @@ CPX* SignalStrength::tdEstimate(CPX *in, quint32 numSamples, bool estNoise, bool
 
 //Calculate signal strength in the frequency domain
 //More accurate, matches user expectation that it sync with spectrum and preferred method
-void SignalStrength::fdEstimate(double *spectrum, int spectrumBins, quint32 spectrumSampleRate,
+CPX* SignalStrength::fdEstimate(CPX *in, double *spectrum, int spectrumBins, quint32 spectrumSampleRate,
 		float bpLowFreq, float bpHighFreq, double mixerFreq)
 {
 	if (!updateTimer.isValid()) {
@@ -294,7 +294,7 @@ void SignalStrength::fdEstimate(double *spectrum, int spectrumBins, quint32 spec
 	}
 
 	if (bpLowFreq ==0 || bpHighFreq == 0)
-		return;
+		return in; //No buffer change
 
 	//Testing FFT based signal strength
 	double bpPeakPwr = 0; //Peak signal in bandwidth
@@ -369,11 +369,21 @@ void SignalStrength::fdEstimate(double *spectrum, int spectrumBins, quint32 spec
 	m_snrDb = DB::powerRatioToDb(m_signal, m_noise); //Same as powerTodB(m_signal/m_noise)
 	m_snrDb = qBound(0.0,m_snrDb,120.0);
 
+	//squelch is a form of AGC and should have an attack/decay component to smooth out the response
+	//we fudge that by just looking at the average of the entire buffer
+	if (m_avgDb < m_squelchDb) {
+		CPX::clearCPX(out,numSamples);
+	} else {
+		CPX::copyCPX(out, in, numSamples);
+	}
+
 	if (updateTimer.elapsed() > updateInterval) {
 		//Only update when we have new signal, not noise
 		emit newSignalStrength(m_peakDb, m_avgDb, m_snrDb, m_floorDb, m_extValue);
 		updateTimer.start(); //Reset
 	}
+
+	return out;
 }
 
 
