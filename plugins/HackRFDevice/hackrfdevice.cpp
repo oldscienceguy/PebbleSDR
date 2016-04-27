@@ -11,6 +11,8 @@ HackRFDevice::HackRFDevice():DeviceInterfaceBase()
 	decimatorBuf = NULL;
 	hackrfDevice = NULL;
 	decimator = NULL;
+	hackrfVersion[0] = '\0';
+	hackrfBoardId = 0;
 }
 
 HackRFDevice::~HackRFDevice()
@@ -134,11 +136,11 @@ bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _ar
 
 				if (!apiCheck(hackrf_board_id_read(hackrfDevice, &hackrfBoardId),"id_read"))
 					return false;
-				qDebug("Board ID Number: %d (%s)\n", hackrfBoardId, hackrf_board_id_name((hackrf_board_id)hackrfBoardId));
+				//qDebug("Board ID Number: %d (%s)\n", hackrfBoardId, hackrf_board_id_name((hackrf_board_id)hackrfBoardId));
 
 				if (!apiCheck(hackrf_version_string_read(hackrfDevice, &hackrfVersion[0], 255),"id_name"))
 					return false;
-				qDebug("Firmware Version: %s\n", hackrfVersion);
+				//qDebug("Firmware Version: %s\n", hackrfVersion);
 
 				hackrf_device_list_free(list);
 			}
@@ -274,6 +276,11 @@ bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _ar
 			optionUi->decimationBox->setCurrentIndex(item);
 			connect(optionUi->decimationBox,SIGNAL(currentIndexChanged(int)),this,SLOT(
 						decimationChanged(int)));
+
+			QString fwString;
+			fwString = fwString.sprintf("FW: %s ",(char *)hackrfVersion);
+			optionUi->fwLabel->setText(fwString);
+
 			return true;
 		}
 		default:
