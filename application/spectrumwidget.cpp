@@ -768,10 +768,14 @@ void SpectrumWidget::paintSpectrum(bool paintTopPanel, QPainter *painter)
 		topPanelFr.adjust(-1,0,+1,0);
 		painter->drawPixmap(topPanelFr, m_topPanelPlotArea); //Includes plotOverlay which was copied to plotArea
 		painter->drawPixmap(topPanelLabelFr,m_topPanelPlotLabel);
+		paintFreqCursor(painter, topPanelFr, true, Qt::white);
+		paintFreqCursor(painter, topPanelLabelFr, true, Qt::white);
 	} else {
 		plotFr.adjust(-1,0,+1,0);
 		painter->drawPixmap(plotFr, m_plotArea); //Includes plotOverlay which was copied to plotArea
 		painter->drawPixmap(plotLabelFr,m_plotLabel);
+		paintFreqCursor(painter, plotFr, false, Qt::white);
+		paintFreqCursor(painter, plotLabelFr, false, Qt::white);
 	}
 
 	paintMouseCursor(paintTopPanel, painter, Qt::white, true, true);
@@ -825,7 +829,6 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 
 		case SPECTRUM_WATERFALL:
 			paintSpectrum(true,&painter); //Top frame
-
 			paintWaterfall(false, &painter);
 			break;
 
