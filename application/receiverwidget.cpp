@@ -519,7 +519,7 @@ void ReceiverWidget::setFrequency(double f)
 	}
 	//frequency is what's displayed, ie combination of loFrequency and mixer (if any)
     displayNixieNumber(m_frequency);
-    ui.spectrumWidget->SetMixer(m_mixer,m_loFrequency); //Spectrum tracks mixer
+	ui.spectrumWidget->setMixer(m_mixer,m_loFrequency); //Spectrum tracks mixer
     //Update band info
     displayBand(m_frequency);
 
@@ -531,7 +531,7 @@ double ReceiverWidget::getFrequency()
 }
 void ReceiverWidget::setMessage(QStringList s)
 {
-	ui.spectrumWidget->SetMessage(s);
+	ui.spectrumWidget->setMessage(s);
 }
 void ReceiverWidget::setMode(DeviceInterface::DEMODMODE m)
 {
@@ -633,12 +633,12 @@ void ReceiverWidget::powerToggled(bool on)
         //Presets are only loaded when receiver is on
         m_presets = m_receiver->getPresets();
 
-        ui.spectrumWidget->SetSignalSpectrum(m_receiver->getSignalSpectrum());
+		ui.spectrumWidget->setSignalSpectrum(m_receiver->getSignalSpectrum());
 
-		ui.spectrumWidget->plotSelectionChanged((SpectrumWidget::DISPLAYMODE)m_sdr->Get(DeviceInterface::LastSpectrumMode).toInt());
+		ui.spectrumWidget->plotSelectionChanged((SpectrumWidget::DisplayMode)m_sdr->Get(DeviceInterface::LastSpectrumMode).toInt());
         ui.bandType->setCurrentIndex(Band::HAM);
 
-		ui.spectrumWidget->Run(true);
+		ui.spectrumWidget->run(true);
         ui.sMeterWidget->start();
 
 		//Set startup frequency last
@@ -687,7 +687,7 @@ void ReceiverWidget::powerToggled(bool on)
 
         m_presets = NULL;
 
-		ui.spectrumWidget->Run(false);
+		ui.spectrumWidget->run(false);
         ui.sMeterWidget->stop();
 		//We have to make sure that widgets are stopped before cleaning up supporting objects
 		m_receiver->togglePower(false);
@@ -869,7 +869,7 @@ void ReceiverWidget::filterSelectionChanged(QString f)
 		return; //Error
 	}
 
-	ui.spectrumWidget->SetFilter(lo,hi); //So we can display filter around cursor
+	ui.spectrumWidget->setFilter(lo,hi); //So we can display filter around cursor
 
 	emit filterChanged(lo,hi);
 }
@@ -956,7 +956,7 @@ void ReceiverWidget::modeSelectionChanged(QString m)
     ui.filterBox->addItems(Demod::demodInfo[m_mode].filters);
     ui.filterBox->setCurrentIndex(Demod::demodInfo[m_mode].defaultFilter);
 
-    ui.spectrumWidget->SetMode(m_mode, m_modeOffset);
+	ui.spectrumWidget->setMode(m_mode, m_modeOffset);
 	emit demodChanged(m_mode);
 	ui.filterBox->blockSignals(false);
 	this->filterSelectionChanged(ui.filterBox->currentText());
