@@ -670,7 +670,7 @@ void SpectrumWidget::SetSignalSpectrum(SignalSpectrum *s)
 }
 // Diplays frequency cursor and filter range
 //Now called from DrawOverlay
-void SpectrumWidget::drawCursor(QPainter *painter, QRect plotFr, bool isZoomed, QColor color)
+void SpectrumWidget::paintFreqCursor(QPainter *painter, QRect plotFr, bool isZoomed, QColor color)
 {
     if (!isRunning)
         return;
@@ -704,6 +704,7 @@ void SpectrumWidget::drawCursor(QPainter *painter, QRect plotFr, bool isZoomed, 
 #endif
 
 
+	int y = plotFr.y();
     //Show filter range
     //This doesn't work for CW because we have to take into account offset
     int xLo, xHi;
@@ -724,18 +725,18 @@ void SpectrumWidget::drawCursor(QPainter *painter, QRect plotFr, bool isZoomed, 
     //Shade filter area
     painter->setBrush(Qt::SolidPattern);
     painter->setOpacity(0.50);
-    painter->fillRect(xLo, 0,x1 - xLo - 1, plotHeight, Qt::gray);
-    painter->fillRect(x1+2, 0,xHi - x1 - 2, plotHeight, Qt::gray);
+	painter->fillRect(xLo, y, x1 - xLo - 1, y + plotHeight, Qt::gray);
+	painter->fillRect(x1+2, y, xHi - x1 - 2, y + plotHeight, Qt::gray);
 
     //Show filter boundaries
     painter->setPen(QPen(Qt::cyan, 1,Qt::SolidLine));
-    painter->drawLine(xLo,0,xLo, plotFr.height()); //Extend line into label frame
-    painter->drawLine(xHi,0,xHi, plotFr.height()); //Extend line into label frame
+	painter->drawLine(xLo, y, xLo, y + plotFr.height()); //Extend line into label frame
+	painter->drawLine(xHi, y, xHi, y + plotFr.height()); //Extend line into label frame
 
     //Main cursor, draw last so it's on top
     painter->setOpacity(1.0);
     painter->setPen(QPen(color, 1,Qt::SolidLine));
-    painter->drawLine(x1,0,x1, plotFr.height()); //Extend line into label frame
+	painter->drawLine(x1, y, x1, y + plotFr.height()); //Extend line into label frame
 
 }
 
@@ -761,27 +762,6 @@ void SpectrumWidget::paintSpectrum(bool paintTopPanel, QPainter *painter)
 	QRect topPanelFr = mapFrameToWidget(ui.topPlotFrame);
 	QRect topPanelLabelFr = mapFrameToWidget(ui.topLabelFrame);
 
-	QPoint cursorPos = QWidget::mapFromGlobal(QCursor::pos());
-	cursorPos.setX(cursorPos.x() + 4);
-
-	//Cursor tracking of freq and db
-	QString freqLabel;
-	QString dbLabel;
-	mouseFreq = getMouseFreq() + loFreq;
-	int mouseDb = getMouseDb();
-	if (mouseFreq > 0)
-		freqLabel.sprintf("%.3f kHz",mouseFreq / 1000.0);
-	else
-		freqLabel = "";
-	dbLabel.sprintf("%d db",mouseDb);
-
-	painter->setFont(global->settings->medFont);
-	//How many pixels do we need to display label with specified font
-	QFontMetrics metrics(global->settings->medFont);
-	QRect rect = metrics.boundingRect(freqLabel);
-	if (cursorPos.x() + rect.width() > plotFr.width())
-		cursorPos.setX(cursorPos.x() - rect.width()); //left of cursor
-
 	//We don't want to paint the left and right pixmap borders, just the spectrum data
 	//So we expand plotFr so the left border is off screen (-1) same with right border (+1)
 	if (paintTopPanel) {
@@ -793,34 +773,15 @@ void SpectrumWidget::paintSpectrum(bool paintTopPanel, QPainter *painter)
 		painter->drawPixmap(plotFr, plotArea); //Includes plotOverlay which was copied to plotArea
 		painter->drawPixmap(plotLabelFr,plotLabel);
 	}
-	//Draw cursor label on top of pixmap, but not control frame
-	if (plotFr.contains(cursorPos) || topPanelFr.contains(cursorPos)) {
-		painter->setPen(Qt::white);
-		painter->drawText(cursorPos,freqLabel);
-		//db label below freq
-		cursorPos.setY(cursorPos.y() + metrics.height());
-		painter->drawText(cursorPos,dbLabel);
-	}
-	//Draw overload indicator
-	if (!paintTopPanel && signalSpectrum->getOverload()) {
-		cursorPos.setX(plotFr.width() - 50);
-		cursorPos.setY(10);
-		painter->setPen(Qt::red);
-		painter->drawText(cursorPos,"Overload");
-	}
+
+	paintMouseCursor(paintTopPanel, painter, Qt::white, true, true);
+
 }
 
 void SpectrumWidget::paintEvent(QPaintEvent *e)
 {
 
     QPainter painter(this);
-	QRect plotFr = mapFrameToWidget(ui.plotFrame);
-	QRect plotLabelFr = mapFrameToWidget(ui.labelFrame);
-	QRect topPanelFr = mapFrameToWidget(ui.topPlotFrame);
-	QRect topPanelLabelFr = mapFrameToWidget(ui.topLabelFrame);
-
-	QPoint cursorPos = QWidget::mapFromGlobal(QCursor::pos());
-	cursorPos.setX(cursorPos.x() + 4);
 
 	if (!isRunning)
 	{
@@ -852,77 +813,32 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 	if (spectrumMode == NODISPLAY || signalSpectrum == NULL)
         return;
 
-
-    //Cursor tracking of freq and db
-	QString freqLabel;
-	QString dbLabel;
-	mouseFreq = getMouseFreq() + loFreq;
-	int mouseDb = getMouseDb();
-    if (mouseFreq > 0)
-		freqLabel.sprintf("%.3f kHz",mouseFreq / 1000.0);
-	else
-		freqLabel = "";
-	dbLabel.sprintf("%d db",mouseDb);
-
-	painter.setFont(global->settings->medFont);
-	//How many pixels do we need to display label with specified font
-	QFontMetrics metrics(global->settings->medFont);
-	QRect rect = metrics.boundingRect(freqLabel);
-	if (cursorPos.x() + rect.width() > plotFr.width())
-		cursorPos.setX(cursorPos.x() - rect.width()); //left of cursor
-
 	switch (spectrumMode) {
 		case SPECTRUM:
 			paintSpectrum(false,&painter); //Main frame
 			break;
+
 		case SPECTRUM_SPECTRUM:
 			paintSpectrum(true,&painter); //Top frame
 			paintSpectrum(false,&painter); //Main frame
 			break;
+
 		case SPECTRUM_WATERFALL:
 			paintSpectrum(true,&painter); //Top frame
 
-			painter.drawPixmap(plotFr, plotArea);
-			painter.drawPixmap(plotLabelFr,plotLabel);
-
-			if (plotFr.contains(cursorPos)) {
-				painter.setPen(Qt::black);
-				painter.drawText(cursorPos,freqLabel);
-				//No db label for waterfall
-				//cursorPos.setY(cursorPos.y() + metrics.height());
-				//painter.drawText(cursorPos,dbLabel);
-			}
+			paintWaterfall(false, &painter);
 			break;
 
 		case WATERFALL:
-			painter.drawPixmap(plotFr, plotArea);
-			painter.drawPixmap(plotLabelFr,plotLabel);
-
-			if (plotFr.contains(cursorPos) || topPanelFr.contains(cursorPos)) {
-				painter.setPen(Qt::black);
-				painter.drawText(cursorPos,freqLabel);
-				//No db label for waterfall
-				//cursorPos.setY(cursorPos.y() + metrics.height());
-				//painter.drawText(cursorPos,dbLabel);
-			}
+			paintWaterfall(false, &painter);
 			break;
+
 		case WATERFALL_WATERFALL:
-			painter.drawPixmap(plotFr, plotArea);
-			painter.drawPixmap(plotLabelFr,plotLabel);
-
-			painter.drawPixmap(topPanelFr, topPanelPlotArea); //Includes plotOverlay which was copied to plotArea
-			painter.drawPixmap(topPanelLabelFr,topPanelPlotLabel);
-
-			if (plotFr.contains(cursorPos) || topPanelFr.contains(cursorPos)) {
-				painter.setPen(Qt::black);
-				painter.drawText(cursorPos,freqLabel);
-				//No db label for waterfall
-				//cursorPos.setY(cursorPos.y() + metrics.height());
-				//painter.drawText(cursorPos,dbLabel);
-			}
+			paintWaterfall(true, &painter);
+			paintWaterfall(false, &painter);
 			break;
+
 		default:
-			painter.eraseRect(plotFr);
 			break;
 	}
 
@@ -1603,9 +1519,6 @@ void SpectrumWidget::drawSpectrumOverlay(bool drawTopPanel)
 		painter->drawText(0, y-2, "-"+QString::number(abs(plotMaxDb) + (i * dbLabelInterval)));
 	}
 
-	drawCursor(painter, plotFr, drawTopPanel, Qt::white);
-	drawCursor(labelPainter, plotFr, drawTopPanel, Qt::white); //Continues into label area
-
 	if (!drawTopPanel)
 		drawScale(labelPainter, loFreq, false);
 	else
@@ -1615,6 +1528,86 @@ void SpectrumWidget::drawSpectrumOverlay(bool drawTopPanel)
 	labelPainter->end();
 	delete painter;
 	delete labelPainter;
+}
+
+void SpectrumWidget::paintMouseCursor(bool paintTopPanel, QPainter *painter, QColor color,
+		bool paintDb, bool paintFreq)
+{
+	QRect plotFr = mapFrameToWidget(ui.plotFrame);
+	QRect plotLabelFr = mapFrameToWidget(ui.labelFrame);
+	QRect topPanelFr = mapFrameToWidget(ui.topPlotFrame);
+	QRect topPanelLabelFr = mapFrameToWidget(ui.topLabelFrame);
+
+	QPoint cursorPos = QWidget::mapFromGlobal(QCursor::pos());
+	cursorPos.setX(cursorPos.x() + 4);
+
+	//Cursor tracking of freq and db
+	QString freqLabel;
+	QString dbLabel;
+	mouseFreq = getMouseFreq() + loFreq;
+	int mouseDb = getMouseDb();
+	if (mouseFreq > 0)
+		freqLabel.sprintf("%.3f kHz",mouseFreq / 1000.0);
+	else
+		freqLabel = "";
+	dbLabel.sprintf("%d db",mouseDb);
+
+	painter->setFont(global->settings->medFont);
+	//How many pixels do we need to display label with specified font
+	QFontMetrics metrics(global->settings->medFont);
+	QRect rect = metrics.boundingRect(freqLabel);
+	if (cursorPos.x() + rect.width() > plotFr.width())
+		cursorPos.setX(cursorPos.x() - rect.width()); //left of cursor
+
+	//Draw cursor label on top of pixmap, but not control frame
+	if ((paintTopPanel && topPanelFr.contains(cursorPos)) || (!paintTopPanel && plotFr.contains(cursorPos))) {
+		painter->setPen(color);
+		if (paintFreq) {
+			painter->drawText(cursorPos,freqLabel);
+		}
+		if (paintDb) {
+			//Paint db under freq
+			cursorPos.setY(cursorPos.y() + metrics.height());
+			painter->drawText(cursorPos,dbLabel);
+		}
+	}
+
+	//Draw overload indicator
+	if (!paintTopPanel && signalSpectrum->getOverload()) {
+		cursorPos.setX(plotFr.width() - 50);
+		cursorPos.setY(10);
+		painter->setPen(Qt::red);
+		painter->drawText(cursorPos,"Overload");
+	}
+
+
+}
+
+//topPanelPlotArea, topPanelPlotLabel, plotArea, plotLabel are all pixmaps that are updated whenever
+//we get new FFT data.  The paint routine doensn't care whether its a waterfall or spectrum,
+//but we may want to have special labels etc for different displays
+void SpectrumWidget::paintWaterfall(bool paintTopPanel, QPainter *painter)
+{
+	QRect plotFr = mapFrameToWidget(ui.plotFrame);
+	QRect plotLabelFr = mapFrameToWidget(ui.labelFrame);
+	QRect topPanelFr = mapFrameToWidget(ui.topPlotFrame);
+	QRect topPanelLabelFr = mapFrameToWidget(ui.topLabelFrame);
+
+	if (paintTopPanel) {
+		painter->drawPixmap(topPanelFr, topPanelPlotArea);
+		painter->drawPixmap(topPanelLabelFr,topPanelPlotLabel);
+		//Cursor is drawn on top of pixmap
+		paintFreqCursor(painter, topPanelFr, true, Qt::white);
+		paintFreqCursor(painter, topPanelLabelFr, true, Qt::white);
+		paintMouseCursor(true, painter, Qt::black, false,true);
+	} else {
+		painter->drawPixmap(plotFr, plotArea);
+		painter->drawPixmap(plotLabelFr,plotLabel);
+		//Cursor is drawn on top of pixmap
+		paintFreqCursor(painter, plotFr, false, Qt::white);
+		paintFreqCursor(painter, plotLabelFr, false, Qt::white);
+		paintMouseCursor(false, painter, Qt::black, false,true);
+	}
 }
 
 void SpectrumWidget::drawWaterfallOverlay(bool drawTopPanel)
@@ -1648,7 +1641,6 @@ void SpectrumWidget::drawWaterfallOverlay(bool drawTopPanel)
 		labelPainter.drawPoint(overlayWidth/2 - 80 + i, plotLabelHeight);
 	}
 #endif
-	drawCursor(labelPainter,plotFr, false, Qt::white);
 
 	if (!drawTopPanel)
 		drawScale(labelPainter, loFreq, false);

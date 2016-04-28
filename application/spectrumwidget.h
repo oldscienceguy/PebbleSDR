@@ -69,9 +69,8 @@ private:
     double zoom; //Percentage of total spectrum to display
 
 	Ui::SpectrumWidgetClass ui;
-	void drawCursor(QPainter *painter, QRect plotFr, bool isZoomed, QColor color);
+	void paintFreqCursor(QPainter *painter, QRect plotFr, bool isZoomed, QColor color);
 	void drawOverlay();
-	void drawSpectrum(QPixmap &_pixMap, QPixmap &_pixOverlayMap, qint32 *_fftMap);
 
 	//Event overrides
 	void paintEvent(QPaintEvent *event);
@@ -134,11 +133,16 @@ private:
 
 	bool topPanelHighResolution; //True if top panel is in hi-res mode
 	void paintSpectrum(bool paintTopPanel, QPainter *painter);
+	void drawSpectrum(QPixmap &_pixMap, QPixmap &_pixOverlayMap, qint32 *_fftMap);
 	void drawSpectrumOverlay(bool drawTopPanel);
-	void drawWaterfallOverlay(bool drawTopPanel);
+
+	void paintWaterfall(bool paintTopPanel, QPainter *painter);
 	void drawWaterfall(QPixmap &_pixMap, QPixmap &_pixOverlayMap, qint32 *_fftMap);
+	void drawWaterfallOverlay(bool drawTopPanel);
+
 	QString frequencyLabel(double f, qint16 precision = -1);
 	double calcZoom(int item);
+	void paintMouseCursor(bool paintTopPanel, QPainter *painter, QColor color, bool paintDb, bool paintFreq);
 };
 
 #endif // SPECTRUMWIDGET_H
