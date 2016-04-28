@@ -14,8 +14,6 @@ public:
 	SignalStrength(quint32 _sampleRate, quint32 _bufferSize);
 	~SignalStrength(void);
 
-	void setSquelch(int squelchDb) {m_squelchDb = squelchDb;}
-
 	void reset(); //Initialize all running mean variables
 
 	inline double peakDb() {return m_peakDb;}
@@ -30,7 +28,7 @@ public:
 
 	CPX *tdEstimate(CPX *in, quint32 numSamples, bool estNoise = false, bool estSignal = false);
 
-	CPX *fdEstimate(CPX *in, double *spectrum, int spectrumBins, quint32 spectrumSampleRate,
+	double fdEstimate(double *spectrum, int spectrumBins, quint32 spectrumSampleRate,
 		float bpLowFreq, float bpHighFreq, double mixerFreq);
 signals:
 	void newSignalStrength(double peakDb, double avgDb, double snrDb, double floorDb, double extValue);

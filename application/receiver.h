@@ -85,7 +85,7 @@ public:
 		void demodModeChanged(DeviceInterface::DEMODMODE _demodMode);
 		void audioGainChanged(int g);
 		void agcThresholdChanged(int g);
-		void squelchChanged(int s);
+		void squelchChanged(double s);
 		void mixerChanged(int f);
 		void filterChanged(int lo, int hi);
 		void anfChanged(bool b);
@@ -178,7 +178,7 @@ private:
 	CDecimateBy2 *m_decimate4;
 
 	float m_gain;
-	int m_squelch;
+	double m_squelchDb;
 
 	BandPassFilter *m_bpFilter; //Current BandPass filter
 	FIRFilter *m_usbFilter;
@@ -189,5 +189,7 @@ private:
 	double m_converterOffset;
 	bool m_dcRemoveMode;
 	DCRemoval *m_dcRemove;
+
+	double m_avgDb; //Average signal strength, used for squelch
 
 };

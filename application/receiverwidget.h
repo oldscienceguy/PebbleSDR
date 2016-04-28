@@ -57,7 +57,7 @@ signals:
 		void demodChanged(DeviceInterface::DEMODMODE _demodMode);
 		void audioGainChanged(int _audioGain);
 		void agcThresholdChanged(int _threshold);
-		void squelchChanged(int _squelch);
+		void squelchChanged(double _squelch);
 		void widgetMixerChanged(int _mixer);
 		void filterChanged(int _lo, int _hi);
 		void anfChanged(bool _on);
@@ -91,7 +91,8 @@ private:
 	//Converts value to separate digits and updates display
 	int m_tunerStep;
 	int m_gain;
-	int m_squelch;
+	const int m_squelchDbRes = 10; //For slider, ticks/db
+	double m_squelchDb;
 	bool m_loMode;
 	double m_frequency; //Current frequency
 	double m_loFrequency;

@@ -103,7 +103,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 			SLOT(demodModeChanged(DeviceInterface::DEMODMODE)));
 	connect(m_receiverWidget,SIGNAL(audioGainChanged(int)), this, SLOT(audioGainChanged(int)));
 	connect(m_receiverWidget,SIGNAL(agcThresholdChanged(int)), this, SLOT(agcThresholdChanged(int)));
-	connect(m_receiverWidget,SIGNAL(squelchChanged(int)), this, SLOT(squelchChanged(int)));
+	connect(m_receiverWidget,SIGNAL(squelchChanged(double)), this, SLOT(squelchChanged(double)));
 	connect(m_receiverWidget,SIGNAL(widgetMixerChanged(int)), this, SLOT(mixerChanged(int)));
 	connect(m_receiverWidget,SIGNAL(filterChanged(int, int)), this, SLOT(filterChanged(int, int)));
 	connect(m_receiverWidget,SIGNAL(anfChanged(bool)), this, SLOT(anfChanged(bool)));
@@ -700,10 +700,9 @@ void Receiver::audioGainChanged(int g)
 	m_gain = g; //Adjust in audio classes
 }
 //Called by ReceiverWidget
-void Receiver::squelchChanged(int s)
+void Receiver::squelchChanged(double s)
 {
-	m_squelch = s;
-	m_signalStrength->setSquelch(s);
+	m_squelchDb = s;
 }
 //Called by ReceiverWidget
 void Receiver::mixerChanged(int f)
@@ -888,8 +887,13 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 		//Calc this here, at lower sample rate, for efficiency
 		//Uses original unprocessed spectrum data
 		//There is no bandpass filter for FM, so hi and low are hard coded
-		nextStep = m_signalStrength->fdEstimate(nextStep, m_signalSpectrum->getUnprocessed(),m_signalSpectrum->binCount(),
+		m_avgDb = m_signalStrength->fdEstimate(m_signalSpectrum->getUnprocessed(),m_signalSpectrum->binCount(),
 				m_signalSpectrum->getSampleRate(),-100000, 100000, m_mixerFrequency);
+		//Squelch based on last avgerages
+		if (m_avgDb < m_squelchDb) {
+			//We don't need to do any other processing if signal is below squelch
+			return;
+		}
 
 		nextStep = m_demod->ProcessBlock(nextStep, numStepSamples);
 
@@ -937,6 +941,18 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
         //float post = SignalProcessing::TotalPower(nextStep,frameCount);
 		global->testBench->displayData(numStepSamples,nextStep,m_demodSampleRate,TB_POST_MIXER);
 
+		//If squelch is set, and we're below threshold and should set output to zero
+		//Do this in SignalStrength, since that's where we're calculating average signal strength anyway
+		//Calc this here, at lower sample rate, for efficiency
+		//Uses original unprocessed spectrum data
+		m_avgDb = m_signalStrength->fdEstimate(m_signalSpectrum->getUnprocessed(),m_signalSpectrum->binCount(),
+				m_signalSpectrum->getSampleRate(),m_bpFilter->lowFreq(), m_bpFilter->highFreq(), m_mixerFrequency);
+		//Squelch based on last avgerages
+		if (m_avgDb < m_squelchDb) {
+			//We don't need to do any other processing if signal is below squelch
+			return;
+		}
+
         //global->perform.StopPerformance(100);
 
         //global->perform.StartPerformance();
@@ -948,14 +964,6 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 		//Crude AGC, too much fluctuation
 		//CPX::scaleCPX(nextStep,nextStep,pre/post,frameCount);
 		global->testBench->displayData(numStepSamples,nextStep,m_demodSampleRate,TB_POST_BP);
-
-        //If squelch is set, and we're below threshold and should set output to zero
-        //Do this in SignalStrength, since that's where we're calculating average signal strength anyway
-		//Calc this here, at lower sample rate, for efficiency
-		//Uses original unprocessed spectrum data
-		nextStep = m_signalStrength->fdEstimate(nextStep, m_signalSpectrum->getUnprocessed(),m_signalSpectrum->binCount(),
-				m_signalSpectrum->getSampleRate(),m_bpFilter->lowFreq(), m_bpFilter->highFreq(), m_mixerFrequency);
-
 
         //Tune only mode, no demod or output
 		if (m_demod->DemodMode() == DeviceInterface::dmNONE){

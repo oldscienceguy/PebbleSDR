@@ -83,9 +83,13 @@ void ReceiverWidget::setReceiver(Receiver *r)
     connect(ui.bandCombo,SIGNAL(currentIndexChanged(int)),this,SLOT(bandChanged(int)));
     connect(ui.stationCombo,SIGNAL(currentIndexChanged(int)),this,SLOT(stationChanged(int)));
 
-	ui.squelchSlider->setMinimum(DB::minDb);
-	ui.squelchSlider->setMaximum(DB::maxDb);
-	ui.squelchSlider->setValue(DB::minDb);
+	//10 ticks per db
+	m_squelchDb = DB::minDb;
+	ui.squelchSlider->setMinimum(m_squelchDb * m_squelchDbRes); //-120db
+	//Squelch values above some limit don't make sense, try 30 and see how it works
+	ui.squelchSlider->setMaximum(-300); //-30db
+	ui.squelchSlider->setSingleStep(1);
+	ui.squelchSlider->setValue(m_squelchDb * m_squelchDbRes);
     connect(ui.squelchSlider,SIGNAL(valueChanged(int)),this,SLOT(squelchSliderChanged(int)));
 
     m_currentBandIndex = -1;
@@ -605,8 +609,9 @@ void ReceiverWidget::powerToggled(bool on)
 		emit audioGainChanged(30);
 
 		//Setup Squelch
-		ui.squelchSlider->setValue(DB::minDb);
-		emit squelchChanged(DB::minDb);
+		m_squelchDb = DB::minDb;
+		ui.squelchSlider->setValue(m_squelchDb * m_squelchDbRes);
+		emit squelchChanged(m_squelchDb);
 
 		//Set default AGC mode
 		//agcBoxChanged(AGC::FAST);
@@ -971,13 +976,16 @@ void ReceiverWidget::gainSliderChanged(int g)
 	m_gain=g; 
 	emit audioGainChanged(g);
 }
+
+//Squelch slider is in db
 void ReceiverWidget::squelchSliderChanged(int s)
 {
-    if (!m_powerOn)
-        return;
-	m_squelch = s;
-	emit squelchChanged(s);
+	if (!m_powerOn)
+		return;
+	m_squelchDb = (double)s/10;
+	emit squelchChanged(m_squelchDb);
 }
+
 void ReceiverWidget::nixie1UpClicked() {setFrequency(m_frequency+1);}
 void ReceiverWidget::nixie1DownClicked(){setFrequency(m_frequency-1);}
 void ReceiverWidget::nixie10UpClicked(){setFrequency(m_frequency+10);}
