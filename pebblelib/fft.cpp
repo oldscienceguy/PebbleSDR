@@ -449,12 +449,19 @@ bool FFT::mapFFTToScreen(double *inBuf,
 	float binsPerPixel = (float)fftBinsToPlot / (float)xPixels;
 
 	//dbGainFactor is used to scale min/max db values so they fit in N vertical pixels
-	float dBGainFactor = -1 / (maxdB - mindB);
+	//If yPixels < dbRange, yScaleFactor will compress
+	//If yPixels > dbRange, yScaleFactor will expand
+	//If yPixels == dbRange, yScaleFactor will be 1.  1 y-pixel per DB
+	double dbRange = maxdB - mindB;
+	//-yPixels converts scale factor to neg so when we multiply by power we get positive pixels
+	float yScaleFactor = -yPixels / dbRange;
 
 	qint32 fftBin; //Bin corresponding to freq being processed
 
 	qint32 totalBinPower = 0;
 	qint32 powerdB = 0;
+
+	qint32 yPixel;
 
 	m_fftMutex.lock();
 
@@ -493,7 +500,10 @@ bool FFT::mapFFTToScreen(double *inBuf,
 			lastFftBin = fftBin;
 			// y(0) = maxdB (top of screen)  y(yPixels) = mindB (bottom of screen)
 			//dbGainFactor scales powerDb to this range
-			outBuf[i] = (qint32)(yPixels * dBGainFactor * powerdB);
+			yPixel = (yScaleFactor * powerdB) - 1;
+			//powerdB might be less than mindB, bound to keep in display range
+			yPixel = qBound(0,yPixel,yPixels-1);
+			outBuf[i] = yPixel;
 		} //End xPixel loop
 
 	} else {
@@ -510,9 +520,11 @@ bool FFT::mapFFTToScreen(double *inBuf,
 			} else {
 				powerdB = inBuf[fftBin] - maxdB;
 			}
-			outBuf[i] = (qint32)(yPixels * dBGainFactor * powerdB);
 			lastFftBin = fftBin;
 
+			yPixel = (yScaleFactor * powerdB) - 1;
+			yPixel = qBound(0,yPixel,yPixels-1);
+			outBuf[i] = yPixel;
 		} //End xPixel loop
 	}
 
