@@ -17,6 +17,8 @@ public:
 	//min/max db we'll return from FFT, use in power calculations, plotting, etc
 	static const double minDb;
 	static const double maxDb;
+	static const double minPower; //Equivalent to binDb
+	static const double maxPower;
 
     //Useful conversion functions
 	static inline double clip(double db) {

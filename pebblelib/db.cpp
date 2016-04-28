@@ -6,7 +6,9 @@
 
 const double DB::fullScale = 1.0;
 const double DB::minDb = -120.0;
+const double DB::minPower = 1e-12;  //-120db
 const double DB::maxDb = 0.0;
+const double DB::maxPower = 1.0; //0db
 
 #if 0
 	Naming confusion.  There are different usages of dB that get used interchangeably
