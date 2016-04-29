@@ -47,6 +47,8 @@ public:
 
 	//Spectrum settings
 	int updatesPerSecond;
+	bool autoScaleMax;
+	bool autoScaleMin;
 
 	public slots:
 

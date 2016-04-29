@@ -77,6 +77,8 @@ private:
 	void updateTopPanel(DisplayMode _newMode, bool updateSlider);
 	QRect mapFrameToWidget(QFrame *frame);
 
+	void recalcScale();
+
 	//Event overrides
 	void paintEvent(QPaintEvent *event);
 	void mousePressEvent ( QMouseEvent * event );
@@ -141,8 +143,16 @@ private:
 
 	int m_modeOffset;
 
-
 	bool m_topPanelHighResolution; //True if top panel is in hi-res mode
+
+	bool m_autoScaleMax;
+	bool m_autoScaleMin;
+	bool m_scaleNeedsRecalc;
+
+	//Limits on what user can set ui controls
+	const int m_maxDbScaleLimit = -50;
+	const int m_minDbScaleLimit = -70;
+
 };
 
 #endif // SPECTRUMWIDGET_H

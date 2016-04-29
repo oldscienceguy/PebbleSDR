@@ -67,6 +67,8 @@ void Settings::ReadSettings()
 
 	fullScaleDb = qSettings->value("FullScaleDb",-50).toInt();
 	baseScaleDb = qSettings->value("BaseScaleDb",DB::minDb).toInt();
+	autoScaleMax = qSettings->value("AutoScaleMax",true).toBool();
+	autoScaleMin = qSettings->value("AutoScaleMin",true).toBool();
 
 	updatesPerSecond = qSettings->value("UpdatesPerSec", 10).toInt();
 
@@ -121,6 +123,8 @@ void Settings::WriteSettings()
     qSettings->setValue("ModeOffset",modeOffset);
 	qSettings->setValue("FullScaleDb",fullScaleDb);
 	qSettings->setValue("BaseScaleDb",baseScaleDb);
+	qSettings->setValue("AutoScaleMax",autoScaleMax);
+	qSettings->setValue("AutoScaleMin",autoScaleMin);
 
 	qSettings->setValue("UpdatesPerSec",updatesPerSecond);
 

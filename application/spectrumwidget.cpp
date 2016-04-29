@@ -14,6 +14,8 @@ class Receiver;
 SpectrumWidget::SpectrumWidget(QWidget *parent)
 	: QWidget(parent)
 {
+	int index;
+
 	ui.setupUi(this);
 
 	ui.topLabelFrame->setVisible(false);
@@ -22,9 +24,9 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 
 	ui.displayBox->addItem("Spectrum",SPECTRUM);
 	ui.displayBox->addItem("Waterfall",WATERFALL);
-	ui.displayBox->addItem("Spectrum/Spectrum",SPECTRUM_SPECTRUM);
-	ui.displayBox->addItem("Spectrum/Waterfall",SPECTRUM_WATERFALL);
-	ui.displayBox->addItem("Waterfall/Waterfall",WATERFALL_WATERFALL);
+	ui.displayBox->addItem("Spect/Spect",SPECTRUM_SPECTRUM);
+	ui.displayBox->addItem("Spect/Wfall",SPECTRUM_WATERFALL);
+	ui.displayBox->addItem("Wfall/Wfall",WATERFALL_WATERFALL);
 	//ui.displayBox->addItem("I/Q",IQ);
 	//ui.displayBox->addItem("Phase",PHASE);
 	ui.displayBox->addItem("No Display",NODISPLAY);
@@ -35,25 +37,48 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
     //Starting plot range
 	//CuteSDR defaults to -50
 	m_plotMaxDb = global->settings->fullScaleDb;
-	ui.maxDbBox->setMinimum(-50); //Makes no sense to set to anything below this or no useful information
-	ui.maxDbBox->setMaximum(DB::maxDb);
-	ui.maxDbBox->setValue(m_plotMaxDb);
-	ui.maxDbBox->setSingleStep(5);
-    connect(ui.maxDbBox,SIGNAL(valueChanged(int)),this,SLOT(maxDbChanged(int)));
+	m_autoScaleMax = global->settings->autoScaleMax;
+	ui.maxDbBox->addItem("Auto",10);
+	ui.maxDbBox->addItem("  0db",0);
+	ui.maxDbBox->addItem("-10db",-10);
+	ui.maxDbBox->addItem("-20db",-20);
+	ui.maxDbBox->addItem("-30db",-30);
+	ui.maxDbBox->addItem("-40db",-40);
+	ui.maxDbBox->addItem("-50db",-50);
+	if (m_autoScaleMax)
+		index = 0;
+	else
+		index = ui.maxDbBox->findData(m_plotMaxDb);
+	ui.maxDbBox->setCurrentIndex(index);
+	connect(ui.maxDbBox,SIGNAL(currentIndexChanged(int)),this,SLOT(maxDbChanged(int)));
 
 	m_plotMinDb = global->settings->baseScaleDb;
-	ui.minDbBox->setMinimum(DB::minDb);
-	ui.minDbBox->setMaximum(ui.maxDbBox->minimum() - m_minMaxDbDelta);
-	ui.minDbBox->setValue(m_plotMinDb);
-	ui.minDbBox->setSingleStep(5);
-	connect(ui.minDbBox,SIGNAL(valueChanged(int)),this,SLOT(minDbChanged(int)));
+	m_autoScaleMin = global->settings->autoScaleMin;
+	ui.minDbBox->addItem("Auto",10);
+	ui.minDbBox->addItem("-120db",-120);
+	ui.minDbBox->addItem("-110db",-110);
+	ui.minDbBox->addItem("-100db",-100);
+	ui.minDbBox->addItem("- 90db",-90);
+	ui.minDbBox->addItem("- 80db",-80);
+	ui.minDbBox->addItem("- 70db",-70);
+	if (m_autoScaleMin)
+		index = 0;
+	else
+		index = ui.minDbBox->findData(m_plotMinDb);
+	ui.minDbBox->setCurrentIndex(index);
+	connect(ui.minDbBox,SIGNAL(currentIndexChanged(int)),this,SLOT(minDbChanged(int)));
 
+	ui.updatesPerSec->addItem("5x",5);
+	ui.updatesPerSec->addItem("10x",10);
+	ui.updatesPerSec->addItem("15x",15);
+	ui.updatesPerSec->addItem("20x",20);
+	ui.updatesPerSec->addItem("25x",25);
+	ui.updatesPerSec->addItem("30x",30);
+	ui.updatesPerSec->addItem("Frz",0);
+	index = ui.updatesPerSec->findData(global->settings->updatesPerSecond);
+	ui.updatesPerSec->setCurrentIndex(index);
+	connect(ui.updatesPerSec,SIGNAL(currentIndexChanged(int)),this,SLOT(updatesPerSecChanged(int)));
 
-	ui.updatesPerSec->setMinimum(0); //Freezes display
-	ui.updatesPerSec->setMaximum(30); //20 x/sec is very fast
-	ui.updatesPerSec->setValue(global->settings->updatesPerSecond);
-	ui.updatesPerSec->setSingleStep(2);;
-	connect(ui.updatesPerSec,SIGNAL(valueChanged(int)),this,SLOT(updatesPerSecChanged(int)));
 	m_spectrumMode=SPECTRUM;
 
 	//message = NULL;
@@ -211,6 +236,7 @@ void SpectrumWidget::run(bool r)
 		ui.displayBox->setCurrentIndex(ui.displayBox->findData(m_spectrumMode)); //Initial display mode
 		ui.zoomLabel->setText(QString().sprintf("S: %.0f kHz",m_sampleRate/1000.0));
 		m_isRunning = true;
+		m_scaleNeedsRecalc = true;
 	}
 	else {
 		ui.displayBox->blockSignals(true);
@@ -530,9 +556,14 @@ void SpectrumWidget::setMode(DeviceInterface::DEMODMODE m, int _modeOffset)
 }
 void SpectrumWidget::setMixer(int m, double f)
 {
+	if (m_loFreq != f) {
+		m_loFreq = f;
+		//Recalc auto scale whenever LO changes, but wait for next fft to have new data
+		m_scaleNeedsRecalc = true;
+	}
 	m_fMixer = m;
-	m_loFreq = f;
 	drawOverlay();
+
 }
 //Track bandpass so we can display with cursor
 void SpectrumWidget::setFilter(int lo, int hi)
@@ -631,7 +662,8 @@ void SpectrumWidget::updatesPerSecChanged(int item)
 {
 	if (m_signalSpectrum == NULL)
 		return;
-	m_signalSpectrum->setUpdatesPerSec(ui.updatesPerSec->value());
+
+	m_signalSpectrum->setUpdatesPerSec(ui.updatesPerSec->currentData().toInt());
 }
 
 void SpectrumWidget::splitterMoved(int x, int y)
@@ -655,6 +687,50 @@ void SpectrumWidget::hiResClicked(bool _b)
 	ui.zoomSlider->blockSignals(false);
 	drawOverlay();
 	update(); //Redraw scale
+}
+
+//Update auto-scale
+void SpectrumWidget::recalcScale()
+{
+	if (!m_autoScaleMax && !m_autoScaleMin)
+		return;
+
+	//Similar to SignalStrength, but works across entire spectrum, not just bandpass
+	double *spectrum = m_signalSpectrum->getUnprocessed();
+	double pwr = 0;
+	double totalPwr = 0;
+	double peakPwr = 0;
+	double avgPwr;
+	int binCount = m_signalSpectrum->binCount();
+	for (int i=0; i<binCount; i++) {
+		pwr = DB::dBToPower(spectrum[i]);
+		totalPwr += pwr;
+		if (pwr > peakPwr)
+			peakPwr = pwr;
+	}
+	avgPwr = totalPwr / binCount;
+	//If auto-scale is on, update
+	//Only change in increments of 5 and only if changed
+	//Don't change above/below ui limits
+	int newAvgDb = DB::powerTodB(avgPwr) - 10;
+	newAvgDb = (newAvgDb / 5) * 5;
+	newAvgDb = qBound(-120, newAvgDb, m_minDbScaleLimit);
+	if (m_autoScaleMin) {
+		//ui.minDbBox->setValue(newAvgDb);
+		m_plotMinDb = newAvgDb;
+	}
+
+	int newPeakDb = DB::powerTodB(peakPwr) + 10;
+	newPeakDb = (newPeakDb / 5) * 5;
+	newPeakDb = qBound(m_maxDbScaleLimit, newPeakDb, 0);
+	if (m_autoScaleMax) {
+		//ui.maxDbBox->setValue(newPeakDb);
+		m_plotMaxDb = newPeakDb;
+	}
+
+	drawOverlay();
+	update();
+
 }
 
 void SpectrumWidget::setSignalSpectrum(SignalSpectrum *s)
@@ -860,7 +936,16 @@ void SpectrumWidget::displayChanged(int s)
 
 void SpectrumWidget::maxDbChanged(int s)
 {
-	m_plotMaxDb = ui.maxDbBox->value();
+	int db = ui.maxDbBox->currentData().toInt();
+	if (db > 0) {
+		m_autoScaleMax = true;
+		m_scaleNeedsRecalc = true;
+	} else {
+		m_autoScaleMax = false;
+		m_plotMaxDb = db;
+	}
+
+	global->settings->autoScaleMax = m_autoScaleMax;
 	global->settings->fullScaleDb = m_plotMaxDb;
 	global->settings->WriteSettings(); //save
 	drawOverlay();
@@ -869,7 +954,16 @@ void SpectrumWidget::maxDbChanged(int s)
 
 void SpectrumWidget::minDbChanged(int t)
 {
-	m_plotMinDb = ui.minDbBox->value();
+	int db = ui.minDbBox->currentData().toInt();
+	if (db > 0) {
+		m_autoScaleMin = true;
+		m_scaleNeedsRecalc = true;
+	} else {
+		m_autoScaleMin = false;
+		m_plotMinDb = db;
+	}
+
+	global->settings->autoScaleMin = m_autoScaleMin;
 	global->settings->baseScaleDb = m_plotMinDb;
 	global->settings->WriteSettings(); //save
 	drawOverlay();
@@ -1085,6 +1179,13 @@ void SpectrumWidget::newFftData()
 		drawOverlay();
 	}
 
+	//Only auto-scale when we need to.  Lo changed, user request, etc.
+	//Otherwise too jittery
+	if (m_scaleNeedsRecalc) {
+		recalcScale();
+		m_scaleNeedsRecalc = false;
+	}
+
 	double startFreq =  - (m_sampleRate/2); //Relative to 0
 	double endFreq = m_sampleRate/2;
 	//Top panel is always centered on fMixer
@@ -1252,6 +1353,7 @@ void SpectrumWidget::newFftData()
 		default:
 			break;
 	}
+
 }
 
 //Update top pane with new mode
@@ -1602,14 +1704,14 @@ void SpectrumWidget::paintWaterfall(bool paintTopPanel, QPainter *painter)
 		//Cursor is drawn on top of pixmap
 		paintFreqCursor(painter, topPanelFr, true, Qt::white);
 		paintFreqCursor(painter, topPanelLabelFr, true, Qt::white);
-		paintMouseCursor(true, painter, Qt::black, false,true);
+		paintMouseCursor(true, painter, Qt::white, false,true);
 	} else {
 		painter->drawPixmap(plotFr, m_plotArea);
 		painter->drawPixmap(plotLabelFr,m_plotLabel);
 		//Cursor is drawn on top of pixmap
 		paintFreqCursor(painter, plotFr, false, Qt::white);
 		paintFreqCursor(painter, plotLabelFr, false, Qt::white);
-		paintMouseCursor(false, painter, Qt::black, false,true);
+		paintMouseCursor(false, painter, Qt::white, false,true);
 	}
 }
 
