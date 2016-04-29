@@ -52,6 +52,15 @@ macx {
 	# NO SPACES !!!
 	DEFINES += PEBBLE_DATE=\"$${DATE}\"
 
+        #This technique allows us to execute system commands before any other targets are built
+        #This happens on every build, not just when qmake is executed
+        #delete Pebble.app on every build to avoid warnings about files already existing
+        #macdeployqt generates these warnings for qt.conf for example
+        myPreTarget.commands = rm -f -r $${DESTDIR}/Pebble.app
+        myPreTarget.depends = FORCE
+        QMAKE_EXTRA_TARGETS += myPreTarget
+        PRE_TARGETDEPS += myPreTarget
+
 	#Turn off warnings for unused variables so we can focus on real warnings
 	#We completely replace this variable with our own warning flags in the order we want them
 	#This turns on all warnings, then turns off selected ones
