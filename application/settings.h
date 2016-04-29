@@ -13,48 +13,47 @@ class Settings:public QObject
 public:
 	Settings();
 	~Settings(void);
-	void ShowSettings();
-	void WriteSettings();
+	void writeSettings();
 
 	//Hack, these should eventually be access methods
-    QString sdrDeviceFilename;
-    quint16 sdrDeviceNumber; //For plugins that support mulitple devices
+	QString m_sdrDeviceFilename;
+	quint16 m_sdrDeviceNumber; //For plugins that support mulitple devices
 
 	//If Output Sample Rate is above this, then we try to reduce it by skipping samples when we output
-	int decimateLimit;
-	bool postMixerDecimate; //If true, then downsample to decimate limit after mixer
-	int framesPerBuffer;
-	int numSpectrumBins;
-	int numHiResSpectrumBins;
-	double dbOffset; //DB calibration for spectrum and smeter
+	int m_decimateLimit;
+	bool m_postMixerDecimate; //If true, then downsample to decimate limit after mixer
+	int m_framesPerBuffer;
+	int m_numSpectrumBins;
+	int m_numHiResSpectrumBins;
+	double m_dbOffset; //DB calibration for spectrum and smeter
 	//Increment for left-right and up-down in spectrum display
-	int leftRightIncrement;
-	int upDownIncrement;
-    int modeOffset; //tone offset for CW
-	int fullScaleDb; //Spectrum and waterfall full scale limit
-	int baseScaleDb;
+	int m_leftRightIncrement;
+	int m_upDownIncrement;
+	int m_modeOffset; //tone offset for CW
+	int m_fullScaleDb; //Spectrum and waterfall full scale limit
+	int m_baseScaleDb;
 
 	//Window size and positioning
-	qint16 windowWidth;
-	qint16 windowHeight;
-	qint16 windowXPos;
-	qint16 windowYPos;
+	qint16 m_windowWidth;
+	qint16 m_windowHeight;
+	qint16 m_windowXPos;
+	qint16 m_windowYPos;
 
 	//Fonts for consistent UI
-    QFont smFont;
-    QFont medFont;
-    QFont lgFont;
+	QFont m_smFont;
+	QFont m_medFont;
+	QFont m_lgFont;
 
 	//Spectrum settings
-	int updatesPerSecond;
-	bool autoScaleMax;
-	bool autoScaleMin;
+	int m_updatesPerSecond;
+	bool m_autoScaleMax;
+	bool m_autoScaleMin;
 
 	public slots:
 
 private:
-	QSettings *qSettings;
-	void ReadSettings();
+	QSettings *m_qSettings;
+	void readSettings();
 
 private slots:
 

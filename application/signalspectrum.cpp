@@ -7,8 +7,8 @@ SignalSpectrum::SignalSpectrum(quint32 _sampleRate, quint32 _hiResSampleRate, qu
 	ProcessStep(_sampleRate,_bufferSize)
 {
 	//FFT bin size can be greater than sample size
-	m_numSpectrumBins = global->settings->numSpectrumBins;
-	m_numHiResSpectrumBins = global->settings->numHiResSpectrumBins;
+	m_numSpectrumBins = global->settings->m_numSpectrumBins;
+	m_numHiResSpectrumBins = global->settings->m_numHiResSpectrumBins;
 
 	m_hiResSampleRate = _hiResSampleRate;
 	//Output buffers
@@ -23,11 +23,11 @@ SignalSpectrum::SignalSpectrum(quint32 _sampleRate, quint32 _hiResSampleRate, qu
 	m_tmp_cpx = CPX::memalign(m_numSpectrumBins);
 
 	//db calibration
-	m_dbOffset  = global->settings->dbOffset;
+	m_dbOffset  = global->settings->m_dbOffset;
 
     //Spectrum refresh rate from 1 to 50 per second
     //Init here for now and add UI element to set, save with settings data
-	m_updatesPerSec = global->settings->updatesPerSecond; //Refresh rate per second
+	m_updatesPerSec = global->settings->m_updatesPerSecond; //Refresh rate per second
 	//Elapsed time in ms for use with QElapsedTimer
 	m_spectrumTimerUpdate = 1000 /m_updatesPerSec;
 	m_hiResTimerUpdate = 1000/ m_updatesPerSec;
@@ -124,7 +124,7 @@ void SignalSpectrum::setSpectrum(double *in)
 void SignalSpectrum::setUpdatesPerSec(int updatespersec)
 {
 	m_updatesPerSec = updatespersec;
-	global->settings->updatesPerSecond = m_updatesPerSec;
+	global->settings->m_updatesPerSecond = m_updatesPerSec;
 	if (m_updatesPerSec > 0) {
 		//Elapsed time in ms for use with QElapsedTimer
 		m_spectrumTimerUpdate = 1000 /m_updatesPerSec;

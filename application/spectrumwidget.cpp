@@ -36,8 +36,8 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 
     //Starting plot range
 	//CuteSDR defaults to -50
-	m_plotMaxDb = global->settings->fullScaleDb;
-	m_autoScaleMax = global->settings->autoScaleMax;
+	m_plotMaxDb = global->settings->m_fullScaleDb;
+	m_autoScaleMax = global->settings->m_autoScaleMax;
 	ui.maxDbBox->addItem("Auto",10);
 	ui.maxDbBox->addItem("  0db",0);
 	ui.maxDbBox->addItem("-10db",-10);
@@ -52,8 +52,8 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 	ui.maxDbBox->setCurrentIndex(index);
 	connect(ui.maxDbBox,SIGNAL(currentIndexChanged(int)),this,SLOT(maxDbChanged(int)));
 
-	m_plotMinDb = global->settings->baseScaleDb;
-	m_autoScaleMin = global->settings->autoScaleMin;
+	m_plotMinDb = global->settings->m_baseScaleDb;
+	m_autoScaleMin = global->settings->m_autoScaleMin;
 	ui.minDbBox->addItem("Auto",10);
 	ui.minDbBox->addItem("-120db",-120);
 	ui.minDbBox->addItem("-110db",-110);
@@ -75,7 +75,7 @@ SpectrumWidget::SpectrumWidget(QWidget *parent)
 	ui.updatesPerSec->addItem("25x",25);
 	ui.updatesPerSec->addItem("30x",30);
 	ui.updatesPerSec->addItem("Frz",0);
-	index = ui.updatesPerSec->findData(global->settings->updatesPerSecond);
+	index = ui.updatesPerSec->findData(global->settings->m_updatesPerSecond);
 	ui.updatesPerSec->setCurrentIndex(index);
 	connect(ui.updatesPerSec,SIGNAL(currentIndexChanged(int)),this,SLOT(updatesPerSecChanged(int)));
 
@@ -208,8 +208,8 @@ SpectrumWidget::~SpectrumWidget()
 void SpectrumWidget::run(bool r)
 {
     //Global is not initialized in constructor
-    ui.displayBox->setFont(global->settings->medFont);
-    ui.maxDbBox->setFont(global->settings->medFont);
+	ui.displayBox->setFont(global->settings->m_medFont);
+	ui.maxDbBox->setFont(global->settings->m_medFont);
 
     QRect plotFr = ui.plotFrame->geometry(); //relative to parent
 
@@ -740,8 +740,8 @@ void SpectrumWidget::setSignalSpectrum(SignalSpectrum *s)
 		connect(m_signalSpectrum,SIGNAL(newFftData()),this,SLOT(newFftData()));
 
 		m_sampleRate = s->getSampleRate();
-		m_upDownIncrement = global->settings->upDownIncrement;
-		m_leftRightIncrement = global->settings->leftRightIncrement;
+		m_upDownIncrement = global->settings->m_upDownIncrement;
+		m_leftRightIncrement = global->settings->m_leftRightIncrement;
 	}
 }
 // Diplays frequency cursor and filter range
@@ -867,7 +867,7 @@ void SpectrumWidget::paintEvent(QPaintEvent *e)
 	{
 		if (true)
 		{
-            painter.setFont(global->settings->medFont);
+			painter.setFont(global->settings->m_medFont);
 			for (int i=0; i<m_message.count(); i++)
 			{
 				painter.drawText(20, 15 + (i*12) , m_message[i]);
@@ -945,9 +945,9 @@ void SpectrumWidget::maxDbChanged(int s)
 		m_plotMaxDb = db;
 	}
 
-	global->settings->autoScaleMax = m_autoScaleMax;
-	global->settings->fullScaleDb = m_plotMaxDb;
-	global->settings->WriteSettings(); //save
+	global->settings->m_autoScaleMax = m_autoScaleMax;
+	global->settings->m_fullScaleDb = m_plotMaxDb;
+	global->settings->writeSettings(); //save
 	drawOverlay();
 	update();
 }
@@ -963,9 +963,9 @@ void SpectrumWidget::minDbChanged(int t)
 		m_plotMinDb = db;
 	}
 
-	global->settings->autoScaleMin = m_autoScaleMin;
-	global->settings->baseScaleDb = m_plotMinDb;
-	global->settings->WriteSettings(); //save
+	global->settings->m_autoScaleMin = m_autoScaleMin;
+	global->settings->m_baseScaleDb = m_plotMinDb;
+	global->settings->writeSettings(); //save
 	drawOverlay();
 	update();
 
@@ -1657,9 +1657,9 @@ void SpectrumWidget::paintMouseCursor(bool paintTopPanel, QPainter *painter, QCo
 		freqLabel = "";
 	dbLabel.sprintf("%d db",mouseDb);
 
-	painter->setFont(global->settings->medFont);
+	painter->setFont(global->settings->m_medFont);
 	//How many pixels do we need to display label with specified font
-	QFontMetrics metrics(global->settings->medFont);
+	QFontMetrics metrics(global->settings->m_medFont);
 	QRect rect = metrics.boundingRect(freqLabel);
 	if (cursorPos.x() + rect.width() > plotFr.width())
 		cursorPos.setX(cursorPos.x() - rect.width()); //left of cursor

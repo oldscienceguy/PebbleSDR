@@ -23,12 +23,12 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	m_receiverWidget = rw;
 
 	QRect pos;
-	pos.setX(m_settings->windowXPos);
-	pos.setY(m_settings->windowYPos);
-	pos.setWidth(m_settings->windowWidth);
-	pos.setHeight(m_settings->windowHeight);
+	pos.setX(m_settings->m_windowXPos);
+	pos.setY(m_settings->m_windowYPos);
+	pos.setWidth(m_settings->m_windowWidth);
+	pos.setHeight(m_settings->m_windowHeight);
 	//setGeometry breaks in QT 5.6 and doesn't adjust invalid width and height values
-	if (m_settings->windowWidth < 1 || m_settings->windowHeight < 1) {
+	if (m_settings->m_windowWidth < 1 || m_settings->m_windowHeight < 1) {
 		//Just move window and accept default width and height
 		m_mainWindow->move(pos.x(),pos.y());
 	} else {
@@ -122,7 +122,7 @@ bool Receiver::turnPowerOn()
         return false; //Means something is wrong with plugins,
 
 	//If plugin has multiple devices, we need to set the last one used
-	m_sdr->Set(DeviceInterface::DeviceNumber,global->settings->sdrDeviceNumber);
+	m_sdr->Set(DeviceInterface::DeviceNumber,global->settings->m_sdrDeviceNumber);
 
     //Setup callback for device plugins to use when they have new IQ data
     using namespace std::placeholders;
@@ -134,7 +134,7 @@ bool Receiver::turnPowerOn()
 	if (!m_sdr->Initialize(std::bind(&Receiver::processIQData, this, _1, _2),
 						 std::bind(&Receiver::processBandscopeData, this, _1, _2),
 						 std::bind(&Receiver::processAudioData, this, _1, _2),
-						 m_settings->framesPerBuffer)) {
+						 m_settings->m_framesPerBuffer)) {
 		turnPowerOff();
 		return false;
 	}
@@ -146,7 +146,7 @@ bool Receiver::turnPowerOn()
 	}
 
 	m_sampleRate = m_demodSampleRate = m_sdr->Get(DeviceInterface::SampleRate).toInt();
-	m_framesPerBuffer = m_demodFrames = m_settings->framesPerBuffer;
+	m_framesPerBuffer = m_demodFrames = m_settings->m_framesPerBuffer;
 	global->testBench->initProcessSteps(m_sampleRate, m_framesPerBuffer);
 
     //These steps work on full sample rates
@@ -528,7 +528,7 @@ void Receiver::close()
 		m_readmeView->setVisible(false);
 	if (m_gplView != NULL && m_gplView->isVisible())
 		m_gplView->setVisible(false);
-	m_settings->WriteSettings();
+	m_settings->writeSettings();
 }
 Receiver::~Receiver(void)
 {

@@ -56,9 +56,9 @@ void SdrOptions::showSdrOptions(DeviceInterface *_di, bool b)
 			m_sd->deviceSelection->addItem(m_di->Get(DeviceInterface::DeviceName,i).toString());
 		}
 		//Select active device
-		m_sd->deviceSelection->setCurrentIndex(global->settings->sdrDeviceNumber);
+		m_sd->deviceSelection->setCurrentIndex(global->settings->m_sdrDeviceNumber);
 		//And make sure device has same number
-		m_di->Set(DeviceInterface::DeviceNumber,global->settings->sdrDeviceNumber);
+		m_di->Set(DeviceInterface::DeviceNumber,global->settings->m_sdrDeviceNumber);
 		//And connect so we get changes
 		connect(m_sd->deviceSelection,SIGNAL(currentIndexChanged(int)),this,SLOT(deviceSelectionChanged(int)));
 
@@ -248,7 +248,7 @@ void SdrOptions::dcRemovalChanged(bool b)
 }
 
 void SdrOptions::deviceSelectionChanged(int i) {
-	global->settings->sdrDeviceNumber = i;
+	global->settings->m_sdrDeviceNumber = i;
 	//Set device number
 	m_di->Set(DeviceInterface::DeviceNumber, i); //Which ini file to read from
 	//Read settings, ReadSettings will switch on deviceNumber

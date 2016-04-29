@@ -30,9 +30,9 @@ void ReceiverWidget::setReceiver(Receiver *r)
 
 	m_slaveMode = false;
 
-    QFont smFont = m_receiver->getSettings()->smFont;
-    QFont medFont = m_receiver->getSettings()->medFont;
-    QFont lgFont = m_receiver->getSettings()->lgFont;
+	QFont smFont = m_receiver->getSettings()->m_smFont;
+	QFont medFont = m_receiver->getSettings()->m_medFont;
+	QFont lgFont = m_receiver->getSettings()->m_lgFont;
 
 	QStringList modes;
     modes << "AM"<<"SAM"<<"FMN"<<"FM-Mono"<<"FM-Stereo"<<"DSB"<<"LSB"<<"USB"<<"CWL"<<"CWU"<<"DIGL"<<"DIGU"<<"NONE";
@@ -166,7 +166,7 @@ void ReceiverWidget::setReceiver(Receiver *r)
     foreach (PluginInfo p,m_receiver->getDevicePluginInfo()) {
         v.setValue(p);
         sdrSelector->addItem(p.name,v);
-		if (p.fileName == global->settings->sdrDeviceFilename &&
+		if (p.fileName == global->settings->m_sdrDeviceFilename &&
 			p.type == PluginInfo::DEVICE_PLUGIN) {
                 cur = sdrSelector->count()-1;
 				m_sdr = p.deviceInterface;
@@ -935,11 +935,11 @@ void ReceiverWidget::modeSelectionChanged(QString m)
 	//Todo: Work on this, still not accurately reflecting click
 	case DeviceInterface::dmCWU:
         //Subtract modeOffset from actual freq so we hear upper tone
-        m_modeOffset = -global->settings->modeOffset; //Same as CW decoder
+		m_modeOffset = -global->settings->m_modeOffset; //Same as CW decoder
 		break;
 	case DeviceInterface::dmCWL:
         //Add modeOffset to actual tuned freq so we hear lower tone
-        m_modeOffset = global->settings->modeOffset;
+		m_modeOffset = global->settings->m_modeOffset;
 		break;
 	default:
 		m_modeOffset = 0;
@@ -1119,8 +1119,8 @@ void ReceiverWidget::receiverChanged(int i)
     int cur = ui.sdrSelector->currentIndex();
     PluginInfo p = ui.sdrSelector->itemData(cur).value<PluginInfo>();
     //Replace
-    global->settings->sdrDeviceFilename = p.fileName;
-    global->settings->sdrDeviceNumber = p.deviceNumber;
+	global->settings->m_sdrDeviceFilename = p.fileName;
+	global->settings->m_sdrDeviceNumber = p.deviceNumber;
 
 	m_sdr = p.deviceInterface;
 	global->sdr = m_sdr;
