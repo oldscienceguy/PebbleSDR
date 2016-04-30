@@ -6,7 +6,7 @@ Demod_AM::Demod_AM(int _inputRate, int _numSamples) :
     Demod(_inputRate, _numSamples)
 {
     amDc = amDcLast = 0.0;
-    SetBandwidth(16000); //For testing
+	setBandwidth(16000); //For testing
 }
 
 Demod_AM::~Demod_AM()
@@ -14,14 +14,14 @@ Demod_AM::~Demod_AM()
 
 }
 
-void Demod_AM::SetBandwidth(double bandwidth)
+void Demod_AM::setBandwidth(double bandwidth)
 {
     //create a LP filter with passband the same as the main filter bandwidth for post audio filtering
     lpFilter.InitLPFilter(0, 1.0, 50.0, bandwidth, bandwidth*1.8, sampleRate);//initialize LP FIR filter
 }
 
 //WARNING: demodSamples here is NOT the same as numSamples in the base class due to decimation.
-void Demod_AM::ProcessBlock(CPX *in, CPX *out, int demodSamples)
+void Demod_AM::processBlock(CPX *in, CPX *out, int demodSamples)
 {
     double amOut;
     for (int i=0;i<demodSamples;i++)

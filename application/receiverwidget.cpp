@@ -535,7 +535,7 @@ void ReceiverWidget::setMessage(QStringList s)
 }
 void ReceiverWidget::setMode(DeviceInterface::DemodMode m)
 {
-	QString text = Demod::ModeToString(m);
+	QString text = Demod::modeToString(m);
 	int i = ui.modeBox->findText(text);
 	if (i >= 0) {
 		ui.modeBox->setCurrentIndex(i);
@@ -779,7 +779,7 @@ void ReceiverWidget::findStationButtonClicked()
             s = stationList[i];
             str += QString("%1 %2 %3\n").arg(QString::number(s.freq/1000.0,'f',3), s.station, s.remarks);
         }
-        m_receiver->getDemod()->OutputBandData("", "", QString().sprintf("Stations within %d kHz",range), str);
+		m_receiver->getDemod()->outputBandData("", "", QString().sprintf("Stations within %d kHz",range), str);
     }
 
 
@@ -881,7 +881,7 @@ void ReceiverWidget::dataSelectionChanged(int s)
 
     //Clear any previous data selection
     if (m_dataSelection.fileName == "Band_Data") {
-            m_receiver->getDemod()->SetupDataUi(NULL);
+			m_receiver->getDemod()->setupDataUi(NULL);
             //Delete all children
             foreach (QObject *obj, ui.dataFrame->children()) {
                 //Normally we get a grid layout object, uiFrame, dataFrame
@@ -914,7 +914,7 @@ void ReceiverWidget::dataSelectionChanged(int s)
             }
             update();
     } else if (m_dataSelection.fileName == "Band_Data") {
-            m_receiver->getDemod()->SetupDataUi(ui.dataFrame);
+			m_receiver->getDemod()->setupDataUi(ui.dataFrame);
             ui.dataFrame->setVisible(true);
     } else {
             m_receiver->setDigitalModem(ui.dataSelectionBox->currentText(), ui.dataFrame);
@@ -928,7 +928,7 @@ void ReceiverWidget::modeSelectionChanged(QString m)
 	if (m_slaveMode)
 		return;
 
-	m_mode = Demod::StringToMode(m);
+	m_mode = Demod::stringToMode(m);
 		//Adj to mode, ie we don't want to be exactly on cw, we want to be +/- 200hz
 	switch (m_mode)
 	{

@@ -566,7 +566,7 @@ void Receiver::recToggled(bool on)
             //When we overrun counter, last filename will be continually overwritten
         }
 
-		m_recordingFile.OpenWrite(m_recordingFileName, m_sampleRate, m_frequency, m_demod->DemodMode(), 0);
+		m_recordingFile.OpenWrite(m_recordingFileName, m_sampleRate, m_frequency, m_demod->demodMode(), 0);
 		m_isRecording = true;
     } else {
 		m_recordingFile.Close();
@@ -602,7 +602,7 @@ double Receiver::setSDRFrequency(double fRequested, double fCurrent)
 {
 	if (m_sdr==NULL)
 		return 0;
-	m_demod->ResetDemod();
+	m_demod->resetDemod();
 
 	//There's a problem with 'popping' when we are scrolling freq up and down
 	//Especially in large increments
@@ -643,7 +643,7 @@ void Receiver::demodModeChanged(DeviceInterface::DemodMode _demodMode)
 			m_signalSpectrum->setSampleRate(m_sampleRate, m_demodSampleRate);
 
         //Demod will return new demo
-		m_demod->SetDemodMode(_demodMode, m_sampleRate, m_demodSampleRate);
+		m_demod->setDemodMode(_demodMode, m_sampleRate, m_demodSampleRate);
 		m_sdr->set(DeviceInterface::Key_LastDemodMode,_demodMode);
 		m_sampleBufLen = 0;
 	}
@@ -657,7 +657,7 @@ void Receiver::filterChanged(int lo, int hi)
 	if (m_demod == NULL)
 		return;
 	m_bpFilter->setBandPass(lo,hi);
-	m_demod->SetBandwidth(hi - lo);
+	m_demod->setBandwidth(hi - lo);
 }
 //Called by ReceiverWidget when UI changes ANF
 void Receiver::anfChanged(bool b)
@@ -711,12 +711,12 @@ void Receiver::mixerChanged(int f)
 
 	if (m_useDemodDecimator && m_mixer != NULL) {
 		m_mixer->SetFrequency(f);
-		m_demod->ResetDemod();
+		m_demod->resetDemod();
 	} else {
 		//Only if using downConvert
 		m_downConvert1.SetFrequency(m_mixerFrequency);
 		m_downConvertWfm1.SetFrequency(m_mixerFrequency);
-		m_demod->ResetDemod();
+		m_demod->resetDemod();
 	}
 	m_lastDemodFrequency = m_demodFrequency;
 	m_demodFrequency = m_frequency + m_mixerFrequency;
@@ -850,7 +850,7 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 	}
 
     //global->perform.StartPerformance();
-	if (m_demod->DemodMode() == DeviceInterface::dmFMM || m_demod->DemodMode() == DeviceInterface::dmFMS) {
+	if (m_demod->demodMode() == DeviceInterface::dmFMM || m_demod->demodMode() == DeviceInterface::dmFMS) {
         //These steps are at demodWfmSampleRate NOT demodSampleRate
         //Special handling for wide band fm
 
@@ -895,7 +895,7 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 			return;
 		}
 
-		nextStep = m_demod->ProcessBlock(nextStep, numStepSamples);
+		nextStep = m_demod->processBlock(nextStep, numStepSamples);
 
 		resampRate = (m_demodWfmSampleRate*1.0) / (m_audioOutRate*1.0);
 
@@ -966,7 +966,7 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 		global->testBench->displayData(numStepSamples,nextStep,m_demodSampleRate,TB_POST_BP);
 
         //Tune only mode, no demod or output
-		if (m_demod->DemodMode() == DeviceInterface::dmNONE){
+		if (m_demod->demodMode() == DeviceInterface::dmNONE){
 			CPX::clearCPX(m_audioBuf,m_framesPerBuffer);
             return;
         }
@@ -988,7 +988,7 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 			nextStep = m_iDigitalModem->processBlock(nextStep);
 
 		//global->perform.StartPerformance("Demod");
-		nextStep = m_demod->ProcessBlock(nextStep, numStepSamples);
+		nextStep = m_demod->processBlock(nextStep, numStepSamples);
 		//global->perform.StopPerformance(100);
 
 		global->testBench->displayData(numStepSamples,nextStep,m_demodSampleRate,TB_POST_DEMOD);

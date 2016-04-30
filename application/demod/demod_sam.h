@@ -12,7 +12,7 @@ class Demod_SAM: public Demod
 public:
     Demod_SAM(int _inputRate, int _numSamples);
     ~Demod_SAM();
-    void ProcessBlock(  CPX * in, CPX * out, int demodSamples );
+    void processBlock(  CPX * in, CPX * out, int demodSamples );
 
     CPX PLL(CPX sig, float loLimit, float hiLimit);
 private:

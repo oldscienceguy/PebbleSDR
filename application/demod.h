@@ -28,14 +28,14 @@ public:
 	Demod(quint32 _sampleRate, quint32 _wfmSampleRate, quint32 _bufferSize);
 	~Demod();
 
-    void SetupDataUi(QWidget *parent);
+	void setupDataUi(QWidget *parent);
 
-    CPX * ProcessBlock(CPX * in, int _numSamples);
-	DeviceInterface::DemodMode DemodMode() const;
-    void ResetDemod(); //Resets all data decoders, called after frequency change from receiver
-	void SetDemodMode(DeviceInterface::DemodMode mode, int _sourceSampleRate, int _audioSampleRate);
-	static DeviceInterface::DemodMode StringToMode(QString m);
-	static QString ModeToString(DeviceInterface::DemodMode dm);
+	CPX * processBlock(CPX * in, int _numSamples);
+	DeviceInterface::DemodMode demodMode() const;
+	void resetDemod(); //Resets all data decoders, called after frequency change from receiver
+	void setDemodMode(DeviceInterface::DemodMode m_mode, int _sourceSampleRate, int _audioSampleRate);
+	static DeviceInterface::DemodMode stringToMode(QString m);
+	static QString modeToString(DeviceInterface::DemodMode dm);
 
     struct DemodInfo {
 		DeviceInterface::DemodMode mode;
@@ -51,40 +51,40 @@ public:
     static const DemodInfo demodInfo[];
 
 
-    void SetBandwidth(double bandwidth);
+	void setBandwidth(double bandwidth);
 signals:
-    void BandData(QString status, QString callSign, QString shortData, QString longData);
+	void bandData(QString status, QString callSign, QString shortData, QString longData);
 
 public slots:
-    void OutputBandData(QString status, QString callSign, QString shortData, QString longData);
+	void outputBandData(QString status, QString callSign, QString shortData, QString longData);
 
 private:
-    Demod_AM *demodAM;
-    Demod_SAM *demodSAM;
-    Demod_WFM *demodWFM;
-    Demod_NFM *demodNFM;
+	Demod_AM *m_demodAM;
+	Demod_SAM *m_demodSAM;
+	Demod_WFM *m_demodWFM;
+	Demod_NFM *m_demodNFM;
 
-	DeviceInterface::DemodMode mode;
-    Ui::dataBand *dataUi;
-    bool outputOn;
+	DeviceInterface::DemodMode m_mode;
+	Ui::dataBand *m_dataUi;
+	bool m_outputOn;
 
-    CRdsDecode rdsDecode;
-    char rdsBuf[256]; //Formatted RDS string for output
-    char rdsCallString[10];
-    char rdsString[128]; //Max RDS string
-    bool rdsUpdate; //true if we need to update display
+	CRdsDecode m_rdsDecode;
+	char m_rdsBuf[256]; //Formatted RDS string for output
+	char m_rdsCallString[10];
+	char m_rdsString[128]; //Max RDS string
+	bool m_rdsUpdate; //true if we need to update display
 
     //Used for FMW only for now
-    int inputSampleRate; //Original signal coming in
-    int inputWfmSampleRate; //Original signal coming in for Wfm (wider signal)
+	int m_inputSampleRate; //Original signal coming in
+	int m_inputWfmSampleRate; //Original signal coming in for Wfm (wider signal)
 
-    int audioSampleRate; //Audio out
+	int m_audioSampleRate; //Audio out
 
-    void FMMono(CPX * in, CPX * out, int _numSamples);
-    void FMStereo(CPX * in, CPX * out, int _numSamples);
+	void fmMono(CPX * in, CPX * out, int _numSamples);
+	void fmStereo(CPX * in, CPX * out, int _numSamples);
 
 	//Simple time domain demod algorithms for testing and comparison
-    void SimpleUSB(CPX *in, CPX *out, int _numSamples);
-    void SimpleLSB(CPX *in, CPX *out, int _numSamples);
+	void simpleUSB(CPX *in, CPX *out, int _numSamples);
+	void simpleLSB(CPX *in, CPX *out, int _numSamples);
 };
 

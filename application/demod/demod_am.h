@@ -14,9 +14,9 @@ public:
     Demod_AM(int _inputRate, int _numSamples);
     ~Demod_AM();
 
-    void ProcessBlock(CPX *in, CPX *out, int demodSamples);
+	void processBlock(CPX *in, CPX *out, int demodSamples);
     void ProcessBlockFiltered(CPX *in, CPX *out, int demodSamples);
-    void SetBandwidth(double bandwidth);
+	void setBandwidth(double bandwidth);
 
 private:
     //DC Filtering

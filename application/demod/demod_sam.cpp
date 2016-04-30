@@ -79,7 +79,7 @@ CPX Demod_SAM::PLL(CPX sig, float loLimit, float hiLimit)
 //dttsp & cuteSDR algorithm with DC removal
 #define DC_ALPHA 0.9999f	//ALPHA for DC removal filter ~20Hz Fcut with 15625Hz Sample Rate
 
-void Demod_SAM::ProcessBlock(  CPX * in, CPX * out, int demodSamples )
+void Demod_SAM::processBlock(  CPX * in, CPX * out, int demodSamples )
 {
     //Power magnitude for each sample sqrt(re^2 + im^2)
     CPX pllSample;

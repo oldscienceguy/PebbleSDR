@@ -819,7 +819,7 @@ TYPEREAL angle;
 
 
 //Alternate functions from old demod.cpp
-void Demod_WFM::FMMono( CPX * in, CPX * out, int bufSize)
+void Demod_WFM::fmMono( CPX * in, CPX * out, int bufSize)
 {
     //Alternate methods works as of 5/18/13, but use wfmDemod
     //LP filter to elimate everything above FM bandwidth

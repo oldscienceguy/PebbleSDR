@@ -38,7 +38,7 @@ public:
 
     int GetNextRdsGroupData(tRDS_GROUPS* pGroupData);
     int GetStereoLock(int* pPilotLock);
-    void FMMono(CPX *in, CPX *out, int bufSize);
+    void fmMono(CPX *in, CPX *out, int bufSize);
 private:
     void FMDeemphasisFilter(int _bufSize, CPX *in, CPX *out);
     float fmDeemphasisAlpha;

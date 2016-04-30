@@ -167,7 +167,7 @@ bool Presets::ReadBands()
         bands[i].tune = parts[Band::C_TUNE].toDouble();
         bands[i].name = parts[Band::C_NAME];
         bands[i].bType = StringToBandType(parts[Band::C_BANDTYPE]);
-        bands[i].mode = Demod::StringToMode(parts[Band::C_MODE]);
+        bands[i].mode = Demod::stringToMode(parts[Band::C_MODE]);
         bands[i].notes = parts[Band::C_NOTES];
         bands[i].stations = NULL;
         bands[i].numStations = 0;

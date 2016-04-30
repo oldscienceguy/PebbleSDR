@@ -50,74 +50,74 @@ Demod::Demod(quint32 _sampleRate, quint32 _bufferSize) :
 Demod::Demod(quint32 _sampleRate, quint32 _wfmSampleRate, quint32 _bufferSize) :
 	ProcessStep(_sampleRate,_bufferSize)
 {   
-	inputSampleRate = _sampleRate;
-	inputWfmSampleRate = _wfmSampleRate;
+	m_inputSampleRate = _sampleRate;
+	m_inputWfmSampleRate = _wfmSampleRate;
 
-	SetDemodMode(DeviceInterface::dmAM, sampleRate, sampleRate);
+	setDemodMode(DeviceInterface::dmAM, sampleRate, sampleRate);
 	
     //We're no longer decimating to audio in wfmdemod, so audio rate is same as input rate
     //This fixed bug where FM filters were not working because rate was wrong
 
     //Moving to subclasses for each demod, transition with instance for each demod, change to vptr later
-    demodAM = new Demod_AM(inputSampleRate, numSamples);
-    demodSAM = new Demod_SAM(inputSampleRate, numSamples);
-    demodNFM = new Demod_NFM(inputSampleRate, numSamples);
-    demodWFM = new Demod_WFM(inputWfmSampleRate, numSamples);
-    ResetDemod();
+	m_demodAM = new Demod_AM(m_inputSampleRate, numSamples);
+	m_demodSAM = new Demod_SAM(m_inputSampleRate, numSamples);
+	m_demodNFM = new Demod_NFM(m_inputSampleRate, numSamples);
+	m_demodWFM = new Demod_WFM(m_inputWfmSampleRate, numSamples);
+	resetDemod();
 
-    dataUi = NULL;
+	m_dataUi = NULL;
 }
 
 Demod::~Demod()
 {
 }
 
-void Demod::SetupDataUi(QWidget *parent)
+void Demod::setupDataUi(QWidget *parent)
 {
     if (parent == NULL) {
-        outputOn = false;
+		m_outputOn = false;
 
         //We want to delete
-        if (dataUi != NULL) {
-            delete dataUi;
+		if (m_dataUi != NULL) {
+			delete m_dataUi;
         }
-        dataUi = NULL;
+		m_dataUi = NULL;
         return;
-    } else if (dataUi == NULL) {
+	} else if (m_dataUi == NULL) {
         //Create new one
-        dataUi = new Ui::dataBand();
-        dataUi->setupUi(parent);
+		m_dataUi = new Ui::dataBand();
+		m_dataUi->setupUi(parent);
 
         //Reciever/demod thread emits and display thread handles
-        connect(this,SIGNAL(BandData(QString,QString,QString,QString)),this,SLOT(OutputBandData(QString,QString,QString,QString)));
+		connect(this,SIGNAL(bandData(QString,QString,QString,QString)),this,SLOT(outputBandData(QString,QString,QString,QString)));
 
-        outputOn = true;
+		m_outputOn = true;
     }
 }
 
 //We can get called with anything up to maxSamples, depending on earlier decimation steps
-CPX * Demod::ProcessBlock(CPX * in, int bufSize)
+CPX * Demod::processBlock(CPX * in, int bufSize)
 {
 
-    switch(mode) {
+	switch(m_mode) {
 		case DeviceInterface::dmAM: // AM
             //SimpleAM(in,out, bufSize);
-            demodAM->ProcessBlockFiltered(in,out, bufSize); //Sounds slightly better
+			m_demodAM->ProcessBlockFiltered(in,out, bufSize); //Sounds slightly better
             break;
 		case DeviceInterface::dmSAM: // SAM
-            demodSAM->ProcessBlock(in, out, bufSize);
+			m_demodSAM->processBlock(in, out, bufSize);
             break;
 		case DeviceInterface::dmFMN: // FMN
             //demodNFM->ProcessBlockFM1(in, out, bufSize);
             //demodNFM->ProcessBlockFM2(in, out, bufSize);
-            demodNFM->ProcessBlockNCO(in, out, bufSize);
+			m_demodNFM->ProcessBlockNCO(in, out, bufSize);
             break;
 		case DeviceInterface::dmFMM: // FMW
-            FMMono(in,out, bufSize);
+			fmMono(in,out, bufSize);
             break;
 		case DeviceInterface::dmFMS:
             //Will only work if sample rate is at least 192k
-            FMStereo(in,out,bufSize);
+			fmStereo(in,out,bufSize);
             break;
 
 		//We've already filtered the undesired sideband @ BPFilter
@@ -139,7 +139,7 @@ CPX * Demod::ProcessBlock(CPX * in, int bufSize)
 	return out;
 }
 
-void Demod::SimpleUSB(CPX *in, CPX *out, int _numSamples)
+void Demod::simpleUSB(CPX *in, CPX *out, int _numSamples)
 {
 	float tmp;
     int ns = _numSamples;
@@ -150,7 +150,7 @@ void Demod::SimpleUSB(CPX *in, CPX *out, int _numSamples)
 		out[i].re = out[i].im = tmp;
 	}
 }
-void Demod::SimpleLSB(CPX *in, CPX *out, int _numSamples)
+void Demod::simpleLSB(CPX *in, CPX *out, int _numSamples)
 {
 	float tmp;
     int ns = _numSamples;
@@ -163,11 +163,11 @@ void Demod::SimpleLSB(CPX *in, CPX *out, int _numSamples)
 }
 
 //CuteSDR algorithm
-void Demod::FMMono( CPX * in, CPX * out, int bufSize)
+void Demod::fmMono( CPX * in, CPX * out, int bufSize)
 {
     //in buf has already been decimated to inputWfmSampleRate
     //out buf will be decimated to audio rate in receive chain
-    bufSize = demodWFM->ProcessDataMono(bufSize,in,out);
+	bufSize = m_demodWFM->ProcessDataMono(bufSize,in,out);
     return;
 }
 
@@ -190,33 +190,33 @@ void Demod::FMMono( CPX * in, CPX * out, int bufSize)
   92khz Audos subcarrier
 
 */
-void Demod::FMStereo(CPX * in, CPX * out, int bufSize)
+void Demod::fmStereo(CPX * in, CPX * out, int bufSize)
 {
-    bufSize = demodWFM->ProcessDataStereo(bufSize,in,out);
+	bufSize = m_demodWFM->ProcessDataStereo(bufSize,in,out);
 
-    rdsUpdate = false; //We don't update unless something new or changed
+	m_rdsUpdate = false; //We don't update unless something new or changed
     //Do we have stereo lock
     int pilotLock =0;
-    if (demodWFM->GetStereoLock(&pilotLock))
+	if (m_demodWFM->GetStereoLock(&pilotLock))
         //Stereo lock has changed and pilotLock has status
-        rdsUpdate = true;
+		m_rdsUpdate = true;
 
     //This only updates when something there's new data and its different than last, when do we reset display
     tRDS_GROUPS rdsGroups;
-    if (demodWFM->GetNextRdsGroupData(&rdsGroups)) {
+	if (m_demodWFM->GetNextRdsGroupData(&rdsGroups)) {
         //We have new data, is it valid
         if (rdsGroups.BlockA != 0) {
-            rdsDecode.DecodeRdsGroup(&rdsGroups);
+			m_rdsDecode.DecodeRdsGroup(&rdsGroups);
             //If changed since last call, update
-            if (rdsDecode.GetRdsString(rdsString))
-                rdsUpdate = true;
-            if (rdsDecode.GetRdsCallString(rdsCallString))
-                rdsUpdate = true;
+			if (m_rdsDecode.GetRdsString(m_rdsString))
+				m_rdsUpdate = true;
+			if (m_rdsDecode.GetRdsCallString(m_rdsCallString))
+				m_rdsUpdate = true;
         }
     }
     char *shortData = (char*)"";
-    if (rdsUpdate) {
-        emit BandData((char*) (pilotLock ? "Stereo" : ""), rdsCallString, shortData, rdsString);
+	if (m_rdsUpdate) {
+		emit bandData((char*) (pilotLock ? "Stereo" : ""), m_rdsCallString, shortData, m_rdsString);
     }
     return;
 
@@ -224,28 +224,28 @@ void Demod::FMStereo(CPX * in, CPX * out, int bufSize)
 
 
 //Pass filter changes to demodulators in case they need to stay in sync
-void Demod::SetBandwidth(double bandwidth)
+void Demod::setBandwidth(double bandwidth)
 {
-    switch (mode) {
+	switch (m_mode) {
 		case DeviceInterface::dmAM:
-            demodAM->SetBandwidth(bandwidth);
+			m_demodAM->setBandwidth(bandwidth);
             break;
         default:
             break;
     }
 }
 
-void Demod::SetDemodMode(DeviceInterface::DemodMode _mode, int _sourceSampleRate, int _audioSampleRate)
+void Demod::setDemodMode(DeviceInterface::DemodMode _mode, int _sourceSampleRate, int _audioSampleRate)
 {
-    mode = _mode;
-    inputSampleRate = _sourceSampleRate;
-    audioSampleRate = _audioSampleRate;
+	m_mode = _mode;
+	m_inputSampleRate = _sourceSampleRate;
+	m_audioSampleRate = _audioSampleRate;
 
-    switch (mode) {
+	switch (m_mode) {
 		case DeviceInterface::dmFMM:
 		case DeviceInterface::dmFMS:
             //FM Stereo testing
-            rdsDecode.DecodeReset(true);
+			m_rdsDecode.DecodeReset(true);
             break;
         default:
             break;
@@ -253,22 +253,22 @@ void Demod::SetDemodMode(DeviceInterface::DemodMode _mode, int _sourceSampleRate
 
 }
 
-DeviceInterface::DemodMode Demod::DemodMode() const
+DeviceInterface::DemodMode Demod::demodMode() const
 {
-    return mode;
+	return m_mode;
 }
 
 //Reset RDS and any other decoders after frequency change
-void Demod::ResetDemod()
+void Demod::resetDemod()
 {
-    rdsDecode.DecodeReset(true);
-    rdsCallString[0] = 0;
-    rdsString[0] = 0;
-    rdsBuf[0] = 0;
-    rdsUpdate = true; //Update display next loop
+	m_rdsDecode.DecodeReset(true);
+	m_rdsCallString[0] = 0;
+	m_rdsString[0] = 0;
+	m_rdsBuf[0] = 0;
+	m_rdsUpdate = true; //Update display next loop
 }
 
-DeviceInterface::DemodMode Demod::StringToMode(QString m)
+DeviceInterface::DemodMode Demod::stringToMode(QString m)
 {
 	if (m == "AM") return DeviceInterface::dmAM;
 	else if (m == "SAM") return DeviceInterface::dmSAM;
@@ -285,7 +285,7 @@ DeviceInterface::DemodMode Demod::StringToMode(QString m)
 	else if (m == "NONE") return DeviceInterface::dmNONE;
 	else return DeviceInterface::dmAM; //default
 }
-QString Demod::ModeToString(DeviceInterface::DemodMode dm)
+QString Demod::modeToString(DeviceInterface::DemodMode dm)
 {
 	if (dm == DeviceInterface::dmAM) return "AM";
 	else if (dm == DeviceInterface::dmSAM) return "SAM";
@@ -304,12 +304,12 @@ QString Demod::ModeToString(DeviceInterface::DemodMode dm)
 }
 
 
-void Demod::OutputBandData(QString status, QString callSign, QString shortData, QString longData)
+void Demod::outputBandData(QString status, QString callSign, QString shortData, QString longData)
 {
-    if (!outputOn || dataUi == NULL)
+	if (!m_outputOn || m_dataUi == NULL)
         return;
-    dataUi->status->setText(status);
-    dataUi->callSign->setText(callSign);
-    dataUi->callSignData->setText(shortData);
-    dataUi->dataEdit->setText(longData);
+	m_dataUi->status->setText(status);
+	m_dataUi->callSign->setText(callSign);
+	m_dataUi->callSignData->setText(shortData);
+	m_dataUi->dataEdit->setText(longData);
 }
