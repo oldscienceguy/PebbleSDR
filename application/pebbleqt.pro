@@ -31,12 +31,6 @@ macx {
         #This technique allows us to execute system commands before any other targets are built
         #This happens on every build, not just when qmake is executed
 
-
-        #The real problem is that pebblelib creates Pebble.app before pebbleqt
-        #delete Pebble.app on every build to avoid warnings about files already existing
-        #macdeployqt generates these warnings for qt.conf for example
-        #myPreTarget.commands = rm -f -r $${DESTDIR}/Pebble.app
-
         #Note 2 undocumented hacks.
         #   $${LITERAL_HASH} to escape #, \# doesn't work
         #   \$\$ to escape $, trial and error but this works
@@ -118,12 +112,22 @@ macx {
         #pebblefix.commands += dsymutil $${DESTDIR}/Pebble.app/Contents/MacOS/Pebble;
         #1/26/16: macdeployqt has been strippping debug symbol for some time, ie no breakpoints
         #Some QT update starting running strip at the the end.  Adding -no-strip arg gives us bp back!
-        pebblefix.commands += macdeployqt $${DESTDIR}/Pebble.app -no-strip;
+        #Use -verbose for debugging macdeployqt problems
+        #-verbose= [0]No output [1]Errors and Warnings [2]Normal [3]Debug
+        pebblefix.commands += macdeployqt $${DESTDIR}/Pebble.app -no-strip -verbose=0;
 
         #Uncomment for debugging dependencies
         #pebblefix.commands += otool -L $${DESTDIR}/Pebble.app/contents/macos/pebble >> temp.txt;
         pebblefix.path += $${DESTDIR}
         INSTALLS += pebblefix
+
+        #Copy pebblelib and it's dependencies
+        #Keep in sync with pebblelib.pro
+        plib.files += $${PWD}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
+        plib.files += $${PWD}/../pebblelib/$${LIB_DIR}/libpebblelib.1.dylib
+        plib.path = $${DESTDIR}/Pebble.app/Contents/Frameworks
+        INSTALLS += plib
+
 }
 
 win32 {
