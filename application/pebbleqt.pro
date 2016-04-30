@@ -271,7 +271,6 @@ HEADERS += \
 	nco.h \
 	mixer.h \
 	demod.h \
-    defs.h \
 	#build.h \
 	agc.h \
 	iqbalance.h \
