@@ -43,13 +43,13 @@
 
 CRdsDecode::CRdsDecode()
 {
-	DecodeReset(true);
+	decodeReset(true);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 //Call to reset the decoder and clear out the current text
 ///////////////////////////////////////////////////////////////////////////////
-void CRdsDecode::DecodeReset(int USFm)
+void CRdsDecode::decodeReset(int USFm)
 {
 int i;
 	m_USFm = USFm;
@@ -79,7 +79,7 @@ int i;
 //Call with user char buffer to get filled with latest RDS text string.
 //Returns true if a change in text string
 ////////////////////////////////////////////////////////////////////////
-int CRdsDecode::GetRdsString( char* Str)
+int CRdsDecode::getRdsString( char* Str)
 {
 	m_RDSText[0] = 0;
 	strcat( m_RDSText, m_PTYText );
@@ -98,7 +98,7 @@ int CRdsDecode::GetRdsString( char* Str)
 //Call with user char buffer to get filled with latest RDS callsign string.
 //Returns true if a change in text string
 ////////////////////////////////////////////////////////////////////////
-int CRdsDecode::GetRdsCallString( char* Str)
+int CRdsDecode::getRdsCallString( char* Str)
 {
 	if( strcmp(m_RBDSCallSign, Str) )
 	{
@@ -112,31 +112,31 @@ int CRdsDecode::GetRdsCallString( char* Str)
 ////////////////////////////////////////////////////////////////////////
 //Decode pGrp RDS Data into various text strings
 ////////////////////////////////////////////////////////////////////////
-void CRdsDecode::DecodeRdsGroup(tRDS_GROUPS* pGrp)
+void CRdsDecode::decodeRdsGroup(tRDS_GROUPS* pGrp)
 {
 	if( m_Group.BlockA && (m_Group.BlockA != m_LastPICode) )
 	{	//station changed so reset
-		DecodeReset(m_USFm);
-		DecodePIcode();
+		decodeReset(m_USFm);
+		decodePIcode();
 		m_LastPICode = m_Group.BlockA;
 	}
-	DecodePTYText();
+	decodePTYText();
 	m_Group = *pGrp;
 	m_GrpType = (m_Group.BlockB>>11) & 0x1F;
-	DecodePIcode();
+	decodePIcode();
 	switch(m_GrpType)
 	{
 		case GRPTYPE_0A:	//Program Service Text
 		case GRPTYPE_0B:
-			DecodePSText();
+			decodePSText();
 			break;
 		case GRPTYPE_1A:	//Extended Country Codes
 			break;
 		case GRPTYPE_2A:	//64 character Radio text
-			Decode64RadioText();
+			decode64RadioText();
 			break;
 		case GRPTYPE_2B:	//32 character Radio text
-			Decode32RadioText();
+			decode32RadioText();
 			break;
 		default:
 //qDebug("unimplemented GrpType = %X\n\r", m_GrpType);
@@ -148,7 +148,7 @@ void CRdsDecode::DecodeRdsGroup(tRDS_GROUPS* pGrp)
 ////////////////////////////////////////////////////////////////////////
 // Generate Program type text string from PTY code
 ////////////////////////////////////////////////////////////////////////
-void CRdsDecode::DecodePTYText()
+void CRdsDecode::decodePTYText()
 {
 	m_PrgType = (m_Group.BlockB>>5) & 0x1F;
 	if(m_PrgType != m_LastPrgType)
@@ -164,7 +164,7 @@ void CRdsDecode::DecodePTYText()
 ////////////////////////////////////////////////////////////////////////
 //Generate 32 character Radio Text message from rds data
 ////////////////////////////////////////////////////////////////////////
-void CRdsDecode::Decode32RadioText()
+void CRdsDecode::decode32RadioText()
 {
 char ch;
 int adr = (m_Group.BlockB&0x0F)<<1;
@@ -203,7 +203,7 @@ int adr = (m_Group.BlockB&0x0F)<<1;
 ////////////////////////////////////////////////////////////////////////
 //Generate 64 character Radio Text message from rds data
 ////////////////////////////////////////////////////////////////////////
-void CRdsDecode::Decode64RadioText()
+void CRdsDecode::decode64RadioText()
 {
 char ch;
 int adr = (m_Group.BlockB&0x0F)<<2;
@@ -249,7 +249,7 @@ int adr = (m_Group.BlockB&0x0F)<<2;
 ////////////////////////////////////////////////////////////////////////
 //Generate Program Service name from rds data
 ////////////////////////////////////////////////////////////////////////
-void CRdsDecode::DecodePSText()
+void CRdsDecode::decodePSText()
 {
 int adr = (m_Group.BlockB&0x03)<<1;
 //qDebug("adr = %u\n\r",adr);
@@ -270,7 +270,7 @@ int adr = (m_Group.BlockB&0x03)<<1;
 // bastardized by a recent standards chenge so a lot of callsigns cannot be
 // derived from the code.
 /////////////////////////////////////////////////////////////////////////////////
-void CRdsDecode::DecodePIcode()
+void CRdsDecode::decodePIcode()
 {
 quint16 PIcode = m_Group.BlockA;
 	if(m_LastPICode == PIcode)

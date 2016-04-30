@@ -5,7 +5,7 @@
 Demod_AM::Demod_AM(int _inputRate, int _numSamples) :
     Demod(_inputRate, _numSamples)
 {
-    amDc = amDcLast = 0.0;
+	m_amDc = m_amDcLast = 0.0;
 	setBandwidth(16000); //For testing
 }
 
@@ -17,7 +17,7 @@ Demod_AM::~Demod_AM()
 void Demod_AM::setBandwidth(double bandwidth)
 {
     //create a LP filter with passband the same as the main filter bandwidth for post audio filtering
-    lpFilter.InitLPFilter(0, 1.0, 50.0, bandwidth, bandwidth*1.8, sampleRate);//initialize LP FIR filter
+	m_lpFilter.InitLPFilter(0, 1.0, 50.0, bandwidth, bandwidth*1.8, sampleRate);//initialize LP FIR filter
 }
 
 //WARNING: demodSamples here is NOT the same as numSamples in the base class due to decimation.
@@ -39,7 +39,7 @@ void Demod_AM::processBlock(CPX *in, CPX *out, int demodSamples)
 
 //WARNING: demodSamples here is NOT the same as numSamples in the base class due to decimation.
 //Todo: Clean up so we stay in sync
-void Demod_AM::ProcessBlockFiltered(CPX *in, CPX *out, int demodSamples)
+void Demod_AM::processBlockFiltered(CPX *in, CPX *out, int demodSamples)
 {
     //Power magnitude for each sample
     double mag; //sqrt(re^2 + im^2)
@@ -52,15 +52,15 @@ void Demod_AM::ProcessBlockFiltered(CPX *in, CPX *out, int demodSamples)
         //CuteSDR description of filter for reference
         //High pass filter(DC removal) with IIR filter
         // H(z) = (1 - z^-1)/(1 - ALPHA*z^-1)
-        amDc = (DC_ALPHA * amDcLast) + mag;
-        amOut = amDc - amDcLast;
-        amDcLast = amDc;
+		m_amDc = (DC_ALPHA * m_amDcLast) + mag;
+		amOut = m_amDc - m_amDcLast;
+		m_amDcLast = m_amDc;
 
         //amCout *= .5 so we keep overall signal magnitude unchanged compared to SSB with half the power
         out[i].re = out[i].im = amOut * 0.5;
     }
 
     //post filter AM audio to limit high frequency noise
-    lpFilter.ProcessFilter(demodSamples, out, out);
+	m_lpFilter.ProcessFilter(demodSamples, out, out);
 
 }

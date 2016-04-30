@@ -22,17 +22,17 @@ class CRdsDecode
 {
 public:
     CRdsDecode();
-	void DecodeRdsGroup(tRDS_GROUPS* pGrp);
-	int GetRdsString( char* Str);
-	int GetRdsCallString( char* Str);
-	void DecodeReset(int USFm);
+	void decodeRdsGroup(tRDS_GROUPS* pGrp);
+	int getRdsString( char* Str);
+	int getRdsCallString( char* Str);
+	void decodeReset(int USFm);
 
 private:
-	void Decode32RadioText();
-	void Decode64RadioText();
-	void DecodePTYText();
-	void DecodePSText();
-	void DecodePIcode();
+	void decode32RadioText();
+	void decode64RadioText();
+	void decodePTYText();
+	void decodePSText();
+	void decodePIcode();
 
 	tRDS_GROUPS m_Group;
 	int m_USFm;

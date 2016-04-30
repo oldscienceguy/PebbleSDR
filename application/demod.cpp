@@ -102,7 +102,7 @@ CPX * Demod::processBlock(CPX * in, int bufSize)
 	switch(m_mode) {
 		case DeviceInterface::dmAM: // AM
             //SimpleAM(in,out, bufSize);
-			m_demodAM->ProcessBlockFiltered(in,out, bufSize); //Sounds slightly better
+			m_demodAM->processBlockFiltered(in,out, bufSize); //Sounds slightly better
             break;
 		case DeviceInterface::dmSAM: // SAM
 			m_demodSAM->processBlock(in, out, bufSize);
@@ -110,7 +110,7 @@ CPX * Demod::processBlock(CPX * in, int bufSize)
 		case DeviceInterface::dmFMN: // FMN
             //demodNFM->ProcessBlockFM1(in, out, bufSize);
             //demodNFM->ProcessBlockFM2(in, out, bufSize);
-			m_demodNFM->ProcessBlockNCO(in, out, bufSize);
+			m_demodNFM->processBlockNCO(in, out, bufSize);
             break;
 		case DeviceInterface::dmFMM: // FMW
 			fmMono(in,out, bufSize);
@@ -167,7 +167,7 @@ void Demod::fmMono( CPX * in, CPX * out, int bufSize)
 {
     //in buf has already been decimated to inputWfmSampleRate
     //out buf will be decimated to audio rate in receive chain
-	bufSize = m_demodWFM->ProcessDataMono(bufSize,in,out);
+	bufSize = m_demodWFM->processDataMono(bufSize,in,out);
     return;
 }
 
@@ -192,25 +192,25 @@ void Demod::fmMono( CPX * in, CPX * out, int bufSize)
 */
 void Demod::fmStereo(CPX * in, CPX * out, int bufSize)
 {
-	bufSize = m_demodWFM->ProcessDataStereo(bufSize,in,out);
+	bufSize = m_demodWFM->processDataStereo(bufSize,in,out);
 
 	m_rdsUpdate = false; //We don't update unless something new or changed
     //Do we have stereo lock
     int pilotLock =0;
-	if (m_demodWFM->GetStereoLock(&pilotLock))
+	if (m_demodWFM->getStereoLock(&pilotLock))
         //Stereo lock has changed and pilotLock has status
 		m_rdsUpdate = true;
 
     //This only updates when something there's new data and its different than last, when do we reset display
     tRDS_GROUPS rdsGroups;
-	if (m_demodWFM->GetNextRdsGroupData(&rdsGroups)) {
+	if (m_demodWFM->getNextRdsGroupData(&rdsGroups)) {
         //We have new data, is it valid
         if (rdsGroups.BlockA != 0) {
-			m_rdsDecode.DecodeRdsGroup(&rdsGroups);
+			m_rdsDecode.decodeRdsGroup(&rdsGroups);
             //If changed since last call, update
-			if (m_rdsDecode.GetRdsString(m_rdsString))
+			if (m_rdsDecode.getRdsString(m_rdsString))
 				m_rdsUpdate = true;
-			if (m_rdsDecode.GetRdsCallString(m_rdsCallString))
+			if (m_rdsDecode.getRdsCallString(m_rdsCallString))
 				m_rdsUpdate = true;
         }
     }
@@ -245,7 +245,7 @@ void Demod::setDemodMode(DeviceInterface::DemodMode _mode, int _sourceSampleRate
 		case DeviceInterface::dmFMM:
 		case DeviceInterface::dmFMS:
             //FM Stereo testing
-			m_rdsDecode.DecodeReset(true);
+			m_rdsDecode.decodeReset(true);
             break;
         default:
             break;
@@ -261,7 +261,7 @@ DeviceInterface::DemodMode Demod::demodMode() const
 //Reset RDS and any other decoders after frequency change
 void Demod::resetDemod()
 {
-	m_rdsDecode.DecodeReset(true);
+	m_rdsDecode.decodeReset(true);
 	m_rdsCallString[0] = 0;
 	m_rdsString[0] = 0;
 	m_rdsBuf[0] = 0;

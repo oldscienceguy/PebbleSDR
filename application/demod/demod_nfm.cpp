@@ -25,47 +25,47 @@
 Demod_NFM::Demod_NFM(int _inputRate, int _numSamples) :
     Demod(_inputRate, _numSamples)
 {
-    fmIPrev = 0.0;
-    fmQPrev = 0.0;
+    m_fmIPrev = 0.0;
+    m_fmQPrev = 0.0;
 
     //FMN PLL config
-    pllFreqErrorDC = 0.0;
-    pllPhase = 0.0; //Tracks ref sig in PLL
-    ncoFrequency = 0.0;
+    m_pllFreqErrorDC = 0.0;
+    m_pllPhase = 0.0; //Tracks ref sig in PLL
+    m_ncoFrequency = 0.0;
 
-    fmBandwidth = 5000;
-    Init(sampleRate);
+    m_fmBandwidth = 5000;
+    init(sampleRate);
 }
 
 Demod_NFM::~Demod_NFM()
 {
 }
 
-void Demod_NFM::Init(double samplerate)
+void Demod_NFM::init(double samplerate)
 {
     sampleRate = samplerate;
 
     double norm = TWOPI/sampleRate;	//to normalize Hz to radians
 
     //initialize the PLL
-    ncoLLimit = -FMPLL_RANGE * norm;		//clamp FM PLL NCO
-    ncoHLimit = FMPLL_RANGE * norm;
-    pllAlpha = 2.0 * FMPLL_ZETA * FMPLL_BW * norm;
-    pllBeta = (pllAlpha * pllAlpha) / (4.0 * FMPLL_ZETA * FMPLL_ZETA);
+    m_ncoLLimit = -FMPLL_RANGE * norm;		//clamp FM PLL NCO
+    m_ncoHLimit = FMPLL_RANGE * norm;
+    m_pllAlpha = 2.0 * FMPLL_ZETA * FMPLL_BW * norm;
+    m_pllBeta = (m_pllAlpha * m_pllAlpha) / (4.0 * FMPLL_ZETA * FMPLL_ZETA);
 
     //Check this, gain is like 33k!
 	//pllOutGain = MAX_FMOUT / ncoHLimit;	//audio output level gain value
-	pllOutGain = 1.0; //Fudge to get approx same audio output as AM
+	m_pllOutGain = 1.0; //Fudge to get approx same audio output as AM
 
     //DC removal filter time constant
-    pllDcAlpha = (1.0 - exp(-1.0 / (sampleRate * FMDC_ALPHA)) );
+    m_pllDcAlpha = (1.0 - exp(-1.0 / (sampleRate * FMDC_ALPHA)) );
 
-    lpFilter.InitLPFilter(0,1.0,50.0,VOICE_BANDWIDTH, 1.6*VOICE_BANDWIDTH, sampleRate);
+    m_lpFilter.InitLPFilter(0,1.0,50.0,VOICE_BANDWIDTH, 1.6*VOICE_BANDWIDTH, sampleRate);
 
     //Pick up noise squelch from CuteSDR sometime
 }
 
-void Demod_NFM::SimplePhase(CPX *in, CPX *out, int demodSamples)
+void Demod_NFM::simplePhase(CPX *in, CPX *out, int demodSamples)
 {
     float tmp;
 
@@ -95,7 +95,7 @@ Ip & Qp are the previous sample, I & Q are the current sample
     You may have to take care about the input amplitude limiting.
 */
 
-void Demod_NFM::ProcessBlockFM1(CPX *in, CPX *out, int demodSamples)
+void Demod_NFM::processBlockFM1(CPX *in, CPX *out, int demodSamples)
 {
     float tmp;
     float I,Q; //To make things more readable
@@ -105,13 +105,13 @@ void Demod_NFM::ProcessBlockFM1(CPX *in, CPX *out, int demodSamples)
         I = in[i].re;
         Q = in[i].im;
 
-        tmp = (Q * fmIPrev - I * fmQPrev) / (I * fmIPrev + Q * fmQPrev); //This seems to work better, less static, better audio
+        tmp = (Q * m_fmIPrev - I * m_fmQPrev) / (I * m_fmIPrev + Q * m_fmQPrev); //This seems to work better, less static, better audio
         //tmp = (Q * Ip - I * Qp) / (I * I + Q * Q);
 
         //Output volume is very low, scaling by even 100 doesn't do anything?
         out[i].re = out[i].im = tmp * .0005;
-        fmIPrev = I;
-        fmQPrev = Q;
+        m_fmIPrev = I;
+        m_fmQPrev = Q;
     }
 
 }
@@ -119,7 +119,7 @@ void Demod_NFM::ProcessBlockFM1(CPX *in, CPX *out, int demodSamples)
 //From Doug Smith QEX article, Eq 21,  based on phase delta
 //From Erio Blossom FM article in Linux Journal Sept 2004
 //5/12 Working well for NFM
-void Demod_NFM::ProcessBlockFM2(CPX *in, CPX *out, int demodSamples)
+void Demod_NFM::processBlockFM2(CPX *in, CPX *out, int demodSamples)
 {
     CPX prod;
 
@@ -153,7 +153,7 @@ void Demod_NFM::ProcessBlockFM2(CPX *in, CPX *out, int demodSamples)
   The amount of correction for each sample is the frequency change
 */
 //Reference, not used or updated
-void Demod_NFM::PllFMN(  CPX * in, CPX * out, int demodSamples )
+void Demod_NFM::pllFMN(  CPX * in, CPX * out, int demodSamples )
 {
     int ns = demodSamples;
 
@@ -161,7 +161,7 @@ void Demod_NFM::PllFMN(  CPX * in, CPX * out, int demodSamples )
     //time constant for DC removal filter
     const float fmDcAlpha = (1.0 - exp(-1.0 / (sampleRate * 0.001)) );
     const float fmPllZeta = .707;  //PLL Loop damping factor
-    const float fmPllBW = fmBandwidth /2;// 3000.0;
+    const float fmPllBW = m_fmBandwidth /2;// 3000.0;
     float norm = TWOPI/sampleRate;	//to normalize Hz to radians
 
     //Original alpha/beta calculations
@@ -183,8 +183,8 @@ void Demod_NFM::PllFMN(  CPX * in, CPX * out, int demodSamples )
     for (int i = 0; i < ns; i++) {
         //Todo: See if we can use NCO here
         //This is the generated signal to sync with (NCO)
-        pllNCO.re = cos(pllPhase);
-        pllNCO.im = sin(pllPhase);
+        pllNCO.re = cos(m_pllPhase);
+        pllNCO.im = sin(m_pllPhase);
 
         //Shift signal by PLL.  Should be same as CPX operator * ie pll * in[i]
         delay.re = pllNCO.re * in[i].re - pllNCO.im * in[i].im;
@@ -195,59 +195,59 @@ void Demod_NFM::PllFMN(  CPX * in, CPX * out, int demodSamples )
         //phaseError = -atan2(delay.im,delay.re);
 
         //phaseError is the delta from last sample, ie demod value.  Rest is cleanup
-        ncoFrequency += fmPllBeta * phaseError / 100;  //Scale down to avoid overlaod
+        m_ncoFrequency += fmPllBeta * phaseError / 100;  //Scale down to avoid overlaod
 
         //Keep the PLL within our limits
-        if (ncoFrequency < fmPllLoLimit)
-            ncoFrequency = fmPllLoLimit;
-        if (ncoFrequency > fmPllHiLimit)
-            ncoFrequency = fmPllHiLimit;
+        if (m_ncoFrequency < fmPllLoLimit)
+            m_ncoFrequency = fmPllLoLimit;
+        if (m_ncoFrequency > fmPllHiLimit)
+            m_ncoFrequency = fmPllHiLimit;
 
         //Next value for NCO
-        pllPhase += ncoFrequency + fmPllAlpha * phaseError;
+        m_pllPhase += m_ncoFrequency + fmPllAlpha * phaseError;
 
         //LP filter the NCO frequency term to get DC offset value
-        pllFreqErrorDC = (1.0 - fmDcAlpha) * pllFreqErrorDC + fmDcAlpha * ncoFrequency;
+        m_pllFreqErrorDC = (1.0 - fmDcAlpha) * m_pllFreqErrorDC + fmDcAlpha * m_ncoFrequency;
         //Change in frequency - dc term is our demodulated output
-        out[i].re = out[i].im = (ncoFrequency - pllFreqErrorDC);
+        out[i].re = out[i].im = (m_ncoFrequency - m_pllFreqErrorDC);
 
     }
     //fmod will keep pllPhase <= TWOPI
-    pllPhase = fmod(pllPhase, TWOPI);
+    m_pllPhase = fmod(m_pllPhase, TWOPI);
 
 }
 
 //CuteSDR PLL version that works
-void Demod_NFM::ProcessBlockNCO(CPX* in, CPX* out, int demodSamples)
+void Demod_NFM::processBlockNCO(CPX* in, CPX* out, int demodSamples)
 {
     CPX tmp;
     //Pick up noise squelch from CuteSDR sometime
 
     for(int i=0; i<demodSamples; i++)
     {
-        double ncoSin = sin(pllPhase);
-        double ncoCos = cos(pllPhase);
+        double ncoSin = sin(m_pllPhase);
+        double ncoCos = cos(m_pllPhase);
         //complex multiply input sample by NCO's  sin and cos
         tmp.re = ncoCos * in[i].re - ncoSin * in[i].im;
         tmp.im = ncoCos * in[i].im + ncoSin * in[i].re;
         //find current sample phase after being shifted by NCO frequency
         double phzerror = -atan2(tmp.im, tmp.re);
 
-        ncoFrequency += (pllBeta * phzerror);		//  radians per sampletime
+        m_ncoFrequency += (m_pllBeta * phzerror);		//  radians per sampletime
         //clamp NCO frequency so doesn't drift out of lock range
-        if(ncoFrequency > ncoHLimit)
-            ncoFrequency = ncoHLimit;
-        else if(ncoFrequency < ncoLLimit)
-            ncoFrequency = ncoLLimit;
+        if(m_ncoFrequency > m_ncoHLimit)
+            m_ncoFrequency = m_ncoHLimit;
+        else if(m_ncoFrequency < m_ncoLLimit)
+            m_ncoFrequency = m_ncoLLimit;
         //update NCO phase with new value
-        pllPhase += (ncoFrequency + pllAlpha * phzerror);
+        m_pllPhase += (m_ncoFrequency + m_pllAlpha * phzerror);
         //LP filter the NCO frequency term to get DC offset value
-        pllFreqErrorDC = (1.0 - pllDcAlpha) * pllFreqErrorDC + pllDcAlpha * ncoFrequency;
+        m_pllFreqErrorDC = (1.0 - m_pllDcAlpha) * m_pllFreqErrorDC + m_pllDcAlpha * m_ncoFrequency;
         //subtract out DC term to get FM audio
-        out[i] = (ncoFrequency - pllFreqErrorDC) * pllOutGain;
+        out[i] = (m_ncoFrequency - m_pllFreqErrorDC) * m_pllOutGain;
     }
-    pllPhase = fmod(pllPhase, TWOPI);	//keep radian counter bounded
+    m_pllPhase = fmod(m_pllPhase, TWOPI);	//keep radian counter bounded
     //lpFilter is part of squelch logic
-    lpFilter.ProcessFilter(demodSamples, out, out);
+    m_lpFilter.ProcessFilter(demodSamples, out, out);
 
 }

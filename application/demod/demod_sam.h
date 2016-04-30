@@ -14,23 +14,24 @@ public:
     ~Demod_SAM();
     void processBlock(  CPX * in, CPX * out, int demodSamples );
 
-    CPX PLL(CPX sig, float loLimit, float hiLimit);
+	CPX pll(CPX sig, float loLimit, float hiLimit);
 private:
-    float pllLowLimit; //PLL range
-    float pllHighLimit;
+	float m_pllLowLimit; //PLL range
+	float m_pllHighLimit;
     //PLL variables
-    float pllFrequency;
-    float pllPhase;
-    float pllAlpha,pllBeta;
+	float m_pllFrequency;
+	float m_pllPhase;
+	float m_pllAlpha;
+	float m_pllBeta;
 
 
     //Like AM, but separate re and im for left/right
-    double amDcRe;
-    double amDcReLast;
-    double amDcIm;
-    double amDcImLast;
+	double m_amDcRe;
+	double m_amDcReLast;
+	double m_amDcIm;
+	double m_amDcImLast;
 
-    CFir bpFilter;
+	CFir m_bpFilter;
 
 };
 

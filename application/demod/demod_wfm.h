@@ -29,43 +29,43 @@ public:
     Demod_WFM(int _inputRate, int _numSamples);
     virtual ~Demod_WFM();
 
-    void Init(TYPEREAL samplerate, TYPEREAL _audioRate);
-    TYPEREAL SetSampleRate(TYPEREAL samplerate, TYPEREAL _outRate, bool USver);
+	void init(TYPEREAL samplerate, TYPEREAL _audioRate);
+	TYPEREAL setSampleRate(TYPEREAL samplerate, TYPEREAL _outRate, bool USver);
 	//overloaded functions for mono and stereo
-    int ProcessDataStereo(int InLength, TYPECPX* pInData, TYPECPX* pOutData);
-    int ProcessDataMono(int InLength, TYPECPX* pInData, TYPECPX* pOutData);
-	TYPEREAL GetDemodRate(){return m_OutRate;}
+	int processDataStereo(int InLength, TYPECPX* pInData, TYPECPX* pOutData);
+	int processDataMono(int InLength, TYPECPX* pInData, TYPECPX* pOutData);
+	TYPEREAL getDemodRate(){return m_OutRate;}
 
-    int GetNextRdsGroupData(tRDS_GROUPS* pGroupData);
-    int GetStereoLock(int* pPilotLock);
+	int getNextRdsGroupData(tRDS_GROUPS* pGroupData);
+	int getStereoLock(int* pPilotLock);
     void fmMono(CPX *in, CPX *out, int bufSize);
 private:
-    void FMDeemphasisFilter(int _bufSize, CPX *in, CPX *out);
-    float fmDeemphasisAlpha;
-    static const float usDeemphasisTime; //Use for US & Korea FM
-    static const float intlDeemphasisTime;  //Use for international FM
+	void fmDeemphasisFilter(int _bufSize, CPX *in, CPX *out);
+	float m_fmDeemphasisAlpha;
+	static const float m_usDeemphasisTime; //Use for US & Korea FM
+	static const float m_intlDeemphasisTime;  //Use for international FM
 
     //CFir fmMonoLPFilter;
-    CIir fmMonoLPFilter;
-    CFir fmAudioLPFilter;
-    CIir fmPilotNotchFilter;
-    CIir fmPilotBPFilter;
-    CFir hilbertFilter;
+	CIir m_fmMonoLPFilter;
+	CFir m_fmAudioLPFilter;
+	CIir m_fmPilotNotchFilter;
+	CIir m_fmPilotBPFilter;
+	CFir m_hilbertFilter;
 
-	void InitPll( TYPEREAL SampleRate );
-	void ProcessPll( int InLength, TYPECPX* pInData, TYPEREAL* pOutData );
-	void InitDeemphasis( TYPEREAL Time, TYPEREAL SampleRate);	//create De-emphasis LP filter
-	void ProcessDeemphasisFilter(int InLength, TYPEREAL* InBuf, TYPEREAL* OutBuf);
-	void ProcessDeemphasisFilter(int InLength, TYPECPX* InBuf, TYPECPX* OutBuf);
-	void InitPilotPll( TYPEREAL SampleRate );
-	bool ProcessPilotPll( int InLength, TYPECPX* pInData );
-	void InitRds( TYPEREAL SampleRate );
-	void ProcessRdsPll( int InLength, TYPECPX* pInData, TYPEREAL* pOutData );
+	void initPll( TYPEREAL SampleRate );
+	void processPll( int InLength, TYPECPX* pInData, TYPEREAL* pOutData );
+	void initDeemphasis( TYPEREAL Time, TYPEREAL SampleRate);	//create De-emphasis LP filter
+	void processDeemphasisFilter(int InLength, TYPEREAL* InBuf, TYPEREAL* OutBuf);
+	void processDeemphasisFilter(int InLength, TYPECPX* InBuf, TYPECPX* OutBuf);
+	void initPilotPll( TYPEREAL SampleRate );
+	bool processPilotPll( int InLength, TYPECPX* pInData );
+	void initRds( TYPEREAL SampleRate );
+	void processRdsPll( int InLength, TYPECPX* pInData, TYPEREAL* pOutData );
 	inline TYPEREAL arctan2(TYPEREAL y, TYPEREAL x);
 
-	void ProcessNewRdsBit(int bit);
-	quint32 CheckBlock(quint32 BlockOffset, int UseFec);
-	void CreateCallSign(quint16 PIcode);
+	void processNewRdsBit(int bit);
+	quint32 checkBlock(quint32 BlockOffset, int UseFec);
+	void createCallSign(quint16 PIcode);
 
 	TYPEREAL m_SampleRate;
 	TYPEREAL m_OutRate;

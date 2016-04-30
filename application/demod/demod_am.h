@@ -15,15 +15,15 @@ public:
     ~Demod_AM();
 
 	void processBlock(CPX *in, CPX *out, int demodSamples);
-    void ProcessBlockFiltered(CPX *in, CPX *out, int demodSamples);
+	void processBlockFiltered(CPX *in, CPX *out, int demodSamples);
 	void setBandwidth(double bandwidth);
 
 private:
     //DC Filtering
-    double amDc;
-    double amDcLast;
+	double m_amDc;
+	double m_amDcLast;
 
-    CFir lpFilter;
+	CFir m_lpFilter;
 
 };
 

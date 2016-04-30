@@ -100,17 +100,17 @@ const double HILBLP_H[HILB_LENGTH] =
 	-0.000389631665953405
 };
 
-const float Demod_WFM::usDeemphasisTime = 75E-6; //Use for US & Korea FM
-const float Demod_WFM::intlDeemphasisTime = 50E-6;  //Use for international FM
+const float Demod_WFM::m_usDeemphasisTime = 75E-6; //Use for US & Korea FM
+const float Demod_WFM::m_intlDeemphasisTime = 50E-6;  //Use for international FM
 
 Demod_WFM::Demod_WFM(int _inputRate, int _numSamples) :
     Demod(_inputRate, _numSamples)
 {
     //SampleRate and audioRate are the same because audio is handled outside demod class
-    Init(_inputRate, _inputRate);
+    init(_inputRate, _inputRate);
 }
 
-void Demod_WFM::Init(TYPEREAL samplerate, TYPEREAL _audioRate)
+void Demod_WFM::init(TYPEREAL samplerate, TYPEREAL _audioRate)
 {
     m_SampleRate = sampleRate;
     m_PilotPhaseAdjust = 0.0;
@@ -122,22 +122,22 @@ void Demod_WFM::Init(TYPEREAL samplerate, TYPEREAL _audioRate)
 	m_PilotLocked = false;
 	m_LastPilotLocked = !m_PilotLocked;
 	m_BlockErrors = 0;
-    SetSampleRate(samplerate, _audioRate, true);
+    setSampleRate(samplerate, _audioRate, true);
 
     //These used to be done when we changed mode in demod for earlier experiments
     //Moe Wheatley filters
     //IIR filter freq * 2 must be below sampleRate or algorithm won't work
-    fmMonoLPFilter.InitLP(75000,1.0,sampleRate);
+    m_fmMonoLPFilter.InitLP(75000,1.0,sampleRate);
     //FIR version
     //fmMonoLPFilter.InitLPFilter(0, 1.0, 60.0, 75000, 1.4*75000.0, sourceSampleRate); //FIR version
     //Create narrow BP filter around 19KHz pilot tone with Q=500
-    fmPilotBPFilter.InitBP(19000, 500, sampleRate);
+    m_fmPilotBPFilter.InitBP(19000, 500, sampleRate);
     //create LP filter to roll off audio
-    fmAudioLPFilter.InitLPFilter(0, 1.0, 60.0, 15000.0, 1.4*15000.0, sampleRate);
+    m_fmAudioLPFilter.InitLPFilter(0, 1.0, 60.0, 15000.0, 1.4*15000.0, sampleRate);
     //create 19KHz pilot notch filter with Q=5
-    fmPilotNotchFilter.InitBR(19000, 5, sampleRate);
+    m_fmPilotNotchFilter.InitBR(19000, 5, sampleRate);
 
-    fmDeemphasisAlpha = (1.0-exp(-1.0/(sampleRate * usDeemphasisTime)) );
+    m_fmDeemphasisAlpha = (1.0-exp(-1.0/(sampleRate * m_usDeemphasisTime)) );
 
 }
 
@@ -151,7 +151,7 @@ Demod_WFM::~Demod_WFM()
 // Input sample rate should be in the range 200 to 400Ksps
 // The output rate will be between 50KHz and 100KHz
 /////////////////////////////////////////////////////////////////////////////////
-TYPEREAL Demod_WFM::SetSampleRate(TYPEREAL samplerate, TYPEREAL _outRate, bool USver)
+TYPEREAL Demod_WFM::setSampleRate(TYPEREAL samplerate, TYPEREAL _outRate, bool USver)
 {
     m_SampleRate = samplerate;
     m_OutRate = _outRate;
@@ -171,7 +171,7 @@ TYPEREAL Demod_WFM::SetSampleRate(TYPEREAL samplerate, TYPEREAL _outRate, bool U
 
 	//Create narrow BP filter around 19KHz pilot tone with Q=500
 	m_PilotBPFilter.InitBP(PILOTPLL_FREQ, 500, m_SampleRate);
-	InitPilotPll(m_SampleRate);
+	initPilotPll(m_SampleRate);
 
 	//create LP filter to roll off audio
 	m_LPFilter.InitLPFilter(0, 1.0,60.0, 15000.0,1.4*15000.0, m_OutRate);
@@ -180,15 +180,15 @@ TYPEREAL Demod_WFM::SetSampleRate(TYPEREAL samplerate, TYPEREAL _outRate, bool U
 	m_NotchFilter.InitBR(PILOTPLL_FREQ, 5, m_OutRate);
 	//create deemphasis filter with 75uSec or 50uSec LP corner
 	if(USver)
-		InitDeemphasis(75E-6, m_OutRate);
+		initDeemphasis(75E-6, m_OutRate);
 	else
-		InitDeemphasis(50E-6, m_OutRate);
+		initDeemphasis(50E-6, m_OutRate);
 
 	m_RdsOutputRate = m_RdsDownConvert.SetDataRate(m_SampleRate, 8000.0);
 	m_RdsDownConvert.SetFrequency(-RDS_FREQUENCY);	//set up to shift 57KHz RDS down to baseband and decimate
 //qDebug()<<"RDS Rate = "<< m_RdsOutputRate;
 
-	InitRds(m_RdsOutputRate);
+	initRds(m_RdsOutputRate);
 
 	m_PilotLocked = false;
 	m_LastPilotLocked = !m_PilotLocked;
@@ -204,7 +204,7 @@ TYPEREAL Demod_WFM::SetSampleRate(TYPEREAL samplerate, TYPEREAL _outRate, bool U
 //		pOutData == pointer to callers real(mono audio) output array
 //	returns number of samples placed in callers output array
 /////////////////////////////////////////////////////////////////////////////////
-int Demod_WFM::ProcessDataMono(int InLength, TYPECPX* pInData, TYPECPX* pOutData)
+int Demod_WFM::processDataMono(int InLength, TYPECPX* pInData, TYPECPX* pOutData)
 {
     //RL Added
     if (m_SampleRate >= 150000)
@@ -224,7 +224,7 @@ int Demod_WFM::ProcessDataMono(int InLength, TYPECPX* pInData, TYPECPX* pOutData
     //Moved decimation to Receiver chain and need to come back to it later.
 
     m_LPFilter.ProcessFilter( InLength, pOutData, pOutData);	//rolloff audio above 15KHz
-    ProcessDeemphasisFilter(InLength, pOutData, pOutData);		//50 or 75uSec de-emphasis one pole filter
+    processDeemphasisFilter(InLength, pOutData, pOutData);		//50 or 75uSec de-emphasis one pole filter
     m_NotchFilter.ProcessFilter( InLength, pOutData, pOutData);	//notch out 19KHz pilot
 	m_PilotLocked = false;
 	return InLength;
@@ -251,7 +251,7 @@ int Demod_WFM::ProcessDataMono(int InLength, TYPECPX* pInData, TYPECPX* pOutData
 //		pOutData == pointer to callers complex(stereo audio) output array
 //	returns number of samples placed in callers output array
 /////////////////////////////////////////////////////////////////////////////////
-int Demod_WFM::ProcessDataStereo(int InLength, TYPECPX* pInData, TYPECPX* pOutData)
+int Demod_WFM::processDataStereo(int InLength, TYPECPX* pInData, TYPECPX* pOutData)
 {
 TYPEREAL LminusR;
 //StartPerformance();
@@ -269,7 +269,7 @@ TYPEREAL LminusR;
 //g_pTestBench->DisplayData(InLength, m_CpxRawFm, m_SampleRate,PROFILE_3);
 
 	m_PilotBPFilter.ProcessFilter(InLength, m_CpxRawFm, pInData);//~173 nSec/sample, use input buffer for complex output storage
-	if(ProcessPilotPll(InLength, pInData) )
+	if(processPilotPll(InLength, pInData) )
 	{	//if pilot tone present, do stereo demuxing
 		for(int i=0; i<InLength; i++)
 		{
@@ -301,7 +301,7 @@ TYPEREAL LminusR;
 //g_pTestBench->DisplayData(length, m_RdsRaw, m_RdsOutputRate, PROFILE_3);
 
 	//PLL to remove any rotation since may not be phase locked to 19KHz Pilot or may not even have pilot
-	ProcessRdsPll(length, m_RdsRaw, m_RdsMag);
+	processRdsPll(length, m_RdsRaw, m_RdsMag);
 //g_pTestBench->DisplayData(length, m_RdsMag, m_RdsOutputRate, PROFILE_3);
 
 	//run matched filter correlator to extract the bi-phase data bits
@@ -338,7 +338,7 @@ m_RdsRaw[i].re = m_RdsLastData;
 m_RdsRaw[i].re = m_RdsLastData;
 			}
 			//need to XOR with previous bit to get actual data bit value
-			ProcessNewRdsBit(bit^m_RdsLastBit);		//go process new RDS Bit
+			processNewRdsBit(bit^m_RdsLastBit);		//go process new RDS Bit
 			m_RdsLastBit = bit;
 		}
 		else
@@ -358,7 +358,7 @@ m_RdsRaw[i].im = Data;
     //Todo: Put back decimate stage here if we're running too hot CPU
 
 	m_LPFilter.ProcessFilter( InLength, pOutData, pOutData);	//rolloff audio above 15KHz
-	ProcessDeemphasisFilter(InLength, pOutData, pOutData);		//50 or 75uSec de-emphasis one pole filter
+	processDeemphasisFilter(InLength, pOutData, pOutData);		//50 or 75uSec de-emphasis one pole filter
 	m_NotchFilter.ProcessFilter( InLength, pOutData, pOutData);	//notch out 19KHz pilot
 	return InLength;
 }
@@ -366,7 +366,7 @@ m_RdsRaw[i].im = Data;
 /////////////////////////////////////////////////////////////////////////////////
 //	Iniitalize variables for FM Pilot PLL
 /////////////////////////////////////////////////////////////////////////////////
-void Demod_WFM::InitPilotPll( TYPEREAL SampleRate )
+void Demod_WFM::initPilotPll( TYPEREAL SampleRate )
 {
 	m_PilotNcoPhase = 0.0;
 	m_PilotNcoFreq = -PILOTPLL_FREQ;	//freq offset to bring to baseband
@@ -386,7 +386,7 @@ void Demod_WFM::InitPilotPll( TYPEREAL SampleRate )
 //	Process IQ wide FM data to lock Pilot PLL
 //returns TRUE if Locked.  Fills m_PilotPhase[] with locked 19KHz NCO phase data
 /////////////////////////////////////////////////////////////////////////////////
-bool Demod_WFM::ProcessPilotPll( int InLength, TYPECPX* pInData )
+bool Demod_WFM::processPilotPll( int InLength, TYPECPX* pInData )
 {
 double Sin;
 double Cos;
@@ -432,7 +432,7 @@ TYPECPX tmp;
 // Get present Stereo lock status and put in pPilotLock.
 // Returns true if lock status has changed since last call.
 /////////////////////////////////////////////////////////////////////////////////
-int Demod_WFM::GetStereoLock(int* pPilotLock)
+int Demod_WFM::getStereoLock(int* pPilotLock)
 {
 	if(pPilotLock)
 		*pPilotLock = m_PilotLocked;
@@ -448,7 +448,7 @@ int Demod_WFM::GetStereoLock(int* pPilotLock)
 /////////////////////////////////////////////////////////////////////////////////
 //	Iniitalize IIR variables for De-emphasis IIR filter.
 /////////////////////////////////////////////////////////////////////////////////
-void Demod_WFM::InitDeemphasis( TYPEREAL Time, TYPEREAL SampleRate)	//create De-emphasis LP filter
+void Demod_WFM::initDeemphasis( TYPEREAL Time, TYPEREAL SampleRate)	//create De-emphasis LP filter
 {
 	m_DeemphasisAlpha = (1.0-exp(-1.0/(SampleRate*Time)) );
 	m_DeemphasisAveRe = 0.0;
@@ -459,7 +459,7 @@ void Demod_WFM::InitDeemphasis( TYPEREAL Time, TYPEREAL SampleRate)	//create De-
 //	Process InLength InBuf[] samples and place in OutBuf[]
 //REAL version
 /////////////////////////////////////////////////////////////////////////////////
-void Demod_WFM::ProcessDeemphasisFilter(int InLength, TYPEREAL* InBuf, TYPEREAL* OutBuf)
+void Demod_WFM::processDeemphasisFilter(int InLength, TYPEREAL* InBuf, TYPEREAL* OutBuf)
 {
 	for(int i=0; i<InLength; i++)
 	{
@@ -472,7 +472,7 @@ void Demod_WFM::ProcessDeemphasisFilter(int InLength, TYPEREAL* InBuf, TYPEREAL*
 //	Process InLength InBuf[] samples and place in OutBuf[]
 //complex (stereo) version
 /////////////////////////////////////////////////////////////////////////////////
-void Demod_WFM::ProcessDeemphasisFilter(int InLength, TYPECPX* InBuf, TYPECPX* OutBuf)
+void Demod_WFM::processDeemphasisFilter(int InLength, TYPECPX* InBuf, TYPECPX* OutBuf)
 {
 	for(int i=0; i<InLength; i++)
 	{
@@ -486,7 +486,7 @@ void Demod_WFM::ProcessDeemphasisFilter(int InLength, TYPECPX* InBuf, TYPECPX* O
 /////////////////////////////////////////////////////////////////////////////////
 //	Initialize variables for RDS PLL and matched filter
 /////////////////////////////////////////////////////////////////////////////////
-void Demod_WFM::InitRds( TYPEREAL SampleRate )
+void Demod_WFM::initRds( TYPEREAL SampleRate )
 {
 	m_RdsNcoPhase = 0.0;
 	m_RdsNcoFreq = 0.0;	//freq offset to bring to baseband
@@ -538,7 +538,7 @@ void Demod_WFM::InitRds( TYPEREAL SampleRate )
 /////////////////////////////////////////////////////////////////////////////////
 //	Process I/Q RDS baseband stream to lock PLL
 /////////////////////////////////////////////////////////////////////////////////
-void Demod_WFM::ProcessRdsPll( int InLength, TYPECPX* pInData, TYPEREAL* pOutData )
+void Demod_WFM::processRdsPll( int InLength, TYPECPX* pInData, TYPEREAL* pOutData )
 {
 double Sin;
 double Cos;
@@ -579,13 +579,13 @@ TYPECPX tmp;
 // each block, recovers good groups of 4 data blocks and places in data queue
 // for further upper level GUI processing depending on the application
 /////////////////////////////////////////////////////////////////////////////////
-void Demod_WFM::ProcessNewRdsBit(int bit)
+void Demod_WFM::processNewRdsBit(int bit)
 {
 	m_InBitStream =	(m_InBitStream<<1) | bit;	//shift in new bit
 	switch(m_DecodeState)
 	{
 		case STATE_BITSYNC:		//looking at each bit position till we find a "good" block A
-			if( 0 == CheckBlock(OFFSET_SYNDROME_BLOCK_A, false) )
+			if( 0 == checkBlock(OFFSET_SYNDROME_BLOCK_A, false) )
 			{	//got initial good chkword on Block A not using FEC
 				m_CurrentBitPosition = 0;
 				m_BGroupOffset = 0;
@@ -599,7 +599,7 @@ void Demod_WFM::ProcessNewRdsBit(int bit)
 			if(m_CurrentBitPosition >= NUMBITS_BLOCK)
 			{
 				m_CurrentBitPosition = 0;
-				if( CheckBlock(BLK_OFFSET_TBL[m_CurrentBlock+m_BGroupOffset], false ) )
+				if( checkBlock(BLK_OFFSET_TBL[m_CurrentBlock+m_BGroupOffset], false ) )
 				{	//bad chkword so go look for bit sync again
 					m_DecodeState = STATE_BITSYNC;
 				}
@@ -635,7 +635,7 @@ void Demod_WFM::ProcessNewRdsBit(int bit)
 			if(m_CurrentBitPosition>=NUMBITS_BLOCK)
 			{
 				m_CurrentBitPosition = 0;
-				if( CheckBlock(BLK_OFFSET_TBL[m_CurrentBlock+m_BGroupOffset], USE_FEC ) )
+				if( checkBlock(BLK_OFFSET_TBL[m_CurrentBlock+m_BGroupOffset], USE_FEC ) )
 				{
 					m_BlockErrors++;
 					if( m_BlockErrors > BLOCK_ERROR_LIMIT  )
@@ -704,7 +704,7 @@ void Demod_WFM::ProcessNewRdsBit(int bit)
 // if UseFec is false then no FEC is done else correct up to 5 bits.
 // Returns zero if no remaining errors if FEC is specified.
 /////////////////////////////////////////////////////////////////////////////////
-quint32 Demod_WFM::CheckBlock(quint32 SyndromeOffset, int UseFec)
+quint32 Demod_WFM::checkBlock(quint32 SyndromeOffset, int UseFec)
 {
 	//First calculate syndrome for current 26 m_InBitStream bits
 	quint32 testblock = (0x3FFFFFF & m_InBitStream);	//isolate bottom 26 bits
@@ -759,7 +759,7 @@ quint32 Demod_WFM::CheckBlock(quint32 SyndromeOffset, int UseFec)
 // Get next group data from RDS data queue.
 // Returns zero if queue is empty or null pointer passed or data has not changed
 /////////////////////////////////////////////////////////////////////////////////
-int Demod_WFM::GetNextRdsGroupData(tRDS_GROUPS* pGroupData)
+int Demod_WFM::getNextRdsGroupData(tRDS_GROUPS* pGroupData)
 {
 	if( (m_RdsQHead == m_RdsQTail) || (NULL == pGroupData) )
 	{
@@ -825,7 +825,7 @@ void Demod_WFM::fmMono( CPX * in, CPX * out, int bufSize)
     //LP filter to elimate everything above FM bandwidth
     //Only if sample width high enough (2x) for 75khz filter to work
     if (m_SampleRate >= 2*75000)
-        fmMonoLPFilter.ProcessFilter(bufSize, in, in);
+        m_fmMonoLPFilter.ProcessFilter(bufSize, in, in);
 
 #if 1
     CPX d0;
@@ -845,20 +845,20 @@ void Demod_WFM::fmMono( CPX * in, CPX * out, int bufSize)
 
 
     //19khz notch filter to get rid of pilot
-    fmPilotNotchFilter.ProcessFilter(bufSize, out, out);	//notch out 19KHz pilot
+    m_fmPilotNotchFilter.ProcessFilter(bufSize, out, out);	//notch out 19KHz pilot
 
     //15khz low pass filter to cut off audio >15khz
-    fmAudioLPFilter.ProcessFilter(bufSize, out, out);
+    m_fmAudioLPFilter.ProcessFilter(bufSize, out, out);
 
     //50 or 75uSec de-emphasis one pole filter
-    FMDeemphasisFilter(bufSize, out,out);
+    fmDeemphasisFilter(bufSize, out,out);
 }
 
 
 /*
   1 pole filter to delete high freq 'boost' (pre-emphasis) added before transmission
 */
-void Demod_WFM::FMDeemphasisFilter(int _bufSize, CPX *in, CPX *out)
+void Demod_WFM::fmDeemphasisFilter(int _bufSize, CPX *in, CPX *out)
 {
     int bufSize = _bufSize;
 
@@ -867,8 +867,8 @@ void Demod_WFM::FMDeemphasisFilter(int _bufSize, CPX *in, CPX *out)
 
     for(int i=0; i<bufSize; i++)
     {
-        avgRe = (1.0-fmDeemphasisAlpha)*avgRe + fmDeemphasisAlpha*in[i].re;
-        avgIm = (1.0-fmDeemphasisAlpha)*avgIm + fmDeemphasisAlpha*in[i].im;
+        avgRe = (1.0-m_fmDeemphasisAlpha)*avgRe + m_fmDeemphasisAlpha*in[i].re;
+        avgIm = (1.0-m_fmDeemphasisAlpha)*avgIm + m_fmDeemphasisAlpha*in[i].im;
         out[i].re = avgRe*2.0;
         out[i].im = avgIm*2.0;
     }
