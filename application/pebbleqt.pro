@@ -276,7 +276,6 @@ HEADERS += \
 	agc.h \
 	iqbalance.h \
     global.h \
-    goertzel.h \
 	demod/demod_wfm.h \
     demod/rbdsconstants.h \
     demod/rdsdecode.h \
@@ -311,7 +310,6 @@ SOURCES += \
 	agc.cpp \
     iqbalance.cpp \
     global.cpp \
-    goertzel.cpp \
 	demod/demod_wfm.cpp \
     demod/rdsdecode.cpp \
     bargraphmeter.cpp \

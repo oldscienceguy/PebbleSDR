@@ -123,7 +123,8 @@ SOURCES += pebblelib.cpp \
     butterworth.cpp \
     windowfunction.cpp \
     fastfir.cpp \
-    decimator.cpp
+    decimator.cpp \
+    goertzel.cpp
 
 HEADERS += pebblelib.h\
     pebblelib_global.h \
@@ -160,7 +161,8 @@ HEADERS += pebblelib.h\
     butterworth.h \
     windowfunction.h \
     fastfir.h \
-    decimator.h
+    decimator.h \
+    goertzel.h
 
 DISTFILES += \
     gpl.html
