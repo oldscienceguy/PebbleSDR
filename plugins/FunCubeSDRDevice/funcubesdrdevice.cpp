@@ -3,10 +3,10 @@
 
 FunCubeSDRDevice::FunCubeSDRDevice():DeviceInterfaceBase()
 {
-	InitSettings("FuncubePro");
-	funCubeProSettings = qSettings;
-	InitSettings("FuncubeProPlus");
-	funCubeProPlusSettings = qSettings;
+	initSettings("FuncubePro");
+	funCubeProSettings = m_qSettings;
+	initSettings("FuncubeProPlus");
+	funCubeProPlusSettings = m_qSettings;
 
 	optionUi = NULL;
 
@@ -20,18 +20,18 @@ FunCubeSDRDevice::~FunCubeSDRDevice()
 	hid_exit();
 }
 
-bool FunCubeSDRDevice::Initialize(cbProcessIQData _callback,
-								   cbProcessBandscopeData _callbackBandscope,
-								   cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
+bool FunCubeSDRDevice::initialize(CB_ProcessIQData _callback,
+								   CB_ProcessBandscopeData _callbackBandscope,
+								   CB_ProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
 	Q_UNUSED(_callbackBandscope);
 	Q_UNUSED(_callbackAudio);
-	DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
+	DeviceInterfaceBase::initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
 	hid_init();
 	return true;
 }
 
-bool FunCubeSDRDevice::Connect()
+bool FunCubeSDRDevice::connectDevice()
 {
 	//Don't know if we can get this from DDK calls
 	maxPacketSize = 64;
@@ -55,23 +55,23 @@ bool FunCubeSDRDevice::Connect()
 
 	free(hidPath);
 	hidPath = NULL;
-	connected = true;
+	m_connected = true;
 	return true;
 }
 
-bool FunCubeSDRDevice::Disconnect()
+bool FunCubeSDRDevice::disconnectDevice()
 {
-	WriteSettings();
+	writeSettings();
 
 	//Mac sometimes crashes when hid_close is called, but we need it
 	if (hidDev != NULL)
 		hid_close(hidDev);
 	hidDev = NULL;
-	connected = false;
+	m_connected = false;
 	return true;
 }
 
-void FunCubeSDRDevice::Start()
+void FunCubeSDRDevice::startDevice()
 {
 	//char data[maxPacketSize];
 	//bool res = HIDGet(FCD_HID_CMD_QUERY,data,sizeof(data));
@@ -84,7 +84,7 @@ void FunCubeSDRDevice::Start()
 	//ReadFCDOptions();
 
 
-	if (deviceNumber == FUNCUBE_PRO) {
+	if (m_deviceNumber == FUNCUBE_PRO) {
 		SetDCCorrection(fcdDCICorrection,fcdDCQCorrection);
 		SetIQCorrection(fcdIQPhaseCorrection,fcdIQGainCorrection);
 
@@ -116,54 +116,54 @@ void FunCubeSDRDevice::Start()
 
 	}
 
-	DeviceInterfaceBase::Start();
+	DeviceInterfaceBase::startDevice();
 }
 
-void FunCubeSDRDevice::Stop()
+void FunCubeSDRDevice::stopDevice()
 {
-	DeviceInterfaceBase::Stop();
+	DeviceInterfaceBase::stopDevice();
 }
 
-QVariant FunCubeSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _option)
+QVariant FunCubeSDRDevice::get(DeviceInterface::StandardKeys _key, QVariant _option)
 {
 	Q_UNUSED(_option);
 
 	switch (_key) {
-		case PluginName:
+		case Key_PluginName:
 			return "FunCube Pro family";
-		case PluginDescription:
+		case Key_PluginDescription:
 			return "Funcube Pro and Funcube Pro+";
 			break;
-		case PluginNumDevices:
+		case Key_PluginNumDevices:
 			return 2;
-		case DeviceName:
+		case Key_DeviceName:
 			switch (_option.toInt()) {
 				case 0: return "Funcube Pro";
 				case 1: return "Funcube Pro+";
 				default: return "Unknown";
 			}
-		case DeviceSampleRates:
-			if (deviceNumber == FUNCUBE_PRO)
+		case Key_DeviceSampleRates:
+			if (m_deviceNumber == FUNCUBE_PRO)
 				return QStringList()<<"96000"; //Always 96k
 			else
 				return QStringList()<<"192000"; //Always 192k
 
 		default:
-			return DeviceInterfaceBase::Get(_key, _option);
+			return DeviceInterfaceBase::get(_key, _option);
 	}
 }
 
-bool FunCubeSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, QVariant _option)
+bool FunCubeSDRDevice::set(DeviceInterface::StandardKeys _key, QVariant _value, QVariant _option)
 {
 	Q_UNUSED(_option);
 
 	switch (_key) {
-		case DeviceFrequency:
-			deviceFrequency = SetFrequency(_value.toDouble());
-			lastFreq = deviceFrequency;
+		case Key_DeviceFrequency:
+			m_deviceFrequency = SetFrequency(_value.toDouble());
+			m_lastFreq = m_deviceFrequency;
 			return true;
 		default:
-			return DeviceInterfaceBase::Set(_key, _value, _option);
+			return DeviceInterfaceBase::set(_key, _value, _option);
 	}
 }
 
@@ -181,7 +181,7 @@ void FunCubeSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 
 int FunCubeSDRDevice::HIDWrite(unsigned char *data, int length)
 {
-	if (!connected)
+	if (!m_connected)
 		return HID_TIMEOUT;
 
 	return hid_write(hidDev,data,length);
@@ -195,7 +195,7 @@ int FunCubeSDRDevice::HIDWrite(unsigned char *data, int length)
  */
 int FunCubeSDRDevice::HIDRead(unsigned char *data, int length)
 {
-	if (!connected)
+	if (!m_connected)
 		return HID_TIMEOUT;
 
 	memset(data,0x00,length); // Clear out the response buffer
@@ -211,10 +211,10 @@ int FunCubeSDRDevice::HIDRead(unsigned char *data, int length)
 //Adapted from fcd.c in FuncubeDongle download
 double FunCubeSDRDevice::SetFrequency(double fRequested)
 {
-	if (deviceNumber == FUNCUBE_PRO_PLUS) {
+	if (m_deviceNumber == FUNCUBE_PRO_PLUS) {
 		//Reject tuning in gap
 		if (fRequested > 260000000 && fRequested < 410000000)
-			return deviceFrequency;
+			return m_deviceFrequency;
 	}
 	unsigned char buf[maxPacketSize+1];
 
@@ -247,7 +247,7 @@ double FunCubeSDRDevice::SetFrequency(double fRequested)
 	int result = HIDWrite(buf,sizeof(buf));
 	if (result < 0) {
 		qDebug()<<"FCD: Frequency write error\n";
-		return deviceFrequency; //Write error
+		return m_deviceFrequency; //Write error
 	}
 
 	//Test, read it back to confirm
@@ -256,7 +256,7 @@ double FunCubeSDRDevice::SetFrequency(double fRequested)
 	//We sometimes get timeout errors
 	if (result < 0) {
 		qDebug()<<"FCD: Frequency read after write error\n";
-		return deviceFrequency; //Read error
+		return m_deviceFrequency; //Read error
 	}
 	double fActual;
 	//Remember HIDRead throws away buf[0] when comparing to QTHID
@@ -280,7 +280,7 @@ double FunCubeSDRDevice::SetFrequency(double fRequested)
 
 bool FunCubeSDRDevice::HIDSet(char cmd, unsigned char value)
 {
-	if (!connected)
+	if (!m_connected)
 		return false;
 
 	unsigned char outBuf[maxPacketSize+1];
@@ -306,7 +306,7 @@ bool FunCubeSDRDevice::HIDSet(char cmd, unsigned char value)
 
 bool FunCubeSDRDevice::HIDGet(char cmd, void *data, int len)
 {
-	if (!connected)
+	if (!m_connected)
 		return false;
 
 	unsigned char outBuf[maxPacketSize+1]; //HID Write skips report id 0 and adj buffer, so we need +1 to send 64
@@ -341,7 +341,7 @@ bool FunCubeSDRDevice::HIDGet(char cmd, void *data, int len)
 }
 void FunCubeSDRDevice::SetDCCorrection(qint16 cI, qint16 cQ)
 {
-	if (deviceNumber == FUNCUBE_PRO_PLUS)
+	if (m_deviceNumber == FUNCUBE_PRO_PLUS)
 		return; //Not supported yet
 
 	unsigned char outBuf[maxPacketSize+1];
@@ -363,7 +363,7 @@ void FunCubeSDRDevice::SetDCCorrection(qint16 cI, qint16 cQ)
 }
 void FunCubeSDRDevice::SetIQCorrection(qint16 phase, quint16 gain)
 {
-	if (deviceNumber == FUNCUBE_PRO_PLUS)
+	if (m_deviceNumber == FUNCUBE_PRO_PLUS)
 		return; //Not supported yet
 
 	unsigned char outBuf[maxPacketSize+1];
@@ -404,7 +404,7 @@ void FunCubeSDRDevice::LNAEnhanceChanged(int s)
 }
 void FunCubeSDRDevice::SetLNAEnhance(int v)
 {
-	if (deviceNumber == FUNCUBE_PRO_PLUS)
+	if (m_deviceNumber == FUNCUBE_PRO_PLUS)
 		return; //Not supported yet
 
 	if (v<0)
@@ -415,7 +415,7 @@ void FunCubeSDRDevice::SetLNAEnhance(int v)
 
 void FunCubeSDRDevice::SetBand(int v)
 {
-	if (deviceNumber == FUNCUBE_PRO_PLUS)
+	if (m_deviceNumber == FUNCUBE_PRO_PLUS)
 		return; //Not supported yet
 
 	if (v<0)
@@ -427,7 +427,7 @@ void FunCubeSDRDevice::SetBand(int v)
 void FunCubeSDRDevice::BandChanged(int s)
 {
 	//If FCD+ there are no bands, just populate combo
-	if (deviceNumber == FUNCUBE_PRO_PLUS) {
+	if (m_deviceNumber == FUNCUBE_PRO_PLUS) {
 		optionUi->RFFilter->clear();
 		optionUi->RFFilter->addItem("0 to 4 LPF",TRFE_0_4);
 		optionUi->RFFilter->addItem("4 to 8 LPF",TRFE_4_8);
@@ -505,7 +505,7 @@ void FunCubeSDRDevice::SetRFFilter(int v)
 {
 	if (v<0)
 		v = 0;
-	if (deviceNumber == FUNCUBE_PRO_PLUS && v > TRFE_875_2000)
+	if (m_deviceNumber == FUNCUBE_PRO_PLUS && v > TRFE_875_2000)
 		return; //Invalid for FCD+
 
 	HIDSet(FCD_HID_CMD_SET_RF_FILTER,v);
@@ -532,7 +532,7 @@ void FunCubeSDRDevice::BiasCurrentChanged(int s)
 }
 void FunCubeSDRDevice::SetBiasCurrent(int v)
 {
-	if (deviceNumber == FUNCUBE_PRO_PLUS)
+	if (m_deviceNumber == FUNCUBE_PRO_PLUS)
 		return; //Not supported yet
 
 	if (v<0)
@@ -544,7 +544,7 @@ void FunCubeSDRDevice::SetBiasCurrent(int v)
 //FCD+ only
 void FunCubeSDRDevice::SetBiasTee(int v)
 {
-	if (deviceNumber == FUNCUBE_PRO)
+	if (m_deviceNumber == FUNCUBE_PRO)
 		return; //Not supported
 
 	if (v<0)
@@ -555,7 +555,7 @@ void FunCubeSDRDevice::SetBiasTee(int v)
 
 void FunCubeSDRDevice::BiasTeeChanged(int s)
 {
-	if (deviceNumber == FUNCUBE_PRO)
+	if (m_deviceNumber == FUNCUBE_PRO)
 		return; //Not supported
 	int v = optionUi->BiasTee->itemData(s).toInt();
 
@@ -569,7 +569,7 @@ void FunCubeSDRDevice::MixerFilterChanged(int s)
 }
 void FunCubeSDRDevice::SetMixerFilter(int v)
 {
-	if (deviceNumber == FUNCUBE_PRO_PLUS)
+	if (m_deviceNumber == FUNCUBE_PRO_PLUS)
 		return; //Not supported yet
 
 	if (v<0)
@@ -601,7 +601,7 @@ void FunCubeSDRDevice::IFGain2Changed(int s)
 }
 void FunCubeSDRDevice::SetIFGain2(int v)
 {
-	if (deviceNumber == FUNCUBE_PRO_PLUS)
+	if (m_deviceNumber == FUNCUBE_PRO_PLUS)
 		return; //Not supported yet
 
 	if (v<0)
@@ -617,7 +617,7 @@ void FunCubeSDRDevice::IFGain3Changed(int s)
 }
 void FunCubeSDRDevice::SetIFGain3(int v)
 {
-	if (deviceNumber == FUNCUBE_PRO_PLUS)
+	if (m_deviceNumber == FUNCUBE_PRO_PLUS)
 		return; //Not supported yet
 
 	if (v<0)
@@ -633,7 +633,7 @@ void FunCubeSDRDevice::IFGain4Changed(int s)
 }
 void FunCubeSDRDevice::SetIFGain4(int v)
 {
-	if (deviceNumber == FUNCUBE_PRO_PLUS)
+	if (m_deviceNumber == FUNCUBE_PRO_PLUS)
 		return; //Not supported yet
 
 	if (v<0)
@@ -649,7 +649,7 @@ void FunCubeSDRDevice::IFGain5Changed(int s)
 }
 void FunCubeSDRDevice::SetIFGain5(int v)
 {
-	if (deviceNumber == FUNCUBE_PRO_PLUS)
+	if (m_deviceNumber == FUNCUBE_PRO_PLUS)
 		return; //Not supported yet
 
 	if (v<0)
@@ -665,7 +665,7 @@ void FunCubeSDRDevice::IFGain6Changed(int s)
 }
 void FunCubeSDRDevice::SetIFGain6(int v)
 {
-	if (deviceNumber == FUNCUBE_PRO_PLUS)
+	if (m_deviceNumber == FUNCUBE_PRO_PLUS)
 		return; //Not supported yet
 
 	if (v<0)
@@ -681,7 +681,7 @@ void FunCubeSDRDevice::IFGainModeChanged(int s)
 }
 void FunCubeSDRDevice::SetIFGainMode(int v)
 {
-	if (deviceNumber == FUNCUBE_PRO_PLUS)
+	if (m_deviceNumber == FUNCUBE_PRO_PLUS)
 		return; //Not supported yet
 
 	if (v<0)
@@ -697,7 +697,7 @@ void FunCubeSDRDevice::IFRCFilterChanged(int s)
 }
 void FunCubeSDRDevice::SetIFRCFilter(int v)
 {
-	if (deviceNumber == FUNCUBE_PRO_PLUS)
+	if (m_deviceNumber == FUNCUBE_PRO_PLUS)
 		return; //Not supported yet
 
 	if (v<0)
@@ -727,7 +727,7 @@ void FunCubeSDRDevice::ReadFCDOptions()
 	if (res)
 		fcdVersion = (char*)data;
 
-	if (deviceNumber == FUNCUBE_PRO) {
+	if (m_deviceNumber == FUNCUBE_PRO) {
 		res = HIDGet(FCD_HID_CMD_GET_IQ_CORR,data,sizeof(data));
 		if (res) {
 			fcdIQPhaseCorrection = (qint16)data[0];
@@ -737,7 +737,7 @@ void FunCubeSDRDevice::ReadFCDOptions()
 		}
 	}
 
-	if (deviceNumber == FUNCUBE_PRO) {
+	if (m_deviceNumber == FUNCUBE_PRO) {
 		res = HIDGet(FCD_HID_CMD_GET_DC_CORR,data,sizeof(data));
 		if (res) {
 			fcdDCICorrection = (quint16)data[0];
@@ -759,7 +759,7 @@ void FunCubeSDRDevice::ReadFCDOptions()
 		fcdLNAGain=data[0];
 	}
 
-	if (deviceNumber == FUNCUBE_PRO) {
+	if (m_deviceNumber == FUNCUBE_PRO) {
 		res = HIDGet(FCD_HID_CMD_GET_BAND,data,sizeof(data));
 		if (res) {
 			fcdBand=data[0];
@@ -771,7 +771,7 @@ void FunCubeSDRDevice::ReadFCDOptions()
 		fcdRFFilter=data[0];
 	}
 
-	if (deviceNumber == FUNCUBE_PRO) {
+	if (m_deviceNumber == FUNCUBE_PRO) {
 		res = HIDGet(FCD_HID_CMD_GET_LNA_ENHANCE,data,sizeof(data));
 		if (res) {
 			fcdLNAEnhance=data[0];
@@ -782,20 +782,20 @@ void FunCubeSDRDevice::ReadFCDOptions()
 		fcdMixerGain=data[0];
 	}
 
-	if (deviceNumber == FUNCUBE_PRO) {
+	if (m_deviceNumber == FUNCUBE_PRO) {
 		res = HIDGet(FCD_HID_CMD_GET_BIAS_CURRENT,data,sizeof(data));
 		if (res) {
 			fcdBiasCurrent=data[0];
 		}
 	}
-	if (deviceNumber == FUNCUBE_PRO_PLUS) {
+	if (m_deviceNumber == FUNCUBE_PRO_PLUS) {
 		res = HIDGet(FCD_HID_CMD_GET_BIAS_TEE,data,sizeof(data));
 		if (res) {
 			fcdBiasTee=data[0];
 		}
 	}
 
-	if (deviceNumber == FUNCUBE_PRO) {
+	if (m_deviceNumber == FUNCUBE_PRO) {
 		res = HIDGet(FCD_HID_CMD_GET_MIXER_FILTER,data,sizeof(data));
 		if (res) {
 			fcdMixerFilter=data[0];
@@ -807,28 +807,28 @@ void FunCubeSDRDevice::ReadFCDOptions()
 		fcdIFGain1=data[0];
 	}
 
-	if (deviceNumber == FUNCUBE_PRO) {
+	if (m_deviceNumber == FUNCUBE_PRO) {
 		res = HIDGet(FCD_HID_CMD_GET_IF_GAIN_MODE,data,sizeof(data));
 		if (res) {
 			fcdIFGainMode=data[0];
 		}
 	}
 
-	if (deviceNumber == FUNCUBE_PRO) {
+	if (m_deviceNumber == FUNCUBE_PRO) {
 		res = HIDGet(FCD_HID_CMD_GET_IF_RC_FILTER,data,sizeof(data));
 		if (res) {
 			fcdIFRCFilter=data[0];
 		}
 	}
 
-	if (deviceNumber == FUNCUBE_PRO) {
+	if (m_deviceNumber == FUNCUBE_PRO) {
 		res = HIDGet(FCD_HID_CMD_GET_IF_GAIN2,data,sizeof(data));
 		if (res) {
 			fcdIFGain2=data[0];
 		}
 	}
 
-	if (deviceNumber == FUNCUBE_PRO) {
+	if (m_deviceNumber == FUNCUBE_PRO) {
 		res = HIDGet(FCD_HID_CMD_GET_IF_GAIN3,data,sizeof(data));
 		if (res) {
 			fcdIFGain3=data[0];
@@ -840,21 +840,21 @@ void FunCubeSDRDevice::ReadFCDOptions()
 		fcdIFFilter=data[0];
 	}
 
-	if (deviceNumber == FUNCUBE_PRO) {
+	if (m_deviceNumber == FUNCUBE_PRO) {
 		res = HIDGet(FCD_HID_CMD_GET_IF_GAIN4,data,sizeof(data));
 		if (res) {
 			fcdIFGain4=data[0];
 		}
 	}
 
-	if (deviceNumber == FUNCUBE_PRO) {
+	if (m_deviceNumber == FUNCUBE_PRO) {
 		res = HIDGet(FCD_HID_CMD_GET_IF_GAIN5,data,sizeof(data));
 		if (res) {
 			fcdIFGain5=data[0];
 		}
 	}
 
-	if (deviceNumber == FUNCUBE_PRO) {
+	if (m_deviceNumber == FUNCUBE_PRO) {
 		res = HIDGet(FCD_HID_CMD_GET_IF_GAIN6,data,sizeof(data));
 		if (res) {
 			fcdIFGain6=data[0];
@@ -863,7 +863,7 @@ void FunCubeSDRDevice::ReadFCDOptions()
 
 }
 
-void FunCubeSDRDevice::SetupOptionUi(QWidget *parent)
+void FunCubeSDRDevice::setupOptionUi(QWidget *parent)
 {
 	if (optionUi != NULL)
 		delete optionUi;
@@ -1027,13 +1027,13 @@ void FunCubeSDRDevice::SetupOptionUi(QWidget *parent)
 
 	connect(optionUi->IFFilter,SIGNAL(currentIndexChanged(int)),this,SLOT(IFFilterChanged(int)));
 
-	if (connected) {
+	if (m_connected) {
 		//Get current options from device
 		ReadFCDOptions();
 		int index =0;
 
 		//Common to FCD and FCD+
-		if (deviceNumber == FUNCUBE_PRO)
+		if (m_deviceNumber == FUNCUBE_PRO)
 			optionUi->versionLabel->setText("FunCube: "+fcdVersion);
 		else
 			optionUi->versionLabel->setText("FunCube+: "+fcdVersion);
@@ -1055,7 +1055,7 @@ void FunCubeSDRDevice::SetupOptionUi(QWidget *parent)
 		index = optionUi->LNAGain->findData(fcdLNAGain);
 		optionUi->LNAGain->setCurrentIndex(index);
 
-		if (deviceNumber == FUNCUBE_PRO) {
+		if (m_deviceNumber == FUNCUBE_PRO) {
 			//FCD only
 			optionUi->LNAEnhance->setEnabled(true);
 			optionUi->Band->setEnabled(true);
@@ -1174,98 +1174,98 @@ void FunCubeSDRDevice::SetupOptionUi(QWidget *parent)
 }
 
 
-void FunCubeSDRDevice::ReadSettings()
+void FunCubeSDRDevice::readSettings()
 {
-	if (deviceNumber == FUNCUBE_PRO) {
-		qSettings = funCubeProSettings;
-		deviceSampleRate = 96000;
-		startupFrequency = 162450000;
+	if (m_deviceNumber == FUNCUBE_PRO) {
+		m_qSettings = funCubeProSettings;
+		m_deviceSampleRate = 96000;
+		m_startupFrequency = 162450000;
 		//FCD official range is 64 to 1.7 with no gaps
-		lowFrequency = 60000000;
-		highFrequency = 1700000000;
-		startupDemodMode = dmFMN;
-		normalizeIQGain = 0.05;
+		m_lowFrequency = 60000000;
+		m_highFrequency = 1700000000;
+		m_startupDemodMode = dmFMN;
+		m_normalizeIQGain = 0.05;
 		sPID = FCD_PID;
 		sVID = VID;
 	} else {
-		qSettings = funCubeProPlusSettings;
-		deviceSampleRate = 192000;
-		startupFrequency = 10000000;
+		m_qSettings = funCubeProPlusSettings;
+		m_deviceSampleRate = 192000;
+		m_startupFrequency = 10000000;
 		//FCDPlus 240mhz to 420mhz gap is not handled
-		lowFrequency = 150000;
-		highFrequency = 1900000000;
-		startupDemodMode = dmAM;
-		normalizeIQGain = 0.05;
+		m_lowFrequency = 150000;
+		m_highFrequency = 1900000000;
+		m_startupDemodMode = dmAM;
+		m_normalizeIQGain = 0.05;
 		sPID = FCD_PLUS_PID;
 		sVID = VID;
 	}
 
-	DeviceInterfaceBase::ReadSettings();
+	DeviceInterfaceBase::readSettings();
 
-	sPID = qSettings->value("FCD_PID",sPID).toInt();
+	sPID = m_qSettings->value("FCD_PID",sPID).toInt();
 
-	sVID = qSettings->value("VID",sVID).toInt();
+	sVID = m_qSettings->value("VID",sVID).toInt();
 
-	sOffset = qSettings->value("Offset",999885.0).toDouble();
+	sOffset = m_qSettings->value("Offset",999885.0).toDouble();
 
 	//All settings default to -1 which will force the device default values to be set
-	fcdLNAGain = qSettings->value("LNAGain",-1).toInt();
-	fcdLNAEnhance = qSettings->value("LNAEnhance",-1).toInt();
-	fcdBand = qSettings->value("Band",-1).toInt();
-	fcdRFFilter = qSettings->value("RFFilter",-1).toInt();
-	fcdMixerGain = qSettings->value("MixerGain",-1).toInt();
-	fcdBiasCurrent = qSettings->value("BiasCurrent",-1).toInt();
-	fcdBiasTee = qSettings->value("BiasTee",0).toInt();
-	fcdMixerFilter = qSettings->value("MixerFilter",-1).toInt();
-	fcdIFGain1 = qSettings->value("IFGain1",-1).toInt();
-	fcdIFGain2 = qSettings->value("IFGain2",-1).toInt();
-	fcdIFGain3 = qSettings->value("IFGain3",-1).toInt();
-	fcdIFGain4 = qSettings->value("IFGain4",-1).toInt();
-	fcdIFGain5 = qSettings->value("IFGain5",-1).toInt();
-	fcdIFGain6 = qSettings->value("IFGain6",-1).toInt();
-	fcdIFGainMode = qSettings->value("IFGainMode",-1).toInt();
-	fcdIFRCFilter = qSettings->value("IFRCFilter",-1).toInt();
-	fcdIFFilter = qSettings->value("IFFilter",-1).toInt();
-	fcdSetFreqHz = qSettings->value("SetFreqHz",true).toBool();
-	fcdDCICorrection = qSettings->value("DCICorrection",0).toInt();
-	fcdDCQCorrection = qSettings->value("DCQCorrection",0).toInt();
-	fcdIQPhaseCorrection = qSettings->value("IQPhaseCorrection",0).toInt();
-	fcdIQGainCorrection = qSettings->value("IQGainCorrection",32768).toInt();
+	fcdLNAGain = m_qSettings->value("LNAGain",-1).toInt();
+	fcdLNAEnhance = m_qSettings->value("LNAEnhance",-1).toInt();
+	fcdBand = m_qSettings->value("Band",-1).toInt();
+	fcdRFFilter = m_qSettings->value("RFFilter",-1).toInt();
+	fcdMixerGain = m_qSettings->value("MixerGain",-1).toInt();
+	fcdBiasCurrent = m_qSettings->value("BiasCurrent",-1).toInt();
+	fcdBiasTee = m_qSettings->value("BiasTee",0).toInt();
+	fcdMixerFilter = m_qSettings->value("MixerFilter",-1).toInt();
+	fcdIFGain1 = m_qSettings->value("IFGain1",-1).toInt();
+	fcdIFGain2 = m_qSettings->value("IFGain2",-1).toInt();
+	fcdIFGain3 = m_qSettings->value("IFGain3",-1).toInt();
+	fcdIFGain4 = m_qSettings->value("IFGain4",-1).toInt();
+	fcdIFGain5 = m_qSettings->value("IFGain5",-1).toInt();
+	fcdIFGain6 = m_qSettings->value("IFGain6",-1).toInt();
+	fcdIFGainMode = m_qSettings->value("IFGainMode",-1).toInt();
+	fcdIFRCFilter = m_qSettings->value("IFRCFilter",-1).toInt();
+	fcdIFFilter = m_qSettings->value("IFFilter",-1).toInt();
+	fcdSetFreqHz = m_qSettings->value("SetFreqHz",true).toBool();
+	fcdDCICorrection = m_qSettings->value("DCICorrection",0).toInt();
+	fcdDCQCorrection = m_qSettings->value("DCQCorrection",0).toInt();
+	fcdIQPhaseCorrection = m_qSettings->value("IQPhaseCorrection",0).toInt();
+	fcdIQGainCorrection = m_qSettings->value("IQGainCorrection",32768).toInt();
 }
 
-void FunCubeSDRDevice::WriteSettings()
+void FunCubeSDRDevice::writeSettings()
 {
-	if (deviceNumber == FUNCUBE_PRO)
-		qSettings = funCubeProSettings;
+	if (m_deviceNumber == FUNCUBE_PRO)
+		m_qSettings = funCubeProSettings;
 	else
-		qSettings = funCubeProPlusSettings;
+		m_qSettings = funCubeProPlusSettings;
 
-	DeviceInterfaceBase::WriteSettings();
-	qSettings->setValue("FCD_PID",sPID);
-	qSettings->setValue("VID",sVID);
-	qSettings->setValue("Offset",sOffset);
-	qSettings->setValue("LNAGain",fcdLNAGain);
-	qSettings->setValue("LNAEnhance",fcdLNAEnhance);
-	qSettings->setValue("Band",fcdBand);
-	qSettings->setValue("RFFilter",fcdRFFilter);
-	qSettings->setValue("MixerGain",fcdMixerGain);
-	qSettings->setValue("BiasCurrent",fcdBiasCurrent);
-	qSettings->setValue("BiasTee",fcdBiasTee);
-	qSettings->setValue("MixerFilter",fcdMixerFilter);
-	qSettings->setValue("IFGain1",fcdIFGain1);
-	qSettings->setValue("IFGain2",fcdIFGain2);
-	qSettings->setValue("IFGain3",fcdIFGain3);
-	qSettings->setValue("IFGain4",fcdIFGain4);
-	qSettings->setValue("IFGain5",fcdIFGain5);
-	qSettings->setValue("IFGain6",fcdIFGain6);
-	qSettings->setValue("IFGainMode",fcdIFGainMode);
-	qSettings->setValue("IFRCFilter",fcdIFRCFilter);
-	qSettings->setValue("IFFilter",fcdIFFilter);
-	qSettings->setValue("SetFreqHz",fcdSetFreqHz);
-	qSettings->setValue("DCICorrection",fcdDCICorrection);
-	qSettings->setValue("DCQCorrection",fcdDCQCorrection);
-	qSettings->setValue("IQPhaseCorrection",fcdIQPhaseCorrection);
-	qSettings->setValue("IQGainCorrection",fcdIQGainCorrection);
+	DeviceInterfaceBase::writeSettings();
+	m_qSettings->setValue("FCD_PID",sPID);
+	m_qSettings->setValue("VID",sVID);
+	m_qSettings->setValue("Offset",sOffset);
+	m_qSettings->setValue("LNAGain",fcdLNAGain);
+	m_qSettings->setValue("LNAEnhance",fcdLNAEnhance);
+	m_qSettings->setValue("Band",fcdBand);
+	m_qSettings->setValue("RFFilter",fcdRFFilter);
+	m_qSettings->setValue("MixerGain",fcdMixerGain);
+	m_qSettings->setValue("BiasCurrent",fcdBiasCurrent);
+	m_qSettings->setValue("BiasTee",fcdBiasTee);
+	m_qSettings->setValue("MixerFilter",fcdMixerFilter);
+	m_qSettings->setValue("IFGain1",fcdIFGain1);
+	m_qSettings->setValue("IFGain2",fcdIFGain2);
+	m_qSettings->setValue("IFGain3",fcdIFGain3);
+	m_qSettings->setValue("IFGain4",fcdIFGain4);
+	m_qSettings->setValue("IFGain5",fcdIFGain5);
+	m_qSettings->setValue("IFGain6",fcdIFGain6);
+	m_qSettings->setValue("IFGainMode",fcdIFGainMode);
+	m_qSettings->setValue("IFRCFilter",fcdIFRCFilter);
+	m_qSettings->setValue("IFFilter",fcdIFFilter);
+	m_qSettings->setValue("SetFreqHz",fcdSetFreqHz);
+	m_qSettings->setValue("DCICorrection",fcdDCICorrection);
+	m_qSettings->setValue("DCQCorrection",fcdDCQCorrection);
+	m_qSettings->setValue("IQPhaseCorrection",fcdIQPhaseCorrection);
+	m_qSettings->setValue("IQGainCorrection",fcdIQGainCorrection);
 
-	qSettings->sync();
+	m_qSettings->sync();
 }

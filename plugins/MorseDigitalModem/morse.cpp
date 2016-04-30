@@ -297,7 +297,7 @@ int Morse::UsecToWPM(quint32 u)
     return DOT_MAGIC / u;
 }
 
-void Morse::setDemodMode(DeviceInterface::DEMODMODE _demodMode)
+void Morse::setDemodMode(DeviceInterface::DemodMode _demodMode)
 {
     demodMode = _demodMode;
 }

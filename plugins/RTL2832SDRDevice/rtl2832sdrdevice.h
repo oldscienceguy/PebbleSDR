@@ -43,24 +43,24 @@ class RTL2832SDRDevice: public QObject, public DeviceInterfaceBase
     Q_INTERFACES(DeviceInterface)
 
 public:
-#define K_RTLSampleRate DeviceInterface::CustomKey1
-#define K_RTLTunerGainMode DeviceInterface::CustomKey2
-#define K_RTLTunerGain DeviceInterface::CustomKey3
-#define K_RTLAgcMode DeviceInterface::CustomKey4
-#define K_RTLSampleMode DeviceInterface::CustomKey5
-#define K_RTLOffsetMode DeviceInterface::CustomKey6
+#define K_RTLSampleRate DeviceInterface::Key_CustomKey1
+#define K_RTLTunerGainMode DeviceInterface::Key_CustomKey2
+#define K_RTLTunerGain DeviceInterface::Key_CustomKey3
+#define K_RTLAgcMode DeviceInterface::Key_CustomKey4
+#define K_RTLSampleMode DeviceInterface::Key_CustomKey5
+#define K_RTLOffsetMode DeviceInterface::Key_CustomKey6
 
     RTL2832SDRDevice();
     ~RTL2832SDRDevice();
 
     //DeviceInterface abstract methods that must be implemented
-	bool Initialize(cbProcessIQData _callback,
-					cbProcessBandscopeData _callbackBandscope,
-					cbProcessAudioData _callbackAudio,
+	bool initialize(CB_ProcessIQData _callback,
+					CB_ProcessBandscopeData _callbackBandscope,
+					CB_ProcessAudioData _callbackAudio,
 					quint16 _framesPerBuffer);
 
-	QVariant Get(STANDARD_KEYS _key, QVariant _option = 0);
-	bool Set(STANDARD_KEYS _key, QVariant _value, QVariant _option = 0);
+	QVariant get(StandardKeys _key, QVariant _option = 0);
+	bool set(StandardKeys _key, QVariant _value, QVariant _option = 0);
 
 signals:
     void reset(); //When no recourse, signal this to restart
@@ -84,14 +84,14 @@ private slots:
     void OffsetModeChanged(bool _selected);
 
 private:
-	bool Connect();
-	bool Disconnect();
-	void Start();
-	void Stop();
-	void ReadSettings();
-	void WriteSettings();
+	bool connectDevice();
+	bool disconnectDevice();
+	void startDevice();
+	void stopDevice();
+	void readSettings();
+	void writeSettings();
 	//Display device option widget in settings dialog
-	void SetupOptionUi(QWidget *parent);
+	void setupOptionUi(QWidget *parent);
 
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
@@ -162,7 +162,7 @@ private:
     bool SetRtlAgcMode(bool _on);
     bool SetRtlOffsetMode(bool _on);
 
-    void InitSettings(QString fname);
+	void initSettings(QString fname);
 
     rtlsdr_dev_t *dev;
 

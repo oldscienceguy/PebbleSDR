@@ -37,9 +37,9 @@ public:
 	void setReceiver (Receiver *r); //Our 'model'
 	void setFrequency(double f);
 	double getFrequency();
-	void setMode(DeviceInterface::DEMODMODE m);
+	void setMode(DeviceInterface::DemodMode m);
 	void setDataMode(int _dataMode);
-	DeviceInterface::DEMODMODE getMode();
+	DeviceInterface::DemodMode getMode();
 	void setMessage(QStringList s);
 
 	void displayBand(double freq);
@@ -54,7 +54,7 @@ public slots:
 		void newSignalStrength(double peakDb, double avgDb, double snrDb, double floorDb, double extValue);
 
 signals:
-		void demodChanged(DeviceInterface::DEMODMODE _demodMode);
+		void demodChanged(DeviceInterface::DemodMode _demodMode);
 		void audioGainChanged(int _audioGain);
 		void agcThresholdChanged(int _threshold);
 		void squelchChanged(double _squelch);
@@ -103,7 +103,7 @@ private:
 	int m_highMixer;
 	int m_lowMixer;
 	bool m_powerOn;
-	DeviceInterface::DEMODMODE m_mode;
+	DeviceInterface::DemodMode m_mode;
 	int m_modeOffset; //make CW +- tone instead of actual freq
 	Presets *m_presets;
 

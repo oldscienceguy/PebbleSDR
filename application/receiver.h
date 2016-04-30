@@ -82,7 +82,7 @@ public:
 		void openDeviceAboutBox();
 		void openReadMeWindow();
 		void openGPLWindow();
-		void demodModeChanged(DeviceInterface::DEMODMODE _demodMode);
+		void demodModeChanged(DeviceInterface::DemodMode _demodMode);
 		void audioGainChanged(int g);
 		void agcThresholdChanged(int g);
 		void squelchChanged(double s);

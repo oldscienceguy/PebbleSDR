@@ -127,17 +127,17 @@ public:
 	~RFSpaceDevice();
 
 	//Required
-	bool Initialize(cbProcessIQData _callback,
-					cbProcessBandscopeData _callbackBandscope,
-					cbProcessAudioData _callbackAudio,
+	bool initialize(CB_ProcessIQData _callback,
+					CB_ProcessBandscopeData _callbackBandscope,
+					CB_ProcessAudioData _callbackAudio,
 					quint16 _framesPerBuffer);
-	QVariant Get(STANDARD_KEYS _key, QVariant _option = 0);
-	bool Set(STANDARD_KEYS _key, QVariant _value, QVariant _option = 0);
+	QVariant get(StandardKeys _key, QVariant _option = 0);
+	bool set(StandardKeys _key, QVariant _value, QVariant _option = 0);
 
 	static void UnpackHeader(quint8 byte0, quint8 byte1, ControlHeader *unpacked);
 	static void DoubleToBuf(unsigned char *buf, double value);
 protected:
-	void InitSettings(QString fname);
+	void initSettings(QString fname);
 private slots:
 	void rfGainChanged(int i);
 	void ifGainChanged(int i);
@@ -153,14 +153,14 @@ private slots:
 
 
 private:
-	bool Connect();
-	bool Disconnect();
-	void Start();
-	void Stop();
-	void ReadSettings();
-	void WriteSettings();
+	bool connectDevice();
+	bool disconnectDevice();
+	void startDevice();
+	void stopDevice();
+	void readSettings();
+	void writeSettings();
 	//Display device option widget in settings dialog
-	void SetupOptionUi(QWidget *parent);
+	void setupOptionUi(QWidget *parent);
 
 	enum SDRDEVICE {SDR_IQ =0, SDR_IP, AFEDRI_USB};
 

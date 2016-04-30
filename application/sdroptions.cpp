@@ -51,32 +51,32 @@ void SdrOptions::showSdrOptions(DeviceInterface *_di, bool b)
 		m_sdrOptionsDialog->setWindowTitle("Pebble Settings");
 
 		//Populate device selector
-		int deviceCount = m_di->Get(DeviceInterface::PluginNumDevices).toInt();
+		int deviceCount = m_di->get(DeviceInterface::Key_PluginNumDevices).toInt();
 		for (int i=0; i<deviceCount; i++) {
-			m_sd->deviceSelection->addItem(m_di->Get(DeviceInterface::DeviceName,i).toString());
+			m_sd->deviceSelection->addItem(m_di->get(DeviceInterface::Key_DeviceName,i).toString());
 		}
 		//Select active device
 		m_sd->deviceSelection->setCurrentIndex(global->settings->m_sdrDeviceNumber);
 		//And make sure device has same number
-		m_di->Set(DeviceInterface::DeviceNumber,global->settings->m_sdrDeviceNumber);
+		m_di->set(DeviceInterface::Key_DeviceNumber,global->settings->m_sdrDeviceNumber);
 		//And connect so we get changes
 		connect(m_sd->deviceSelection,SIGNAL(currentIndexChanged(int)),this,SLOT(deviceSelectionChanged(int)));
 
 		//Read current settings now that we have correct deviceNumber
-		m_di->Command(DeviceInterface::CmdReadSettings,0);
+		m_di->command(DeviceInterface::Cmd_ReadSettings,0);
 
-		m_sd->startupBox->addItem("Last Frequency",DeviceInterface::LASTFREQ);
-		m_sd->startupBox->addItem("Set Frequency", DeviceInterface::SETFREQ);
-		m_sd->startupBox->addItem("Device Default", DeviceInterface::DEFAULTFREQ);
+		m_sd->startupBox->addItem("Last Frequency",DeviceInterface::ST_LASTFREQ);
+		m_sd->startupBox->addItem("Set Frequency", DeviceInterface::ST_SETFREQ);
+		m_sd->startupBox->addItem("Device Default", DeviceInterface::ST_DEFAULTFREQ);
 		connect(m_sd->startupBox,SIGNAL(currentIndexChanged(int)),this,SLOT(startupChanged(int)));
 
 		connect(m_sd->startupEdit,SIGNAL(editingFinished()),this,SLOT(startupFrequencyChanged()));
 		connect(m_sd->iqGain,SIGNAL(valueChanged(double)),this,SLOT(iqGainChanged(double)));
 
-		m_sd->IQSettings->addItem("I/Q (normal)",DeviceInterface::IQ);
-		m_sd->IQSettings->addItem("Q/I (swap)",DeviceInterface::QI);
-		m_sd->IQSettings->addItem("I Only",DeviceInterface::IONLY);
-		m_sd->IQSettings->addItem("Q Only",DeviceInterface::QONLY);
+		m_sd->IQSettings->addItem("I/Q (normal)",DeviceInterface::IQO_IQ);
+		m_sd->IQSettings->addItem("Q/I (swap)",DeviceInterface::IQO_QI);
+		m_sd->IQSettings->addItem("I Only",DeviceInterface::IQO_IONLY);
+		m_sd->IQSettings->addItem("Q Only",DeviceInterface::IQO_QONLY);
 		connect(m_sd->IQSettings,SIGNAL(currentIndexChanged(int)),this,SLOT(iqOrderChanged(int)));
 
 		m_sd->iqBalancePhase->setMaximum(500);
@@ -90,7 +90,7 @@ void SdrOptions::showSdrOptions(DeviceInterface *_di, bool b)
 		connect(m_sd->iqEnableBalance,SIGNAL(toggled(bool)),this,SLOT(balanceEnabledChanged(bool)));
 		connect(m_sd->iqBalanceReset,SIGNAL(clicked()),this,SLOT(balanceReset()));
 
-		m_dcRemove = m_di->Get(DeviceInterface::RemoveDC).toBool();
+		m_dcRemove = m_di->get(DeviceInterface::Key_RemoveDC).toBool();
 		m_sd->dcRemoval->setChecked(m_dcRemove);
 		connect (m_sd->dcRemoval, SIGNAL(clicked(bool)),this,SLOT(dcRemovalChanged(bool)));
 
@@ -118,7 +118,7 @@ void SdrOptions::updateOptions()
 {
 	int id;
 	QString dn;
-	if (m_di->Get(DeviceInterface::DeviceType).toInt() == DeviceInterface::AUDIO_IQ_DEVICE) {
+	if (m_di->get(DeviceInterface::Key_DeviceType).toInt() == DeviceInterface::DT_AUDIO_IQ_DEVICE) {
 		//Audio devices may have been plugged or unplugged, refresh list on each show
 		//This will use PortAudio or QTAudio depending on configuration
 		m_inputDevices = Audio::InputDeviceList();
@@ -133,7 +133,7 @@ void SdrOptions::updateOptions()
 			id = m_inputDevices[i].left(2).toInt();
 			dn = m_inputDevices[i].mid(3);
 			m_sd->sourceBox->addItem(dn, id);
-			if (dn == m_di->Get(DeviceInterface::InputDeviceName).toString())
+			if (dn == m_di->get(DeviceInterface::Key_InputDeviceName).toString())
 				m_sd->sourceBox->setCurrentIndex(i);
 		}
 		m_sd->sourceBox->blockSignals(false);
@@ -149,48 +149,48 @@ void SdrOptions::updateOptions()
 		id = m_outputDevices[i].left(2).toInt();
 		dn = m_outputDevices[i].mid(3);
 		m_sd->outputBox->addItem(dn, id);
-		if (dn == m_di->Get(DeviceInterface::OutputDeviceName).toString())
+		if (dn == m_di->get(DeviceInterface::Key_OutputDeviceName).toString())
 			m_sd->outputBox->setCurrentIndex(i);
 	}
 	m_sd->outputBox->blockSignals(false);
 
 	m_sd->startupBox->blockSignals(true);
-	int cur = m_sd->startupBox->findData(m_di->Get(DeviceInterface::StartupType).toInt());
+	int cur = m_sd->startupBox->findData(m_di->get(DeviceInterface::Key_StartupType).toInt());
 	m_sd->startupBox->setCurrentIndex(cur);
 	m_sd->startupBox->blockSignals(false);
 
-	m_sd->startupEdit->setText(m_di->Get(DeviceInterface::UserFrequency).toString());
+	m_sd->startupEdit->setText(m_di->get(DeviceInterface::Key_UserFrequency).toString());
 
 	m_sd->iqGain->blockSignals(true);
-	m_sd->iqGain->setValue(m_di->Get(DeviceInterface::IQGain).toDouble());
+	m_sd->iqGain->setValue(m_di->get(DeviceInterface::Key_IQGain).toDouble());
 	m_sd->iqGain->blockSignals(false);
 
 	m_sd->IQSettings->blockSignals(true);
-	m_sd->IQSettings->setCurrentIndex(m_di->Get(DeviceInterface::IQOrder).toInt());
+	m_sd->IQSettings->setCurrentIndex(m_di->get(DeviceInterface::Key_IQOrder).toInt());
 	m_sd->IQSettings->blockSignals(false);
 
-	m_sd->iqEnableBalance->setChecked(m_di->Get(DeviceInterface::IQBalanceEnabled).toBool());
+	m_sd->iqEnableBalance->setChecked(m_di->get(DeviceInterface::Key_IQBalanceEnabled).toBool());
 
 	m_sd->iqBalancePhase->blockSignals(true);
-	m_sd->iqBalancePhase->setValue(m_di->Get(DeviceInterface::IQBalancePhase).toDouble() * 1000);
+	m_sd->iqBalancePhase->setValue(m_di->get(DeviceInterface::Key_IQBalancePhase).toDouble() * 1000);
 	m_sd->iqBalancePhase->blockSignals(false);
 
 	m_sd->iqBalanceGain->blockSignals(true);
-	m_sd->iqBalanceGain->setValue(m_di->Get(DeviceInterface::IQBalanceGain).toDouble() * 1000);
+	m_sd->iqBalanceGain->setValue(m_di->get(DeviceInterface::Key_IQBalanceGain).toDouble() * 1000);
 	m_sd->iqBalanceGain->blockSignals(false);
 
 	m_sd->converterMode->blockSignals(true);
-	m_sd->converterMode->setChecked(m_di->Get(DeviceInterface::ConverterMode).toBool());
+	m_sd->converterMode->setChecked(m_di->get(DeviceInterface::Key_ConverterMode).toBool());
 	m_sd->converterMode->blockSignals(false);
 
 	m_sd->converterOffset->blockSignals(true);
-	m_sd->converterOffset->setText(m_di->Get(DeviceInterface::ConverterOffset).toString());
+	m_sd->converterOffset->setText(m_di->get(DeviceInterface::Key_ConverterOffset).toString());
 	m_sd->converterOffset->blockSignals(false);
 
 	//Set up options and get allowable sampleRates from device
 
 	int sr;
-	QStringList sampleRates = m_di->Get(DeviceInterface::DeviceSampleRates).toStringList();
+	QStringList sampleRates = m_di->get(DeviceInterface::Key_DeviceSampleRates).toStringList();
 	if (sampleRates.isEmpty()) {
 		//Device handles sample rate selection
 		m_sd->sampleRateBox->hide();
@@ -204,7 +204,7 @@ void SdrOptions::updateOptions()
 		for (int i=0; i<sampleRates.count(); i++) {
 			sr = sampleRates[i].toInt();
 			m_sd->sampleRateBox->addItem(sampleRates[i],sr);
-			if (m_di->Get(DeviceInterface::DeviceSampleRate).toUInt() == sr)
+			if (m_di->get(DeviceInterface::Key_DeviceSampleRate).toUInt() == sr)
 				m_sd->sampleRateBox->setCurrentIndex(i);
 		}
 		m_sd->sampleRateBox->blockSignals(false);
@@ -214,7 +214,7 @@ void SdrOptions::updateOptions()
 	//This only works because ShowSdrOptions() is being called via a pointer to the derived class
 	//Some other method that's called from the base class could not do this
 	//di->SetupOptionUi(sd->sdrSpecific);
-	m_di->Command(DeviceInterface::CmdDisplayOptionUi,QVariant::fromValue(m_sd->sdrSpecific));
+	m_di->command(DeviceInterface::Cmd_DisplayOptionUi,QVariant::fromValue(m_sd->sdrSpecific));
 
 }
 
@@ -226,21 +226,21 @@ void SdrOptions::closeOptions(bool b)
 
 void SdrOptions::converterModeChanged(bool b)
 {
-	m_di->Set(DeviceInterface::ConverterMode,b);
-	m_di->Command(DeviceInterface::CmdWriteSettings,0);
+	m_di->set(DeviceInterface::Key_ConverterMode,b);
+	m_di->command(DeviceInterface::Cmd_WriteSettings,0);
 }
 
 void SdrOptions::converterOffsetChanged()
 {
-	m_di->Set(DeviceInterface::ConverterOffset, m_sd->converterOffset->text().toDouble());
-	m_di->Command(DeviceInterface::CmdWriteSettings,0);
+	m_di->set(DeviceInterface::Key_ConverterOffset, m_sd->converterOffset->text().toDouble());
+	m_di->command(DeviceInterface::Cmd_WriteSettings,0);
 }
 
 void SdrOptions::dcRemovalChanged(bool b)
 {
 	m_dcRemove = b;
-	m_di->Set(DeviceInterface::RemoveDC,b);
-	m_di->Command(DeviceInterface::CmdWriteSettings,0);
+	m_di->set(DeviceInterface::Key_RemoveDC,b);
+	m_di->command(DeviceInterface::Cmd_WriteSettings,0);
 	if (!global->receiver->getPowerOn())
 		return;
 	global->receiver->m_dcRemove->enableStep(b);
@@ -250,11 +250,11 @@ void SdrOptions::dcRemovalChanged(bool b)
 void SdrOptions::deviceSelectionChanged(int i) {
 	global->settings->m_sdrDeviceNumber = i;
 	//Set device number
-	m_di->Set(DeviceInterface::DeviceNumber, i); //Which ini file to read from
+	m_di->set(DeviceInterface::Key_DeviceNumber, i); //Which ini file to read from
 	//Read settings, ReadSettings will switch on deviceNumber
-	m_di->Command(DeviceInterface::CmdReadSettings,0);
+	m_di->command(DeviceInterface::Cmd_ReadSettings,0);
 	//ReadSettings will read in last device number and overwrite our change, so reset it again
-	m_di->Set(DeviceInterface::DeviceNumber, i); //Which ini file to read from
+	m_di->set(DeviceInterface::Key_DeviceNumber, i); //Which ini file to read from
 	//Update sdr specific section
 	updateOptions();
 }
@@ -262,55 +262,55 @@ void SdrOptions::deviceSelectionChanged(int i) {
 void SdrOptions::sampleRateChanged(int i)
 {
 	int cur = m_sd->sampleRateBox->currentIndex();
-	m_di->Set(DeviceInterface::DeviceSampleRate, m_sd->sampleRateBox->itemText(cur).toInt());
-	m_di->Command(DeviceInterface::CmdWriteSettings,0);
+	m_di->set(DeviceInterface::Key_DeviceSampleRate, m_sd->sampleRateBox->itemText(cur).toInt());
+	m_di->command(DeviceInterface::Cmd_WriteSettings,0);
 }
 
 void SdrOptions::inputChanged(int i)
 {
 	int cur = m_sd->sourceBox->currentIndex();
-	m_di->Set(DeviceInterface::InputDeviceName, m_sd->sourceBox->itemText(cur));
-	m_di->Command(DeviceInterface::CmdWriteSettings,0);
+	m_di->set(DeviceInterface::Key_InputDeviceName, m_sd->sourceBox->itemText(cur));
+	m_di->command(DeviceInterface::Cmd_WriteSettings,0);
 }
 
 void SdrOptions::outputChanged(int i)
 {
 	int cur = m_sd->outputBox->currentIndex();
-	m_di->Set(DeviceInterface::OutputDeviceName, m_sd->outputBox->itemText(cur));
-	m_di->Command(DeviceInterface::CmdWriteSettings,0);
+	m_di->set(DeviceInterface::Key_OutputDeviceName, m_sd->outputBox->itemText(cur));
+	m_di->command(DeviceInterface::Cmd_WriteSettings,0);
 }
 
 void SdrOptions::startupChanged(int i)
 {
-	m_di->Set(DeviceInterface::StartupType, m_sd->startupBox->itemData(i).toInt());
-	m_sd->startupEdit->setText(m_di->Get(DeviceInterface::UserFrequency).toString());
-	if (m_di->Get(DeviceInterface::StartupType).toInt() == DeviceInterface::SETFREQ) {
+	m_di->set(DeviceInterface::Key_StartupType, m_sd->startupBox->itemData(i).toInt());
+	m_sd->startupEdit->setText(m_di->get(DeviceInterface::Key_UserFrequency).toString());
+	if (m_di->get(DeviceInterface::Key_StartupType).toInt() == DeviceInterface::ST_SETFREQ) {
 		m_sd->startupEdit->setEnabled(true);
 	}
 	else {
 		m_sd->startupEdit->setEnabled(false);
 	}
-	m_di->Command(DeviceInterface::CmdWriteSettings,0);
+	m_di->command(DeviceInterface::Cmd_WriteSettings,0);
 }
 
 void SdrOptions::startupFrequencyChanged()
 {
-	m_di->Set(DeviceInterface::UserFrequency, m_sd->startupEdit->text().toDouble());
-	m_di->Command(DeviceInterface::CmdWriteSettings,0);
+	m_di->set(DeviceInterface::Key_UserFrequency, m_sd->startupEdit->text().toDouble());
+	m_di->command(DeviceInterface::Cmd_WriteSettings,0);
 }
 
 //IQ gain can be changed in real time, without saving
 void SdrOptions::iqGainChanged(double i)
 {
-	m_di->Set(DeviceInterface::IQGain, i);
-	m_di->Command(DeviceInterface::CmdWriteSettings,0);
+	m_di->set(DeviceInterface::Key_IQGain, i);
+	m_di->command(DeviceInterface::Cmd_WriteSettings,0);
 }
 
 //IQ order can be changed in real time, without saving
 void SdrOptions::iqOrderChanged(int i)
 {
-	m_di->Set(DeviceInterface::IQOrder, m_sd->IQSettings->itemData(i).toInt());
-	m_di->Command(DeviceInterface::CmdWriteSettings,0);
+	m_di->set(DeviceInterface::Key_IQOrder, m_sd->IQSettings->itemData(i).toInt());
+	m_di->command(DeviceInterface::Cmd_WriteSettings,0);
 }
 
 void SdrOptions::balancePhaseChanged(int v)
@@ -318,12 +318,12 @@ void SdrOptions::balancePhaseChanged(int v)
 	//v is an integer, convert to fraction -.500 to +.500
 	double newValue = v/1000.0;
 	m_sd->iqBalancePhaseLabel->setText("Phase: " + QString::number(newValue));
-	m_di->Set(DeviceInterface::IQBalancePhase, newValue);
+	m_di->set(DeviceInterface::Key_IQBalancePhase, newValue);
 
 	if (!global->receiver->getPowerOn())
 		return;
 	global->receiver->getIQBalance()->setPhaseFactor(newValue);
-	m_di->Command(DeviceInterface::CmdWriteSettings,0);
+	m_di->command(DeviceInterface::Cmd_WriteSettings,0);
 }
 
 void SdrOptions::balanceGainChanged(int v)
@@ -331,8 +331,8 @@ void SdrOptions::balanceGainChanged(int v)
 	//v is an integer, convert to fraction -.750 to +1.250
 	double newValue = v/1000.0;
 	m_sd->iqBalanceGainLabel->setText("Gain: " + QString::number(newValue));
-	m_di->Set(DeviceInterface::IQBalanceGain, newValue);
-	m_di->Command(DeviceInterface::CmdWriteSettings,0);
+	m_di->set(DeviceInterface::Key_IQBalanceGain, newValue);
+	m_di->command(DeviceInterface::Cmd_WriteSettings,0);
 	//Update in realtime
 	if (!global->receiver->getPowerOn())
 		return;
@@ -341,8 +341,8 @@ void SdrOptions::balanceGainChanged(int v)
 
 void SdrOptions::balanceEnabledChanged(bool b)
 {
-	m_di->Set(DeviceInterface::IQBalanceEnabled, b);
-	m_di->Command(DeviceInterface::CmdWriteSettings,0);
+	m_di->set(DeviceInterface::Key_IQBalanceEnabled, b);
+	m_di->command(DeviceInterface::Cmd_WriteSettings,0);
 	if (!global->receiver->getPowerOn())
 		return;
 	global->receiver->getIQBalance()->enableStep(b);
@@ -369,7 +369,7 @@ void SdrOptions::resetSettings(bool b)
 		//Disabled
 		emit restart(); //Shut receiver off so current options aren't written to ini file
 		//fname gets absolute path
-		QString fname = m_di->Get(DeviceInterface::SettingsFile).toString();
+		QString fname = m_di->get(DeviceInterface::Key_SettingsFile).toString();
 		qDebug()<<"Device file name: "<<fname;
 		QFile::remove(fname);
 #if 0

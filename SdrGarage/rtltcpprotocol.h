@@ -17,12 +17,12 @@ public:
                 CMD_IF_GAIN=0x06, CMD_TEST_MODE=0x07, CMD_AGC_MODE=0x08, CMD_DIRECT_SAMPLING = 0x09,
                 CMD_OFFSET_TUNING = 0x0a, CMD_XTAL_FREQ=0x0b, CMD_TUNER_XTAL=0x0c, CMD_TUNER_GAIN_BY_INDEX = 0x0d};
 
-#define K_RTLSampleRate DeviceInterface::CustomKey1
-#define K_RTLTunerGainMode DeviceInterface::CustomKey2
-#define K_RTLTunerGain DeviceInterface::CustomKey3
-#define K_RTLAgcMode DeviceInterface::CustomKey4
-#define K_RTLSampleMode DeviceInterface::CustomKey5
-#define K_RTLOffsetMode DeviceInterface::CustomKey6
+#define K_RTLSampleRate DeviceInterface::Key_CustomKey1
+#define K_RTLTunerGainMode DeviceInterface::Key_CustomKey2
+#define K_RTLTunerGain DeviceInterface::Key_CustomKey3
+#define K_RTLAgcMode DeviceInterface::Key_CustomKey4
+#define K_RTLSampleMode DeviceInterface::Key_CustomKey5
+#define K_RTLOffsetMode DeviceInterface::Key_CustomKey6
 
     union RTL_CMD {
         //This needs to be packed for network transfer, no padded bytes

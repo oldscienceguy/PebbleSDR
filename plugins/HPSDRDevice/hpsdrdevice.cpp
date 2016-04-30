@@ -15,7 +15,7 @@ HPSDRDevice::HPSDRDevice():DeviceInterfaceBase()
 {
 	pebbleLibGlobal = new PebbleLibGlobal();
 
-	InitSettings("HPSDR");
+	initSettings("HPSDR");
 
 	ozyFX2FW.clear();
 	ozyFW=0;
@@ -24,7 +24,7 @@ HPSDRDevice::HPSDRDevice():DeviceInterfaceBase()
 	metisFW=0;
 	janusFW=0;
 
-	ReadSettings();
+	readSettings();
 	if (discovery == USE_OZY)
 		connectionType = OZY;
 	else if (discovery == USE_METIS)
@@ -48,11 +48,11 @@ HPSDRDevice::~HPSDRDevice()
 	}
 }
 
-bool HPSDRDevice::Initialize(cbProcessIQData _callback,
-							  cbProcessBandscopeData _callbackBandscope,
-							  cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
+bool HPSDRDevice::initialize(CB_ProcessIQData _callback,
+							  CB_ProcessBandscopeData _callbackBandscope,
+							  CB_ProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
-	DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
+	DeviceInterfaceBase::initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
 
 	//Frames are 512 bytes, defined by HPSDR protocol
 	//Each frame has 3 sync and 5 Command and control bytes, leaving 504 for data
@@ -69,20 +69,20 @@ bool HPSDRDevice::Initialize(cbProcessIQData _callback,
 		delete[] inputBuffer;
 	inputBuffer = new unsigned char[inputBufferSize];
 
-	numProducerBuffers = 50;
-	readBufferSize = framesPerBuffer * sizeof(CPX);
-	producerConsumer.Initialize(std::bind(&HPSDRDevice::producerWorker, this, std::placeholders::_1),
-		std::bind(&HPSDRDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, readBufferSize);
+	m_numProducerBuffers = 50;
+	m_readBufferSize = framesPerBuffer * sizeof(CPX);
+	m_producerConsumer.Initialize(std::bind(&HPSDRDevice::producerWorker, this, std::placeholders::_1),
+		std::bind(&HPSDRDevice::consumerWorker, this, std::placeholders::_1),m_numProducerBuffers, m_readBufferSize);
 
 	if (connectionType == OZY) {
 		//Must be called after Initialize
 		//Sample rate and size must be in consistent units - cpx samples
-		producerConsumer.SetProducerInterval(deviceSampleRate,inputBufferSize / sizeof(CPX));
-		producerConsumer.SetConsumerInterval(deviceSampleRate,framesPerBuffer);
+		m_producerConsumer.SetProducerInterval(m_deviceSampleRate,inputBufferSize / sizeof(CPX));
+		m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,framesPerBuffer);
 	} else {
 		//Producer triggered by readyRead signal, so set polling for long time 1 sec
-		producerConsumer.SetProducerInterval(inputBufferSize,inputBufferSize);
-		producerConsumer.SetConsumerInterval(deviceSampleRate,framesPerBuffer);
+		m_producerConsumer.SetProducerInterval(inputBufferSize,inputBufferSize);
+		m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,framesPerBuffer);
 	}
 	return true;
 }
@@ -104,7 +104,7 @@ bool HPSDRDevice::ConnectUsb()
 
 	if (!Open())
 		return false;
-	connected = true;
+	m_connected = true;
 
 	//This setting allows the user to load and manage the firmware directly if Pebble has a problem for some reason
 	//If no init flag, just send Ozy config
@@ -212,14 +212,14 @@ bool HPSDRDevice::ConnectTcp()
 	else
 		result = hpsdrNetwork.Init(this, metisAddress, metisPort);
 	if (result) {
-		connected = true;
+		m_connected = true;
 		return true;
 	}
 	return false;
 
 }
 
-bool HPSDRDevice::Connect()
+bool HPSDRDevice::connectDevice()
 {
 	if (discovery == USE_AUTO_DISCOVERY) {
 		//Try USB first
@@ -236,23 +236,23 @@ bool HPSDRDevice::Connect()
 		return false;
 }
 
-bool HPSDRDevice::Disconnect()
+bool HPSDRDevice::disconnectDevice()
 {
-	WriteSettings();
+	writeSettings();
 
 	if (connectionType == METIS) {
-		connected = false;
+		m_connected = false;
 		connectionType = UNKNOWN;
 		return true;
 	} else if (connectionType == OZY){
-		connected = false;
+		m_connected = false;
 		connectionType = UNKNOWN;
 		return Close();
 	} else
 		return false;
 }
 
-void HPSDRDevice::Start()
+void HPSDRDevice::startDevice()
 {
 	sampleCount = 0;
 	if (connectionType == METIS) {
@@ -261,35 +261,35 @@ void HPSDRDevice::Start()
 		//Metis won't listen to any commands before Start, so send config right after
 		SendConfig();
 		//TCP does not need producer thread because it uses QUDPSocket readyRead signal
-		producerConsumer.Start(true,true);
+		m_producerConsumer.Start(true,true);
 	} else if (connectionType == OZY) {
 		//USB needs producer thread to poll USB
-		producerConsumer.Start(true,true);
+		m_producerConsumer.Start(true,true);
 	}
 }
 
-void HPSDRDevice::Stop()
+void HPSDRDevice::stopDevice()
 {
 	if (connectionType == METIS) {
 		if (!hpsdrNetwork.SendStop())
 			return;
 		QThread::msleep(500); //Short delay for data to stop
 	}
-	producerConsumer.Stop();
+	m_producerConsumer.Stop();
 }
 
 //Review and rename common in device base
-void HPSDRDevice::ReadSettings()
+void HPSDRDevice::readSettings()
 {
 	//Set defaults before we call base ReadSettings
-	startupFrequency = 10000000;
-	lowFrequency = 150000;
-	highFrequency = 33000000;
-	startupDemodMode = dmAM;
+	m_startupFrequency = 10000000;
+	m_lowFrequency = 150000;
+	m_highFrequency = 33000000;
+	m_startupDemodMode = dmAM;
 
-	DeviceInterfaceBase::ReadSettings();
+	DeviceInterfaceBase::readSettings();
 	//Determine sSpeed from deviceSampleRate
-	switch (deviceSampleRate) {
+	switch (m_deviceSampleRate) {
 	case 48000:
 		sSpeed = C1_SPEED_48KHZ;
 		break;
@@ -305,97 +305,97 @@ void HPSDRDevice::ReadSettings()
 	}
 
 
-	sGainPreampOn = qSettings->value("GainPreampOn",3.0).toDouble();
-	sGainPreampOff = qSettings->value("GainPreampOff",20.0).toDouble();
-	sPID = qSettings->value("PID",0x0007).toInt();
-	sVID = qSettings->value("VID",0xfffe).toInt();
+	sGainPreampOn = m_qSettings->value("GainPreampOn",3.0).toDouble();
+	sGainPreampOff = m_qSettings->value("GainPreampOff",20.0).toDouble();
+	sPID = m_qSettings->value("PID",0x0007).toInt();
+	sVID = m_qSettings->value("VID",0xfffe).toInt();
 	//NOTE: I had problems with various combinations of hex and rbf files
 	//The most current ones I found were the 'PennyMerge' version which can be found here
 	//svn://64.245.179.219/svn/repos_sdr_windows/PowerSDR/branches/kd5tfd/PennyMerge
-	sFpga = qSettings->value("FPGA","ozy_janus.rbf").toString();
-	sFW = qSettings->value("FW","ozyfw-sdr1k.hex").toString();
+	sFpga = m_qSettings->value("FPGA","ozy_janus.rbf").toString();
+	sFW = m_qSettings->value("FW","ozyfw-sdr1k.hex").toString();
 
 	//SDR-WIDGET
 	//Skips firmware check and upload
-	sNoInit = qSettings->value("NoInit",false).toBool();
+	sNoInit = m_qSettings->value("NoInit",false).toBool();
 
 	//Harware options
 	//sSpeed = qSettings->value("Speed",C1_SPEED_48KHZ).toInt();
-	sPTT = qSettings->value("PTT",C0_MOX_INACTIVE).toInt();
-	s10Mhz = qSettings->value("10Mhz",C1_10MHZ_MERCURY).toInt();
-	s122Mhz = qSettings->value("122Mhz",C1_122MHZ_MERCURY).toInt();
-	sConfig = qSettings->value("AtlasConfig",C1_CONFIG_MERCURY).toInt();
-	sMic = qSettings->value("MicSource",C1_MIC_PENELOPE).toInt();
-	sMode = qSettings->value("Mode",C2_MODE_OTHERS).toInt();
-	sPreamp = qSettings->value("LT2208Preamp",C3_LT2208_PREAMP_ON).toInt();
-	sDither = qSettings->value("LT2208Dither",C3_LT2208_DITHER_OFF).toInt();
-	sRandom = qSettings->value("LT2208Random",C3_LT2208_RANDOM_OFF).toInt();
-	discovery = (DISCOVERY)qSettings->value("Discovery",HPSDRDevice::USE_AUTO_DISCOVERY).toInt();
-	metisAddress = qSettings->value("MetisAddress","").toString();
-	metisPort = qSettings->value("MetisPort",1024).toUInt();
+	sPTT = m_qSettings->value("PTT",C0_MOX_INACTIVE).toInt();
+	s10Mhz = m_qSettings->value("10Mhz",C1_10MHZ_MERCURY).toInt();
+	s122Mhz = m_qSettings->value("122Mhz",C1_122MHZ_MERCURY).toInt();
+	sConfig = m_qSettings->value("AtlasConfig",C1_CONFIG_MERCURY).toInt();
+	sMic = m_qSettings->value("MicSource",C1_MIC_PENELOPE).toInt();
+	sMode = m_qSettings->value("Mode",C2_MODE_OTHERS).toInt();
+	sPreamp = m_qSettings->value("LT2208Preamp",C3_LT2208_PREAMP_ON).toInt();
+	sDither = m_qSettings->value("LT2208Dither",C3_LT2208_DITHER_OFF).toInt();
+	sRandom = m_qSettings->value("LT2208Random",C3_LT2208_RANDOM_OFF).toInt();
+	discovery = (DISCOVERY)m_qSettings->value("Discovery",HPSDRDevice::USE_AUTO_DISCOVERY).toInt();
+	metisAddress = m_qSettings->value("MetisAddress","").toString();
+	metisPort = m_qSettings->value("MetisPort",1024).toUInt();
 }
 
-void HPSDRDevice::WriteSettings()
+void HPSDRDevice::writeSettings()
 {
-	DeviceInterfaceBase::WriteSettings();
+	DeviceInterfaceBase::writeSettings();
 	//Device specific settings follow
-	qSettings->setValue("GainPreampOn",sGainPreampOn);
-	qSettings->setValue("GainPreampOff",sGainPreampOff);
-	qSettings->setValue("PID",sPID);
-	qSettings->setValue("VID",sVID);
-	qSettings->setValue("FPGA",sFpga);
-	qSettings->setValue("FW",sFW);
-	qSettings->setValue("NoInit",sNoInit);
-	qSettings->setValue("PTT",sPTT);
-	qSettings->setValue("10Mhz",s10Mhz);
-	qSettings->setValue("122Mhz",s122Mhz);
-	qSettings->setValue("AtlasConfig",sConfig);
-	qSettings->setValue("MicSource",sMic);
-	qSettings->setValue("Mode",sMode);
-	qSettings->setValue("LT2208Preamp",sPreamp);
-	qSettings->setValue("LT2208Dither",sDither);
-	qSettings->setValue("LT2208Random",sRandom);
-	qSettings->setValue("Discovery",discovery);
-	qSettings->setValue("MetisAddress",metisAddress);
-	qSettings->setValue("MetisPort",metisPort);
+	m_qSettings->setValue("GainPreampOn",sGainPreampOn);
+	m_qSettings->setValue("GainPreampOff",sGainPreampOff);
+	m_qSettings->setValue("PID",sPID);
+	m_qSettings->setValue("VID",sVID);
+	m_qSettings->setValue("FPGA",sFpga);
+	m_qSettings->setValue("FW",sFW);
+	m_qSettings->setValue("NoInit",sNoInit);
+	m_qSettings->setValue("PTT",sPTT);
+	m_qSettings->setValue("10Mhz",s10Mhz);
+	m_qSettings->setValue("122Mhz",s122Mhz);
+	m_qSettings->setValue("AtlasConfig",sConfig);
+	m_qSettings->setValue("MicSource",sMic);
+	m_qSettings->setValue("Mode",sMode);
+	m_qSettings->setValue("LT2208Preamp",sPreamp);
+	m_qSettings->setValue("LT2208Dither",sDither);
+	m_qSettings->setValue("LT2208Random",sRandom);
+	m_qSettings->setValue("Discovery",discovery);
+	m_qSettings->setValue("MetisAddress",metisAddress);
+	m_qSettings->setValue("MetisPort",metisPort);
 
-	qSettings->sync();
+	m_qSettings->sync();
 }
 
-QVariant HPSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _option)
+QVariant HPSDRDevice::get(DeviceInterface::StandardKeys _key, QVariant _option)
 {
 	Q_UNUSED(_option);
 
 	switch (_key) {
-		case PluginName:
+		case Key_PluginName:
 			return "HPSDR USB & TCP";
 			break;
-		case PluginDescription:
+		case Key_PluginDescription:
 			return "HPSDR Devices";
 			break;
-		case DeviceName:
+		case Key_DeviceName:
 			return "HPSDR Metis or Ozy";
-		case DeviceType:
-			return IQ_DEVICE;
-		case DeviceSampleRates:
+		case Key_DeviceType:
+			return DT_IQ_DEVICE;
+		case Key_DeviceSampleRates:
 			return QStringList()<<"48000"<<"96000"<<"192000"<<"384000";
-		case CustomKey1:
+		case Key_CustomKey1:
 			if (sPreamp == C3_LT2208_PREAMP_ON)
 				return sGainPreampOn;
 			else
 				return sGainPreampOff;
 
 		default:
-			return DeviceInterfaceBase::Get(_key, _option);
+			return DeviceInterfaceBase::get(_key, _option);
 	}
 }
 
-bool HPSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, QVariant _option)
+bool HPSDRDevice::set(DeviceInterface::StandardKeys _key, QVariant _value, QVariant _option)
 {
 	Q_UNUSED(_option);
 
 	switch (_key) {
-		case DeviceFrequency: {
+		case Key_DeviceFrequency: {
 			char cmd[5];
 			quint32 freq = _value.toDouble();
 
@@ -408,29 +408,29 @@ bool HPSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, QVar
 			if (connectionType == METIS) {
 				if (!hpsdrNetwork.SendCommand(cmd)) {
 					qDebug()<<"HPSDR-IP failed to update frequency";
-					return deviceFrequency;
+					return m_deviceFrequency;
 				}
 			} else if (connectionType == OZY){
 				if (!WriteOutputBuffer(cmd)) {
 					qDebug()<<"HPSDR-USB failed to update frequency";
-					return deviceFrequency;
+					return m_deviceFrequency;
 				}
 			} else {
-				return deviceFrequency;
+				return m_deviceFrequency;
 			}
-			deviceFrequency = freq;
-			lastFreq = freq;
+			m_deviceFrequency = freq;
+			m_lastFreq = freq;
 			return freq;
 		}
 		default:
-			return DeviceInterfaceBase::Set(_key, _value, _option);
+			return DeviceInterfaceBase::set(_key, _value, _option);
 	}
 }
 
 //USB Only
 void HPSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 {
-	if (!connected)
+	if (!m_connected)
 		return;
 	switch (_event) {
 		case cbProducerConsumerEvents::Start:
@@ -521,7 +521,7 @@ bool HPSDRDevice::ProcessInputFrame(unsigned char *buf, int len)
 		while (b < len) {
 			if (sampleCount == 0) {
 				//Get a new buffer
-				producerFreeBufPtr = (CPX*)producerConsumer.AcquireFreeBuffer();
+				producerFreeBufPtr = (CPX*)m_producerConsumer.AcquireFreeBuffer();
 				if (producerFreeBufPtr == NULL)
 					return false;
 			}
@@ -549,7 +549,7 @@ bool HPSDRDevice::ProcessInputFrame(unsigned char *buf, int len)
 			if (sampleCount == framesPerBuffer) {
 				sampleCount = 0;
 				producerFreeBufPtr = NULL;
-				producerConsumer.ReleaseFilledBuffer(); //Triggers signal that calls consumer
+				m_producerConsumer.ReleaseFilledBuffer(); //Triggers signal that calls consumer
 			}
 		}
 		return true;
@@ -560,7 +560,7 @@ bool HPSDRDevice::ProcessInputFrame(unsigned char *buf, int len)
 
 void HPSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 {
-	if (!connected)
+	if (!m_connected)
 		return;
 
 	switch (_event) {
@@ -570,15 +570,15 @@ void HPSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 			break;
 		case cbProducerConsumerEvents::Run: {
 			//Wait for data from the producer thread
-			unsigned char *dataBuf = producerConsumer.AcquireFilledBuffer();
+			unsigned char *dataBuf = m_producerConsumer.AcquireFilledBuffer();
 			if (dataBuf == NULL) {
 				return; //No data available
 			}
 
 			//Got data, process
-			ProcessIQData((CPX *)dataBuf,framesPerBuffer); //!!Check size, CPX samples?
+			processIQData((CPX *)dataBuf,framesPerBuffer); //!!Check size, CPX samples?
 
-			producerConsumer.ReleaseFreeBuffer();
+			m_producerConsumer.ReleaseFreeBuffer();
 			break;
 		}
 	}
@@ -655,7 +655,7 @@ void HPSDRDevice::preampChanged(bool b)
 		sPreamp = C3_LT2208_PREAMP_OFF;
 
 	//Save to hpsdr.ini
-	WriteSettings();
+	writeSettings();
 
 	//Change immediately
 	SendConfig();
@@ -668,7 +668,7 @@ void HPSDRDevice::ditherChanged(bool b)
 		sDither = C3_LT2208_DITHER_OFF;
 
 	//Save to hpsdr.ini
-	WriteSettings();
+	writeSettings();
 
 	//Change immediately
 	SendConfig();
@@ -682,7 +682,7 @@ void HPSDRDevice::randomChanged(bool b)
 		sRandom = C3_LT2208_RANDOM_OFF;
 
 	//Save to hpsdr.ini
-	WriteSettings();
+	writeSettings();
 
 	//Change immediately
 	SendConfig();
@@ -693,7 +693,7 @@ void HPSDRDevice::optionsAccepted()
 	//Save settings are are not immediate mode
 
 	//Save to hpsdr.ini
-	WriteSettings();
+	writeSettings();
 
 }
 
@@ -703,7 +703,7 @@ void HPSDRDevice::useDiscoveryChanged(bool b)
 		discovery = USE_AUTO_DISCOVERY;
 	optionUi->ipInput->setEnabled(false);
 	optionUi->portInput->setEnabled(false);
-	WriteSettings();
+	writeSettings();
 }
 
 void HPSDRDevice::useOzyChanged(bool b)
@@ -712,7 +712,7 @@ void HPSDRDevice::useOzyChanged(bool b)
 		discovery = USE_OZY;
 	optionUi->ipInput->setEnabled(false);
 	optionUi->portInput->setEnabled(false);
-	WriteSettings();
+	writeSettings();
 }
 
 void HPSDRDevice::useMetisChanged(bool b)
@@ -721,22 +721,22 @@ void HPSDRDevice::useMetisChanged(bool b)
 		discovery = USE_METIS;
 	optionUi->ipInput->setEnabled(true);
 	optionUi->portInput->setEnabled(true);
-	WriteSettings();
+	writeSettings();
 }
 
 void HPSDRDevice::metisAddressChanged()
 {
 	metisAddress = optionUi->ipInput->text();
-	WriteSettings();
+	writeSettings();
 }
 
 void HPSDRDevice::metisPortChanged()
 {
 	metisPort = optionUi->portInput->text().toInt();
-	WriteSettings();
+	writeSettings();
 }
 
-void HPSDRDevice::SetupOptionUi(QWidget *parent)
+void HPSDRDevice::setupOptionUi(QWidget *parent)
 {
 	if (optionUi != NULL)
 		delete optionUi;
@@ -847,7 +847,7 @@ bool HPSDRDevice::WriteOutputBuffer(char * commandBuf)
 		return true;
 	}
 
-	if (!connected)
+	if (!m_connected)
 		return false;
 
 	//We're not sending audio back to Ozy, so zero out all the data buffers

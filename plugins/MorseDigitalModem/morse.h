@@ -49,7 +49,7 @@ public:
     ~Morse();
     //DigitalModemInterface
 	void setSampleRate(int _sampleRate, int _sampleCount);
-	void setDemodMode(DeviceInterface::DEMODMODE _demodMode);
+	void setDemodMode(DeviceInterface::DemodMode _demodMode);
 	CPX * processBlock(CPX * in);
 	void setupDataUi(QWidget *parent);
 	QString getPluginName();

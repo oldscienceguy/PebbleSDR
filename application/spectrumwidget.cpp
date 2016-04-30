@@ -231,7 +231,7 @@ void SpectrumWidget::run(bool r)
 	m_topPanelPlotLabel.fill(Qt::black);
 
 	if (r) {
-		m_spectrumMode = (DisplayMode)global->sdr->Get(DeviceInterface::LastSpectrumMode).toInt();
+		m_spectrumMode = (DisplayMode)global->sdr->get(DeviceInterface::Key_LastSpectrumMode).toInt();
 		//Triggers connection slot to set current mode
 		ui.displayBox->setCurrentIndex(ui.displayBox->findData(m_spectrumMode)); //Initial display mode
 		ui.zoomLabel->setText(QString().sprintf("S: %.0f kHz",m_sampleRate/1000.0));
@@ -549,7 +549,7 @@ void SpectrumWidget::mousePressEvent ( QMouseEvent * event )
     }
     event->accept();
 }
-void SpectrumWidget::setMode(DeviceInterface::DEMODMODE m, int _modeOffset)
+void SpectrumWidget::setMode(DeviceInterface::DemodMode m, int _modeOffset)
 {
 	m_demodMode = m;
 	m_modeOffset = _modeOffset;
@@ -930,7 +930,7 @@ void SpectrumWidget::displayChanged(int s)
     //Get mode from itemData
 	DisplayMode displayMode = (DisplayMode)ui.displayBox->itemData(s).toInt();
 	//Save in device ini
-	global->sdr->Set(DeviceInterface::LastSpectrumMode,displayMode);
+	global->sdr->set(DeviceInterface::Key_LastSpectrumMode,displayMode);
     plotSelectionChanged(displayMode);
 }
 

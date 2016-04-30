@@ -117,8 +117,8 @@ void Plugins::findPlugins()
                 //Get # devices plugin supports
                 //For each device, create plugin info and SDR with device interface and device #
 				pluginInfo.type = PluginInfo::DEVICE_PLUGIN;
-				pluginInfo.name = iDeviceInterface->Get(DeviceInterface::PluginName).toString();
-				pluginInfo.description = iDeviceInterface->Get(DeviceInterface::PluginDescription).toString();
+				pluginInfo.name = iDeviceInterface->get(DeviceInterface::Key_PluginName).toString();
+				pluginInfo.description = iDeviceInterface->get(DeviceInterface::Key_PluginDescription).toString();
 				pluginInfo.fileName = fileName;
 				pluginInfo.deviceInterface = iDeviceInterface;
 				pluginInfo.modemInterface = NULL;

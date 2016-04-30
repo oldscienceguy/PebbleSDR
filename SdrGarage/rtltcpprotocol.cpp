@@ -130,28 +130,28 @@ void RtlTcpProtocol::tcpCommands(RTL_CMD cmd)
     case CMD_FREQ:
         frequency = ntohl(cmd.param);
         qDebug()<<"set freq"<< frequency;
-		sdr->Set(DeviceInterface::DeviceFrequency,frequency);
+		sdr->set(DeviceInterface::Key_DeviceFrequency,frequency);
         break;
 
     case CMD_SAMPLERATE:
         sampleRate = ntohl(cmd.param);
         qDebug()<<"set sample rate"<<sampleRate;
-		sdr->Set(K_RTLSampleRate,sampleRate);
+		sdr->set(K_RTLSampleRate,sampleRate);
         break;
     case CMD_GAIN_MODE:
         tunerGainMode = ntohl(cmd.param);
         qDebug()<<"set gain mode"<<tunerGainMode;
-		sdr->Set(K_RTLTunerGainMode,tunerGainMode);
+		sdr->set(K_RTLTunerGainMode,tunerGainMode);
         break;
     case CMD_TUNER_GAIN:
         tunerGain = ntohl(cmd.param);
         qDebug()<<"set gain"<<tunerGain;
-		sdr->Set(K_RTLTunerGain, tunerGain);
+		sdr->set(K_RTLTunerGain, tunerGain);
         break;
     case CMD_FREQ_CORRECTION:
         frequencyCorrection = ntohl(cmd.param);
         qDebug()<<"set freq correction"<<frequencyCorrection;
-		sdr->Set(DeviceInterface::DeviceFreqCorrectionPpm,frequencyCorrection);
+		sdr->set(DeviceInterface::Key_DeviceFreqCorrectionPpm,frequencyCorrection);
         break;
     case CMD_IF_GAIN:
         tmp = ntohl(cmd.param);
@@ -165,17 +165,17 @@ void RtlTcpProtocol::tcpCommands(RTL_CMD cmd)
     case CMD_AGC_MODE:
         agcMode = ntohl(cmd.param);
         qDebug()<<"set agc mode "<<agcMode;
-		sdr->Set(K_RTLAgcMode,agcMode);
+		sdr->set(K_RTLAgcMode,agcMode);
         break;
     case CMD_DIRECT_SAMPLING:
         directSampling = ntohl(cmd.param);
         qDebug()<<"set direct sampling "<<directSampling;
-		sdr->Set(K_RTLSampleMode,directSampling);
+		sdr->set(K_RTLSampleMode,directSampling);
         break;
     case CMD_OFFSET_TUNING:
         offsetTuning = ntohl(cmd.param);
         qDebug()<<"set offset tuning "<<offsetTuning;
-		sdr->Set(K_RTLOffsetMode,offsetTuning);
+		sdr->set(K_RTLOffsetMode,offsetTuning);
         break;
     case CMD_XTAL_FREQ:
         qDebug()<<"set rtl xtal "<<ntohl(cmd.param);

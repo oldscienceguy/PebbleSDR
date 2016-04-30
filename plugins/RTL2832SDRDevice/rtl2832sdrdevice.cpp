@@ -8,9 +8,9 @@
 
 RTL2832SDRDevice::RTL2832SDRDevice():DeviceInterfaceBase()
 {
-    InitSettings("rtl2832sdr");
+	initSettings("rtl2832sdr");
     inBuffer = NULL;
-    running = false;
+	m_running = false;
     optionUi = NULL;
     rtlTcpSocket = NULL;
     tcpThreadSocket = NULL;
@@ -21,17 +21,17 @@ RTL2832SDRDevice::RTL2832SDRDevice():DeviceInterfaceBase()
 
 RTL2832SDRDevice::~RTL2832SDRDevice()
 {
-    Stop();
-    Disconnect();
+	stopDevice();
+	disconnectDevice();
     if (inBuffer != NULL)
 		free (inBuffer);
 }
 
-bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback,
-								   cbProcessBandscopeData _callbackBandscope,
-								   cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
+bool RTL2832SDRDevice::initialize(CB_ProcessIQData _callback,
+								   CB_ProcessBandscopeData _callbackBandscope,
+								   CB_ProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
-	DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
+	DeviceInterfaceBase::initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
 
     //crystalFreqHz = DEFAULT_CRYSTAL_FREQUENCY;
     //RTL2832 samples from 900001 to 3200000 sps (900ksps to 3.2msps)
@@ -87,8 +87,8 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback,
 */
 	//1 byte per I + 1 byte per Q
 	//This is set so we always get framesPerBuffer samples after decimating to lower sampleRate
-	readBufferSize = framesPerBuffer * sizeof(CPXU8);
-	inBuffer = (CPXU8 *)malloc(readBufferSize);
+	m_readBufferSize = framesPerBuffer * sizeof(CPXU8);
+	inBuffer = (CPXU8 *)malloc(m_readBufferSize);
 
     haveDongleInfo = false; //Look for first bytes
     tcpDongleInfo.magic[0] = 0x0;
@@ -99,20 +99,20 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback,
     tcpDongleInfo.tunerType = RTLSDR_TUNER_UNKNOWN;
     tcpDongleInfo.tunerGainCount = 0;
 
-    running = false;
+	m_running = false;
 
-    numProducerBuffers = 50;
-    producerConsumer.Initialize(std::bind(&RTL2832SDRDevice::producerWorker, this, std::placeholders::_1),
-		std::bind(&RTL2832SDRDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, framesPerBuffer * sizeof(CPX));
+	m_numProducerBuffers = 50;
+	m_producerConsumer.Initialize(std::bind(&RTL2832SDRDevice::producerWorker, this, std::placeholders::_1),
+		std::bind(&RTL2832SDRDevice::consumerWorker, this, std::placeholders::_1),m_numProducerBuffers, framesPerBuffer * sizeof(CPX));
 	//Must be called after Initialize
-	producerConsumer.SetProducerInterval(deviceSampleRate,framesPerBuffer);
-	producerConsumer.SetConsumerInterval(deviceSampleRate,framesPerBuffer);
+	m_producerConsumer.SetProducerInterval(m_deviceSampleRate,framesPerBuffer);
+	m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,framesPerBuffer);
 
     readBufferIndex = 0;
 
-    if (deviceNumber == RTL_TCP) {
+	if (m_deviceNumber == RTL_TCP) {
         //Start consumer thread so it's ready to get data which starts as soon as we are connected
-        producerConsumer.Start(false,true);
+		m_producerConsumer.Start(false,true);
         if (rtlTcpSocket == NULL) {
             rtlTcpSocket = new QTcpSocket();
 
@@ -132,9 +132,9 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback,
             //test
             connect(this,&RTL2832SDRDevice::reset,this,&RTL2832SDRDevice::Reset);
         }
-    } else if (deviceNumber == RTL_USB) {
+	} else if (m_deviceNumber == RTL_USB) {
         //Start this immediately, before connect, so we don't miss any data
-        producerConsumer.Start(true,true);
+		m_producerConsumer.Start(true,true);
 
     }
 
@@ -148,16 +148,16 @@ bool RTL2832SDRDevice::Initialize(cbProcessIQData _callback,
 void RTL2832SDRDevice::Reset()
 {
     qDebug()<<"RTL reset signal received";
-    Stop();
-    Disconnect();
-	Initialize(ProcessIQData, NULL, NULL, framesPerBuffer);
-    Connect();
-    Start();
+	stopDevice();
+	disconnectDevice();
+	initialize(processIQData, NULL, NULL, framesPerBuffer);
+	connectDevice();
+	startDevice();
 }
 
-bool RTL2832SDRDevice::Connect()
+bool RTL2832SDRDevice::connectDevice()
 {
-    if (deviceNumber == RTL_USB) {
+	if (m_deviceNumber == RTL_USB) {
         int device_count;
         int dev_index = 0; //Assume we only have 1 RTL2832 device for now
         //dev = NULL;
@@ -178,9 +178,9 @@ bool RTL2832SDRDevice::Connect()
             qDebug("Failed to open rtlsdr device #%d", dev_index);
             return false;
         }
-        connected = true;
+		m_connected = true;
         return true;
-    } else if (deviceNumber == RTL_TCP) {
+	} else if (m_deviceNumber == RTL_TCP) {
 
         //The socket buffer is infinite by default, it will keep growing if we're not able to fetch data fast enough
         //So we set it to a fixed size, which is the maximum amount of data that can be fetched in one read call
@@ -188,7 +188,7 @@ bool RTL2832SDRDevice::Connect()
         //If too large, we may have problems processing all the data before the next batch comes in.
         //Setting to 1 framesPerBuffer seems to work best
         //If problems, try setting to some multiple that less than numProducerBuffers
-        rtlTcpSocket->setReadBufferSize(readBufferSize);
+		rtlTcpSocket->setReadBufferSize(m_readBufferSize);
 
         //rtl_tcp server starts to dump data as soon as there is a connection, there is no start/stop command
         rtlTcpSocket->connectToHost(rtlServerIP,rtlServerPort,QTcpSocket::ReadWrite);
@@ -198,7 +198,7 @@ bool RTL2832SDRDevice::Connect()
             return false;
         }
         qDebug()<<"RTL Server connected";
-        connected = true;
+		m_connected = true;
 
         return true;
     }
@@ -222,7 +222,7 @@ void RTL2832SDRDevice::TCPSocketDisconnected()
     // -When we turn off device
     // -When device is disconnected due to network or other failure
     //If device is running, try to reset
-    if (running) {
+	if (m_running) {
         emit reset();
     }
     qDebug()<<"TCP disconnected signal received";
@@ -282,7 +282,7 @@ void RTL2832SDRDevice::TCPSocketNewData()
         if (producerFreeBufPtr == NULL) {
             //Starting a new buffer
             //We wait for a free buffer for 100ms before giving up.  May need to adjust this
-			if ((producerFreeBufPtr = (CPX *)producerConsumer.AcquireFreeBuffer(1000)) == NULL) {
+			if ((producerFreeBufPtr = (CPX *)m_producerConsumer.AcquireFreeBuffer(1000)) == NULL) {
                 rtlTcpSocketMutex.unlock();
                 //We're sol in this situation because we won't get another readReady() signal
                 //emit reset(); //Start over
@@ -291,16 +291,16 @@ void RTL2832SDRDevice::TCPSocketNewData()
             //qDebug()<<"Acquired free buffer";
             //qDebug()<<producerConsumer.IsFreeBufferOverflow();
         }
-        bytesToFillBuffer = readBufferSize - readBufferIndex;
+		bytesToFillBuffer = m_readBufferSize - readBufferIndex;
         bytesToFillBuffer = (bytesToFillBuffer <= bytesAvailable) ? bytesToFillBuffer : bytesAvailable;
 		bytesRead = rtlTcpSocket->read((char *)inBuffer + readBufferIndex, bytesToFillBuffer);
         bytesAvailable -= bytesRead;
         readBufferIndex += bytesRead;
-        readBufferIndex %= readBufferSize;
+		readBufferIndex %= m_readBufferSize;
         if (readBufferIndex == 0) {
 			//IQ normally reversed
 			normalizeIQ(producerFreeBufPtr, inBuffer, framesPerBuffer, true);
-            producerConsumer.ReleaseFilledBuffer();
+			m_producerConsumer.ReleaseFilledBuffer();
             producerFreeBufPtr = NULL; //Trigger new Acquire next loop
 		}
 
@@ -310,29 +310,29 @@ void RTL2832SDRDevice::TCPSocketNewData()
 
 }
 
-bool RTL2832SDRDevice::Disconnect()
+bool RTL2832SDRDevice::disconnectDevice()
 {
-    if (!connected)
+	if (!m_connected)
         return false;
 
-    if (deviceNumber == RTL_USB) {
+	if (m_deviceNumber == RTL_USB) {
         rtlsdr_close(dev);
-    } else if (deviceNumber == RTL_TCP) {
+	} else if (m_deviceNumber == RTL_TCP) {
         rtlTcpSocket->disconnectFromHost();
         //Wait for disconnect
         //if (!rtlTcpSocket->waitForDisconnected(500)) {
         //    qDebug()<<"rtlTcpSocket didn't disconnect within timeout";
         //}
     }
-    connected = false;
+	m_connected = false;
     dev = NULL;
     return true;
 }
 
-void RTL2832SDRDevice::Start()
+void RTL2832SDRDevice::startDevice()
 {
     //producerConsumer.
-    if (deviceNumber == RTL_USB) {
+	if (m_deviceNumber == RTL_USB) {
         rtlTunerType = (RTLSDR_TUNERS) rtlsdr_get_tuner_type(dev);
 
         /* Reset endpoint before we start reading from it (mandatory) */
@@ -340,14 +340,14 @@ void RTL2832SDRDevice::Start()
             qDebug("WARNING: Failed to reset buffers.");
             return;
         }
-    } else if (deviceNumber == RTL_TCP) {
+	} else if (m_deviceNumber == RTL_TCP) {
         //Nothing to do here
     }
 
     //These have to be executed after we've done USB or TCP specific setup
     //Handles both USB and TCP
     SetRtlSampleMode(rtlSampleMode);
-	SetRtlSampleRate(deviceSampleRate);
+	SetRtlSampleRate(m_deviceSampleRate);
     SetRtlAgcMode(rtlAgcMode);
     GetRtlValidTunerGains();
     SetRtlTunerMode(rtlTunerGainMode);
@@ -356,42 +356,42 @@ void RTL2832SDRDevice::Start()
     SetRtlFrequencyCorrection(rtlFreqencyCorrection);
 
     //Setting running=true is what tells the producer thread to start collecting data
-    running = true; //Must be after reset
+	m_running = true; //Must be after reset
 
     return;
 }
 
 //Stop is called by Reciever first, then Disconnect
 //Stop incoming samples
-void RTL2832SDRDevice::Stop()
+void RTL2832SDRDevice::stopDevice()
 {
-    running = false;
+	m_running = false;
 
-    if (deviceNumber == RTL_USB) {
+	if (m_deviceNumber == RTL_USB) {
 
-    } else if (deviceNumber == RTL_TCP) {
+	} else if (m_deviceNumber == RTL_TCP) {
 
     }
-    producerConsumer.Stop();
+	m_producerConsumer.Stop();
 }
 
 bool RTL2832SDRDevice::SetRtlFrequencyCorrection(qint16 _correction)
 {
-    if (!connected)
+	if (!m_connected)
         return false;
 
     //Trying to set a correction of zero fails, so ignore
     if (_correction == 0)
         return true;
 
-    if (deviceNumber == RTL_USB) {
+	if (m_deviceNumber == RTL_USB) {
         int r = rtlsdr_set_freq_correction(dev,_correction);
         if (r<0) {
             qDebug()<<"Frequency correction failed";
             return false;
         }
 
-    } else if (deviceNumber == RTL_TCP) {
+	} else if (m_deviceNumber == RTL_TCP) {
         SendTcpCmd(TCP_SET_FREQ_CORRECTION,_correction);
     }
     return false;
@@ -399,7 +399,7 @@ bool RTL2832SDRDevice::SetRtlFrequencyCorrection(qint16 _correction)
 
 bool RTL2832SDRDevice::SetRtlSampleMode(RTL2832SDRDevice::SAMPLING_MODES _sampleMode)
 {
-    if (deviceNumber == RTL_USB) {
+	if (m_deviceNumber == RTL_USB) {
         int r = rtlsdr_set_direct_sampling(dev,_sampleMode);
         if (r<0) {
             qDebug()<<"SampleMode failed";
@@ -414,7 +414,7 @@ bool RTL2832SDRDevice::SetRtlSampleMode(RTL2832SDRDevice::SAMPLING_MODES _sample
 
 bool RTL2832SDRDevice::SetRtlAgcMode(bool _on)
 {
-    if (deviceNumber == RTL_USB) {
+	if (m_deviceNumber == RTL_USB) {
         int r = rtlsdr_set_agc_mode(dev, _on);
         if (r<0) {
             qDebug()<<"AGC mode failed";
@@ -429,7 +429,7 @@ bool RTL2832SDRDevice::SetRtlAgcMode(bool _on)
 
 bool RTL2832SDRDevice::SetRtlOffsetMode(bool _on)
 {
-    if (deviceNumber == RTL_USB) {
+	if (m_deviceNumber == RTL_USB) {
         int r = rtlsdr_set_offset_tuning(dev, _on);
         if (r<0) {
             qDebug()<<"Offset mode not supported for this device";
@@ -445,7 +445,7 @@ bool RTL2832SDRDevice::SetRtlOffsetMode(bool _on)
 
 bool RTL2832SDRDevice::SetRtlTunerGain(quint16 _gain)
 {
-    if (!connected)
+	if (!m_connected)
         return false;
 
     qint16 gain = _gain;
@@ -469,7 +469,7 @@ bool RTL2832SDRDevice::SetRtlTunerGain(quint16 _gain)
             lastDelta = delta;
         }
     }
-    if (deviceNumber == RTL_USB) {
+	if (m_deviceNumber == RTL_USB) {
 
         if (rtlTunerGainMode == GAIN_MODE_MANUAL){
             /* Set the tuner gain */
@@ -482,7 +482,7 @@ bool RTL2832SDRDevice::SetRtlTunerGain(quint16 _gain)
             qDebug()<<"Requested tuner gain "<<_gain<<" Actual tuner gain "<<actual;
         }
         return true;
-    } else if (deviceNumber == RTL_TCP) {
+	} else if (m_deviceNumber == RTL_TCP) {
         if (rtlTunerGainMode == GAIN_MODE_MANUAL) {
             SendTcpCmd(TCP_SET_TUNER_GAIN, gain);
             //When do we need to set IF Gain?
@@ -494,13 +494,13 @@ bool RTL2832SDRDevice::SetRtlTunerGain(quint16 _gain)
 
 bool RTL2832SDRDevice::SetRtlTunerMode(quint16 _mode)
 {
-    if (!connected)
+	if (!m_connected)
         return false;
     if (rtlSampleMode != NORMAL) {
         //Tuner AGC mode is disabled in Direct, have to set manually
         _mode = GAIN_MODE_MANUAL;
     }
-    if (deviceNumber == RTL_USB) {
+	if (m_deviceNumber == RTL_USB) {
 
         int r = rtlsdr_set_tuner_gain_mode(dev, _mode);
         if (r < 0) {
@@ -515,7 +515,7 @@ bool RTL2832SDRDevice::SetRtlTunerMode(quint16 _mode)
 
 bool RTL2832SDRDevice::SetRtlIfGain(quint16 _stage, quint16 _gain)
 {
-    if (deviceNumber == RTL_USB) {
+	if (m_deviceNumber == RTL_USB) {
         int r = rtlsdr_set_tuner_if_gain(dev, _stage, _gain);
         if (r < 0) {
             qDebug("WARNING: Failed to set IF gain.");
@@ -530,52 +530,52 @@ bool RTL2832SDRDevice::SetRtlIfGain(quint16 _stage, quint16 _gain)
     return false;
 }
 
-void RTL2832SDRDevice::ReadSettings()
+void RTL2832SDRDevice::readSettings()
 {
-	if (deviceNumber == RTL_USB)
-		qSettings = usbSettings;
-	else if (deviceNumber == RTL_TCP)
-		qSettings = tcpSettings;
+	if (m_deviceNumber == RTL_USB)
+		m_qSettings = usbSettings;
+	else if (m_deviceNumber == RTL_TCP)
+		m_qSettings = tcpSettings;
 
 	//Defaults for initial ini file
-	deviceSampleRate = 2048000;
-	startupDemodMode = dmFMN;
-	normalizeIQGain = 1/128.0;
-	DeviceInterfaceBase::ReadSettings();
+	m_deviceSampleRate = 2048000;
+	m_startupDemodMode = dmFMN;
+	m_normalizeIQGain = 1/128.0;
+	DeviceInterfaceBase::readSettings();
 
     //Valid gain values (in tenths of a dB) for the E4000 tuner:
     //-10, 15, 40, 65, 90, 115, 140, 165, 190,
     //215, 240, 290, 340, 420, 430, 450, 470, 490
     //0 for automatic gain
-	rtlTunerGain = qSettings->value("RtlGain",250).toInt();
-	rtlServerIP = QHostAddress(qSettings->value("IPAddr","127.0.0.1").toString());
-	rtlServerPort = qSettings->value("Port","1234").toInt();
-	rtlTunerGainMode = qSettings->value("RtlGainMode",GAIN_MODE_MANUAL).toUInt();
-	rtlFreqencyCorrection = qSettings->value("RtlFrequencyCorrection",0).toInt();
-	rtlSampleMode = (SAMPLING_MODES)qSettings->value("RtlSampleMode",NORMAL).toInt();
-	rtlAgcMode = qSettings->value("RtlAgcMode",false).toBool();
-	rtlOffsetMode = qSettings->value("RtlOffsetMode",false).toBool();
+	rtlTunerGain = m_qSettings->value("RtlGain",250).toInt();
+	rtlServerIP = QHostAddress(m_qSettings->value("IPAddr","127.0.0.1").toString());
+	rtlServerPort = m_qSettings->value("Port","1234").toInt();
+	rtlTunerGainMode = m_qSettings->value("RtlGainMode",GAIN_MODE_MANUAL).toUInt();
+	rtlFreqencyCorrection = m_qSettings->value("RtlFrequencyCorrection",0).toInt();
+	rtlSampleMode = (SAMPLING_MODES)m_qSettings->value("RtlSampleMode",NORMAL).toInt();
+	rtlAgcMode = m_qSettings->value("RtlAgcMode",false).toBool();
+	rtlOffsetMode = m_qSettings->value("RtlOffsetMode",false).toBool();
 }
 
-void RTL2832SDRDevice::WriteSettings()
+void RTL2832SDRDevice::writeSettings()
 {
-	if (deviceNumber == RTL_USB)
-		qSettings = usbSettings;
-	else if (deviceNumber == RTL_TCP)
-		qSettings = tcpSettings;
+	if (m_deviceNumber == RTL_USB)
+		m_qSettings = usbSettings;
+	else if (m_deviceNumber == RTL_TCP)
+		m_qSettings = tcpSettings;
 
-	DeviceInterfaceBase::WriteSettings();
+	DeviceInterfaceBase::writeSettings();
 
-	qSettings->setValue("RtlGain",rtlTunerGain);
-	qSettings->setValue("IPAddr",rtlServerIP.toString());
-	qSettings->setValue("Port",rtlServerPort);
-	qSettings->setValue("RtlGainMode",rtlTunerGainMode);
-	qSettings->setValue("RtlFrequencyCorrection",rtlFreqencyCorrection);
-	qSettings->setValue("RtlSampleMode",rtlSampleMode);
-	qSettings->setValue("RtlAgcMode",rtlAgcMode);
-	qSettings->setValue("RtlOffsetMode",rtlOffsetMode);
+	m_qSettings->setValue("RtlGain",rtlTunerGain);
+	m_qSettings->setValue("IPAddr",rtlServerIP.toString());
+	m_qSettings->setValue("Port",rtlServerPort);
+	m_qSettings->setValue("RtlGainMode",rtlTunerGainMode);
+	m_qSettings->setValue("RtlFrequencyCorrection",rtlFreqencyCorrection);
+	m_qSettings->setValue("RtlSampleMode",rtlSampleMode);
+	m_qSettings->setValue("RtlAgcMode",rtlAgcMode);
+	m_qSettings->setValue("RtlOffsetMode",rtlOffsetMode);
 
-	qSettings->sync();
+	m_qSettings->sync();
 
 }
 
@@ -644,17 +644,17 @@ double RTL2832SDRDevice::GetLowLimit()
     }
 }
 
-QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _option)
+QVariant RTL2832SDRDevice::get(DeviceInterface::StandardKeys _key, QVariant _option)
 {
 	switch (_key) {
-		case PluginName:
+		case Key_PluginName:
 			return "RTL2832 Family";
-		case PluginDescription:
+		case Key_PluginDescription:
 			return "RTL2832 Family";
-		case PluginNumDevices:
+		case Key_PluginNumDevices:
 			return 2;
 			break;
-		case DeviceName:
+		case Key_DeviceName:
 			switch (_option.toInt()) {
 				case 0:
 					return "RTL2832 USB";
@@ -683,50 +683,50 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _op
 					return "RTL2832-Unknown";
 			}
 #endif
-		case DeviceDescription:
+		case Key_DeviceDescription:
 			break;
-		case DeviceType:
-			return DeviceInterface::IQ_DEVICE;
+		case Key_DeviceType:
+			return DeviceInterface::DT_IQ_DEVICE;
 			break;
-		case DeviceSampleRates:
+		case Key_DeviceSampleRates:
 			//Don't return any sample rates to sdrOptions UI, we handle it all in device UI
 			return QStringList();
 			break;
-		case HighFrequency:
-			if (converterMode)
+		case Key_HighFrequency:
+			if (m_converterMode)
 				return 6000000000.0;
 			else
 				return GetHighLimit();
 			break;
-		case LowFrequency:
-			if (converterMode)
+		case Key_LowFrequency:
+			if (m_converterMode)
 				return 0;
 			else
 				return GetLowLimit();
 			break;
-		case DeviceFreqCorrectionPpm:
+		case Key_DeviceFreqCorrectionPpm:
 			return rtlFreqencyCorrection; //int, may not be right format for all devices
 			break;
-		case StartupDemodMode:
+		case Key_StartupDemodMode:
 			if (rtlSampleMode == NORMAL)
 				return dmFMN;
 			else
 				//No place to store two lastModes for normal and direct, so always start direct in AM for now
 				return dmAM; //Direct mode
 			break;
-		case StartupFrequency:
+		case Key_StartupFrequency:
 			return GetStartupFrequency();
 			break;
-		case UserFrequency:
+		case Key_UserFrequency:
 			//If freq is outside of mode we are in return default
-			if (userFrequency > GetHighLimit() || userFrequency < GetLowLimit())
+			if (m_userFrequency > GetHighLimit() || m_userFrequency < GetLowLimit())
 				return GetStartupFrequency();
 			else
-				return userFrequency;
+				return m_userFrequency;
 			break;
 		//Custom keys
 		case K_RTLSampleRate:
-			return deviceSampleRate;
+			return m_deviceSampleRate;
 		case K_RTLTunerGainMode:
 			return rtlTunerGainMode;
 		case K_RTLTunerGain:
@@ -739,37 +739,37 @@ QVariant RTL2832SDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _op
 			return rtlOffsetMode;
 		default:
 			//If we don't handle it, let default grab it
-			return DeviceInterfaceBase::Get(_key, _option);
+			return DeviceInterfaceBase::get(_key, _option);
 			break;
 	}
 	return QVariant();
 }
 
-bool RTL2832SDRDevice::Set(STANDARD_KEYS _key, QVariant _value, QVariant _option) {
+bool RTL2832SDRDevice::set(StandardKeys _key, QVariant _value, QVariant _option) {
 	Q_UNUSED(_option);
 	switch (_key) {
-		case DeviceFrequency: {
+		case Key_DeviceFrequency: {
 			double fRequested = _value.toDouble();
-			if (!connected || fRequested == 0)
+			if (!m_connected || fRequested == 0)
 				return false;
 
 			if (fRequested > GetHighLimit() || fRequested < GetLowLimit())
 				return false;
 
-			if (deviceNumber == RTL_USB) {
+			if (m_deviceNumber == RTL_USB) {
 				/* Set the frequency */
 				if (rtlsdr_set_center_freq(dev, fRequested) < 0) {
 					qDebug("WARNING: Failed to set center freq.");
 					return false;
 				} else {
-					deviceFrequency = fRequested;
-					lastFreq = deviceFrequency;
+					m_deviceFrequency = fRequested;
+					m_lastFreq = m_deviceFrequency;
 					return true;
 				}
-			} else if (deviceNumber == RTL_TCP) {
+			} else if (m_deviceNumber == RTL_TCP) {
 				if (SendTcpCmd(TCP_SET_FREQ,fRequested)) {
-					deviceFrequency = fRequested;
-					lastFreq = deviceFrequency;
+					m_deviceFrequency = fRequested;
+					m_lastFreq = m_deviceFrequency;
 					return true;
 				} else {
 					qDebug("WARNING: Failed to set center freq.");
@@ -778,7 +778,7 @@ bool RTL2832SDRDevice::Set(STANDARD_KEYS _key, QVariant _value, QVariant _option
 			}
 			break;
 		}
-		case DeviceFreqCorrectionPpm:
+		case Key_DeviceFreqCorrectionPpm:
 			rtlFreqencyCorrection = _value.toInt();
 			break;
 		//Custom keys
@@ -796,14 +796,14 @@ bool RTL2832SDRDevice::Set(STANDARD_KEYS _key, QVariant _value, QVariant _option
 			return SetRtlOffsetMode(_value.toInt());
 
 		default:
-			return DeviceInterfaceBase::Set(_key, _value, _option);
+			return DeviceInterfaceBase::set(_key, _value, _option);
 	}
 	return true;
 }
 
-void RTL2832SDRDevice::SetupOptionUi(QWidget *parent)
+void RTL2832SDRDevice::setupOptionUi(QWidget *parent)
 {
-    ReadSettings();
+    readSettings();
 
     //This sets up the sdr specific widget
     if (optionUi != NULL)
@@ -812,7 +812,7 @@ void RTL2832SDRDevice::SetupOptionUi(QWidget *parent)
     optionUi->setupUi(parent);
     parent->setVisible(true);
 
-    if (deviceNumber == RTL_TCP) {
+	if (m_deviceNumber == RTL_TCP) {
         optionUi->tcpFrame->setVisible(true);
         //Read options file and display
         optionUi->ipAddress->setText(rtlServerIP.toString());
@@ -841,7 +841,7 @@ void RTL2832SDRDevice::SetupOptionUi(QWidget *parent)
 	optionUi->sampleRateSelector->addItem("2400 msps",(quint32)2400000);
 	optionUi->sampleRateSelector->addItem("2800 msps",(quint32)2800000);
 	optionUi->sampleRateSelector->addItem("3200 msps",(quint32)3200000);
-	int cur = optionUi->sampleRateSelector->findData(deviceSampleRate);
+	int cur = optionUi->sampleRateSelector->findData(m_deviceSampleRate);
     optionUi->sampleRateSelector->setCurrentIndex(cur);
     connect(optionUi->sampleRateSelector,SIGNAL(currentIndexChanged(int)),this,SLOT(SampleRateChanged(int)));
 
@@ -888,19 +888,19 @@ void RTL2832SDRDevice::IPAddressChanged()
 {
     //qDebug()<<optionUi->ipAddress->text();
     rtlServerIP = QHostAddress(optionUi->ipAddress->text());
-    WriteSettings();
+    writeSettings();
 }
 
 void RTL2832SDRDevice::IPPortChanged()
 {
     rtlServerPort = optionUi->port->text().toInt();
-    WriteSettings();
+    writeSettings();
 }
 
 void RTL2832SDRDevice::SampleRateChanged(int _index)
 {
-	deviceSampleRate = optionUi->sampleRateSelector->itemData(_index).toUInt();
-    WriteSettings();
+	m_deviceSampleRate = optionUi->sampleRateSelector->itemData(_index).toUInt();
+    writeSettings();
 }
 
 void RTL2832SDRDevice::TunerGainChanged(int _selection)
@@ -916,14 +916,14 @@ void RTL2832SDRDevice::TunerGainChanged(int _selection)
     //Make real time changes
     SetRtlTunerMode(rtlTunerGainMode);
     SetRtlTunerGain(rtlTunerGain);
-    WriteSettings();
+    writeSettings();
 }
 
 void RTL2832SDRDevice::FreqCorrectionChanged(int _correction)
 {
     rtlFreqencyCorrection = _correction;
     SetRtlFrequencyCorrection(rtlFreqencyCorrection);
-    WriteSettings();
+    writeSettings();
 }
 
 void RTL2832SDRDevice::SamplingModeChanged(int _samplingMode)
@@ -931,7 +931,7 @@ void RTL2832SDRDevice::SamplingModeChanged(int _samplingMode)
     Q_UNUSED(_samplingMode);
     int cur = optionUi->samplingModeSelector->currentIndex();
     rtlSampleMode = (SAMPLING_MODES)optionUi->samplingModeSelector->itemData(cur).toUInt();
-    WriteSettings();
+    writeSettings();
 }
 
 void RTL2832SDRDevice::AgcModeChanged(bool _selected)
@@ -939,7 +939,7 @@ void RTL2832SDRDevice::AgcModeChanged(bool _selected)
     Q_UNUSED(_selected);
     rtlAgcMode = optionUi->agcModeBox->isChecked();
     SetRtlAgcMode(rtlAgcMode);
-    WriteSettings();
+    writeSettings();
 }
 
 void RTL2832SDRDevice::OffsetModeChanged(bool _selected)
@@ -948,12 +948,12 @@ void RTL2832SDRDevice::OffsetModeChanged(bool _selected)
     rtlOffsetMode = optionUi->offsetModeBox->isChecked();
     if (!SetRtlOffsetMode(rtlOffsetMode))
         rtlOffsetMode = false;
-    WriteSettings();
+    writeSettings();
 }
 
 bool RTL2832SDRDevice::SendTcpCmd(quint8 _cmd, quint32 _data)
 {
-    if (!connected)
+	if (!m_connected)
         return false;
 
     rtlTcpSocketMutex.lock();
@@ -979,7 +979,7 @@ bool RTL2832SDRDevice::SendTcpCmd(quint8 _cmd, quint32 _data)
 
 bool RTL2832SDRDevice::SetRtlSampleRate(quint64 _sampleRate)
 {
-    if (deviceNumber == RTL_USB) {
+	if (m_deviceNumber == RTL_USB) {
         /* Set the sample rate */
         if (rtlsdr_set_sample_rate(dev, _sampleRate) < 0) {
             qDebug("WARNING: Failed to set sample rate.");
@@ -994,7 +994,7 @@ bool RTL2832SDRDevice::SetRtlSampleRate(quint64 _sampleRate)
 
 bool RTL2832SDRDevice::GetRtlValidTunerGains()
 {
-    if (deviceNumber == RTL_USB) {
+	if (m_deviceNumber == RTL_USB) {
         rtlTunerGainCount = rtlsdr_get_tuner_gains(dev,rtlTunerGains);
         if (rtlTunerGainCount < 0) {
             rtlTunerGainCount = 0;
@@ -1012,30 +1012,30 @@ void RTL2832SDRDevice::producerWorker(cbProducerConsumerEvents _event)
 {
     switch (_event) {
         case cbProducerConsumerEvents::Start:
-            if (deviceNumber == RTL_TCP) {
+			if (m_deviceNumber == RTL_TCP) {
                 if (tcpThreadSocket == NULL) {
                     //First time, construct any thread local objects like QTcpSockets
                     tcpThreadSocket = new QTcpSocket();
                     tcpThreadSocket->setSocketDescriptor(rtlTcpSocket->socketDescriptor()); //Has same connection as rtlTpSocket
                     //Local socket will only get thread specific event, not UI events
-                    tcpThreadSocket->setReadBufferSize(readBufferSize); //Not sure if this is necessary
+					tcpThreadSocket->setReadBufferSize(m_readBufferSize); //Not sure if this is necessary
                 }
 
             }
             break;
 
         case cbProducerConsumerEvents::Run:
-            if (!connected)
+			if (!m_connected)
                 return;
 
             int bytesRead;
 
-            if (deviceNumber == RTL_USB) {
+			if (m_deviceNumber == RTL_USB) {
 
-                if (!running)
+				if (!m_running)
                     return;
-				while (running) {
-				if ((producerFreeBufPtr = (CPX *)producerConsumer.AcquireFreeBuffer()) == NULL)
+				while (m_running) {
+				if ((producerFreeBufPtr = (CPX *)m_producerConsumer.AcquireFreeBuffer()) == NULL)
                     return;
 
 
@@ -1044,16 +1044,16 @@ void RTL2832SDRDevice::producerWorker(cbProducerConsumerEvents _event)
 				//So at 2048msps, it makes sense that it blocks for 1ms
 				//I'd consider switching to rtlsdr_read_async(), but that also blocks
 				//Since we need to read one buffer every ms, hard to see how we're keeping up
-				if (rtlsdr_read_sync(dev, inBuffer, readBufferSize, &bytesRead) < 0) {
+				if (rtlsdr_read_sync(dev, inBuffer, m_readBufferSize, &bytesRead) < 0) {
                     qDebug("Sync transfer error");
-                    producerConsumer.PutbackFreeBuffer(); //Put back buffer for next try
+					m_producerConsumer.PutbackFreeBuffer(); //Put back buffer for next try
 					producerFreeBufPtr = NULL;
                     return;
 				}
 
-                if (bytesRead < readBufferSize) {
+				if (bytesRead < m_readBufferSize) {
                     qDebug("RTL2832 Under read");
-                    producerConsumer.PutbackFreeBuffer(); //Put back buffer for next try
+					m_producerConsumer.PutbackFreeBuffer(); //Put back buffer for next try
 					producerFreeBufPtr = NULL;
 					return;
                 }
@@ -1075,17 +1075,17 @@ void RTL2832SDRDevice::producerWorker(cbProducerConsumerEvents _event)
 				//I/Q are normally reversed
 				normalizeIQ(producerFreeBufPtr, inBuffer, framesPerBuffer, true);
 
-                producerConsumer.ReleaseFilledBuffer();
+				m_producerConsumer.ReleaseFilledBuffer();
 			} //End while(running)
                 return;
 
-            } else if (deviceNumber == RTL_TCP) {
+			} else if (m_deviceNumber == RTL_TCP) {
                 //Moved to TcpNewData
             }
             break;
 
         case cbProducerConsumerEvents::Stop:
-            if (deviceNumber == RTL_TCP) {
+			if (m_deviceNumber == RTL_TCP) {
                 rtlTcpSocketMutex.unlock();
                 if (tcpThreadSocket != NULL)
                     tcpThreadSocket->disconnectFromHost();
@@ -1103,25 +1103,25 @@ void RTL2832SDRDevice::consumerWorker(cbProducerConsumerEvents _event)
             break;
 
         case cbProducerConsumerEvents::Run:
-            if (!connected)
+			if (!m_connected)
                 return;
 
-            if (!running)
+			if (!m_running)
                 return;
 
 				//qDebug()<<"Free buf "<<producerConsumer.GetNumFreeBufs();
 				//We always want to consume everything we have, producer will eventually block if we're not consuming fast enough
-				while (producerConsumer.GetNumFilledBufs() > 0) {
+				while (m_producerConsumer.GetNumFilledBufs() > 0) {
 					//Wait for data to be available from producer
-					if ((consumerFilledBufferPtr = (CPX *)producerConsumer.AcquireFilledBuffer()) == NULL) {
+					if ((consumerFilledBufferPtr = (CPX *)m_producerConsumer.AcquireFilledBuffer()) == NULL) {
 						//qDebug()<<"No filled buffer available";
 						return;
 					}
 				//perform.StartPerformance("ProcessIQ");
-				ProcessIQData(consumerFilledBufferPtr,framesPerBuffer);
+				processIQData(consumerFilledBufferPtr,framesPerBuffer);
 				//perform.StopPerformance(1000);
 				//We don't release a free buffer until ProcessIQData returns because that would also allow inBuffer to be reused
-				producerConsumer.ReleaseFreeBuffer();
+				m_producerConsumer.ReleaseFreeBuffer();
 				}
             break;
 
@@ -1133,11 +1133,11 @@ void RTL2832SDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 
 //These need to be moved to a DeviceInterface implementation class, equivalent to SDR
 //Must be called from derived class constructor to work correctly
-void RTL2832SDRDevice::InitSettings(QString fname)
+void RTL2832SDRDevice::initSettings(QString fname)
 {
-	DeviceInterfaceBase::InitSettings(fname + "_usb");
-	usbSettings = qSettings;
-	DeviceInterfaceBase::InitSettings(fname + "_tcp");
-	tcpSettings = qSettings;
+	DeviceInterfaceBase::initSettings(fname + "_usb");
+	usbSettings = m_qSettings;
+	DeviceInterfaceBase::initSettings(fname + "_tcp");
+	tcpSettings = m_qSettings;
 
 }

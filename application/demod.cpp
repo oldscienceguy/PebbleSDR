@@ -235,7 +235,7 @@ void Demod::SetBandwidth(double bandwidth)
     }
 }
 
-void Demod::SetDemodMode(DeviceInterface::DEMODMODE _mode, int _sourceSampleRate, int _audioSampleRate)
+void Demod::SetDemodMode(DeviceInterface::DemodMode _mode, int _sourceSampleRate, int _audioSampleRate)
 {
     mode = _mode;
     inputSampleRate = _sourceSampleRate;
@@ -253,7 +253,7 @@ void Demod::SetDemodMode(DeviceInterface::DEMODMODE _mode, int _sourceSampleRate
 
 }
 
-DeviceInterface::DEMODMODE Demod::DemodMode() const
+DeviceInterface::DemodMode Demod::DemodMode() const
 {
     return mode;
 }
@@ -268,7 +268,7 @@ void Demod::ResetDemod()
     rdsUpdate = true; //Update display next loop
 }
 
-DeviceInterface::DEMODMODE Demod::StringToMode(QString m)
+DeviceInterface::DemodMode Demod::StringToMode(QString m)
 {
 	if (m == "AM") return DeviceInterface::dmAM;
 	else if (m == "SAM") return DeviceInterface::dmSAM;
@@ -285,7 +285,7 @@ DeviceInterface::DEMODMODE Demod::StringToMode(QString m)
 	else if (m == "NONE") return DeviceInterface::dmNONE;
 	else return DeviceInterface::dmAM; //default
 }
-QString Demod::ModeToString(DeviceInterface::DEMODMODE dm)
+QString Demod::ModeToString(DeviceInterface::DemodMode dm)
 {
 	if (dm == DeviceInterface::dmAM) return "AM";
 	else if (dm == DeviceInterface::dmSAM) return "SAM";

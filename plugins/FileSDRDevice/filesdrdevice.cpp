@@ -8,7 +8,7 @@ PebbleLibGlobal *pebbleLibGlobal;
 
 FileSDRDevice::FileSDRDevice():DeviceInterfaceBase()
 {
-    InitSettings("WavFileSDR");
+	initSettings("WavFileSDR");
     copyTest = false; //Write what we read
     fileName = "";
     recordingPath = "";
@@ -17,22 +17,22 @@ FileSDRDevice::FileSDRDevice():DeviceInterfaceBase()
 
 FileSDRDevice::~FileSDRDevice()
 {
-    Stop();
-    Disconnect();
+	stopDevice();
+	disconnectDevice();
 }
 
-bool FileSDRDevice::Initialize(cbProcessIQData _callback,
-							   cbProcessBandscopeData _callbackBandscope,
-							   cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
+bool FileSDRDevice::initialize(CB_ProcessIQData _callback,
+							   CB_ProcessBandscopeData _callbackBandscope,
+							   CB_ProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
-	DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
-    producerConsumer.Initialize(std::bind(&FileSDRDevice::producerWorker, this, std::placeholders::_1),
+	DeviceInterfaceBase::initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
+	m_producerConsumer.Initialize(std::bind(&FileSDRDevice::producerWorker, this, std::placeholders::_1),
 		std::bind(&FileSDRDevice::consumerWorker, this, std::placeholders::_1),50,framesPerBuffer * sizeof(CPX));
 
     return true;
 }
 
-bool FileSDRDevice::Connect()
+bool FileSDRDevice::connectDevice()
 {
 
     //Use last recording path and filename for convenience
@@ -74,134 +74,134 @@ bool FileSDRDevice::Connect()
     if (!res)
         return false;
 
-	deviceSampleRate = wavFileRead.GetSampleRate();
+	m_deviceSampleRate = wavFileRead.GetSampleRate();
 	//We have sample rate for file, set polling interval
 	//We don't use producer thread, sampleRateTimer and producerSlot() instead
-	producerConsumer.SetProducerInterval(deviceSampleRate, framesPerBuffer);
-	producerConsumer.SetConsumerInterval(deviceSampleRate, framesPerBuffer);
+	m_producerConsumer.SetProducerInterval(m_deviceSampleRate, framesPerBuffer);
+	m_producerConsumer.SetConsumerInterval(m_deviceSampleRate, framesPerBuffer);
 
     if (copyTest) {
-		res = wavFileWrite.OpenWrite(fileName + "2", deviceSampleRate,0,0,0);
+		res = wavFileWrite.OpenWrite(fileName + "2", m_deviceSampleRate,0,0,0);
     }
     return true;
 }
 
-bool FileSDRDevice::Disconnect()
+bool FileSDRDevice::disconnectDevice()
 {
     wavFileRead.Close();
     wavFileWrite.Close();
     return true;
 }
 
-void FileSDRDevice::Start()
+void FileSDRDevice::startDevice()
 {
 	//How often do we need to read samples from files to get framesPerBuffer at sampleRate
-	nsPerBuffer = (1000000000.0 / deviceSampleRate) * framesPerBuffer;
+	nsPerBuffer = (1000000000.0 / m_deviceSampleRate) * framesPerBuffer;
 	//qDebug()<<"nsPerBuffer"<<nsPerBuffer;
 
-	producerConsumer.Start(true,true);
+	m_producerConsumer.Start(true,true);
 
 	elapsedTimer.start();
 }
 
-void FileSDRDevice::Stop()
+void FileSDRDevice::stopDevice()
 {
-    producerConsumer.Stop();
+	m_producerConsumer.Stop();
 }
 
-void FileSDRDevice::ReadSettings()
+void FileSDRDevice::readSettings()
 {
 
-	DeviceInterfaceBase::ReadSettings();
+	DeviceInterfaceBase::readSettings();
 
-	fileName = qSettings->value("FileName", "").toString();
-	recordingPath = qSettings->value("RecordingPath", "").toString();
+	fileName = m_qSettings->value("FileName", "").toString();
+	recordingPath = m_qSettings->value("RecordingPath", "").toString();
 }
 
-void FileSDRDevice::WriteSettings()
+void FileSDRDevice::writeSettings()
 {
-	DeviceInterfaceBase::WriteSettings();
+	DeviceInterfaceBase::writeSettings();
 
-	qSettings->setValue("FileName", fileName);
-	qSettings->setValue("RecordingPath", recordingPath);
+	m_qSettings->setValue("FileName", fileName);
+	m_qSettings->setValue("RecordingPath", recordingPath);
 }
 
-QVariant FileSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _option)
+QVariant FileSDRDevice::get(DeviceInterface::StandardKeys _key, QVariant _option)
 {
 	Q_UNUSED(_option);
 
 	switch (_key) {
-		case PluginName:
+		case Key_PluginName:
 			return "WAV File SDR";
 			break;
-		case PluginDescription:
+		case Key_PluginDescription:
 			return "Plays back I/Q WAV file";
 			break;
-		case DeviceName:
-			return "SDRFile: " + QFileInfo(fileName).fileName() + "-" + QString::number(deviceSampleRate);
-		case DeviceType:
-			return IQ_DEVICE;
-		case StartupType:
-			return DeviceInterface::DEFAULTFREQ; //Fixed, can't change freq
-		case HighFrequency: {
+		case Key_DeviceName:
+			return "SDRFile: " + QFileInfo(fileName).fileName() + "-" + QString::number(m_deviceSampleRate);
+		case Key_DeviceType:
+			return DT_IQ_DEVICE;
+		case Key_StartupType:
+			return DeviceInterface::ST_DEFAULTFREQ; //Fixed, can't change freq
+		case Key_HighFrequency: {
 			quint32 loFreq = wavFileRead.GetLoFreq();
 			if (loFreq == 0)
-				return deviceSampleRate;
+				return m_deviceSampleRate;
 			else
-				return loFreq + deviceSampleRate / 2.0;
+				return loFreq + m_deviceSampleRate / 2.0;
 		}
-		case LowFrequency: {
+		case Key_LowFrequency: {
 			quint32 loFreq = wavFileRead.GetLoFreq();
 			if (loFreq == 0)
 				return 0;
 			else
-				return loFreq - deviceSampleRate / 2.0;
+				return loFreq - m_deviceSampleRate / 2.0;
 		}
-		case StartupFrequency: {
+		case Key_StartupFrequency: {
 			//If it's a pebble wav file, we should have LO freq
 			quint32 loFreq = wavFileRead.GetLoFreq();
 			if (loFreq == 0)
-				return deviceSampleRate / 2.0; //Default
+				return m_deviceSampleRate / 2.0; //Default
 			else
 				return loFreq;
 			break;
 		}
-		case StartupDemodMode: {
+		case Key_StartupDemodMode: {
 			int startupMode =  wavFileRead.GetMode();
 			if (startupMode < 255)
 				return startupMode;
 			else
-				return lastDemodMode;
+				return m_lastDemodMode;
 
 			break;
 		}
 		default:
 			//If we don't handle it, let default grab it
-			return DeviceInterfaceBase::Get(_key, _option);
+			return DeviceInterfaceBase::get(_key, _option);
 			break;
 
 	}
 }
 
-bool FileSDRDevice::Set(STANDARD_KEYS _key, QVariant _value, QVariant _option)
+bool FileSDRDevice::set(StandardKeys _key, QVariant _value, QVariant _option)
 {
 	Q_UNUSED(_option);
 
 	switch (_key) {
-		case DeviceFrequency: {
+		case Key_DeviceFrequency: {
 			quint32 loFreq = wavFileRead.GetLoFreq();
 			if (loFreq == 0)
-				return Get(DeviceInterface::StartupFrequency).toDouble();
+				return get(DeviceInterface::Key_StartupFrequency).toDouble();
 			else
 				return loFreq;
 		}
 		default:
-			return DeviceInterfaceBase::Set(_key, _value, _option);
+			return DeviceInterfaceBase::set(_key, _value, _option);
 
 	}
 }
 
-void FileSDRDevice::SetupOptionUi(QWidget *parent)
+void FileSDRDevice::setupOptionUi(QWidget *parent)
 {
 	Q_UNUSED(parent);
 
@@ -250,7 +250,7 @@ void FileSDRDevice::producerSlot()
 	int samplesRead;
 
 	//Fill one buffer with data
-	if ((producerBuf = (CPX*)producerConsumer.AcquireFreeBuffer()) == NULL)
+	if ((producerBuf = (CPX*)m_producerConsumer.AcquireFreeBuffer()) == NULL)
 		return;
 
 	samplesRead = wavFileRead.ReadSamples(producerBuf,framesPerBuffer);
@@ -258,7 +258,7 @@ void FileSDRDevice::producerSlot()
 
 	//ProcessIQData(producerBuf,framesPerBuffer);
 
-	producerConsumer.ReleaseFilledBuffer();
+	m_producerConsumer.ReleaseFilledBuffer();
 	//pebbleLibGlobal->perform.StopPerformance(1000);
 }
 
@@ -272,16 +272,16 @@ void FileSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
         case cbProducerConsumerEvents::Run:
 
 			//We always want to consume everything we have, producer will eventually block if we're not consuming fast enough
-			while (producerConsumer.GetNumFilledBufs() > 0) {
+			while (m_producerConsumer.GetNumFilledBufs() > 0) {
 
-				if ((bufPtr = (CPX*)producerConsumer.AcquireFilledBuffer()) == NULL)
+				if ((bufPtr = (CPX*)m_producerConsumer.AcquireFilledBuffer()) == NULL)
 					return;
 
 				if (copyTest)
 					wavFileWrite.WriteSamples(bufPtr, framesPerBuffer);
 
-				ProcessIQData(bufPtr,framesPerBuffer);
-				producerConsumer.ReleaseFreeBuffer();
+				processIQData(bufPtr,framesPerBuffer);
+				m_producerConsumer.ReleaseFreeBuffer();
 			}
             break;
 

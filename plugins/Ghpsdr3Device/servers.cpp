@@ -119,7 +119,7 @@ void Servers::lineClicked(QTreeWidgetItem *item,int col)
 	//Save settings
 	sdr->deviceAddress = QHostAddress(IP);
 	sdr->devicePort = 8000;
-	sdr->WriteSettings();
+	sdr->writeSettings();
 }
 
 void Servers::TimerFired()

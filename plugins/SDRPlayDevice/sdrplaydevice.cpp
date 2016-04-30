@@ -3,7 +3,7 @@
 
 SDRPlayDevice::SDRPlayDevice():DeviceInterfaceBase()
 {
-	InitSettings("SDRPlay");
+	initSettings("SDRPlay");
 	optionUi = NULL;
 	packetIBuf = packetQBuf = NULL;
 	samplesPerPacket = 0;
@@ -20,33 +20,33 @@ SDRPlayDevice::~SDRPlayDevice()
 		delete[] packetQBuf;
 }
 
-bool SDRPlayDevice::Initialize(cbProcessIQData _callback,
-								  cbProcessBandscopeData _callbackBandscope,
-								  cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
+bool SDRPlayDevice::initialize(CB_ProcessIQData _callback,
+								  CB_ProcessBandscopeData _callbackBandscope,
+								  CB_ProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
-	DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
-	numProducerBuffers = 100;
+	DeviceInterfaceBase::initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
+	m_numProducerBuffers = 100;
 #if 1
 	//Remove if producer/consumer buffers are not used
 	//This is set so we always get framesPerBuffer samples (factor in any necessary decimation)
 	//ProducerConsumer allocates as array of bytes, so factor in size of sample data
 	quint16 sampleDataSize = sizeof(CPX);
-	readBufferSize = framesPerBuffer * sampleDataSize;
+	m_readBufferSize = framesPerBuffer * sampleDataSize;
 
 	packetIBuf = new short[framesPerBuffer * 2]; //2X what we need so we have overflow space
 	packetQBuf = new short[framesPerBuffer * 2];
 	producerIndex = 0;
 
-	producerConsumer.Initialize(std::bind(&SDRPlayDevice::producerWorker, this, std::placeholders::_1),
-		std::bind(&SDRPlayDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, readBufferSize);
+	m_producerConsumer.Initialize(std::bind(&SDRPlayDevice::producerWorker, this, std::placeholders::_1),
+		std::bind(&SDRPlayDevice::consumerWorker, this, std::placeholders::_1),m_numProducerBuffers, m_readBufferSize);
 	//Must be called after Initialize
-	producerConsumer.SetProducerInterval(deviceSampleRate,framesPerBuffer);
-	producerConsumer.SetConsumerInterval(deviceSampleRate,framesPerBuffer);
+	m_producerConsumer.SetProducerInterval(m_deviceSampleRate,framesPerBuffer);
+	m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,framesPerBuffer);
 
 #endif
 
 	//Other constructor like init
-	sampleRateMhz = deviceSampleRate / 1000000.0; //Sample rate in Mhz, NOT Hz
+	sampleRateMhz = m_deviceSampleRate / 1000000.0; //Sample rate in Mhz, NOT Hz
 	producerFreeBufPtr = NULL;
 	return true;
 }
@@ -95,11 +95,11 @@ bool SDRPlayDevice::errorCheck(mir_sdr_ErrT err)
 	return false;
 }
 
-bool SDRPlayDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _arg)
+bool SDRPlayDevice::command(DeviceInterface::StandardCommands _cmd, QVariant _arg)
 {
 	switch (_cmd) {
-		case CmdConnect:
-			DeviceInterfaceBase::Connect();
+		case Cmd_Connect:
+			DeviceInterfaceBase::connectDevice();
 			//Device specific code follows
 			//Check version
 			if (!errorCheck(mir_sdr_ApiVersion(&apiVersion)))
@@ -109,51 +109,51 @@ bool SDRPlayDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _a
 			currentBand = band0; //Initial value to force band search on first frequency check
 
 			//Will fail if SDRPlay is not connected
-			if (!reinitMirics(deviceFrequency))
+			if (!reinitMirics(m_deviceFrequency))
 				return false;
-			connected = true;
-			running = false;
+			m_connected = true;
+			m_running = false;
 			optionParent = NULL;
 
 			dbFSChanged(dbFS); //Init all the AGC values
 			return true;
 
-		case CmdDisconnect:
-			DeviceInterfaceBase::Disconnect();
+		case Cmd_Disconnect:
+			DeviceInterfaceBase::disconnectDevice();
 			//Device specific code follows
 			if (!errorCheck(mir_sdr_Uninit()))
 				return false;
-			connected = false;
+			m_connected = false;
 			return true;
 
-		case CmdStart:
-			DeviceInterfaceBase::Start();
+		case Cmd_Start:
+			DeviceInterfaceBase::startDevice();
 			//Device specific code follows
-			running = true;
-			producerConsumer.Start(true,true);
+			m_running = true;
+			m_producerConsumer.Start(true,true);
 
 			return true;
 
-		case CmdStop:
-			DeviceInterfaceBase::Stop();
+		case Cmd_Stop:
+			DeviceInterfaceBase::stopDevice();
 			//Device specific code follows
-			running = false;
-			producerConsumer.Stop();
+			m_running = false;
+			m_producerConsumer.Stop();
 			return true;
 
-		case CmdReadSettings:
-			DeviceInterfaceBase::ReadSettings();
-			ReadSettings();
+		case Cmd_ReadSettings:
+			DeviceInterfaceBase::readSettings();
+			readSettings();
 			return true;
 
-		case CmdWriteSettings:
-			DeviceInterfaceBase::WriteSettings();
-			WriteSettings();
+		case Cmd_WriteSettings:
+			DeviceInterfaceBase::writeSettings();
+			writeSettings();
 			return true;
 
-		case CmdDisplayOptionUi:						//Arg is QWidget *parent
+		case Cmd_DisplayOptionUi:						//Arg is QWidget *parent
 			//Use QVariant::fromValue() to pass, and value<type passed>() to get back
-			this->SetupOptionUi(_arg.value<QWidget*>());
+			this->setupOptionUi(_arg.value<QWidget*>());
 			return true;
 
 		default:
@@ -161,79 +161,79 @@ bool SDRPlayDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _a
 	}
 }
 
-QVariant SDRPlayDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _option)
+QVariant SDRPlayDevice::get(DeviceInterface::StandardKeys _key, QVariant _option)
 {
 	Q_UNUSED(_option);
 	QStringList sl;
 
 	switch (_key) {
-		case PluginName:
+		case Key_PluginName:
 			return "SDRPlay";
 			break;
-		case PluginDescription:
+		case Key_PluginDescription:
 			return "SDRPlay (Mirics chips)";
 			break;
-		case DeviceName:
+		case Key_DeviceName:
 			return "SDRPlay";
-		case DeviceType:
-			return IQ_DEVICE;
-		case DeviceSampleRates:
+		case Key_DeviceType:
+			return DT_IQ_DEVICE;
+		case Key_DeviceSampleRates:
 			//Don't return any sample rates to sdrOptions UI, we handle it all in device UI
 			return sl;
 			break;
 		default:
-			return DeviceInterfaceBase::Get(_key, _option);
+			return DeviceInterfaceBase::get(_key, _option);
 	}
 }
 
-bool SDRPlayDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, QVariant _option)
+bool SDRPlayDevice::set(DeviceInterface::StandardKeys _key, QVariant _value, QVariant _option)
 {
 	Q_UNUSED(_option);
 	switch (_key) {
-		case DeviceFrequency:
+		case Key_DeviceFrequency:
 			return setFrequency(_value.toDouble());
 
 		default:
-			return DeviceInterfaceBase::Set(_key, _value, _option);
+			return DeviceInterfaceBase::set(_key, _value, _option);
 	}
 }
 
-void SDRPlayDevice::ReadSettings()
+void SDRPlayDevice::readSettings()
 {
 	//DeviceInterfaceBase takes care of reading and writing these values
-	lowFrequency = 100000;
-	highFrequency = 2000000000;
-	deviceFrequency = lastFreq = 10000000;
-	deviceSampleRate = 2000000;
-	normalizeIQGain = 1.0;
+	m_lowFrequency = 100000;
+	m_highFrequency = 2000000000;
+	m_deviceFrequency = m_lastFreq = 10000000;
+	m_deviceSampleRate = 2000000;
+	m_normalizeIQGain = 1.0;
 	//normalizeIQGain = DB::dbToAmplitude(-14.0);
 
-	DeviceInterfaceBase::ReadSettings();
-	dcCorrectionMode = qSettings->value("dcCorrectionMode",0).toInt(); //0 = off
-	totalGainReduction = qSettings->value("totalGainReduction",60).toInt(); //60db
-	bandwidthKhz = (mir_sdr_Bw_MHzT) qSettings->value("bandwidthKhz",mir_sdr_BW_1_536).toInt();
+	DeviceInterfaceBase::readSettings();
+	dcCorrectionMode = m_qSettings->value("dcCorrectionMode",0).toInt(); //0 = off
+	totalGainReduction = m_qSettings->value("totalGainReduction",60).toInt(); //60db
+	bandwidthKhz = (mir_sdr_Bw_MHzT) m_qSettings->value("bandwidthKhz",mir_sdr_BW_1_536).toInt();
 	//bandwidth can not be > sampleRate which is a problem is ini is manually edited
 
-	IFKhz = (mir_sdr_If_kHzT) qSettings->value("IFKhz",mir_sdr_IF_Zero).toInt();
+	IFKhz = (mir_sdr_If_kHzT) m_qSettings->value("IFKhz",mir_sdr_IF_Zero).toInt();
 
-	agcEnabled = qSettings->value("agcEnabled",false).toBool();
-	dbFS = qSettings->value("dbFS",-15).toInt();
+	agcEnabled = m_qSettings->value("agcEnabled",false).toBool();
+	dbFS = m_qSettings->value("dbFS",-15).toInt();
 }
 
-void SDRPlayDevice::WriteSettings()
+void SDRPlayDevice::writeSettings()
 {
-	DeviceInterfaceBase::WriteSettings();
-	qSettings->setValue("dcCorrectionMode",dcCorrectionMode);
-	qSettings->setValue("totalGainReduction",totalGainReduction);
-	qSettings->setValue("bandwidthKhz",bandwidthKhz);
-	qSettings->setValue("IFKhz",IFKhz);
-	qSettings->setValue("agcEnabled",agcEnabled);
-	qSettings->setValue("dbFS",dbFS);
+	DeviceInterfaceBase::writeSettings();
+	m_qSettings->setValue("dcCorrectionMode",dcCorrectionMode);
+	m_qSettings->setValue("totalGainReduction",totalGainReduction);
+	m_qSettings->setValue("bandwidthKhz",bandwidthKhz);
+	m_qSettings->setValue("IFKhz",IFKhz);
+	m_qSettings->setValue("agcEnabled",agcEnabled);
+	m_qSettings->setValue("dbFS",dbFS);
 
-	qSettings->sync();
+	m_qSettings->sync();
 }
 
-void SDRPlayDevice::SetupOptionUi(QWidget *parent)
+void SDRPlayDevice::setupOptionUi(QWidget *parent)
 {
 	int cur;
 
@@ -261,7 +261,7 @@ void SDRPlayDevice::SetupOptionUi(QWidget *parent)
 	optionUi->sampleRate->addItem("8Mhz",8000000);
 	optionUi->sampleRate->addItem("9Mhz",9000000);
 	optionUi->sampleRate->addItem("10Mhz",10000000);
-	cur = optionUi->sampleRate->findData(deviceSampleRate);
+	cur = optionUi->sampleRate->findData(m_deviceSampleRate);
 	optionUi->sampleRate->setCurrentIndex(cur);
 	connect(optionUi->sampleRate,SIGNAL(currentIndexChanged(int)),this,SLOT(sampleRateChanged(int)));
 
@@ -302,7 +302,7 @@ void SDRPlayDevice::dcCorrectionChanged(int _item)
 	int cur = _item;
 	dcCorrectionMode = optionUi->dcCorrection->itemData(cur).toUInt();
 	setDcMode(dcCorrectionMode, 1);
-	WriteSettings();
+	writeSettings();
 }
 
 void SDRPlayDevice::totalGainReductionChanged(int _value)
@@ -311,7 +311,7 @@ void SDRPlayDevice::totalGainReductionChanged(int _value)
 		return; //AGC managing
 
 	setGainReduction(_value, 1, 0);
-	WriteSettings();
+	writeSettings();
 }
 
 void SDRPlayDevice::IFBandwidthChanged(int _item)
@@ -319,17 +319,17 @@ void SDRPlayDevice::IFBandwidthChanged(int _item)
 	int cur = _item;
 	bandwidthKhz = (mir_sdr_Bw_MHzT)optionUi->IFBw->itemData(cur).toUInt();
 	matchIFModeToSRAndBW();
-	WriteSettings();
-	reinitMirics(deviceFrequency);
+	writeSettings();
+	reinitMirics(m_deviceFrequency);
 }
 
 void SDRPlayDevice::sampleRateChanged(int _item)
 {
-	deviceSampleRate = (quint32)optionUi->sampleRate->itemData(_item).toUInt();
+	m_deviceSampleRate = (quint32)optionUi->sampleRate->itemData(_item).toUInt();
 	//Update dependent bandwidth options
 	matchBandwidthToSampleRate(false);
 	matchIFModeToSRAndBW();
-	WriteSettings();
+	writeSettings();
 }
 
 void SDRPlayDevice::agcEnabledChanged(bool _b)
@@ -358,15 +358,15 @@ void SDRPlayDevice::IFModeChanged(int _item)
 {
 	//We know that IF is valid for SR because we limit the choices whenever SR or BW is changed
 	IFKhz = (mir_sdr_If_kHzT)optionUi->IFMode->itemData(_item).toUInt();
-	WriteSettings();
-	reinitMirics(deviceFrequency);  //IF mode only changed by init()
+	writeSettings();
+	reinitMirics(m_deviceFrequency);  //IF mode only changed by init()
 }
 
 //Called with SR or BW changes to make sure IF mode options are within range
 void SDRPlayDevice::matchIFModeToSRAndBW()
 {
 	mir_sdr_If_kHzT newMode;
-	quint32 sampleRateKhz = deviceSampleRate / 1000;
+	quint32 sampleRateKhz = m_deviceSampleRate / 1000;
 
 	optionUi->IFMode->blockSignals(true);
 	optionUi->IFMode->clear();
@@ -418,10 +418,10 @@ void SDRPlayDevice::matchBandwidthToSampleRate(bool preserveBandwidth)
 	optionUi->IFBw->addItem("0.600 Mhz",mir_sdr_BW_0_600);
 	//Only allow BW selections that are <= sampleRate
 	newBandwidth = bandwidthKhz;
-	if (deviceSampleRate < 1536000) {
+	if (m_deviceSampleRate < 1536000) {
 		newBandwidth = mir_sdr_BW_0_600;
 	}
-	if (deviceSampleRate >= 1536000 && deviceSampleRate < 5000000) {
+	if (m_deviceSampleRate >= 1536000 && m_deviceSampleRate < 5000000) {
 		optionUi->IFBw->addItem("1.536 Mhz",mir_sdr_BW_1_536);
 		if (!preserveBandwidth) {
 			//Always set new bw to max for SR when SR changes
@@ -431,7 +431,7 @@ void SDRPlayDevice::matchBandwidthToSampleRate(bool preserveBandwidth)
 			newBandwidth = mir_sdr_BW_1_536;
 		}
 	}
-	if (deviceSampleRate >= 5000000 && deviceSampleRate < 6000000) {
+	if (m_deviceSampleRate >= 5000000 && m_deviceSampleRate < 6000000) {
 		optionUi->IFBw->addItem("1.536 Mhz",mir_sdr_BW_1_536);
 		optionUi->IFBw->addItem("5.000 Mhz",mir_sdr_BW_5_000);
 		if (!preserveBandwidth) {
@@ -442,7 +442,7 @@ void SDRPlayDevice::matchBandwidthToSampleRate(bool preserveBandwidth)
 			newBandwidth = mir_sdr_BW_5_000;
 		}
 	}
-	if (deviceSampleRate >= 6000000 && deviceSampleRate < 7000000) {
+	if (m_deviceSampleRate >= 6000000 && m_deviceSampleRate < 7000000) {
 		optionUi->IFBw->addItem("1.536 Mhz",mir_sdr_BW_1_536);
 		optionUi->IFBw->addItem("5.000 Mhz",mir_sdr_BW_5_000);
 		optionUi->IFBw->addItem("6.000 Mhz",mir_sdr_BW_6_000);
@@ -454,7 +454,7 @@ void SDRPlayDevice::matchBandwidthToSampleRate(bool preserveBandwidth)
 			newBandwidth = mir_sdr_BW_6_000;
 		}
 	}
-	if (deviceSampleRate >= 7000000 && deviceSampleRate < 8000000) {
+	if (m_deviceSampleRate >= 7000000 && m_deviceSampleRate < 8000000) {
 		optionUi->IFBw->addItem("1.536 Mhz",mir_sdr_BW_1_536);
 		optionUi->IFBw->addItem("5.000 Mhz",mir_sdr_BW_5_000);
 		optionUi->IFBw->addItem("6.000 Mhz",mir_sdr_BW_6_000);
@@ -467,7 +467,7 @@ void SDRPlayDevice::matchBandwidthToSampleRate(bool preserveBandwidth)
 			newBandwidth = mir_sdr_BW_7_000;
 		}
 	}
-	if (deviceSampleRate >= 8000000) {
+	if (m_deviceSampleRate >= 8000000) {
 		optionUi->IFBw->addItem("1.536 Mhz",mir_sdr_BW_1_536);
 		optionUi->IFBw->addItem("5.000 Mhz",mir_sdr_BW_5_000);
 		optionUi->IFBw->addItem("6.000 Mhz",mir_sdr_BW_6_000);
@@ -495,7 +495,7 @@ void SDRPlayDevice::matchBandwidthToSampleRate(bool preserveBandwidth)
 bool SDRPlayDevice::reinitMirics(double newFrequency)
 {
 	initInProgress.lock(); //Pause producer/consumer
-	if (running) {
+	if (m_running) {
 		//Unitinialize first
 		if (!errorCheck(mir_sdr_Uninit())) {
 			initInProgress.unlock();
@@ -534,7 +534,7 @@ bool SDRPlayDevice::setGainReduction(int gRdb, int abs, int syncUpdate)
 	if (errorCheck(mir_sdr_SetGr(gRdb, abs, syncUpdate))) {
 		pendingGainReduction = true;
 		//Update UI with new AGC values
-		if (running && agcEnabled && optionParent != NULL && optionParent->isVisible()) {
+		if (m_running && agcEnabled && optionParent != NULL && optionParent->isVisible()) {
 			optionUi->totalGainReduction->setValue(totalGainReduction);
 		}
 
@@ -555,7 +555,7 @@ bool SDRPlayDevice::setDcMode(int _dcCorrectionMode, int _speedUp)
 
 bool SDRPlayDevice::setFrequency(double newFrequency)
 {
-	if (deviceFrequency == newFrequency || newFrequency == 0)
+	if (m_deviceFrequency == newFrequency || newFrequency == 0)
 		return true;
 
 	band newBand;
@@ -612,8 +612,8 @@ bool SDRPlayDevice::setFrequency(double newFrequency)
 	}
 
 #endif
-	deviceFrequency = newFrequency;
-	lastFreq = deviceFrequency;
+	m_deviceFrequency = newFrequency;
+	m_lastFreq = m_deviceFrequency;
 	return true;
 
 }
@@ -639,12 +639,12 @@ void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 			break;
 
 		case cbProducerConsumerEvents::Run:
-			if (!connected || !running)
+			if (!m_connected || !m_running)
 				return;
 
 			//Returns one packet (samplesPerPacket) of data int I and Q buffers
 			//We want to read enough data to fill producerIbuf and producerQbuf with framesPerBuffer
-			while(running) {
+			while(m_running) {
 				//If init is in progress (locked), wait for it to complete
 				initInProgress.lock();
 
@@ -674,7 +674,7 @@ void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 				}
 #endif
 				if (producerFreeBufPtr == NULL) {
-					if ((producerFreeBufPtr = (CPX *)producerConsumer.AcquireFreeBuffer()) == NULL) {
+					if ((producerFreeBufPtr = (CPX *)m_producerConsumer.AcquireFreeBuffer()) == NULL) {
 						qDebug()<<"No free buffers available.  producerIndex = "<<producerIndex <<
 								  "samplesPerPacket = "<<samplesPerPacket;
 						return;
@@ -729,11 +729,11 @@ void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 					//Process any remaining samples in packet if any
 					producerIndex = 0;
 					producerFreeBufPtr = NULL;
-					producerConsumer.ReleaseFilledBuffer();
+					m_producerConsumer.ReleaseFilledBuffer();
 
 					if (samplesExtra > 0) {
 						//Start a new producer buffer
-						if ((producerFreeBufPtr = (CPX *)producerConsumer.AcquireFreeBuffer()) == NULL) {
+						if ((producerFreeBufPtr = (CPX *)m_producerConsumer.AcquireFreeBuffer()) == NULL) {
 							qDebug()<<"No free buffers available.  producerIndex = "<<producerIndex <<
 									  "samplesPerPacket = "<<samplesPerPacket;
 							return;
@@ -761,22 +761,22 @@ void SDRPlayDevice::consumerWorker(cbProducerConsumerEvents _event)
 		case cbProducerConsumerEvents::Start:
 			break;
 		case cbProducerConsumerEvents::Run:
-			if (!connected || !running)
+			if (!m_connected || !m_running)
 				return;
 
 			//We always want to consume everything we have, producer will eventually block if we're not consuming fast enough
-			while (running && producerConsumer.GetNumFilledBufs() > 0) {
+			while (m_running && m_producerConsumer.GetNumFilledBufs() > 0) {
 				//Wait for data to be available from producer
-				if ((consumerFilledBufferPtr = (CPX *)producerConsumer.AcquireFilledBuffer()) == NULL) {
+				if ((consumerFilledBufferPtr = (CPX *)m_producerConsumer.AcquireFilledBuffer()) == NULL) {
 					//qDebug()<<"No filled buffer available";
 					return;
 				}
 
 				//perform.StartPerformance("ProcessIQ");
-				ProcessIQData(consumerFilledBufferPtr,framesPerBuffer);
+				processIQData(consumerFilledBufferPtr,framesPerBuffer);
 				//perform.StopPerformance(1000);
 				//We don't release a free buffer until ProcessIQData returns because that would also allow inBuffer to be reused
-				producerConsumer.ReleaseFreeBuffer();
+				m_producerConsumer.ReleaseFreeBuffer();
 
 			}
 			break;

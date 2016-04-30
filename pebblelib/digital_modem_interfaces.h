@@ -16,7 +16,7 @@ public:
 	virtual void setSampleRate(int _sampleRate, int _sampleCount) = 0;
 
     //Setup demod mode etc
-	virtual void setDemodMode(DeviceInterface::DEMODMODE _demodMode) = 0;
+	virtual void setDemodMode(DeviceInterface::DemodMode _demodMode) = 0;
 
     //Process samples
 	virtual CPX * processBlock(CPX * in) = 0;

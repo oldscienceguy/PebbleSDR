@@ -53,11 +53,11 @@ void DevicePlugins::findPlugins()
                 //plugin can support multiple similar devices, ie softrock family
                 //Get # devices plugin supports
                 //For each device, create plugin info and SDR with device interface and device #
-				int numDevices = iDeviceInterface->Get(DeviceInterface::PluginNumDevices).toInt();
+				int numDevices = iDeviceInterface->get(DeviceInterface::Key_PluginNumDevices).toInt();
                 for (int i = 0; i<numDevices; i++) {
                     pluginInfo.type = PluginInfo::DEVICE_PLUGIN;
-					pluginInfo.name = iDeviceInterface->Get(DeviceInterface::PluginName,i).toString();
-					pluginInfo.description = iDeviceInterface->Get(DeviceInterface::PluginDescription,i).toString();
+					pluginInfo.name = iDeviceInterface->get(DeviceInterface::Key_PluginName,i).toString();
+					pluginInfo.description = iDeviceInterface->get(DeviceInterface::Key_PluginDescription,i).toString();
                     pluginInfo.fileName = fileName;
                     pluginInfo.deviceNumber  = i;
                     pluginInfo.deviceInterface = iDeviceInterface;

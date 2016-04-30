@@ -31,7 +31,7 @@ public:
 	void setMixer(int m, double f);
 	void setFilter(int lo, int hi);
 	void run(bool r);
-	void setMode(DeviceInterface::DEMODMODE m, int _modeOffset);
+	void setMode(DeviceInterface::DemodMode m, int _modeOffset);
 	//Text is displayed when spectrum is 'off' for now
 	void setMessage(QStringList s);
 	void setSignalSpectrum(SignalSpectrum *s);
@@ -119,7 +119,7 @@ private:
 
 	DisplayMode m_spectrumMode;
 	int m_sampleRate;
-	DeviceInterface::DEMODMODE m_demodMode;
+	DeviceInterface::DemodMode m_demodMode;
 
 	bool m_isRunning;
 	//QString *message;

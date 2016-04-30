@@ -13,20 +13,20 @@ Derived from:
 
 ElektorDevice::ElektorDevice():DeviceInterfaceBase()
 {
-	InitSettings("Elektor");
-	ReadSettings();
+	initSettings("Elektor");
+	readSettings();
 }
 
 ElektorDevice::~ElektorDevice()
 {
 }
 
-bool ElektorDevice::Initialize(cbProcessIQData _callback,
-							   cbProcessBandscopeData _callbackBandscope,
-							   cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
+bool ElektorDevice::initialize(CB_ProcessIQData _callback,
+							   CB_ProcessBandscopeData _callbackBandscope,
+							   CB_ProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
-	DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
-	numProducerBuffers = 50;
+	DeviceInterfaceBase::initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
+	m_numProducerBuffers = 50;
 
 	usbUtil = new USBUtil(USBUtil::FTDI_D2XX);
 
@@ -42,7 +42,7 @@ bool ElektorDevice::Initialize(cbProcessIQData _callback,
 	return true;
 }
 
-bool ElektorDevice::Connect()
+bool ElektorDevice::connectDevice()
 {
 	if (!usbUtil->IsUSBLoaded())
 		return false;
@@ -98,13 +98,13 @@ bool ElektorDevice::Connect()
 	ftPortValue = 0;
 	ftWriteBufferCount = 0;
 
-	connected = true;
+	m_connected = true;
 	return true;
 }
 
-bool ElektorDevice::Disconnect()
+bool ElektorDevice::disconnectDevice()
 {
-	WriteSettings();
+	writeSettings();
 
 	// Close the USB link
 	usbUtil->CloseDevice();
@@ -115,84 +115,84 @@ bool ElektorDevice::Disconnect()
 
 	ftWriteBuffer = NULL;
 
-	connected = false;
+	m_connected = false;
 	return true;
 }
 
-void ElektorDevice::Start()
+void ElektorDevice::startDevice()
 {
-	DeviceInterfaceBase::Start();
+	DeviceInterfaceBase::startDevice();
 }
 
-void ElektorDevice::Stop()
+void ElektorDevice::stopDevice()
 {
-	DeviceInterfaceBase::Stop();
+	DeviceInterfaceBase::stopDevice();
 }
 
-void ElektorDevice::ReadSettings()
+void ElektorDevice::readSettings()
 {
-	DeviceInterfaceBase::ReadSettings();
+	DeviceInterfaceBase::readSettings();
 	//Device specific settings follow
-	ELEKTOR_Low = qSettings->value("Low",150000).toDouble();
-	ELEKTOR_High = qSettings->value("High",30000000).toDouble();
+	ELEKTOR_Low = m_qSettings->value("Low",150000).toDouble();
+	ELEKTOR_High = m_qSettings->value("High",30000000).toDouble();
 
 
 }
 
-void ElektorDevice::WriteSettings()
+void ElektorDevice::writeSettings()
 {
-	DeviceInterfaceBase::WriteSettings();
+	DeviceInterfaceBase::writeSettings();
 	//Device specific settings follow
-	qSettings->setValue("Low",ELEKTOR_Low);
-	qSettings->setValue("High",ELEKTOR_High);
+	m_qSettings->setValue("Low",ELEKTOR_Low);
+	m_qSettings->setValue("High",ELEKTOR_High);
 
-	qSettings->sync();
+	m_qSettings->sync();
 
 }
 
-QVariant ElektorDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _option)
+QVariant ElektorDevice::get(DeviceInterface::StandardKeys _key, QVariant _option)
 {
 	Q_UNUSED(_option);
 
 	switch (_key) {
-		case PluginName:
+		case Key_PluginName:
 			return "Elektor";
 			break;
-		case PluginDescription:
+		case Key_PluginDescription:
 			return "Elektor";
 			break;
-		case DeviceName:
+		case Key_DeviceName:
 			return "Elektor 2007";
-		case StartupFrequency:
+		case Key_StartupFrequency:
 			return 10000000;
-		case HighFrequency:
+		case Key_HighFrequency:
 			return ELEKTOR_High;
-		case LowFrequency:
+		case Key_LowFrequency:
 			return ELEKTOR_Low;
 
 		default:
-			return DeviceInterfaceBase::Get(_key, _option);
+			return DeviceInterfaceBase::get(_key, _option);
 	}
 }
 
-bool ElektorDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, QVariant _option)
+bool ElektorDevice::set(DeviceInterface::StandardKeys _key, QVariant _value, QVariant _option)
 {
 	Q_UNUSED(_option);
 
 	switch (_key) {
-		case DeviceFrequency: {
-			if (SetFrequency(_value.toDouble()) != deviceFrequency)
+		case Key_DeviceFrequency: {
+			if (SetFrequency(_value.toDouble()) != m_deviceFrequency)
 				return true;
 			else
 				return false;
 			break;
 		}
 		default:
-		return DeviceInterfaceBase::Set(_key, _value, _option);
+		return DeviceInterfaceBase::set(_key, _value, _option);
 	}
 }
 
-void ElektorDevice::SetupOptionUi(QWidget *parent)
+void ElektorDevice::setupOptionUi(QWidget *parent)
 {
 	Q_UNUSED(parent);
 	if (optionUi != NULL)
@@ -379,7 +379,7 @@ void ElektorDevice::I2C_Byte(unsigned char byte)
 */
 void ElektorDevice::setInput(int input)
 {
-	if (!connected)
+	if (!m_connected)
 		return;
 
 	if (!usbUtil->IsUSBLoaded())
@@ -412,7 +412,7 @@ To get exact frequency, it seems we need to apply mixer value
 double ElektorDevice::SetFrequency(double fRequested)
 {
 	if (!usbUtil->IsUSBLoaded())
-		return deviceFrequency;
+		return m_deviceFrequency;
 
 	double newFreq;
 	//Sanity check, make sure factors are correct
@@ -421,11 +421,11 @@ double ElektorDevice::SetFrequency(double fRequested)
 	//	return;
 	FindBand(fRequested);
 	if (bandStep == 0)
-		return deviceFrequency; //Reached band limits
+		return m_deviceFrequency; //Reached band limits
 
 	//Find the next higher or lower frequency that's an even multiple of bandStep
 	newFreq = (int)(fRequested / bandStep) * bandStep;
-	if (fRequested != newFreq && fRequested > deviceFrequency)
+	if (fRequested != newFreq && fRequested > m_deviceFrequency)
 	{
 		newFreq += bandStep;
 	}
@@ -650,7 +650,7 @@ int ElektorDevice::getInput()
 */
 void ElektorDevice::setAttenuator(int attenuator)
 {
-	if (!connected)
+	if (!m_connected)
 		return;
 	if (!usbUtil->IsUSBLoaded())
 		return;

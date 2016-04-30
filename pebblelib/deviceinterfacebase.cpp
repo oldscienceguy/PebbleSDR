@@ -8,40 +8,40 @@ DeviceInterfaceBase::DeviceInterfaceBase()
 {
 	pebbleLibGlobal = new PebbleLibGlobal();
 
-	connected = false;
+	m_connected = false;
 	//These are common settings for every device, variables are defined in DeviceInterface
-	startupType = DEFAULTFREQ;
-	userFrequency = 10000000;
-	inputDeviceName = QString();
-	outputDeviceName = QString();
-	sampleRate = 48000;
-	deviceSampleRate = sampleRate;
-	userIQGain = 1.0;
-	iqOrder = IQ;
-	iqBalanceGain = 1.0;
-	iqBalancePhase = 0;
-	iqBalanceEnable = false;
-	lastFreq = 10000000;
-	lastDemodMode = dmAM;
-	lastSpectrumMode = 0;
-	deviceNumber = 0;
-	startupFrequency = 10000000;
-	lowFrequency = 150000;
-	highFrequency = 30000000;
-	startupDemodMode = dmAM;
-	connected = false;
-	running = false;
-	audioInput = NULL;
-	ProcessIQData = NULL;
-	ProcessBandscopeData = NULL;
-	ProcessAudioData = NULL;
-	audioOutputSampleRate = 11025;
-	audioInputBuffer = NULL;
+	m_startupType = ST_DEFAULTFREQ;
+	m_userFrequency = 10000000;
+	m_inputDeviceName = QString();
+	m_outputDeviceName = QString();
+	m_sampleRate = 48000;
+	m_deviceSampleRate = m_sampleRate;
+	m_userIQGain = 1.0;
+	m_iqOrder = IQO_IQ;
+	m_iqBalanceGain = 1.0;
+	m_iqBalancePhase = 0;
+	m_iqBalanceEnable = false;
+	m_lastFreq = 10000000;
+	m_lastDemodMode = dmAM;
+	m_lastSpectrumMode = 0;
+	m_deviceNumber = 0;
+	m_startupFrequency = 10000000;
+	m_lowFrequency = 150000;
+	m_highFrequency = 30000000;
+	m_startupDemodMode = dmAM;
+	m_connected = false;
+	m_running = false;
+	m_audioInput = NULL;
+	processIQData = NULL;
+	processBandscopeData = NULL;
+	processAudioData = NULL;
+	m_audioOutputSampleRate = 11025;
+	m_audioInputBuffer = NULL;
 	//Set normalizeIQ gain by injecting known signal db into device and matching spectrum display
-	normalizeIQGain = 1.0; //Will be overridden by specific devices if needed
-	converterMode = false;
-	converterOffset = 0;
-	decimateFactor = 1;
+	m_normalizeIQGain = 1.0; //Will be overridden by specific devices if needed
+	m_converterMode = false;
+	m_converterOffset = 0;
+	m_decimateFactor = 1;
 }
 
 //Implement pure virtual destructor from interface, otherwise we don't link
@@ -52,91 +52,91 @@ DeviceInterface::~DeviceInterface()
 
 DeviceInterfaceBase::~DeviceInterfaceBase()
 {
-	if (audioInputBuffer != NULL) {
-		delete audioInputBuffer;
-		audioInputBuffer = NULL;
+	if (m_audioInputBuffer != NULL) {
+		delete m_audioInputBuffer;
+		m_audioInputBuffer = NULL;
 	}
 }
 
-bool DeviceInterfaceBase::Initialize(cbProcessIQData _callback,
-									 cbProcessBandscopeData _callbackBandscope,
-									 cbProcessAudioData _callbackAudio,
+bool DeviceInterfaceBase::initialize(CB_ProcessIQData _callback,
+									 CB_ProcessBandscopeData _callbackBandscope,
+									 CB_ProcessAudioData _callbackAudio,
 									 quint16 _framesPerBuffer)
 {
-	ProcessIQData = _callback;
-	ProcessBandscopeData = _callbackBandscope;
-	ProcessAudioData = _callbackAudio;
+	processIQData = _callback;
+	processBandscopeData = _callbackBandscope;
+	processAudioData = _callbackAudio;
 	framesPerBuffer = _framesPerBuffer;
-	connected = false;
+	m_connected = false;
 
 	using namespace std::placeholders;
-	if (Get(DeviceInterface::DeviceType).toInt() == AUDIO_IQ_DEVICE) {
-		audioInput = Audio::Factory(std::bind(&DeviceInterfaceBase::AudioProducer, this, _1, _2), framesPerBuffer);
+	if (get(DeviceInterface::Key_DeviceType).toInt() == DT_AUDIO_IQ_DEVICE) {
+		m_audioInput = Audio::Factory(std::bind(&DeviceInterfaceBase::audioProducer, this, _1, _2), framesPerBuffer);
 	}
 
-	audioInputBuffer = CPX::memalign(framesPerBuffer);
+	m_audioInputBuffer = CPX::memalign(framesPerBuffer);
 
 	return true;
 }
 
-bool DeviceInterfaceBase::Connect()
+bool DeviceInterfaceBase::connectDevice()
 {
 	return true;
 }
 
-bool DeviceInterfaceBase::Disconnect()
+bool DeviceInterfaceBase::disconnectDevice()
 {
 	return true;
 }
 
-void DeviceInterfaceBase::Start()
+void DeviceInterfaceBase::startDevice()
 {
-	if (Get(DeviceInterface::DeviceType).toInt() == AUDIO_IQ_DEVICE) {
+	if (get(DeviceInterface::Key_DeviceType).toInt() == DT_AUDIO_IQ_DEVICE) {
 		//We handle audio
-		audioInput->StartInput(inputDeviceName, sampleRate);
+		m_audioInput->StartInput(m_inputDeviceName, m_sampleRate);
 	}
 	return;
 }
 
-void DeviceInterfaceBase::Stop()
+void DeviceInterfaceBase::stopDevice()
 {
-	if (Get(DeviceInterface::DeviceType).toInt() == AUDIO_IQ_DEVICE) {
-		if (audioInput != NULL)
-			audioInput->Stop();
+	if (get(DeviceInterface::Key_DeviceType).toInt() == DT_AUDIO_IQ_DEVICE) {
+		if (m_audioInput != NULL)
+			m_audioInput->Stop();
 	}
 
 	return;
 }
 
-void DeviceInterfaceBase::SetupOptionUi(QWidget *parent)
+void DeviceInterfaceBase::setupOptionUi(QWidget *parent)
 {
 	Q_UNUSED(parent);
 	return;
 }
 
-bool DeviceInterfaceBase::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _arg)
+bool DeviceInterfaceBase::command(DeviceInterface::StandardCommands _cmd, QVariant _arg)
 {
 	switch (_cmd) {
-		case CmdConnect:
+		case Cmd_Connect:
 			//Transition
-			return this->Connect();
-		case CmdDisconnect:
-			return this->Disconnect();
-		case CmdStart:
-			this->Start();
+			return this->connectDevice();
+		case Cmd_Disconnect:
+			return this->disconnectDevice();
+		case Cmd_Start:
+			this->startDevice();
 			return true;
-		case CmdStop:
-			this->Stop();
+		case Cmd_Stop:
+			this->stopDevice();
 			return true;
-		case CmdReadSettings:
-			this->ReadSettings();
+		case Cmd_ReadSettings:
+			this->readSettings();
 			return true;
-		case CmdWriteSettings:
-			this->WriteSettings();
+		case Cmd_WriteSettings:
+			this->writeSettings();
 			return true;
-		case CmdDisplayOptionUi:						//Arg is QWidget *parent
+		case Cmd_DisplayOptionUi:						//Arg is QWidget *parent
 			//Use QVariant::fromValue() to pass, and value<type passed>() to get back
-			this->SetupOptionUi(_arg.value<QWidget*>());
+			this->setupOptionUi(_arg.value<QWidget*>());
 			return true;
 		default:
 			return false;
@@ -145,150 +145,150 @@ bool DeviceInterfaceBase::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVari
 }
 
 
-QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, QVariant _option) {
+QVariant DeviceInterfaceBase::get(StandardKeys _key, QVariant _option) {
 	Q_UNUSED(_option);
 	switch (_key) {
-		case PluginName:
+		case Key_PluginName:
 			break;
-		case PluginDescription:
+		case Key_PluginDescription:
 			break;
-		case PluginNumDevices:
+		case Key_PluginNumDevices:
 			return 1;
 			break;
-		case DeviceName:
+		case Key_DeviceName:
 			break;
-		case DeviceDescription:
+		case Key_DeviceDescription:
 			break;
-		case DeviceNumber:
-			return deviceNumber;
+		case Key_DeviceNumber:
+			return m_deviceNumber;
 			break;
-		case DeviceType:
-			return AUDIO_IQ_DEVICE;
+		case Key_DeviceType:
+			return DT_AUDIO_IQ_DEVICE;
 			break;
 		//Applications sets deviceSampleRate, which is the hardware sample rate
 		//Device returns sampleRate, which may be decimated by the device
 		//SampleRate is read only and defaults to deviceSampleRate
-		case SampleRate:
-			return deviceSampleRate;
+		case Key_SampleRate:
+			return m_deviceSampleRate;
 			break;
-		case DeviceSampleRate:
-			return deviceSampleRate;
+		case Key_DeviceSampleRate:
+			return m_deviceSampleRate;
 			break;
-		case DeviceSampleRates:
+		case Key_DeviceSampleRates:
 			//We shouldn't know this, depends on audio device connected to receiver
 			return QStringList()<<"48000"<<"96000"<<"192000";
 			break;
-		case DeviceFrequency:
-			return deviceFrequency;
+		case Key_DeviceFrequency:
+			return m_deviceFrequency;
 			break;
-		case DeviceHealthValue:
+		case Key_DeviceHealthValue:
 			return 100; //Default is perfect health
-		case DeviceHealthString:
+		case Key_DeviceHealthString:
 			return "Device running normally";
-		case InputDeviceName:
-			return inputDeviceName;
+		case Key_InputDeviceName:
+			return m_inputDeviceName;
 			break;
-		case OutputDeviceName:
-			return outputDeviceName;
+		case Key_OutputDeviceName:
+			return m_outputDeviceName;
 			break;
-		case HighFrequency:
+		case Key_HighFrequency:
 			//Assume DC to daylight since we have no idea what converter is doing
-			if (converterMode)
+			if (m_converterMode)
 				return 6000000000.0;
 			else
-				return highFrequency;
-		case LowFrequency:
+				return m_highFrequency;
+		case Key_LowFrequency:
 			//Assume DC to daylight since we have no idea what converter is doing
-			if (converterMode)
+			if (m_converterMode)
 				return 0;
 			else
-				return lowFrequency;
-		case DeviceFreqCorrectionPpm:
+				return m_lowFrequency;
+		case Key_DeviceFreqCorrectionPpm:
 			return 0;
 			break;
-		case IQGain:
-			return userIQGain;
+		case Key_IQGain:
+			return m_userIQGain;
 			break;
-		case StartupType:
-			return startupType;
+		case Key_StartupType:
+			return m_startupType;
 			break;
-		case StartupDemodMode:
-			return startupDemodMode;
-		case StartupSpectrumMode:
+		case Key_StartupDemodMode:
+			return m_startupDemodMode;
+		case Key_StartupSpectrumMode:
 			break;
-		case StartupFrequency:
-			return startupFrequency;
-		case LastDemodMode:
-			return lastDemodMode;
+		case Key_StartupFrequency:
+			return m_startupFrequency;
+		case Key_LastDemodMode:
+			return m_lastDemodMode;
 			break;
-		case LastSpectrumMode:
-			return lastSpectrumMode;
+		case Key_LastSpectrumMode:
+			return m_lastSpectrumMode;
 			break;
-		case LastFrequency:
+		case Key_LastFrequency:
 			//If freq is outside of mode we are in return default
-			if (lastFreq > Get(DeviceInterface::HighFrequency).toDouble() || lastFreq < Get(DeviceInterface::LowFrequency).toDouble())
-				return Get(DeviceInterface::StartupFrequency).toDouble();
+			if (m_lastFreq > get(DeviceInterface::Key_HighFrequency).toDouble() || m_lastFreq < get(DeviceInterface::Key_LowFrequency).toDouble())
+				return get(DeviceInterface::Key_StartupFrequency).toDouble();
 			else
-				return lastFreq;
+				return m_lastFreq;
 			break;
-		case UserDemodMode:
+		case Key_UserDemodMode:
 			break;
-		case UserSpectrumMode:
+		case Key_UserSpectrumMode:
 			break;
-		case UserFrequency:
-			return userFrequency;
+		case Key_UserFrequency:
+			return m_userFrequency;
 			break;
-		case IQOrder:
-			return iqOrder;
+		case Key_IQOrder:
+			return m_iqOrder;
 			break;
-		case IQBalanceEnabled:
-			return iqBalanceEnable;
+		case Key_IQBalanceEnabled:
+			return m_iqBalanceEnable;
 			break;
-		case IQBalanceGain:
-			return iqBalanceGain;
+		case Key_IQBalanceGain:
+			return m_iqBalanceGain;
 			break;
-		case IQBalancePhase:
-			return iqBalancePhase;
+		case Key_IQBalancePhase:
+			return m_iqBalancePhase;
 			break;
-		case AudioOutputSampleRate:
-			return audioOutputSampleRate;
+		case Key_AudioOutputSampleRate:
+			return m_audioOutputSampleRate;
 			break;
-		case DeviceDemodMode:		//RW quint16 enum DeviceInterface::DEMODMODE
+		case Key_DeviceDemodMode:		//RW quint16 enum DeviceInterface::DEMODMODE
 			return 0;
 			break;
-		case DeviceOutputGain:		//RW quint16
+		case Key_DeviceOutputGain:		//RW quint16
 			return 0;
 			break;
-		case DeviceFilter:			//RW QString "lowFilter:highFilter"
+		case Key_DeviceFilter:			//RW QString "lowFilter:highFilter"
 			return "-2000:2000";
 			break;
-		case DeviceAGC:				//RW quint16
+		case Key_DeviceAGC:				//RW quint16
 			return 0;
 			break;
-		case DeviceANF:				//RW quint16
+		case Key_DeviceANF:				//RW quint16
 			return 0;
 			break;
-		case DeviceNB:				//RW quint16
+		case Key_DeviceNB:				//RW quint16
 			return 0;
 			break;
-		case DeviceSlave:			//RO bool true if device is controled by somthing other than Pebble
+		case Key_DeviceSlave:			//RO bool true if device is controled by somthing other than Pebble
 			return false;
-		case SettingsFile:
-			if (qSettings != NULL)
-				return qSettings->fileName();
+		case Key_SettingsFile:
+			if (m_qSettings != NULL)
+				return m_qSettings->fileName();
 			return false;
-		case ConverterMode:
-			return converterMode;
-		case ConverterOffset:
-			return converterOffset;
-		case Setting:
-			return qSettings->value(_option.toString());
+		case Key_ConverterMode:
+			return m_converterMode;
+		case Key_ConverterOffset:
+			return m_converterOffset;
+		case Key_Setting:
+			return m_qSettings->value(_option.toString());
 			break;
-		case DecimateFactor:
-			return decimateFactor;
+		case Key_DecimateFactor:
+			return m_decimateFactor;
 			break;
-		case RemoveDC:
-			return removeDC;
+		case Key_RemoveDC:
+			return m_removeDC;
 			break;
 		default:
 			break;
@@ -296,137 +296,137 @@ QVariant DeviceInterfaceBase::Get(STANDARD_KEYS _key, QVariant _option) {
 	return QVariant();
 }
 
-bool DeviceInterfaceBase::Set(STANDARD_KEYS _key, QVariant _value, QVariant _option) {
+bool DeviceInterfaceBase::set(StandardKeys _key, QVariant _value, QVariant _option) {
 	Q_UNUSED(_value);
 	Q_UNUSED(_option);
 	switch (_key) {
-		case PluginName:
+		case Key_PluginName:
 			Q_UNREACHABLE(); //Read only key
 			break;
-		case PluginDescription:
+		case Key_PluginDescription:
 			Q_UNREACHABLE();
 			break;
-		case PluginNumDevices:
+		case Key_PluginNumDevices:
 			Q_UNREACHABLE();
 			break;
-		case DeviceName:
+		case Key_DeviceName:
 			Q_UNREACHABLE();
 			break;
-		case DeviceDescription:
+		case Key_DeviceDescription:
 			Q_UNREACHABLE();
 			break;
-		case DeviceNumber:
-			deviceNumber = _value.toInt();
+		case Key_DeviceNumber:
+			m_deviceNumber = _value.toInt();
 			break;
-		case DeviceType:
+		case Key_DeviceType:
 			Q_UNREACHABLE();
 			break;
 		//SampleRate is read only and returned by device based on deviceSampleRate
-		case SampleRate:
+		case Key_SampleRate:
 			Q_UNREACHABLE();
 			break;
-		case DeviceSampleRate:
-			deviceSampleRate = _value.toUInt();
+		case Key_DeviceSampleRate:
+			m_deviceSampleRate = _value.toUInt();
 			break;
-		case DeviceSampleRates:
+		case Key_DeviceSampleRates:
 			Q_UNREACHABLE();
 			break;
-		case DeviceFrequency:
+		case Key_DeviceFrequency:
 			Q_UNREACHABLE(); //Must be handled by device
 			break;
-		case InputDeviceName:
-			inputDeviceName = _value.toString();
+		case Key_InputDeviceName:
+			m_inputDeviceName = _value.toString();
 			break;
-		case OutputDeviceName:
-			outputDeviceName = _value.toString();
+		case Key_OutputDeviceName:
+			m_outputDeviceName = _value.toString();
 			break;
-		case HighFrequency:
+		case Key_HighFrequency:
 			Q_UNREACHABLE();
 			break;
-		case LowFrequency:
+		case Key_LowFrequency:
 			Q_UNREACHABLE();
 			break;
-		case DeviceFreqCorrectionPpm:
+		case Key_DeviceFreqCorrectionPpm:
 			break;
-		case IQGain:
-			userIQGain = _value.toDouble();
+		case Key_IQGain:
+			m_userIQGain = _value.toDouble();
 			break;
-		case StartupType:
-			startupType = (STARTUP_TYPE)_value.toInt();
+		case Key_StartupType:
+			m_startupType = (StartupType)_value.toInt();
 			break;
-		case StartupDemodMode:
+		case Key_StartupDemodMode:
 			Q_UNREACHABLE();
 			break;
-		case StartupSpectrumMode:
+		case Key_StartupSpectrumMode:
 			Q_UNREACHABLE();
 			break;
-		case StartupFrequency:
+		case Key_StartupFrequency:
 			Q_UNREACHABLE();
 			break;
-		case LastDemodMode:
-			lastDemodMode = _value.toInt();
+		case Key_LastDemodMode:
+			m_lastDemodMode = _value.toInt();
 			break;
-		case LastSpectrumMode:
-			lastSpectrumMode = _value.toInt();
+		case Key_LastSpectrumMode:
+			m_lastSpectrumMode = _value.toInt();
 			break;
-		case LastFrequency:
-			lastFreq = _value.toDouble();
+		case Key_LastFrequency:
+			m_lastFreq = _value.toDouble();
 			break;
-		case UserDemodMode:
+		case Key_UserDemodMode:
 			Q_UNREACHABLE(); //Future
 			break;
-		case UserSpectrumMode:
+		case Key_UserSpectrumMode:
 			Q_UNREACHABLE(); //Future
 			break;
-		case UserFrequency:
-			userFrequency = _value.toDouble();
+		case Key_UserFrequency:
+			m_userFrequency = _value.toDouble();
 			break;
-		case IQOrder:
-			iqOrder = (IQORDER)_value.toInt();
+		case Key_IQOrder:
+			m_iqOrder = (IQOrder)_value.toInt();
 			break;
-		case IQBalanceEnabled:
-			iqBalanceEnable = _value.toBool();
+		case Key_IQBalanceEnabled:
+			m_iqBalanceEnable = _value.toBool();
 			break;
-		case IQBalanceGain:
-			iqBalanceGain = _value.toDouble();
+		case Key_IQBalanceGain:
+			m_iqBalanceGain = _value.toDouble();
 			break;
-		case IQBalancePhase:
-			iqBalancePhase = _value.toDouble();
+		case Key_IQBalancePhase:
+			m_iqBalancePhase = _value.toDouble();
 			break;
-		case AudioOutputSampleRate:
+		case Key_AudioOutputSampleRate:
 			Q_UNREACHABLE();
 			break;
-		case DeviceDemodMode:		//RW quint16 enum DeviceInterface::DEMODMODE
+		case Key_DeviceDemodMode:		//RW quint16 enum DeviceInterface::DEMODMODE
 			break;
-		case DeviceOutputGain:		//RW quint16
+		case Key_DeviceOutputGain:		//RW quint16
 			break;
-		case DeviceFilter:			//RW QString "lowFilter:highFilter"
+		case Key_DeviceFilter:			//RW QString "lowFilter:highFilter"
 			break;
-		case DeviceAGC:				//RW quint16
+		case Key_DeviceAGC:				//RW quint16
 			break;
-		case DeviceANF:				//RW quint16
+		case Key_DeviceANF:				//RW quint16
 			break;
-		case DeviceNB:				//RW quint16
+		case Key_DeviceNB:				//RW quint16
 			break;
-		case DeviceSlave:			//RO bool true if device is controled by somthing other than Pebble
+		case Key_DeviceSlave:			//RO bool true if device is controled by somthing other than Pebble
 			Q_UNREACHABLE();
 			break;
-		case ConverterMode:
-			converterMode = _value.toBool();
+		case Key_ConverterMode:
+			m_converterMode = _value.toBool();
 			break;
-		case ConverterOffset:
-			converterOffset = _value.toDouble();
+		case Key_ConverterOffset:
+			m_converterOffset = _value.toDouble();
 			break;
-		case Setting:
-			if (qSettings == NULL)
+		case Key_Setting:
+			if (m_qSettings == NULL)
 				return false;
-			qSettings->setValue(_value.toString(), _option);
+			m_qSettings->setValue(_value.toString(), _option);
 			break;
-		case DecimateFactor:
-			decimateFactor = _value.toUInt();
+		case Key_DecimateFactor:
+			m_decimateFactor = _value.toUInt();
 			break;
-		case RemoveDC:
-			removeDC = _value.toBool();
+		case Key_RemoveDC:
+			m_removeDC = _value.toBool();
 			break;
 		default:
 			break;
@@ -436,21 +436,21 @@ bool DeviceInterfaceBase::Set(STANDARD_KEYS _key, QVariant _value, QVariant _opt
 
 //Settings shared by all devices
 //Set defaults first, then call ReadSettings to handle initial ini file creation
-void DeviceInterfaceBase::ReadSettings()
+void DeviceInterfaceBase::readSettings()
 {
 	//Set up defaults, specific devices can override by setting inputDeviceName and outputDeviceName before calling ReadSettings()
-	if (outputDeviceName.isEmpty()) {
+	if (m_outputDeviceName.isEmpty()) {
 #ifdef USE_QT_AUDIO
-		outputDeviceName = "Built-in Output";
+		m_outputDeviceName = "Built-in Output";
 #endif
 #ifdef USE_PORT_AUDIO
 		outputDeviceName = "Core Audio:Built-in Output";
 #endif
 
 	}
-	if (inputDeviceName.isEmpty()) {
+	if (m_inputDeviceName.isEmpty()) {
 #ifdef USE_QT_AUDIO
-		inputDeviceName = "Built-in Microphone";
+		m_inputDeviceName = "Built-in Microphone";
 #endif
 #ifdef USE_PORT_AUDIO
 		inputDeviceName = "CoreAudio:Built-in Microphone";
@@ -458,72 +458,72 @@ void DeviceInterfaceBase::ReadSettings()
 
 	}
 	//These are common settings for every device, variables are defined in DeviceInterface
-	startupType = (STARTUP_TYPE)qSettings->value("StartupType", startupType).toInt();
-	userFrequency = qSettings->value("UserFrequency", userFrequency).toDouble();
+	m_startupType = (StartupType)m_qSettings->value("StartupType", m_startupType).toInt();
+	m_userFrequency = m_qSettings->value("UserFrequency", m_userFrequency).toDouble();
 	//Allow the device to specify a fixed inputDeviceName, see rfspacedevice for example
-	inputDeviceName = qSettings->value("InputDeviceName", inputDeviceName).toString();
-	outputDeviceName = qSettings->value("OutputDeviceName", outputDeviceName).toString();
+	m_inputDeviceName = m_qSettings->value("InputDeviceName", m_inputDeviceName).toString();
+	m_outputDeviceName = m_qSettings->value("OutputDeviceName", m_outputDeviceName).toString();
 	//sampleRate is returned by device and not saved
 	//sampleRate = qSettings->value("SampleRate", sampleRate).toUInt();
-	deviceSampleRate = qSettings->value("DeviceSampleRate", deviceSampleRate).toUInt();
+	m_deviceSampleRate = m_qSettings->value("DeviceSampleRate", m_deviceSampleRate).toUInt();
 	//Default sampleRate to deviceSampleRate for compatibility, device will override if necessary
-	sampleRate = deviceSampleRate;
-	userIQGain = qSettings->value("IQGain",userIQGain).toDouble();
-	iqOrder = (IQORDER)qSettings->value("IQOrder", iqOrder).toInt();
-	iqBalanceGain = qSettings->value("IQBalanceGain",iqBalanceGain).toDouble();
-	iqBalancePhase = qSettings->value("IQBalancePhase",iqBalancePhase).toDouble();
-	iqBalanceEnable = qSettings->value("IQBalanceEnable",iqBalanceEnable).toBool();
-	lastFreq = qSettings->value("LastFreq", lastFreq).toDouble();
-	lastDemodMode = qSettings->value("LastDemodMode",lastDemodMode).toInt();
-	lastSpectrumMode = qSettings->value("LastSpectrumMode",lastSpectrumMode).toInt();
-	deviceNumber = qSettings->value("DeviceNumber",deviceNumber).toInt();
-	startupFrequency = qSettings->value("StartupFrequency",startupFrequency).toDouble();
-	lowFrequency = qSettings->value("LowFrequency",lowFrequency).toDouble();
-	highFrequency = qSettings->value("HighFrequency",highFrequency).toDouble();
-	startupDemodMode = qSettings->value("StartupDemodMode",startupDemodMode).toInt();
-	converterMode = qSettings->value("ConverterMode", false).toBool();
-	converterOffset = qSettings->value("ConverterOffset", 0).toDouble();
-	decimateFactor = qSettings->value("DecimateFactor",decimateFactor).toUInt();
-	removeDC = qSettings->value("RemoveDC",false).toBool();
+	m_sampleRate = m_deviceSampleRate;
+	m_userIQGain = m_qSettings->value("IQGain",m_userIQGain).toDouble();
+	m_iqOrder = (IQOrder)m_qSettings->value("IQOrder", m_iqOrder).toInt();
+	m_iqBalanceGain = m_qSettings->value("IQBalanceGain",m_iqBalanceGain).toDouble();
+	m_iqBalancePhase = m_qSettings->value("IQBalancePhase",m_iqBalancePhase).toDouble();
+	m_iqBalanceEnable = m_qSettings->value("IQBalanceEnable",m_iqBalanceEnable).toBool();
+	m_lastFreq = m_qSettings->value("LastFreq", m_lastFreq).toDouble();
+	m_lastDemodMode = m_qSettings->value("LastDemodMode",m_lastDemodMode).toInt();
+	m_lastSpectrumMode = m_qSettings->value("LastSpectrumMode",m_lastSpectrumMode).toInt();
+	m_deviceNumber = m_qSettings->value("DeviceNumber",m_deviceNumber).toInt();
+	m_startupFrequency = m_qSettings->value("StartupFrequency",m_startupFrequency).toDouble();
+	m_lowFrequency = m_qSettings->value("LowFrequency",m_lowFrequency).toDouble();
+	m_highFrequency = m_qSettings->value("HighFrequency",m_highFrequency).toDouble();
+	m_startupDemodMode = m_qSettings->value("StartupDemodMode",m_startupDemodMode).toInt();
+	m_converterMode = m_qSettings->value("ConverterMode", false).toBool();
+	m_converterOffset = m_qSettings->value("ConverterOffset", 0).toDouble();
+	m_decimateFactor = m_qSettings->value("DecimateFactor",m_decimateFactor).toUInt();
+	m_removeDC = m_qSettings->value("RemoveDC",false).toBool();
 }
 
-void DeviceInterfaceBase::WriteSettings()
+void DeviceInterfaceBase::writeSettings()
 {
-	qSettings->setValue("StartupType",startupType);
-	qSettings->setValue("UserFrequency",userFrequency);
-	qSettings->setValue("InputDeviceName", inputDeviceName);
-	qSettings->setValue("OutputDeviceName", outputDeviceName);
+	m_qSettings->setValue("StartupType",m_startupType);
+	m_qSettings->setValue("UserFrequency",m_userFrequency);
+	m_qSettings->setValue("InputDeviceName", m_inputDeviceName);
+	m_qSettings->setValue("OutputDeviceName", m_outputDeviceName);
 	//sampleRate is returned by device and not saved
 	//qSettings->setValue("SampleRate",sampleRate);
-	qSettings->setValue("DeviceSampleRate",deviceSampleRate);
-	qSettings->setValue("IQGain",userIQGain);
-	qSettings->setValue("IQOrder", iqOrder);
-	qSettings->setValue("IQBalanceGain", iqBalanceGain);
-	qSettings->setValue("IQBalancePhase", iqBalancePhase);
-	qSettings->setValue("IQBalanceEnable", iqBalanceEnable);
-	qSettings->setValue("LastFreq",lastFreq);
-	qSettings->setValue("LastDemodMode",lastDemodMode);
-	qSettings->setValue("LastSpectrumMode",lastSpectrumMode);
-	qSettings->setValue("DeviceNumber",deviceNumber);
-	qSettings->setValue("StartupFrequency",startupFrequency);
-	qSettings->setValue("LowFrequency",lowFrequency);
-	qSettings->setValue("HighFrequency",highFrequency);
-	qSettings->setValue("StartupDemodMode",startupDemodMode);
-	qSettings->setValue("ConverterMode",converterMode);
-	qSettings->setValue("ConverterOffset",converterOffset);
-	qSettings->setValue("DecimateFactor",decimateFactor);
-	qSettings->setValue("RemoveDC",removeDC);
+	m_qSettings->setValue("DeviceSampleRate",m_deviceSampleRate);
+	m_qSettings->setValue("IQGain",m_userIQGain);
+	m_qSettings->setValue("IQOrder", m_iqOrder);
+	m_qSettings->setValue("IQBalanceGain", m_iqBalanceGain);
+	m_qSettings->setValue("IQBalancePhase", m_iqBalancePhase);
+	m_qSettings->setValue("IQBalanceEnable", m_iqBalanceEnable);
+	m_qSettings->setValue("LastFreq",m_lastFreq);
+	m_qSettings->setValue("LastDemodMode",m_lastDemodMode);
+	m_qSettings->setValue("LastSpectrumMode",m_lastSpectrumMode);
+	m_qSettings->setValue("DeviceNumber",m_deviceNumber);
+	m_qSettings->setValue("StartupFrequency",m_startupFrequency);
+	m_qSettings->setValue("LowFrequency",m_lowFrequency);
+	m_qSettings->setValue("HighFrequency",m_highFrequency);
+	m_qSettings->setValue("StartupDemodMode",m_startupDemodMode);
+	m_qSettings->setValue("ConverterMode",m_converterMode);
+	m_qSettings->setValue("ConverterOffset",m_converterOffset);
+	m_qSettings->setValue("DecimateFactor",m_decimateFactor);
+	m_qSettings->setValue("RemoveDC",m_removeDC);
 }
 
 
 //Should be a common function
-void DeviceInterfaceBase::InitSettings(QString fname)
+void DeviceInterfaceBase::initSettings(QString fname)
 {
 	//Use ini files to avoid any registry problems or install/uninstall
 	//Scope::UserScope puts file C:\Users\...\AppData\Roaming\N1DDY
 	//Scope::SystemScope puts file c:\ProgramData\n1ddy
 
-	qSettings = new QSettings(pebbleLibGlobal->appDirPath + "/PebbleData/" + fname +".ini",QSettings::IniFormat);
+	m_qSettings = new QSettings(pebbleLibGlobal->appDirPath + "/PebbleData/" + fname +".ini",QSettings::IniFormat);
 
 }
 
@@ -533,23 +533,23 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, float I, float Q)
 {
 	double tmp;
 	//Normalize and apply gain
-	cpx->re = I * userIQGain * normalizeIQGain;
-	cpx->im = Q * userIQGain * normalizeIQGain;
+	cpx->re = I * m_userIQGain * m_normalizeIQGain;
+	cpx->im = Q * m_userIQGain * m_normalizeIQGain;
 
 	//Configure IQ order if not default
-	switch(iqOrder) {
-		case DeviceInterface::IQ:
+	switch(m_iqOrder) {
+		case DeviceInterface::IQO_IQ:
 			//No change, this is the default order
 			break;
-		case DeviceInterface::QI:
+		case DeviceInterface::IQO_QI:
 			tmp = cpx->re;
 			cpx->re = cpx->im;
 			cpx->im = tmp;
 			break;
-		case DeviceInterface::IONLY:
+		case DeviceInterface::IQO_IONLY:
 			cpx->im = cpx->re;
 			break;
-		case DeviceInterface::QONLY:
+		case DeviceInterface::IQO_QONLY:
 			cpx->re = cpx->im;
 			break;
 	}
@@ -560,23 +560,23 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, qint16 I, qint16 Q)
 {
 	double tmp;
 	//Normalize and apply gain
-	cpx->re = (I / 32768.0) * userIQGain * normalizeIQGain;
-	cpx->im = (Q / 32768.0) * userIQGain * normalizeIQGain;
+	cpx->re = (I / 32768.0) * m_userIQGain * m_normalizeIQGain;
+	cpx->im = (Q / 32768.0) * m_userIQGain * m_normalizeIQGain;
 
 	//Configure IQ order if not default
-	switch(iqOrder) {
-		case DeviceInterface::IQ:
+	switch(m_iqOrder) {
+		case DeviceInterface::IQO_IQ:
 			//No change, this is the default order
 			break;
-		case DeviceInterface::QI:
+		case DeviceInterface::IQO_QI:
 			tmp = cpx->re;
 			cpx->re = cpx->im;
 			cpx->im = tmp;
 			break;
-		case DeviceInterface::IONLY:
+		case DeviceInterface::IQO_IONLY:
 			cpx->im = cpx->re;
 			break;
-		case DeviceInterface::QONLY:
+		case DeviceInterface::IQO_QONLY:
 			cpx->re = cpx->im;
 			break;
 	}
@@ -591,23 +591,23 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, quint8 I, quint8 Q)
 {
 	double tmp;
 	//Normalize and apply gain
-	cpx->re = ((I - 128) / 128.0) * userIQGain * normalizeIQGain;
-	cpx->im = ((Q - 128) / 128.0) * userIQGain * normalizeIQGain;
+	cpx->re = ((I - 128) / 128.0) * m_userIQGain * m_normalizeIQGain;
+	cpx->im = ((Q - 128) / 128.0) * m_userIQGain * m_normalizeIQGain;
 
 	//Configure IQ order if not default
-	switch(iqOrder) {
-		case DeviceInterface::IQ:
+	switch(m_iqOrder) {
+		case DeviceInterface::IQO_IQ:
 			//No change, this is the default order
 			break;
-		case DeviceInterface::QI:
+		case DeviceInterface::IQO_QI:
 			tmp = cpx->re;
 			cpx->re = cpx->im;
 			cpx->im = tmp;
 			break;
-		case DeviceInterface::IONLY:
+		case DeviceInterface::IQO_IONLY:
 			cpx->im = cpx->re;
 			break;
-		case DeviceInterface::QONLY:
+		case DeviceInterface::IQO_QONLY:
 			cpx->re = cpx->im;
 			break;
 	}
@@ -622,23 +622,23 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, qint8 I, qint8 Q)
 {
 	double tmp;
 	//Normalize and apply gain
-	cpx->re = (I / 128.0) * userIQGain * normalizeIQGain;
-	cpx->im = (Q / 128.0) * userIQGain * normalizeIQGain;
+	cpx->re = (I / 128.0) * m_userIQGain * m_normalizeIQGain;
+	cpx->im = (Q / 128.0) * m_userIQGain * m_normalizeIQGain;
 
 	//Configure IQ order if not default
-	switch(iqOrder) {
-		case DeviceInterface::IQ:
+	switch(m_iqOrder) {
+		case DeviceInterface::IQO_IQ:
 			//No change, this is the default order
 			break;
-		case DeviceInterface::QI:
+		case DeviceInterface::IQO_QI:
 			tmp = cpx->re;
 			cpx->re = cpx->im;
 			cpx->im = tmp;
 			break;
-		case DeviceInterface::IONLY:
+		case DeviceInterface::IQO_IONLY:
 			cpx->im = cpx->re;
 			break;
-		case DeviceInterface::QONLY:
+		case DeviceInterface::IQO_QONLY:
 			cpx->re = cpx->im;
 			break;
 	}
@@ -648,33 +648,33 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, qint8 I, qint8 Q)
 void DeviceInterfaceBase::normalizeIQ(CPX* _out, CPX8* _in, quint32 _numSamples, bool _reverse)
 {
 	//Runs at full device sample rate, optimize loop invariants like scale, object copies and switches
-	double scale = 1/128.0 * userIQGain * normalizeIQGain;
+	double scale = 1/128.0 * m_userIQGain * m_normalizeIQGain;
 	//Only check iqOrder once per loop instead of every sample
-	IQORDER tmpOrder = iqOrder;
-	if (iqOrder == IQ && _reverse)
-		tmpOrder = QI;
-	else if (iqOrder == QI && _reverse)
-		tmpOrder = IQ;
+	IQOrder tmpOrder = m_iqOrder;
+	if (m_iqOrder == IQO_IQ && _reverse)
+		tmpOrder = IQO_QI;
+	else if (m_iqOrder == IQO_QI && _reverse)
+		tmpOrder = IQO_IQ;
 	switch(tmpOrder) {
-		case DeviceInterface::IQ:
+		case DeviceInterface::IQO_IQ:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].re = _in[i].re * scale;
 				_out[i].im = _in[i].im * scale;
 			}
 			break;
-		case DeviceInterface::QI:
+		case DeviceInterface::IQO_QI:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].re = _in[i].im * scale;
 				_out[i].im = _in[i].re * scale;
 			}
 			break;
-		case DeviceInterface::IONLY:
+		case DeviceInterface::IQO_IONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].re = _in[i].re * scale;
 				_out[i].im = _out[i].re;
 			}
 			break;
-		case DeviceInterface::QONLY:
+		case DeviceInterface::IQO_QONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].im = _in[i].im * scale;
 				_out[i].re = _out[i].im;
@@ -686,35 +686,35 @@ void DeviceInterfaceBase::normalizeIQ(CPX* _out, CPX8* _in, quint32 _numSamples,
 void DeviceInterfaceBase::normalizeIQ(CPX* _out, CPXU8* _in, quint32 _numSamples, bool _reverse)
 {
 	//Runs at full device sample rate, optimize loop invariants like scale, object copies and switches
-	double scale = 1/128.0 * userIQGain * normalizeIQGain;
+	double scale = 1/128.0 * m_userIQGain * m_normalizeIQGain;
 	//(I - 128) / 128.0) * userIQGain * normalizeIQGain
 	//Only check iqOrder once per loop instead of every sample
-	IQORDER tmpOrder = iqOrder;
-	if (iqOrder == IQ && _reverse)
-		tmpOrder = QI;
-	else if (iqOrder == QI && _reverse)
-		tmpOrder = IQ;
+	IQOrder tmpOrder = m_iqOrder;
+	if (m_iqOrder == IQO_IQ && _reverse)
+		tmpOrder = IQO_QI;
+	else if (m_iqOrder == IQO_QI && _reverse)
+		tmpOrder = IQO_IQ;
 
 	switch(tmpOrder) {
-		case DeviceInterface::IQ:
+		case DeviceInterface::IQO_IQ:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].re = (_in[i].re - 128.0) * scale;
 				_out[i].im = (_in[i].im - 128.0) * scale;
 			}
 			break;
-		case DeviceInterface::QI:
+		case DeviceInterface::IQO_QI:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].re = (_in[i].im - 128.0) * scale;
 				_out[i].im = (_in[i].re - 128.0) * scale;
 			}
 			break;
-		case DeviceInterface::IONLY:
+		case DeviceInterface::IQO_IONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].re = (_in[i].re - 128.0) * scale;
 				_out[i].im = _out[i].re;
 			}
 			break;
-		case DeviceInterface::QONLY:
+		case DeviceInterface::IQO_QONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].im = (_in[i].im - 128.0) * scale;
 				_out[i].re = _out[i].im;
@@ -726,33 +726,33 @@ void DeviceInterfaceBase::normalizeIQ(CPX* _out, CPXU8* _in, quint32 _numSamples
 void DeviceInterfaceBase::normalizeIQ(CPX *_out, CPX16 *_in, quint32 _numSamples, bool _reverse)
 {
 	//Runs at full device sample rate, optimize loop invariants like scale, object copies and switches
-	double scale = 1/32768.0 * userIQGain * normalizeIQGain;
+	double scale = 1/32768.0 * m_userIQGain * m_normalizeIQGain;
 	//Only check iqOrder once per loop instead of every sample
-	IQORDER tmpOrder = iqOrder;
-	if (iqOrder == IQ && _reverse)
-		tmpOrder = QI;
-	else if (iqOrder == QI && _reverse)
-		tmpOrder = IQ;
+	IQOrder tmpOrder = m_iqOrder;
+	if (m_iqOrder == IQO_IQ && _reverse)
+		tmpOrder = IQO_QI;
+	else if (m_iqOrder == IQO_QI && _reverse)
+		tmpOrder = IQO_IQ;
 	switch(tmpOrder) {
-		case DeviceInterface::IQ:
+		case DeviceInterface::IQO_IQ:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].re = _in[i].re * scale;
 				_out[i].im = _in[i].im * scale;
 			}
 			break;
-		case DeviceInterface::QI:
+		case DeviceInterface::IQO_QI:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].re = _in[i].im * scale;
 				_out[i].im = _in[i].re * scale;
 			}
 			break;
-		case DeviceInterface::IONLY:
+		case DeviceInterface::IQO_IONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].re = _in[i].re * scale;
 				_out[i].im = _out[i].re;
 			}
 			break;
-		case DeviceInterface::QONLY:
+		case DeviceInterface::IQO_QONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].im = _in[i].im * scale;
 				_out[i].re = _out[i].im;
@@ -764,33 +764,33 @@ void DeviceInterfaceBase::normalizeIQ(CPX *_out, CPX16 *_in, quint32 _numSamples
 void DeviceInterfaceBase::normalizeIQ(CPX *_out, CPX *_in, quint32 _numSamples, bool _reverse)
 {
 	//Runs at full device sample rate, optimize loop invariants like scale, object copies and switches
-	double scale = userIQGain * normalizeIQGain;
+	double scale = m_userIQGain * m_normalizeIQGain;
 	//Only check iqOrder once per loop instead of every sample
-	IQORDER tmpOrder = iqOrder;
-	if (iqOrder == IQ && _reverse)
-		tmpOrder = QI;
-	else if (iqOrder == QI && _reverse)
-		tmpOrder = IQ;
+	IQOrder tmpOrder = m_iqOrder;
+	if (m_iqOrder == IQO_IQ && _reverse)
+		tmpOrder = IQO_QI;
+	else if (m_iqOrder == IQO_QI && _reverse)
+		tmpOrder = IQO_IQ;
 	switch(tmpOrder) {
-		case DeviceInterface::IQ:
+		case DeviceInterface::IQO_IQ:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].re = _in[i].re * scale;
 				_out[i].im = _in[i].im * scale;
 			}
 			break;
-		case DeviceInterface::QI:
+		case DeviceInterface::IQO_QI:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].re = _in[i].im * scale;
 				_out[i].im = _in[i].re * scale;
 			}
 			break;
-		case DeviceInterface::IONLY:
+		case DeviceInterface::IQO_IONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].re = _in[i].re * scale;
 				_out[i].im = _out[i].re;
 			}
 			break;
-		case DeviceInterface::QONLY:
+		case DeviceInterface::IQO_QONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].im = _in[i].im * scale;
 				_out[i].re = _out[i].im;
@@ -802,33 +802,33 @@ void DeviceInterfaceBase::normalizeIQ(CPX *_out, CPX *_in, quint32 _numSamples, 
 void DeviceInterfaceBase::normalizeIQ(CPX *_out, CPXFLOAT *_in, quint32 _numSamples, bool _reverse)
 {
 	//Runs at full device sample rate, optimize loop invariants like scale, object copies and switches
-	double scale = userIQGain * normalizeIQGain;
+	double scale = m_userIQGain * m_normalizeIQGain;
 	//Only check iqOrder once per loop instead of every sample
-	IQORDER tmpOrder = iqOrder;
-	if (iqOrder == IQ && _reverse)
-		tmpOrder = QI;
-	else if (iqOrder == QI && _reverse)
-		tmpOrder = IQ;
+	IQOrder tmpOrder = m_iqOrder;
+	if (m_iqOrder == IQO_IQ && _reverse)
+		tmpOrder = IQO_QI;
+	else if (m_iqOrder == IQO_QI && _reverse)
+		tmpOrder = IQO_IQ;
 	switch(tmpOrder) {
-		case DeviceInterface::IQ:
+		case DeviceInterface::IQO_IQ:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].re = _in[i].re * scale;
 				_out[i].im = _in[i].im * scale;
 			}
 			break;
-		case DeviceInterface::QI:
+		case DeviceInterface::IQO_QI:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].re = _in[i].im * scale;
 				_out[i].im = _in[i].re * scale;
 			}
 			break;
-		case DeviceInterface::IONLY:
+		case DeviceInterface::IQO_IONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].re = _in[i].re * scale;
 				_out[i].im = _out[i].re;
 			}
 			break;
-		case DeviceInterface::QONLY:
+		case DeviceInterface::IQO_QONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].im = _in[i].im * scale;
 				_out[i].re = _out[i].im;
@@ -841,33 +841,33 @@ void DeviceInterfaceBase::normalizeIQ(CPX *_out, CPXFLOAT *_in, quint32 _numSamp
 void DeviceInterfaceBase::normalizeIQ(CPX *_out, short *_inI, short *_inQ, quint32 _numSamples, bool _reverse)
 {
 	//Runs at full device sample rate, optimize loop invariants like scale, object copies and switches
-	double scale = 1/32768.0 * userIQGain * normalizeIQGain;
+	double scale = 1/32768.0 * m_userIQGain * m_normalizeIQGain;
 	//Only check iqOrder once per loop instead of every sample
-	IQORDER tmpOrder = iqOrder;
-	if (iqOrder == IQ && _reverse)
-		tmpOrder = QI;
-	else if (iqOrder == QI && _reverse)
-		tmpOrder = IQ;
+	IQOrder tmpOrder = m_iqOrder;
+	if (m_iqOrder == IQO_IQ && _reverse)
+		tmpOrder = IQO_QI;
+	else if (m_iqOrder == IQO_QI && _reverse)
+		tmpOrder = IQO_IQ;
 	switch(tmpOrder) {
-		case DeviceInterface::IQ:
+		case DeviceInterface::IQO_IQ:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].re = _inI[i] * scale;
 				_out[i].im = _inQ[i] * scale;
 			}
 			break;
-		case DeviceInterface::QI:
+		case DeviceInterface::IQO_QI:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].re = _inQ[i] * scale;
 				_out[i].im = _inI[i] * scale;
 			}
 			break;
-		case DeviceInterface::IONLY:
+		case DeviceInterface::IQO_IONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].re = _inI[i] * scale;
 				_out[i].im = _out[i].re;
 			}
 			break;
-		case DeviceInterface::QONLY:
+		case DeviceInterface::IQO_QONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].im = _inQ[i] * scale;
 				_out[i].re = _out[i].im;
@@ -881,23 +881,23 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, CPX iq)
 {
 	double tmp;
 	//Normalize and apply gain
-	cpx->re = iq.re * userIQGain * normalizeIQGain;
-	cpx->im = iq.im * userIQGain * normalizeIQGain;
+	cpx->re = iq.re * m_userIQGain * m_normalizeIQGain;
+	cpx->im = iq.im * m_userIQGain * m_normalizeIQGain;
 
 	//Configure IQ order if not default
-	switch(iqOrder) {
-		case DeviceInterface::IQ:
+	switch(m_iqOrder) {
+		case DeviceInterface::IQO_IQ:
 			//No change, this is the default order
 			break;
-		case DeviceInterface::QI:
+		case DeviceInterface::IQO_QI:
 			tmp = cpx->re;
 			cpx->re = cpx->im;
 			cpx->im = tmp;
 			break;
-		case DeviceInterface::IONLY:
+		case DeviceInterface::IQO_IONLY:
 			cpx->im = cpx->re;
 			break;
-		case DeviceInterface::QONLY:
+		case DeviceInterface::IQO_QONLY:
 			cpx->re = cpx->im;
 			break;
 	}
@@ -907,12 +907,12 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, CPX iq)
 //Called by audio devices when new samples are available
 //Samples are paired I and Q
 //numSamples is total number of samples I + Q
-void DeviceInterfaceBase::AudioProducer(float *samples, quint16 numSamples)
+void DeviceInterfaceBase::audioProducer(float *samples, quint16 numSamples)
 {
 	//NormalizeIQGain is determined by the audio library we're using, not the SDR
 	//Set to -60db at 10mhz .0005v signal generator input
 #ifdef USE_QT_AUDIO
-	normalizeIQGain = DB::dBToAmplitude(-18.00);
+	m_normalizeIQGain = DB::dBToAmplitude(-18.00);
 #endif
 #ifdef USE_PORT_AUDIO
 	normalizeIQGain = DB::dBToAmplitude(-4.00);
@@ -922,7 +922,7 @@ void DeviceInterfaceBase::AudioProducer(float *samples, quint16 numSamples)
 		return;
 	}
 	for (int i=0, j=0; i<framesPerBuffer; i++, j+=2) {
-		normalizeIQ( &audioInputBuffer[i], samples[j], samples[j+1]);
+		normalizeIQ( &m_audioInputBuffer[i], samples[j], samples[j+1]);
 	}
-	ProcessIQData(audioInputBuffer, framesPerBuffer);
+	processIQData(m_audioInputBuffer, framesPerBuffer);
 }

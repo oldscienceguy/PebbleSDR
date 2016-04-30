@@ -3,7 +3,7 @@
 
 HackRFDevice::HackRFDevice():DeviceInterfaceBase()
 {
-	InitSettings("HackRF");
+	initSettings("HackRF");
 	optionUi = NULL;
 	useSynchronousAPI = true; //Testing
 	useSignals = false;
@@ -26,36 +26,36 @@ HackRFDevice::~HackRFDevice()
 }
 
 //Sample rate must be set before this is called
-bool HackRFDevice::Initialize(cbProcessIQData _callback,
-								  cbProcessBandscopeData _callbackBandscope,
-								  cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
+bool HackRFDevice::initialize(CB_ProcessIQData _callback,
+								  CB_ProcessBandscopeData _callbackBandscope,
+								  CB_ProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
-	DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
+	DeviceInterfaceBase::initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
 	//If we are decimating, we need to collect more samples
-	deviceSamplesPerBuffer = framesPerBuffer * decimateFactor;
+	deviceSamplesPerBuffer = framesPerBuffer * m_decimateFactor;
 	producerBuf = (CPX8*)new qint8[deviceSamplesPerBuffer * sizeof(CPX8)];
 	decimatorBuf = CPX::memalign(deviceSamplesPerBuffer);
 
-	decimator = new Decimator(deviceSampleRate, deviceSamplesPerBuffer);
-	setSampleRate(deviceSampleRate); //Builds decimation chain
+	decimator = new Decimator(m_deviceSampleRate, deviceSamplesPerBuffer);
+	setSampleRate(m_deviceSampleRate); //Builds decimation chain
 
 	if (useSynchronousAPI)
-		numProducerBuffers = 50;
+		m_numProducerBuffers = 50;
 	else
-		numProducerBuffers = 128; //We get 64 buffers worth of data at a time, so this needs to be large enough
+		m_numProducerBuffers = 128; //We get 64 buffers worth of data at a time, so this needs to be large enough
 	producerFreeBufPtr = NULL;
 #if 1
 	//Remove if producer/consumer buffers are not used
 	//This is set so we always get framesPerBuffer samples (factor in any necessary decimation)
-	readBufferSize = deviceSamplesPerBuffer * sizeof(CPX);
+	m_readBufferSize = deviceSamplesPerBuffer * sizeof(CPX);
 
-	producerConsumer.Initialize(std::bind(&HackRFDevice::producerWorker, this, std::placeholders::_1),
-		std::bind(&HackRFDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, readBufferSize);
+	m_producerConsumer.Initialize(std::bind(&HackRFDevice::producerWorker, this, std::placeholders::_1),
+		std::bind(&HackRFDevice::consumerWorker, this, std::placeholders::_1),m_numProducerBuffers, m_readBufferSize);
 	//Must be called after Initialize
 	//Producer checks at device rate
-	producerConsumer.SetProducerInterval(deviceSampleRate,deviceSamplesPerBuffer);
+	m_producerConsumer.SetProducerInterval(m_deviceSampleRate,deviceSamplesPerBuffer);
 	//Consumer checks at decimated rate set in setSampleRate()
-	producerConsumer.SetConsumerInterval(sampleRate,framesPerBuffer);
+	m_producerConsumer.SetConsumerInterval(m_sampleRate,framesPerBuffer);
 
 	if (useSignals)
 		connect(this,SIGNAL(newIQData()),this,SLOT(consumerSlot()));
@@ -65,41 +65,41 @@ bool HackRFDevice::Initialize(cbProcessIQData _callback,
 	return true;
 }
 
-void HackRFDevice::ReadSettings()
+void HackRFDevice::readSettings()
 {
 	//Set defaults before calling DeviceInterfaceBase
-	highFrequency = 6000000000;
+	m_highFrequency = 6000000000;
 	//lowFrequency = 1000000;
 	//1mHz is spec, but rest of AM band seems ok
-	lowFrequency = 500000;
-	sampleRate = 8000000;
-	deviceSampleRate = sampleRate;
-	decimateFactor = 2; //We can't keep up with full device sample rate yet
-	DeviceInterfaceBase::ReadSettings();
+	m_lowFrequency = 500000;
+	m_sampleRate = 8000000;
+	m_deviceSampleRate = m_sampleRate;
+	m_decimateFactor = 2; //We can't keep up with full device sample rate yet
+	DeviceInterfaceBase::readSettings();
 	//Recommended defaults from hackRf wiki
-	rfGain = qSettings->value("rfGain",false).toBool();
-	lnaGain = qSettings->value("lnaGain",16).toUInt();
-	vgaGain = qSettings->value("vgaGain",16).toUInt();
+	rfGain = m_qSettings->value("rfGain",false).toBool();
+	lnaGain = m_qSettings->value("lnaGain",16).toUInt();
+	vgaGain = m_qSettings->value("vgaGain",16).toUInt();
 
 }
 
-void HackRFDevice::WriteSettings()
+void HackRFDevice::writeSettings()
 {
-	DeviceInterfaceBase::WriteSettings();
-	qSettings->setValue("rfGain",rfGain);
-	qSettings->setValue("lnaGain",lnaGain);
-	qSettings->setValue("vgaGain",vgaGain);
-	qSettings->sync();
+	DeviceInterfaceBase::writeSettings();
+	m_qSettings->setValue("rfGain",rfGain);
+	m_qSettings->setValue("lnaGain",lnaGain);
+	m_qSettings->setValue("vgaGain",vgaGain);
+	m_qSettings->sync();
 }
 
 void HackRFDevice::setSampleRate(quint32 _sampleRate)
 {
-	deviceSampleRate = _sampleRate;
+	m_deviceSampleRate = _sampleRate;
 
-	if (decimateFactor == 1) {
-		sampleRate = deviceSampleRate;
+	if (m_decimateFactor == 1) {
+		m_sampleRate = m_deviceSampleRate;
 	} else {
-		sampleRate = decimator->buildDecimationChain(deviceSampleRate,200000,deviceSampleRate / decimateFactor);
+		m_sampleRate = decimator->buildDecimationChain(m_deviceSampleRate,200000,m_deviceSampleRate / m_decimateFactor);
 	}
 }
 
@@ -112,12 +112,12 @@ bool HackRFDevice::apiCheck(int result, const char* api)
 	return true;
 }
 
-bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _arg)
+bool HackRFDevice::command(DeviceInterface::StandardCommands _cmd, QVariant _arg)
 {
 
 	switch (_cmd) {
-		case CmdConnect: {
-				DeviceInterfaceBase::Connect();
+		case Cmd_Connect: {
+				DeviceInterfaceBase::connectDevice();
 				//Device specific code follows
 				hackrf_device_list_t *list;
 				if (!apiCheck(hackrf_init(),"init"))
@@ -146,8 +146,8 @@ bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _ar
 			}
 			return true;
 
-		case CmdDisconnect:
-			DeviceInterfaceBase::Disconnect();
+		case Cmd_Disconnect:
+			DeviceInterfaceBase::disconnectDevice();
 			if (hackrfDevice == NULL)
 				return true;
 
@@ -157,19 +157,19 @@ bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _ar
 			hackrf_exit();
 			return true;
 
-		case CmdStart: {
+		case Cmd_Start: {
 
-			DeviceInterfaceBase::Start();
+			DeviceInterfaceBase::startDevice();
 			//Device specific code follows
 
 			//If sampleRateDecimate ==4, then set actual device sample rate 4x what user specifies
-			if (!apiCheck(hackrf_set_sample_rate(hackrfDevice,deviceSampleRate),"set_sample_rate"))
+			if (!apiCheck(hackrf_set_sample_rate(hackrfDevice,m_deviceSampleRate),"set_sample_rate"))
 				return false;
 
 			//5000000 default filter bandwidth 1750000 to 28000000
 			//1.75/2.5/3.5/5/5.5/6/7/8/9/10/12/14/15/20/24/28MHz
 			//Auto calc filter, we can add manual selection later if needed
-			quint32 baseband_filter_bw_hz = hackrf_compute_baseband_filter_bw(deviceSampleRate);
+			quint32 baseband_filter_bw_hz = hackrf_compute_baseband_filter_bw(m_deviceSampleRate);
 			if (!apiCheck(hackrf_set_baseband_filter_bandwidth(hackrfDevice,baseband_filter_bw_hz),"set_filter_bandwidth"))
 				return false;
 			//baseband rx gain 0-62dB, 2dB steps
@@ -188,9 +188,9 @@ bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _ar
 				return false;
 
 			if (useSignals)
-				producerConsumer.Start(useSynchronousAPI,false); //Just consumer unless synchronous API
+				m_producerConsumer.Start(useSynchronousAPI,false); //Just consumer unless synchronous API
 			else
-				producerConsumer.Start(useSynchronousAPI,true);
+				m_producerConsumer.Start(useSynchronousAPI,true);
 
 
 			if (useSynchronousAPI) {
@@ -201,14 +201,14 @@ bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _ar
 					return false;
 			}
 
-			running = true;
+			m_running = true;
 			return true;
 		}
-		case CmdStop:
-			DeviceInterfaceBase::Stop();
+		case Cmd_Stop:
+			DeviceInterfaceBase::stopDevice();
 			//Device specific code follows
-			running = false;
-			producerConsumer.Stop();
+			m_running = false;
+			m_producerConsumer.Stop();
 
 			if (useSynchronousAPI) {
 				return synchronousStopRx();
@@ -218,19 +218,19 @@ bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _ar
 			}
 			return true;
 
-		case CmdReadSettings:
-			DeviceInterfaceBase::ReadSettings();
+		case Cmd_ReadSettings:
+			DeviceInterfaceBase::readSettings();
 			//Device specific settings follow
-			ReadSettings();
+			readSettings();
 			return true;
 
-		case CmdWriteSettings:
-			DeviceInterfaceBase::WriteSettings();
+		case Cmd_WriteSettings:
+			DeviceInterfaceBase::writeSettings();
 			//Device specific settings follow
-			WriteSettings();
+			writeSettings();
 			return true;
 
-		case CmdDisplayOptionUi: {
+		case Cmd_DisplayOptionUi: {
 			//Add ui header file include
 			//Add private uiOptions
 
@@ -272,7 +272,7 @@ bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _ar
 			optionUi->decimationBox->addItem("4",4);
 			optionUi->decimationBox->addItem("8",8);
 			optionUi->decimationBox->addItem("16",16);
-			int item = optionUi->decimationBox->findData(decimateFactor);
+			int item = optionUi->decimationBox->findData(m_decimateFactor);
 			optionUi->decimationBox->setCurrentIndex(item);
 			connect(optionUi->decimationBox,SIGNAL(currentIndexChanged(int)),this,SLOT(
 						decimationChanged(int)));
@@ -288,48 +288,48 @@ bool HackRFDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _ar
 	}
 }
 
-QVariant HackRFDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _option)
+QVariant HackRFDevice::get(DeviceInterface::StandardKeys _key, QVariant _option)
 {
 	Q_UNUSED(_option);
 
 	switch (_key) {
-		case PluginName:
+		case Key_PluginName:
 			return "HackRFDevice";
 			break;
-		case PluginDescription:
+		case Key_PluginDescription:
 			return "HackRFDevice";
 			break;
-		case DeviceName:
+		case Key_DeviceName:
 			return "HackRF";
-		case DeviceType:
-			return DeviceInterfaceBase::IQ_DEVICE;
-		case DeviceSampleRates:
+		case Key_DeviceType:
+			return DeviceInterfaceBase::DT_IQ_DEVICE;
+		case Key_DeviceSampleRates:
 			//Move to device options page and return empty list
 			//Sample rates may be decimated by user selection for CPU usage
 			return QStringList()<<"8000000"<<"10000000"<<"12500000"<<"16000000"<<"20000000";
-		case SampleRate:
+		case Key_SampleRate:
 			//Default in deviceInterfaceBase is to return deviceSampleRate
 			//We may be decimated and over-ride default to return post-decimated sample rate
-			return sampleRate;
+			return m_sampleRate;
 		default:
-			return DeviceInterfaceBase::Get(_key, _option);
+			return DeviceInterfaceBase::get(_key, _option);
 	}
 }
 
-bool HackRFDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, QVariant _option)
+bool HackRFDevice::set(DeviceInterface::StandardKeys _key, QVariant _value, QVariant _option)
 {
 	Q_UNUSED(_option);
 	switch (_key) {
-		case DeviceFrequency:
+		case Key_DeviceFrequency:
 			if (!apiCheck(hackrf_set_freq(hackrfDevice, _value.toDouble()),"set_freq"))
 				return false;
 			return true; //Must be handled by device
-		case DeviceSampleRate:
+		case Key_DeviceSampleRate:
 			setSampleRate(_value.toUInt());
 			return true;
 			break;
 		default:
-			return DeviceInterfaceBase::Set(_key, _value, _option);
+			return DeviceInterfaceBase::set(_key, _value, _option);
 	}
 }
 
@@ -343,7 +343,7 @@ void HackRFDevice::rfGainChanged(bool _value)
 	}
 	if (hackrfDevice != NULL)
 		apiCheck(hackrf_set_amp_enable(hackrfDevice, rfGain),"amp enable");
-	qSettings->sync();
+	m_qSettings->sync();
 }
 
 int HackRFDevice::hackrf_set_transceiver_mode(hackrf_transceiver_mode value)
@@ -403,7 +403,7 @@ bool HackRFDevice::synchronousRead(CPX8 *_buf, int _bufLen)
 	//Get enough data so we get framesPerBuffer after sample rate decimation
 	int bytesRead;
 	//Set timeout to 2x what it should take to get a complete frame, based on sampleRate
-	quint16 timeout = deviceSamplesPerBuffer / deviceSampleRate * 1000; //ms per frame
+	quint16 timeout = deviceSamplesPerBuffer / m_deviceSampleRate * 1000; //ms per frame
 	timeout *= 2;
 
 	int ret = libusb_bulk_transfer(hackrfDevice->usb_device, endpoint_address,
@@ -436,7 +436,7 @@ void HackRFDevice::lnaGainChanged(int _value)
 	}
 	optionUi->lnaValue->setText(QString::number(db)+"dB");
 	lnaGain = db;
-	qSettings->sync();
+	m_qSettings->sync();
 }
 
 void HackRFDevice::vgaGainChanged(int _value)
@@ -451,14 +451,14 @@ void HackRFDevice::vgaGainChanged(int _value)
 	}
 	optionUi->vgaValue->setText(QString::number(db)+"dB");
 	vgaGain = db;
-	qSettings->sync();
+	m_qSettings->sync();
 }
 
 void HackRFDevice::decimationChanged(int _index)
 {
 	Q_UNUSED(_index);
-	decimateFactor = optionUi->decimationBox->currentData().toUInt();
-	qSettings->sync();
+	m_decimateFactor = optionUi->decimationBox->currentData().toUInt();
+	m_qSettings->sync();
 }
 
 //typedef int(*hackrf_sample_block_cb_fn)(hackrf_transfer*transfer)
@@ -473,7 +473,7 @@ int HackRFDevice::rx_callback(hackrf_transfer*transfer)
 	//buffer_length is size of buffer, valid_length is actual bytes transferred
 	for (int i=0; i<transfer->valid_length; i+=2) {
 		if (hackRf->producerFreeBufPtr == NULL) {
-			if ((hackRf->producerFreeBufPtr = (CPX *)hackRf->producerConsumer.AcquireFreeBuffer()) == NULL) {
+			if ((hackRf->producerFreeBufPtr = (CPX *)hackRf->m_producerConsumer.AcquireFreeBuffer()) == NULL) {
 				qDebug()<<"No free buffers available.  producerIndex = "<<hackRf->producerIndex <<
 						  "samplesPerPacket = "<<transfer->valid_length;
 				hackRf->mutex.unlock();
@@ -487,13 +487,13 @@ int HackRFDevice::rx_callback(hackrf_transfer*transfer)
 		if (hackRf->producerIndex >= hackRf->framesPerBuffer) {
 			hackRf->producerIndex = 0;
 			hackRf->producerFreeBufPtr = NULL;
-			hackRf->producerConsumer.ReleaseFilledBuffer();
+			hackRf->m_producerConsumer.ReleaseFilledBuffer();
 			//qDebug()<<"producer release";
 			if (hackRf->useSignals)
 				emit(hackRf->newIQData());
 			//perform.StopPerformance(1000);
 			//We don't release a free buffer until ProcessIQData returns because that would also allow inBuffer to be reused
-			hackRf->producerConsumer.ReleaseFreeBuffer();
+			hackRf->m_producerConsumer.ReleaseFreeBuffer();
 
 			//We process 262144 bytes per call, at 2 bytes per sample and a 2048 sample buffer,
 			//this is 64 buffers of data each call.  We may need to increase the number of producer
@@ -513,9 +513,9 @@ void HackRFDevice::producerWorker(cbProducerConsumerEvents _event)
 		case cbProducerConsumerEvents::Start:
 			break;
 		case cbProducerConsumerEvents::Run:
-			while (running) {
+			while (m_running) {
 
-				if ((producerFreeBufPtr = (CPX*)producerConsumer.AcquireFreeBuffer()) == NULL) {
+				if ((producerFreeBufPtr = (CPX*)m_producerConsumer.AcquireFreeBuffer()) == NULL) {
 					qDebug()<<"No free producer buffer";
 					return;
 				}
@@ -524,11 +524,11 @@ void HackRFDevice::producerWorker(cbProducerConsumerEvents _event)
 				//Return and wait for next producer time slice
 				if (!synchronousRead(producerBuf, deviceSamplesPerBuffer * sizeof(CPX8))) {
 					//Put back buffer
-					producerConsumer.PutbackFreeBuffer();
+					m_producerConsumer.PutbackFreeBuffer();
 					return;
 				}
 
-				if (decimateFactor > 1) {
+				if (m_decimateFactor > 1) {
 					normalizeIQ(decimatorBuf, producerBuf, deviceSamplesPerBuffer);
 					numDecimatedSamples = decimator->process(decimatorBuf, producerFreeBufPtr, deviceSamplesPerBuffer);
 				} else {
@@ -536,7 +536,7 @@ void HackRFDevice::producerWorker(cbProducerConsumerEvents _event)
 					normalizeIQ(producerFreeBufPtr, producerBuf, framesPerBuffer);
 				}
 
-				producerConsumer.ReleaseFilledBuffer();
+				m_producerConsumer.ReleaseFilledBuffer();
 				if (useSignals)
 					emit(newIQData());
 			}
@@ -551,9 +551,9 @@ void HackRFDevice::producerWorker(cbProducerConsumerEvents _event)
 void HackRFDevice::consumerSlot()
 {
 	unsigned char *consumerFilledBufferPtr;
-	while (producerConsumer.GetNumFilledBufs() > 0) {
+	while (m_producerConsumer.GetNumFilledBufs() > 0) {
 		//Wait for data to be available from producer
-		if ((consumerFilledBufferPtr = producerConsumer.AcquireFilledBuffer()) == NULL) {
+		if ((consumerFilledBufferPtr = m_producerConsumer.AcquireFilledBuffer()) == NULL) {
 			qDebug()<<"No filled buffer available";
 			return;
 		}
@@ -561,10 +561,10 @@ void HackRFDevice::consumerSlot()
 		//Process data in filled buffer and convert to Pebble format in consumerBuffer
 
 		//perform.StartPerformance("ProcessIQ");
-		ProcessIQData((CPX *)consumerFilledBufferPtr,framesPerBuffer);
+		processIQData((CPX *)consumerFilledBufferPtr,framesPerBuffer);
 		//perform.StopPerformance(1000);
 		//We don't release a free buffer until ProcessIQData returns because that would also allow inBuffer to be reused
-		producerConsumer.ReleaseFreeBuffer();
+		m_producerConsumer.ReleaseFreeBuffer();
 	}
 }
 

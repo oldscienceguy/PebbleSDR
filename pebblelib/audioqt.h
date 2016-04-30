@@ -13,7 +13,7 @@ class AudioQT : public Audio
 {
 	Q_OBJECT
 public:
-	AudioQT(cbAudioProducer cb, int fpb);
+	AudioQT(CB_AudioProducer cb, int fpb);
     ~AudioQT();
 
 	//Virtual functions

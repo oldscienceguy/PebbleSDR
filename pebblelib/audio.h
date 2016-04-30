@@ -27,7 +27,7 @@ public:
 	virtual void ClearCounts()=0;
 
     //Creates either PortAudio or QTAudio device
-	static Audio *Factory(cbAudioProducer cb, quint16 framesPerBuffer);
+	static Audio *Factory(CB_AudioProducer cb, quint16 framesPerBuffer);
 
     //Returns a list of input devices for settings to chose from
     static QStringList InputDeviceList();
@@ -56,7 +56,7 @@ protected:
 	int inputSampleRate;
 	int outputSampleRate;
 	int framesPerBuffer; //#samples in each callback
-	cbAudioProducer AudioProducer;
+	CB_AudioProducer AudioProducer;
 	bool hasOutputTimedOut;
 };
 

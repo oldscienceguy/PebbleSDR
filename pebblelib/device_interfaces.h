@@ -28,16 +28,16 @@ class CPX;
 
 //using std::placeholders;
 //Used by audio devices to call back to device with new sample data
-typedef std::function<void(float *, quint16)> cbAudioProducer;
+typedef std::function<void(float *, quint16)> CB_AudioProducer;
 
 //ProcessIQData callback: Call with CPX buffer of I/Q unprocessed samples and number of samples
-typedef std::function<void(CPX *, quint16)> cbProcessIQData;
+typedef std::function<void(CPX *, quint16)> CB_ProcessIQData;
 
 //ProcessBandscopeData callback: Call with buffer of spectrum values and number of data points
-typedef std::function<void(quint8 *, quint16)> cbProcessBandscopeData;
+typedef std::function<void(quint8 *, quint16)> CB_ProcessBandscopeData;
 
 //ProcessAudioData callback: Call with CPX buffer with left/right audio values and number of samples
-typedef std::function<void(CPX *, quint16)> cbProcessAudioData;
+typedef std::function<void(CPX *, quint16)> CB_ProcessAudioData;
 
 //Device (HW) options are usually saved to device .ini file
 //Application (App) options may or may not be saved
@@ -45,85 +45,85 @@ class DeviceInterface
 {
 public:
 	//These enums can only be extended, not changed, once released.  Otherwise will break existing plugins that are not rebuilt
-	enum STANDARD_KEYS {
-		PluginName = 0,			//RO QString Name of plugin device was found in
-		PluginDescription,		//RO QString Description of plugin device was found in
-		PluginNumDevices,		//RO How many unique devices does plugin support, see DeviceNumber for correlation
-		InputDeviceName,		//RW QString Plugins manage settings - OS name for selected Audio input device, if any
-		OutputDeviceName,		//RW QString
-		SampleRate,				//RW Application I/Q processing sample rate
-		HighFrequency,			//RO Highest frequency device supports
-		LowFrequency,			//RO Lowest frequency device supports
-		IQGain,					//RW double User adjustable to normalize levels among devices
-		StartupType,			//RW int (enum STARTUP_TYPE)
-		StartupDemodMode,		//RO int (enum DeviceInterface::DEMODMODE) Default mode for device if not otherwise specified
-		StartupSpectrumMode,	//RO Not used yet
-		StartupFrequency,		//RO Default frequency for device if not otherwise specified
-		LastDemodMode,			//RW int (enum) Mode in use when power off
-		LastSpectrumMode,		//RW int (enum) Last spectrum selection
-		LastFrequency,			//RW Frequency displayed with power off
-		UserDemodMode,			// not used yet int (enum) User specified demod mode
-		UserSpectrumMode,		//not used yet
-		UserFrequency,			//User specified startup frequency
-		IQOrder,				//Enum
-		IQBalanceEnabled,		//bool
-		IQBalanceGain,			//double
-		IQBalancePhase,			//double
+	enum StandardKeys {
+		Key_PluginName = 0,			//RO QString Name of plugin device was found in
+		Key_PluginDescription,		//RO QString Description of plugin device was found in
+		Key_PluginNumDevices,		//RO How many unique devices does plugin support, see DeviceNumber for correlation
+		Key_InputDeviceName,		//RW QString Plugins manage settings - OS name for selected Audio input device, if any
+		Key_OutputDeviceName,		//RW QString
+		Key_SampleRate,				//RW Application I/Q processing sample rate
+		Key_HighFrequency,			//RO Highest frequency device supports
+		Key_LowFrequency,			//RO Lowest frequency device supports
+		Key_IQGain,					//RW double User adjustable to normalize levels among devices
+		Key_StartupType,			//RW int (enum STARTUP_TYPE)
+		Key_StartupDemodMode,		//RO int (enum DeviceInterface::DEMODMODE) Default mode for device if not otherwise specified
+		Key_StartupSpectrumMode,	//RO Not used yet
+		Key_StartupFrequency,		//RO Default frequency for device if not otherwise specified
+		Key_LastDemodMode,			//RW int (enum) Mode in use when power off
+		Key_LastSpectrumMode,		//RW int (enum) Last spectrum selection
+		Key_LastFrequency,			//RW Frequency displayed with power off
+		Key_UserDemodMode,			// not used yet int (enum) User specified demod mode
+		Key_UserSpectrumMode,		//not used yet
+		Key_UserFrequency,			//User specified startup frequency
+		Key_IQOrder,				//Enum
+		Key_IQBalanceEnabled,		//bool
+		Key_IQBalanceGain,			//double
+		Key_IQBalancePhase,			//double
 
 		//Remote servers may control things like audio output rate
-		AudioOutputSampleRate,	//RO quint32
+		Key_AudioOutputSampleRate,	//RO quint32
 
-		SettingsFile,			//RO returns .ini file name used by device
-		ConverterMode,			//RW returns whether device is using an up/down converter
-		ConverterOffset,		//RW Offset to device frequency to use if converter is active
-		Setting,				//RW Direct access to device settings file. Settings name in _option
-		DecimateFactor,			//RW If device plugin or device supports decimation
-		RemoveDC,				//RW Filter to remove dc component in device or plugin
+		Key_SettingsFile,			//RO returns .ini file name used by device
+		Key_ConverterMode,			//RW returns whether device is using an up/down converter
+		Key_ConverterOffset,		//RW Offset to device frequency to use if converter is active
+		Key_Setting,				//RW Direct access to device settings file. Settings name in _option
+		Key_DecimateFactor,			//RW If device plugin or device supports decimation
+		Key_RemoveDC,				//RW Filter to remove dc component in device or plugin
 
 		//Hardware options
-		DeviceName,				//RO QString Actual device name, may be more than one device per plugin
-		DeviceDescription,		//RO QString Actual device description
-		DeviceNumber,			//RW Optional index for plugins that support multiple devices
-		DeviceType,				//RO int (enum DEVICE_TYPE)
-		DeviceSampleRate,		//RW quint32
-		DeviceSampleRates,		//RO QStringList Sample rates supported by device
-		DeviceFrequency,		//RW double Device center (LO) frequency
-		DeviceHealthValue,		//RO quin16 0-100 where 0 = throwing away data and 100 = within expected tollerances
-		DeviceHealthString,		//RO QString explaining last DeviceHealth returned value
-		DeviceDemodMode,		//RW quint16 enum DeviceInterface::DEMODMODE
-		DeviceOutputGain,		//RW quint16
-		DeviceFilter,			//RW QString "lowFilter:highFilter"
-		DeviceAGC,				//RW quint16
-		DeviceANF,				//RW quint16
-		DeviceNB,				//RW quint16
-		DeviceSlave,			//RO bool true if device is controled by somthing other than Pebble
-		DeviceFreqCorrectionPpm,	//RW If device supports frequency correction in ppm
+		Key_DeviceName,				//RO QString Actual device name, may be more than one device per plugin
+		Key_DeviceDescription,		//RO QString Actual device description
+		Key_DeviceNumber,			//RW Optional index for plugins that support multiple devices
+		Key_DeviceType,				//RO int (enum DEVICE_TYPE)
+		Key_DeviceSampleRate,		//RW quint32
+		Key_DeviceSampleRates,		//RO QStringList Sample rates supported by device
+		Key_DeviceFrequency,		//RW double Device center (LO) frequency
+		Key_DeviceHealthValue,		//RO quin16 0-100 where 0 = throwing away data and 100 = within expected tollerances
+		Key_DeviceHealthString,		//RO QString explaining last DeviceHealth returned value
+		Key_DeviceDemodMode,		//RW quint16 enum DeviceInterface::DEMODMODE
+		Key_DeviceOutputGain,		//RW quint16
+		Key_DeviceFilter,			//RW QString "lowFilter:highFilter"
+		Key_DeviceAGC,				//RW quint16
+		Key_DeviceANF,				//RW quint16
+		Key_DeviceNB,				//RW quint16
+		Key_DeviceSlave,			//RO bool true if device is controled by somthing other than Pebble
+		Key_DeviceFreqCorrectionPpm,	//RW If device supports frequency correction in ppm
 
 		//Expansion room if needed
-		CustomKey1 = 200,		//Devices can implement custom keys, as long as they start with this
-		CustomKey2,
-		CustomKey3,
-		CustomKey4,
-		CustomKey5,
-		CustomKey6,
-		CustomKey7,
-		CustomKey8,
-		CustomKey9,
-		CustomKey10,
+		Key_CustomKey1 = 200,		//Devices can implement custom keys, as long as they start with this
+		Key_CustomKey2,
+		Key_CustomKey3,
+		Key_CustomKey4,
+		Key_CustomKey5,
+		Key_CustomKey6,
+		Key_CustomKey7,
+		Key_CustomKey8,
+		Key_CustomKey9,
+		Key_CustomKey10,
 	};
 
-	enum STANDARD_COMMANDS {
-		CmdConnect,
-		CmdDisconnect,
-		CmdStart,
-		CmdStop,
-		CmdReadSettings,
-		CmdWriteSettings,
+	enum StandardCommands {
+		Cmd_Connect,
+		Cmd_Disconnect,
+		Cmd_Start,
+		Cmd_Stop,
+		Cmd_ReadSettings,
+		Cmd_WriteSettings,
 		//Display device option widget in settings dialog
-		CmdDisplayOptionUi,						//Arg is QWidget *parent
+		Cmd_DisplayOptionUi,						//Arg is QWidget *parent
 	};
 
-	enum DEMODMODE {
+	enum DemodMode {
 		dmAM,
 		dmSAM,
 		dmFMN,
@@ -139,40 +139,40 @@ public:
 		dmNONE
 	};
 
-	enum IQORDER {
-		IQ = 0,		//Normal order
-		QI,		//Reversed
-		IONLY,	//Normally used for testing, ignores the Q sample
-		QONLY	//Normally used for testing, ignores the I sample
+	enum IQOrder {
+		IQO_IQ = 0,		//Normal order
+		IQO_QI,		//Reversed
+		IQO_IONLY,	//Normally used for testing, ignores the Q sample
+		IQO_QONLY	//Normally used for testing, ignores the I sample
 	};
 
-	enum STARTUP_TYPE {
-		SETFREQ = 0,	//Device is started with a specified frequency and mode
-		LASTFREQ,		//Device is started with the last used frequency and mode
-		DEFAULTFREQ		//Device is started with a frequency and mode defined by device plugin
+	enum StartupType {
+		ST_SETFREQ = 0,	//Device is started with a specified frequency and mode
+		ST_LASTFREQ,		//Device is started with the last used frequency and mode
+		ST_DEFAULTFREQ		//Device is started with a frequency and mode defined by device plugin
 	};
 
 	//Does device generate IQ, rely on Sound Card for IQ (not in plugin) or return processed audio
-	enum DEVICE_TYPE {
-		IQ_DEVICE,			//IQ is generated by device
-		AUDIO_IQ_DEVICE,	//IQ is generated by audio handled outside of device
-		DSP_DEVICE			//Device is responsible for all DSP, returns audio and spectrum data directly
+	enum DeviceType {
+		DT_IQ_DEVICE,			//IQ is generated by device
+		DT_AUDIO_IQ_DEVICE,	//IQ is generated by audio handled outside of device
+		DT_DSP_DEVICE			//Device is responsible for all DSP, returns audio and spectrum data directly
 		};
 
 
     //Interface must be all pure virtual functions
 	virtual ~DeviceInterface() = 0;
 
-	virtual bool Initialize(cbProcessIQData _callback,
-							cbProcessBandscopeData _callbackBandscope,
-							cbProcessAudioData _callbackAudio,
+	virtual bool initialize(CB_ProcessIQData _callback,
+							CB_ProcessBandscopeData _callbackBandscope,
+							CB_ProcessAudioData _callbackAudio,
 							quint16 _framesPerBuffer) = 0;
 
-	virtual bool Command(STANDARD_COMMANDS _cmd, QVariant _arg) = 0;
+	virtual bool command(StandardCommands _cmd, QVariant _arg) = 0;
 
     //Allows us to get/set any device specific data
-	virtual QVariant Get(STANDARD_KEYS _key, QVariant _option = 0) = 0;
-	virtual bool Set(STANDARD_KEYS _key, QVariant _value, QVariant _option = 0) = 0;
+	virtual QVariant get(StandardKeys _key, QVariant _option = 0) = 0;
+	virtual bool set(StandardKeys _key, QVariant _value, QVariant _option = 0) = 0;
 };
 
 //How best to encode version number in interface

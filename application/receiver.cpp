@@ -99,8 +99,8 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	m_gplView = NULL;
 
 	//ReceiverWidget connections
-	connect(m_receiverWidget,SIGNAL(demodChanged(DeviceInterface::DEMODMODE)), this,
-			SLOT(demodModeChanged(DeviceInterface::DEMODMODE)));
+	connect(m_receiverWidget,SIGNAL(demodChanged(DeviceInterface::DemodMode)), this,
+			SLOT(demodModeChanged(DeviceInterface::DemodMode)));
 	connect(m_receiverWidget,SIGNAL(audioGainChanged(int)), this, SLOT(audioGainChanged(int)));
 	connect(m_receiverWidget,SIGNAL(agcThresholdChanged(int)), this, SLOT(agcThresholdChanged(int)));
 	connect(m_receiverWidget,SIGNAL(squelchChanged(double)), this, SLOT(squelchChanged(double)));
@@ -122,7 +122,7 @@ bool Receiver::turnPowerOn()
         return false; //Means something is wrong with plugins,
 
 	//If plugin has multiple devices, we need to set the last one used
-	m_sdr->Set(DeviceInterface::DeviceNumber,global->settings->m_sdrDeviceNumber);
+	m_sdr->set(DeviceInterface::Key_DeviceNumber,global->settings->m_sdrDeviceNumber);
 
     //Setup callback for device plugins to use when they have new IQ data
     using namespace std::placeholders;
@@ -130,8 +130,8 @@ bool Receiver::turnPowerOn()
     //std::function<void(CPX *, quint16)> cb = std::bind(&Receiver::ProcessIQData, _receiver, std::placeholders::_1, std::placeholders::_2);
     //bind(Method ptr, object, arg1, ... argn)
 
-	m_sdr->Command(DeviceInterface::CmdReadSettings,0); //Always start with most current
-	if (!m_sdr->Initialize(std::bind(&Receiver::processIQData, this, _1, _2),
+	m_sdr->command(DeviceInterface::Cmd_ReadSettings,0); //Always start with most current
+	if (!m_sdr->initialize(std::bind(&Receiver::processIQData, this, _1, _2),
 						 std::bind(&Receiver::processBandscopeData, this, _1, _2),
 						 std::bind(&Receiver::processAudioData, this, _1, _2),
 						 m_settings->m_framesPerBuffer)) {
@@ -139,13 +139,13 @@ bool Receiver::turnPowerOn()
 		return false;
 	}
 
-	if (!m_sdr->Command(DeviceInterface::CmdConnect,0)){
+	if (!m_sdr->command(DeviceInterface::Cmd_Connect,0)){
         QMessageBox::information(NULL,"Pebble","SDR device is not connected");
 		turnPowerOff();
 		return false;
 	}
 
-	m_sampleRate = m_demodSampleRate = m_sdr->Get(DeviceInterface::SampleRate).toInt();
+	m_sampleRate = m_demodSampleRate = m_sdr->get(DeviceInterface::Key_SampleRate).toInt();
 	m_framesPerBuffer = m_demodFrames = m_settings->m_framesPerBuffer;
 	global->testBench->initProcessSteps(m_sampleRate, m_framesPerBuffer);
 
@@ -154,12 +154,12 @@ bool Receiver::turnPowerOn()
 	//Todo: Don't need Mixer anymore
 	m_mixer = new Mixer(m_sampleRate, m_framesPerBuffer);
 	m_iqBalance = new IQBalance(m_sampleRate,m_framesPerBuffer);
-	m_iqBalance->enableStep(m_sdr->Get(DeviceInterface::IQBalanceEnabled).toBool());
-	m_iqBalance->setGainFactor(m_sdr->Get(DeviceInterface::IQBalanceGain).toDouble());
-	m_iqBalance->setPhaseFactor(m_sdr->Get(DeviceInterface::IQBalancePhase).toDouble());
+	m_iqBalance->enableStep(m_sdr->get(DeviceInterface::Key_IQBalanceEnabled).toBool());
+	m_iqBalance->setGainFactor(m_sdr->get(DeviceInterface::Key_IQBalanceGain).toDouble());
+	m_iqBalance->setPhaseFactor(m_sdr->get(DeviceInterface::Key_IQBalancePhase).toDouble());
 
 	m_dcRemove = new DCRemoval(m_sampleRate, m_framesPerBuffer);
-	m_dcRemoveMode = m_sdr->Get(DeviceInterface::RemoveDC).toBool();
+	m_dcRemoveMode = m_sdr->get(DeviceInterface::Key_RemoveDC).toBool();
 	m_dcRemove->enableStep(m_dcRemoveMode);
 
     /*
@@ -199,7 +199,7 @@ bool Receiver::turnPowerOn()
 	}
 
 	//audioOutRate can be fixed by remote devices, default to 11025 which is a rate supported by QTAudio and PortAudio on Mac
-	m_audioOutRate = m_sdr->Get(DeviceInterface::AudioOutputSampleRate).toUInt();
+	m_audioOutRate = m_sdr->get(DeviceInterface::Key_AudioOutputSampleRate).toUInt();
 	//audioOutRate = demodSampleRate;
 
 	//For FMStereo, sample rate should be close to 300k
@@ -266,12 +266,12 @@ bool Receiver::turnPowerOn()
 	m_demodFrequency = 0;
 	m_lastDemodFrequency = 0;
 
-	m_converterMode = m_sdr->Get(DeviceInterface::ConverterMode).toBool();
-	m_converterOffset = m_sdr->Get(DeviceInterface::ConverterOffset).toDouble();
+	m_converterMode = m_sdr->get(DeviceInterface::Key_ConverterMode).toBool();
+	m_converterOffset = m_sdr->get(DeviceInterface::Key_ConverterOffset).toDouble();
 
 	//This should always be last because it starts samples flowing through the processBlocks
-	m_audioOutput->StartOutput(m_sdr->Get(DeviceInterface::OutputDeviceName).toString(), m_audioOutRate);
-	m_sdr->Command(DeviceInterface::CmdStart,0);
+	m_audioOutput->StartOutput(m_sdr->get(DeviceInterface::Key_OutputDeviceName).toString(), m_audioOutRate);
+	m_sdr->command(DeviceInterface::Cmd_Start,0);
 
 
     //Don't set title until we connect and start.
@@ -284,8 +284,8 @@ void Receiver::setWindowTitle()
 {
 	if (m_sdr == NULL)
         return;
-	qint16 number = m_sdr->Get(DeviceInterface::DeviceNumber).toInt();
-	QString devName = m_sdr->Get(DeviceInterface::DeviceName,number).toString();
+	qint16 number = m_sdr->get(DeviceInterface::Key_DeviceNumber).toInt();
+	QString devName = m_sdr->get(DeviceInterface::Key_DeviceName,number).toString();
     //In some cases, unknown, activeWindow() can return NULL
     QWidget *win = QApplication::activeWindow();
     if (win != NULL)
@@ -357,15 +357,15 @@ void Receiver::openDeviceAboutBox()
 		return;
 	QString about;
 	about += "\nAbout Device\n\n";
-	about += m_sdr->Get(DeviceInterface::DeviceName).toString();
+	about += m_sdr->get(DeviceInterface::Key_DeviceName).toString();
 	about += "\n";
-	about += m_sdr->Get(DeviceInterface::DeviceDescription).toString();
+	about += m_sdr->get(DeviceInterface::Key_DeviceDescription).toString();
 	about += "\nFrequency Range ";
-	about += QString::number(m_sdr->Get(DeviceInterface::LowFrequency).toDouble()/1000000.0);
+	about += QString::number(m_sdr->get(DeviceInterface::Key_LowFrequency).toDouble()/1000000.0);
 	about += " to ";
-	about += QString::number(m_sdr->Get(DeviceInterface::HighFrequency).toDouble()/1000000.0);
+	about += QString::number(m_sdr->get(DeviceInterface::Key_HighFrequency).toDouble()/1000000.0);
 	about += " mHz\n";
-	if (m_sdr->Get(DeviceInterface::DeviceSlave).toBool()) {
+	if (m_sdr->get(DeviceInterface::Key_DeviceSlave).toBool()) {
 		about += "Device is in Slave mode to server";
 	}
 
@@ -422,7 +422,7 @@ bool Receiver::turnPowerOff()
 
 	//Stop incoming samples first
 	if (m_sdr != NULL) {
-		m_sdr->Command(DeviceInterface::CmdStop,0);
+		m_sdr->command(DeviceInterface::Cmd_Stop,0);
     }
 	if (m_audioOutput != NULL)
 		m_audioOutput->Stop();
@@ -432,10 +432,10 @@ bool Receiver::turnPowerOff()
 	//Now clean up rest
 	if (m_sdr != NULL){
         //Save any run time settings
-		m_sdr->Set(DeviceInterface::LastFrequency,m_frequency);
-		m_sdr->Command(DeviceInterface::CmdWriteSettings,0); //Always save last mode, last freq, etc
+		m_sdr->set(DeviceInterface::Key_LastFrequency,m_frequency);
+		m_sdr->command(DeviceInterface::Cmd_WriteSettings,0); //Always save last mode, last freq, etc
 
-		m_sdr->Command(DeviceInterface::CmdDisconnect,0);
+		m_sdr->command(DeviceInterface::Cmd_Disconnect,0);
 		//Make sure SDR threads are fully stopped, otherwise processIQ objects below will crash in destructor
 		//Active SDR object survives on/off and is kept in global.  Do not delete
 		//delete sdr;
@@ -621,7 +621,7 @@ double Receiver::setSDRFrequency(double fRequested, double fCurrent)
 	if (m_converterMode) {
 		fRequested += m_converterOffset;
 	}
-	if (m_sdr->Set(DeviceInterface::DeviceFrequency,fRequested)) {
+	if (m_sdr->set(DeviceInterface::Key_DeviceFrequency,fRequested)) {
 		m_frequency = fRequested;
 	} else {
 		//Failed, return current freq without change
@@ -634,7 +634,7 @@ double Receiver::setSDRFrequency(double fRequested, double fCurrent)
 }
 
 //Called by ReceiverWidget to sets demod mode and default bandpass filter for each mode
-void Receiver::demodModeChanged(DeviceInterface::DEMODMODE _demodMode)
+void Receiver::demodModeChanged(DeviceInterface::DemodMode _demodMode)
 {
 	if(m_demod != NULL) {
 		if (_demodMode == DeviceInterface::dmFMM || _demodMode == DeviceInterface::dmFMS)
@@ -644,7 +644,7 @@ void Receiver::demodModeChanged(DeviceInterface::DEMODMODE _demodMode)
 
         //Demod will return new demo
 		m_demod->SetDemodMode(_demodMode, m_sampleRate, m_demodSampleRate);
-		m_sdr->Set(DeviceInterface::LastDemodMode,_demodMode);
+		m_sdr->set(DeviceInterface::Key_LastDemodMode,_demodMode);
 		m_sampleBufLen = 0;
 	}
 	if (m_iDigitalModem != NULL) {

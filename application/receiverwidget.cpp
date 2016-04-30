@@ -170,7 +170,7 @@ void ReceiverWidget::setReceiver(Receiver *r)
 			p.type == PluginInfo::DEVICE_PLUGIN) {
                 cur = sdrSelector->count()-1;
 				m_sdr = p.deviceInterface;
-				m_sdr->Command(DeviceInterface::CmdReadSettings,0);
+				m_sdr->command(DeviceInterface::Cmd_ReadSettings,0);
 				global->sdr = m_sdr;
         }
     }
@@ -533,7 +533,7 @@ void ReceiverWidget::setMessage(QStringList s)
 {
 	ui.spectrumWidget->setMessage(s);
 }
-void ReceiverWidget::setMode(DeviceInterface::DEMODMODE m)
+void ReceiverWidget::setMode(DeviceInterface::DemodMode m)
 {
 	QString text = Demod::ModeToString(m);
 	int i = ui.modeBox->findText(text);
@@ -543,7 +543,7 @@ void ReceiverWidget::setMode(DeviceInterface::DEMODMODE m)
 		modeSelectionChanged(text);
 	}
 }
-DeviceInterface::DEMODMODE ReceiverWidget::getMode()
+DeviceInterface::DemodMode ReceiverWidget::getMode()
 {
 	return m_mode;
 }
@@ -596,9 +596,9 @@ void ReceiverWidget::powerToggled(bool on)
 		powerStyle(m_powerOn);
 
 		//Limit tuning range and mixer range
-		int sampleRate = m_sdr->Get(DeviceInterface::SampleRate).toInt();
-		setLimits(m_sdr->Get(DeviceInterface::HighFrequency).toDouble(),
-					m_sdr->Get(DeviceInterface::LowFrequency).toDouble(),
+		int sampleRate = m_sdr->get(DeviceInterface::Key_SampleRate).toInt();
+		setLimits(m_sdr->get(DeviceInterface::Key_HighFrequency).toDouble(),
+					m_sdr->get(DeviceInterface::Key_LowFrequency).toDouble(),
 					sampleRate/2,-sampleRate/2);
 
 		//Set intial gain slider position and range
@@ -635,29 +635,29 @@ void ReceiverWidget::powerToggled(bool on)
 
 		ui.spectrumWidget->setSignalSpectrum(m_receiver->getSignalSpectrum());
 
-		ui.spectrumWidget->plotSelectionChanged((SpectrumWidget::DisplayMode)m_sdr->Get(DeviceInterface::LastSpectrumMode).toInt());
+		ui.spectrumWidget->plotSelectionChanged((SpectrumWidget::DisplayMode)m_sdr->get(DeviceInterface::Key_LastSpectrumMode).toInt());
         ui.bandType->setCurrentIndex(Band::HAM);
 
 		ui.spectrumWidget->run(true);
         ui.sMeterWidget->start();
 
 		//Set startup frequency last
-		DeviceInterface::STARTUP_TYPE startupType = (DeviceInterface::STARTUP_TYPE)m_sdr->Get(DeviceInterface::StartupType).toInt();
-		if (startupType == DeviceInterface::DEFAULTFREQ) {
-			m_frequency=m_sdr->Get(DeviceInterface::StartupFrequency).toDouble();
+		DeviceInterface::StartupType startupType = (DeviceInterface::StartupType)m_sdr->get(DeviceInterface::Key_StartupType).toInt();
+		if (startupType == DeviceInterface::ST_DEFAULTFREQ) {
+			m_frequency=m_sdr->get(DeviceInterface::Key_StartupFrequency).toDouble();
 			setFrequency(m_frequency);
 			//This triggers indirect frequency set, so make sure we set widget first
-			setMode((DeviceInterface::DEMODMODE)m_sdr->Get(DeviceInterface::StartupDemodMode).toInt());
+			setMode((DeviceInterface::DemodMode)m_sdr->get(DeviceInterface::Key_StartupDemodMode).toInt());
 		}
-		else if (startupType == DeviceInterface::SETFREQ) {
-			m_frequency = m_sdr->Get(DeviceInterface::UserFrequency).toDouble();
+		else if (startupType == DeviceInterface::ST_SETFREQ) {
+			m_frequency = m_sdr->get(DeviceInterface::Key_UserFrequency).toDouble();
 			setFrequency(m_frequency);
-			setMode((DeviceInterface::DEMODMODE)m_sdr->Get(DeviceInterface::LastDemodMode).toInt());
+			setMode((DeviceInterface::DemodMode)m_sdr->get(DeviceInterface::Key_LastDemodMode).toInt());
 		}
-		else if (startupType == DeviceInterface::LASTFREQ) {
-			m_frequency = m_sdr->Get(DeviceInterface::LastFrequency).toDouble();
+		else if (startupType == DeviceInterface::ST_LASTFREQ) {
+			m_frequency = m_sdr->get(DeviceInterface::Key_LastFrequency).toDouble();
 			setFrequency(m_frequency);
-			setMode((DeviceInterface::DEMODMODE)m_sdr->Get(DeviceInterface::LastDemodMode).toInt());
+			setMode((DeviceInterface::DemodMode)m_sdr->get(DeviceInterface::Key_LastDemodMode).toInt());
 		}
 		else {
 			m_frequency = 10000000;
@@ -1043,29 +1043,29 @@ void ReceiverWidget::updateSlaveInfo()
 	if (!m_powerOn || m_sdr==NULL)
 		return;
 
-	if (!m_sdr->Get(DeviceInterface::DeviceSlave).toBool()) {
+	if (!m_sdr->get(DeviceInterface::Key_DeviceSlave).toBool()) {
 		m_slaveMode = false;
 		return;
 	}
 	m_slaveMode = true;
 
 	//Display last info fetched
-	double f = m_sdr->Get(DeviceInterface::DeviceFrequency).toDouble();
+	double f = m_sdr->get(DeviceInterface::Key_DeviceFrequency).toDouble();
 	setFrequency(f);
 
-	DeviceInterface::DEMODMODE dm = (DeviceInterface::DEMODMODE)m_sdr->Get(DeviceInterface::DeviceDemodMode).toInt();
+	DeviceInterface::DemodMode dm = (DeviceInterface::DemodMode)m_sdr->get(DeviceInterface::Key_DeviceDemodMode).toInt();
 	setMode(dm);
 
 	m_receiver->setWindowTitle();
 
 	//Ask the device to return new info
-	m_sdr->Set(DeviceInterface::DeviceSlave,0);
+	m_sdr->set(DeviceInterface::Key_DeviceSlave,0);
 }
 
 void ReceiverWidget::updateHealth()
 {
 	if (m_powerOn && m_sdr != NULL) {
-		quint16 freeBuf = m_sdr->Get(DeviceInterface::DeviceHealthValue).toInt();
+		quint16 freeBuf = m_sdr->get(DeviceInterface::Key_DeviceHealthValue).toInt();
 		if (freeBuf >= 75)
 			ui.sdrOptions->setStyleSheet("background:green");
 		else if (freeBuf >= 25)
@@ -1199,7 +1199,7 @@ void ReceiverWidget::bandChanged(int s)
 	//If no specific tune freq for band select, set to middle
     if (freq == 0)
 		freq = bands[bandIndex].low + ((bands[bandIndex].high - bands[bandIndex].low) / 2.0);
-	DeviceInterface::DEMODMODE mode = bands[bandIndex].mode;
+	DeviceInterface::DemodMode mode = bands[bandIndex].mode;
 
     //Make sure we're in LO mode
     setLoMode(true);

@@ -69,13 +69,13 @@ public:
 	~HackRFDevice();
 
 	//Required
-	bool Initialize(cbProcessIQData _callback,
-					cbProcessBandscopeData _callbackBandscope,
-					cbProcessAudioData _callbackAudio,
+	bool initialize(CB_ProcessIQData _callback,
+					CB_ProcessBandscopeData _callbackBandscope,
+					CB_ProcessAudioData _callbackAudio,
 					quint16 _framesPerBuffer);
-	bool Command(STANDARD_COMMANDS _cmd, QVariant _arg);
-	QVariant Get(STANDARD_KEYS _key, QVariant _option = 0);
-	bool Set(STANDARD_KEYS _key, QVariant _value, QVariant _option = 0);
+	bool command(StandardCommands _cmd, QVariant _arg);
+	QVariant get(StandardKeys _key, QVariant _option = 0);
+	bool set(StandardKeys _key, QVariant _value, QVariant _option = 0);
 
 private slots:
 	void rfGainChanged(bool _value);
@@ -88,8 +88,8 @@ signals:
 	void newIQData();
 
 private:
-	void ReadSettings();
-	void WriteSettings();
+	void readSettings();
+	void writeSettings();
 
 	void setSampleRate(quint32 _sampleRate); //Handles decimation and deviceSampleRate
 

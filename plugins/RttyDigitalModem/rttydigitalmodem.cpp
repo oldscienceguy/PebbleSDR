@@ -23,7 +23,7 @@ void RttyDigitalModem::setSampleRate(int _sampleRate, int _sampleCount)
     Q_UNUSED(_sampleCount);
 }
 
-void RttyDigitalModem::setDemodMode(DeviceInterface::DEMODMODE _demodMode)
+void RttyDigitalModem::setDemodMode(DeviceInterface::DemodMode _demodMode)
 {
 	Q_UNUSED(_demodMode);
     //qDebug()<<"Demod mode = "<<m; //Demod::ModeToString(m);

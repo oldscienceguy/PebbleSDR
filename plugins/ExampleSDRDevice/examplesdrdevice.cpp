@@ -5,7 +5,7 @@
 //Be careful not to access objects that are not initialized yet, do that in Initialize()
 ExampleSDRDevice::ExampleSDRDevice():DeviceInterfaceBase()
 {
-	InitSettings("ExampleSDR");
+	initSettings("ExampleSDR");
 	optionUi = NULL;
 }
 
@@ -16,85 +16,85 @@ ExampleSDRDevice::~ExampleSDRDevice()
 
 }
 
-bool ExampleSDRDevice::Initialize(cbProcessIQData _callback,
-								  cbProcessBandscopeData _callbackBandscope,
-								  cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
+bool ExampleSDRDevice::initialize(CB_ProcessIQData _callback,
+								  CB_ProcessBandscopeData _callbackBandscope,
+								  CB_ProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
-	DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
-	numProducerBuffers = 50;
+	DeviceInterfaceBase::initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
+	m_numProducerBuffers = 50;
 	producerFreeBufPtr = NULL;
 #if 1
 	//Remove if producer/consumer buffers are not used
 	//This is set so we always get framesPerBuffer samples (factor in any necessary decimation)
 	//ProducerConsumer allocates as array of bytes, so factor in size of sample data
 	quint16 sampleDataSize = sizeof(double);
-	readBufferSize = framesPerBuffer * sampleDataSize * 2; //2 samples per frame (I/Q)
+	m_readBufferSize = framesPerBuffer * sampleDataSize * 2; //2 samples per frame (I/Q)
 
-	producerConsumer.Initialize(std::bind(&ExampleSDRDevice::producerWorker, this, std::placeholders::_1),
-		std::bind(&ExampleSDRDevice::consumerWorker, this, std::placeholders::_1),numProducerBuffers, readBufferSize);
+	m_producerConsumer.Initialize(std::bind(&ExampleSDRDevice::producerWorker, this, std::placeholders::_1),
+		std::bind(&ExampleSDRDevice::consumerWorker, this, std::placeholders::_1),m_numProducerBuffers, m_readBufferSize);
 	//Must be called after Initialize
-	producerConsumer.SetProducerInterval(deviceSampleRate,framesPerBuffer);
-	producerConsumer.SetConsumerInterval(deviceSampleRate,framesPerBuffer);
+	m_producerConsumer.SetProducerInterval(m_deviceSampleRate,framesPerBuffer);
+	m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,framesPerBuffer);
 
 	//Start this immediately, before connect, so we don't miss any data
-	producerConsumer.Start(true,true);
+	m_producerConsumer.Start(true,true);
 
 #endif
 
 	return true;
 }
 
-void ExampleSDRDevice::ReadSettings()
+void ExampleSDRDevice::readSettings()
 {
 	// +/- db gain required to normalize to fixed level input
 	// Default is 0db gain, or a factor of 1.0
-	normalizeIQGain = DB::dBToAmplitude(0);
+	m_normalizeIQGain = DB::dBToAmplitude(0);
 
 	//Set defaults before calling DeviceInterfaceBase
-	DeviceInterfaceBase::ReadSettings();
+	DeviceInterfaceBase::readSettings();
 }
 
-void ExampleSDRDevice::WriteSettings()
+void ExampleSDRDevice::writeSettings()
 {
-	DeviceInterfaceBase::WriteSettings();
+	DeviceInterfaceBase::writeSettings();
 }
 
-bool ExampleSDRDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant _arg)
+bool ExampleSDRDevice::command(DeviceInterface::StandardCommands _cmd, QVariant _arg)
 {
 	switch (_cmd) {
-		case CmdConnect:
-			DeviceInterfaceBase::Connect();
+		case Cmd_Connect:
+			DeviceInterfaceBase::connectDevice();
 			//Device specific code follows
 			return true;
 
-		case CmdDisconnect:
-			DeviceInterfaceBase::Disconnect();
+		case Cmd_Disconnect:
+			DeviceInterfaceBase::disconnectDevice();
 			//Device specific code follows
 			return true;
 
-		case CmdStart:
-			DeviceInterfaceBase::Start();
+		case Cmd_Start:
+			DeviceInterfaceBase::startDevice();
 			//Device specific code follows
 			return true;
 
-		case CmdStop:
-			DeviceInterfaceBase::Stop();
+		case Cmd_Stop:
+			DeviceInterfaceBase::stopDevice();
 			//Device specific code follows
 			return true;
 
-		case CmdReadSettings:
-			DeviceInterfaceBase::ReadSettings();
+		case Cmd_ReadSettings:
+			DeviceInterfaceBase::readSettings();
 			//Device specific settings follow
-			ReadSettings();
+			readSettings();
 			return true;
 
-		case CmdWriteSettings:
-			DeviceInterfaceBase::WriteSettings();
+		case Cmd_WriteSettings:
+			DeviceInterfaceBase::writeSettings();
 			//Device specific settings follow
-			WriteSettings();
+			writeSettings();
 			return true;
 
-		case CmdDisplayOptionUi: {
+		case Cmd_DisplayOptionUi: {
 			//Add ui header file include
 			//Add private uiOptions
 
@@ -115,36 +115,36 @@ bool ExampleSDRDevice::Command(DeviceInterface::STANDARD_COMMANDS _cmd, QVariant
 	}
 }
 
-QVariant ExampleSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _option)
+QVariant ExampleSDRDevice::get(DeviceInterface::StandardKeys _key, QVariant _option)
 {
 	Q_UNUSED(_option);
 
 	switch (_key) {
-		case PluginName:
+		case Key_PluginName:
 			return "Example Device";
 			break;
-		case PluginDescription:
+		case Key_PluginDescription:
 			return "Template for Devices";
 			break;
-		case DeviceName:
+		case Key_DeviceName:
 			return "ExampleDevice";
-		case DeviceType:
-			return DeviceInterfaceBase::AUDIO_IQ_DEVICE;
+		case Key_DeviceType:
+			return DeviceInterfaceBase::DT_AUDIO_IQ_DEVICE;
 		default:
-			return DeviceInterfaceBase::Get(_key, _option);
+			return DeviceInterfaceBase::get(_key, _option);
 	}
 }
 
-bool ExampleSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, QVariant _option)
+bool ExampleSDRDevice::set(DeviceInterface::StandardKeys _key, QVariant _value, QVariant _option)
 {
 	Q_UNUSED(_option);
 
 	switch (_key) {
-		case DeviceFrequency:
+		case Key_DeviceFrequency:
 			return true; //Must be handled by device
 
 		default:
-			return DeviceInterfaceBase::Set(_key, _value, _option);
+			return DeviceInterfaceBase::set(_key, _value, _option);
 	}
 }
 
@@ -159,7 +159,7 @@ void ExampleSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 		case cbProducerConsumerEvents::Start:
 			break;
 		case cbProducerConsumerEvents::Run:
-			if ((producerFreeBufPtr = (CPX*)producerConsumer.AcquireFreeBuffer()) == NULL)
+			if ((producerFreeBufPtr = (CPX*)m_producerConsumer.AcquireFreeBuffer()) == NULL)
 				return;
 #if 0
 			while (running) {
@@ -191,7 +191,7 @@ void ExampleSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 			}
 #endif
 
-			producerConsumer.ReleaseFilledBuffer();
+			m_producerConsumer.ReleaseFilledBuffer();
 			return;
 
 			break;
@@ -209,9 +209,9 @@ void ExampleSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 			break;
 		case cbProducerConsumerEvents::Run:
 			//We always want to consume everything we have, producer will eventually block if we're not consuming fast enough
-			while (producerConsumer.GetNumFilledBufs() > 0) {
+			while (m_producerConsumer.GetNumFilledBufs() > 0) {
 				//Wait for data to be available from producer
-				if ((consumerFilledBufferPtr = producerConsumer.AcquireFilledBuffer()) == NULL) {
+				if ((consumerFilledBufferPtr = m_producerConsumer.AcquireFilledBuffer()) == NULL) {
 					//qDebug()<<"No filled buffer available";
 					return;
 				}
@@ -219,10 +219,10 @@ void ExampleSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 				//Process data in filled buffer and convert to Pebble format in consumerBuffer
 
 				//perform.StartPerformance("ProcessIQ");
-				ProcessIQData(consumerBuffer,framesPerBuffer);
+				processIQData(consumerBuffer,framesPerBuffer);
 				//perform.StopPerformance(1000);
 				//We don't release a free buffer until ProcessIQData returns because that would also allow inBuffer to be reused
-				producerConsumer.ReleaseFreeBuffer();
+				m_producerConsumer.ReleaseFreeBuffer();
 
 			}
 			break;

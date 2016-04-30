@@ -26,7 +26,7 @@ void DigitalModemExample::setSampleRate(int _sampleRate, int _sampleCount)
     Q_UNUSED(_sampleCount);
 }
 
-void DigitalModemExample::setDemodMode(DeviceInterface::DEMODMODE _demodMode)
+void DigitalModemExample::setDemodMode(DeviceInterface::DemodMode _demodMode)
 {
 	Q_UNUSED(_demodMode);
 }

@@ -4,7 +4,7 @@
 
 SoftrockSDRDevice::SoftrockSDRDevice():DeviceInterfaceBase()
 {
-	InitSettings("");
+	initSettings("");
 	optionUi = NULL;
 }
 
@@ -12,16 +12,16 @@ SoftrockSDRDevice::~SoftrockSDRDevice()
 {
 }
 
-bool SoftrockSDRDevice::Initialize(cbProcessIQData _callback,
-								   cbProcessBandscopeData _callbackBandscope,
-								   cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
+bool SoftrockSDRDevice::initialize(CB_ProcessIQData _callback,
+								   CB_ProcessBandscopeData _callbackBandscope,
+								   CB_ProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
 	Q_UNUSED(_callbackBandscope);
 	Q_UNUSED(_callbackAudio);
-	return DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
+	return DeviceInterfaceBase::initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
 }
 
-bool SoftrockSDRDevice::Connect()
+bool SoftrockSDRDevice::connectDevice()
 {
 	//Was in constructor for internal implemenation, but should be in Initialize or connect
 	//Note: This uses libusb 0.1 not 1.0
@@ -43,8 +43,8 @@ bool SoftrockSDRDevice::Connect()
 
 
 	//No USB to connect to for SR Lite
-	if (deviceNumber == SR_LITE || !usbUtil.IsUSBLoaded()) {
-		connected = true;
+	if (m_deviceNumber == SR_LITE || !usbUtil.IsUSBLoaded()) {
+		m_connected = true;
 		return true;
 	}
 	int numFound = 0;
@@ -65,7 +65,7 @@ bool SoftrockSDRDevice::Connect()
 		//unsigned serial = dev->descriptor.iSerialNumber; //This is NOT the SoftRock serial number suffix
 		int serial = GetSerialNumber();
 		if (sdrNumber == -1 || serial == sdrNumber) {
-			connected = true;
+			m_connected = true;
 			//FifiGetSvn(); //We may want to add specific support for FiFi in the future
 
 			return true; //We've got it
@@ -80,11 +80,11 @@ bool SoftrockSDRDevice::Connect()
 
 }
 
-bool SoftrockSDRDevice::Disconnect()
+bool SoftrockSDRDevice::disconnectDevice()
 {
-	WriteSettings();
-	if (deviceNumber == SR_LITE || !usbUtil.IsUSBLoaded()) {
-		connected = false;
+	writeSettings();
+	if (m_deviceNumber == SR_LITE || !usbUtil.IsUSBLoaded()) {
+		m_connected = false;
 		return true;
 	}
 
@@ -92,57 +92,57 @@ bool SoftrockSDRDevice::Disconnect()
 	usbUtil.ReleaseInterface(0);
 	usbUtil.CloseDevice();
 	//usbUtil.Exit();
-	connected = false;
+	m_connected = false;
 	return true;
 }
 
-void SoftrockSDRDevice::Start()
+void SoftrockSDRDevice::startDevice()
 {
-	return DeviceInterfaceBase::Start();
+	return DeviceInterfaceBase::startDevice();
 }
 
-void SoftrockSDRDevice::Stop()
+void SoftrockSDRDevice::stopDevice()
 {
-	return DeviceInterfaceBase::Stop();
+	return DeviceInterfaceBase::stopDevice();
 }
 
-void SoftrockSDRDevice::InitSettings(QString fname)
+void SoftrockSDRDevice::initSettings(QString fname)
 {
 	Q_UNUSED(fname);
 
-	DeviceInterfaceBase::InitSettings("SREnsemble");
-	srEnsembleSettings = qSettings;
-	DeviceInterfaceBase::InitSettings("SREnsemble2M");
-	srEnsemble2MSettings = qSettings;
-	DeviceInterfaceBase::InitSettings("SREnsemble4M");
-	srEnsemble4MSettings = qSettings;
-	DeviceInterfaceBase::InitSettings("SREnsemble6M");
-	srEnsemble6MSettings = qSettings;
-	DeviceInterfaceBase::InitSettings("SREnsembleLF");
-	srEnsembleLFSettings = qSettings;
-	DeviceInterfaceBase::InitSettings("SRLite");
-	srLiteSettings = qSettings;
-	DeviceInterfaceBase::InitSettings("SRV9");
-	srV9Settings = qSettings;
-	DeviceInterfaceBase::InitSettings("SRFifi");
-	srFifiSettings = qSettings;
+	DeviceInterfaceBase::initSettings("SREnsemble");
+	srEnsembleSettings = m_qSettings;
+	DeviceInterfaceBase::initSettings("SREnsemble2M");
+	srEnsemble2MSettings = m_qSettings;
+	DeviceInterfaceBase::initSettings("SREnsemble4M");
+	srEnsemble4MSettings = m_qSettings;
+	DeviceInterfaceBase::initSettings("SREnsemble6M");
+	srEnsemble6MSettings = m_qSettings;
+	DeviceInterfaceBase::initSettings("SREnsembleLF");
+	srEnsembleLFSettings = m_qSettings;
+	DeviceInterfaceBase::initSettings("SRLite");
+	srLiteSettings = m_qSettings;
+	DeviceInterfaceBase::initSettings("SRV9");
+	srV9Settings = m_qSettings;
+	DeviceInterfaceBase::initSettings("SRFifi");
+	srFifiSettings = m_qSettings;
 }
 
-void SoftrockSDRDevice::ReadSettings()
+void SoftrockSDRDevice::readSettings()
 {
-	int currentDeviceNumber = deviceNumber; //Save until we remove it from settings
-	switch (deviceNumber)
+	int currentDeviceNumber = m_deviceNumber; //Save until we remove it from settings
+	switch (m_deviceNumber)
 	{
-		case FiFi: qSettings = srFifiSettings; break;
-		case SR_V9: qSettings = srV9Settings; break;
-		case SR_LITE: qSettings = srLiteSettings; break;
-		case SR_ENSEMBLE: qSettings = srEnsembleSettings; break;
-		case SR_ENSEMBLE_LF: qSettings = srEnsembleLFSettings; break;
-		case SR_ENSEMBLE_2M: qSettings = srEnsemble2MSettings; break;
-		case SR_ENSEMBLE_4M: qSettings = srEnsemble4MSettings; break;
-		case SR_ENSEMBLE_6M: qSettings = srEnsemble6MSettings; break;
+		case FiFi: m_qSettings = srFifiSettings; break;
+		case SR_V9: m_qSettings = srV9Settings; break;
+		case SR_LITE: m_qSettings = srLiteSettings; break;
+		case SR_ENSEMBLE: m_qSettings = srEnsembleSettings; break;
+		case SR_ENSEMBLE_LF: m_qSettings = srEnsembleLFSettings; break;
+		case SR_ENSEMBLE_2M: m_qSettings = srEnsemble2MSettings; break;
+		case SR_ENSEMBLE_4M: m_qSettings = srEnsemble4MSettings; break;
+		case SR_ENSEMBLE_6M: m_qSettings = srEnsemble6MSettings; break;
 		default:
-			qSettings = NULL; break;
+			m_qSettings = NULL; break;
 	}
 
 	//Device Settings
@@ -152,110 +152,110 @@ void SoftrockSDRDevice::ReadSettings()
 	//Limits will be based on divider settings for each radio
 
 	//Different defaults for different devices
-	switch(deviceNumber) {
+	switch(m_deviceNumber) {
 		case SR_LITE: //Need separate settings
 		case SR_V9: //Same as ensemble
 		case SR_ENSEMBLE:
 			//si570 / 4.0
-			startupFrequency = 10000000;
-			lowFrequency = 1000000;
-			highFrequency = 40000000;
-			startupDemodMode = dmAM;
+			m_startupFrequency = 10000000;
+			m_lowFrequency = 1000000;
+			m_highFrequency = 40000000;
+			m_startupDemodMode = dmAM;
 			break;
 		case SR_ENSEMBLE_2M:
 			//si570 / 0.8 = 5000000 to 200000000
-			startupFrequency = 146000000;
-			lowFrequency = 100000000;
-			highFrequency = 175000000;
-			startupDemodMode = dmFMN;
+			m_startupFrequency = 146000000;
+			m_lowFrequency = 100000000;
+			m_highFrequency = 175000000;
+			m_startupDemodMode = dmFMN;
 			break;
 		case SR_ENSEMBLE_4M:
 			//si570 / 1.33 = 3000000 to 120000000
-			startupFrequency = 70000000;
-			lowFrequency = 60000000;
-			highFrequency = 100000000;
-			startupDemodMode = dmFMN;
+			m_startupFrequency = 70000000;
+			m_lowFrequency = 60000000;
+			m_highFrequency = 100000000;
+			m_startupDemodMode = dmFMN;
 			break;
 		case SR_ENSEMBLE_6M:
 			//si570 / 1.33
-			startupFrequency = 52000000;
-			lowFrequency = 40000000;
-			highFrequency = 60000000;
-			startupDemodMode = dmFMN;
+			m_startupFrequency = 52000000;
+			m_lowFrequency = 40000000;
+			m_highFrequency = 60000000;
+			m_startupDemodMode = dmFMN;
 			break;
 		case SR_ENSEMBLE_LF:
 			//Extra div/4 stage, so 1/4 normal SR
-			startupFrequency = 1000000;
-			lowFrequency = 150000;
-			highFrequency = 4000000;
-			startupDemodMode = dmAM;
+			m_startupFrequency = 1000000;
+			m_lowFrequency = 150000;
+			m_highFrequency = 4000000;
+			m_startupDemodMode = dmAM;
 			break;
 		case FiFi:
 			//si570 / 4.0
-			startupFrequency = 10000000;
-			lowFrequency = 200000;
+			m_startupFrequency = 10000000;
+			m_lowFrequency = 200000;
 			//highFrequency = 30000000;
-			highFrequency = 150000000; //Test
-			startupDemodMode = dmAM;
+			m_highFrequency = 150000000; //Test
+			m_startupDemodMode = dmAM;
 
 			//Default input device
 #ifdef USE_PORT_AUDIO
 			inputDeviceName = "CoreAudio:UDA1361 Input";
 #endif
 #ifdef USE_QT_AUDIO
-			inputDeviceName = "UDA1361 Input";
+			m_inputDeviceName = "UDA1361 Input";
 #endif
-			iqOrder = QI; //Fifi is normal inverted
+			m_iqOrder = IQO_QI; //Fifi is normal inverted
 			break;
 		default:
 			break;
 	}
 
 	//Set defaults, then read common settings
-	DeviceInterfaceBase::ReadSettings();
+	DeviceInterfaceBase::readSettings();
 
-	deviceNumber = currentDeviceNumber; //Restore
+	m_deviceNumber = currentDeviceNumber; //Restore
 
-	sdrNumber = qSettings->value("SDRNumber",-1).toInt();
+	sdrNumber = m_qSettings->value("SDRNumber",-1).toInt();
 	//useABPF = qSettings->value("UseABPF",true).toInt();
 
 }
 
-void SoftrockSDRDevice::WriteSettings()
+void SoftrockSDRDevice::writeSettings()
 {
-	switch (deviceNumber)
+	switch (m_deviceNumber)
 	{
-		case FiFi: qSettings = srFifiSettings; break;
-		case SR_V9: qSettings = srV9Settings; break;
-		case SR_LITE: qSettings = srLiteSettings; break;
-		case SR_ENSEMBLE: qSettings = srEnsembleSettings; break;
-		case SR_ENSEMBLE_LF: qSettings = srEnsembleLFSettings; break;
-		case SR_ENSEMBLE_2M: qSettings = srEnsemble2MSettings; break;
-		case SR_ENSEMBLE_4M: qSettings = srEnsemble4MSettings; break;
-		case SR_ENSEMBLE_6M: qSettings = srEnsemble6MSettings; break;
+		case FiFi: m_qSettings = srFifiSettings; break;
+		case SR_V9: m_qSettings = srV9Settings; break;
+		case SR_LITE: m_qSettings = srLiteSettings; break;
+		case SR_ENSEMBLE: m_qSettings = srEnsembleSettings; break;
+		case SR_ENSEMBLE_LF: m_qSettings = srEnsembleLFSettings; break;
+		case SR_ENSEMBLE_2M: m_qSettings = srEnsemble2MSettings; break;
+		case SR_ENSEMBLE_4M: m_qSettings = srEnsemble4MSettings; break;
+		case SR_ENSEMBLE_6M: m_qSettings = srEnsemble6MSettings; break;
 		default:
-			qSettings = NULL; break;
+			m_qSettings = NULL; break;
 	}
 
-	DeviceInterfaceBase::WriteSettings();
-	qSettings->setValue("SDRNumber",sdrNumber);
+	DeviceInterfaceBase::writeSettings();
+	m_qSettings->setValue("SDRNumber",sdrNumber);
 
-	qSettings->sync();
+	m_qSettings->sync();
 
 }
 
-QVariant SoftrockSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _option)
+QVariant SoftrockSDRDevice::get(DeviceInterface::StandardKeys _key, QVariant _option)
 {
 	switch (_key) {
 		//Used to select device
-		case PluginName:
+		case Key_PluginName:
 			return "SoftRock Family";
-		case PluginDescription:
+		case Key_PluginDescription:
 			return "Softrock devices";
-		case PluginNumDevices:
+		case Key_PluginNumDevices:
 			return 8;
 		//Used in titles
-		case DeviceName:
+		case Key_DeviceName:
 			switch (_option.toInt())
 			{
 				case SR_LITE: return "SR Lite - Fixed"; break;
@@ -271,19 +271,19 @@ QVariant SoftrockSDRDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _o
 			}
 
 		default:
-			return DeviceInterfaceBase::Get(_key, _option);
+			return DeviceInterfaceBase::get(_key, _option);
 	}
 }
 
-bool SoftrockSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, QVariant _option)
+bool SoftrockSDRDevice::set(DeviceInterface::StandardKeys _key, QVariant _value, QVariant _option)
 {
 	Q_UNUSED(_option);
 	double fRequested = _value.toDouble();
 	switch (_key) {
-		case DeviceFrequency: {
+		case Key_DeviceFrequency: {
 			//What type of SoftRock are we using?  Determines how we calc LO
 			double mult = 4;
-			switch (deviceNumber)
+			switch (m_deviceNumber)
 			{
 				//SR_LITE has no USB control, just return what was requested so app can set fixed freq
 				case SR_LITE:
@@ -309,15 +309,15 @@ bool SoftrockSDRDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value
 			}
 			bool result = SetFrequencyByValue(fRequested * mult);
 			if (result) {
-				deviceFrequency = fRequested;
+				m_deviceFrequency = fRequested;
 				return fRequested; //SoftRock sets exact freq
 			} else {
-				return deviceFrequency; //Freq didn't change, return previous value
+				return m_deviceFrequency; //Freq didn't change, return previous value
 			}
 			break;
 		}
 		default:
-		return DeviceInterfaceBase::Set(_key, _value, _option);
+		return DeviceInterfaceBase::set(_key, _value, _option);
 	}
 }
 
@@ -809,7 +809,7 @@ qint32 SoftrockSDRDevice::Freq2SRFreq(double iFreq)
 //Utility functions that each SoftRock command used to send/receive data.  See Firmware.txt
 int SoftrockSDRDevice::usbCtrlMsgIn(int request, int value, int index, unsigned char *bytes, int size)
 {
-	if (deviceNumber == SR_LITE || !usbUtil.IsUSBLoaded())
+	if (m_deviceNumber == SR_LITE || !usbUtil.IsUSBLoaded())
 		return size; //No USB, pretend everything is working
 
 	return usbUtil.ControlMsg(LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_IN,
@@ -818,7 +818,7 @@ int SoftrockSDRDevice::usbCtrlMsgIn(int request, int value, int index, unsigned 
 
 int SoftrockSDRDevice::usbCtrlMsgOut(int request, int value, int index, unsigned char *bytes, int size)
 {
-	if (deviceNumber == SR_LITE || !usbUtil.IsUSBLoaded())
+	if (m_deviceNumber == SR_LITE || !usbUtil.IsUSBLoaded())
 		return size; //No USB, pretend everything is working
 
 	return usbUtil.ControlMsg(LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE | LIBUSB_ENDPOINT_OUT,
@@ -828,13 +828,13 @@ int SoftrockSDRDevice::usbCtrlMsgOut(int request, int value, int index, unsigned
 //Dialog stuff
 void SoftrockSDRDevice::selectAutomatic(bool b) {
 	Q_UNUSED(b);
-	if (!connected)
+	if (!m_connected)
 		return;
 	SetAutoBPF(true);
 }
 void SoftrockSDRDevice::selectInput0(bool b) {
 	Q_UNUSED(b);
-	if (!connected)
+	if (!m_connected)
 		return;
 	//Turn off ABPF
 	SetAutoBPF(false);
@@ -842,32 +842,32 @@ void SoftrockSDRDevice::selectInput0(bool b) {
 }
 void SoftrockSDRDevice::selectInput1(bool b) {
 	Q_UNUSED(b);
-	if (!connected)
+	if (!m_connected)
 		return;
 	SetAutoBPF(false);
 	SetInputMux(1);
 }
 void SoftrockSDRDevice::selectInput2(bool b) {
 	Q_UNUSED(b);
-	if (!connected)
+	if (!m_connected)
 		return;
 	SetAutoBPF(false);
 	SetInputMux(2);
 }
 void SoftrockSDRDevice::selectInput3(bool b) {
 	Q_UNUSED(b);
-	if (!connected)
+	if (!m_connected)
 		return;
 	SetInputMux(3);
 }
 void SoftrockSDRDevice::serialNumberChanged(int s)
 {
-	if (!connected)
+	if (!m_connected)
 		return;
 	SetSerialNumber(s);
 }
 
-void SoftrockSDRDevice::SetupOptionUi(QWidget *parent)
+void SoftrockSDRDevice::setupOptionUi(QWidget *parent)
 {
 	if (optionUi != NULL)
 		delete optionUi;
@@ -913,7 +913,7 @@ void SoftrockSDRDevice::SetupOptionUi(QWidget *parent)
 	connect(optionUi->serialBox,SIGNAL(currentIndexChanged(int)),this,SLOT(serialNumberChanged(int)));
 
 	//Enable/disable for different softrock-ish devices
-	if (deviceNumber == FiFi) {
+	if (m_deviceNumber == FiFi) {
 		optionUi->fifiVersionLabel->setVisible(true);
 		optionUi->fifiHelp->setVisible(true);
 
@@ -935,8 +935,8 @@ void SoftrockSDRDevice::SetupOptionUi(QWidget *parent)
 	}
 
 	//This can only be displayed when power is on
-	if (connected) {
-		if (deviceNumber == FiFi) {
+	if (m_connected) {
+		if (m_deviceNumber == FiFi) {
 			quint32 fifiSVN;
 			QString version;
 			QString label;

@@ -31,14 +31,14 @@ public:
     void SetupDataUi(QWidget *parent);
 
     CPX * ProcessBlock(CPX * in, int _numSamples);
-	DeviceInterface::DEMODMODE DemodMode() const;
+	DeviceInterface::DemodMode DemodMode() const;
     void ResetDemod(); //Resets all data decoders, called after frequency change from receiver
-	void SetDemodMode(DeviceInterface::DEMODMODE mode, int _sourceSampleRate, int _audioSampleRate);
-	static DeviceInterface::DEMODMODE StringToMode(QString m);
-	static QString ModeToString(DeviceInterface::DEMODMODE dm);
+	void SetDemodMode(DeviceInterface::DemodMode mode, int _sourceSampleRate, int _audioSampleRate);
+	static DeviceInterface::DemodMode StringToMode(QString m);
+	static QString ModeToString(DeviceInterface::DemodMode dm);
 
     struct DemodInfo {
-		DeviceInterface::DEMODMODE mode;
+		DeviceInterface::DemodMode mode;
         QStringList filters;
         qint32 defaultFilter;
         qint32 lowCutMin; //Low bandpass
@@ -64,7 +64,7 @@ private:
     Demod_WFM *demodWFM;
     Demod_NFM *demodNFM;
 
-	DeviceInterface::DEMODMODE mode;
+	DeviceInterface::DemodMode mode;
     Ui::dataBand *dataUi;
     bool outputOn;
 

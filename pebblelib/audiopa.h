@@ -11,7 +11,7 @@ class Receiver; //Forward declaration since soundcard and receiver are dependent
 class AudioPA:public Audio
 {
 public:
-	AudioPA(cbAudioProducer cb, int fpb);
+	AudioPA(CB_AudioProducer cb, int fpb);
 	~AudioPA(void);
 	//Virtual functions
 	//We may get input from some other source, if so inputSampleRate = 0

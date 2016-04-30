@@ -32,17 +32,17 @@ public:
 	~SDRPlayDevice();
 
 	//Required
-	bool Initialize(cbProcessIQData _callback,
-					cbProcessBandscopeData _callbackBandscope,
-					cbProcessAudioData _callbackAudio,
+	bool initialize(CB_ProcessIQData _callback,
+					CB_ProcessBandscopeData _callbackBandscope,
+					CB_ProcessAudioData _callbackAudio,
 					quint16 _framesPerBuffer);
-	bool Command(STANDARD_COMMANDS _cmd, QVariant _arg);
-	QVariant Get(STANDARD_KEYS _key, QVariant _option = 0);
-	bool Set(STANDARD_KEYS _key, QVariant _value, QVariant _option = 0);
-	void ReadSettings();
-	void WriteSettings();
+	bool command(StandardCommands _cmd, QVariant _arg);
+	QVariant get(StandardKeys _key, QVariant _option = 0);
+	bool set(StandardKeys _key, QVariant _value, QVariant _option = 0);
+	void readSettings();
+	void writeSettings();
 	//Display device option widget in settings dialog
-	void SetupOptionUi(QWidget *parent);
+	void setupOptionUi(QWidget *parent);
 
 private slots:
 	void dcCorrectionChanged(int _item);

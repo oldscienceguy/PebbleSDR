@@ -24,82 +24,82 @@ class PEBBLELIBSHARED_EXPORT DeviceInterfaceBase : public DeviceInterface
 public:
 	DeviceInterfaceBase();
 	virtual ~DeviceInterfaceBase();
-	virtual bool Initialize(cbProcessIQData _callback,
-							cbProcessBandscopeData _callbackBandscope,
-							cbProcessAudioData _callbackAudio,
+	virtual bool initialize(CB_ProcessIQData _callback,
+							CB_ProcessBandscopeData _callbackBandscope,
+							CB_ProcessAudioData _callbackAudio,
 							quint16 _framesPerBuffer);
 
-	virtual bool Command(STANDARD_COMMANDS _cmd, QVariant _arg);
+	virtual bool command(StandardCommands _cmd, QVariant _arg);
 
 	//Defaults so devices only have to handle what they need to
-	virtual QVariant Get(STANDARD_KEYS _key, QVariant _option = 0);
-	virtual bool Set(STANDARD_KEYS _key, QVariant _value, QVariant _option = 0);
+	virtual QVariant get(StandardKeys _key, QVariant _option = 0);
+	virtual bool set(StandardKeys _key, QVariant _value, QVariant _option = 0);
 
 protected:
 	//Used to be in public DeviceInterface, made private as a transition so we don't have to immediately re-write all the plugins
-	virtual bool Connect();
-	virtual bool Disconnect();
-	virtual void Start();
-	virtual void Stop();
-	virtual void ReadSettings();
-	virtual void WriteSettings();
+	virtual bool connectDevice();
+	virtual bool disconnectDevice();
+	virtual void startDevice();
+	virtual void stopDevice();
+	virtual void readSettings();
+	virtual void writeSettings();
 	//Display device option widget in settings dialog
-	virtual void SetupOptionUi(QWidget *parent);
+	virtual void setupOptionUi(QWidget *parent);
 
 
-	virtual void InitSettings(QString fname);
+	virtual void initSettings(QString fname);
 
-	void AudioProducer(float *samples, quint16 numSamples);
-	cbProcessIQData ProcessIQData;
-	cbProcessBandscopeData ProcessBandscopeData;
-	cbProcessAudioData ProcessAudioData;
+	void audioProducer(float *samples, quint16 numSamples);
+	CB_ProcessIQData processIQData;
+	CB_ProcessBandscopeData processBandscopeData;
+	CB_ProcessAudioData processAudioData;
 
 
 	//Todo: Flag which of these is just a convenience for Pebble, vs required for the interface
 	quint16 framesPerBuffer;
 
-	int lastSpectrumMode; //Spectrum, waterfall, etc
-	STARTUP_TYPE startupType;
-	double userFrequency;
-	double deviceFrequency; //Current device frequency
-	double startupFrequency;
-	double highFrequency;
-	double lowFrequency;
-	QString inputDeviceName;
-	QString outputDeviceName;
-	quint32 sampleRate;
-	quint32 deviceSampleRate;
+	int m_lastSpectrumMode; //Spectrum, waterfall, etc
+	StartupType m_startupType;
+	double m_userFrequency;
+	double m_deviceFrequency; //Current device frequency
+	double m_startupFrequency;
+	double m_highFrequency;
+	double m_lowFrequency;
+	QString m_inputDeviceName;
+	QString m_outputDeviceName;
+	quint32 m_sampleRate;
+	quint32 m_deviceSampleRate;
 
-	double userIQGain; //Normalize device so incoming IQ levels are consistent
-	double normalizeIQGain; //Per device to normalize device levels at userGain == 1
+	double m_userIQGain; //Normalize device so incoming IQ levels are consistent
+	double m_normalizeIQGain; //Per device to normalize device levels at userGain == 1
 
-	IQORDER iqOrder;
+	IQOrder m_iqOrder;
 	//Image rejection (iqbalance) factors for this device
-	double iqBalanceGain;
-	double iqBalancePhase;
-	bool iqBalanceEnable;
+	double m_iqBalanceGain;
+	double m_iqBalancePhase;
+	bool m_iqBalanceEnable;
 
-	double lastFreq;
-	int startupDemodMode;
-	int lastDemodMode;
+	double m_lastFreq;
+	int m_startupDemodMode;
+	int m_lastDemodMode;
 
 	//Device needs to manage QSettings since it knows its own settings file name
-	QSettings *qSettings;
+	QSettings *m_qSettings;
 
-	int deviceNumber; //For plugins that support multiple devices
-	bool connected;
-	bool running;
+	int m_deviceNumber; //For plugins that support multiple devices
+	bool m_connected;
+	bool m_running;
 
-	Perform perform;
+	Perform m_perform;
 
 	//Not used if we're not using ProducerConsumer
-	ProducerConsumer producerConsumer;
-	quint16 numProducerBuffers; //For faster sample rates, may need more producer buffers to handle
-	int readBufferSize; //Producer buffer size in bytes (not CPX)
+	ProducerConsumer m_producerConsumer;
+	quint16 m_numProducerBuffers; //For faster sample rates, may need more producer buffers to handle
+	int m_readBufferSize; //Producer buffer size in bytes (not CPX)
 
-	Audio *audioInput;
-	quint16 audioOutputSampleRate;
-	CPX *audioInputBuffer;
+	Audio *m_audioInput;
+	quint16 m_audioOutputSampleRate;
+	CPX *m_audioInputBuffer;
 
 	//Moved responsibility from receiver.cpp ProcessIQ to device
 	void normalizeIQ(CPX *cpx, float I, float Q);
@@ -117,11 +117,11 @@ protected:
 	void normalizeIQ(CPX *_out, short *_inI, short *_inQ, quint32 _numSamples, bool _reverse = false);
 
 	//Used for up or down converters
-	bool converterMode;
-	double converterOffset;
+	bool m_converterMode;
+	double m_converterOffset;
 
-	quint32 decimateFactor;
-	bool removeDC;
+	quint32 m_decimateFactor;
+	bool m_removeDC;
 };
 
 #endif // DEVICEINTERFACEBASE_H

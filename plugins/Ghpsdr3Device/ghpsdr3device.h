@@ -248,12 +248,12 @@ public:
 	~Ghpsdr3Device();
 
 	//Required
-	bool Initialize(cbProcessIQData _callback,
-					cbProcessBandscopeData _callbackBandscope,
-					cbProcessAudioData _callbackAudio,
+	bool initialize(CB_ProcessIQData _callback,
+					CB_ProcessBandscopeData _callbackBandscope,
+					CB_ProcessAudioData _callbackAudio,
 					quint16 _framesPerBuffer);
-	QVariant Get(STANDARD_KEYS _key, QVariant _option = 0);
-	bool Set(STANDARD_KEYS _key, QVariant _value, QVariant _option = 0);
+	QVariant get(StandardKeys _key, QVariant _option = 0);
+	bool set(StandardKeys _key, QVariant _value, QVariant _option = 0);
 
 signals:
 	void CheckNewData();
@@ -268,14 +268,14 @@ private slots:
 	void cmdGetSpectrum();
 
 private:
-	bool Connect();
-	bool Disconnect();
-	void Start();
-	void Stop();
-	void ReadSettings();
-	void WriteSettings();
+	bool connectDevice();
+	bool disconnectDevice();
+	void startDevice();
+	void stopDevice();
+	void readSettings();
+	void writeSettings();
 	//Display device option widget in settings dialog
-	void SetupOptionUi(QWidget *parent);
+	void setupOptionUi(QWidget *parent);
 
 	enum AudioEncoding {
 		ALAW = 0,
@@ -372,7 +372,7 @@ private:
 		bool isSlave;
 		quint16 serverNum; //Not sure this is correct
 		quint32 frequency;
-		DeviceInterface::DEMODMODE demodMode; //Pebble demod mode, mapped to gDemodMode
+		DeviceInterface::DemodMode demodMode; //Pebble demod mode, mapped to gDemodMode
 		quint16 zoom;
 		qint16 lowFilter;
 		qint16 highFilter;

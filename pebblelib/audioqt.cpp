@@ -3,7 +3,7 @@
 #include "audioqt.h"
 #include <QDebug>
 
-AudioQT::AudioQT(cbAudioProducer cb, int fpb):Audio()
+AudioQT::AudioQT(CB_AudioProducer cb, int fpb):Audio()
 {
 	AudioProducer = cb;
 

@@ -9,8 +9,8 @@
 
 RFSpaceDevice::RFSpaceDevice():DeviceInterfaceBase()
 {
-	InitSettings("");
-	ReadSettings();
+	initSettings("");
+	readSettings();
 
 	optionUi = NULL;
 	readBuf = usbReadBuf = NULL;
@@ -47,24 +47,24 @@ RFSpaceDevice::~RFSpaceDevice()
 		delete afedri;
 }
 
-void RFSpaceDevice::InitSettings(QString fname)
+void RFSpaceDevice::initSettings(QString fname)
 {
 	Q_UNUSED(fname);
 
-	DeviceInterfaceBase::InitSettings("SDR_IQ");
-	sdriqSettings = qSettings;
-	DeviceInterfaceBase::InitSettings("SDR_IP");
-	sdripSettings = qSettings;
-	DeviceInterfaceBase::InitSettings("AFEDRI_USB");
-	afedri_usbSettings = qSettings;
-	qSettings = NULL; //Catch errors
+	DeviceInterfaceBase::initSettings("SDR_IQ");
+	sdriqSettings = m_qSettings;
+	DeviceInterfaceBase::initSettings("SDR_IP");
+	sdripSettings = m_qSettings;
+	DeviceInterfaceBase::initSettings("AFEDRI_USB");
+	afedri_usbSettings = m_qSettings;
+	m_qSettings = NULL; //Catch errors
 }
 
-bool RFSpaceDevice::Initialize(cbProcessIQData _callback,
-							   cbProcessBandscopeData _callbackBandscope,
-							   cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
+bool RFSpaceDevice::initialize(CB_ProcessIQData _callback,
+							   CB_ProcessBandscopeData _callbackBandscope,
+							   CB_ProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
-	numProducerBuffers = 50;
+	m_numProducerBuffers = 50;
 
 	usbUtil = new USBUtil(USBUtil::FTDI_D2XX);
 	ad6620 = new AD6620(usbUtil);
@@ -72,44 +72,44 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback,
 
 
 
-	if (deviceNumber == SDR_IQ) {
-		DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
-		producerConsumer.Initialize(std::bind(&RFSpaceDevice::producerWorker, this, std::placeholders::_1),
+	if (m_deviceNumber == SDR_IQ) {
+		DeviceInterfaceBase::initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
+		m_producerConsumer.Initialize(std::bind(&RFSpaceDevice::producerWorker, this, std::placeholders::_1),
 			std::bind(&RFSpaceDevice::consumerWorker, this, std::placeholders::_1),
-			numProducerBuffers, framesPerBuffer * sizeof(CPX), ProducerConsumer::PRODUCER_MODE::POLL);
+			m_numProducerBuffers, framesPerBuffer * sizeof(CPX), ProducerConsumer::PRODUCER_MODE::POLL);
 		//SR * 2 bytes for I * 2 bytes for Q .  dataBlockSize is 8192
-		producerConsumer.SetProducerInterval(deviceSampleRate,framesPerBuffer);
-		producerConsumer.SetConsumerInterval(deviceSampleRate,framesPerBuffer);
+		m_producerConsumer.SetProducerInterval(m_deviceSampleRate,framesPerBuffer);
+		m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,framesPerBuffer);
 		//Normalizes signal +/- db. -10 will decrease signal by 10db, +10 will increase by 10db
 		//Use 10mhz signal generator with .0005vpp (Red Pitaya) should result in approx -60db signal
 		//Test with normalizeGain = 1 to get baseline, then calculate db gain/loss adjustment
 		//Compare with other programs to verify
 		//normalizeIQGain = DB::dBToAmplitude(-9.5);
 
-	} else if(deviceNumber == SDR_IP) {
-		DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
+	} else if(m_deviceNumber == SDR_IP) {
+		DeviceInterfaceBase::initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
 		//Run Producer in NOTIFY mode which only calls worker when we have new UDP datagrams
 		//More efficient and robust compared with POLL, but either one works
-		producerConsumer.Initialize(std::bind(&RFSpaceDevice::producerWorker, this, std::placeholders::_1),
+		m_producerConsumer.Initialize(std::bind(&RFSpaceDevice::producerWorker, this, std::placeholders::_1),
 			std::bind(&RFSpaceDevice::consumerWorker, this, std::placeholders::_1),
-			numProducerBuffers, framesPerBuffer * sizeof(CPX), ProducerConsumer::PRODUCER_MODE::NOTIFY);
+			m_numProducerBuffers, framesPerBuffer * sizeof(CPX), ProducerConsumer::PRODUCER_MODE::NOTIFY);
 		//Get get UDP datagrams of 1024 bytes, 4bytes per CPX or 256 CPX samples
 		//Not needed if producer is running in NOTIFY mode
-		producerConsumer.SetProducerInterval(deviceSampleRate,udpBlockSize / sizeof(CPX16));
+		m_producerConsumer.SetProducerInterval(m_deviceSampleRate,udpBlockSize / sizeof(CPX16));
 
 		//Consumer only has to run once every 2048 CPX samples
-		producerConsumer.SetConsumerInterval(deviceSampleRate,framesPerBuffer);
-		normalizeIQGain = DB::dBToAmplitude(7);
+		m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,framesPerBuffer);
+		m_normalizeIQGain = DB::dBToAmplitude(7);
 
-	} else if (deviceNumber == AFEDRI_USB) {
-		DeviceInterfaceBase::Initialize(_callback, NULL, NULL, _framesPerBuffer); //Handle audio input
+	} else if (m_deviceNumber == AFEDRI_USB) {
+		DeviceInterfaceBase::initialize(_callback, NULL, NULL, _framesPerBuffer); //Handle audio input
 		afedri->Initialize(); //HID
-		normalizeIQGain = DB::dBToAmplitude(-23);
+		m_normalizeIQGain = DB::dBToAmplitude(-23);
 	}
 
 	readBufferIndex = 0;
 
-	if (deviceNumber == SDR_IP && tcpSocket == NULL) {
+	if (m_deviceNumber == SDR_IP && tcpSocket == NULL) {
 		tcpSocket = new QTcpSocket();
 
 		//We use the signals emitted by QTcpSocket to get new data, instead of polling in a separate thread
@@ -121,7 +121,7 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback,
 		connect(tcpSocket,&QTcpSocket::readyRead, this, &RFSpaceDevice::TCPSocketNewData);
 
 	}
-	if (deviceNumber == SDR_IP && autoDiscover) {
+	if (m_deviceNumber == SDR_IP && autoDiscover) {
 		if (!SendUDPDiscovery()) {
 			QMessageBox::information(NULL,"RFSpace Discovery",
 				"No SDR-IP compatible device found.\nPlease try again or set a fixed IP/Port");
@@ -130,7 +130,7 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback,
 			//Got something
 			deviceAddress = deviceDiscoveredAddress;
 			devicePort = deviceDiscoveredPort;
-			WriteSettings(); //Save
+			writeSettings(); //Save
 			return true;
 		}
 
@@ -140,9 +140,9 @@ bool RFSpaceDevice::Initialize(cbProcessIQData _callback,
 	return true;
 }
 
-bool RFSpaceDevice::Connect()
+bool RFSpaceDevice::connectDevice()
 {
-	if (deviceNumber == SDR_IP) {
+	if (m_deviceNumber == SDR_IP) {
 		tcpSocket->connectToHost(deviceAddress,devicePort,QTcpSocket::ReadWrite);
 		if (!tcpSocket->waitForConnected(1000)) {
 			//Socket was closed or error
@@ -150,10 +150,10 @@ bool RFSpaceDevice::Connect()
 			return false;
 		}
 		qDebug()<<"Server connected";
-		connected = true;
+		m_connected = true;
 
 		return true;
-	} else if (deviceNumber == SDR_IQ) {
+	} else if (m_deviceNumber == SDR_IQ) {
 		header.gotHeader = false;
 
 		if (!usbUtil->IsUSBLoaded()) {
@@ -196,12 +196,12 @@ bool RFSpaceDevice::Connect()
 			return false;
 		}
 
-		connected = true;
+		m_connected = true;
 		return true;
 
-	} else if (deviceNumber == AFEDRI_USB) {
+	} else if (m_deviceNumber == AFEDRI_USB) {
 		if (afedri->Connect()) {
-			connected = true;
+			m_connected = true;
 			return true;
 		} else {
 			return false;
@@ -210,37 +210,37 @@ bool RFSpaceDevice::Connect()
 	return false; //Invalid connection type
 }
 
-bool RFSpaceDevice::Disconnect()
+bool RFSpaceDevice::disconnectDevice()
 {
-	WriteSettings();
+	writeSettings();
 
-	if (!connected)
+	if (!m_connected)
 		return false;
 
-	if (deviceNumber == SDR_IP) {
+	if (m_deviceNumber == SDR_IP) {
 		tcpSocket->disconnectFromHost();
-		connected = false;
+		m_connected = false;
 		return true;
-	} else if (deviceNumber == SDR_IQ) {
+	} else if (m_deviceNumber == SDR_IQ) {
 		usbUtil->CloseDevice();
-		connected = false;
+		m_connected = false;
 		return true;
-	} else if (deviceNumber == AFEDRI_USB) {
+	} else if (m_deviceNumber == AFEDRI_USB) {
 		return afedri->Disconnect();
 	}
 	return false;
 }
 
 
-void RFSpaceDevice::Start()
+void RFSpaceDevice::startDevice()
 {
-	if (deviceNumber == SDR_IP) {
+	if (m_deviceNumber == SDR_IP) {
 		//Fastest is no threads, just signals from NewUDPData to ConsumerWorker via ProducerConsumer
-		producerConsumer.Start(true,true);
-	} else if (deviceNumber == SDR_IQ){
-		producerConsumer.Start(true,true);
-	} else if (deviceNumber == AFEDRI_USB) {
-		DeviceInterfaceBase::Start(); //Audio Input
+		m_producerConsumer.Start(true,true);
+	} else if (m_deviceNumber == SDR_IQ){
+		m_producerConsumer.Start(true,true);
+	} else if (m_deviceNumber == AFEDRI_USB) {
+		DeviceInterfaceBase::startDevice(); //Audio Input
 	} else {
 		return;
 	}
@@ -272,48 +272,48 @@ void RFSpaceDevice::Start()
 
 	//Finally ready to start getting data samples
 	StartCapture();
-	running = true;
+	m_running = true;
 }
 
-void RFSpaceDevice::Stop()
+void RFSpaceDevice::stopDevice()
 {
-	if (!running)
+	if (!m_running)
 		return;
-	if (deviceNumber == SDR_IP || deviceNumber == SDR_IQ) {
+	if (m_deviceNumber == SDR_IP || m_deviceNumber == SDR_IQ) {
 		StopCapture();
-		producerConsumer.Stop();
-	} else if (deviceNumber == AFEDRI_USB) {
-		DeviceInterfaceBase::Stop(); //Audio input
+		m_producerConsumer.Stop();
+	} else if (m_deviceNumber == AFEDRI_USB) {
+		DeviceInterfaceBase::stopDevice(); //Audio input
 	}
-	running = false;
+	m_running = false;
 }
 
-void RFSpaceDevice::ReadSettings()
+void RFSpaceDevice::readSettings()
 {
-	if (deviceNumber == SDR_IQ) {
-		qSettings = sdriqSettings;
-	} else if (deviceNumber == SDR_IP) {
-		qSettings = sdripSettings;
-	} else if (deviceNumber == AFEDRI_USB) {
-		qSettings = afedri_usbSettings;
-		inputDeviceName = "AFEDRI-SDR-Net Audio"; //Default if not overridden by user in dialog
-		iqOrder = QI; //AFEDRI uses audio device and IQ is reversed compared to SDR-IQ
+	if (m_deviceNumber == SDR_IQ) {
+		m_qSettings = sdriqSettings;
+	} else if (m_deviceNumber == SDR_IP) {
+		m_qSettings = sdripSettings;
+	} else if (m_deviceNumber == AFEDRI_USB) {
+		m_qSettings = afedri_usbSettings;
+		m_inputDeviceName = "AFEDRI-SDR-Net Audio"; //Default if not overridden by user in dialog
+		m_iqOrder = IQO_QI; //AFEDRI uses audio device and IQ is reversed compared to SDR-IQ
 	} else {
 		return;
 	}
 
-	deviceSampleRate = 196078; //Default if not previously set
-	lowFrequency = 150000;
-	highFrequency = 33000000;
-	DeviceInterfaceBase::ReadSettings();
+	m_deviceSampleRate = 196078; //Default if not previously set
+	m_lowFrequency = 150000;
+	m_highFrequency = 33000000;
+	DeviceInterfaceBase::readSettings();
 	//Device specific settings follow
-	sRFGain = qSettings->value("RFGain",0).toInt();
-	sIFGain = qSettings->value("IFGain",18).toInt();
-	deviceAddress = QHostAddress(qSettings->value("DeviceAddress","10.0.1.100").toString());
-	devicePort = qSettings->value("DevicePort",50000).toInt();
-	autoDiscover = qSettings->value("AutoDiscover",true).toBool();
+	sRFGain = m_qSettings->value("RFGain",0).toInt();
+	sIFGain = m_qSettings->value("IFGain",18).toInt();
+	deviceAddress = QHostAddress(m_qSettings->value("DeviceAddress","10.0.1.100").toString());
+	devicePort = m_qSettings->value("DevicePort",50000).toInt();
+	autoDiscover = m_qSettings->value("AutoDiscover",true).toBool();
 
-	sBandwidth = MapIQSampleRateToBandwidth(deviceSampleRate);
+	sBandwidth = MapIQSampleRateToBandwidth(m_deviceSampleRate);
 }
 
 quint32 RFSpaceDevice::MapBWToIQSampleRate(AD6620::BANDWIDTH bw)
@@ -356,41 +356,41 @@ AD6620::BANDWIDTH RFSpaceDevice::MapIQSampleRateToBandwidth(quint32 iqSampleRate
 
 }
 
-void RFSpaceDevice::WriteSettings()
+void RFSpaceDevice::writeSettings()
 {
-	if (deviceNumber == SDR_IQ)
-		qSettings = sdriqSettings;
-	else if (deviceNumber == SDR_IP)
-		qSettings = sdripSettings;
-	else if (deviceNumber == AFEDRI_USB)
-		qSettings = afedri_usbSettings;
+	if (m_deviceNumber == SDR_IQ)
+		m_qSettings = sdriqSettings;
+	else if (m_deviceNumber == SDR_IP)
+		m_qSettings = sdripSettings;
+	else if (m_deviceNumber == AFEDRI_USB)
+		m_qSettings = afedri_usbSettings;
 	else
 		return;
 
-	DeviceInterfaceBase::WriteSettings();
+	DeviceInterfaceBase::writeSettings();
 	//Device specific settings follow
-	qSettings->setValue("RFGain",sRFGain);
-	qSettings->setValue("IFGain",sIFGain);
-	qSettings->setValue("DeviceAddress",deviceAddress.toString());
-	qSettings->setValue("DevicePort",devicePort);
-	qSettings->setValue("AutoDiscover",autoDiscover);
+	m_qSettings->setValue("RFGain",sRFGain);
+	m_qSettings->setValue("IFGain",sIFGain);
+	m_qSettings->setValue("DeviceAddress",deviceAddress.toString());
+	m_qSettings->setValue("DevicePort",devicePort);
+	m_qSettings->setValue("AutoDiscover",autoDiscover);
 
-	qSettings->sync();
+	m_qSettings->sync();
 }
 
-QVariant RFSpaceDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _option)
+QVariant RFSpaceDevice::get(DeviceInterface::StandardKeys _key, QVariant _option)
 {
 	Q_UNUSED(_option);
 
 	switch (_key) {
-		case PluginName:
+		case Key_PluginName:
 			return "RFSpace Family";
 			break;
-		case PluginDescription:
+		case Key_PluginDescription:
 			return "SDR-IQ, SDR-IP, AFEDRI_USB";
-		case PluginNumDevices:
+		case Key_PluginNumDevices:
 			return 3;
-		case DeviceName:
+		case Key_DeviceName:
 			switch (_option.toInt()) {
 				case SDR_IQ:
 					return "SDR-IQ";
@@ -401,8 +401,8 @@ QVariant RFSpaceDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _optio
 				default:
 					return "Unknown";
 			}
-		case DeviceDescription:
-			switch (deviceNumber) {
+		case Key_DeviceDescription:
+			switch (m_deviceNumber) {
 				case SDR_IQ:
 					return "SDR-IQ";
 				case SDR_IP:
@@ -412,51 +412,51 @@ QVariant RFSpaceDevice::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _optio
 				default:
 					return "Unknown";
 			}
-		case DeviceSampleRates:
-			if (deviceNumber == SDR_IP)
+		case Key_DeviceSampleRates:
+			if (m_deviceNumber == SDR_IP)
 				return QStringList()<<"62500"<<"250000"<<"500000"<<"2000000";
-			else if (deviceNumber == SDR_IQ)
+			else if (m_deviceNumber == SDR_IQ)
 				return QStringList()<<"55555"<<"111111"<<"158730"<<"196078";
-			else if (deviceNumber == AFEDRI_USB)
+			else if (m_deviceNumber == AFEDRI_USB)
 				return QStringList()<<"50000"<<"100000"<<"150000"<<"190000"<<"250000";
 			else
 				return QStringList();
-		case DeviceType:
-			if (deviceNumber == SDR_IP || deviceNumber == SDR_IQ)
-				return DeviceInterfaceBase::IQ_DEVICE;
-			else if(deviceNumber == AFEDRI_USB)
-				return DeviceInterfaceBase::AUDIO_IQ_DEVICE;
+		case Key_DeviceType:
+			if (m_deviceNumber == SDR_IP || m_deviceNumber == SDR_IQ)
+				return DeviceInterfaceBase::DT_IQ_DEVICE;
+			else if(m_deviceNumber == AFEDRI_USB)
+				return DeviceInterfaceBase::DT_AUDIO_IQ_DEVICE;
 			else
-				return DeviceInterfaceBase::AUDIO_IQ_DEVICE;
+				return DeviceInterfaceBase::DT_AUDIO_IQ_DEVICE;
 
-		case DeviceFrequency:
+		case Key_DeviceFrequency:
 			return GetFrequency();
-		case DeviceHealthValue:
-			return producerConsumer.GetPercentageFree();
-		case DeviceHealthString:
-			if (producerConsumer.GetPercentageFree() > 50)
+		case Key_DeviceHealthValue:
+			return m_producerConsumer.GetPercentageFree();
+		case Key_DeviceHealthString:
+			if (m_producerConsumer.GetPercentageFree() > 50)
 				return "Device running normally";
 			else
 				return "Device under stress";
 
 		default:
-			return DeviceInterfaceBase::Get(_key, _option);
+			return DeviceInterfaceBase::get(_key, _option);
 	}
 }
 
-bool RFSpaceDevice::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, QVariant _option)
+bool RFSpaceDevice::set(DeviceInterface::StandardKeys _key, QVariant _value, QVariant _option)
 {
 	Q_UNUSED(_option);
 
 	switch (_key) {
-		case DeviceFrequency:
+		case Key_DeviceFrequency:
 			return SetFrequency(_value.toDouble());
 		default:
-			return DeviceInterfaceBase::Set(_key, _value, _option);
+			return DeviceInterfaceBase::set(_key, _value, _option);
 	}
 }
 
-void RFSpaceDevice::SetupOptionUi(QWidget *parent)
+void RFSpaceDevice::setupOptionUi(QWidget *parent)
 {
 	if (optionUi != NULL) {
 		//This will delete everything from the previous option page, then we re-create
@@ -505,12 +505,12 @@ void RFSpaceDevice::SetupOptionUi(QWidget *parent)
 	optionUi->ifGainBox->setCurrentIndex(cur);
 	connect(optionUi->ifGainBox,SIGNAL(currentIndexChanged(int)),this,SLOT(ifGainChanged(int)));
 
-	if (deviceNumber == SDR_IQ || deviceNumber == AFEDRI_USB) {
+	if (m_deviceNumber == SDR_IQ || m_deviceNumber == AFEDRI_USB) {
 		optionUi->ipEdit->setVisible(false);
 		optionUi->portEdit->setVisible(false);
 		optionUi->discoverBox->setVisible(false);
 		optionUi->ipDiscovered->setVisible(false);
-	} else if (deviceNumber == SDR_IP) {
+	} else if (m_deviceNumber == SDR_IP) {
 		optionUi->ipEdit->setVisible(true);
 		optionUi->portEdit->setVisible(true);
 		optionUi->discoverBox->setVisible(true);
@@ -527,7 +527,7 @@ void RFSpaceDevice::SetupOptionUi(QWidget *parent)
 		connect(optionUi->discoverBox,SIGNAL(clicked(bool)), this, SLOT(discoverBoxChanged(bool)));
 	}
 
-	if (connected) {
+	if (m_connected) {
 		optionUi->nameLabel->setText("Name: " + targetName);
 		optionUi->serialNumberLabel->setText("Serial #: " + serialNumber);
 		optionUi->firmwareLabel->setText("Firmware Version: " + QString::number(firmwareVersion));
@@ -634,7 +634,7 @@ void RFSpaceDevice::producerWorker(cbProducerConsumerEvents _event)
 	switch (_event) {
 		//Thread local constuction.  All tcp and udp port access must be kept within thread
 		case cbProducerConsumerEvents::Start:
-			if (deviceNumber == SDR_IQ || deviceNumber == AFEDRI_USB)
+			if (m_deviceNumber == SDR_IQ || m_deviceNumber == AFEDRI_USB)
 				return;
 			//Construct UDP sockets in thread local
 			if (udpSocket == NULL) {
@@ -663,22 +663,22 @@ void RFSpaceDevice::producerWorker(cbProducerConsumerEvents _event)
 				::setsockopt(udpSocket->socketDescriptor(), SOL_SOCKET, SO_RCVBUF, (char *)&v, sizeof(v));
 				//Remember we're being called from thread and signal needs to go to something in our thread
 				//In this case, we translate the udpSocket signal to a producerConsumer signal
-				connect(udpSocket, SIGNAL(readyRead()), &producerConsumer, SIGNAL(newDataNotification()));
+				connect(udpSocket, SIGNAL(readyRead()), &m_producerConsumer, SIGNAL(newDataNotification()));
 			}
 			break;
 		case cbProducerConsumerEvents::Stop:
-			if (deviceNumber == SDR_IQ || deviceNumber == AFEDRI_USB)
+			if (m_deviceNumber == SDR_IQ || m_deviceNumber == AFEDRI_USB)
 				return;
 			//Destruct UDP sockets in thread local
 			udpSocket->disconnectFromHost();
 			disconnect(udpSocket,0,0,0);
 			break;
 		case cbProducerConsumerEvents::Run:
-			if (deviceNumber == SDR_IQ) {
+			if (m_deviceNumber == SDR_IQ) {
 				DoUSBProducer();
-			} else if (deviceNumber == SDR_IP) {
+			} else if (m_deviceNumber == SDR_IP) {
 				DoUDPProducer();
-			} else if (deviceNumber == AFEDRI_USB) {
+			} else if (m_deviceNumber == AFEDRI_USB) {
 				//Audio producer
 			}
 			break;
@@ -712,19 +712,19 @@ void RFSpaceDevice::DoUSBProducer()
 		if (bytesAvailable < dataBlockSize)
 			return;
 		header.gotHeader = false; //ready for new header
-		if ((producerFreeBufPtr = (CPX *)producerConsumer.AcquireFreeBuffer()) == NULL) {
+		if ((producerFreeBufPtr = (CPX *)m_producerConsumer.AcquireFreeBuffer()) == NULL) {
 			//We have to read data and throw away or we'll get out of sync
 			usbUtil->Read(usbReadBuf, dataBlockSize);
 			return;
 		}
 		if (!usbUtil->Read(usbReadBuf, dataBlockSize)) {
 			//Lost data
-			producerConsumer.ReleaseFreeBuffer(); //Put back what we acquired
+			m_producerConsumer.ReleaseFreeBuffer(); //Put back what we acquired
 			return;
 		}
 		normalizeIQ(producerFreeBufPtr, usbReadBuf, framesPerBuffer, false);
 		//Increment the number of data buffers that are filled so consumer thread can access
-		producerConsumer.ReleaseFilledBuffer();
+		m_producerConsumer.ReleaseFilledBuffer();
 		return;
 	} else if (header.length < 2 || header.length > 100) {
 		qDebug()<<"SDR-IQ header error";
@@ -753,19 +753,19 @@ void RFSpaceDevice::consumerWorker(cbProducerConsumerEvents _event)
 			break;
 		case cbProducerConsumerEvents::Run:
 			//Wait for data to be available from producer
-			while (producerConsumer.GetNumFilledBufs() > 0) {
+			while (m_producerConsumer.GetNumFilledBufs() > 0) {
 				//qDebug()<<producerConsumer.GetNumFilledBufs()<<" "<<producerConsumer.GetNumFreeBufs();
-				if ((consumerFilledBufPtr = (CPX *)producerConsumer.AcquireFilledBuffer()) == NULL)
+				if ((consumerFilledBufPtr = (CPX *)m_producerConsumer.AcquireFilledBuffer()) == NULL)
 					return;
 				//Not sure if this is required for SDR-IQ, but it is for SDR-14
 				//SendAck();
 
 				//perform.StartPerformance("ProcessIQ");
-				ProcessIQData(consumerFilledBufPtr,framesPerBuffer);
+				processIQData(consumerFilledBufPtr,framesPerBuffer);
 				//perform.StopPerformance(100);
 
 				//Update lastDataBuf & release dataBuf
-				producerConsumer.ReleaseFreeBuffer();
+				m_producerConsumer.ReleaseFreeBuffer();
 			}
 
 			break;
@@ -779,7 +779,7 @@ void RFSpaceDevice::rfGainChanged(int i)
 	rfGain = optionUi->rfGainBox->currentData().toInt();
 	sRFGain = rfGain;
 	SetRFGain(rfGain);
-	WriteSettings();
+	writeSettings();
 }
 void RFSpaceDevice::ifGainChanged(int i)
 {
@@ -787,26 +787,26 @@ void RFSpaceDevice::ifGainChanged(int i)
 	ifGain = optionUi->ifGainBox->currentData().toInt();
 	sIFGain = ifGain;
 	SetIFGain(ifGain);
-	WriteSettings();
+	writeSettings();
 }
 void RFSpaceDevice::discoverBoxChanged(bool b)
 {
 	autoDiscover = b;
 	//Update options dialog if displayed
-	WriteSettings();
+	writeSettings();
 }
 
 void RFSpaceDevice::IPAddressChanged()
 {
 	//qDebug()<<optionUi->ipAddress->text();
 	deviceAddress = QHostAddress(optionUi->ipEdit->text());
-	WriteSettings();
+	writeSettings();
 }
 
 void RFSpaceDevice::IPPortChanged()
 {
 	devicePort = optionUi->portEdit->text().toInt();
-	WriteSettings();
+	writeSettings();
 }
 
 void RFSpaceDevice::TCPSocketError(QAbstractSocket::SocketError socketError)
@@ -883,7 +883,7 @@ void RFSpaceDevice::UDPSocketNewData()
 		if (readBufferIndex == 0) {
 			//qDebug()<<producerConsumer.GetNumFreeBufs();
 			//Starting a new producer buffer
-			if ((producerFreeBufPtr = (CPX *)producerConsumer.AcquireFreeBuffer()) == NULL) {
+			if ((producerFreeBufPtr = (CPX *)m_producerConsumer.AcquireFreeBuffer()) == NULL) {
 				mutex.unlock();
 				return;
 			}
@@ -899,7 +899,7 @@ void RFSpaceDevice::UDPSocketNewData()
 			//Reverse IQ order
 			normalizeIQ(producerFreeBufPtr, readBuf, framesPerBuffer, true);
 			//Increment the number of data buffers that are filled so consumer thread can access
-			producerConsumer.ReleaseFilledBuffer();
+			m_producerConsumer.ReleaseFilledBuffer();
 		}
 	}
 	mutex.unlock();
@@ -921,7 +921,7 @@ bool RFSpaceDevice::SendUsbCommand(void *buf, qint64 len)
 bool RFSpaceDevice::SendAck()
 {
 	unsigned char writeBuf[] = {0x03,0x60,0x00}; //Ack data block 0
-	if (deviceNumber == SDR_IQ)
+	if (m_deviceNumber == SDR_IQ)
 		return SendUsbCommand(writeBuf, sizeof(writeBuf));
 	return false;
 	//If udpSocket is in ProducerThread and tcpSocket is in main thread, we can't send ack from ProducerThread
@@ -1010,7 +1010,7 @@ bool RFSpaceDevice::SendUDPDiscovery()
 
 bool RFSpaceDevice::SetUDPAddressAndPort(QHostAddress address, quint16 port) {
 	//To set the UDP IP address to 192.168.3.123 and port to 12345: [0A][00] [C5][00] [7B][03][A8]C0] [39][30]
-	if (deviceNumber != SDR_IP)
+	if (m_deviceNumber != SDR_IP)
 		return false;
 	unsigned char writeBuf[] {0x0a, 0x00, 0xc5, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 	//192.168.0.1 is stored as 1, 0, 168, 192 in buffer
@@ -1025,11 +1025,11 @@ bool RFSpaceDevice::SetADSampleRate()
 {
 	unsigned char writeBuf[] = {0x09, 0x00, 0xB0, 0x00, 0x02, 0xff, 0xff, 0xff, 0xff};
 	*(quint32 *)&writeBuf[5] = 66666667;
-	if (deviceNumber == SDR_IP)
+	if (m_deviceNumber == SDR_IP)
 		return false;
-	else if (deviceNumber == SDR_IQ)
+	else if (m_deviceNumber == SDR_IQ)
 		return SendUsbCommand(writeBuf,sizeof(writeBuf));
-	else if (deviceNumber == AFEDRI_USB)
+	else if (m_deviceNumber == AFEDRI_USB)
 		return true;
 	else
 		return false;
@@ -1041,20 +1041,20 @@ bool RFSpaceDevice::SetIQSampleRate()
 	//100k sample rate example: [09] [00] [B8] [00] [00] [A0] [86] [01] [00]
 	unsigned char writeBuf[] = {0x09, 0x00, 0xb8, 0x00, 0x00, 0xa0, 0x86, 0x01, 0x00};
 	//Verified that this cast to quint32 puts things in right order by setting sampleRate = 100000 and comparing
-	if (deviceNumber == SDR_IP) {
-		*(quint32 *)&writeBuf[5] = deviceSampleRate;
+	if (m_deviceNumber == SDR_IP) {
+		*(quint32 *)&writeBuf[5] = m_deviceSampleRate;
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (deviceNumber == SDR_IQ) {
+	} else if (m_deviceNumber == SDR_IQ) {
 		//Setting AD6620 registers, takes a while and returns lots of garbage data
 		//We used to have to flush usb buffer after doing this
 		//Replaced in firmware 1.4 with 0xb8 command
 		// ad6620->SetBandwidth(sBandwidth);
 
-		*(quint32 *)&writeBuf[5] = deviceSampleRate;
+		*(quint32 *)&writeBuf[5] = m_deviceSampleRate;
 		return SendUsbCommand(writeBuf,sizeof(writeBuf));
-	} else if (deviceNumber == AFEDRI_USB) {
+	} else if (m_deviceNumber == AFEDRI_USB) {
 		//afedri->Set_New_Sample_Rate(sampleRate);
-		afedri->Send_Sample_Rate(deviceSampleRate);
+		afedri->Send_Sample_Rate(m_deviceSampleRate);
 	}
 	return false;
 }
@@ -1066,11 +1066,11 @@ bool RFSpaceDevice::SetRFGain(qint8 gain)
 	unsigned char writeBuf[] = { 0x06, 0x00, 0x38, 0x00, 0xff, 0xff};
 	writeBuf[4] = 0x00;
 	writeBuf[5] = gain ;
-	if (deviceNumber == SDR_IP) {
+	if (m_deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (deviceNumber == SDR_IQ) {
+	} else if (m_deviceNumber == SDR_IQ) {
 		return SendUsbCommand(writeBuf,sizeof(writeBuf));
-	} else  if (deviceNumber == AFEDRI_USB)
+	} else  if (m_deviceNumber == AFEDRI_USB)
 		return true; //Needs afedri.cpp support
 	return false;
 }
@@ -1081,11 +1081,11 @@ bool RFSpaceDevice::SetIFGain(qint8 gain)
 	//Bits 7,6,5 are Factory test bits and are masked
 	writeBuf[4] = 0; //gain & 0xE0;
 	writeBuf[5] = gain;
-	if (deviceNumber == SDR_IP) {
+	if (m_deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (deviceNumber == SDR_IQ) {
+	} else if (m_deviceNumber == SDR_IQ) {
 		return SendUsbCommand(writeBuf,sizeof(writeBuf));
-	} else  if (deviceNumber == AFEDRI_USB)
+	} else  if (m_deviceNumber == AFEDRI_USB)
 		return true; //Needs afedri.cpp support
 	return false;
 }
@@ -1139,39 +1139,39 @@ TCP
 #endif
 bool RFSpaceDevice::StartCapture()
 {
-	if (deviceNumber == SDR_IP) {
+	if (m_deviceNumber == SDR_IP) {
 		unsigned char writeBuf[] = { 0x08, 0x00, 0x18, 0x00, 0x80, 0x02, 0x00, 0x00};
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (deviceNumber == SDR_IQ) {
+	} else if (m_deviceNumber == SDR_IQ) {
 		unsigned char writeBuf[] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x02, 0x00, 0x00};
 		return SendUsbCommand(writeBuf,sizeof(writeBuf));
-	} else  if (deviceNumber == AFEDRI_USB)
+	} else  if (m_deviceNumber == AFEDRI_USB)
 		return true;
 	return false;
 }
 
 bool RFSpaceDevice::StopCapture()
 {
-	if (deviceNumber == SDR_IP) {
+	if (m_deviceNumber == SDR_IP) {
 		unsigned char writeBuf[] = { 0x08, 0x00, 0x18, 0x00, 0x80, 0x01, 0x00, 0x00};
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (deviceNumber == SDR_IQ) {
+	} else if (m_deviceNumber == SDR_IQ) {
 		unsigned char writeBuf[] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x01, 0x00, 0x00};
 		return SendUsbCommand(writeBuf,sizeof(writeBuf));
-	} else  if (deviceNumber == AFEDRI_USB)
+	} else  if (m_deviceNumber == AFEDRI_USB)
 		return true;
 	return false;
 }
 void RFSpaceDevice::FlushDataBlocks()
 {
 	bool result;
-	if (deviceNumber == SDR_IP) {
+	if (m_deviceNumber == SDR_IP) {
 		return;
-	} else if (deviceNumber == SDR_IQ) {
+	} else if (m_deviceNumber == SDR_IQ) {
 		do
 			result = usbUtil->Read(usbHeaderBuf, 1);
 		while (result);
-	} else  if (deviceNumber == AFEDRI_USB)
+	} else  if (m_deviceNumber == AFEDRI_USB)
 		return;
 }
 //Control Item Code 0x0001
@@ -1181,11 +1181,11 @@ bool RFSpaceDevice::RequestTargetName()
 	//0x04, 0x20 is the request command
 	//0x01, 0x00 is the Control Item Code (command)
 	unsigned char writeBuf[] = { 0x04, 0x20, 0x01, 0x00 };
-	if (deviceNumber == SDR_IP) {
+	if (m_deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (deviceNumber == SDR_IQ) {
+	} else if (m_deviceNumber == SDR_IQ) {
 		return SendUsbCommand(writeBuf,sizeof(writeBuf));
-	} else  if (deviceNumber == AFEDRI_USB)
+	} else  if (m_deviceNumber == AFEDRI_USB)
 		return true; //Needs afedri.cpp support
 	return false;
 }
@@ -1194,11 +1194,11 @@ bool RFSpaceDevice::RequestTargetSerialNumber()
 {
 	serialNumber = "Pending";
 	unsigned char writeBuf[] = { 0x04, 0x20, 0x02, 0x00 };
-	if (deviceNumber == SDR_IP) {
+	if (m_deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (deviceNumber == SDR_IQ) {
+	} else if (m_deviceNumber == SDR_IQ) {
 		return SendUsbCommand(writeBuf,sizeof(writeBuf));
-	} else  if (deviceNumber == AFEDRI_USB) {
+	} else  if (m_deviceNumber == AFEDRI_USB) {
 		serialNumber = afedri->Get_Serial_Number();
 		return true;
 	}
@@ -1208,11 +1208,11 @@ bool RFSpaceDevice::RequestInterfaceVersion()
 {
 	interfaceVersion = 0;
 	unsigned char writeBuf[] = { 0x04, 0x20, 0x03, 0x00 };
-	if (deviceNumber == SDR_IP) {
+	if (m_deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (deviceNumber == SDR_IQ) {
+	} else if (m_deviceNumber == SDR_IQ) {
 		return SendUsbCommand(writeBuf,sizeof(writeBuf));
-	} else  if (deviceNumber == AFEDRI_USB) {
+	} else  if (m_deviceNumber == AFEDRI_USB) {
 		return true;
 	}
 	return false;
@@ -1221,11 +1221,11 @@ bool RFSpaceDevice::RequestFirmwareVersion()
 {
 	firmwareVersion = 0;
 	unsigned char writeBuf[] = { 0x05, 0x20, 0x04, 0x00, 0x01 };
-	if (deviceNumber == SDR_IP) {
+	if (m_deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (deviceNumber == SDR_IQ) {
+	} else if (m_deviceNumber == SDR_IQ) {
 		return SendUsbCommand(writeBuf,sizeof(writeBuf));
-	} else  if (deviceNumber == AFEDRI_USB)
+	} else  if (m_deviceNumber == AFEDRI_USB)
 		return true;
 	return false;
 }
@@ -1233,11 +1233,11 @@ bool RFSpaceDevice::RequestBootcodeVersion()
 {
 	bootcodeVersion = 0;
 	unsigned char writeBuf[] = { 0x05, 0x20, 0x04, 0x00, 0x00 };
-	if (deviceNumber == SDR_IP) {
+	if (m_deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (deviceNumber == SDR_IQ) {
+	} else if (m_deviceNumber == SDR_IQ) {
 		return SendUsbCommand(writeBuf,sizeof(writeBuf));
-	} else  if (deviceNumber == AFEDRI_USB)
+	} else  if (m_deviceNumber == AFEDRI_USB)
 		return true;
 	return false;
 }
@@ -1245,11 +1245,11 @@ bool RFSpaceDevice::RequestBootcodeVersion()
 bool RFSpaceDevice::RequestStatusCode()
 {
 	unsigned char writeBuf[] = { 0x04, 0x20, 0x05, 0x00};
-	if (deviceNumber == SDR_IP) {
+	if (m_deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (deviceNumber == SDR_IQ) {
+	} else if (m_deviceNumber == SDR_IQ) {
 		return SendUsbCommand(writeBuf,sizeof(writeBuf));
-	} else  if (deviceNumber == AFEDRI_USB)
+	} else  if (m_deviceNumber == AFEDRI_USB)
 		return true;
 	return false;
 }
@@ -1257,22 +1257,22 @@ bool RFSpaceDevice::RequestStatusCode()
 bool RFSpaceDevice::RequestStatusString(unsigned char code)
 {
 	unsigned char writeBuf[] = { 0x05, 0x20, 0x06, 0x00, code};
-	if (deviceNumber == SDR_IP) {
+	if (m_deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (deviceNumber == SDR_IQ) {
+	} else if (m_deviceNumber == SDR_IQ) {
 		return SendUsbCommand(writeBuf,sizeof(writeBuf));
-	} else  if (deviceNumber == AFEDRI_USB)
+	} else  if (m_deviceNumber == AFEDRI_USB)
 		return true;
 	return false;
 }
 bool RFSpaceDevice::GetFrequency()
 {
 	unsigned char writeBuf[] = { 0x05, 0x20, 0x20, 0x00, 0x00};
-	if (deviceNumber == SDR_IP) {
+	if (m_deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (deviceNumber == SDR_IQ) {
+	} else if (m_deviceNumber == SDR_IQ) {
 		return SendUsbCommand(writeBuf,sizeof(writeBuf));
-	} else  if (deviceNumber == AFEDRI_USB)
+	} else  if (m_deviceNumber == AFEDRI_USB)
 		return true;
 	return false;
 }
@@ -1283,11 +1283,11 @@ bool RFSpaceDevice::SetFrequency(double freq)
 
 	unsigned char writeBuf[] = { 0x0a, 0x00, 0x20, 0x00, 0x00,0xff,0xff,0xff,0xff,0x01};
 	DoubleToBuf(&writeBuf[5],freq);
-	if (deviceNumber == SDR_IP) {
+	if (m_deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (deviceNumber == SDR_IQ) {
+	} else if (m_deviceNumber == SDR_IQ) {
 		return SendUsbCommand(writeBuf,sizeof(writeBuf));
-	} else  if (deviceNumber == AFEDRI_USB)
+	} else  if (m_deviceNumber == AFEDRI_USB)
 		//HID commands look almost like writeBuf[2] to [n] above
 		//But HID command to set freq is 0x03, not 0x20 as above.  Not sure why
 		return afedri->SetFrequency(freq);
@@ -1301,11 +1301,11 @@ bool RFSpaceDevice::CaptureBlocks(unsigned numBlocks)
 	//C++11 doesn't allow variable in constant initializer, so we set writeBuf[7] separately
 	unsigned char writeBuf[] = { 0x08, 0x00, 0x18, 0x00, 0x81, 0x02, 0x02, 0x00};
 	writeBuf[7] = numBlocks;
-	if (deviceNumber == SDR_IP) {
+	if (m_deviceNumber == SDR_IP) {
 		return SendTcpCommand(writeBuf,sizeof(writeBuf));
-	} else if (deviceNumber == SDR_IQ) {
+	} else if (m_deviceNumber == SDR_IQ) {
 		return SendUsbCommand(writeBuf,sizeof(writeBuf));
-	} else  if (deviceNumber == AFEDRI_USB)
+	} else  if (m_deviceNumber == AFEDRI_USB)
 		return true;
 	return false;
 }

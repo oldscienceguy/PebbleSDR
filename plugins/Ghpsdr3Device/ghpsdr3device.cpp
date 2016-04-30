@@ -16,7 +16,7 @@ IP	Call	Location	Band	Rig	Ant	Status	UTC
 #endif
 Ghpsdr3Device::Ghpsdr3Device():DeviceInterfaceBase()
 {
-	InitSettings("Ghpsdr3");
+	initSettings("Ghpsdr3");
 	tcpSocket = NULL;
 	servers = NULL;
 
@@ -28,20 +28,20 @@ Ghpsdr3Device::~Ghpsdr3Device()
 		delete tcpSocket;
 }
 
-bool Ghpsdr3Device::Initialize(cbProcessIQData _callback,
-							   cbProcessBandscopeData _callbackBandscope,
-							   cbProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
+bool Ghpsdr3Device::initialize(CB_ProcessIQData _callback,
+							   CB_ProcessBandscopeData _callbackBandscope,
+							   CB_ProcessAudioData _callbackAudio, quint16 _framesPerBuffer)
 {
-	running = false;
-	connected = false;
+	m_running = false;
+	m_connected = false;
 
-	DeviceInterfaceBase::Initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
-	numProducerBuffers = 50;
-	producerConsumer.Initialize(std::bind(&Ghpsdr3Device::producerWorker, this, std::placeholders::_1),
-		std::bind(&Ghpsdr3Device::consumerWorker, this, std::placeholders::_1),numProducerBuffers, framesPerBuffer*sizeof(CPX));
+	DeviceInterfaceBase::initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
+	m_numProducerBuffers = 50;
+	m_producerConsumer.Initialize(std::bind(&Ghpsdr3Device::producerWorker, this, std::placeholders::_1),
+		std::bind(&Ghpsdr3Device::consumerWorker, this, std::placeholders::_1),m_numProducerBuffers, framesPerBuffer*sizeof(CPX));
 	//Review interval since we're gettin audio rates not IQ sample rates
-	producerConsumer.SetConsumerInterval(8000,AUDIO_OUTPUT_SIZE);
-	producerConsumer.SetProducerInterval(8000,AUDIO_OUTPUT_SIZE);
+	m_producerConsumer.SetConsumerInterval(8000,AUDIO_OUTPUT_SIZE);
+	m_producerConsumer.SetProducerInterval(8000,AUDIO_OUTPUT_SIZE);
 	producerBufIndex = 0;
 
 	tcpReadState = READ_HEADER_TYPE; //Start out looking for header type
@@ -61,9 +61,9 @@ bool Ghpsdr3Device::Initialize(cbProcessIQData _callback,
 	return true;
 }
 
-bool Ghpsdr3Device::Connect()
+bool Ghpsdr3Device::connectDevice()
 {
-	running = false;
+	m_running = false;
 	//Smaller buffers generally work better, shorter processing time per buffer
 	tcpSocket->setReadBufferSize(AUDIO_OUTPUT_SIZE*2);
 
@@ -73,26 +73,26 @@ bool Ghpsdr3Device::Connect()
 		qDebug()<<"Server error "<<tcpSocket->errorString();
 		return false;
 	}
-	connected = true;
+	m_connected = true;
 	//Sometimes server responds with data, before we call startAudio...
 	tcpSocket->readAll(); //Clear it
 	return true;
 }
 
-bool Ghpsdr3Device::Disconnect()
+bool Ghpsdr3Device::disconnectDevice()
 {
-	if (connected) {
+	if (m_connected) {
 		tcpSocket->disconnectFromHost();
 		if (tcpSocket->state() == QTcpSocket::ConnectedState  && !tcpSocket->waitForDisconnected(1000)) {
 			qDebug()<<"tcpSocket disconnect timed out";
 		}
 		tcpSocket->close(); //Redundant?
 	}
-	connected = false;
+	m_connected = false;
 	return true;
 }
 
-void Ghpsdr3Device::Start()
+void Ghpsdr3Device::startDevice()
 {
 	//Protocol docs are useless, from QT Radio UI.cpp
 	//Search for sendCommand
@@ -118,8 +118,8 @@ void Ghpsdr3Device::Start()
 	//"setrxdcblock "
 	//....
 	//We start getting data from server, before we start.  Handle it or we fill up ProdCons buffer
-	producerConsumer.Start();
-	running = true;
+	m_producerConsumer.Start();
+	m_running = true;
 	//Testing initial setup requirements
 	//SendTcpCmd("setClient QtRadio");
 	cmdSetMode(gDemodMode::AM);
@@ -142,126 +142,126 @@ void Ghpsdr3Device::Start()
 	//Replaces old use of spectrumTimer to request spectrum data, server sends spectrum data automatically at setfps rate
 	sendTcpCmd("setfps 2048 10");
 
-	DeviceInterfaceBase::Start();
+	DeviceInterfaceBase::startDevice();
 }
 
-void Ghpsdr3Device::Stop()
+void Ghpsdr3Device::stopDevice()
 {
-	if (!running)
+	if (!m_running)
 		return;
 	//spectrumTimer.stop();
 
-	running = false;
-	producerConsumer.Stop();
+	m_running = false;
+	m_producerConsumer.Stop();
 	sendTcpCmd("stopaudiostream");
 	//Drain any buffered data
 	tcpSocket->flush();
 	tcpSocket->readAll(); //Throw away anything left in buffers
-	DeviceInterfaceBase::Stop();
+	DeviceInterfaceBase::stopDevice();
 }
 
-void Ghpsdr3Device::ReadSettings()
+void Ghpsdr3Device::readSettings()
 {
-	DeviceInterfaceBase::ReadSettings();
+	DeviceInterfaceBase::readSettings();
 	//Device specific settings follow
-	deviceAddress = QHostAddress(qSettings->value("DeviceAddress","127.0.0.1").toString());
-	devicePort = qSettings->value("DevicePort",8000).toUInt();
+	deviceAddress = QHostAddress(m_qSettings->value("DeviceAddress","127.0.0.1").toString());
+	devicePort = m_qSettings->value("DevicePort",8000).toUInt();
 
 }
 
-void Ghpsdr3Device::WriteSettings()
+void Ghpsdr3Device::writeSettings()
 {
-	DeviceInterfaceBase::WriteSettings();
+	DeviceInterfaceBase::writeSettings();
 	//Device specific settings follow
-	qSettings->setValue("DeviceAddress",deviceAddress.toString());
-	qSettings->setValue("DevicePort",devicePort);
-	qSettings->sync();
+	m_qSettings->setValue("DeviceAddress",deviceAddress.toString());
+	m_qSettings->setValue("DevicePort",devicePort);
+	m_qSettings->sync();
 }
 
-QVariant Ghpsdr3Device::Get(DeviceInterface::STANDARD_KEYS _key, QVariant _option)
+QVariant Ghpsdr3Device::get(DeviceInterface::StandardKeys _key, QVariant _option)
 {
 	Q_UNUSED(_option);
 
 	switch (_key) {
-		case PluginName:
+		case Key_PluginName:
 			return "Ghpsdr3Server";
 			break;
-		case PluginDescription:
+		case Key_PluginDescription:
 			return "Ghpsdr3Server";
 			break;
-		case DeviceName:
+		case Key_DeviceName:
 			if (serverInfo.isValid)
 				return "Ghpsdr3Server " + serverInfo.serverName + (serverInfo.isSlave?"(Slave)":"(Master)");
 			else
 				return "Ghpsdr3Server (Unknown status)";
-		case DeviceFrequency:
+		case Key_DeviceFrequency:
 			if (serverInfo.isValid && serverInfo.isSlave)
 				return serverInfo.frequency;
 			else
 				return 0;
 
-		case DeviceType:
+		case Key_DeviceType:
 			//!!Todo: Update all DeviceType usage to handle Audio_only
-			return DeviceInterface::IQ_DEVICE; //AUDIO_ONLY;
-		case AudioOutputSampleRate:
+			return DeviceInterface::DT_IQ_DEVICE; //AUDIO_ONLY;
+		case Key_AudioOutputSampleRate:
 			return 8000; //Fixed by spec?
 			break;
-		case DeviceSlave:
+		case Key_DeviceSlave:
 			if (!serverInfo.isValid || !serverInfo.isSlave)
 				return false;
 			else
 				return serverInfo.isSlave;
-		case DeviceDemodMode:
+		case Key_DeviceDemodMode:
 			if (!serverInfo.isValid || !serverInfo.isSlave)
-				return DeviceInterface::DEMODMODE::dmAM;
+				return DeviceInterface::DemodMode::dmAM;
 			else
 				return serverInfo.demodMode;
 		default:
-			return DeviceInterfaceBase::Get(_key, _option);
+			return DeviceInterfaceBase::get(_key, _option);
 	}
 }
 
-bool Ghpsdr3Device::Set(DeviceInterface::STANDARD_KEYS _key, QVariant _value, QVariant _option)
+bool Ghpsdr3Device::set(DeviceInterface::StandardKeys _key, QVariant _value, QVariant _option)
 {
 	Q_UNUSED(_option);
 
 	switch (_key) {
-		case DeviceFrequency:
+		case Key_DeviceFrequency:
 			if (serverInfo.isValid && !serverInfo.isSlave)
 				return cmdSetFrequency(_value.toFloat());
 			return false;
-		case DeviceDemodMode:		//RW quint16 enum DeviceInterface::DEMODMODE
+		case Key_DeviceDemodMode:		//RW quint16 enum DeviceInterface::DEMODMODE
 			if (serverInfo.isValid && !serverInfo.isSlave)
 				return true;
 			return false;
-		case DeviceOutputGain:		//RW quint16
+		case Key_DeviceOutputGain:		//RW quint16
 			if (serverInfo.isValid && !serverInfo.isSlave)
 				return true;
 			return false;
-		case DeviceFilter:			//RW QString "lowFilter:highFilter"
+		case Key_DeviceFilter:			//RW QString "lowFilter:highFilter"
 			if (serverInfo.isValid && !serverInfo.isSlave)
 				return true;
 			return false;
-		case DeviceAGC:				//RW quint16
+		case Key_DeviceAGC:				//RW quint16
 			if (serverInfo.isValid && !serverInfo.isSlave)
 				return true;
 			return false;
-		case DeviceANF:				//RW quint16
+		case Key_DeviceANF:				//RW quint16
 			if (serverInfo.isValid && !serverInfo.isSlave)
 				return true;
 			return false;
-		case DeviceNB:				//RW quint16
+		case Key_DeviceNB:				//RW quint16
 			if (serverInfo.isValid && !serverInfo.isSlave)
 				return true;
 			return false;
 
-		case DeviceSlave:
+		case Key_DeviceSlave:
 			//Fetch new data
 			RequestInfo(); //Move to command
 			return true;
 
 		default:
-			return DeviceInterfaceBase::Set(_key, _value, _option);
+			return DeviceInterfaceBase::set(_key, _value, _option);
 	}
 }
 
@@ -272,7 +272,7 @@ void Ghpsdr3Device::cmdGetSpectrum()
 
 void Ghpsdr3Device::RequestInfo()
 {
-	if (!running)
+	if (!m_running)
 		return;
 
 	mutex.lock();
@@ -342,7 +342,7 @@ bool Ghpsdr3Device::cmdSetFilter(qint16 low, qint16 high)
 	return sendTcpCmd(buf);
 }
 
-void Ghpsdr3Device::SetupOptionUi(QWidget *parent)
+void Ghpsdr3Device::setupOptionUi(QWidget *parent)
 {
 	if (servers != NULL)
 		delete servers;
@@ -372,13 +372,13 @@ void Ghpsdr3Device::consumerWorker(cbProducerConsumerEvents _event)
 			break;
 		case cbProducerConsumerEvents::Run: {
 			//qDebug()<<"Consumer run";
-			unsigned char * buf = producerConsumer.AcquireFilledBuffer(100);
+			unsigned char * buf = m_producerConsumer.AcquireFilledBuffer(100);
 			if (buf == NULL) {
 				//qDebug()<<"No filled buffer available";
 				return;
 			}
-			ProcessAudioData((CPX*)buf,AUDIO_OUTPUT_SIZE);
-			producerConsumer.ReleaseFreeBuffer();
+			processAudioData((CPX*)buf,AUDIO_OUTPUT_SIZE);
+			m_producerConsumer.ReleaseFreeBuffer();
 			break;
 		}
 		case cbProducerConsumerEvents::Stop:
@@ -407,7 +407,7 @@ void Ghpsdr3Device::TCPSocketDisconnected()
 void Ghpsdr3Device::TCPSocketNewData()
 {
 	//If we haven't called Start() yet, throw away any incoming data
-	if (!running) {
+	if (!m_running) {
 		tcpSocket->readAll();
 		return;
 	}
@@ -531,7 +531,7 @@ void Ghpsdr3Device::TCPSocketNewData()
 				for (int i=0; i<bytesRead; i++) {
 					if (producerBufIndex == 0) {
 						//Make sure we wait for free buffer long enough to handle short delays
-						producerBuf = (CPX*)producerConsumer.AcquireFreeBuffer(1000);
+						producerBuf = (CPX*)m_producerConsumer.AcquireFreeBuffer(1000);
 						if (producerBuf == NULL) {
 							qDebug()<<"No free Audio buffer available";
 							//Todo: We need a reset function to start everything over, reconnect etc
@@ -548,7 +548,7 @@ void Ghpsdr3Device::TCPSocketNewData()
 					//Every time we get 512 bytes of audio data, release it to application
 					if (producerBufIndex >= AUDIO_OUTPUT_SIZE) {
 						//ProcessAudioData(producerBuf,AUDIO_OUTPUT_SIZE);
-						producerConsumer.ReleaseFilledBuffer();
+						m_producerConsumer.ReleaseFilledBuffer();
 						producerBufIndex = 0;
 					}
 
@@ -616,7 +616,7 @@ void Ghpsdr3Device::TCPSocketNewData()
 				//If we have a full spectrumBuffer, update client
 				spectrumBufferIndex += bytesRead;
 				if (spectrumBufferIndex >= dspSpectrumHeader.bufLen) {
-					ProcessBandscopeData(spectrumBuffer,dspSpectrumHeader.bufLen);
+					processBandscopeData(spectrumBuffer,dspSpectrumHeader.bufLen);
 					spectrumBufferIndex = 0;
 					tcpReadState = READ_HEADER_TYPE; //Start over and look for next header
 				}
@@ -689,19 +689,19 @@ void Ghpsdr3Device::TCPSocketNewData()
 					//Map demo mode to Pebble
 					gDemodMode gdm = (gDemodMode)rx.cap(3).toInt();
 					switch (gdm) {
-						case LSB: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmLSB; break;
-						case USB: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmUSB; break;
-						case DSB: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmDSB; break;
-						case CWL: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmCWL; break;
-						case CWH: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmCWU; break;
-						case FM: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmFMN; break; //Check
-						case AM: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmAM; break;
-						case DIGU: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmDIGU; break;
-						case SPEC: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmNONE; break;
-						case DIGL: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmDIGL; break;
-						case SAM: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmSAM; break;
-						case DRM: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmNONE; break; //Missing
-						default: serverInfo.demodMode = DeviceInterface::DEMODMODE::dmAM; break;
+						case LSB: serverInfo.demodMode = DeviceInterface::DemodMode::dmLSB; break;
+						case USB: serverInfo.demodMode = DeviceInterface::DemodMode::dmUSB; break;
+						case DSB: serverInfo.demodMode = DeviceInterface::DemodMode::dmDSB; break;
+						case CWL: serverInfo.demodMode = DeviceInterface::DemodMode::dmCWL; break;
+						case CWH: serverInfo.demodMode = DeviceInterface::DemodMode::dmCWU; break;
+						case FM: serverInfo.demodMode = DeviceInterface::DemodMode::dmFMN; break; //Check
+						case AM: serverInfo.demodMode = DeviceInterface::DemodMode::dmAM; break;
+						case DIGU: serverInfo.demodMode = DeviceInterface::DemodMode::dmDIGU; break;
+						case SPEC: serverInfo.demodMode = DeviceInterface::DemodMode::dmNONE; break;
+						case DIGL: serverInfo.demodMode = DeviceInterface::DemodMode::dmDIGL; break;
+						case SAM: serverInfo.demodMode = DeviceInterface::DemodMode::dmSAM; break;
+						case DRM: serverInfo.demodMode = DeviceInterface::DemodMode::dmNONE; break; //Missing
+						default: serverInfo.demodMode = DeviceInterface::DemodMode::dmAM; break;
 
 					}
 

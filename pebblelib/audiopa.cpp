@@ -12,7 +12,7 @@ QMutex AudioPA::mutex;
     Files should be re-created and problem goes away.
 
 */
-AudioPA::AudioPA(cbAudioProducer cb, int fpb):Audio()
+AudioPA::AudioPA(CB_AudioProducer cb, int fpb):Audio()
 {
 	AudioProducer = cb;
 
