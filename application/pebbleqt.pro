@@ -28,38 +28,31 @@ macx {
 	ICON = Resources/Pebble.icns
 
 
-	#WARNING: Switching computers caused this .pro file to not load due to a bad certificate for asembla subversion
-	#Ran Qmake in terminal to see error, accepted cert, and file loads ok
-	#Get most recent checkin version number.  Assumes svn installed as in comments above
-	#See http://www.qtcentre.org/wiki/index.php?title=Version_numbering_using_QMake
-	#Note: This only gets re-generated when QMake is run and global.cpp compiled, not on every build
-	#VERSION = $$system(/opt/subversion/bin/svn info -r HEAD . | grep 'Changed\\ Rev' | cut -b 19-)
-	#!isEmpty(VERSION){
-	#  VERSION = 0.$${VERSION}
-	#}
-	#VERSION = '\\"$${VERSION}\\"' #puts escaped strings so VERSION is \"0.123\"
-	VERSION = '\\"$$system(git rev-list --count HEAD)\\"'
-	message($${VERSION})
-	#make it available to code
-	# NO SPACES !!!
-	DEFINES += PEBBLE_VERSION=\"$${VERSION}\"
-
-	#DATE = $$system(/opt/subversion/bin/svn info -r HEAD . | grep 'Changed\\ Date' | cut -b 19-)
-	#DATE = '\\"$${DATE}\\"' #puts escaped strings so VERSION is \"0.123\"
-	DATE = '\\"$$system(date)\\"'
-	message($${DATE})
-	#make it available to code
-	# NO SPACES !!!
-	DEFINES += PEBBLE_DATE=\"$${DATE}\"
-
         #This technique allows us to execute system commands before any other targets are built
         #This happens on every build, not just when qmake is executed
+
+
+        #The real problem is that pebblelib creates Pebble.app before pebbleqt
         #delete Pebble.app on every build to avoid warnings about files already existing
         #macdeployqt generates these warnings for qt.conf for example
-        myPreTarget.commands = rm -f -r $${DESTDIR}/Pebble.app
-        myPreTarget.depends = FORCE
-        QMAKE_EXTRA_TARGETS += myPreTarget
-        PRE_TARGETDEPS += myPreTarget
+        #myPreTarget.commands = rm -f -r $${DESTDIR}/Pebble.app
+
+        #Note 2 undocumented hacks.
+        #   $${LITERAL_HASH} to escape #, \# doesn't work
+        #   \$\$ to escape $, trial and error but this works
+        #1st echo creates .h file with '>', subsequent echo's append with '>>'
+        #Every commmand must end with ';' to separate it from following commands
+        myPreTarget.commands += echo \"//Created by pebbleqt.pro every build \">buildinfo.h;
+        myPreTarget.commands += echo \"$${LITERAL_HASH}define PEBBLE_QT  \"\\\"$${QT_VERSION}\\\">>buildinfo.h;
+        myPreTarget.commands += echo \"$${LITERAL_HASH}define PEBBLE_DATE \"\\\"\$\$(date)\\\">>buildinfo.h;
+        #Not sure why we need single quotes around 'git rev-list --count HEAD', but we do
+        #Note the -C $${PWD} argument which tells git where the repository is.
+        #Commands are executed in the 'build...' directory otherwise
+        myPreTarget.commands += echo \"$${LITERAL_HASH}define PEBBLE_VERSION \"\\\"\$\$('git -C $${PWD} rev-list --count HEAD')\\\">>buildinfo.h;
+        myPreTarget.depends = FORCE #Rebuild target every time
+        QMAKE_EXTRA_TARGETS += myPreTarget #Defines this as a target for QMAKE
+        PRE_TARGETDEPS += myPreTarget #Tells QMake to build this target before any other targets
+
 
 	#Turn off warnings for unused variables so we can focus on real warnings
 	#We completely replace this variable with our own warning flags in the order we want them
