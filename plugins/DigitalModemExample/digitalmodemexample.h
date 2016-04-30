@@ -21,30 +21,30 @@ public:
     DigitalModemExample();
 	~DigitalModemExample();
 
-    void SetSampleRate(int _sampleRate, int _sampleCount);
+    void setSampleRate(int _sampleRate, int _sampleCount);
 
     //Setup demod mode etc
-    void SetDemodMode(DeviceInterface::DEMODMODE _demodMode);
+    void setDemodMode(DeviceInterface::DEMODMODE _demodMode);
 
     //Process samples
-    CPX * ProcessBlock(CPX * in);
+    CPX * processBlock(CPX * in);
 
     //Setup UI in context of parent
-    void SetupDataUi(QWidget *parent);
+    void setupDataUi(QWidget *parent);
 
     //Info - return plugin name for menus
-    QString GetPluginName();
+    QString getPluginName();
 
     //Additional info
-    QString GetPluginDescription();
+    QString getPluginDescription();
 
     QObject *asQObject() {return (QObject *)this;}
 
 signals:
-    void Testbench(int _length, CPX* _buf, double _sampleRate, int _profile);
-    void Testbench(int _length, double* _buf, double _sampleRate, int _profile);
-    bool AddProfile(QString profileName, int profileNumber); //false if profilenumber already exists
-    void RemoveProfile(quint16 profileNumber);
+    void testbench(int _length, CPX* _buf, double _sampleRate, int _profile);
+    void testbench(int _length, double* _buf, double _sampleRate, int _profile);
+    bool addProfile(QString profileName, int profileNumber); //false if profilenumber already exists
+    void removeProfile(quint16 profileNumber);
 
 private:
     Ui::dataExample *dataUi;

@@ -648,7 +648,7 @@ void Receiver::demodModeChanged(DeviceInterface::DEMODMODE _demodMode)
 		m_sampleBufLen = 0;
 	}
 	if (m_iDigitalModem != NULL) {
-		m_iDigitalModem->SetDemodMode(_demodMode);
+		m_iDigitalModem->setDemodMode(_demodMode);
     }
 }
 //Called by ReceiverWidget when UI changes filter settings
@@ -985,7 +985,7 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 
         //Data decoders come before demod
 		if (m_iDigitalModem != NULL)
-			nextStep = m_iDigitalModem->ProcessBlock(nextStep);
+			nextStep = m_iDigitalModem->processBlock(nextStep);
 
 		//global->perform.StartPerformance("Demod");
 		nextStep = m_demod->ProcessBlock(nextStep, numStepSamples);
@@ -1088,7 +1088,7 @@ void Receiver::setDigitalModem(QString _name, QWidget *_parent)
 {
     if (_name == NULL || _parent == NULL) {
 		if (m_iDigitalModem != NULL)
-			m_iDigitalModem->SetupDataUi(NULL);
+			m_iDigitalModem->setupDataUi(NULL);
 
 		m_iDigitalModem = NULL;
         return;
@@ -1097,17 +1097,17 @@ void Receiver::setDigitalModem(QString _name, QWidget *_parent)
 	if (m_iDigitalModem != NULL) {
 
         //Display array of CPX data in TestBench
-		connect(m_iDigitalModem->asQObject(), SIGNAL(Testbench(int, CPX*, double, int)),global->testBench,SLOT(DisplayData(int, CPX*, double, int)));
+		connect(m_iDigitalModem->asQObject(), SIGNAL(testbench(int, CPX*, double, int)),global->testBench,SLOT(displayData(int, CPX*, double, int)));
 
         //Display array of double data in TestBench
-		connect(m_iDigitalModem->asQObject(), SIGNAL(Testbench(int, double*, double, int)),global->testBench,SLOT(DisplayData(int, double*, double, int)));
+		connect(m_iDigitalModem->asQObject(), SIGNAL(testbench(int, double*, double, int)),global->testBench,SLOT(displayData(int, double*, double, int)));
 
-		connect(m_iDigitalModem->asQObject(), SIGNAL(AddProfile(QString,int)), global->testBench,SLOT(AddProfile(QString,int)));
+		connect(m_iDigitalModem->asQObject(), SIGNAL(addProfile(QString,int)), global->testBench,SLOT(addProfile(QString,int)));
 
-		connect(m_iDigitalModem->asQObject(), SIGNAL(RemoveProfile(quint16)), global->testBench,SLOT(RemoveProfile(quint16)));
+		connect(m_iDigitalModem->asQObject(), SIGNAL(removeProfile(quint16)), global->testBench,SLOT(removeProfile(quint16)));
 
-		m_iDigitalModem->SetSampleRate(m_demodSampleRate, m_demodFrames);
-		m_iDigitalModem->SetupDataUi(_parent);
+		m_iDigitalModem->setSampleRate(m_demodSampleRate, m_demodFrames);
+		m_iDigitalModem->setupDataUi(_parent);
     }
 
 }

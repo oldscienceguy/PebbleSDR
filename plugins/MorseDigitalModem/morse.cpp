@@ -106,7 +106,7 @@ Morse::Morse()
 
 }
 
-void Morse::SetSampleRate(int _sampleRate, int _sampleCount)
+void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 {
     sampleRate = _sampleRate;
     numSamples = _sampleCount;
@@ -206,7 +206,7 @@ Morse::~Morse()
 
 }
 
-void Morse::SetupDataUi(QWidget *parent)
+void Morse::setupDataUi(QWidget *parent)
 {
     if (parent == NULL) {
         outputOn = false;
@@ -262,12 +262,12 @@ void Morse::SetupDataUi(QWidget *parent)
 
 }
 
-QString Morse::GetPluginName()
+QString Morse::getPluginName()
 {
     return "Morse";
 }
 
-QString Morse::GetPluginDescription()
+QString Morse::getPluginDescription()
 {
     return "Morse code";
 }
@@ -297,7 +297,7 @@ int Morse::UsecToWPM(quint32 u)
     return DOT_MAGIC / u;
 }
 
-void Morse::SetDemodMode(DeviceInterface::DEMODMODE _demodMode)
+void Morse::setDemodMode(DeviceInterface::DEMODMODE _demodMode)
 {
     demodMode = _demodMode;
 }
@@ -583,7 +583,7 @@ void Morse::resetModemClock()
 */
 
 //My version of FIRprocess + rx_processing for Pebble
-CPX * Morse::ProcessBlock(CPX *in)
+CPX * Morse::processBlock(CPX *in)
 {
 
     CPX z;

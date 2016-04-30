@@ -48,12 +48,12 @@ public:
     Morse();
     ~Morse();
     //DigitalModemInterface
-    void SetSampleRate(int _sampleRate, int _sampleCount);
-    void SetDemodMode(DeviceInterface::DEMODMODE _demodMode);
-    CPX * ProcessBlock(CPX * in);
-    void SetupDataUi(QWidget *parent);
-    QString GetPluginName();
-    QString GetPluginDescription();
+	void setSampleRate(int _sampleRate, int _sampleCount);
+	void setDemodMode(DeviceInterface::DEMODMODE _demodMode);
+	CPX * processBlock(CPX * in);
+	void setupDataUi(QWidget *parent);
+	QString getPluginName();
+	QString getPluginDescription();
     QObject *asQObject() {return (QObject *)this;}
 
 
@@ -78,10 +78,10 @@ public slots:
 
 signals:
     void newOutput();
-    void Testbench(int _length, CPX* _buf, double _sampleRate, int _profile);
-    void Testbench(int _length, double* _buf, double _sampleRate, int _profile);
-    bool AddProfile(QString profileName, int profileNumber); //false if profilenumber already exists
-    void RemoveProfile(quint16 profileNumber);
+	void testbench(int _length, CPX* _buf, double _sampleRate, int _profile);
+	void testbench(int _length, double* _buf, double _sampleRate, int _profile);
+	bool addProfile(QString profileName, int profileNumber); //false if profilenumber already exists
+	void removeProfile(quint16 profileNumber);
 
 
 protected:

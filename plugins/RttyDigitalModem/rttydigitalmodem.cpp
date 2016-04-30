@@ -17,24 +17,24 @@ RttyDigitalModem::~RttyDigitalModem()
 
 }
 
-void RttyDigitalModem::SetSampleRate(int _sampleRate, int _sampleCount)
+void RttyDigitalModem::setSampleRate(int _sampleRate, int _sampleCount)
 {
     Q_UNUSED(_sampleRate);
     Q_UNUSED(_sampleCount);
 }
 
-void RttyDigitalModem::SetDemodMode(DeviceInterface::DEMODMODE _demodMode)
+void RttyDigitalModem::setDemodMode(DeviceInterface::DEMODMODE _demodMode)
 {
 	Q_UNUSED(_demodMode);
     //qDebug()<<"Demod mode = "<<m; //Demod::ModeToString(m);
 }
 
-CPX *RttyDigitalModem::ProcessBlock(CPX *in)
+CPX *RttyDigitalModem::processBlock(CPX *in)
 {
     return in;
 }
 
-void RttyDigitalModem::SetupDataUi(QWidget *parent)
+void RttyDigitalModem::setupDataUi(QWidget *parent)
 {
 	Q_UNUSED(parent);
     return;
@@ -54,12 +54,12 @@ void RttyDigitalModem::SetupDataUi(QWidget *parent)
 #endif
 }
 
-QString RttyDigitalModem::GetPluginName()
+QString RttyDigitalModem::getPluginName()
 {
     return "RTTY";
 }
 
-QString RttyDigitalModem::GetPluginDescription()
+QString RttyDigitalModem::getPluginDescription()
 {
     return "Rtty digital modem";
 }

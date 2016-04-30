@@ -20,23 +20,23 @@ DigitalModemExample::~DigitalModemExample()
 
 }
 
-void DigitalModemExample::SetSampleRate(int _sampleRate, int _sampleCount)
+void DigitalModemExample::setSampleRate(int _sampleRate, int _sampleCount)
 {
     Q_UNUSED(_sampleRate);
     Q_UNUSED(_sampleCount);
 }
 
-void DigitalModemExample::SetDemodMode(DeviceInterface::DEMODMODE _demodMode)
+void DigitalModemExample::setDemodMode(DeviceInterface::DEMODMODE _demodMode)
 {
 	Q_UNUSED(_demodMode);
 }
 
-CPX *DigitalModemExample::ProcessBlock(CPX *in)
+CPX *DigitalModemExample::processBlock(CPX *in)
 {
     return in;
 }
 
-void DigitalModemExample::SetupDataUi(QWidget *parent)
+void DigitalModemExample::setupDataUi(QWidget *parent)
 {
     if (parent == NULL) {
         //We want to delete
@@ -52,12 +52,12 @@ void DigitalModemExample::SetupDataUi(QWidget *parent)
     }
 }
 
-QString DigitalModemExample::GetPluginName()
+QString DigitalModemExample::getPluginName()
 {
     return "Example";
 }
 
-QString DigitalModemExample::GetPluginDescription()
+QString DigitalModemExample::getPluginDescription()
 {
     return "Example of digial modem plugin for Pebble SDR";
 }

@@ -326,7 +326,7 @@ WWVDigitalModem::WWVDigitalModem() : QObject()
     modemClock = 0;
 }
 
-void WWVDigitalModem::SetSampleRate(int _sampleRate, int _sampleCount)
+void WWVDigitalModem::setSampleRate(int _sampleRate, int _sampleCount)
 {
     sampleRate = _sampleRate;
     numSamples = _sampleCount;
@@ -365,12 +365,12 @@ WWVDigitalModem::~WWVDigitalModem()
 {
 }
 
-void WWVDigitalModem::SetDemodMode(DeviceInterface::DEMODMODE _demodMode)
+void WWVDigitalModem::setDemodMode(DeviceInterface::DEMODMODE _demodMode)
 {
 	Q_UNUSED(_demodMode);
 }
 
-CPX *WWVDigitalModem::ProcessBlock(CPX *in)
+CPX *WWVDigitalModem::processBlock(CPX *in)
 {
     if (workingBuf == NULL)
         return in; //Not initialized yet
@@ -388,7 +388,7 @@ CPX *WWVDigitalModem::ProcessBlock(CPX *in)
     //emit Testbench(numModemSamples, workingBuf, modemSampleRate, WWVModem);
 
     ms170->ProcessSamples(numModemSamples,workingBuf, ms170Buf);
-    emit Testbench(numModemSamples, ms170Buf, modemSampleRate, WWVModem);
+    emit testbench(numModemSamples, ms170Buf, modemSampleRate, WWVModem);
 
 #if 0
 
@@ -462,12 +462,12 @@ void WWVDigitalModem::Process1000Hz(CPX in)
 
 }
 
-void WWVDigitalModem::SetupDataUi(QWidget *parent)
+void WWVDigitalModem::setupDataUi(QWidget *parent)
 {
     if (parent == NULL) {
         //We want to delete
         if (dataUi != NULL) {
-            emit RemoveProfile(WWVModem);
+            emit removeProfile(WWVModem);
             delete dataUi;
         }
         dataUi = NULL;
@@ -477,17 +477,17 @@ void WWVDigitalModem::SetupDataUi(QWidget *parent)
         dataUi = new Ui::dataWWV();
         dataUi->setupUi(parent);
         //Register testbench
-        emit AddProfile("WWV Modem", WWVModem);
+        emit addProfile("WWV Modem", WWVModem);
 
     }
 }
 
-QString WWVDigitalModem::GetPluginName()
+QString WWVDigitalModem::getPluginName()
 {
     return "WWV";
 }
 
-QString WWVDigitalModem::GetPluginDescription()
+QString WWVDigitalModem::getPluginDescription()
 {
     return "WWV Digital Modem";
 }

@@ -103,8 +103,8 @@ void Plugins::findPlugins()
             if (iDigitalModem) {
                 //plugin supports interface
                 pluginInfo.type = PluginInfo::MODEM_PLUGIN;
-                pluginInfo.name = iDigitalModem->GetPluginName();
-                pluginInfo.description = iDigitalModem->GetPluginDescription();
+                pluginInfo.name = iDigitalModem->getPluginName();
+                pluginInfo.description = iDigitalModem->getPluginDescription();
                 pluginInfo.fileName = fileName;
                 pluginInfo.deviceNumber  = 0;
                 pluginInfo.modemInterface = iDigitalModem;

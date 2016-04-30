@@ -13,22 +13,22 @@ public:
     //Interface must be all pure virtual functions
 	virtual ~DigitalModemInterface() = 0;
 
-    virtual void SetSampleRate(int _sampleRate, int _sampleCount) = 0;
+	virtual void setSampleRate(int _sampleRate, int _sampleCount) = 0;
 
     //Setup demod mode etc
-    virtual void SetDemodMode(DeviceInterface::DEMODMODE _demodMode) = 0;
+	virtual void setDemodMode(DeviceInterface::DEMODMODE _demodMode) = 0;
 
     //Process samples
-    virtual CPX * ProcessBlock(CPX * in) = 0;
+	virtual CPX * processBlock(CPX * in) = 0;
 
     //Setup UI in context of parent
-    virtual void SetupDataUi(QWidget *parent) = 0;
+	virtual void setupDataUi(QWidget *parent) = 0;
 
     //Info - return plugin name for menus
-    virtual QString GetPluginName() = 0;
+	virtual QString getPluginName() = 0;
 
     //Additional info
-    virtual QString GetPluginDescription() = 0;
+	virtual QString getPluginDescription() = 0;
 
     //Any plugins that need to output to Testbench should declare this signal
     //void Testbench(quint16 _length, CPX* _buf, double _sampleRate, quint16 _profile);
@@ -38,10 +38,10 @@ public:
     virtual QObject* asQObject() = 0;
 
 signals:
-    void Testbench(int _length, CPX* _buf, double _sampleRate, int _profile);
-    void Testbench(int _length, double* _buf, double _sampleRate, int _profile);
-    bool AddProfile(QString profileName, int profileNumber); //false if profilenumber already exists
-    void RemoveProfile(quint16 profileNumber);
+	void testbench(int _length, CPX* _buf, double _sampleRate, int _profile);
+	void testbench(int _length, double* _buf, double _sampleRate, int _profile);
+	bool addProfile(QString profileName, int profileNumber); //false if profilenumber already exists
+	void removeProfile(quint16 profileNumber);
 
 
 };
