@@ -5,6 +5,56 @@
 #include "QtDebug"
 #include "firfilter.h"
 
+const DTMF DTMF::DTMF_1 = DTMF(1209,697);
+const DTMF DTMF::DTMF_2 = DTMF(1336,697);
+const DTMF DTMF::DTMF_3 = DTMF(1477,697);
+const DTMF DTMF::DTMF_A = DTMF(1633,697);
+const DTMF DTMF::DTMF_4 = DTMF(1209,770);
+const DTMF DTMF::DTMF_5 = DTMF(1336,770);
+const DTMF DTMF::DTMF_6 = DTMF(1477,770);
+const DTMF DTMF::DTMF_B = DTMF(1633,770);
+const DTMF DTMF::DTMF_7 = DTMF(1209,852);
+const DTMF DTMF::DTMF_8 = DTMF(1336,852);
+const DTMF DTMF::DTMF_9 = DTMF(1477,852);
+const DTMF DTMF::DTMF_C = DTMF(1633,852);
+const DTMF DTMF::DTMF_STAR = DTMF(1209,941);
+const DTMF DTMF::DTMF_0 = DTMF(1336,941);
+const DTMF DTMF::DTMF_POUND = DTMF(1477,941);
+const DTMF DTMF::DTMF_D = DTMF(1633,941);
+
+const CTCSS CTCSS::CTCSS_1 = CTCSS("XY",67.0,0);
+const CTCSS CTCSS::CTCSS_2 = CTCSS("XA",71.9,4.9);
+const CTCSS CTCSS::CTCSS_3 = CTCSS("WA",74.4,2.5);
+const CTCSS CTCSS::CTCSS_4 = CTCSS("??",0,0);//Not defined??
+const CTCSS CTCSS::CTCSS_5 = CTCSS("SP",79.7,2.7);
+const CTCSS CTCSS::CTCSS_6 = CTCSS("YZ",82.5,2.8);
+const CTCSS CTCSS::CTCSS_7 = CTCSS("YA",85.4,2.9);
+const CTCSS CTCSS::CTCSS_8 = CTCSS("YB",88.5,3.1);
+const CTCSS CTCSS::CTCSS_9 = CTCSS("ZZ",91.5,3.0);
+const CTCSS CTCSS::CTCSS_10 = CTCSS("ZA",94.8,3.3);
+const CTCSS CTCSS::CTCSS_11 = CTCSS("ZB",97.4,2.6);
+const CTCSS CTCSS::CTCSS_12 = CTCSS("1Z",100.0,2.6);
+const CTCSS CTCSS::CTCSS_13 = CTCSS("1A",103.5,3.5);
+const CTCSS CTCSS::CTCSS_14 = CTCSS("1B",107.2,3.7);
+const CTCSS CTCSS::CTCSS_15 = CTCSS("2Z",110.9,3.7);
+const CTCSS CTCSS::CTCSS_16 = CTCSS("2A",114.8,3.9);
+const CTCSS CTCSS::CTCSS_17 = CTCSS("2B",118.8,4.0);
+const CTCSS CTCSS::CTCSS_18 = CTCSS("3Z",123.0,4.2);
+const CTCSS CTCSS::CTCSS_19 = CTCSS("3A",127.3,4.3);
+const CTCSS CTCSS::CTCSS_20 = CTCSS("3B",131.8,4.5);
+const CTCSS CTCSS::CTCSS_21 = CTCSS("4Z",136.5,4.7);
+const CTCSS CTCSS::CTCSS_22 = CTCSS("4A",141.3,4.8);
+const CTCSS CTCSS::CTCSS_23 = CTCSS("4B",146.2,4.9);
+const CTCSS CTCSS::CTCSS_24 = CTCSS("5Z",151.4,5.2);
+const CTCSS CTCSS::CTCSS_25 = CTCSS("5A",156.7,5.3);
+const CTCSS CTCSS::CTCSS_26 = CTCSS("5B",162.2,5.5);
+const CTCSS CTCSS::CTCSS_27 = CTCSS("6Z",167.9,5.7);
+const CTCSS CTCSS::CTCSS_28 = CTCSS("6A",173.8,5.9);
+const CTCSS CTCSS::CTCSS_29 = CTCSS("6B",179.9,6.1);
+const CTCSS CTCSS::CTCSS_30 = CTCSS("7Z",186.2,6.3);
+const CTCSS CTCSS::CTCSS_31 = CTCSS("7A",192.8,6.6);
+const CTCSS CTCSS::CTCSS_32 = CTCSS("M1",203.5,10.7);
+
 /*
   From SILabs DTMF paper http://www.silabs.com/Support%20Documents/TechnicalDocs/an218.pdf
 
@@ -28,28 +78,28 @@ See [2] for additional information about choosing a block size.
 
 Goertzel::Goertzel(int _sampleRate, int _numSamples)
 {
-    sampleRate = _sampleRate;
-    numSamples = _numSamples;
+	m_sampleRate = _sampleRate;
+	m_numSamples = _numSamples;
 
-    realW = 0;
-    binaryOutput = false;
-    binaryThreshold = 0;
-    noiseThreshold = 0.5;
-    delay0 = delay1 = delay2 = 0;
-    sampleCount = 0;
-    binWidthHz = 0;
-    samplesPerBin = 0;
-    avgTonePower = 0;
-    peakPower = 0;
-    scale = 1000; //So we don't lose precision?
-    powerBuf = NULL;
-	windowFunction = NULL;
+	m_realW = 0;
+	m_binaryOutput = false;
+	m_binaryThreshold = 0;
+	m_noiseThreshold = 0.5;
+	m_delay0 = m_delay1 = m_delay2 = 0;
+	m_sampleCount = 0;
+	m_binWidthHz = 0;
+	m_samplesPerBin = 0;
+	m_avgTonePower = 0;
+	m_peakPower = 0;
+	m_scale = 1000; //So we don't lose precision?
+	m_powerBuf = NULL;
+	m_windowFunction = NULL;
 }
 
 Goertzel::~Goertzel()
 {
-    if (powerBuf != NULL)
-        delete (powerBuf);
+	if (m_powerBuf != NULL)
+		delete (m_powerBuf);
 }
 
 /*
@@ -109,22 +159,22 @@ http://www.eetimes.com/design/embedded/4024443/The-Goertzel-Algorithm
 //SampleRate 48000, 96000, etc
 //Test with Freq from DTMF and sampleRate 8000 and compare with table above
 //returns numToneResults for sizing toneBuffer
-int Goertzel::SetFreqHz(int fTone, int bw, int gsr)
+int Goertzel::setFreqHz(int fTone, int bw, int gsr)
 {
-    freqHz = fTone;
-    gSampleRate = gsr;
-    decimateFactor = sampleRate / gSampleRate;
+	m_freqHz = fTone;
+	m_gSampleRate = gsr;
+	m_decimateFactor = m_sampleRate / m_gSampleRate;
 
-    binWidthHz = bw; //equivalent to filter bandwidth
+	m_binWidthHz = bw; //equivalent to filter bandwidth
     //Set blockSize based on sampleRate and desired filter bandwidth
     //How many samples do we need to accumulate to get desired bandwidth
-    samplesPerBin = gSampleRate / binWidthHz;
+	m_samplesPerBin = m_gSampleRate / m_binWidthHz;
 
     //What is the time, in ms, that each bin represents
-    timePerBin = 1.0/gSampleRate * samplesPerBin * 1000;
+	m_timePerBin = 1.0/m_gSampleRate * m_samplesPerBin * 1000;
 
     //How many tone results per sample buffer = num decimated samples / samples per bin
-    numToneResults = (numSamples / decimateFactor) / samplesPerBin;
+	m_numToneResults = (m_numSamples / m_decimateFactor) / m_samplesPerBin;
 
     //Calc the filter coefficient
     //Think of the goertzel as 1 bin of an N bin FFT
@@ -132,39 +182,39 @@ int Goertzel::SetFreqHz(int fTone, int bw, int gsr)
     //So for binwidth = 200hz, bin1=0-199, bin2=200-399, bin3=400-599, bin4=600-799
     //If we're looking for 700hz in this example, it would be in the middle of bin 4, perfect!
     //k represents the fft bin that would contain the frequency of interest
-    k = (float)(samplesPerBin * freqHz)/(float)(gSampleRate) + 0.5; // + 0.5 rounds up
+	m_k = (float)(m_samplesPerBin * m_freqHz)/(float)(m_gSampleRate) + 0.5; // + 0.5 rounds up
 
-    w = TWOPI * k / samplesPerBin;
+	m_w = TWOPI * m_k / m_samplesPerBin;
 
-    realW = 2.0 * cos(w);
-    imagW = sin(w);
+	m_realW = 2.0 * cos(m_w);
+	m_imagW = sin(m_w);
 
     //qDebug("Goertzel: freq = %d binWidth = %d sampleRate = %d samplesPerBin = %d coefficient = %.12f timePerBin = %d",
     //       freqHz,binWidthHz,sampleRate,samplesPerBin,coeff,timePerBin);
 
-    avgTonePower = 0.001;
-    avgNoisePower = 0.000001;
-    binaryThreshold = (avgTonePower - avgNoisePower) / 2.0;
+	m_avgTonePower = 0.001;
+	m_avgNoisePower = 0.000001;
+	m_binaryThreshold = (m_avgTonePower - m_avgNoisePower) / 2.0;
 
-    noiseThreshold = 1.0/(scale*1000); //Lowest possible value for binaryThreshold?
+	m_noiseThreshold = 1.0/(m_scale*1000); //Lowest possible value for binaryThreshold?
 
-    peakPower=0;
-    binaryOutput=0;
-    lastBinaryOutput = 0;
-    noiseTimer = 0;
-    noiseTimerThreshold = 1000 / timePerBin; //1 second for now
+	m_peakPower=0;
+	m_binaryOutput=0;
+	m_lastBinaryOutput = 0;
+	m_noiseTimer = 0;
+	m_noiseTimerThreshold = 1000 / m_timePerBin; //1 second for now
 
-    powerBufSize = 1000 / timePerBin; //2 sec of data
-    if (powerBuf != NULL)
-        delete powerBuf;
-    powerBuf = new DelayLine(powerBufSize);
+	m_powerBufSize = 1000 / m_timePerBin; //2 sec of data
+	if (m_powerBuf != NULL)
+		delete m_powerBuf;
+	m_powerBuf = new DelayLine(m_powerBufSize);
 
-    resultCounter = 0;
+	m_resultCounter = 0;
 
     //See http://www.mstarlabs.com/dsp/goertzel/goertzel.html for details on using a window for better detection
-	if (windowFunction != NULL)
-		delete windowFunction;
-	windowFunction = new WindowFunction(WindowFunction::BLACKMANHARRIS, samplesPerBin);
+	if (m_windowFunction != NULL)
+		delete m_windowFunction;
+	m_windowFunction = new WindowFunction(WindowFunction::BLACKMANHARRIS, m_samplesPerBin);
 #if 0
     for (int n = 0; n<samplesPerBin; n++) {
         //Hamming: Pass band spans primary 2 bins plus first neighbors on each side.
@@ -175,45 +225,45 @@ int Goertzel::SetFreqHz(int fTone, int bw, int gsr)
         //window[n] = 0.426591 - .496561*cos(TWOPI * n / samplesPerBin) +.076848*cos(4*pi * n /samplesPerBin);
     }
 #endif
-    return numToneResults;
+	return m_numToneResults;
 }
-void Goertzel::SetBinaryThreshold(float t)
+void Goertzel::setBinaryThreshold(float t)
 {
-    binaryThreshold = t;
+	m_binaryThreshold = t;
 }
 
-bool Goertzel::CalcThreshold_Average(float power)
+bool Goertzel::calcThreshold_Average(float power)
 {
     //WIP What should binary threshold be initialized to?
-    binaryOutput = (power > binaryThreshold) ? true : false;
+	m_binaryOutput = (power > m_binaryThreshold) ? true : false;
 
     //Only update average on transition and only if binaryOutput same for at least 3 results
-    if (binaryOutput == lastBinaryOutput) {
+	if (m_binaryOutput == m_lastBinaryOutput) {
         //No transition, keep counting
-        resultCounter++;
-        if (binaryOutput)
-            avgTonePower = (power * .01) + (avgTonePower * 0.99);
+		m_resultCounter++;
+		if (m_binaryOutput)
+			m_avgTonePower = (power * .01) + (m_avgTonePower * 0.99);
         else
-            avgNoisePower = (power * .01) + (avgNoisePower * 0.99);
+			m_avgNoisePower = (power * .01) + (m_avgNoisePower * 0.99);
 
     } else {
         //Transition, see if it was long enough to average
         //Only update average if we have N consecutive marks or spaces
-        if (resultCounter > 3) {
+		if (m_resultCounter > 3) {
             //We want our threshold to adjust to some percentage of average
             //Calc average over N seconds, based on current settings
-            binaryThreshold = (avgTonePower - avgNoisePower) / 2.0;
+			m_binaryThreshold = (m_avgTonePower - m_avgNoisePower) / 2.0;
         }
-        resultCounter = 0;
-        lastBinaryOutput = binaryOutput;
+		m_resultCounter = 0;
+		m_lastBinaryOutput = m_binaryOutput;
     }
     //Timeout if we're constantly above or below threshold
-    if (resultCounter > (2000 / timePerBin)) {
-        resultCounter = 0;
+	if (m_resultCounter > (2000 / m_timePerBin)) {
+		m_resultCounter = 0;
         //Or should we just reset to default values??
-        binaryThreshold *= 0.5; //Cut in half and try again
-        avgTonePower = binaryThreshold * 1.5;
-        avgNoisePower = binaryThreshold * 0.5;
+		m_binaryThreshold *= 0.5; //Cut in half and try again
+		m_avgTonePower = m_binaryThreshold * 1.5;
+		m_avgNoisePower = m_binaryThreshold * 0.5;
     }
 
 
@@ -262,31 +312,31 @@ bool Goertzel::CalcThreshold_Average(float power)
 
 //Sets threshold by comparing min/max values of last N samples
 //Returns true if there is enough variation to indicate that there are some tones in sample buffer
-bool Goertzel::CalcThreshold_MinMax(float power)
+bool Goertzel::calcThreshold_MinMax(float power)
 {
     //Only check ever n sec
-    if (++resultCounter < 1000/timePerBin)
+	if (++m_resultCounter < 1000/m_timePerBin)
         return true;
-    resultCounter = 0;
+	m_resultCounter = 0;
 
     //Initial values such that first result will always be > max and < min
-    maxPower = 0.0;
-    minPower = 1.0;
+	m_maxPower = 0.0;
+	m_minPower = 1.0;
 
-    minSample = 1.0;
-    maxSample = -1.0;
+	m_minSample = 1.0;
+	m_maxSample = -1.0;
 
     //Todo: Investigate running min/max and running median algorithms
     //This adjusts for varying signal strength and should allow weak signals to still have a clear
     //threshold between tone or no-tone
     //Find min/max in last N results
     //We don't know state of circular buffer, so just check all
-    for (int i = 0; i<powerBufSize; i++) {
-        power = (*powerBuf)[i].re;
-        if (power > maxPower)
-            maxPower = power;
-        else if (power>0 && power < minPower)
-            minPower = power;
+	for (int i = 0; i<m_powerBufSize; i++) {
+		power = (*m_powerBuf)[i].re;
+		if (power > m_maxPower)
+			m_maxPower = power;
+		else if (power>0 && power < m_minPower)
+			m_minPower = power;
     }
 
     //We need at least some variation in results in order to determine valid threshold
@@ -304,12 +354,12 @@ bool Goertzel::CalcThreshold_MinMax(float power)
     //Min 0.000000186417 Max 0.000070004084
     //Signal on 20m
     //Min 0.000000069135 Max 0.00311974407
-    binaryThreshold = maxPower * 0.60; //n% of max above min
+	m_binaryThreshold = m_maxPower * 0.60; //n% of max above min
 
     return true;
 }
 
-CPX * Goertzel::ProcessBlock(CPX *in, bool *toneBuf)
+CPX * Goertzel::processBlock(CPX *in, bool *toneBuf)
 {
     bool res;
     float power;
@@ -319,40 +369,40 @@ CPX * Goertzel::ProcessBlock(CPX *in, bool *toneBuf)
     float sample;
 
     //If we have processed at least 1 block use min/max from last block to normalize this block
-    if (maxSample > -1.0 ) {
+	if (m_maxSample > -1.0 ) {
         //Remove DC bias per SILabs algorithm
         //In a pure sine wave, bias is the offset to make the sine cross at exactly zero
         //Removing the dc bias from the input signal provides consistent power measurements and minimizes errors
-        dcBias = (maxSample - minSample) / 2.0;
+		dcBias = (m_maxSample - m_minSample) / 2.0;
         //Scale to 50% max - what should this be?
-        normalize = 0.001 / (maxSample-dcBias);
+		normalize = 0.001 / (m_maxSample-dcBias);
     }
     //Reset to get new min/max
-    minSample = 1.0;
-    maxSample = -1.0; //Remember fp is -1 to +1
+	m_minSample = 1.0;
+	m_maxSample = -1.0; //Remember fp is -1 to +1
 
     //If Goretzel is 8k and Receiver is 96k, decimate factor is 12.  Only process every 12th sample
-    for (int i=0; i<numSamples; i=i+decimateFactor) {
+	for (int i=0; i<m_numSamples; i=i+m_decimateFactor) {
         sample = in[i].re;
-        if (sample > maxSample)
-            maxSample = sample;
-        else if (sample < minSample)
-            minSample = sample;
+		if (sample > m_maxSample)
+			m_maxSample = sample;
+		else if (sample < m_minSample)
+			m_minSample = sample;
         //Normalize
         sample -= dcBias;
         //sample *= normalize;
 
-        res = NewSample(sample, power);
+		res = newSample(sample, power);
 
         if (res) {
-            toneBuf[toneBufCounter ++] = binaryOutput;
+			toneBuf[toneBufCounter ++] = m_binaryOutput;
         }
     }
     return in;
 }
 
 //Tone detection occurs every Nth sample
-bool Goertzel::NewSample(float sample, float &power)
+bool Goertzel::newSample(float sample, float &power)
 {
 
     CPX cpx;
@@ -366,8 +416,8 @@ bool Goertzel::NewSample(float sample, float &power)
     //delay1 = delay0;
 
     //Apply window for better discrimination
-	if (windowFunction != NULL)
-		sample = sample * windowFunction->window[sampleCount];
+	if (m_windowFunction != NULL)
+		sample = sample * m_windowFunction->window[m_sampleCount];
 
 #if 0
     float phase;
@@ -412,27 +462,27 @@ bool Goertzel::NewSample(float sample, float &power)
         power = s_prev2*s_prev2 + s_prev*s_prev - coeff*s_prev*s_prev2;
 
     */
-    delay0 = sample + (realW * delay1) - delay2;
-    delay2 = delay1;
-    delay1 = delay0;
+	m_delay0 = sample + (m_realW * m_delay1) - m_delay2;
+	m_delay2 = m_delay1;
+	m_delay1 = m_delay0;
 
-    if(++sampleCount >= samplesPerBin) {
+	if(++m_sampleCount >= m_samplesPerBin) {
         //We've accumulated enough to change output
-        sampleCount = 0;
+		m_sampleCount = 0;
         //Filter output is the total 'energy' in the delay loop
-        power = delay2*delay2 + delay1 * delay1 - realW * delay1 * delay2;
+		power = m_delay2*m_delay2 + m_delay1 * m_delay1 - m_realW * m_delay1 * m_delay2;
         //power *= scale;
 
-        delay2 = 0;
-        delay1 = 0;
+		m_delay2 = 0;
+		m_delay1 = 0;
 
         //Add new result and throw away oldest result
-        powerBuf->NewSample(CPX(power,0));
+		m_powerBuf->NewSample(CPX(power,0));
 
         bool valid;
         //Check threshold every N second
         //valid = CalcThreshold_MinMax(power);
-        valid = CalcThreshold_Average(power);
+		valid = calcThreshold_Average(power);
 
         //qDebug("Thresh %.12f Power %.12f Phase %.12f",binaryThreshold, power, phase);
 
@@ -442,9 +492,9 @@ bool Goertzel::NewSample(float sample, float &power)
     return false;
 }
 
-float Goertzel::GetNextPowerResult()
+float Goertzel::getNextPowerResult()
 {
-    return powerBuf->NextDelay(0).re;
+	return m_powerBuf->NextDelay(0).re;
 }
 
 //From Nue-PSK

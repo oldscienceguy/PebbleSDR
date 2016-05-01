@@ -9,70 +9,78 @@
 #include "windowfunction.h"
 
 //Standard Reference Tones
-struct DTMF {
-    DTMF(quint16 h, quint16 l) {hi =h; lo=l;}
-    quint16 hi;
-    quint16 lo;
-};
-const DTMF DTMF_1(1209,697);
-const DTMF DTMF_2(1336,697);
-const DTMF DTMF_3(1477,697);
-const DTMF DTMF_A(1633,697);
-const DTMF DTMF_4(1209,770);
-const DTMF DTMF_5(1336,770);
-const DTMF DTMF_6(1477,770);
-const DTMF DTMF_B(1633,770);
-const DTMF DTMF_7(1209,852);
-const DTMF DTMF_8(1336,852);
-const DTMF DTMF_9(1477,852);
-const DTMF DTMF_C(1633,852);
-const DTMF DTMF_STAR(1209,941);
-const DTMF DTMF_0(1336,941);
-const DTMF DTMF_POUND(1477,941);
-const DTMF DTMF_D(1633,941);
 
-struct CTCSS {
-    CTCSS(const char *d, float f, float s) {
-        strncpy(designation,d,2);
-        freq = f;
-        spacing = s;
-    }
-    char designation[2];
-    float freq;
-    float spacing;
+class DTMF
+{
+public:
+	DTMF(quint16 h, quint16 l) {m_hi =h; m_lo=l;}
+	quint16 m_hi;
+	quint16 m_lo;
+
+	static const DTMF DTMF_1;
+	static const DTMF DTMF_2;
+	static const DTMF DTMF_3;
+	static const DTMF DTMF_A;
+	static const DTMF DTMF_4;
+	static const DTMF DTMF_5;
+	static const DTMF DTMF_6;
+	static const DTMF DTMF_B;
+	static const DTMF DTMF_7;
+	static const DTMF DTMF_8;
+	static const DTMF DTMF_9;
+	static const DTMF DTMF_C;
+	static const DTMF DTMF_STAR;
+	static const DTMF DTMF_0;
+	static const DTMF DTMF_POUND;
+	static const DTMF DTMF_D;
+
 };
-const CTCSS CTCSS_1("XY",67.0,0);
-const CTCSS CTCSS_2("XA",71.9,4.9);
-const CTCSS CTCSS_3("WA",74.4,2.5);
-const CTCSS CTCSS_4("??",0,0);//Not defined??
-const CTCSS CTCSS_5("SP",79.7,2.7);
-const CTCSS CTCSS_6("YZ",82.5,2.8);
-const CTCSS CTCSS_7("YA",85.4,2.9);
-const CTCSS CTCSS_8("YB",88.5,3.1);
-const CTCSS CTCSS_9("ZZ",91.5,3.0);
-const CTCSS CTCSS_10("ZA",94.8,3.3);
-const CTCSS CTCSS_11("ZB",97.4,2.6);
-const CTCSS CTCSS_12("1Z",100.0,2.6);
-const CTCSS CTCSS_13("1A",103.5,3.5);
-const CTCSS CTCSS_14("1B",107.2,3.7);
-const CTCSS CTCSS_15("2Z",110.9,3.7);
-const CTCSS CTCSS_16("2A",114.8,3.9);
-const CTCSS CTCSS_17("2B",118.8,4.0);
-const CTCSS CTCSS_18("3Z",123.0,4.2);
-const CTCSS CTCSS_19("3A",127.3,4.3);
-const CTCSS CTCSS_20("3B",131.8,4.5);
-const CTCSS CTCSS_21("4Z",136.5,4.7);
-const CTCSS CTCSS_22("4A",141.3,4.8);
-const CTCSS CTCSS_23("4B",146.2,4.9);
-const CTCSS CTCSS_24("5Z",151.4,5.2);
-const CTCSS CTCSS_25("5A",156.7,5.3);
-const CTCSS CTCSS_26("5B",162.2,5.5);
-const CTCSS CTCSS_27("6Z",167.9,5.7);
-const CTCSS CTCSS_28("6A",173.8,5.9);
-const CTCSS CTCSS_29("6B",179.9,6.1);
-const CTCSS CTCSS_30("7Z",186.2,6.3);
-const CTCSS CTCSS_31("7A",192.8,6.6);
-const CTCSS CTCSS_32("M1",203.5,10.7);
+
+
+class CTCSS
+{
+public:
+    CTCSS(const char *d, float f, float s) {
+		strncpy(m_designation,d,2);
+		m_freq = f;
+		m_spacing = s;
+    }
+	char m_designation[2];
+	float m_freq;
+	float m_spacing;
+	static const CTCSS CTCSS_1;
+	static const CTCSS CTCSS_2;
+	static const CTCSS CTCSS_3;
+	static const CTCSS CTCSS_4;//Not defined??
+	static const CTCSS CTCSS_5;
+	static const CTCSS CTCSS_6;
+	static const CTCSS CTCSS_7;
+	static const CTCSS CTCSS_8;
+	static const CTCSS CTCSS_9;
+	static const CTCSS CTCSS_10;
+	static const CTCSS CTCSS_11;
+	static const CTCSS CTCSS_12;
+	static const CTCSS CTCSS_13;
+	static const CTCSS CTCSS_14;
+	static const CTCSS CTCSS_15;
+	static const CTCSS CTCSS_16;
+	static const CTCSS CTCSS_17;
+	static const CTCSS CTCSS_18;
+	static const CTCSS CTCSS_19;
+	static const CTCSS CTCSS_20;
+	static const CTCSS CTCSS_21;
+	static const CTCSS CTCSS_22;
+	static const CTCSS CTCSS_23;
+	static const CTCSS CTCSS_24;
+	static const CTCSS CTCSS_25;
+	static const CTCSS CTCSS_26;
+	static const CTCSS CTCSS_27;
+	static const CTCSS CTCSS_28;
+	static const CTCSS CTCSS_29;
+	static const CTCSS CTCSS_30;
+	static const CTCSS CTCSS_31;
+	static const CTCSS CTCSS_32;
+};
 
 class Goertzel
 {
@@ -82,79 +90,76 @@ public:
 
     //Sets internal values (coefficient) for freq
 
-    int SetFreqHz(int _freq, int _bwHz, int _goertzelSampleRate);
-    void SetBinaryThreshold(float t);
+	int setFreqHz(int _freq, int _bwHz, int _goertzelSampleRate);
+	void setBinaryThreshold(float t);
     //Processes next sample and returns true if we've accumulated enough for an output change
-    bool NewSample(float s, float &p);
-
-    int freqHz;
-    int gSampleRate;
-    //output values
-    CPX cpx;
-    float avgTonePower;
-    float avgNoisePower;
-    float peakPower;
-    bool binaryOutput;
-    bool lastBinaryOutput;
-
-    float binaryThreshold; //above is true, below or = is false
-    float noiseThreshold; //Ignore results below this level
-    int noiseTimer; //If we get noise for some time, reset all averages, peaks, etc
-    int noiseTimerThreshold; //How much noise triggers a reset.  Specified in block counts
-
-    //#samples we need to process throught filter to get accurate result
-    int samplesPerBin;
-    int timePerBin; //in ms
-
-    //Need function to return all of powerBuf or just next result
-    float GetNextPowerResult();
-
-    //toneBuf is returned with bool values indicating tone/no-tone
-    CPX * ProcessBlock(CPX *in, bool *toneBuf);
-
+	bool newSample(float s, float &p);
+	//toneBuf is returned with bool values indicating tone/no-tone
+	CPX * processBlock(CPX *in, bool *toneBuf);
+	//Need function to return all of powerBuf or just next result
+	float getNextPowerResult();
 
 private:
-    int sampleRate; //Source
-    int numSamples; //Source
-    int decimateFactor;
-    int numToneResults;
+	bool calcThreshold_MinMax(float p);
+	bool calcThreshold_Average(float p);
+
+	int m_freqHz;
+	int m_gSampleRate;
+    //output values
+	CPX m_cpx;
+	float m_avgTonePower;
+	float m_avgNoisePower;
+	float m_peakPower;
+	bool m_binaryOutput;
+	bool m_lastBinaryOutput;
+
+	float m_binaryThreshold; //above is true, below or = is false
+	float m_noiseThreshold; //Ignore results below this level
+	int m_noiseTimer; //If we get noise for some time, reset all averages, peaks, etc
+	int m_noiseTimerThreshold; //How much noise triggers a reset.  Specified in block counts
+
+    //#samples we need to process throught filter to get accurate result
+	int m_samplesPerBin;
+	int m_timePerBin; //in ms
+
+
+	int m_sampleRate; //Source
+	int m_numSamples; //Source
+	int m_decimateFactor;
+	int m_numToneResults;
 
     //Filter coefficient, calculate with CalcCoefficient or table lookup
-    float realW;
-    float imagW;
-    float w;
+	float m_realW;
+	float m_imagW;
+	float m_w;
 
-    bool CalcThreshold_MinMax(float p);
-    bool CalcThreshold_Average(float p);
-    int resultCounter;
+	int m_resultCounter;
 
     //Circular buffer for saving power readings
-    DelayLine *powerBuf;
-    int powerBufSize;
+	DelayLine *m_powerBuf;
+	int m_powerBufSize;
 
     //Internal values per EE Times article
-    int k;
-    int binWidthHz;
-    int scale;
+	int m_k;
+	int m_binWidthHz;
+	int m_scale;
 
-	WindowFunction *windowFunction; //Precalculated array of window values for specified freq,
+	WindowFunction *m_windowFunction; //Precalculated array of window values for specified freq,
 
     //These could be static in FPNextSample, but here for debugging and for use
     //if we try different algorithms
     //iteration counter
-    int sampleCount;
+	int m_sampleCount;
     //Delay loop for filter
-    float delay0;
-    float delay1;
-    float delay2;
+	float m_delay0;
+	float m_delay1;
+	float m_delay2;
 
-    float maxPower;
-    float minPower;
+	float m_maxPower;
+	float m_minPower;
 
-    float maxSample;
-    float minSample;
-
-
+	float m_maxSample;
+	float m_minSample;
 
 };
 
