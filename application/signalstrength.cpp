@@ -299,9 +299,6 @@ double SignalStrength::fdEstimate(double *spectrum, int spectrumBins, quint32 sp
 	}
 	updateTimer.start(); //Reset
 
-	if (bpLowFreq ==0 || bpHighFreq == 0)
-		return m_avgDb; //No buffer change
-
 	//Testing FFT based signal strength
 	double bpPeakPwr = 0; //Peak signal in bandwidth
 	double bpAvgPwr = 0;
