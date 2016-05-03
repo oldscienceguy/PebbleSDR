@@ -5,22 +5,22 @@
 #include "QtDebug"
 #include "firfilter.h"
 
+const DTMF DTMF::DTMF_0 = DTMF(1336,941);
 const DTMF DTMF::DTMF_1 = DTMF(1209,697);
 const DTMF DTMF::DTMF_2 = DTMF(1336,697);
 const DTMF DTMF::DTMF_3 = DTMF(1477,697);
-const DTMF DTMF::DTMF_A = DTMF(1633,697);
 const DTMF DTMF::DTMF_4 = DTMF(1209,770);
 const DTMF DTMF::DTMF_5 = DTMF(1336,770);
 const DTMF DTMF::DTMF_6 = DTMF(1477,770);
-const DTMF DTMF::DTMF_B = DTMF(1633,770);
 const DTMF DTMF::DTMF_7 = DTMF(1209,852);
 const DTMF DTMF::DTMF_8 = DTMF(1336,852);
 const DTMF DTMF::DTMF_9 = DTMF(1477,852);
+const DTMF DTMF::DTMF_A = DTMF(1633,697);
+const DTMF DTMF::DTMF_B = DTMF(1633,770);
 const DTMF DTMF::DTMF_C = DTMF(1633,852);
-const DTMF DTMF::DTMF_STAR = DTMF(1209,941);
-const DTMF DTMF::DTMF_0 = DTMF(1336,941);
-const DTMF DTMF::DTMF_POUND = DTMF(1477,941);
 const DTMF DTMF::DTMF_D = DTMF(1633,941);
+const DTMF DTMF::DTMF_STAR = DTMF(1209,941);
+const DTMF DTMF::DTMF_POUND = DTMF(1477,941);
 
 const CTCSS CTCSS::CTCSS_1 = CTCSS("XY",67.0,0);
 const CTCSS CTCSS::CTCSS_2 = CTCSS("XA",71.9,4.9);
@@ -56,23 +56,27 @@ const CTCSS CTCSS::CTCSS_31 = CTCSS("7A",192.8,6.6);
 const CTCSS CTCSS::CTCSS_32 = CTCSS("M1",203.5,10.7);
 
 /*
-  From SILabs DTMF paper http://www.silabs.com/Support%20Documents/TechnicalDocs/an218.pdf
+From SILabs DTMF paper http://www.silabs.com/Support%20Documents/TechnicalDocs/an218.pdf
 
-The Goertzel algorithm works on blocks of ADC samples.
-Samples are processed as they arrive and a result is produced every N samples, where N is the number of samples in each block.
-If the sampling rate is fixed, the block size determines the frequency resolution or “bin width” of the resulting power measurement.
-The example below shows how to calculate the frequency resolution and time required to capture N samples:
+The Goertzel algorithm works on blocks of ADC samples. Samples are processed as
+they arrive and a result is produced every N samples, where N is the number of
+samples in each block. If the sampling rate is fixed, the block size determines
+the frequency resolution or “bin width” of the resulting power measurement. The
+example below shows how to calculate the frequency resolution and time required
+to capture N samples:
 
 Sampling rate: 8 kHz
 Block size (N): 200 samples
 Frequency Resolution: sampling rate/block size = 40 Hz
 Time required to capture N samples: block size/sampling rate = 25 ms
 
-The tradeoff in choosing an appropriate block size is between frequency resolution and the time required to capture a block of samples.
-Increasing the output word rate (decreasing block size) increases the “bin width” of the resulting power measurement.
-The bin width should be chosen to provide enough frequency resolution to differentiate between the DTMF frequencies and be able to detect DTMF tones with reasonable delay.
-See [2] for additional information about choosing a block size.
-
+The tradeoff in choosing an appropriate block size is between frequency
+resolution and the time required to capture a block of samples. Increasing the
+output word rate (decreasing block size) increases the “bin width” of the
+resulting power measurement. The bin width should be chosen to provide enough
+frequency resolution to differentiate between the DTMF frequencies and be able
+to detect DTMF tones with reasonable delay. See [2] for additional information
+about choosing a block size.
 
 */
 
@@ -122,15 +126,18 @@ Freq    k       Coeff           Coeff
 1477    38      0.790074        0x6521
 1633    42      0.559454        0x479C
 
-Note: Q15 format means that 15 decimal places are assumed.  Used for situations where there is no floating point
-or only integer math is used.
+Note: Q15 format means that 15 decimal places are assumed.
+Used for situations where there is no floating point or only integer math is used.
 See http://en.wikipedia.org/wiki/Q_(number_format)
 
 Nue-Psk coefficient for 796.875hz is 1.6136951071 as another example
 */
+
 /*
-The Goertzel algorithm is derived from the DFT and exploits the periodicity of the phase factor, exp(-j*2k/N) to reduce the computational complexity associated with the DFT, as the FFT does.
-With the Goertzel algorithm only 16 samples of the DFT are required for the 16 tones (\Links\Goertzel Theory.pdf)
+The Goertzel algorithm is derived from the DFT and exploits the periodicity of
+the phase factor, exp(-j*2k/N) to reduce the computational complexity
+associated with the DFT, as the FFT does. With the Goertzel algorithm only 16
+samples of the DFT are required for the 16 tones (\Links\Goertzel Theory.pdf)
 Goertzel is a 2nd order IIR filter or a single bin DFT
 
 http://en.wikipedia.org/wiki/Goertzel_algorithm
@@ -155,6 +162,7 @@ http://www.eetimes.com/design/embedded/4024443/The-Goertzel-Algorithm
   1000      8           1           300
 
 */
+
 //fTone is the freq in hz we want to detect
 //SampleRate 48000, 96000, etc
 //Test with Freq from DTMF and sampleRate 8000 and compare with table above
@@ -639,3 +647,122 @@ The results are the real and imaginary parts of the DFT transform for frequency 
 
 
 */
+
+NewGoertzel::NewGoertzel(quint32 sampleRate, quint32 numSamples)
+{
+	m_externalSampleRate  = sampleRate;
+	m_internalSampleRate = m_externalSampleRate; //No decimation for now
+	m_numSamples = numSamples;
+	//More than we need since we need N samples for every goertzel result
+	//Move to setTone1Freq where we can calc
+	m_tone1Power = new double[numSamples];
+	m_tone2Power = new double[numSamples];
+	m_tone1Bits = new QBitArray(numSamples);
+	m_tone2Bits = new QBitArray(numSamples);
+	m_tone1Freq = 0;
+	m_tone1Bandwidth = 0;
+	m_tone2Freq = 0;
+	m_tone2Bandwidth = 0;
+}
+
+NewGoertzel::~NewGoertzel()
+{
+	delete[] m_tone1Power;
+	delete[] m_tone2Power;
+	delete m_tone1Bits;
+	delete m_tone2Bits;
+}
+
+void NewGoertzel::setTone1Freq(quint32 freq, quint32 bandwidth)
+{
+	m_tone1Freq = freq;
+	m_tone1Bandwidth = bandwidth;
+}
+
+void NewGoertzel::setTone2Freq(quint32 freq, quint32 bandwidth)
+{
+	m_tone2Freq = freq;
+	m_tone2Bandwidth = bandwidth;
+}
+
+/*
+	Uses Lyons pg 738, 13.17.1
+	Same as Wikipedia, just differnt nomenclature
+	Wikipedia algorithm ...
+	s_prev = 0
+	s_prev2 = 0
+	normalized_frequency = target_frequency / sample_rate;
+	coeff = 2*cos(2*PI*normalized_frequency);
+	for each sample, x[n],
+	  s = x[n] + coeff*s_prev - s_prev2;
+	  s_prev2 = s_prev;
+	  s_prev = s;
+	end
+	power = s_prev2*s_prev2 + s_prev*s_prev - coeff*s_prev*s_prev2;
+
+*/
+double NewGoertzel::updateTonePower(CPX *cpxIn)
+{
+	//Assumptions, move to setFreq after testing
+	//Freq = 800hz
+	double toneFreq = 732; //Integer multiple of SR/N
+
+	//Number of samples per result
+	//Lyons: The larger N is, the better the frequency resolution and noise immunity,
+	//	but the more calculations and CPU.
+
+	//Banks http://www.embedded.com/design/configurable-systems/4024443/The-Goertzel-Algorithm
+	//Goertzel block size N is like the number of points in an equivalent FFT.
+	//It controls the frequency resolution (also called bin width).
+	//For example, if your sampling rate is 8kHz and N is 100 samples, then your bin width is 80Hz.
+	//Ideally you want the frequencies to be centered in their respective bins.
+	//In other words, you want the target frequencies to be integer multiples of sample_rate/N.
+
+	int N = 512; //Lyons example is 64, but must be evenly divisible into m_numSamples
+	//double m = toneFreq / (m_internalSampleRate / (double) N); //Lyons 13-82
+	//double coeff = 2 * cos((TWOPI * m) / N);
+	//Lyons coeff same as Wikipedia coeff, but Wikipedia not dependent on N
+	double coeff = 2 * cos(TWOPI * toneFreq / m_internalSampleRate); //Wikipedia
+
+	double w_n; //Lyons w(n), Wikipedia s
+	double w_n1 = 0; //Lyons w(n-1), Wikipedia s_prev
+	double w_n2 = 0; //Lyons w(n-2), Wikipedia s_prev2
+
+	double x_n; //Lyons x(n)
+	double tonePower;
+	double totalTonePower = 0;
+	int toneCount = 0;
+	//We make sure that the number of samples needed for each result is an even divisor of m_numSamples
+	//This means we don't have to worry about cross-buffer handling
+	for (int i = 0; i < m_numSamples; i += N) {
+		for (int n = 0; n < N; n++) {
+			//x_n = DB::amplitude(cpxIn[n+i]); // Maybe
+			//x_n = fabs(cpxIn[n+i].re);
+			x_n = cpxIn[n+i].re; //Ignore phase, not needed?
+			//w_n = x_n + (w_n1 * coeff) + (w_n2 * -1); //Same as simplified version below
+			w_n = x_n + (w_n1 * coeff) - w_n2;
+			//Update delay line
+			w_n2 = w_n1;
+			w_n1 = w_n;
+		}
+		//We have enough samples to calculate a result
+		tonePower = (w_n1 * w_n1) + (w_n2 * w_n2) - (w_n1 * w_n2 * coeff); //Lyons 13-83
+		tonePower /= (N/2); //Normalize?
+		totalTonePower += tonePower;
+		m_tone1Power[toneCount++] = tonePower;
+		w_n1 = w_n2 = 0;
+	}
+	//Return avg tone power for tuning
+	//Power or amplitude?
+	return totalTonePower / toneCount;
+}
+
+void NewGoertzel::updateToneThreshold()
+{
+
+}
+
+void NewGoertzel::updateBitDetection()
+{
+
+}

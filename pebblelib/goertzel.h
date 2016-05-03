@@ -7,6 +7,7 @@
 #include "QtGlobal"
 #include "cpx.h"
 #include "windowfunction.h"
+#include "qbitarray.h"
 
 //Standard Reference Tones
 
@@ -17,23 +18,22 @@ public:
 	quint16 m_hi;
 	quint16 m_lo;
 
+	static const DTMF DTMF_0;
 	static const DTMF DTMF_1;
 	static const DTMF DTMF_2;
 	static const DTMF DTMF_3;
-	static const DTMF DTMF_A;
 	static const DTMF DTMF_4;
 	static const DTMF DTMF_5;
 	static const DTMF DTMF_6;
-	static const DTMF DTMF_B;
 	static const DTMF DTMF_7;
 	static const DTMF DTMF_8;
 	static const DTMF DTMF_9;
+	static const DTMF DTMF_A;
+	static const DTMF DTMF_B;
 	static const DTMF DTMF_C;
-	static const DTMF DTMF_STAR;
-	static const DTMF DTMF_0;
-	static const DTMF DTMF_POUND;
 	static const DTMF DTMF_D;
-
+	static const DTMF DTMF_STAR;
+	static const DTMF DTMF_POUND;
 };
 
 
@@ -80,6 +80,54 @@ public:
 	static const CTCSS CTCSS_30;
 	static const CTCSS CTCSS_31;
 	static const CTCSS CTCSS_32;
+};
+
+//Testing, 1 or 2 tone goertzel with updated model
+class NewGoertzel
+{
+public:
+	NewGoertzel(quint32 sampleRate, quint32 numSamples);
+	~NewGoertzel();
+
+	void setTone1Freq(quint32 freq, quint32 bandwidth);
+	void setTone2Freq(quint32 freq, quint32 bandwidth);
+
+	//Updates tone1Power and tone2Power
+	double updateTonePower(CPX *cpxIn);
+
+	//Updates threshold power between 0 and 1 bit
+	void updateToneThreshold();
+
+	//Processes tone1Power and tone2Power to update high/low bits
+	void updateBitDetection();
+
+	double* getTone1Power() {return m_tone1Power;}
+	double* getTone2Power() {return m_tone2Power;}
+
+private:
+	quint32 m_externalSampleRate;
+	quint32 m_internalSampleRate;
+	int m_numSamples;
+
+	double *m_tone1Power;
+	QBitArray *m_tone1Bits;
+	quint32 m_tone1Freq;
+	quint32 m_tone1Bandwidth;
+
+	double *m_tone2Power;
+	QBitArray *m_tone2Bits;
+	quint32 m_tone2Freq;
+	quint32 m_tone2Bandwidth;
+
+	//Using Lyons terminology (pg 740)
+	//N = m_numSamples
+	double m_wn1; //Lyons w(n-1) Most recent
+	double m_wn2; //Lyons w(n-2) 2nd most recent
+	quint32 m_samplesPerBin;
+	quint32 m_resonantFreq;
+	//If we think of Goertzel as single bin FFT, m_fftBin would be the bin index our freq would
+	//	be found in a full FFT.  We want our freq to be in the center of the bin if possible
+	quint32 m_fftBin; //Lyons m where 0 <= m <= N-1
 };
 
 class Goertzel
