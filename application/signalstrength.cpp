@@ -382,4 +382,7 @@ double SignalStrength::fdEstimate(double *spectrum, int spectrumBins, quint32 sp
 void SignalStrength::setExtValue(double v)
 {
 	m_extValue = v;
+	//Trigger immediate meter update whenever external value is changed
+	emit newSignalStrength(m_peakDb, m_avgDb, m_snrDb, m_floorDb, m_extValue);
+
 }
