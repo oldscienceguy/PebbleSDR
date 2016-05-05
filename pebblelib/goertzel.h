@@ -89,8 +89,8 @@ public:
 	NewGoertzel(quint32 sampleRate, quint32 numSamples);
 	~NewGoertzel();
 
-	void setTone1Freq(quint32 freq, quint32 bandwidth);
-	void setTone2Freq(quint32 freq, quint32 bandwidth);
+	void setTone1Freq(quint32 freq, quint32 N);
+	void setTone2Freq(quint32 freq);
 
 	//Updates tone1Power and tone2Power
 	double updateTonePower(CPX *cpxIn);
@@ -104,15 +104,25 @@ public:
 	double* getTone1Power() {return m_tone1Power;}
 	double* getTone2Power() {return m_tone2Power;}
 
+	//Call one or the other to set N
+	quint32 estNForShortestBit(double msShortestBit);
+	quint32 estNForBinBandwidth(quint32 bandwidth);
+
+	void setTargetSampleRate(quint32 targetSampleRate);
 private:
 	quint32 m_externalSampleRate;
 	quint32 m_internalSampleRate;
-	int m_numSamples;
+	int m_decimate;
+
+	int m_externalNumSamples;
+	int m_internalNumSamples;
 
 	double *m_tone1Power;
 	QBitArray *m_tone1Bits;
 	quint32 m_tone1Freq;
 	quint32 m_tone1Bandwidth;
+	quint32 m_tone1BinWidth; //# samples per bin
+	double m_tone1Coeff;
 
 	double *m_tone2Power;
 	QBitArray *m_tone2Bits;

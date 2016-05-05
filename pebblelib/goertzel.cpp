@@ -146,22 +146,6 @@ http://en.wikipedia.org/wiki/Goertzel_algorithm
 http://www.eetimes.com/design/embedded/4024443/The-Goertzel-Algorithm
 */
 
-/*
-  For reference and testing, these are correct values for 8khz sample rate (note doesn't change with fTone)
-  The more samples we process, the 'sharper' the filter but the more time per result
-  max wpm for each setting is 1200 / (4 * MsPerBin) min 4 results per element
-  Bandwidth #Samples    MsPerBin    MaxWPM
-  100       80          10          30
-  125       64          8           37.5
-  160       50          6.25        48
-  200       40          5           60      (Default value)
-  250       32          4           75
-  400       20          2.5         120
-  500       16          2           150
-  800       10          1.25        240
-  1000      8           1           300
-
-*/
 
 //fTone is the freq in hz we want to detect
 //SampleRate 48000, 96000, etc
@@ -652,7 +636,8 @@ NewGoertzel::NewGoertzel(quint32 sampleRate, quint32 numSamples)
 {
 	m_externalSampleRate  = sampleRate;
 	m_internalSampleRate = m_externalSampleRate; //No decimation for now
-	m_numSamples = numSamples;
+	m_externalNumSamples = numSamples;
+	m_internalNumSamples = m_externalNumSamples;
 	//More than we need since we need N samples for every goertzel result
 	//Move to setTone1Freq where we can calc
 	m_tone1Power = new double[numSamples];
@@ -660,8 +645,10 @@ NewGoertzel::NewGoertzel(quint32 sampleRate, quint32 numSamples)
 	m_tone1Bits = new QBitArray(numSamples);
 	m_tone2Bits = new QBitArray(numSamples);
 	m_tone1Freq = 0;
+	m_tone1BinWidth = 0;
 	m_tone1Bandwidth = 0;
 	m_tone2Freq = 0;
+	m_tone2Bits = 0;
 	m_tone2Bandwidth = 0;
 }
 
@@ -673,16 +660,95 @@ NewGoertzel::~NewGoertzel()
 	delete m_tone2Bits;
 }
 
-void NewGoertzel::setTone1Freq(quint32 freq, quint32 bandwidth)
+/*
+	Returns an optimal bin size
+	Determine an optimum bin width, or number of samples needed for each result
+	Lyons: The larger N is, the better the frequency resolution and noise immunity,
+		but the more calculations and CPU and the longer it takes to return each result.
+
+	Banks http://www.embedded.com/design/configurable-systems/4024443/The-Goertzel-Algorithm
+	Goertzel block size N is like the number of points in an equivalent FFT.
+	It controls the frequency resolution (also called bin width).
+	For example, if your sampling rate is 8kHz and N is 100 samples, then your bin width is 80Hz.
+	Ideally you want the frequencies to be centered in their respective bins.
+	In other words, you want the target frequencies to be integer multiples of sample_rate/N.
+
+	For morse code, the shortest 'bit' is 100ms @ 12wpm and 10ms @120wpm for example.  See morse.cpp
+	For morse code, typical bandwidths run from 50hz to 1000hz
+
+	(move to morse.cpp)
+	For reference and testing, these are correct values for 8khz sample rate (note doesn't change with fTone)
+	The more samples we process, the 'sharper' the filter but the more time per result
+
+	Tcw = 60/(wpm*50) //See morse.cpp for details
+	msPerSample = 1 / sampleRate, 1/8000 = .125ms
+	maxN = Tcw / msPerSample, any bigger and we miss Tcw's (aka bits)
+	N = maxN / 4, For better granularity 4 bits = 1 tcw
+	N must be an integer, truncate if necessary
+	bandwidth = sampleRate / N
+	Ideal freq is one that is centered in the bin, ie an even multiple of binWidth/2
+	Max  Tcw   Max       BW     Ideal
+	WPM  ms    N    N    for N  freq
+	-------------------------------
+	 20  60.0  480  120   66hz  792
+	 30  40.0  320   80  100hz  800 (Ideal)
+	 40  30.0  240   60  133hz  798
+	 50  24.0  192   48  166hz  830
+	 60  20.0  160   40  200hz  800 (Ideal)
+	 70  17.1  137   34  235hz  705
+	 80  15.0  120   30  266hz  798
+	 90  13.3  106   26  307hz  614 or 921 (bad choice)
+	100  12.0   96   24  333hz  666 or 999 (bad choice)
+	120  10.0   80   20  400hz  800  (Ideal - Good default to start auto wpm)
+	200   6.0   48   12  666hz  666 or 1332 (bad choice)
+	240   5.0   40   10  800hz  800 (Ideal)
+	300   4.0   32    8  1khz   500 or 1000 (bad choice)
+*/
+
+//Returns an estimated N based on shortest bit length
+quint32 NewGoertzel::estNForShortestBit(double msShortestBit)
 {
-	m_tone1Freq = freq;
-	m_tone1Bandwidth = bandwidth;
+	//How many ms does each sample represent?
+	//ie for 8k sample rate and 2048 buffer, each sample is .125ms
+	double msPerSample = 1e3 / m_internalSampleRate; //result in ms, not seconds
+	//N has to be less than the shortest 'bit' or we lose data
+	//ie maxN for 120wpm morse = 10ms / .125ms = 80
+	return msShortestBit / msPerSample;
 }
 
-void NewGoertzel::setTone2Freq(quint32 freq, quint32 bandwidth)
+//Returns an estimated N based on bin bandwidth
+quint32 NewGoertzel::estNForBinBandwidth(quint32 bandwidth)
+{
+	//N has to be large enough for desired bandwidth
+	//ie minN for bandwidth of 100 = 100 / 3.90 = 25.6
+	double binWidth = (m_internalSampleRate / m_internalNumSamples);
+	return bandwidth / binWidth;
+}
+
+void NewGoertzel::setTargetSampleRate(quint32 targetSampleRate)
+{
+	//Find internal sample rate closest to intSampleRate, but with even decimation factor
+	quint32 dec = m_externalSampleRate / targetSampleRate;
+	m_decimate = dec + (dec % 2);
+	m_internalSampleRate = m_externalSampleRate / m_decimate;
+
+}
+
+//Call setTargetSampleRate before setToneFreq
+void NewGoertzel::setTone1Freq(quint32 freq, quint32 N)
+{
+	m_tone1Freq = freq;
+	m_tone1BinWidth = N;
+
+	//double m = toneFreq / (m_internalSampleRate / (double) N); //Lyons 13-82
+	//double coeff = 2 * cos((TWOPI * m) / N);
+	//Lyons coeff same as Wikipedia coeff, but Wikipedia not dependent on N
+	m_tone1Coeff = 2 * cos(TWOPI * m_tone1Freq / m_internalSampleRate); //Wikipedia
+}
+
+void NewGoertzel::setTone2Freq(quint32 freq)
 {
 	m_tone2Freq = freq;
-	m_tone2Bandwidth = bandwidth;
 }
 
 /*
@@ -703,27 +769,12 @@ void NewGoertzel::setTone2Freq(quint32 freq, quint32 bandwidth)
 */
 double NewGoertzel::updateTonePower(CPX *cpxIn)
 {
-	//Assumptions, move to setFreq after testing
-	//Freq = 800hz
-	double toneFreq = 732; //Integer multiple of SR/N
+	if (m_tone1BinWidth == 0 || m_tone1Freq == 0)
+		//Not initialized
+		return 0;
 
-	//Number of samples per result
-	//Lyons: The larger N is, the better the frequency resolution and noise immunity,
-	//	but the more calculations and CPU.
-
-	//Banks http://www.embedded.com/design/configurable-systems/4024443/The-Goertzel-Algorithm
-	//Goertzel block size N is like the number of points in an equivalent FFT.
-	//It controls the frequency resolution (also called bin width).
-	//For example, if your sampling rate is 8kHz and N is 100 samples, then your bin width is 80Hz.
-	//Ideally you want the frequencies to be centered in their respective bins.
-	//In other words, you want the target frequencies to be integer multiples of sample_rate/N.
-
-	int N = 512; //Lyons example is 64, but must be evenly divisible into m_numSamples
-	//double m = toneFreq / (m_internalSampleRate / (double) N); //Lyons 13-82
-	//double coeff = 2 * cos((TWOPI * m) / N);
-	//Lyons coeff same as Wikipedia coeff, but Wikipedia not dependent on N
-	double coeff = 2 * cos(TWOPI * toneFreq / m_internalSampleRate); //Wikipedia
-
+	int N = m_tone1BinWidth;
+	double coeff = m_tone1Coeff;
 	double w_n; //Lyons w(n), Wikipedia s
 	double w_n1 = 0; //Lyons w(n-1), Wikipedia s_prev
 	double w_n2 = 0; //Lyons w(n-2), Wikipedia s_prev2
@@ -732,25 +783,28 @@ double NewGoertzel::updateTonePower(CPX *cpxIn)
 	double tonePower;
 	double totalTonePower = 0;
 	int toneCount = 0;
+	int nCount = 0;
 	//We make sure that the number of samples needed for each result is an even divisor of m_numSamples
 	//This means we don't have to worry about cross-buffer handling
-	for (int i = 0; i < m_numSamples; i += N) {
-		for (int n = 0; n < N; n++) {
-			//x_n = DB::amplitude(cpxIn[n+i]); // Maybe
-			//x_n = fabs(cpxIn[n+i].re);
-			x_n = cpxIn[n+i].re; //Ignore phase, not needed?
-			//w_n = x_n + (w_n1 * coeff) + (w_n2 * -1); //Same as simplified version below
-			w_n = x_n + (w_n1 * coeff) - w_n2;
-			//Update delay line
-			w_n2 = w_n1;
-			w_n1 = w_n;
+	for (int i = 0; i < m_externalNumSamples; i += m_decimate) {
+		//Todo: Do we need decimation filtering here?
+
+		x_n = cpxIn[i].re;
+		//w_n = x_n + (w_n1 * coeff) + (w_n2 * -1); //Same as simplified version below
+		w_n = x_n + (w_n1 * coeff) - w_n2;
+		//Update delay line
+		w_n2 = w_n1;
+		w_n1 = w_n;
+
+		if (nCount++ >= N) {
+			//We have enough samples to calculate a result
+			tonePower = (w_n1 * w_n1) + (w_n2 * w_n2) - (w_n1 * w_n2 * coeff); //Lyons 13-83
+			tonePower /= (N/2); //Normalize?
+			totalTonePower += tonePower;
+			m_tone1Power[toneCount++] = tonePower;
+			w_n1 = w_n2 = 0;
+			nCount = 0;
 		}
-		//We have enough samples to calculate a result
-		tonePower = (w_n1 * w_n1) + (w_n2 * w_n2) - (w_n1 * w_n2 * coeff); //Lyons 13-83
-		tonePower /= (N/2); //Normalize?
-		totalTonePower += tonePower;
-		m_tone1Power[toneCount++] = tonePower;
-		w_n1 = w_n2 = 0;
 	}
 	//Return avg tone power for tuning
 	//Power or amplitude?
@@ -766,3 +820,111 @@ void NewGoertzel::updateBitDetection()
 {
 
 }
+
+//Todo:  Look at realtime algorithms from https://netwerkt.wordpress.com/2011/08/25/goertzel-filter/
+#if 0
+Efficiently detecting a frequency using a Goertzel filter
+Posted on August 25, 2011 by Wilfried Elmenreich
+
+The Goertzel algorithm detects a specific, predetermined frequency in a signal.
+This can be used to analyze a sound source for the presence of a particular
+tone. The algorithm is simpler than an FFT and therefore a candidate for small
+embedded systems.
+
+With the following C code you can analyze an array of samples for a given frequency:
+
+double goertzelFilter(int samples[], double freq, int N) {
+	double s_prev = 0.0;
+	double s_prev2 = 0.0;
+	double coeff,normalizedfreq,power,s;
+	int i;
+	normalizedfreq = freq / SAMPLEFREQUENCY;
+	coeff = 2*cos(2*M_PI*normalizedfreq);
+	for (i=0; i<N; i++) {
+		s = samples[i] + coeff * s_prev - s_prev2;
+		s_prev2 = s_prev;
+		s_prev = s;
+	}
+	power = s_prev2*s_prev2+s_prev*s_prev-coeff*s_prev*s_prev2;
+	return power;
+}
+
+However, there are two issues with that approach: first, the samples need to be
+stored, which requires a lot of RAM memory that might not be easily available
+on a microcontroller. Second, the detection of a signal might be delayed until
+the sample buffer is full and gets analyzed. As an improvement, we can
+formulate the filter also as a real time algorithm that analyzes one sample at
+a time:
+
+double RTgoertzelFilter(int sample, double freq) {
+	static double s_prev = 0.0;
+	static double s_prev2 = 0.0;
+	static double totalpower = 0.0;
+	static int N = 0;
+	double coeff,normalizedfreq,power,s;
+	normalizedfreq = freq / SAMPLEFREQUENCY;
+	coeff = 2*cos(2*M_PI*normalizedfreq);
+	s = sample + coeff * s_prev - s_prev2;
+	s_prev2 = s_prev;
+	s_prev = s;
+	N++;
+	power = s_prev2*s_prev2+s_prev*s_prev-coeff*s_prev*s_prev2;
+	totalpower += sample*sample;
+	if (totalpower == 0) totalpower=1;
+	return power / totalpower / N;
+}
+
+Note that the initialization of the static variables takes place only at the
+first time when the function is called. The return value has been normalized
+using the total power and number of samples. This filter delivers a result
+after each sample without storing the samples, but it considers the whole
+history of the signal. If you want to detect the sudden presence of a tone, it
+is better to limit the history of the filter. This can be done using the
+tandemRTgoertzelFilter:
+
+double tandemRTgoertzelFilter(int sample, double freq) {
+	static double s_prev[2] = {0.0,0.0};
+	static double s_prev2[2] = {0.0,0.0};
+	static double totalpower[2] = {0.0,0.0};
+	static int N=0;
+	double coeff,normalizedfreq,power,s;
+	int active;
+	static int n[2] = {0,0};
+	normalizedfreq = freq / SAMPLEFREQUENCY;
+	coeff = 2*cos(2*M_PI*normalizedfreq);
+	s = sample + coeff * s_prev[0] - s_prev2[0];
+	s_prev2[0] = s_prev[0];
+	s_prev[0] = s;
+	n[0]++;
+	s = sample + coeff * s_prev[1] - s_prev2[1];
+	s_prev2[1] = s_prev[1];
+	s_prev[1] = s;
+	n[1]++;
+	N++;
+	active = (N / RESETSAMPLES) & 0x01;
+	if  (n[1-active] >= RESETSAMPLES) { // reset inactive
+		s_prev[1-active] = 0.0;
+		s_prev2[1-active] = 0.0;
+		totalpower[1-active] = 0.0;
+		n[1-active]=0;
+	}
+	totalpower[0] += sample*sample;
+	totalpower[1] += sample*sample;
+	power = s_prev2[active]*s_prev2[active]+s_prev[active]
+	  * s_prev[active]-coeff*s_prev[active]*s_prev2[active];
+	return power / (totalpower[active]+1e-7) / n[active];
+}
+
+The tandem filter is the combination of two real-time filters, which are reset
+alternatively every RESETSAMPLES. Except for the first RESETSAMPLES, the active
+filter always has a history between RESETSAMPLES and 2 * RESETSAMPLES samples.
+Meanwhile the inactive filter is building up its history again. This is
+necessary because the algorithm needs some time to reach a steady state. In my
+test runs, I successfully used a value of 200 samples for RESETSAMPLES in order
+to detect a 440 Hz signal in a 44kHz audio sample. Even for an 8 bit
+Microcontroller without an FPU, the tandem implementation is fast enough. For
+high performance computation, I further recommend to translate the algorithm to
+fixed point arithmetic.
+
+#endif
+
