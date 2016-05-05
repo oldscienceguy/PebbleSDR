@@ -20,12 +20,11 @@ AGC::AGC(quint32 _sampleRate, quint32 _bufferSize):ProcessStep(_sampleRate,_buff
     //cuteSDR
 	m_useHang = false;
 	m_threshold = 0;
-	m_manualGainDb = 0;
 	m_slopeFactor = 0;
 	m_decay = 0;
 	m_sampleRate = 100.0; //Trigger init on first call to setup
 
-	thresholdFromUi = 0;
+	uiSliderValueDb = 0;
 	setAgcMode(AGC_OFF);
 
 }
@@ -38,12 +37,12 @@ AGC::~AGC(void)
 //Returns what we got, keep in sync with SetAgcThreshold
 int AGC::getAgcThreshold()
 {
-    return thresholdFromUi;
+	return uiSliderValueDb;
 }
 //Values in = 0-99
 void AGC::setAgcThreshold(int g)
 {
-    thresholdFromUi = g; //Could be gain or threshold, used differently
+	uiSliderValueDb = g; //Could be gain or threshold, used differently
 
     //Set AGC mode so we can recalc values
 	setAgcMode(m_agcMode); //Not changing, just reseting
@@ -53,7 +52,6 @@ void AGC::setAgcMode(AgcMode m)
 {
     bool useHang = false;
     int threshold;
-    int manualGain;
     int slopeFactor = 0; //0db to 10db
     int decay = 200; //20ms to 2000ms
 
@@ -61,43 +59,47 @@ void AGC::setAgcMode(AgcMode m)
 		case AGC_OFF:
 			//If change, reset threshold
 			if (m_agcMode != m)
-				thresholdFromUi = 0;
-			manualGain = thresholdFromUi;
-            threshold = -20;
+				uiSliderValueDb = 0;
+			//convert uiSliderValue to linear manual gain value
+			//RL: We're converting a db gain figure to amplitude so we can scale with it
+			//Slider value is normally 0db to 99db, which is way to much simple gain
+			//Scale it back to a level where we're unlikely to overload
+			m_manualIFGainAmp = DB::dBToAmplitude(uiSliderValueDb / 5);
+			threshold = -20;
             break;
 		case ACG_FAST:
 			//If change, reset threshold
 			if (m_agcMode != m)
-				thresholdFromUi = DEFAULT_THRESHOLD;
-			manualGain = 30;
-            threshold = - thresholdFromUi;
+				uiSliderValueDb = DEFAULT_THRESHOLD;
+			m_manualIFGainAmp = 1.0;
+			threshold = - uiSliderValueDb;
             //hang time 100ms (fixed value from other algorithms, not used)
             decay = 100;
             break;
 		case AGC_SLOW:
 			//If change, reset threshold
 			if (m_agcMode != m)
-				thresholdFromUi = DEFAULT_THRESHOLD;
-			manualGain = 30;
-            threshold = - thresholdFromUi;
+				uiSliderValueDb = DEFAULT_THRESHOLD;
+			m_manualIFGainAmp = 1.0;
+			threshold = - uiSliderValueDb;
             //hang time 500ms
             decay = 500;
             break;
 		case AGC_MED:
 			//If change, reset threshold
 			if (m_agcMode != m)
-				thresholdFromUi = DEFAULT_THRESHOLD;
-			manualGain = 30;
-            threshold = - thresholdFromUi;
+				uiSliderValueDb = DEFAULT_THRESHOLD;
+			m_manualIFGainAmp = 1.0;
+			threshold = - uiSliderValueDb;
             //hang time 250ms
             decay = 250;
             break;
 		case AGC_LONG:
 			//If change, reset threshold
 			if (m_agcMode != m)
-				thresholdFromUi = DEFAULT_THRESHOLD;
-			threshold = - thresholdFromUi;
-            manualGain = 30;
+				uiSliderValueDb = DEFAULT_THRESHOLD;
+			m_manualIFGainAmp = 1.0;
+			threshold = - uiSliderValueDb;
             //hang time 750ms
             decay = 2000;
             break;
@@ -105,7 +107,7 @@ void AGC::setAgcMode(AgcMode m)
             break;
     }
 	m_agcMode = AGC_OFF; //stop processing while changing
-	setParameters(useHang,threshold,manualGain,slopeFactor, decay);
+	setParameters(useHang, threshold, slopeFactor, decay);
 	m_agcMode = m;
 
 }
@@ -116,8 +118,8 @@ CPX* AGC::processBlock(CPX *pInData)
         //manual gain just multiply by m_ManualGain
         for(int i=0; i<numSamples; i++)
         {
-			out[i].re = m_manualGainAmp * pInData[i].re;
-			out[i].im = m_manualGainAmp * pInData[i].im;
+			out[i].re = m_manualIFGainAmp * pInData[i].re;
+			out[i].im = m_manualIFGainAmp * pInData[i].im;
         }
         return out;
     }
@@ -263,18 +265,18 @@ CPX* AGC::processBlock(CPX *pInData)
 
 
 
-void AGC::setParameters(bool useHang, int threshold, int manualGainDb, int slopeFactor, int decay)
+void AGC::setParameters(bool useHang, int threshold, int slopeFactor, int decay)
 {
 	if((useHang == m_useHang) &&
-		(threshold == m_threshold) && (manualGainDb == m_manualGainDb) &&
-		(slopeFactor == m_slopeFactor) && (decay == m_decay) )
+		(threshold == m_threshold) &&
+		(slopeFactor == m_slopeFactor) &&
+		(decay == m_decay) )
     {
         return;		//just return if no parameter changed
     }
     //m_Mutex.lock();
 	m_useHang = useHang;
 	m_threshold = threshold;
-	m_manualGainDb = manualGainDb;
 	m_slopeFactor = slopeFactor;
 	m_decay = decay;
     //sampleRate doesn't change in Pebble, call once to init
@@ -294,11 +296,6 @@ void AGC::setParameters(bool useHang, int threshold, int manualGainDb, int slope
 		m_attackAvg = -5.0;
 		m_magBufPos = 0;
     }
-
-    //convert m_ThreshGain to linear manual gain value
-    //m_ManualAgcGain = MAX_MANUAL_AMPLITUDE*pow(10.0, -(100-(double)m_ManualGain)/20.0);
-    //RL: We're converting a db gain figure to amplitude so we can scale with it
-	m_manualGainAmp = DB::dBToAmplitude(m_manualGainDb);
 
     //calculate parameters for AGC gain as a function of input magnitude
 	m_knee = (double)m_threshold/20.0;

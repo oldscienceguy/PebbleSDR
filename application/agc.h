@@ -21,7 +21,7 @@ public:
 
 	//CPX *processBlock3(CPX *in); //Testing cuteSDR algorithm
 
-	void setParameters(bool useHang, int threshold, int manualGainDb, int slopeFactor, int decay);
+	void setParameters(bool useHang, int threshold, int slopeFactor, int decay);
 private:
 	static const int DEFAULT_THRESHOLD = 20;
 	static const int MAX_DELAY_BUF = 2048;
@@ -98,13 +98,12 @@ private:
 	//int fastDelayTime;
 
     //CuteSDR implementation
-    int thresholdFromUi;
+	int uiSliderValueDb;
 
     //internal copy of AGC settings parameters
 	bool m_useHang;
 	int m_threshold;
-	int m_manualGainDb;
-	double m_manualGainAmp;
+	double m_manualIFGainAmp;
 
 	//int m_Slope;
 	int m_decay;
