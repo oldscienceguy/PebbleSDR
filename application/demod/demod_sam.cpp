@@ -94,8 +94,8 @@ void Demod_SAM::processBlock(  CPX * in, CPX * out, int demodSamples )
         //Basic am demod but using delay instead of mag() for sample
         m_amDcRe = (DC_ALPHA * m_amDcReLast) + pllSample.re;
         m_amDcIm = (DC_ALPHA * m_amDcImLast) + pllSample.im;
-        out[i].re = (m_amDcRe - m_amDcReLast) * 0.5; //Adj for half power so == USB
-        out[i].im = (m_amDcIm - m_amDcImLast) * 0.5;
+		out[i].re = (m_amDcRe - m_amDcReLast);
+		out[i].im = (m_amDcIm - m_amDcImLast);
         m_amDcReLast = m_amDcRe;
         m_amDcImLast = m_amDcIm;
     }
