@@ -17,7 +17,6 @@ AGC::AGC(quint32 _sampleRate, quint32 _bufferSize):ProcessStep(_sampleRate,_buff
 	m_agcDelay = NULL;
 
 
-	thresholdFromUi = DEFAULT_THRESHOLD; //Either 20db gain or -20db threshold depending on mode
     //cuteSDR
 	m_useHang = false;
 	m_threshold = 0;
@@ -26,6 +25,7 @@ AGC::AGC(quint32 _sampleRate, quint32 _bufferSize):ProcessStep(_sampleRate,_buff
 	m_decay = 0;
 	m_sampleRate = 100.0; //Trigger init on first call to setup
 
+	thresholdFromUi = 0;
 	setAgcMode(AGC_OFF);
 
 }
@@ -57,35 +57,46 @@ void AGC::setAgcMode(AgcMode m)
     int slopeFactor = 0; //0db to 10db
     int decay = 200; //20ms to 2000ms
 
-	//If change, reset threshold
-	if (m_agcMode != m)
-		thresholdFromUi = DEFAULT_THRESHOLD;
-
     switch (m) {
 		case AGC_OFF:
-			manualGain = 0;
+			//If change, reset threshold
+			if (m_agcMode != m)
+				thresholdFromUi = 0;
+			manualGain = thresholdFromUi;
             threshold = -20;
             break;
 		case ACG_FAST:
-            manualGain = 30;
+			//If change, reset threshold
+			if (m_agcMode != m)
+				thresholdFromUi = DEFAULT_THRESHOLD;
+			manualGain = 30;
             threshold = - thresholdFromUi;
             //hang time 100ms (fixed value from other algorithms, not used)
             decay = 100;
             break;
 		case AGC_SLOW:
-            manualGain = 30;
+			//If change, reset threshold
+			if (m_agcMode != m)
+				thresholdFromUi = DEFAULT_THRESHOLD;
+			manualGain = 30;
             threshold = - thresholdFromUi;
             //hang time 500ms
             decay = 500;
             break;
 		case AGC_MED:
-            manualGain = 30;
+			//If change, reset threshold
+			if (m_agcMode != m)
+				thresholdFromUi = DEFAULT_THRESHOLD;
+			manualGain = 30;
             threshold = - thresholdFromUi;
             //hang time 250ms
             decay = 250;
             break;
 		case AGC_LONG:
-            threshold = - thresholdFromUi;
+			//If change, reset threshold
+			if (m_agcMode != m)
+				thresholdFromUi = DEFAULT_THRESHOLD;
+			threshold = - thresholdFromUi;
             manualGain = 30;
             //hang time 750ms
             decay = 2000;
