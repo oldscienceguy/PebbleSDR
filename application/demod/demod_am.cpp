@@ -27,10 +27,7 @@ void Demod_AM::processBlock(CPX *in, CPX *out, int demodSamples)
     for (int i=0;i<demodSamples;i++)
     {
         //Just return the magnitude of each sample
-        //tmp = sqrt(in[i].re * in[i].re + in[i].im * in[i].im);
-        //10/11/10: putting 50% of mag in re and im yields the same signal power
-        //as USB or LSB.  Without this, we get AM distortion at the same gain
-        amOut = in[i].mag() * 0.5;
+		amOut = DB::amplitude(in[i]);
         out[i].re = out[i].im = amOut;
     }
 }
@@ -47,7 +44,7 @@ void Demod_AM::processBlockFiltered(CPX *in, CPX *out, int demodSamples)
 
     for (int i = 0; i < demodSamples; i++)
     {
-        mag = in[i].mag();
+		mag = DB::amplitude(in[i]);
 
         //CuteSDR description of filter for reference
         //High pass filter(DC removal) with IIR filter
@@ -56,8 +53,7 @@ void Demod_AM::processBlockFiltered(CPX *in, CPX *out, int demodSamples)
 		amOut = m_amDc - m_amDcLast;
 		m_amDcLast = m_amDc;
 
-        //amCout *= .5 so we keep overall signal magnitude unchanged compared to SSB with half the power
-        out[i].re = out[i].im = amOut * 0.5;
+		out[i].re = out[i].im = amOut;
     }
 
     //post filter AM audio to limit high frequency noise
