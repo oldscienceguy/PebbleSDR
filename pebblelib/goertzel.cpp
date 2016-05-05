@@ -638,26 +638,10 @@ NewGoertzel::NewGoertzel(quint32 sampleRate, quint32 numSamples)
 	m_internalSampleRate = m_externalSampleRate; //No decimation for now
 	m_externalNumSamples = numSamples;
 	m_internalNumSamples = m_externalNumSamples;
-	//More than we need since we need N samples for every goertzel result
-	//Move to setTone1Freq where we can calc
-	m_tone1Power = new double[numSamples];
-	m_tone2Power = new double[numSamples];
-	m_tone1Bits = new QBitArray(numSamples);
-	m_tone2Bits = new QBitArray(numSamples);
-	m_tone1Freq = 0;
-	m_tone1BinWidth = 0;
-	m_tone1Bandwidth = 0;
-	m_tone2Freq = 0;
-	m_tone2Bits = 0;
-	m_tone2Bandwidth = 0;
 }
 
 NewGoertzel::~NewGoertzel()
 {
-	delete[] m_tone1Power;
-	delete[] m_tone2Power;
-	delete m_tone1Bits;
-	delete m_tone2Bits;
 }
 
 /*
@@ -734,21 +718,11 @@ void NewGoertzel::setTargetSampleRate(quint32 targetSampleRate)
 
 }
 
-//Call setTargetSampleRate before setToneFreq
-void NewGoertzel::setTone1Freq(quint32 freq, quint32 N)
+void NewGoertzel::setFreq(quint32 freq, quint32 N)
 {
-	m_tone1Freq = freq;
-	m_tone1BinWidth = N;
-
-	//double m = toneFreq / (m_internalSampleRate / (double) N); //Lyons 13-82
-	//double coeff = 2 * cos((TWOPI * m) / N);
-	//Lyons coeff same as Wikipedia coeff, but Wikipedia not dependent on N
-	m_tone1Coeff = 2 * cos(TWOPI * m_tone1Freq / m_internalSampleRate); //Wikipedia
-}
-
-void NewGoertzel::setTone2Freq(quint32 freq)
-{
-	m_tone2Freq = freq;
+	m_mainTone.setFreq(freq, N, m_internalSampleRate);
+	m_highCompareTone.setFreq(freq + m_mainTone.m_bandwidth, N, m_internalSampleRate);
+	m_lowCompareTone.setFreq(freq - m_mainTone.m_bandwidth, N, m_internalSampleRate);
 }
 
 /*
@@ -769,46 +743,80 @@ void NewGoertzel::setTone2Freq(quint32 freq)
 */
 double NewGoertzel::updateTonePower(CPX *cpxIn)
 {
-	if (m_tone1BinWidth == 0 || m_tone1Freq == 0)
+	if (m_mainTone.m_N == 0 || m_mainTone.m_freq == 0)
 		//Not initialized
 		return 0;
 
-	int N = m_tone1BinWidth;
-	double coeff = m_tone1Coeff;
-	double w_n; //Lyons w(n), Wikipedia s
-	double w_n1 = 0; //Lyons w(n-1), Wikipedia s_prev
-	double w_n2 = 0; //Lyons w(n-2), Wikipedia s_prev2
-
-	double x_n; //Lyons x(n)
-	double tonePower;
 	double totalTonePower = 0;
+	double totalComparePower = 0;
 	int toneCount = 0;
-	int nCount = 0;
 	//We make sure that the number of samples needed for each result is an even divisor of m_numSamples
 	//This means we don't have to worry about cross-buffer handling
 	for (int i = 0; i < m_externalNumSamples; i += m_decimate) {
 		//Todo: Do we need decimation filtering here?
-
-		x_n = cpxIn[i].re;
-		//w_n = x_n + (w_n1 * coeff) + (w_n2 * -1); //Same as simplified version below
-		w_n = x_n + (w_n1 * coeff) - w_n2;
-		//Update delay line
-		w_n2 = w_n1;
-		w_n1 = w_n;
-
-		if (nCount++ >= N) {
-			//We have enough samples to calculate a result
-			tonePower = (w_n1 * w_n1) + (w_n2 * w_n2) - (w_n1 * w_n2 * coeff); //Lyons 13-83
-			tonePower /= (N/2); //Normalize?
-			totalTonePower += tonePower;
-			m_tone1Power[toneCount++] = tonePower;
-			w_n1 = w_n2 = 0;
-			nCount = 0;
+		//All the tones have the same N, just check the result of the main
+		bool result = m_mainTone.processSample(cpxIn[i].re);
+		m_highCompareTone.processSample(cpxIn[i].re);
+		m_lowCompareTone.processSample(cpxIn[i].re);
+		if (result) {
+			totalTonePower += m_mainTone.m_power;
+			totalComparePower += m_highCompareTone.m_power + m_lowCompareTone.m_power;
+			toneCount++;
 		}
 	}
 	//Return avg tone power for tuning
 	//Power or amplitude?
-	return totalTonePower / toneCount;
+	double avgTonePower = totalTonePower / toneCount;
+	double avgComparePower = totalComparePower / (toneCount * 2);
+	if (avgTonePower > (2 * avgComparePower))
+		return avgTonePower;
+	else
+		return 0;
+}
+
+NewGoertzel::Tone::Tone()
+{
+	m_freq = 0;
+	m_N = 0;
+	m_bandwidth = 0;
+	m_wn = 0;
+	m_wn1 = 0;
+	m_wn2 = 0;
+	m_nCount = 0;
+	//Todo: construct power and bit arrays
+}
+
+//Call setTargetSampleRate before setToneFreq
+void NewGoertzel::Tone::setFreq(quint32 freq, quint32 N, quint32 sampleRate)
+{
+	m_freq = freq;
+	m_N = N;
+	m_bandwidth = sampleRate / m_N;
+
+	//double m = toneFreq / (m_internalSampleRate / (double) N); //Lyons 13-82
+	//double coeff = 2 * cos((TWOPI * m) / N);
+	//Lyons coeff same as Wikipedia coeff, but Wikipedia not dependent on N
+	m_coeff = 2 * cos(TWOPI * m_freq / sampleRate); //Wikipedia
+}
+
+//Process a single sample, return true if we've processed enough for a result
+bool NewGoertzel::Tone::processSample(double x_n)
+{
+	//m_wn = x_n + (m_wn1 * m_coeff) + (m_wn2 * -1); //Same as simplified version below
+	m_wn = x_n + (m_wn1 * m_coeff) - m_wn2;
+	//Update delay line
+	m_wn2 = m_wn1;
+	m_wn1 = m_wn;
+
+	if (m_nCount++ >= m_N) {
+		//We have enough samples to calculate a result
+		m_power = (m_wn1 * m_wn1) + (m_wn2 * m_wn2) - (m_wn1 * m_wn2 * m_coeff); //Lyons 13-83
+		m_power /= (m_N/2); //Normalize?
+		m_wn1 = m_wn2 = 0;
+		m_nCount = 0;
+		return true;
+	}
+	return false;
 }
 
 void NewGoertzel::updateToneThreshold()
@@ -927,4 +935,5 @@ high performance computation, I further recommend to translate the algorithm to
 fixed point arithmetic.
 
 #endif
+
 

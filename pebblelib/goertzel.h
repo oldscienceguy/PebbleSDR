@@ -89,8 +89,7 @@ public:
 	NewGoertzel(quint32 sampleRate, quint32 numSamples);
 	~NewGoertzel();
 
-	void setTone1Freq(quint32 freq, quint32 N);
-	void setTone2Freq(quint32 freq);
+	void setFreq(quint32 freq, quint32 N);
 
 	//Updates tone1Power and tone2Power
 	double updateTonePower(CPX *cpxIn);
@@ -101,43 +100,47 @@ public:
 	//Processes tone1Power and tone2Power to update high/low bits
 	void updateBitDetection();
 
-	double* getTone1Power() {return m_tone1Power;}
-	double* getTone2Power() {return m_tone2Power;}
-
 	//Call one or the other to set N
 	quint32 estNForShortestBit(double msShortestBit);
 	quint32 estNForBinBandwidth(quint32 bandwidth);
 
 	void setTargetSampleRate(quint32 targetSampleRate);
 private:
+	//All of the internal data needed to decode a tone
+	//Allows us to specify multiple tones that can be decoded at the same time
+	struct Tone{
+		Tone();
+		void setFreq(quint32 freq, quint32 N, quint32 sampleRate);
+		bool processSample (double x_n);
+
+		//Saved results, do we need?
+		QBitArray *m_bits;
+
+		quint32 m_freq;
+		quint32 m_bandwidth;
+		double m_power; //Result of last bin
+
+		//Using Lyons terminology (pg 740)
+		double m_coeff;
+		int m_N; //binWidth = #samples per bin
+		double m_wn; //Lyons w(n), Wikipedia s
+		double m_wn1; //Lyons w(n-1), Wikipedia s_prev
+		double m_wn2; //Lyons w(n-2), Wikipedia s_prev2
+		int m_nCount; //# samples processed
+
+	};
+	void setToneFreq(Tone &tone, quint32 freq, quint32 N);
+
+	Tone m_mainTone;
+	Tone m_lowCompareTone;
+	Tone m_highCompareTone;
+
 	quint32 m_externalSampleRate;
 	quint32 m_internalSampleRate;
 	int m_decimate;
 
 	int m_externalNumSamples;
 	int m_internalNumSamples;
-
-	double *m_tone1Power;
-	QBitArray *m_tone1Bits;
-	quint32 m_tone1Freq;
-	quint32 m_tone1Bandwidth;
-	quint32 m_tone1BinWidth; //# samples per bin
-	double m_tone1Coeff;
-
-	double *m_tone2Power;
-	QBitArray *m_tone2Bits;
-	quint32 m_tone2Freq;
-	quint32 m_tone2Bandwidth;
-
-	//Using Lyons terminology (pg 740)
-	//N = m_numSamples
-	double m_wn1; //Lyons w(n-1) Most recent
-	double m_wn2; //Lyons w(n-2) 2nd most recent
-	quint32 m_samplesPerBin;
-	quint32 m_resonantFreq;
-	//If we think of Goertzel as single bin FFT, m_fftBin would be the bin index our freq would
-	//	be found in a full FFT.  We want our freq to be in the center of the bin if possible
-	quint32 m_fftBin; //Lyons m where 0 <= m <= N-1
 };
 
 class Goertzel
