@@ -38,11 +38,11 @@ void ReceiverWidget::setReceiver(Receiver *r)
     modes << "AM"<<"SAM"<<"FMN"<<"FM-Mono"<<"FM-Stereo"<<"DSB"<<"LSB"<<"USB"<<"CWL"<<"CWU"<<"DIGL"<<"DIGU"<<"NONE";
 	ui.modeBox->addItems(modes);
 
-	ui.agcBox->addItem("Off",AGC::OFF);
-	ui.agcBox->addItem("Fast",AGC::FAST);
-	ui.agcBox->addItem("Med",AGC::MED);
-	ui.agcBox->addItem("Slow",AGC::SLOW);
-	ui.agcBox->addItem("Long",AGC::LONG);
+	ui.agcBox->addItem("Off",AGC::AGC_OFF);
+	ui.agcBox->addItem("Fast",AGC::ACG_FAST);
+	ui.agcBox->addItem("Med",AGC::AGC_MED);
+	ui.agcBox->addItem("Slow",AGC::AGC_SLOW);
+	ui.agcBox->addItem("Long",AGC::AGC_LONG);
 
 #if 0
 	QMenu *settingsMenu = new QMenu();
@@ -98,6 +98,12 @@ void ReceiverWidget::setReceiver(Receiver *r)
     ui.powerButton->setCheckable(true); //Make it a toggle button
     ui.recButton->setCheckable(true);
     //ui.sdrOptions->setCheckable(true);
+
+	//Slider is in db
+	ui.agcSlider->setMinimum(0);
+	ui.agcSlider->setMaximum(99);
+	connect(ui.agcSlider,SIGNAL(valueChanged(int)),this,SLOT(agcSliderChanged(int)));
+
     connect(ui.powerButton,SIGNAL(toggled(bool)),this,SLOT(powerToggled(bool)));
 	connect(ui.recButton,SIGNAL(toggled(bool)),m_receiver,SLOT(recToggled(bool)));
 	connect(ui.sdrOptions,SIGNAL(pressed()),m_receiver,SLOT(sdrOptionsPressed()));
@@ -110,7 +116,6 @@ void ReceiverWidget::setReceiver(Receiver *r)
 	connect(ui.modeBox,SIGNAL(currentIndexChanged(QString)),this,SLOT(modeSelectionChanged(QString)));
 	connect(ui.filterBox,SIGNAL(currentIndexChanged(QString)),this,SLOT(filterSelectionChanged(QString)));
 	connect(ui.gainSlider,SIGNAL(valueChanged(int)),this,SLOT(gainSliderChanged(int)));
-	connect(ui.agcSlider,SIGNAL(valueChanged(int)),this,SLOT(agcSliderChanged(int)));
 	connect(ui.spectrumWidget,SIGNAL(spectrumMixerChanged(qint32)),this,SLOT(mixerChanged(qint32)));
 	connect(ui.spectrumWidget,SIGNAL(spectrumMixerChanged(qint32,bool)),this,SLOT(mixerChanged(qint32,bool)));
     connect(ui.addMemoryButton,SIGNAL(clicked()),this,SLOT(addMemoryButtonClicked()));
@@ -615,7 +620,7 @@ void ReceiverWidget::powerToggled(bool on)
 
 		//Set default AGC mode
 		//agcBoxChanged(AGC::FAST);
-		int agcIndex = ui.agcBox->findData(AGC::OFF);
+		int agcIndex = ui.agcBox->findData(AGC::AGC_OFF);
 		ui.agcBox->blockSignals(true);
 		ui.agcBox->setCurrentIndex(agcIndex);
 		ui.agcBox->blockSignals(false);
@@ -738,9 +743,12 @@ void ReceiverWidget::agcBoxChanged(int item)
 {
     if (!m_powerOn)
         return;
-	AGC::AGCMODE agcMode = (AGC::AGCMODE)ui.agcBox->currentData().toInt();
+	AGC::AgcMode agcMode = (AGC::AgcMode)ui.agcBox->currentData().toInt();
+	if (agcMode == AGC::AgcMode::AGC_OFF)
+		ui.agcSlider->setValue(0); //0db gain
+	else
+		ui.agcSlider->setValue(30);
 	emit agcModeChanged(agcMode);
-	ui.agcSlider->setValue(30);
 }
 void ReceiverWidget::muteButtonToggled(bool b)
 {

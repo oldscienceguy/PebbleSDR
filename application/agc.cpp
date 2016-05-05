@@ -1,10 +1,7 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include "agc.h"
-#ifndef max
-#define max(a,b) (((a) > (b)) ? (a) : (b))
-#define min(a,b) (((a) < (b)) ? (a) : (b))
-#endif
+
 /*
 dttsp uses these values
 Attack time: 2ms
@@ -17,59 +14,26 @@ Initial Gain: 1
 */
 AGC::AGC(quint32 _sampleRate, quint32 _bufferSize):ProcessStep(_sampleRate,_bufferSize)
 {
-	agcDelay = NULL;
+	m_agcDelay = NULL;
 
 
 	thresholdFromUi = DEFAULT_THRESHOLD; //Either 20db gain or -20db threshold depending on mode
     //cuteSDR
-    m_UseHang = false;
-    m_Threshold = 0;
-    m_ManualGain = 0;
-    m_SlopeFactor = 0;
-    m_Decay = 0;
-    m_SampleRate = 100.0; //Trigger init on first call to setup
+	m_useHang = false;
+	m_threshold = 0;
+	m_manualGainDb = 0;
+	m_slopeFactor = 0;
+	m_decay = 0;
+	m_sampleRate = 100.0; //Trigger init on first call to setup
 
-    setAgcMode(FAST);
+	setAgcMode(AGC_OFF);
 
 }
 
 AGC::~AGC(void)
 {
-	delete agcDelay;
+	delete m_agcDelay;
 }
-
-
-
-//CuteSDR algorithm converted for FP CPX samples and predefined modes
-
-//signal delay line time delay in seconds.
-//adjust to cover the impulse response time of filter
-#define DELAY_TIMECONST .015
-
-//Peak Detector window time delay in seconds.
-#define WINDOW_TIMECONST .018
-
-//attack time constant in seconds
-//just small enough to let attackave charge up within the DELAY_TIMECONST time
-#define ATTACK_RISE_TIMECONST .002
-#define ATTACK_FALL_TIMECONST .005
-
-#define DECAY_RISEFALL_RATIO .3	//ratio between rise and fall times of Decay time constants
-                                //adjust for best action with SSB
-
-// hang timer release decay time constant in seconds
-#define RELEASE_TIMECONST .05
-
-//limit output to about 3db of max
-#define AGC_OUTSCALE 0.7
-
-#define MAX_AMPLITUDE 1.0		//keep max in and out the same (was 32767 for cuteSDR, but we're FP cpx
-#define MAX_MANUAL_AMPLITUDE 1.0 //Same, was 32767
-
-//#define MIN_CONSTANT 3.2767e-4	//const for calc log() so that a value of 0 magnitude == -8
-#define MIN_CONSTANT 1e-8	//const for calc log() so that a value of 0 magnitude == -8
-                                //corresponding to -160dB.
-                                //K = 10^( -8 + log(1) )
 
 //Returns what we got, keep in sync with SetAgcThreshold
 int AGC::getAgcThreshold()
@@ -82,10 +46,10 @@ void AGC::setAgcThreshold(int g)
     thresholdFromUi = g; //Could be gain or threshold, used differently
 
     //Set AGC mode so we can recalc values
-    setAgcMode(agcMode); //Not changing, just reseting
+	setAgcMode(m_agcMode); //Not changing, just reseting
 }
 
-void AGC::setAgcMode(AGCMODE m)
+void AGC::setAgcMode(AgcMode m)
 {
     bool useHang = false;
     int threshold;
@@ -94,33 +58,33 @@ void AGC::setAgcMode(AGCMODE m)
     int decay = 200; //20ms to 2000ms
 
 	//If change, reset threshold
-	if (agcMode != m)
+	if (m_agcMode != m)
 		thresholdFromUi = DEFAULT_THRESHOLD;
 
     switch (m) {
-        case OFF:
-            manualGain = thresholdFromUi;
+		case AGC_OFF:
+			manualGain = 0;
             threshold = -20;
             break;
-        case FAST:
+		case ACG_FAST:
             manualGain = 30;
             threshold = - thresholdFromUi;
             //hang time 100ms (fixed value from other algorithms, not used)
             decay = 100;
             break;
-        case SLOW:
+		case AGC_SLOW:
             manualGain = 30;
             threshold = - thresholdFromUi;
             //hang time 500ms
             decay = 500;
             break;
-        case MED:
+		case AGC_MED:
             manualGain = 30;
             threshold = - thresholdFromUi;
             //hang time 250ms
             decay = 250;
             break;
-        case LONG:
+		case AGC_LONG:
             threshold = - thresholdFromUi;
             manualGain = 30;
             //hang time 750ms
@@ -129,20 +93,20 @@ void AGC::setAgcMode(AGCMODE m)
         default:
             break;
     }
-	agcMode = OFF; //stop processing while changing
-    SetParameters(useHang,threshold,manualGain,slopeFactor, decay);
-    agcMode = m;
+	m_agcMode = AGC_OFF; //stop processing while changing
+	setParameters(useHang,threshold,manualGain,slopeFactor, decay);
+	m_agcMode = m;
 
 }
 
-CPX* AGC::ProcessBlock(CPX *pInData)
+CPX* AGC::processBlock(CPX *pInData)
 {
-    if (agcMode == OFF) {
+	if (m_agcMode == AGC_OFF) {
         //manual gain just multiply by m_ManualGain
         for(int i=0; i<numSamples; i++)
         {
-            out[i].re = m_ManualAgcGain * pInData[i].re;
-            out[i].im = m_ManualAgcGain * pInData[i].im;
+			out[i].re = m_manualGainAmp * pInData[i].re;
+			out[i].im = m_manualGainAmp * pInData[i].im;
         }
         return out;
     }
@@ -155,11 +119,11 @@ CPX* AGC::ProcessBlock(CPX *pInData)
     {
         CPX in = pInData[i];	//get latest input sample
         //Get delayed sample of input signal
-        delayedin = m_SigDelayBuf[m_SigDelayPtr];
+		delayedin = m_sigDelayBuf[m_sigDelayPtr];
         //put new input sample into signal delay buffer
-        m_SigDelayBuf[m_SigDelayPtr++] = in;
-        if( m_SigDelayPtr >= m_DelaySamples)	//deal with delay buffer wrap around
-            m_SigDelayPtr = 0;
+		m_sigDelayBuf[m_sigDelayPtr++] = in;
+		if( m_sigDelayPtr >= m_delaySamples)	//deal with delay buffer wrap around
+			m_sigDelayPtr = 0;
 
         //double dmag = 0.5* log10(  (dsig.re*dsig.re+dsig.im*dsig.im)/(MAX_AMPLITUDE*MAX_AMPLITUDE) + 1e-16);	//clamped to -160dBfs
         //pOutData[i].re = 3000*dmag;
@@ -178,78 +142,78 @@ CPX* AGC::ProcessBlock(CPX *pInData)
         //pOutData[i].re = 1500*log10( ((delayedin.re*delayedin.re)+(delayedin.im*delayedin.im))/(MAX_AMPLITUDE*MAX_AMPLITUDE) + 1e-16);;
 
         //create a sliding window of 'm_WindowSamples' magnitudes and output the peak value within the sliding window
-        double tmp = m_MagBuf[m_MagBufPos];	//get oldest mag sample from buffer into tmp
-        m_MagBuf[m_MagBufPos++] = mag;			//put latest mag sample in buffer;
-        if( m_MagBufPos >= m_WindowSamples)		//deal with magnitude buffer wrap around
-            m_MagBufPos = 0;
-        if(mag > m_Peak)
+		double tmp = m_magBuf[m_magBufPos];	//get oldest mag sample from buffer into tmp
+		m_magBuf[m_magBufPos++] = mag;			//put latest mag sample in buffer;
+		if( m_magBufPos >= m_windowSamples)		//deal with magnitude buffer wrap around
+			m_magBufPos = 0;
+		if(mag > m_peak)
         {
-            m_Peak = mag;	//if new sample is larger than current peak then use it, no need to look at buffer values
+			m_peak = mag;	//if new sample is larger than current peak then use it, no need to look at buffer values
         }
         else
         {
-            if(tmp == m_Peak)		//tmp is oldest sample pulled out of buffer
+			if(tmp == m_peak)		//tmp is oldest sample pulled out of buffer
             {	//if oldest sample pulled out was last peak then need to find next highest peak in buffer
-                m_Peak = -8.0;		//set to lowest value to find next max peak
+				m_peak = -8.0;		//set to lowest value to find next max peak
                 //search all buffer for maximum value and set as new peak
-                for(int i=0; i<m_WindowSamples; i++)
+				for(int i=0; i<m_windowSamples; i++)
                 {
-                    tmp = m_MagBuf[i];
-                    if(tmp > m_Peak)
-                        m_Peak = tmp;
+					tmp = m_magBuf[i];
+					if(tmp > m_peak)
+						m_peak = tmp;
                 }
             }
         }
 
         //pOutData[i].im = 3000*m_Peak;
 
-        if(m_UseHang)
+		if(m_useHang)
         {	//using hang timer mode
-            if(m_Peak>m_AttackAve)	//if power is rising (use m_AttackRiseAlpha time constant)
-                m_AttackAve = (1.0-m_AttackRiseAlpha)*m_AttackAve + m_AttackRiseAlpha*m_Peak;
+			if(m_peak>m_attackAvg)	//if power is rising (use m_AttackRiseAlpha time constant)
+				m_attackAvg = (1.0-m_attackRiseAlpha)*m_attackAvg + m_attackRiseAlpha*m_peak;
             else					//else magnitude is falling (use  m_AttackFallAlpha time constant)
-                m_AttackAve = (1.0-m_AttackFallAlpha)*m_AttackAve + m_AttackFallAlpha*m_Peak;
+				m_attackAvg = (1.0-m_attackFallAlpha)*m_attackAvg + m_attackFallAlpha*m_peak;
 
-            if(m_Peak>m_DecayAve)	//if magnitude is rising (use m_DecayRiseAlpha time constant)
+			if(m_peak>m_decayAvg)	//if magnitude is rising (use m_DecayRiseAlpha time constant)
             {
-                m_DecayAve = (1.0-m_DecayRiseAlpha)*m_DecayAve + m_DecayRiseAlpha*m_Peak;
-                m_HangTimer = 0;	//reset hang timer
+				m_decayAvg = (1.0-m_decayRiseAlpha)*m_decayAvg + m_decayRiseAlpha*m_peak;
+				m_hangTimer = 0;	//reset hang timer
             }
             else
             {	//here if decreasing signal
-                if(m_HangTimer<m_HangTime)
-                    m_HangTimer++;	//just inc and hold current m_DecayAve
+				if(m_hangTimer<m_hangTime)
+					m_hangTimer++;	//just inc and hold current m_DecayAve
                 else	//else decay with m_DecayFallAlpha which is RELEASE_TIMECONST
-                    m_DecayAve = (1.0-m_DecayFallAlpha)*m_DecayAve + m_DecayFallAlpha*m_Peak;
+					m_decayAvg = (1.0-m_decayFallAlpha)*m_decayAvg + m_decayFallAlpha*m_peak;
             }
         }
         else
         {	//using exponential decay mode
             // perform average of magnitude using 2 averagers each with separate rise and fall time constants
-            if(m_Peak>m_AttackAve)	//if magnitude is rising (use m_AttackRiseAlpha time constant)
-                m_AttackAve = (1.0-m_AttackRiseAlpha)*m_AttackAve + m_AttackRiseAlpha*m_Peak;
+			if(m_peak>m_attackAvg)	//if magnitude is rising (use m_AttackRiseAlpha time constant)
+				m_attackAvg = (1.0-m_attackRiseAlpha)*m_attackAvg + m_attackRiseAlpha*m_peak;
             else					//else magnitude is falling (use  m_AttackFallAlpha time constant)
-                m_AttackAve = (1.0-m_AttackFallAlpha)*m_AttackAve + m_AttackFallAlpha*m_Peak;
+				m_attackAvg = (1.0-m_attackFallAlpha)*m_attackAvg + m_attackFallAlpha*m_peak;
 
             //pOutData[i].im = 3000*m_AttackAve;
-            if(m_Peak>m_DecayAve)	//if magnitude is rising (use m_DecayRiseAlpha time constant)
-                m_DecayAve = (1.0-m_DecayRiseAlpha)*m_DecayAve + m_DecayRiseAlpha*(m_Peak);
+			if(m_peak>m_decayAvg)	//if magnitude is rising (use m_DecayRiseAlpha time constant)
+				m_decayAvg = (1.0-m_decayRiseAlpha)*m_decayAvg + m_decayRiseAlpha*(m_peak);
             else					//else magnitude is falling (use m_DecayFallAlpha time constant)
-                m_DecayAve = (1.0-m_DecayFallAlpha)*m_DecayAve + m_DecayFallAlpha*(m_Peak);
+				m_decayAvg = (1.0-m_decayFallAlpha)*m_decayAvg + m_decayFallAlpha*(m_peak);
             //pOutData[i].im = 3000*m_DecayAve;
         }
         //use greater magnitude of attack or Decay Averager
-        if(m_AttackAve>m_DecayAve)
-            mag = m_AttackAve;
+		if(m_attackAvg>m_decayAvg)
+			mag = m_attackAvg;
         else
-            mag = m_DecayAve;
+			mag = m_decayAvg;
 
         //pOutData[i].im = 3000*mag;
         //calc gain depending on which side of knee the magnitude is on
-        if(mag<=m_Knee)		//use fixed gain if below knee
-            gain = m_FixedGain;
+		if(mag<=m_knee)		//use fixed gain if below knee
+			gain = m_fixedGain;
         else				//use variable gain if above knee
-            gain = AGC_OUTSCALE * pow(10.0, mag*(m_GainSlope - 1.0) );
+			gain = AGC_OUTSCALE * pow(10.0, mag*(m_gainSlope - 1.0) );
         //pOutData[i].re = .5*gain;
         out[i].re = delayedin.re * gain;
         out[i].im = delayedin.im * gain;
@@ -288,68 +252,68 @@ CPX* AGC::ProcessBlock(CPX *pInData)
 
 
 
-void AGC::SetParameters(bool UseHang, int Threshold, int ManualGain, int SlopeFactor, int Decay)
+void AGC::setParameters(bool useHang, int threshold, int manualGainDb, int slopeFactor, int decay)
 {
-    if((UseHang == m_UseHang) &&
-        (Threshold == m_Threshold) && (ManualGain == m_ManualGain) &&
-        (SlopeFactor == m_SlopeFactor) && (Decay == m_Decay) )
+	if((useHang == m_useHang) &&
+		(threshold == m_threshold) && (manualGainDb == m_manualGainDb) &&
+		(slopeFactor == m_slopeFactor) && (decay == m_decay) )
     {
         return;		//just return if no parameter changed
     }
     //m_Mutex.lock();
-    m_UseHang = UseHang;
-    m_Threshold = Threshold;
-    m_ManualGain = ManualGain;
-    m_SlopeFactor = SlopeFactor;
-    m_Decay = Decay;
+	m_useHang = useHang;
+	m_threshold = threshold;
+	m_manualGainDb = manualGainDb;
+	m_slopeFactor = slopeFactor;
+	m_decay = decay;
     //sampleRate doesn't change in Pebble, call once to init
-    if(	m_SampleRate != sampleRate)
+	if(	m_sampleRate != sampleRate)
     {	//clear out delay buffer and init some things if sample rate changes
-        m_SampleRate = sampleRate;
+		m_sampleRate = sampleRate;
         for(int i=0; i<MAX_DELAY_BUF; i++)
         {
-            m_SigDelayBuf[i].re = 0.0;
-            m_SigDelayBuf[i].im = 0.0;
-            m_MagBuf[i] = -16.0;
+			m_sigDelayBuf[i].re = 0.0;
+			m_sigDelayBuf[i].im = 0.0;
+			m_magBuf[i] = -16.0;
         }
-        m_SigDelayPtr = 0;
-        m_HangTimer = 0;
-        m_Peak = -16.0;
-        m_DecayAve = -5.0;
-        m_AttackAve = -5.0;
-        m_MagBufPos = 0;
+		m_sigDelayPtr = 0;
+		m_hangTimer = 0;
+		m_peak = -16.0;
+		m_decayAvg = -5.0;
+		m_attackAvg = -5.0;
+		m_magBufPos = 0;
     }
 
     //convert m_ThreshGain to linear manual gain value
     //m_ManualAgcGain = MAX_MANUAL_AMPLITUDE*pow(10.0, -(100-(double)m_ManualGain)/20.0);
     //RL: We're converting a db gain figure to amplitude so we can scale with it
-	m_ManualAgcGain = DB::dBToAmplitude(m_ManualGain);
+	m_manualGainAmp = DB::dBToAmplitude(m_manualGainDb);
 
     //calculate parameters for AGC gain as a function of input magnitude
-    m_Knee = (double)m_Threshold/20.0;
-    m_GainSlope = m_SlopeFactor/(100.0);
+	m_knee = (double)m_threshold/20.0;
+	m_gainSlope = m_slopeFactor/(100.0);
     //m_FixedGain = AGC_OUTSCALE * pow(10.0, m_Knee*(m_GainSlope - 1.0) );	//fixed gain value used below knee threshold
-    m_FixedGain = AGC_OUTSCALE * pow(10.0, m_Knee*(m_GainSlope - 1.0) );	//fixed gain value used below knee threshold
+	m_fixedGain = AGC_OUTSCALE * pow(10.0, m_knee*(m_gainSlope - 1.0) );	//fixed gain value used below knee threshold
 //qDebug()<<"m_Knee = "<<m_Knee<<" m_GainSlope = "<<m_GainSlope<< "m_FixedGain = "<<m_FixedGain;
 
     //calculate fast and slow filter values.
-    m_AttackRiseAlpha = (1.0-exp(-1.0/(m_SampleRate*ATTACK_RISE_TIMECONST)) );
-    m_AttackFallAlpha = (1.0-exp(-1.0/(m_SampleRate*ATTACK_FALL_TIMECONST)) );
+	m_attackRiseAlpha = (1.0-exp(-1.0/(m_sampleRate*ATTACK_RISE_TIMECONST)) );
+	m_attackFallAlpha = (1.0-exp(-1.0/(m_sampleRate*ATTACK_FALL_TIMECONST)) );
 
-    m_DecayRiseAlpha = (1.0-exp(-1.0/(m_SampleRate * (double)m_Decay*.001*DECAY_RISEFALL_RATIO)) );	//make rise time DECAY_RISEFALL_RATIO of fall
-    m_HangTime = (int)(m_SampleRate * (double)m_Decay * .001);
+	m_decayRiseAlpha = (1.0-exp(-1.0/(m_sampleRate * (double)m_decay*.001*DECAY_RISEFALL_RATIO)) );	//make rise time DECAY_RISEFALL_RATIO of fall
+	m_hangTime = (int)(m_sampleRate * (double)m_decay * .001);
 
-    if(m_UseHang)
-        m_DecayFallAlpha = (1.0-exp(-1.0/(m_SampleRate * RELEASE_TIMECONST)) );
+	if(m_useHang)
+		m_decayFallAlpha = (1.0-exp(-1.0/(m_sampleRate * RELEASE_TIMECONST)) );
     else
-        m_DecayFallAlpha = (1.0-exp(-1.0/(m_SampleRate * (double)m_Decay *.001)) );
+		m_decayFallAlpha = (1.0-exp(-1.0/(m_sampleRate * (double)m_decay *.001)) );
 
-    m_DelaySamples = (int)(m_SampleRate*DELAY_TIMECONST);
-    m_WindowSamples = (int)(m_SampleRate*WINDOW_TIMECONST);
+	m_delaySamples = (int)(m_sampleRate*DELAY_TIMECONST);
+	m_windowSamples = (int)(m_sampleRate*WINDOW_TIMECONST);
 
     //clamp Delay samples within buffer limit
-    if(m_DelaySamples >= MAX_DELAY_BUF-1)
-        m_DelaySamples = MAX_DELAY_BUF-1;
+	if(m_delaySamples >= MAX_DELAY_BUF-1)
+		m_delaySamples = MAX_DELAY_BUF-1;
 
     //m_Mutex.unlock();
 }

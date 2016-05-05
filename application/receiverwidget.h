@@ -63,7 +63,7 @@ signals:
 		void anfChanged(bool _on);
 		void nb1Changed(bool _on);
 		void nb2Changed(bool _on);
-		void agcModeChanged(AGC::AGCMODE _mode);
+		void agcModeChanged(AGC::AgcMode _mode);
 		void muteChanged(bool _on);
 
 protected:		
