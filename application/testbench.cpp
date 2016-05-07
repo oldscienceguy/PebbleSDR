@@ -161,8 +161,8 @@ TestBench::TestBench(QWidget *parent) :
 	//Vertical range is peak to peak
 	//Divide by 32768 to convert to +/- 1.0 CPX
 	ui->spinBoxVertRange->setMaximum(65536); //2.0 peak to peak, +/- 1.0
-	ui->spinBoxVertRange->setMinimum(2048); // .000001 1e-6
-	ui->spinBoxVertRange->setSingleStep(2048);
+	ui->spinBoxVertRange->setMinimum(128); // .000001 1e-6
+	ui->spinBoxVertRange->setSingleStep(1024);
 
 	//in khz
 	ui->spinBoxStart->setMaximum(1000); //1000khz
@@ -428,6 +428,7 @@ void TestBench::onHorzSpan(int span)
 		m_displaySkipValue = m_displaySampleRate/(capturesize*m_displayRate);
 		m_timeScrnPixel = .001* (double)((double)m_horzSpan/(double)m_rect.width());	//time per pixel on screen in seconds
 	}
+	reset();
 }
 
 void TestBench::onTimeDisplay(bool timemode)
@@ -447,6 +448,7 @@ void TestBench::onTrigLevel(int level)
 	m_trigLevel = level;
 	if(m_timeDisplay)
 		drawTimeOverlay();
+	reset();
 }
 
 void TestBench::onProfile(int profindex)

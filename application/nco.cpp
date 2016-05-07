@@ -166,31 +166,34 @@ if( (m_SweepFrequency>-31250) && (m_SweepFrequency<31250) )
 		}
 		//inc phase accummulator with normalized freqeuency step
 		m_sweepAcc += ( m_sweepFreq * m_sweepFreqNorm );
-		if (m_sweepUp) {
-			m_sweepFreq += m_sweepRateInc;	//inc sweep frequency
-		} else {
-			m_sweepFreq -= m_sweepRateInc;	//dec sweep frequency
-		}
-		if((m_sweepUp && m_sweepFreq >= m_sweepStopFreq) ||
-				(!m_sweepUp && m_sweepFreq <= m_sweepStopFreq)) {	//reached end of sweep?
-			switch (m_sweepType) {
-				//3 choices: stop, start over, return in opposite direction
-				case SINGLE:
-					m_sweepRateInc = 0.0; //stop sweep when end is reached
-					break;
-				case REPEAT:
-					m_sweepFreq = m_sweepStartFreq;	//restart sweep when end is reached
-					break;
-				case REPEAT_REVERSE:
-					//Swap start/stop and reverse direction
-					m_sweepFreq = m_sweepStartFreq; //save
-					m_sweepStartFreq = m_sweepStopFreq;
-					m_sweepStopFreq = m_sweepFreq;
-					m_sweepUp = !m_sweepUp;
-					m_sweepFreq = m_sweepStartFreq; //save
-					break;
+		if (m_sweepRateInc > 0) {
+			if (m_sweepUp) {
+				m_sweepFreq += m_sweepRateInc;	//inc sweep frequency
+			} else {
+				m_sweepFreq -= m_sweepRateInc;	//dec sweep frequency
 			}
 
+			if((m_sweepUp && m_sweepFreq >= m_sweepStopFreq) ||
+					(!m_sweepUp && m_sweepFreq <= m_sweepStopFreq)) {	//reached end of sweep?
+				switch (m_sweepType) {
+					//3 choices: stop, start over, return in opposite direction
+					case SINGLE:
+						m_sweepRateInc = 0.0; //stop sweep when end is reached
+						break;
+					case REPEAT:
+						m_sweepFreq = m_sweepStartFreq;	//restart sweep when end is reached
+						break;
+					case REPEAT_REVERSE:
+						//Swap start/stop and reverse direction
+						m_sweepFreq = m_sweepStartFreq; //save
+						m_sweepStartFreq = m_sweepStopFreq;
+						m_sweepStopFreq = m_sweepFreq;
+						m_sweepUp = !m_sweepUp;
+						m_sweepFreq = m_sweepStartFreq; //save
+						break;
+				}
+
+			}
 		}
 	}
 	m_sweepAcc = (double)fmod((double)m_sweepAcc, TWOPI);	//keep radian counter bounded
