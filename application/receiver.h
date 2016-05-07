@@ -31,6 +31,9 @@
 #include "dcremoval.h"
 #include "decimator.h"
 
+//Testing goertzel
+#include "goertzel.h"
+
 #include "plugins.h"
 #include <QMenuBar>
 #include <QWebEngineView>
@@ -91,7 +94,7 @@ public:
 		void anfChanged(bool b);
 		void nb1Changed(bool b);
 		void nb2Changed(bool b);
-		void agcModeChanged(AGC::AGCMODE _mode);
+		void agcModeChanged(AGC::AgcMode _mode);
 		void muteChanged(bool b);
 
 private:
@@ -191,5 +194,8 @@ private:
 	DCRemoval *m_dcRemove;
 
 	double m_avgDb; //Average signal strength, used for squelch
+
+	//Testing goertzel
+	NewGoertzel *m_testGoertzel;
 
 };

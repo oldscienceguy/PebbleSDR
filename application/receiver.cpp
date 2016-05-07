@@ -109,7 +109,7 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	connect(m_receiverWidget,SIGNAL(anfChanged(bool)), this, SLOT(anfChanged(bool)));
 	connect(m_receiverWidget,SIGNAL(nb1Changed(bool)), this, SLOT(nb1Changed(bool)));
 	connect(m_receiverWidget,SIGNAL(nb2Changed(bool)), this, SLOT(nb2Changed(bool)));
-	connect(m_receiverWidget,SIGNAL(agcModeChanged(AGC::AGCMODE)), this, SLOT(agcModeChanged(AGC::AGCMODE)));
+	connect(m_receiverWidget,SIGNAL(agcModeChanged(AGC::AgcMode)), this, SLOT(agcModeChanged(AGC::AgcMode)));
 	connect(m_receiverWidget,SIGNAL(muteChanged(bool)), this, SLOT(muteChanged(bool)));
 }
 bool Receiver::turnPowerOn()
@@ -251,7 +251,7 @@ bool Receiver::turnPowerOn()
     //Calls to ProcessBlock will pass post decimation len
 	m_signalStrength = new SignalStrength(m_demodSampleRate,m_framesPerBuffer);
 
-	//Testing, will update too fast, need to sync with new fft data
+	//disconnect in off
 	connect(m_signalStrength, SIGNAL(newSignalStrength(double,double,double,double,double)),
 			m_receiverWidget, SLOT(newSignalStrength(double,double,double,double,double)));
 
@@ -273,6 +273,13 @@ bool Receiver::turnPowerOn()
 	m_audioOutput->StartOutput(m_sdr->get(DeviceInterface::Key_OutputDeviceName).toString(), m_audioOutRate);
 	m_sdr->command(DeviceInterface::Cmd_Start,0);
 
+	//Test goertzel
+	m_testGoertzel = new NewGoertzel(m_demodSampleRate, m_demodFrames);
+	m_testGoertzel->setTargetSampleRate(8000);
+	quint32 estN = m_testGoertzel->estNForShortestBit(5.0);
+	//estN = 512; //For testing
+	quint32 debounce = 4;
+	m_testGoertzel->setFreq(800, estN, debounce);
 
     //Don't set title until we connect and start.
     //Some drivers handle multiple devices (RTL2832) and we need connection data
@@ -469,6 +476,9 @@ bool Receiver::turnPowerOff()
 		delete m_noiseFilter;
 		m_noiseFilter = NULL;
 	}
+
+	disconnect(m_signalStrength, SIGNAL(newSignalStrength(double,double,double,double,double)),
+			m_receiverWidget, SLOT(newSignalStrength(double,double,double,double,double)));
 	if (m_signalStrength != NULL) {
 		delete m_signalStrength;
 		m_signalStrength = NULL;
@@ -675,7 +685,7 @@ void Receiver::nb2Changed(bool b)
 	m_noiseBlanker->setNb2Enabled(b);
 }
 //Called by ReceiverWidget when UI changes AGC, returns new threshold for display
-void Receiver::agcModeChanged(AGC::AGCMODE _mode)
+void Receiver::agcModeChanged(AGC::AgcMode _mode)
 {
 	m_agc->setAgcMode(_mode);
 	//AGC sets a default gain with mode
@@ -910,7 +920,6 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 			numStepSamples = m_demodDecimator->process(nextStep, m_workingBuf, numStepSamples);
 		}
 		//global->perform.StopPerformance(1000);
-		//global->testBench->DisplayData(numStepSamples,workingBuf,demodSampleRate,testBenchPostDecimator);
 
 		//This is a significant change from the way we used to process post downconvert
         //We used to process every downConvertLen samples, 32 for a 2m sdr sample rate
@@ -935,11 +944,15 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 		m_signalSpectrum->zoomed(nextStep, numStepSamples);
 		//global->perform.StopPerformance(100);
 
-
-        //Mixer shows no loss in testing
-        //nextStep = mixer->ProcessBlock(nextStep);
-        //float post = SignalProcessing::TotalPower(nextStep,frameCount);
 		global->testBench->displayData(numStepSamples,nextStep,m_demodSampleRate,TB_POST_MIXER);
+
+        //global->perform.StartPerformance();
+
+		//global->perform.StartPerformance("Band Pass Filter");
+		nextStep = m_bpFilter->process(nextStep, numStepSamples);
+		//global->perform.StopPerformance(100);
+
+		global->testBench->displayData(numStepSamples,nextStep,m_demodSampleRate,TB_POST_BP);
 
 		//If squelch is set, and we're below threshold and should set output to zero
 		//Do this in SignalStrength, since that's where we're calculating average signal strength anyway
@@ -953,18 +966,6 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 			return;
 		}
 
-        //global->perform.StopPerformance(100);
-
-        //global->perform.StartPerformance();
-
-        //float pre = SignalProcessing::TotalPower(nextStep,frameCount);
-		//global->perform.StartPerformance("Band Pass Filter");
-		nextStep = m_bpFilter->process(nextStep, numStepSamples);
-		//global->perform.StopPerformance(100);
-		//Crude AGC, too much fluctuation
-		//CPX::scaleCPX(nextStep,nextStep,pre/post,frameCount);
-		global->testBench->displayData(numStepSamples,nextStep,m_demodSampleRate,TB_POST_BP);
-
         //Tune only mode, no demod or output
 		if (m_demod->demodMode() == DeviceInterface::dmNONE){
 			CPX::clearCPX(m_audioBuf,m_framesPerBuffer);
@@ -975,11 +976,8 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 		nextStep = m_noiseFilter->ProcessBlock(nextStep);
 		//global->perform.StopPerformance(100);
 
-        //nr->ProcessBlock(out, in, size);
-        //float post = SignalProcessing::totalPower(nextStep,framesPerBuffer);
-
 		//global->perform.StartPerformance("AGC");
-		nextStep = m_agc->ProcessBlock(nextStep);
+		nextStep = m_agc->processBlock(nextStep);
 		//global->perform.StopPerformance(100);
 
 
@@ -990,6 +988,17 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 		//global->perform.StartPerformance("Demod");
 		nextStep = m_demod->processBlock(nextStep, numStepSamples);
 		//global->perform.StopPerformance(100);
+
+		//audioCpx from here on
+
+		//Testing goertzel
+		double power;
+		bool result;
+		for (int i=0; i<numStepSamples; i++) {
+			result = m_testGoertzel->processSample(nextStep[i].re, power);
+			if (result)
+				m_signalStrength->setExtValue(DB::powerTodB(power));
+		}
 
 		global->testBench->displayData(numStepSamples,nextStep,m_demodSampleRate,TB_POST_DEMOD);
 
