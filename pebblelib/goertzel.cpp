@@ -636,12 +636,29 @@ NewGoertzel::NewGoertzel(quint32 sampleRate, quint32 numSamples)
 {
 	m_externalSampleRate  = sampleRate;
 	m_internalSampleRate = m_externalSampleRate; //No decimation for now
-	m_externalNumSamples = numSamples;
-	m_internalNumSamples = m_externalNumSamples;
+	m_numSamples = numSamples;
+
+	m_decimate = 1;
+	m_decimateCount = 0;
+
+	m_thresholdType = TH_COMPARE;
+	m_threshold = 0.5;
+
+	m_debounceCounter = 0;
 }
 
 NewGoertzel::~NewGoertzel()
 {
+}
+
+void NewGoertzel::setThresholdType(NewGoertzel::ThresholdType t)
+{
+	m_thresholdType = t;
+}
+
+void NewGoertzel::setThreshold(double threshold)
+{
+	m_threshold = threshold;
 }
 
 /*
@@ -705,7 +722,7 @@ quint32 NewGoertzel::estNForBinBandwidth(quint32 bandwidth)
 {
 	//N has to be large enough for desired bandwidth
 	//ie minN for bandwidth of 100 = 100 / 3.90 = 25.6
-	double binWidth = (m_internalSampleRate / m_internalNumSamples);
+	double binWidth = (m_internalSampleRate / (m_numSamples/m_decimate));
 	return bandwidth / binWidth;
 }
 
@@ -713,16 +730,43 @@ void NewGoertzel::setTargetSampleRate(quint32 targetSampleRate)
 {
 	//Find internal sample rate closest to intSampleRate, but with even decimation factor
 	quint32 dec = m_externalSampleRate / targetSampleRate;
-	m_decimate = dec + (dec % 2);
+	//We process sample by sample cross buffer, so decimate can be any integer
+	m_decimate = dec;
+#if 0
+	//m_decimate = dec + (dec % 2);
+
+	if (dec > 2)
+		//Round up to nearest power of 2 so we can decimae numSamples evenly
+		m_decimate =  pow(2,(int(log2(dec-1))+1));
+	else
+		m_decimate = 2;
+#endif
+
 	m_internalSampleRate = m_externalSampleRate / m_decimate;
 
 }
 
-void NewGoertzel::setFreq(quint32 freq, quint32 N)
+void NewGoertzel::setFreq(quint32 freq, quint32 N, quint32 debounce)
 {
+	m_debounce = debounce;
+
+	/*
+		This creates 3 overlapping bins.  If main bin is 200hz wide
+				   Main
+			   |--- 200 ---|
+		|--- 200 ---||--- 200 ---|
+			 Low          High
+		With the averaging comparison, the effective bandwidth of Main is 150hz
+		Better than just using frequency to set high/low?
+	*/
 	m_mainTone.setFreq(freq, N, m_internalSampleRate);
-	m_highCompareTone.setFreq(freq + m_mainTone.m_bandwidth, N, m_internalSampleRate);
-	m_lowCompareTone.setFreq(freq - m_mainTone.m_bandwidth, N, m_internalSampleRate);
+	//Try bw, bw/2, bw/4
+	quint32 bwDelta = m_mainTone.m_bandwidth / 2;
+	m_highCompareTone.setFreq(freq + bwDelta, N, m_internalSampleRate);
+	m_lowCompareTone.setFreq(freq - bwDelta, N, m_internalSampleRate);
+	//KA7OEI differential goertzel algorithm compares 5% below and 4% above bins
+	//m_lowCompareTone.setFreq(freq * 0.95, N, m_internalSampleRate);
+	//m_highCompareTone.setFreq(freq * 1.04, N, m_internalSampleRate);
 }
 
 /*
@@ -741,37 +785,129 @@ void NewGoertzel::setFreq(quint32 freq, quint32 N)
 	power = s_prev2*s_prev2 + s_prev*s_prev - coeff*s_prev*s_prev2;
 
 */
+
+/*
+	Excellent practical information from KA7OE1 on mcHf SDR DTMF implementation
+		http://ka7oei.blogspot.com/2015/11/fm-squelch-and-subaudible-tone.html
+	"Differential Goertzel" detection:
+
+	I chose to use a "differential" approach in which I set up three separate
+	Goertzel detection algorithms: One operating at the desired frequency, another
+	operating at 5% below the desired frequency and the third operating at 4% above
+	the desired frequency and processed the results as follows:
+
+		Sum the amplitude results of the -5% Goertzel and +4% Goertzel detections.
+		Divide the results of the sum, above, by two.
+		Divide the amplitude results of the on-frequency Goertzel by the above sum.
+
+	RL Note: Setting with +/- freq doesn't take into account the bin width, ie the higher and lower
+	freq may still be in the main bin.  Try setting based on bin bandwidth.  +/- 50% of bandwidth maybe.
+
+	The result is a ratio, independent of amplitude, that indicates the amount of
+	on-frequency energy. In general, a ratio higher than "1" would indicate that
+	"on-frequency" energy was present. A threshold of 1.75 is a good place to start.
+	By having the two additional Goertzel detectors (above and below) frequency we accomplish
+	several things at once:
+
+		*We obtain a "reference" amplitude that indicates how much energy there is that is
+		not on the frequency of the desired tone as a basis of comparison.
+		*By measuring the amplitude of adjacent frequencies the frequency discrimination capability
+		of the decoder is enhanced without requiring narrower detection bandwidth and the necessarily
+		"slower" detection response that this would imply.
+
+	In the case of the last point, above, if we were looking for a 100 Hz tone and
+	a 103 Hz tone was present, our 100 Hz decoder would "weakly-to-medium" detect
+	the 103 Hz tone as well but the +4% decoder (at 104 Hz) would more strongly
+	detect it, but since its value is averaged in the numerator it would reduce the
+	ratiometric output and prevent detection.
+
+*/
+//Process one sample at a time
+//3 states: Not enough samples for result, result below threshold, result above threshold
+bool NewGoertzel::processSample(double x_n, double &power)
+{
+	//We decimate here so caller doesn't need to know details
+	//Ignore samples between decimation
+	if (m_decimateCount++ % m_decimate > 0) {
+		power = 0;
+		return false;
+	}
+	//All the tones have the same N, just check the result of the main
+	bool result = m_mainTone.processSample(x_n);
+	m_highCompareTone.processSample(x_n);
+	m_lowCompareTone.processSample(x_n);
+	m_mainTone.m_isValid = false;
+	power = 0;
+	if (result) {
+		//If we have a detectable tone, it should be strong in the main bin compared with surrounding bins
+		double avgComparePower = (m_highCompareTone.m_power + m_lowCompareTone.m_power) / 2;
+#if 1
+		//KA7OEI differential goertzel
+		double compareRatio = m_mainTone.m_power / avgComparePower;
+		if (compareRatio > 1.75) {
+			//We have a tone, check to see if it's consistent across debounce
+			if (m_lastResult) {
+				//If last result was a tone, see if we have enough in a row
+				m_debounceCounter++;
+			} else {
+				//Last result was unknown or no-tone, restart debounce counter
+				m_debounceCounter = 1;
+			}
+			m_lastResult = true;
+			//This will return valid result only if we have at least m_debounce consistent results
+			if (m_debounceCounter >= m_debounce) {
+				power = m_mainTone.m_power;
+				m_debounceCounter = 0;
+				m_mainTone.m_isValid = true;
+				return true; //Valid
+			}
+			return false; //No result yet
+		} else {
+			//We need consistent timing for both on and off keying
+			if (!m_lastResult)
+				m_debounceCounter++;
+			else
+				m_debounceCounter = 1;
+			m_lastResult = false;
+			if (m_debounceCounter >= m_debounce) {
+				power = 0;
+				m_debounceCounter = 0;
+				m_mainTone.m_isValid = false;
+				return true;
+			}
+			return false;
+		}
+
+#else
+		//We want to see a 6db difference or 4x
+		m_threshold = avgComparePower * 16;
+		if (m_mainTone.m_power > m_threshold)
+			power = m_mainTone.m_power;
+		else
+			power = 0;
+#endif
+	} //End if (result)
+	return false; //Needs more samples
+}
+
+//For future use if we need to detect all the bits in a buffer at once
 double NewGoertzel::updateTonePower(CPX *cpxIn)
 {
 	if (m_mainTone.m_N == 0 || m_mainTone.m_freq == 0)
 		//Not initialized
 		return 0;
 
-	double totalTonePower = 0;
-	double totalComparePower = 0;
-	int toneCount = 0;
-	//We make sure that the number of samples needed for each result is an even divisor of m_numSamples
-	//This means we don't have to worry about cross-buffer handling
-	for (int i = 0; i < m_externalNumSamples; i += m_decimate) {
+	//We make sure that decimate an even divisor of m_numSamples
+	for (int i = 0; i < m_numSamples; i += m_decimate) {
 		//Todo: Do we need decimation filtering here?
-		//All the tones have the same N, just check the result of the main
-		bool result = m_mainTone.processSample(cpxIn[i].re);
-		m_highCompareTone.processSample(cpxIn[i].re);
-		m_lowCompareTone.processSample(cpxIn[i].re);
+		double power;
+		bool result = processSample(cpxIn[i].re, power);
 		if (result) {
-			totalTonePower += m_mainTone.m_power;
-			totalComparePower += m_highCompareTone.m_power + m_lowCompareTone.m_power;
-			toneCount++;
+			//power == 0 or power > 0 for on-off
+			//Save bits
 		}
 	}
-	//Return avg tone power for tuning
-	//Power or amplitude?
-	double avgTonePower = totalTonePower / toneCount;
-	double avgComparePower = totalComparePower / (toneCount * 2);
-	if (avgTonePower > (2 * avgComparePower))
-		return avgTonePower;
-	else
-		return 0;
+	return 0;
 }
 
 NewGoertzel::Tone::Tone()
@@ -783,6 +919,8 @@ NewGoertzel::Tone::Tone()
 	m_wn1 = 0;
 	m_wn2 = 0;
 	m_nCount = 0;
+	m_usePhaseAlgorithm = false;
+	m_isValid = false;
 	//Todo: construct power and bit arrays
 }
 
@@ -792,26 +930,56 @@ void NewGoertzel::Tone::setFreq(quint32 freq, quint32 N, quint32 sampleRate)
 	m_freq = freq;
 	m_N = N;
 	m_bandwidth = sampleRate / m_N;
-
-	//double m = toneFreq / (m_internalSampleRate / (double) N); //Lyons 13-82
-	//double coeff = 2 * cos((TWOPI * m) / N);
-	//Lyons coeff same as Wikipedia coeff, but Wikipedia not dependent on N
+	//Lyons coeff same result as Wikipedia coeff, but Wikipedia not dependent on N
 	m_coeff = 2 * cos(TWOPI * m_freq / sampleRate); //Wikipedia
+	m_coeff2 = 2 * sin(TWOPI * m_freq / sampleRate);
+}
+
+#if 0
+	We can also process complex input, like spectrum data, not just audio
+	From Wikipedia ...
+	Complex signals in real arithmetic[edit]
+	Since complex signals decompose linearly into real and imaginary parts, the Goertzel algorithm can be computed in real arithmetic separately over the sequence of real parts, yielding y_r(n); and over the sequence of imaginary parts, yielding y_i(n). After that, the two complex-valued partial results can be recombined:
+
+	(15) y(n) = y_r(n) + i\ y_i(n)
+#endif
+
+bool NewGoertzel::Tone::processSample(CPX cpx)
+{
+	Q_UNUSED(cpx);
+	return false;
 }
 
 //Process a single sample, return true if we've processed enough for a result
 bool NewGoertzel::Tone::processSample(double x_n)
 {
+	//m_wn = x_n + m_wn1 * (2 * cos((TWOPI * m_m )/ N)) - m_wn2; //Lyons 13-80 re-arranged
+	//Same as m_wn = x+n + m_coeff * w_wn1 - m_wn2;
 	//m_wn = x_n + (m_wn1 * m_coeff) + (m_wn2 * -1); //Same as simplified version below
 	m_wn = x_n + (m_wn1 * m_coeff) - m_wn2;
+
 	//Update delay line
 	m_wn2 = m_wn1;
 	m_wn1 = m_wn;
 
+	int normalize = m_N / 2;
+
 	if (m_nCount++ >= m_N) {
 		//We have enough samples to calculate a result
-		m_power = (m_wn1 * m_wn1) + (m_wn2 * m_wn2) - (m_wn1 * m_wn2 * m_coeff); //Lyons 13-83
-		m_power /= (m_N/2); //Normalize?
+		if (m_usePhaseAlgorithm) {
+			//Full algorithm with phase
+			double re = (0.5 * m_coeff * m_wn1 - m_wn2);
+			double im = (0.5 * m_coeff2 * m_wn1 - m_wn2);
+			m_power = re * re + im * im;
+			m_power /= normalize; //Normalize?
+			//Phase compared to prev result phase, for phase change detection
+			m_phase = atan2(im, re); //Result not tested or confirmed
+		} else {
+			//Simplified algorithm without phase
+			m_power = (m_wn1 * m_wn1) + (m_wn2 * m_wn2) - (m_wn1 * m_wn2 * m_coeff); //Lyons 13-83
+			m_power /= normalize; //Normalize?
+			m_phase = 0;
+		}
 		m_wn1 = m_wn2 = 0;
 		m_nCount = 0;
 		return true;

@@ -89,7 +89,17 @@ public:
 	NewGoertzel(quint32 sampleRate, quint32 numSamples);
 	~NewGoertzel();
 
-	void setFreq(quint32 freq, quint32 N);
+	//Threshold determines the boundary between 'present' and 'not present' tones
+	//TH_COMPARE uses 2 extra bins, above and below the target freq
+	//TH_AVERAGE uses the average power in the buffer
+	//TH_MANUAL uses specific target
+	enum ThresholdType {TH_COMPARE, TH_AVERAGE, TH_MANUAL};
+	void setThresholdType(ThresholdType t);
+	ThresholdType thresholdType() {return m_thresholdType;}
+	void setThreshold(double threshold);
+	double threshold(){return m_threshold;}
+
+	void setFreq(quint32 freq, quint32 N, quint32 debounce);
 
 	//Updates tone1Power and tone2Power
 	double updateTonePower(CPX *cpxIn);
@@ -105,23 +115,34 @@ public:
 	quint32 estNForBinBandwidth(quint32 bandwidth);
 
 	void setTargetSampleRate(quint32 targetSampleRate);
+	bool processSample(double x_n, double &power);
 private:
 	//All of the internal data needed to decode a tone
 	//Allows us to specify multiple tones that can be decoded at the same time
-	struct Tone{
+	class Tone{
+	public:
 		Tone();
 		void setFreq(quint32 freq, quint32 N, quint32 sampleRate);
-		bool processSample (double x_n);
+		bool processSample (double x_n); //For audio data
+		bool processSample (CPX cpx); //For IQ data - Not implemented yet
+
+		//Use simplified goertzel or full which includes phase information
+		bool m_usePhaseAlgorithm;
+
+		//Is the result valid, ie processed enough samples
+		bool m_isValid;
 
 		//Saved results, do we need?
 		QBitArray *m_bits;
 
 		quint32 m_freq;
 		quint32 m_bandwidth;
-		double m_power; //Result of last bin
+		double m_power; //Power of last bin
+		double m_phase; //Phase of last bin
 
 		//Using Lyons terminology (pg 740)
-		double m_coeff;
+		double m_coeff; //For power
+		double m_coeff2; //For phase if needed
 		int m_N; //binWidth = #samples per bin
 		double m_wn; //Lyons w(n), Wikipedia s
 		double m_wn1; //Lyons w(n-1), Wikipedia s_prev
@@ -129,7 +150,6 @@ private:
 		int m_nCount; //# samples processed
 
 	};
-	void setToneFreq(Tone &tone, quint32 freq, quint32 N);
 
 	Tone m_mainTone;
 	Tone m_lowCompareTone;
@@ -138,9 +158,15 @@ private:
 	quint32 m_externalSampleRate;
 	quint32 m_internalSampleRate;
 	int m_decimate;
+	int m_decimateCount;
 
-	int m_externalNumSamples;
-	int m_internalNumSamples;
+	int m_numSamples;
+	ThresholdType m_thresholdType;
+	double m_threshold;
+
+	bool m_lastResult; //For debounce counting
+	quint32 m_debounce; //#results needed to determine tone is present
+	quint32 m_debounceCounter;
 };
 
 class Goertzel
