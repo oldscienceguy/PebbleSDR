@@ -14,72 +14,77 @@
 class DTMF
 {
 public:
-	DTMF(quint16 h, quint16 l) {m_hi =h; m_lo=l;}
-	quint16 m_hi;
-	quint16 m_lo;
+	DTMF();
+	struct Tone {
+		void init(quint16 h, quint16 l);
+		quint16 m_hi;
+		quint16 m_lo;
 
-	static const DTMF DTMF_0;
-	static const DTMF DTMF_1;
-	static const DTMF DTMF_2;
-	static const DTMF DTMF_3;
-	static const DTMF DTMF_4;
-	static const DTMF DTMF_5;
-	static const DTMF DTMF_6;
-	static const DTMF DTMF_7;
-	static const DTMF DTMF_8;
-	static const DTMF DTMF_9;
-	static const DTMF DTMF_A;
-	static const DTMF DTMF_B;
-	static const DTMF DTMF_C;
-	static const DTMF DTMF_D;
-	static const DTMF DTMF_STAR;
-	static const DTMF DTMF_POUND;
+	};
+
+
+	Tone DTMF_0;
+	Tone DTMF_1;
+	Tone DTMF_2;
+	Tone DTMF_3;
+	Tone DTMF_4;
+	Tone DTMF_5;
+	Tone DTMF_6;
+	Tone DTMF_7;
+	Tone DTMF_8;
+	Tone DTMF_9;
+	Tone DTMF_A;
+	Tone DTMF_B;
+	Tone DTMF_C;
+	Tone DTMF_D;
+	Tone DTMF_STAR;
+	Tone DTMF_POUND;
 };
 
 
 class CTCSS
 {
 public:
-    CTCSS(const char *d, float f, float s) {
-		strncpy(m_designation,d,2);
-		m_freq = f;
-		m_spacing = s;
-    }
-	char m_designation[2];
-	float m_freq;
-	float m_spacing;
-	static const CTCSS CTCSS_1;
-	static const CTCSS CTCSS_2;
-	static const CTCSS CTCSS_3;
-	static const CTCSS CTCSS_4;//Not defined??
-	static const CTCSS CTCSS_5;
-	static const CTCSS CTCSS_6;
-	static const CTCSS CTCSS_7;
-	static const CTCSS CTCSS_8;
-	static const CTCSS CTCSS_9;
-	static const CTCSS CTCSS_10;
-	static const CTCSS CTCSS_11;
-	static const CTCSS CTCSS_12;
-	static const CTCSS CTCSS_13;
-	static const CTCSS CTCSS_14;
-	static const CTCSS CTCSS_15;
-	static const CTCSS CTCSS_16;
-	static const CTCSS CTCSS_17;
-	static const CTCSS CTCSS_18;
-	static const CTCSS CTCSS_19;
-	static const CTCSS CTCSS_20;
-	static const CTCSS CTCSS_21;
-	static const CTCSS CTCSS_22;
-	static const CTCSS CTCSS_23;
-	static const CTCSS CTCSS_24;
-	static const CTCSS CTCSS_25;
-	static const CTCSS CTCSS_26;
-	static const CTCSS CTCSS_27;
-	static const CTCSS CTCSS_28;
-	static const CTCSS CTCSS_29;
-	static const CTCSS CTCSS_30;
-	static const CTCSS CTCSS_31;
-	static const CTCSS CTCSS_32;
+	CTCSS();
+	struct Tone {
+		void init(const char *d, float f, float s);
+		char m_designation[2];
+		float m_freq;
+		float m_spacing;
+	};
+
+	Tone CTCSS_1;
+	Tone CTCSS_2;
+	Tone CTCSS_3;
+	Tone CTCSS_4;//Not defined??
+	Tone CTCSS_5;
+	Tone CTCSS_6;
+	Tone CTCSS_7;
+	Tone CTCSS_8;
+	Tone CTCSS_9;
+	Tone CTCSS_10;
+	Tone CTCSS_11;
+	Tone CTCSS_12;
+	Tone CTCSS_13;
+	Tone CTCSS_14;
+	Tone CTCSS_15;
+	Tone CTCSS_16;
+	Tone CTCSS_17;
+	Tone CTCSS_18;
+	Tone CTCSS_19;
+	Tone CTCSS_20;
+	Tone CTCSS_21;
+	Tone CTCSS_22;
+	Tone CTCSS_23;
+	Tone CTCSS_24;
+	Tone CTCSS_25;
+	Tone CTCSS_26;
+	Tone CTCSS_27;
+	Tone CTCSS_28;
+	Tone CTCSS_29;
+	Tone CTCSS_30;
+	Tone CTCSS_31;
+	Tone CTCSS_32;
 };
 
 //Testing, 1 or 2 tone goertzel with updated model
@@ -167,6 +172,50 @@ private:
 	bool m_lastResult; //For debounce counting
 	quint32 m_debounce; //#results needed to determine tone is present
 	quint32 m_debounceCounter;
+};
+
+
+//For reference, goertzel from Nue-Psk
+class NuePskGoertzel
+{
+public:
+	NuePskGoertzel();
+	void do_goertzel (qint16 f_samp);
+
+private:
+	// The Goretzel sample block size determines the CW bandwidth as follows:
+	// CW Bandwidth :  100, 125, 160, 200, 250, 400, 500, 800, 1000 Hz.
+	const int cw_bwa[9] = {80,  64,  50,  40,  32,  20,  16,  10,    8};
+	const int cw_bwa_index = 3;
+
+	int		cw_n; // Number of samples used for Goertzel algorithm
+
+	double	cw_f;		// CW frequency offset (start of bin)
+	double	g_coef;	// 2*cos(PI2*(cw_f+7.1825)/SAMPLING_RATE);
+	double  q0;
+	double	q1;
+	double	q2;
+	double	current;
+	int		g_t_lock;			// Goertzel threshold lock
+	int		cspm_lock;			// Character SPace Multiple lock
+	int		wspm_lock;			// Word SPace Multiple lock
+	int 	g_sample_count;
+	double 	g_sample;
+	double	g_current;
+	double	g_scale_factor;
+	volatile long	g_s;
+	volatile long g_ra;
+	volatile long g_threshold;
+	volatile int	do_g_ave;
+	int		g_dup_count;
+	int 	preKey;
+
+	//RL fixes
+	int RXKey;
+	int last_trans;
+	int cwPractice;
+
+
 };
 
 class Goertzel

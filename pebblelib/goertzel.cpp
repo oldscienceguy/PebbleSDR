@@ -5,55 +5,6 @@
 #include "QtDebug"
 #include "firfilter.h"
 
-const DTMF DTMF::DTMF_0 = DTMF(1336,941);
-const DTMF DTMF::DTMF_1 = DTMF(1209,697);
-const DTMF DTMF::DTMF_2 = DTMF(1336,697);
-const DTMF DTMF::DTMF_3 = DTMF(1477,697);
-const DTMF DTMF::DTMF_4 = DTMF(1209,770);
-const DTMF DTMF::DTMF_5 = DTMF(1336,770);
-const DTMF DTMF::DTMF_6 = DTMF(1477,770);
-const DTMF DTMF::DTMF_7 = DTMF(1209,852);
-const DTMF DTMF::DTMF_8 = DTMF(1336,852);
-const DTMF DTMF::DTMF_9 = DTMF(1477,852);
-const DTMF DTMF::DTMF_A = DTMF(1633,697);
-const DTMF DTMF::DTMF_B = DTMF(1633,770);
-const DTMF DTMF::DTMF_C = DTMF(1633,852);
-const DTMF DTMF::DTMF_D = DTMF(1633,941);
-const DTMF DTMF::DTMF_STAR = DTMF(1209,941);
-const DTMF DTMF::DTMF_POUND = DTMF(1477,941);
-
-const CTCSS CTCSS::CTCSS_1 = CTCSS("XY",67.0,0);
-const CTCSS CTCSS::CTCSS_2 = CTCSS("XA",71.9,4.9);
-const CTCSS CTCSS::CTCSS_3 = CTCSS("WA",74.4,2.5);
-const CTCSS CTCSS::CTCSS_4 = CTCSS("??",0,0);//Not defined??
-const CTCSS CTCSS::CTCSS_5 = CTCSS("SP",79.7,2.7);
-const CTCSS CTCSS::CTCSS_6 = CTCSS("YZ",82.5,2.8);
-const CTCSS CTCSS::CTCSS_7 = CTCSS("YA",85.4,2.9);
-const CTCSS CTCSS::CTCSS_8 = CTCSS("YB",88.5,3.1);
-const CTCSS CTCSS::CTCSS_9 = CTCSS("ZZ",91.5,3.0);
-const CTCSS CTCSS::CTCSS_10 = CTCSS("ZA",94.8,3.3);
-const CTCSS CTCSS::CTCSS_11 = CTCSS("ZB",97.4,2.6);
-const CTCSS CTCSS::CTCSS_12 = CTCSS("1Z",100.0,2.6);
-const CTCSS CTCSS::CTCSS_13 = CTCSS("1A",103.5,3.5);
-const CTCSS CTCSS::CTCSS_14 = CTCSS("1B",107.2,3.7);
-const CTCSS CTCSS::CTCSS_15 = CTCSS("2Z",110.9,3.7);
-const CTCSS CTCSS::CTCSS_16 = CTCSS("2A",114.8,3.9);
-const CTCSS CTCSS::CTCSS_17 = CTCSS("2B",118.8,4.0);
-const CTCSS CTCSS::CTCSS_18 = CTCSS("3Z",123.0,4.2);
-const CTCSS CTCSS::CTCSS_19 = CTCSS("3A",127.3,4.3);
-const CTCSS CTCSS::CTCSS_20 = CTCSS("3B",131.8,4.5);
-const CTCSS CTCSS::CTCSS_21 = CTCSS("4Z",136.5,4.7);
-const CTCSS CTCSS::CTCSS_22 = CTCSS("4A",141.3,4.8);
-const CTCSS CTCSS::CTCSS_23 = CTCSS("4B",146.2,4.9);
-const CTCSS CTCSS::CTCSS_24 = CTCSS("5Z",151.4,5.2);
-const CTCSS CTCSS::CTCSS_25 = CTCSS("5A",156.7,5.3);
-const CTCSS CTCSS::CTCSS_26 = CTCSS("5B",162.2,5.5);
-const CTCSS CTCSS::CTCSS_27 = CTCSS("6Z",167.9,5.7);
-const CTCSS CTCSS::CTCSS_28 = CTCSS("6A",173.8,5.9);
-const CTCSS CTCSS::CTCSS_29 = CTCSS("6B",179.9,6.1);
-const CTCSS CTCSS::CTCSS_30 = CTCSS("7Z",186.2,6.3);
-const CTCSS CTCSS::CTCSS_31 = CTCSS("7A",192.8,6.6);
-const CTCSS CTCSS::CTCSS_32 = CTCSS("M1",203.5,10.7);
 
 /*
 From SILabs DTMF paper http://www.silabs.com/Support%20Documents/TechnicalDocs/an218.pdf
@@ -489,37 +440,42 @@ float Goertzel::getNextPowerResult()
 	return m_powerBuf->NextDelay(0).re;
 }
 
-//From Nue-PSK
-/*************************************************************************
- *			G O E R T Z E L  F I L T E R   P R O C E S S I N G           *
- *************************************************************************/
-// The Goretzel sample block size determines the CW bandwidth as follows:
-// CW Bandwidth :  100, 125, 160, 200, 250, 400, 500, 800, 1000 Hz.
-int		cw_bwa[] = {80,  64,  50,  40,  32,  20,  16,  10,    8};
-int		cw_bwa_index = 3;
-int		cw_n =  40; // Number of samples used for Goertzel algorithm
+//From Nue-PSK for reference
+NuePskGoertzel::NuePskGoertzel()
+{
 
-double	cw_f = 796.8750;		// CW frequency offset (start of bin)
-double	g_coef = 1.6136951071;	// 2*cos(PI2*(cw_f+7.1825)/SAMPLING_RATE);
-double  q0=0, q1=0, q2=0, current;
-int		g_t_lock = 0;			// Goertzel threshold lock
-int		cspm_lock = 0;			// Character SPace Multiple lock
-int		wspm_lock = 0;			// Word SPace Multiple lock
-int 	g_sample_count = 0;
-double 	g_sample;
-double	g_current;
-double	g_scale_factor = 1000.0;
-volatile long	g_s, g_ra = 10000, g_threshold = 1000;
-volatile int	do_g_ave = 0;
-int		g_dup_count = 0;
-int 	preKey;
+	// The Goretzel sample block size determines the CW bandwidth as follows:
+	// CW Bandwidth :  100, 125, 160, 200, 250, 400, 500, 800, 1000 Hz.
+	//cw_bwa[] = {80,  64,  50,  40,  32,  20,  16,  10,    8};
+	//cw_bwa_index = 3;
+	cw_n =  40; // Number of samples used for Goertzel algorithm
 
-//RL fixes
-int RXKey;
-int last_trans;
-int cwPractice;
+	cw_f = 796.8750;		// CW frequency offset (start of bin)
+	g_coef = 1.6136951071;	// 2*cos(PI2*(cw_f+7.1825)/SAMPLING_RATE);
+	q0 = 0;
+	q1 = 0;
+	q2 = 0;
+	current = 0;
+	g_t_lock = 0;			// Goertzel threshold lock
+	cspm_lock = 0;			// Character SPace Multiple lock
+	wspm_lock = 0;			// Word SPace Multiple lock
+	g_sample_count = 0;
+	g_sample = 0;
+	g_current = 0;
+	g_scale_factor = 1000.0;
+	g_s = 0;
+	g_ra = 10000;
+	g_threshold = 1000;
+	do_g_ave = 0;
+	g_dup_count = 0;
+	preKey = 0;
+	//RL fixes
+	RXKey = 0;
+	last_trans = 0;
+	cwPractice = 0;
+}
 
-void do_goertzel (qint16 f_samp)
+void NuePskGoertzel::do_goertzel (qint16 f_samp)
 {
     //(fractional f_samp){
 
@@ -561,6 +517,77 @@ void do_goertzel (qint16 f_samp)
             g_threshold = g_ra > 200 ? g_ra : 200;
         }
     }
+}
+
+//For future experimentation
+
+DTMF::DTMF()
+{
+	DTMF_0.init(1336,941);
+	DTMF_1.init(1209,697);
+	DTMF_2.init(1336,697);
+	DTMF_3.init(1477,697);
+	DTMF_4.init(1209,770);
+	DTMF_5.init(1336,770);
+	DTMF_6.init(1477,770);
+	DTMF_7.init(1209,852);
+	DTMF_8.init(1336,852);
+	DTMF_9.init(1477,852);
+	DTMF_A.init(1633,697);
+	DTMF_B.init(1633,770);
+	DTMF_C.init(1633,852);
+	DTMF_D.init(1633,941);
+	DTMF_STAR.init(1209,941);
+	DTMF_POUND.init(1477,941);
+}
+
+void DTMF::Tone::init(quint16 h, quint16 l)
+{
+	m_hi = h;
+	m_lo = l;
+}
+
+CTCSS::CTCSS()
+{
+	CTCSS_1.init("XY",67.0,0);
+	CTCSS_2.init("XA",71.9,4.9);
+	CTCSS_3.init("WA",74.4,2.5);
+	CTCSS_4.init("??",0,0);//Not defined??
+	CTCSS_5.init("SP",79.7,2.7);
+	CTCSS_6.init("YZ",82.5,2.8);
+	CTCSS_7.init("YA",85.4,2.9);
+	CTCSS_8.init("YB",88.5,3.1);
+	CTCSS_9.init("ZZ",91.5,3.0);
+	CTCSS_10.init("ZA",94.8,3.3);
+	CTCSS_11.init("ZB",97.4,2.6);
+	CTCSS_12.init("1Z",100.0,2.6);
+	CTCSS_13.init("1A",103.5,3.5);
+	CTCSS_14.init("1B",107.2,3.7);
+	CTCSS_15.init("2Z",110.9,3.7);
+	CTCSS_16.init("2A",114.8,3.9);
+	CTCSS_17.init("2B",118.8,4.0);
+	CTCSS_18.init("3Z",123.0,4.2);
+	CTCSS_19.init("3A",127.3,4.3);
+	CTCSS_20.init("3B",131.8,4.5);
+	CTCSS_21.init("4Z",136.5,4.7);
+	CTCSS_22.init("4A",141.3,4.8);
+	CTCSS_23.init("4B",146.2,4.9);
+	CTCSS_24.init("5Z",151.4,5.2);
+	CTCSS_25.init("5A",156.7,5.3);
+	CTCSS_26.init("5B",162.2,5.5);
+	CTCSS_27.init("6Z",167.9,5.7);
+	CTCSS_28.init("6A",173.8,5.9);
+	CTCSS_29.init("6B",179.9,6.1);
+	CTCSS_30.init("7Z",186.2,6.3);
+	CTCSS_31.init("7A",192.8,6.6);
+	CTCSS_32.init("M1",203.5,10.7);
+}
+
+void CTCSS::Tone::init(const char *d, float f, float s)
+{
+	strncpy(m_designation,d,2);
+	m_freq = f;
+	m_spacing = s;
 }
 
 #if 0
@@ -932,7 +959,7 @@ void NewGoertzel::Tone::setFreq(quint32 freq, quint32 N, quint32 sampleRate)
 	m_bandwidth = sampleRate / m_N;
 	//Lyons coeff same result as Wikipedia coeff, but Wikipedia not dependent on N
 	m_coeff = 2 * cos(TWOPI * m_freq / sampleRate); //Wikipedia
-	m_coeff2 = 2 * sin(TWOPI * m_freq / sampleRate);
+	m_coeff2 = sin(TWOPI * m_freq / sampleRate);
 }
 
 #if 0
