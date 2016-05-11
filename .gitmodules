@@ -4,3 +4,5 @@
 [submodule "gr-osmosdr"]
 	path = gr-osmosdr
 	url = git://git.osmocom.org/gr-osmosdr
+[submodule "libusb"]
+	path = libusb
