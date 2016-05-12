@@ -1,11 +1,29 @@
 /*
+    This file is not pure qss and will generate errors if not pre-parsed to process variables.
+    Variables are defined one-per-line, using Less-like syntax
+    main.cpp uses regular expressions to find and replace variables in the css definitions
+*/
+/* Less-like variables parsed in main.cpp */
+@LightSteelGrey: #A9B3BC; /*Control backgrounds, 2 shades lighter than SteelGrey*/
+@SteelGrey: #8D99A6; /*Frame backgrounds */
+@DarkSteelGrey: #708090; /*Nixie buttons*/
+@LightSilver: #CDCDCD; /*Just a bit lighter than silver */
+@SliderGroove: #999999; /*border*/
+@SliderHandle: #5c5c5c;
+@LCDNumberOff: #A0A0A0;
+@LCDNumberOn: #FFFF00; /*Bright Orange*/
+@LCDGradientStart: #353B43;
+@LCDGradientMid: #BF4609;
+@LCDGradientEnd: #353B43;
+
+/*
 Some examples
 QLineEdit { background: yellow }
 QPushButton { color: red }
 */
 /*
 	http://www.w3schools.com/tags/ref_colorpicker.asp
-	Option 1: shades of lightSteelGray
+        Option 1: shades of lightSteelGrey
 	Option 2: Shades of Powder Blue
 	Option 3: Shades of Slate Gray
 	Option 1	Option 2
@@ -27,15 +45,15 @@ QDialog, QFrame#comboFrame, QFrame#tunerFrame, QFrame#buttonFrame, QFrame#slider
 	Knobs or equiv black
 	Other backgrounds
 	*/
-	background-color: #8D99A6;
+        background-color: @SteelGrey;
 }
 
 /*Main application window */
 QMainWindow {
 	border-style: solid;
 	border-width: 2px;
-	border-color: #CDCDCD; /* just a bit lighter than silver */
-	background-color: #8D99A6;
+        border-color: @LightSilver; /* just a bit lighter than silver */
+        background-color: @SteelGrey;
 }
 
 QLineEdit, QTextEdit {
@@ -44,13 +62,13 @@ QLineEdit, QTextEdit {
 	font-size: 10px;
 	font-weight: "normal";
 	color: white;
-	background-color: #A9B3BC;
+        background-color: @LightSteelGrey;
 }
 
 
 /* All the up/down nixie buttons */
 #nixieFrame QPushButton {
-	background-color: #708090;
+        background-color: @DarkSteelGrey;
 }
 
 QPushButton#powerButton:on {color:orange;}
@@ -62,29 +80,29 @@ QSlider{
 }
 
 QSlider::groove:horizontal {
-	 border: 1px solid #999999;
+         border: 1px solid @SliderGroove;
 	 height: 8px; /* the groove expands to the size of the slider by default. by giving it a height, it has a fixed size */
-	 background: #A9B3BC;
+         background: @LightSteelGrey;
 	 margin: 2px 0;
  }
  QSlider::groove:vertical {
-	  border: 1px solid #999999;
+          border: 1px solid @SliderGroove;
 	  width: 8px; /* the groove expands to the size of the slider by default. by giving it a height, it has a fixed size */
-	  background: #A9B3BC;
+          background: @LightSteelGrey;
 	  left: 2px;
 	  right: 0px;
   }
 
 QSlider::handle:horizontal {
-	 background: #708090;
-	 border: 1px solid #5c5c5c;
+         background: @DarkSteelGrey;
+         border: 1px solid @SliderHandle;
 	 width: 3px; /* plus radius and border */
 	 margin: -4px 0; /* handle is placed by default on the contents rect of the groove. Expand outside the groove */
 	 border-radius: 3px;
  }
  QSlider::handle:vertical {
-	  background: #708090;
-	  border: 1px solid #5c5c5c;
+          background: @DarkSteelGrey;
+          border: 1px solid @SliderHandle;
 	  height: 3px; /* plus radius and border */
 	  margin: 0 -4px; /* handle is placed by default on the contents rect of the groove. Expand outside the groove */
 	  border-radius: 3px;
@@ -93,12 +111,12 @@ QSlider::handle:horizontal {
 
 /*Color of groove after thumb*/
 QSlider::add-page:horizontal {
-	/*background: lightGray;*/
+        /*background: @LightSteelGrey;*/
 }
 
 /*Color of groove before thumb */
 QSlider::sub-page:horizontal {
-	/*background: darkGray;*/
+        /*background: @DarkSteelGrey;*/
 }
 
 
@@ -114,7 +132,7 @@ QSpinBox {
 	font-size: 10px;
 	font-weight: "normal";
 	color: white;
-	background-color: #8D99A6; /*Same as BG color*/
+        background-color: @SteelGrey; /*Same as BG color*/
 }
 
 QCheckBox {
@@ -122,7 +140,7 @@ QCheckBox {
 	font-size: 10px;
 	font-weight: "normal";
 	color: white;
-	background-color: #8D99A6; /*Same as BG color*/
+        background-color: @SteelGrey; /*Same as BG color*/
 }
 
 QRadioButton {
@@ -130,12 +148,12 @@ QRadioButton {
 	font-size: 10px;
 	font-weight: "normal";
 	color: white;
-	background-color: #8D99A6; /*Same as BG color*/
+        background-color: @SteelGrey; /*Same as BG color*/
 }
 
 QSplitter::handle {
         /*width: 5px;*/
-        background-color: #8D99A6; /*Same as BG color*/
+        background-color: @SteelGrey; /*Same as BG color*/
 }
 
 /*Use this to eventually change .png used for checked/unchecked */
@@ -149,7 +167,7 @@ QToolButton, QPushButton {
 	font-size: 10px;
 	font-weight: "normal";
 	color: white;
-	background-color: #708090; /*Darker*/
+        background-color: @DarkSteelGrey; /*Darker*/
 
 }
 
@@ -158,28 +176,18 @@ QComboBox {
 	font-size: 10px;
 	font-weight: "normal";
 	color: white;
-	background-color: #A9B3BC; /*2 shade lighter than bg */
+        background-color: @LightSteelGrey; /*2 shade lighter than bg */
 }
 /* This handles the list view when the down arrow is pressed */
 QComboBox QAbstractItemView {
 	color: white;
-	background-color: #A9B3BC; /*2 shade lighter than bg */
+        background-color: @LightSteelGrey; /*2 shade lighter than bg */
 	/* Problem with white top,bottom space */
 }
 /*selected or about to be selected item in drop down list */
 QComboBox::item::selected {
-	background-color: #8D99A6;
+        background-color: @SteelGrey;
 }
-
-/*
-As of QT 5.6, there is no support for CSS variables, which would let us write something like this
-:root{
-    --pebbleYellow: rgb(231,232,135);
-}
-...
-    color: var(--pebbleYellow);
-...
-*/
 
 /*
 Change the 'power' property on selected controls to turn background on/off
@@ -197,13 +205,13 @@ rgb(255,225,0) bright orange
 /*ui id selector with property.  All QLCDNumber elements with a #tunerFrame[power="on"] ancestor*/
 #nixieFrame[power="off"] QLCDNumber,
 #clockFrame[power="off"] QLCDNumber{
-    color: #A0A0A0;
-    background-color: #708090;
+    color: @LCDNumberOff;
+    background-color: @DarkSteelGrey;
 }
 
 #nixieFrame[power="on"] QLCDNumber,
 #clockFrame[power="on"] QLCDNumber{
-    color: rgb(255,225,0);
+    color: @LCDNumberOn;
     /*
     Use http://www.colorzilla.com/gradient-editor/ for gradient editing and preview
     x1:0,y1:0,x2:1,y2:1 Diagonal gradient from upper left (0,0) to lower right (1,1)
@@ -212,7 +220,7 @@ rgb(255,225,0) bright orange
     */
     background-color: qlineargradient(
         x1:0, y1:0, x2:1, y2:0,
-        stop:0 #353B43,
-        stop:0.5 #BF4609,
-        stop:1 #353B43);
+        stop:0 @LCDGradientStart,
+        stop:0.5 @LCDGradientMid,
+        stop:1 @LCDGradientEnd);
 }
