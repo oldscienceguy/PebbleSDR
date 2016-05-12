@@ -274,7 +274,7 @@ bool Receiver::turnPowerOn()
 	m_sdr->command(DeviceInterface::Cmd_Start,0);
 
 	//Test goertzel
-	m_testGoertzel = new NewGoertzel(m_demodSampleRate, m_demodFrames);
+	m_testGoertzel = new Goertzel(m_demodSampleRate, m_demodFrames);
 	m_testGoertzel->setTargetSampleRate(8000);
 	quint32 estN = m_testGoertzel->estNForShortestBit(5.0);
 	//estN = 512; //For testing

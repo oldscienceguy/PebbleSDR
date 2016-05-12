@@ -29,62 +29,6 @@ frequency resolution to differentiate between the DTMF frequencies and be able
 to detect DTMF tones with reasonable delay. See [2] for additional information
 about choosing a block size.
 
-*/
-
-Goertzel::Goertzel(int _sampleRate, int _numSamples)
-{
-	m_sampleRate = _sampleRate;
-	m_numSamples = _numSamples;
-
-	m_realW = 0;
-	m_binaryOutput = false;
-	m_binaryThreshold = 0;
-	m_noiseThreshold = 0.5;
-	m_delay0 = m_delay1 = m_delay2 = 0;
-	m_sampleCount = 0;
-	m_binWidthHz = 0;
-	m_samplesPerBin = 0;
-	m_avgTonePower = 0;
-	m_peakPower = 0;
-	m_scale = 1000; //So we don't lose precision?
-	m_powerBuf = NULL;
-	m_windowFunction = NULL;
-}
-
-Goertzel::~Goertzel()
-{
-	if (m_powerBuf != NULL)
-		delete (m_powerBuf);
-}
-
-/*
-DTMF Tone Pairs to test algorithm
-        1209hz  1336hz  1477hz  1633hz
-697hz   1       2       3       A
-770hz   4       5       6       B
-852hz   7       8       9       C
-941hz   *       0       #       D
-
-For N=205 and fs=8000
-Freq    k       Coeff           Coeff
-                decimal         Q15
-697     18      1.703275        0x6D02
-770     20      1.635585        0x68B1
-852     22      1.562297        0x63FC
-941     24      1.482867        0x5EE7
-1209    31      1.163138        0x4A70
-1336    34      1.008835        0x4090
-1477    38      0.790074        0x6521
-1633    42      0.559454        0x479C
-
-Note: Q15 format means that 15 decimal places are assumed.
-Used for situations where there is no floating point or only integer math is used.
-See http://en.wikipedia.org/wiki/Q_(number_format)
-
-Nue-Psk coefficient for 796.875hz is 1.6136951071 as another example
-*/
-
-/*
 The Goertzel algorithm is derived from the DFT and exploits the periodicity of
 the phase factor, exp(-j*2k/N) to reduce the computational complexity
 associated with the DFT, as the FFT does. With the Goertzel algorithm only 16
@@ -95,493 +39,8 @@ http://en.wikipedia.org/wiki/Goertzel_algorithm
 
 //Simplest best explanation
 http://www.eetimes.com/design/embedded/4024443/The-Goertzel-Algorithm
+
 */
-
-
-//fTone is the freq in hz we want to detect
-//SampleRate 48000, 96000, etc
-//Test with Freq from DTMF and sampleRate 8000 and compare with table above
-//returns numToneResults for sizing toneBuffer
-int Goertzel::setFreqHz(int fTone, int bw, int gsr)
-{
-	m_freqHz = fTone;
-	m_gSampleRate = gsr;
-	m_decimateFactor = m_sampleRate / m_gSampleRate;
-
-	m_binWidthHz = bw; //equivalent to filter bandwidth
-    //Set blockSize based on sampleRate and desired filter bandwidth
-    //How many samples do we need to accumulate to get desired bandwidth
-	m_samplesPerBin = m_gSampleRate / m_binWidthHz;
-
-    //What is the time, in ms, that each bin represents
-	m_timePerBin = 1.0/m_gSampleRate * m_samplesPerBin * 1000;
-
-    //How many tone results per sample buffer = num decimated samples / samples per bin
-	m_numToneResults = (m_numSamples / m_decimateFactor) / m_samplesPerBin;
-
-    //Calc the filter coefficient
-    //Think of the goertzel as 1 bin of an N bin FFT
-    //Each bin 'holds' a frequency range, specified by bandwidth or binwidth
-    //So for binwidth = 200hz, bin1=0-199, bin2=200-399, bin3=400-599, bin4=600-799
-    //If we're looking for 700hz in this example, it would be in the middle of bin 4, perfect!
-    //k represents the fft bin that would contain the frequency of interest
-	m_k = (float)(m_samplesPerBin * m_freqHz)/(float)(m_gSampleRate) + 0.5; // + 0.5 rounds up
-
-	m_w = TWOPI * m_k / m_samplesPerBin;
-
-	m_realW = 2.0 * cos(m_w);
-	m_imagW = sin(m_w);
-
-    //qDebug("Goertzel: freq = %d binWidth = %d sampleRate = %d samplesPerBin = %d coefficient = %.12f timePerBin = %d",
-    //       freqHz,binWidthHz,sampleRate,samplesPerBin,coeff,timePerBin);
-
-	m_avgTonePower = 0.001;
-	m_avgNoisePower = 0.000001;
-	m_binaryThreshold = (m_avgTonePower - m_avgNoisePower) / 2.0;
-
-	m_noiseThreshold = 1.0/(m_scale*1000); //Lowest possible value for binaryThreshold?
-
-	m_peakPower=0;
-	m_binaryOutput=0;
-	m_lastBinaryOutput = 0;
-	m_noiseTimer = 0;
-	m_noiseTimerThreshold = 1000 / m_timePerBin; //1 second for now
-
-	m_powerBufSize = 1000 / m_timePerBin; //2 sec of data
-	if (m_powerBuf != NULL)
-		delete m_powerBuf;
-	m_powerBuf = new DelayLine(m_powerBufSize);
-
-	m_resultCounter = 0;
-
-    //See http://www.mstarlabs.com/dsp/goertzel/goertzel.html for details on using a window for better detection
-	if (m_windowFunction != NULL)
-		delete m_windowFunction;
-	m_windowFunction = new WindowFunction(WindowFunction::BLACKMANHARRIS, m_samplesPerBin);
-#if 0
-    for (int n = 0; n<samplesPerBin; n++) {
-        //Hamming: Pass band spans primary 2 bins plus first neighbors on each side.
-        //      Out of band rejection minimum -43 dB.
-        window[n] = 0.54 - 0.46 * cos(TWOPI * n / samplesPerBin);
-        //Exact Blackman: Pass band spans primary 2 bins plus first 2 neighbors on each side.
-        //      Out of band rejection minimum -66 dB.
-        //window[n] = 0.426591 - .496561*cos(TWOPI * n / samplesPerBin) +.076848*cos(4*pi * n /samplesPerBin);
-    }
-#endif
-	return m_numToneResults;
-}
-void Goertzel::setBinaryThreshold(float t)
-{
-	m_binaryThreshold = t;
-}
-
-bool Goertzel::calcThreshold_Average(float power)
-{
-    //WIP What should binary threshold be initialized to?
-	m_binaryOutput = (power > m_binaryThreshold) ? true : false;
-
-    //Only update average on transition and only if binaryOutput same for at least 3 results
-	if (m_binaryOutput == m_lastBinaryOutput) {
-        //No transition, keep counting
-		m_resultCounter++;
-		if (m_binaryOutput)
-			m_avgTonePower = (power * .01) + (m_avgTonePower * 0.99);
-        else
-			m_avgNoisePower = (power * .01) + (m_avgNoisePower * 0.99);
-
-    } else {
-        //Transition, see if it was long enough to average
-        //Only update average if we have N consecutive marks or spaces
-		if (m_resultCounter > 3) {
-            //We want our threshold to adjust to some percentage of average
-            //Calc average over N seconds, based on current settings
-			m_binaryThreshold = (m_avgTonePower - m_avgNoisePower) / 2.0;
-        }
-		m_resultCounter = 0;
-		m_lastBinaryOutput = m_binaryOutput;
-    }
-    //Timeout if we're constantly above or below threshold
-	if (m_resultCounter > (2000 / m_timePerBin)) {
-		m_resultCounter = 0;
-        //Or should we just reset to default values??
-		m_binaryThreshold *= 0.5; //Cut in half and try again
-		m_avgTonePower = m_binaryThreshold * 1.5;
-		m_avgNoisePower = m_binaryThreshold * 0.5;
-    }
-
-
-#if 0
-    if (power > noiseThreshold) {
-        if (avgPower > peakPower) {
-            //When we get a stronger signal, move our noise and binary thresholds to keep up
-            peakPower = avgPower;
-
-            //Threshold should be some factor of average so we get clear distinction between tone / no tone
-            binaryThreshold = peakPower * 0.50;
-
-            noiseThreshold = peakPower * 0.05;
-        }
-        if (power > binaryThreshold)
-            binaryOutput = true;
-        else
-            binaryOutput = false;
-        noiseTimer = 0; //Start looking for noise again
-    } else {
-        power = 0.0;
-        binaryOutput = false;
-        //If noise for some period, reset avgPower and peakPower
-        if (noiseTimer++ > noiseTimerThreshold) {
-            //No tones and no signal above noiseThreshold for some time
-            //Reset noiseThreshold to averagePower and keep checking
-            noiseThreshold = avgPower;
-            peakPower = 0;
-            noiseTimer = 0;
-        }
-    }
-#endif
-    return true;
-}
-
-/*
-  Several algorithms for determining the threshold
-  1. Explicit: User adjusts slider or something.  Ughh
-  2. Dynamic Median:  Look for lowest and highest power returned over some interval and split
-  3. Dynamic Comparison: Process 2 goertzel filters some freqency apart and compare results.  Signal should only be
-  in one or the other, not both.  Similar to the technique used by SiLabs paper on DTMF detection.
-  If power in 1 filter is 8x greater than sum of all the others, that filter must have a tone
-  Note: Tried comparison with 1 other filter value and could not achieve consistent results
-*/
-
-
-//Sets threshold by comparing min/max values of last N samples
-//Returns true if there is enough variation to indicate that there are some tones in sample buffer
-bool Goertzel::calcThreshold_MinMax(float power)
-{
-    //Only check ever n sec
-	if (++m_resultCounter < 1000/m_timePerBin)
-        return true;
-	m_resultCounter = 0;
-
-    //Initial values such that first result will always be > max and < min
-	m_maxPower = 0.0;
-	m_minPower = 1.0;
-
-	m_minSample = 1.0;
-	m_maxSample = -1.0;
-
-    //Todo: Investigate running min/max and running median algorithms
-    //This adjusts for varying signal strength and should allow weak signals to still have a clear
-    //threshold between tone or no-tone
-    //Find min/max in last N results
-    //We don't know state of circular buffer, so just check all
-	for (int i = 0; i<m_powerBufSize; i++) {
-		power = (*m_powerBuf)[i].re;
-		if (power > m_maxPower)
-			m_maxPower = power;
-		else if (power>0 && power < m_minPower)
-			m_minPower = power;
-    }
-
-    //We need at least some variation in results in order to determine valid threshold
-    //If we're just sitting on noise, we'll have a min/max, but delta won't be enough for threshold
-    //So we need a min delta in order to reliably detect tone presence
-    //Some example Min values: 0.000000010636
-    //Min 0.000000000040 Max 0.000472313695
-    //Min 0.000000000048 Max 0.000000665952 Tone or noise? mag 4 diff
-    //Min 0.000000000040 Max 0.000442085729 Clearly a tone mag 7 diff
-    //Min 0.000000007617 Max 0.000403082959 Mag 5 diff
-    //Min 0.000000010636 Max 0.000361439010
-    //Just noise on 40m
-    //Min 0.000000001696 Max 0.000012756922
-    //Noise on 20m
-    //Min 0.000000186417 Max 0.000070004084
-    //Signal on 20m
-    //Min 0.000000069135 Max 0.00311974407
-	m_binaryThreshold = m_maxPower * 0.60; //n% of max above min
-
-    return true;
-}
-
-CPX * Goertzel::processBlock(CPX *in, bool *toneBuf)
-{
-    bool res;
-    float power;
-    int toneBufCounter = 0;
-    float normalize = 0.0;
-    float dcBias = 0.0;
-    float sample;
-
-    //If we have processed at least 1 block use min/max from last block to normalize this block
-	if (m_maxSample > -1.0 ) {
-        //Remove DC bias per SILabs algorithm
-        //In a pure sine wave, bias is the offset to make the sine cross at exactly zero
-        //Removing the dc bias from the input signal provides consistent power measurements and minimizes errors
-		dcBias = (m_maxSample - m_minSample) / 2.0;
-        //Scale to 50% max - what should this be?
-		normalize = 0.001 / (m_maxSample-dcBias);
-    }
-    //Reset to get new min/max
-	m_minSample = 1.0;
-	m_maxSample = -1.0; //Remember fp is -1 to +1
-
-    //If Goretzel is 8k and Receiver is 96k, decimate factor is 12.  Only process every 12th sample
-	for (int i=0; i<m_numSamples; i=i+m_decimateFactor) {
-        sample = in[i].re;
-		if (sample > m_maxSample)
-			m_maxSample = sample;
-		else if (sample < m_minSample)
-			m_minSample = sample;
-        //Normalize
-        sample -= dcBias;
-        //sample *= normalize;
-
-		res = newSample(sample, power);
-
-        if (res) {
-			toneBuf[toneBufCounter ++] = m_binaryOutput;
-        }
-    }
-    return in;
-}
-
-//Tone detection occurs every Nth sample
-bool Goertzel::newSample(float sample, float &power)
-{
-
-    CPX cpx;
-
-    //TI algorithm
-    //Internal products - shown for clarity not speed
-    //float prod1, prod2, prod3;
-    //prod1 = coeff * delay1;
-    //delay0 = sample + prod1 - delay2;
-    //delay2 = delay1;
-    //delay1 = delay0;
-
-    //Apply window for better discrimination
-	if (m_windowFunction != NULL)
-		sample = sample * m_windowFunction->window[m_sampleCount];
-
-#if 0
-    float phase;
-    //mstarlabs algorithm realW = 2*cos(w)
-    delay0 = sample + (realW * delay1) - delay2;
-    delay2 = delay1;
-    delay1 = delay0;
-
-    power = 0;
-    if(++sampleCount >= samplesPerBin) {
-        cpx.re = 0.5 * realW * delay1 - delay2;
-        cpx.im = imagW * delay1;
-        power = cpx.mag();
-        phase = cpx.phase();
-        delay2 = 0;
-        delay1 = 0;
-
-        //Add new result and throw away oldest result
-        powerBuf->NewSample(CPX(power,0));
-
-        bool valid = true;
-        //valid = CalcThreshold_MinMax(power);
-        valid = CalcThreshold_Average(power);
-
-        qDebug("Thresh %.12f Power %.12f Phase %.12f Sample %.12f",binaryThreshold, power, phase, sample);
-
-        return true;
-    }
-#endif
-
-    /*
-        Wikipedia algorithm
-        s_prev = 0
-        s_prev2 = 0
-        normalized_frequency = target_frequency / sample_rate;
-        coeff = 2*cos(2*PI*normalized_frequency);
-        for each sample, x[n],
-          s = x[n] + coeff*s_prev - s_prev2;
-          s_prev2 = s_prev;
-          s_prev = s;
-        end
-        power = s_prev2*s_prev2 + s_prev*s_prev - coeff*s_prev*s_prev2;
-
-    */
-	m_delay0 = sample + (m_realW * m_delay1) - m_delay2;
-	m_delay2 = m_delay1;
-	m_delay1 = m_delay0;
-
-	if(++m_sampleCount >= m_samplesPerBin) {
-        //We've accumulated enough to change output
-		m_sampleCount = 0;
-        //Filter output is the total 'energy' in the delay loop
-		power = m_delay2*m_delay2 + m_delay1 * m_delay1 - m_realW * m_delay1 * m_delay2;
-        //power *= scale;
-
-		m_delay2 = 0;
-		m_delay1 = 0;
-
-        //Add new result and throw away oldest result
-		m_powerBuf->NewSample(CPX(power,0));
-
-        bool valid;
-        //Check threshold every N second
-        //valid = CalcThreshold_MinMax(power);
-		valid = calcThreshold_Average(power);
-
-        //qDebug("Thresh %.12f Power %.12f Phase %.12f",binaryThreshold, power, phase);
-
-        return true;
-    }
-
-    return false;
-}
-
-float Goertzel::getNextPowerResult()
-{
-	return m_powerBuf->NextDelay(0).re;
-}
-
-//From Nue-PSK for reference
-NuePskGoertzel::NuePskGoertzel()
-{
-
-	// The Goretzel sample block size determines the CW bandwidth as follows:
-	// CW Bandwidth :  100, 125, 160, 200, 250, 400, 500, 800, 1000 Hz.
-	//cw_bwa[] = {80,  64,  50,  40,  32,  20,  16,  10,    8};
-	//cw_bwa_index = 3;
-	cw_n =  40; // Number of samples used for Goertzel algorithm
-
-	cw_f = 796.8750;		// CW frequency offset (start of bin)
-	g_coef = 1.6136951071;	// 2*cos(PI2*(cw_f+7.1825)/SAMPLING_RATE);
-	q0 = 0;
-	q1 = 0;
-	q2 = 0;
-	current = 0;
-	g_t_lock = 0;			// Goertzel threshold lock
-	cspm_lock = 0;			// Character SPace Multiple lock
-	wspm_lock = 0;			// Word SPace Multiple lock
-	g_sample_count = 0;
-	g_sample = 0;
-	g_current = 0;
-	g_scale_factor = 1000.0;
-	g_s = 0;
-	g_ra = 10000;
-	g_threshold = 1000;
-	do_g_ave = 0;
-	g_dup_count = 0;
-	preKey = 0;
-	//RL fixes
-	RXKey = 0;
-	last_trans = 0;
-	cwPractice = 0;
-}
-
-void NuePskGoertzel::do_goertzel (qint16 f_samp)
-{
-    //(fractional f_samp){
-
-    g_sample = (((double)f_samp)/32768.0);
-    q0 = g_coef*q1 - q2 + g_sample;
-    q2 = q1;
-    q1 = q0;
-
-    if(!cwPractice && (++g_sample_count >= cw_n)){
-        g_sample_count = 0;
-        cw_n = cw_bwa[cw_bwa_index];
-        g_current = q1*q1 + q2*q2 - q1*q2*g_coef; 	// ~ energy^2
-        q2 = 0;
-        q1 = 0;
-        g_s = (long)(g_current*g_scale_factor);	//scale and convert to long
-        preKey = (g_s > g_threshold) ? 1 : 0;		//sample MARK or SPACE?
-        if(preKey == RXKey){		//state transition?
-            last_trans = 0;			//no, clear timer
-            g_dup_count++;			//and count duplicate
-        }else{
-            g_dup_count = 0;		//yes, clear duplicate count
-                                    //and let timer run
-        }
-        //Change receive "key" if last change was over 15 clocks ago.
-        //This adds some of latency but should not have a major
-        //affect on durations.
-        if(last_trans > 15){
-            RXKey = preKey;
-            last_trans = 0;
-        }
-        //add sample to running average if no change in 3 samples
-        if(g_dup_count > 3){
-            do_g_ave = 1;
-            g_ra = (999*g_ra + g_s)/1000;
-        }
-        if(g_t_lock){
-            g_ra = g_threshold;
-        }else{
-            g_threshold = g_ra > 200 ? g_ra : 200;
-        }
-    }
-}
-
-//For future experimentation
-
-DTMF::DTMF()
-{
-	DTMF_0.init(1336,941);
-	DTMF_1.init(1209,697);
-	DTMF_2.init(1336,697);
-	DTMF_3.init(1477,697);
-	DTMF_4.init(1209,770);
-	DTMF_5.init(1336,770);
-	DTMF_6.init(1477,770);
-	DTMF_7.init(1209,852);
-	DTMF_8.init(1336,852);
-	DTMF_9.init(1477,852);
-	DTMF_A.init(1633,697);
-	DTMF_B.init(1633,770);
-	DTMF_C.init(1633,852);
-	DTMF_D.init(1633,941);
-	DTMF_STAR.init(1209,941);
-	DTMF_POUND.init(1477,941);
-}
-
-void DTMF::Tone::init(quint16 h, quint16 l)
-{
-	m_hi = h;
-	m_lo = l;
-}
-
-CTCSS::CTCSS()
-{
-	CTCSS_1.init("XY",67.0,0);
-	CTCSS_2.init("XA",71.9,4.9);
-	CTCSS_3.init("WA",74.4,2.5);
-	CTCSS_4.init("??",0,0);//Not defined??
-	CTCSS_5.init("SP",79.7,2.7);
-	CTCSS_6.init("YZ",82.5,2.8);
-	CTCSS_7.init("YA",85.4,2.9);
-	CTCSS_8.init("YB",88.5,3.1);
-	CTCSS_9.init("ZZ",91.5,3.0);
-	CTCSS_10.init("ZA",94.8,3.3);
-	CTCSS_11.init("ZB",97.4,2.6);
-	CTCSS_12.init("1Z",100.0,2.6);
-	CTCSS_13.init("1A",103.5,3.5);
-	CTCSS_14.init("1B",107.2,3.7);
-	CTCSS_15.init("2Z",110.9,3.7);
-	CTCSS_16.init("2A",114.8,3.9);
-	CTCSS_17.init("2B",118.8,4.0);
-	CTCSS_18.init("3Z",123.0,4.2);
-	CTCSS_19.init("3A",127.3,4.3);
-	CTCSS_20.init("3B",131.8,4.5);
-	CTCSS_21.init("4Z",136.5,4.7);
-	CTCSS_22.init("4A",141.3,4.8);
-	CTCSS_23.init("4B",146.2,4.9);
-	CTCSS_24.init("5Z",151.4,5.2);
-	CTCSS_25.init("5A",156.7,5.3);
-	CTCSS_26.init("5B",162.2,5.5);
-	CTCSS_27.init("6Z",167.9,5.7);
-	CTCSS_28.init("6A",173.8,5.9);
-	CTCSS_29.init("6B",179.9,6.1);
-	CTCSS_30.init("7Z",186.2,6.3);
-	CTCSS_31.init("7A",192.8,6.6);
-	CTCSS_32.init("M1",203.5,10.7);
-}
 
 void CTCSS::Tone::init(const char *d, float f, float s)
 {
@@ -659,7 +118,119 @@ The results are the real and imaginary parts of the DFT transform for frequency 
 
 */
 
-NewGoertzel::NewGoertzel(quint32 sampleRate, quint32 numSamples)
+ToneBit::ToneBit()
+{
+	m_freq = 0;
+	m_N = 0;
+	m_bandwidth = 0;
+	m_wn = 0;
+	m_wn1 = 0;
+	m_wn2 = 0;
+	m_nCount = 0;
+	m_usePhaseAlgorithm = false;
+	m_isValid = false;
+	//Todo: construct power and bit arrays
+}
+
+//Call setTargetSampleRate before setToneFreq
+void ToneBit::setFreq(quint32 freq, quint32 N, quint32 sampleRate)
+{
+	m_freq = freq;
+	m_N = N;
+	m_bandwidth = sampleRate / m_N;
+	//time, in ms, that each bin represents
+	m_msPerBit = 1.0/sampleRate * m_N * 1000;
+
+#if 1
+	//Lyons coeff same result as Wikipedia coeff, but Wikipedia not dependent on N
+	m_coeff = 2 * cos(TWOPI * m_freq / sampleRate); //Wikipedia
+	m_coeff2 = sin(TWOPI * m_freq / sampleRate);
+#else
+	//Alternate, should be same results
+	//Think of the goertzel as 1 bin of an N bin FFT
+	//Each bin 'holds' a frequency range, specified by bandwidth or binwidth
+	//So for binwidth = 200hz, bin1=0-199, bin2=200-399, bin3=400-599, bin4=600-799
+	//If we're looking for 700hz in this example, it would be in the middle of bin 4, perfect!
+	//k represents the fft bin that would contain the frequency of interest
+	m_k = (float)(m_samplesPerBin * m_freqHz)/(float)(m_gSampleRate) + 0.5; // + 0.5 rounds up
+
+	m_w = TWOPI * m_k / m_samplesPerBin;
+
+	m_realW = 2.0 * cos(m_w);
+	m_imagW = sin(m_w);
+
+#endif
+
+}
+
+#if 0
+	We can also process complex input, like spectrum data, not just audio
+	From Wikipedia ...
+	Complex signals in real arithmetic[edit]
+	Since complex signals decompose linearly into real and imaginary parts, the Goertzel algorithm can be computed in real arithmetic separately over the sequence of real parts, yielding y_r(n); and over the sequence of imaginary parts, yielding y_i(n). After that, the two complex-valued partial results can be recombined:
+
+	(15) y(n) = y_r(n) + i\ y_i(n)
+#endif
+
+bool ToneBit::processSample(CPX cpx)
+{
+	Q_UNUSED(cpx);
+	return false;
+}
+
+/*
+	Wikipedia algorithm
+	s_prev = 0
+	s_prev2 = 0
+	normalized_frequency = target_frequency / sample_rate;
+	coeff = 2*cos(2*PI*normalized_frequency);
+	for each sample, x[n],
+	  s = x[n] + coeff*s_prev - s_prev2;
+	  s_prev2 = s_prev;
+	  s_prev = s;
+	end
+	power = s_prev2*s_prev2 + s_prev*s_prev - coeff*s_prev*s_prev2;
+
+*/
+
+//Process a single sample, return true if we've processed enough for a result
+bool ToneBit::processSample(double x_n)
+{
+	//m_wn = x_n + m_wn1 * (2 * cos((TWOPI * m_m )/ N)) - m_wn2; //Lyons 13-80 re-arranged
+	//Same as m_wn = x+n + m_coeff * w_wn1 - m_wn2;
+	//m_wn = x_n + (m_wn1 * m_coeff) + (m_wn2 * -1); //Same as simplified version below
+	m_wn = x_n + (m_wn1 * m_coeff) - m_wn2;
+
+	//Update delay line
+	m_wn2 = m_wn1;
+	m_wn1 = m_wn;
+
+	int normalize = m_N / 2;
+
+	if (m_nCount++ >= m_N) {
+		//We have enough samples to calculate a result
+		if (m_usePhaseAlgorithm) {
+			//Full algorithm with phase
+			double re = (0.5 * m_coeff * m_wn1 - m_wn2);
+			double im = (0.5 * m_coeff2 * m_wn1 - m_wn2);
+			m_power = re * re + im * im;
+			m_power /= normalize; //Normalize?
+			//Phase compared to prev result phase, for phase change detection
+			m_phase = atan2(im, re); //Result not tested or confirmed
+		} else {
+			//Simplified algorithm without phase
+			m_power = (m_wn1 * m_wn1) + (m_wn2 * m_wn2) - (m_wn1 * m_wn2 * m_coeff); //Lyons 13-83
+			m_power /= normalize; //Normalize?
+			m_phase = 0;
+		}
+		m_wn1 = m_wn2 = 0;
+		m_nCount = 0;
+		return true;
+	}
+	return false;
+}
+
+Goertzel::Goertzel(quint32 sampleRate, quint32 numSamples)
 {
 	m_externalSampleRate  = sampleRate;
 	m_internalSampleRate = m_externalSampleRate; //No decimation for now
@@ -674,16 +245,16 @@ NewGoertzel::NewGoertzel(quint32 sampleRate, quint32 numSamples)
 	m_debounceCounter = 0;
 }
 
-NewGoertzel::~NewGoertzel()
+Goertzel::~Goertzel()
 {
 }
 
-void NewGoertzel::setThresholdType(NewGoertzel::ThresholdType t)
+void Goertzel::setThresholdType(Goertzel::ThresholdType t)
 {
 	m_thresholdType = t;
 }
 
-void NewGoertzel::setThreshold(double threshold)
+void Goertzel::setThreshold(double threshold)
 {
 	m_threshold = threshold;
 }
@@ -734,7 +305,7 @@ void NewGoertzel::setThreshold(double threshold)
 */
 
 //Returns an estimated N based on shortest bit length
-quint32 NewGoertzel::estNForShortestBit(double msShortestBit)
+quint32 Goertzel::estNForShortestBit(double msShortestBit)
 {
 	//How many ms does each sample represent?
 	//ie for 8k sample rate and 2048 buffer, each sample is .125ms
@@ -745,7 +316,7 @@ quint32 NewGoertzel::estNForShortestBit(double msShortestBit)
 }
 
 //Returns an estimated N based on bin bandwidth
-quint32 NewGoertzel::estNForBinBandwidth(quint32 bandwidth)
+quint32 Goertzel::estNForBinBandwidth(quint32 bandwidth)
 {
 	//N has to be large enough for desired bandwidth
 	//ie minN for bandwidth of 100 = 100 / 3.90 = 25.6
@@ -753,7 +324,7 @@ quint32 NewGoertzel::estNForBinBandwidth(quint32 bandwidth)
 	return bandwidth / binWidth;
 }
 
-void NewGoertzel::setTargetSampleRate(quint32 targetSampleRate)
+void Goertzel::setTargetSampleRate(quint32 targetSampleRate)
 {
 	//Find internal sample rate closest to intSampleRate, but with even decimation factor
 	quint32 dec = m_externalSampleRate / targetSampleRate;
@@ -773,7 +344,7 @@ void NewGoertzel::setTargetSampleRate(quint32 targetSampleRate)
 
 }
 
-void NewGoertzel::setFreq(quint32 freq, quint32 N, quint32 debounce)
+void Goertzel::setFreq(quint32 freq, quint32 N, quint32 debounce)
 {
 	m_debounce = debounce;
 
@@ -851,7 +422,7 @@ void NewGoertzel::setFreq(quint32 freq, quint32 N, quint32 debounce)
 */
 //Process one sample at a time
 //3 states: Not enough samples for result, result below threshold, result above threshold
-bool NewGoertzel::processSample(double x_n, double &power)
+bool Goertzel::processSample(double x_n, double &power)
 {
 	//We decimate here so caller doesn't need to know details
 	//Ignore samples between decimation
@@ -918,7 +489,7 @@ bool NewGoertzel::processSample(double x_n, double &power)
 }
 
 //For future use if we need to detect all the bits in a buffer at once
-double NewGoertzel::updateTonePower(CPX *cpxIn)
+double Goertzel::updateTonePower(CPX *cpxIn)
 {
 	if (m_mainTone.m_N == 0 || m_mainTone.m_freq == 0)
 		//Not initialized
@@ -937,89 +508,116 @@ double NewGoertzel::updateTonePower(CPX *cpxIn)
 	return 0;
 }
 
-NewGoertzel::Tone::Tone()
-{
-	m_freq = 0;
-	m_N = 0;
-	m_bandwidth = 0;
-	m_wn = 0;
-	m_wn1 = 0;
-	m_wn2 = 0;
-	m_nCount = 0;
-	m_usePhaseAlgorithm = false;
-	m_isValid = false;
-	//Todo: construct power and bit arrays
-}
+/*
+  Several algorithms for determining the threshold
+  1. Explicit: User adjusts slider or something.  Ughh
+  2. Dynamic Median:  Look for lowest and highest power returned over some interval and split
+  3. Dynamic Comparison: Process 2 goertzel filters some freqency apart and compare results.  Signal should only be
+  in one or the other, not both.  Similar to the technique used by SiLabs paper on DTMF detection.
+  If power in 1 filter is 8x greater than sum of all the others, that filter must have a tone
+  Note: Tried comparison with 1 other filter value and could not achieve consistent results
+*/
 
-//Call setTargetSampleRate before setToneFreq
-void NewGoertzel::Tone::setFreq(quint32 freq, quint32 N, quint32 sampleRate)
+void Goertzel::updateToneThreshold()
 {
-	m_freq = freq;
-	m_N = N;
-	m_bandwidth = sampleRate / m_N;
-	//Lyons coeff same result as Wikipedia coeff, but Wikipedia not dependent on N
-	m_coeff = 2 * cos(TWOPI * m_freq / sampleRate); //Wikipedia
-	m_coeff2 = sin(TWOPI * m_freq / sampleRate);
-}
-
+	switch (m_thresholdType) {
+		case TH_COMPARE:
+			break;
+		case TH_AVERAGE:
 #if 0
-	We can also process complex input, like spectrum data, not just audio
-	From Wikipedia ...
-	Complex signals in real arithmetic[edit]
-	Since complex signals decompose linearly into real and imaginary parts, the Goertzel algorithm can be computed in real arithmetic separately over the sequence of real parts, yielding y_r(n); and over the sequence of imaginary parts, yielding y_i(n). After that, the two complex-valued partial results can be recombined:
+		//From old Goertzel
+			//WIP What should binary threshold be initialized to?
+			m_binaryOutput = (power > m_binaryThreshold) ? true : false;
 
-	(15) y(n) = y_r(n) + i\ y_i(n)
+			//Only update average on transition and only if binaryOutput same for at least 3 results
+			if (m_binaryOutput == m_lastBinaryOutput) {
+				//No transition, keep counting
+				m_resultCounter++;
+				if (m_binaryOutput)
+					m_avgTonePower = (power * .01) + (m_avgTonePower * 0.99);
+				else
+					m_avgNoisePower = (power * .01) + (m_avgNoisePower * 0.99);
+
+			} else {
+				//Transition, see if it was long enough to average
+				//Only update average if we have N consecutive marks or spaces
+				if (m_resultCounter > 3) {
+					//We want our threshold to adjust to some percentage of average
+					//Calc average over N seconds, based on current settings
+					m_binaryThreshold = (m_avgTonePower - m_avgNoisePower) / 2.0;
+				}
+				m_resultCounter = 0;
+				m_lastBinaryOutput = m_binaryOutput;
+			}
+			//Timeout if we're constantly above or below threshold
+			if (m_resultCounter > (2000 / m_timePerBin)) {
+				m_resultCounter = 0;
+				//Or should we just reset to default values??
+				m_binaryThreshold *= 0.5; //Cut in half and try again
+				m_avgTonePower = m_binaryThreshold * 1.5;
+				m_avgNoisePower = m_binaryThreshold * 0.5;
+			}
+
+
 #endif
+			break;
+		case TH_MIN_MAX:
+#if 0
+		//From old Goertzel
+			//Only check ever n sec
+			if (++m_resultCounter < 1000/m_timePerBin)
+				return true;
+			m_resultCounter = 0;
 
-bool NewGoertzel::Tone::processSample(CPX cpx)
-{
-	Q_UNUSED(cpx);
-	return false;
-}
+			//Initial values such that first result will always be > max and < min
+			m_maxPower = 0.0;
+			m_minPower = 1.0;
 
-//Process a single sample, return true if we've processed enough for a result
-bool NewGoertzel::Tone::processSample(double x_n)
-{
-	//m_wn = x_n + m_wn1 * (2 * cos((TWOPI * m_m )/ N)) - m_wn2; //Lyons 13-80 re-arranged
-	//Same as m_wn = x+n + m_coeff * w_wn1 - m_wn2;
-	//m_wn = x_n + (m_wn1 * m_coeff) + (m_wn2 * -1); //Same as simplified version below
-	m_wn = x_n + (m_wn1 * m_coeff) - m_wn2;
+			m_minSample = 1.0;
+			m_maxSample = -1.0;
 
-	//Update delay line
-	m_wn2 = m_wn1;
-	m_wn1 = m_wn;
+			//Todo: Investigate running min/max and running median algorithms
+			//This adjusts for varying signal strength and should allow weak signals to still have a clear
+			//threshold between tone or no-tone
+			//Find min/max in last N results
+			//We don't know state of circular buffer, so just check all
+			for (int i = 0; i<m_powerBufSize; i++) {
+				power = (*m_powerBuf)[i].re;
+				if (power > m_maxPower)
+					m_maxPower = power;
+				else if (power>0 && power < m_minPower)
+					m_minPower = power;
+			}
 
-	int normalize = m_N / 2;
+			//We need at least some variation in results in order to determine valid threshold
+			//If we're just sitting on noise, we'll have a min/max, but delta won't be enough for threshold
+			//So we need a min delta in order to reliably detect tone presence
+			//Some example Min values: 0.000000010636
+			//Min 0.000000000040 Max 0.000472313695
+			//Min 0.000000000048 Max 0.000000665952 Tone or noise? mag 4 diff
+			//Min 0.000000000040 Max 0.000442085729 Clearly a tone mag 7 diff
+			//Min 0.000000007617 Max 0.000403082959 Mag 5 diff
+			//Min 0.000000010636 Max 0.000361439010
+			//Just noise on 40m
+			//Min 0.000000001696 Max 0.000012756922
+			//Noise on 20m
+			//Min 0.000000186417 Max 0.000070004084
+			//Signal on 20m
+			//Min 0.000000069135 Max 0.00311974407
+			m_binaryThreshold = m_maxPower * 0.60; //n% of max above min
 
-	if (m_nCount++ >= m_N) {
-		//We have enough samples to calculate a result
-		if (m_usePhaseAlgorithm) {
-			//Full algorithm with phase
-			double re = (0.5 * m_coeff * m_wn1 - m_wn2);
-			double im = (0.5 * m_coeff2 * m_wn1 - m_wn2);
-			m_power = re * re + im * im;
-			m_power /= normalize; //Normalize?
-			//Phase compared to prev result phase, for phase change detection
-			m_phase = atan2(im, re); //Result not tested or confirmed
-		} else {
-			//Simplified algorithm without phase
-			m_power = (m_wn1 * m_wn1) + (m_wn2 * m_wn2) - (m_wn1 * m_wn2 * m_coeff); //Lyons 13-83
-			m_power /= normalize; //Normalize?
-			m_phase = 0;
-		}
-		m_wn1 = m_wn2 = 0;
-		m_nCount = 0;
-		return true;
+			return true;
+
+#endif
+			break;
+		case TH_MANUAL:
+			break;
+		default:
+			break;
 	}
-	return false;
 }
 
-void NewGoertzel::updateToneThreshold()
-{
-
-}
-
-void NewGoertzel::updateBitDetection()
+void Goertzel::updateBitDetection()
 {
 
 }
@@ -1131,4 +729,171 @@ fixed point arithmetic.
 
 #endif
 
+//From Nue-PSK for reference
+NuePskGoertzel::NuePskGoertzel()
+{
+
+	// The Goretzel sample block size determines the CW bandwidth as follows:
+	// CW Bandwidth :  100, 125, 160, 200, 250, 400, 500, 800, 1000 Hz.
+	//cw_bwa[] = {80,  64,  50,  40,  32,  20,  16,  10,    8};
+	//cw_bwa_index = 3;
+	cw_n =  40; // Number of samples used for Goertzel algorithm
+	//For sample rate = 8000
+	cw_f = 796.8750;		// CW frequency offset (start of bin)
+	g_coef = 1.6136951071;	// 2*cos(PI2*(cw_f+7.1825)/SAMPLING_RATE);
+	q0 = 0;
+	q1 = 0;
+	q2 = 0;
+	current = 0;
+	g_t_lock = 0;			// Goertzel threshold lock
+	cspm_lock = 0;			// Character SPace Multiple lock
+	wspm_lock = 0;			// Word SPace Multiple lock
+	g_sample_count = 0;
+	g_sample = 0;
+	g_current = 0;
+	g_scale_factor = 1000.0;
+	g_s = 0;
+	g_ra = 10000;
+	g_threshold = 1000;
+	do_g_ave = 0;
+	g_dup_count = 0;
+	preKey = 0;
+	//RL fixes
+	RXKey = 0;
+	last_trans = 0;
+	cwPractice = 0;
+}
+
+void NuePskGoertzel::do_goertzel (qint16 f_samp)
+{
+	//(fractional f_samp){
+
+	g_sample = (((double)f_samp)/32768.0);
+	q0 = g_coef*q1 - q2 + g_sample;
+	q2 = q1;
+	q1 = q0;
+
+	if(!cwPractice && (++g_sample_count >= cw_n)){
+		g_sample_count = 0;
+		cw_n = cw_bwa[cw_bwa_index];
+		g_current = q1*q1 + q2*q2 - q1*q2*g_coef; 	// ~ energy^2
+		q2 = 0;
+		q1 = 0;
+		g_s = (long)(g_current*g_scale_factor);	//scale and convert to long
+		preKey = (g_s > g_threshold) ? 1 : 0;		//sample MARK or SPACE?
+		if(preKey == RXKey){		//state transition?
+			last_trans = 0;			//no, clear timer
+			g_dup_count++;			//and count duplicate
+		}else{
+			g_dup_count = 0;		//yes, clear duplicate count
+									//and let timer run
+		}
+		//Change receive "key" if last change was over 15 clocks ago.
+		//This adds some of latency but should not have a major
+		//affect on durations.
+		if(last_trans > 15){
+			RXKey = preKey;
+			last_trans = 0;
+		}
+		//add sample to running average if no change in 3 samples
+		if(g_dup_count > 3){
+			do_g_ave = 1;
+			g_ra = (999*g_ra + g_s)/1000;
+		}
+		if(g_t_lock){
+			g_ra = g_threshold;
+		}else{
+			g_threshold = g_ra > 200 ? g_ra : 200;
+		}
+	}
+}
+
+//For future experimentation
+/*
+DTMF Tone Pairs to test algorithm
+		1209hz  1336hz  1477hz  1633hz
+697hz   1       2       3       A
+770hz   4       5       6       B
+852hz   7       8       9       C
+941hz   *       0       #       D
+
+For N=205 and fs=8000
+Freq    k       Coeff           Coeff
+				decimal         Q15
+697     18      1.703275        0x6D02
+770     20      1.635585        0x68B1
+852     22      1.562297        0x63FC
+941     24      1.482867        0x5EE7
+1209    31      1.163138        0x4A70
+1336    34      1.008835        0x4090
+1477    38      0.790074        0x6521
+1633    42      0.559454        0x479C
+
+Note: Q15 format means that 15 decimal places are assumed.
+Used for situations where there is no floating point or only integer math is used.
+See http://en.wikipedia.org/wiki/Q_(number_format)
+
+*/
+
+DTMF::DTMF()
+{
+	DTMF_0.init(1336,941);
+	DTMF_1.init(1209,697);
+	DTMF_2.init(1336,697);
+	DTMF_3.init(1477,697);
+	DTMF_4.init(1209,770);
+	DTMF_5.init(1336,770);
+	DTMF_6.init(1477,770);
+	DTMF_7.init(1209,852);
+	DTMF_8.init(1336,852);
+	DTMF_9.init(1477,852);
+	DTMF_A.init(1633,697);
+	DTMF_B.init(1633,770);
+	DTMF_C.init(1633,852);
+	DTMF_D.init(1633,941);
+	DTMF_STAR.init(1209,941);
+	DTMF_POUND.init(1477,941);
+}
+
+void DTMF::Tone::init(quint16 h, quint16 l)
+{
+	m_hi = h;
+	m_lo = l;
+}
+
+CTCSS::CTCSS()
+{
+	CTCSS_1.init("XY",67.0,0);
+	CTCSS_2.init("XA",71.9,4.9);
+	CTCSS_3.init("WA",74.4,2.5);
+	CTCSS_4.init("??",0,0);//Not defined??
+	CTCSS_5.init("SP",79.7,2.7);
+	CTCSS_6.init("YZ",82.5,2.8);
+	CTCSS_7.init("YA",85.4,2.9);
+	CTCSS_8.init("YB",88.5,3.1);
+	CTCSS_9.init("ZZ",91.5,3.0);
+	CTCSS_10.init("ZA",94.8,3.3);
+	CTCSS_11.init("ZB",97.4,2.6);
+	CTCSS_12.init("1Z",100.0,2.6);
+	CTCSS_13.init("1A",103.5,3.5);
+	CTCSS_14.init("1B",107.2,3.7);
+	CTCSS_15.init("2Z",110.9,3.7);
+	CTCSS_16.init("2A",114.8,3.9);
+	CTCSS_17.init("2B",118.8,4.0);
+	CTCSS_18.init("3Z",123.0,4.2);
+	CTCSS_19.init("3A",127.3,4.3);
+	CTCSS_20.init("3B",131.8,4.5);
+	CTCSS_21.init("4Z",136.5,4.7);
+	CTCSS_22.init("4A",141.3,4.8);
+	CTCSS_23.init("4B",146.2,4.9);
+	CTCSS_24.init("5Z",151.4,5.2);
+	CTCSS_25.init("5A",156.7,5.3);
+	CTCSS_26.init("5B",162.2,5.5);
+	CTCSS_27.init("6Z",167.9,5.7);
+	CTCSS_28.init("6A",173.8,5.9);
+	CTCSS_29.init("6B",179.9,6.1);
+	CTCSS_30.init("7Z",186.2,6.3);
+	CTCSS_31.init("7A",192.8,6.6);
+	CTCSS_32.init("M1",203.5,10.7);
+}
 
