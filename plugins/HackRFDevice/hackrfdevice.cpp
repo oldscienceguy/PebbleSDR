@@ -72,9 +72,9 @@ void HackRFDevice::readSettings()
 	//lowFrequency = 1000000;
 	//1mHz is spec, but rest of AM band seems ok
 	m_lowFrequency = 500000;
-	m_sampleRate = 8000000;
+	m_sampleRate = 2048000;
 	m_deviceSampleRate = m_sampleRate;
-	m_decimateFactor = 2; //We can't keep up with full device sample rate yet
+	m_decimateFactor = 1;
 	DeviceInterfaceBase::readSettings();
 	//Recommended defaults from hackRf wiki
 	rfGain = m_qSettings->value("rfGain",false).toBool();
@@ -306,7 +306,9 @@ QVariant HackRFDevice::get(DeviceInterface::StandardKeys _key, QVariant _option)
 		case Key_DeviceSampleRates:
 			//Move to device options page and return empty list
 			//Sample rates may be decimated by user selection for CPU usage
-			return QStringList()<<"8000000"<<"10000000"<<"12500000"<<"16000000"<<"20000000";
+			//return QStringList()<<"8000000"<<"10000000"<<"12500000"<<"16000000"<<"20000000";
+			//HackRF videos say sample rate can go as low as 2msps, contrary to doc at this time
+			return QStringList()<<"2048000"<<"4096000"<<"8000000"<<"10000000"<<"12500000"<<"16000000"<<"20000000";
 		case Key_SampleRate:
 			//Default in deviceInterfaceBase is to return deviceSampleRate
 			//We may be decimated and over-ride default to return post-decimated sample rate
