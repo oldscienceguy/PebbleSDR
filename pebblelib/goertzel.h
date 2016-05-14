@@ -41,6 +41,14 @@ public:
 	double m_wn2; //Lyons w(n-2), Wikipedia s_prev2
 	int m_nCount; //# samples processed
 
+	//Used for runningMean and StdDev calculations
+	bool m_calcRunningMean;
+	double m_runningMean;
+	quint32 m_runningMeanCount;
+	double m_S;
+	double m_stdDev;
+	double m_variance;
+
 };
 
 //Testing, 1 or 2 tone goertzel with updated model

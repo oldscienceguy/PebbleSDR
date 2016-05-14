@@ -129,7 +129,13 @@ ToneBit::ToneBit()
 	m_nCount = 0;
 	m_usePhaseAlgorithm = false;
 	m_isValid = false;
-	//Todo: construct power and bit arrays
+
+	m_calcRunningMean = true;
+	m_runningMean = 0;
+	m_runningMeanCount = 1; //Avoid div by zero error
+	m_S = 0;
+	m_stdDev = 0;
+	m_variance = 0;
 }
 
 /*
@@ -209,10 +215,54 @@ bool ToneBit::processSample(CPX cpx)
 	power = s_prev2*s_prev2 + s_prev*s_prev - coeff*s_prev*s_prev2;
 
 */
+/*
+	We can add a window function, just like FFT, to improve results at the low and high edges of the
+	bandwidth.  Without this, the results 'ripple', meaning we might get a -80db result at the edge
+	then a -70db result further past the edge.  See the test results for low/main/high tones in Gertzel()
+	for an example.
 
+	http://www.mstarlabs.com/dsp/goertzel/goertzel.html has a good example of how to use a window
+	Hamming Window
+		Terms are generated using the formula
+		0.54 - 0.46 * cos(2*pi*n/N)
+
+	Pass band spans primary 2 bins plus first neighbors on each side.
+	Out of band rejection minimum -43 dB.
+
+	Exact Blackman
+		Terms are generated using the formula
+		0.426591 - .496561*cos(2*pi*n/N) +.076848*cos(4*pi*n/N)
+
+	Pass band spans primary 2 bins plus first 2 neighbors on each side.
+	Out of band rejection minimum -66 dB.
+*/
+
+/*
+	We also calculate average signal and stdDev (noise) for possible use in threshold
+	Todo: Test SNR threshold for Goertzel
+*/
 //Process a single sample, return true if we've processed enough for a result
 bool ToneBit::processSample(double x_n)
 {
+	if (m_calcRunningMean) {
+		//See Knuth TAOCP vol 2, 3rd edition, page 232
+		//for each incoming sample x:
+		//    prev_mean = m;
+		//    n = n + 1;
+		//    m = m + (x-m)/n;
+		//    S = S + (x-m)*(x-prev_mean);
+		//	standardDev = sqrt(S/n) or sqrt(S/n-1) depending on who you listen to
+		double prevMean = 0;
+		prevMean = m_runningMean;
+		m_runningMean += (x_n - m_runningMean) / m_runningMeanCount;
+		m_S += (x_n - m_runningMean) * (x_n - prevMean);
+		//Dividing by N-1 (Bessel's correction) returns unbiased variance, dividing by N returns variance across the entire sample set
+		m_variance = m_S / (m_runningMeanCount - 1);
+		m_stdDev = sqrt(m_variance);
+		m_runningMeanCount++;
+		//Not tested, here for future use
+	}
+
 	//m_wn = x_n + m_wn1 * (2 * cos((TWOPI * m_m )/ N)) - m_wn2; //Lyons 13-80 re-arranged
 	//Same as m_wn = x+n + m_coeff * w_wn1 - m_wn2;
 	//m_wn = x_n + (m_wn1 * m_coeff) + (m_wn2 * -1); //Same as simplified version below
@@ -373,16 +423,29 @@ void Goertzel::setFreq(quint32 freq, quint32 N, quint32 attackCount, quint32 dec
 	m_decayCounter = 0;
 
 	/*
-		This creates 3 bins.  If main bin is 200hz wide
-						Main
-					|--- 200 ---|
-		|--- 200 ---|           |--- 200 ---|
-			 Low                     High
-		With the averaging comparison, the effective bandwidth of Main is 150hz
 
 		KA7OEI differential goertzel algorithm compares 5% below and 4% above bins
 		But comparison seems to work better with non-overlapping bins.
 		Tested with bw, bw/2, bw/4 using signal strength meter and receiver.cpp processIq() testing
+
+		We use 3 bins.  If main bin is 200hz wide and centered at 800hz
+					  Low		    Main          High
+							  |---- 200 ----|
+				|---- 200 ----|             |----- 200 -----|
+			   500hz  600hz  700hz  800hz  900hz  1000hz  1100hz
+		  Mixer
+		---------------------------------------------
+		1: 8500      -31db         - 40db         - 43db
+		2: 8600      -28db(1)      -106db(2)      -106db(2)
+		3: 8700      -31db(3)      - 32db(3)      - 42db
+		4: 8800      -78db(2)      - 28db(1)      - 78db(2)
+		5: 8900      -42db         - 32db(3)      - 31db(3)
+		6: 9000      -78db(2)      - 78db(2)      - 28db(1)
+		7: 9100      -44db         - 40db         - 31db
+		Test results with TestBench generating an 8khz signal at -40db, lsb, SR 8000, N=44
+		(1) Highest db of -28 is at center frequency for each bin, as expected.
+		(2) Results at the edge of each bin are in-accurate without windowing
+		(3) Results right between 2 bins give equal results for each bin
 	*/
 	m_mainTone.setFreq(freq, N, m_internalSampleRate);
 	quint32 bwDelta = m_mainTone.m_bandwidth;
@@ -530,7 +593,10 @@ bool Goertzel::processSample(double x_n, double &power)
 		double avgComparePower = (m_highCompareTone.m_power + m_lowCompareTone.m_power) / 2;
 #if 1
 		//KA7OEI differential goertzel
-		double compareRatio = m_mainTone.m_power / avgComparePower;
+		double compareRatio = 0;
+		if (avgComparePower > 0)
+			//Avoid dev by zero for Nan
+			compareRatio = m_mainTone.m_power / avgComparePower;
 		if (debounce(compareRatio > m_compareThreshold)) {
 			power = m_mainTone.m_power;
 		}
