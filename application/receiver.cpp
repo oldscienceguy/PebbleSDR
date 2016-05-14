@@ -275,11 +275,11 @@ bool Receiver::turnPowerOn()
 
 	//Test goertzel
 	m_testGoertzel = new Goertzel(m_demodSampleRate, m_demodFrames);
-	m_testGoertzel->setTargetSampleRate(8000);
+	//m_testGoertzel->setTargetSampleRate(8000);
+	m_testGoertzel->setTargetSampleRate(m_demodSampleRate);
 	quint32 estN = m_testGoertzel->estNForShortestBit(5.0);
 	//estN = 512; //For testing
-	quint32 debounce = 4;
-	m_testGoertzel->setFreq(800, estN, debounce);
+	m_testGoertzel->setFreq(800, estN, 2, 2);
 
     //Don't set title until we connect and start.
     //Some drivers handle multiple devices (RTL2832) and we need connection data

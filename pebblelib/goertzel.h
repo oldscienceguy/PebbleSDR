@@ -9,6 +9,143 @@
 #include "windowfunction.h"
 #include "qbitarray.h"
 
+//All of the internal data needed to decode a tone
+//Allows us to specify multiple tones that can be decoded at the same time
+//1 or more ToneBits make up a tone, this is the smallest unit we can detect
+class ToneBit
+{
+public:
+	ToneBit();
+	void setFreq(quint32 freq, quint32 N, quint32 sampleRate);
+	bool processSample (double x_n); //For audio data
+	bool processSample (CPX cpx); //For IQ data - Not implemented yet
+
+	//Use simplified goertzel or full which includes phase information
+	bool m_usePhaseAlgorithm;
+
+	//Is the result valid, ie processed enough samples
+	bool m_isValid;
+
+	quint32 m_freq;
+	quint32 m_bandwidth;
+	quint32 m_msPerBit;
+	double m_power; //Power of last bin
+	double m_phase; //Phase of last bin
+
+	//Using Lyons terminology (pg 740)
+	double m_coeff; //For power
+	double m_coeff2; //For phase if needed
+	int m_bitSamples; //N = binWidth = #samples per bin
+	double m_wn; //Lyons w(n), Wikipedia s
+	double m_wn1; //Lyons w(n-1), Wikipedia s_prev
+	double m_wn2; //Lyons w(n-2), Wikipedia s_prev2
+	int m_nCount; //# samples processed
+
+};
+
+//Testing, 1 or 2 tone goertzel with updated model
+class Goertzel
+{
+public:
+	Goertzel(quint32 sampleRate, quint32 numSamples);
+	~Goertzel();
+
+	//Threshold determines the boundary between 'present' and 'not present' tones
+	//TH_COMPARE uses 2 extra bins, above and below the target freq
+	//TH_AVERAGE uses the average power in the buffer
+	//TH_MANUAL uses specific target
+	enum ThresholdType {TH_COMPARE, TH_AVERAGE, TH_MIN_MAX, TH_MANUAL};
+	void setThresholdType(ThresholdType t);
+	ThresholdType thresholdType() {return m_thresholdType;}
+	void setThreshold(double threshold);
+	double threshold(){return m_compareThreshold;}
+
+	void setFreq(quint32 freq, quint32 N, quint32 attackCount, quint32 decayCount);
+
+	//Updates tone1Power and tone2Power
+	double updateTonePower(CPX *cpxIn);
+
+	//Updates threshold power between 0 and 1 bit
+	void updateToneThreshold();
+
+	//Processes tone1Power and tone2Power to update high/low bits
+	void updateBitDetection();
+
+	//Call one or the other to set N
+	quint32 estNForShortestBit(double msShortestBit);
+	quint32 estNForBinBandwidth(quint32 bandwidth);
+
+	void setTargetSampleRate(quint32 targetSampleRate);
+	bool processSample(double x_n, double &power);
+private:
+
+	ToneBit m_mainTone;
+	ToneBit m_lowCompareTone;
+	ToneBit m_highCompareTone;
+
+	quint32 m_externalSampleRate;
+	quint32 m_internalSampleRate;
+	int m_decimate;
+	int m_decimateCount;
+
+	int m_numSamples;
+	ThresholdType m_thresholdType;
+	double m_compareThreshold;
+
+	bool m_lastTone; //For debounce counting
+	quint32 m_attackCount;
+	quint32 m_attackCounter;
+	quint32 m_decayCount;
+	quint32 m_decayCounter;
+
+	quint32 m_debounceCounter;
+	bool debounce(bool aboveThreshold);
+};
+
+
+//For reference, goertzel from Nue-Psk
+class NuePskGoertzel
+{
+public:
+	NuePskGoertzel();
+	void do_goertzel (qint16 f_samp);
+
+private:
+	// The Goretzel sample block size determines the CW bandwidth as follows:
+	// CW Bandwidth :  100, 125, 160, 200, 250, 400, 500, 800, 1000 Hz.
+	const int cw_bwa[9] = {80,  64,  50,  40,  32,  20,  16,  10,    8};
+	const int cw_bwa_index = 3;
+
+	int		cw_n; // Number of samples used for Goertzel algorithm
+
+	double	cw_f;		// CW frequency offset (start of bin)
+	double	g_coef;	// 2*cos(PI2*(cw_f+7.1825)/SAMPLING_RATE);
+	double  q0;
+	double	q1;
+	double	q2;
+	double	current;
+	int		g_t_lock;			// Goertzel threshold lock
+	int		cspm_lock;			// Character SPace Multiple lock
+	int		wspm_lock;			// Word SPace Multiple lock
+	int 	g_sample_count;
+	double 	g_sample;
+	double	g_current;
+	double	g_scale_factor;
+	volatile long	g_s;
+	volatile long g_ra;
+	volatile long g_threshold;
+	volatile int	do_g_ave;
+	int		g_dup_count;
+	int 	preKey;
+
+	//RL fixes
+	int RXKey;
+	int last_trans;
+	int cwPractice;
+
+
+};
+
 //Standard Reference Tones
 
 class DTMF
@@ -21,7 +158,16 @@ public:
 		quint16 m_lo;
 
 	};
-
+	//Look for all tone bits in parallel
+	//Strongest two that are above threshold are DTMF
+	ToneBit m_697;
+	ToneBit m_770;
+	ToneBit m_852;
+	ToneBit m_941;
+	ToneBit m_1209;
+	ToneBit m_1336;
+	ToneBit m_1477;
+	ToneBit m_1633;
 
 	Tone DTMF_0;
 	Tone DTMF_1;
@@ -87,139 +233,5 @@ public:
 	Tone CTCSS_32;
 };
 
-//All of the internal data needed to decode a tone
-//Allows us to specify multiple tones that can be decoded at the same time
-//1 or more ToneBits make up a tone, this is the smallest unit we can detect
-class ToneBit
-{
-public:
-	ToneBit();
-	void setFreq(quint32 freq, quint32 N, quint32 sampleRate);
-	bool processSample (double x_n); //For audio data
-	bool processSample (CPX cpx); //For IQ data - Not implemented yet
-
-	//Use simplified goertzel or full which includes phase information
-	bool m_usePhaseAlgorithm;
-
-	//Is the result valid, ie processed enough samples
-	bool m_isValid;
-
-	//Saved results, do we need?
-	QBitArray *m_bits;
-
-	quint32 m_freq;
-	quint32 m_bandwidth;
-	quint32 m_msPerBit;
-	double m_power; //Power of last bin
-	double m_phase; //Phase of last bin
-
-	//Using Lyons terminology (pg 740)
-	double m_coeff; //For power
-	double m_coeff2; //For phase if needed
-	int m_N; //binWidth = #samples per bin
-	double m_wn; //Lyons w(n), Wikipedia s
-	double m_wn1; //Lyons w(n-1), Wikipedia s_prev
-	double m_wn2; //Lyons w(n-2), Wikipedia s_prev2
-	int m_nCount; //# samples processed
-
-};
-
-//Testing, 1 or 2 tone goertzel with updated model
-class Goertzel
-{
-public:
-	Goertzel(quint32 sampleRate, quint32 numSamples);
-	~Goertzel();
-
-	//Threshold determines the boundary between 'present' and 'not present' tones
-	//TH_COMPARE uses 2 extra bins, above and below the target freq
-	//TH_AVERAGE uses the average power in the buffer
-	//TH_MANUAL uses specific target
-	enum ThresholdType {TH_COMPARE, TH_AVERAGE, TH_MIN_MAX, TH_MANUAL};
-	void setThresholdType(ThresholdType t);
-	ThresholdType thresholdType() {return m_thresholdType;}
-	void setThreshold(double threshold);
-	double threshold(){return m_threshold;}
-
-	void setFreq(quint32 freq, quint32 N, quint32 debounce);
-
-	//Updates tone1Power and tone2Power
-	double updateTonePower(CPX *cpxIn);
-
-	//Updates threshold power between 0 and 1 bit
-	void updateToneThreshold();
-
-	//Processes tone1Power and tone2Power to update high/low bits
-	void updateBitDetection();
-
-	//Call one or the other to set N
-	quint32 estNForShortestBit(double msShortestBit);
-	quint32 estNForBinBandwidth(quint32 bandwidth);
-
-	void setTargetSampleRate(quint32 targetSampleRate);
-	bool processSample(double x_n, double &power);
-private:
-
-	ToneBit m_mainTone;
-	ToneBit m_lowCompareTone;
-	ToneBit m_highCompareTone;
-
-	quint32 m_externalSampleRate;
-	quint32 m_internalSampleRate;
-	int m_decimate;
-	int m_decimateCount;
-
-	int m_numSamples;
-	ThresholdType m_thresholdType;
-	double m_threshold;
-
-	bool m_lastResult; //For debounce counting
-	quint32 m_debounce; //#results needed to determine tone is present
-	quint32 m_debounceCounter;
-};
-
-
-//For reference, goertzel from Nue-Psk
-class NuePskGoertzel
-{
-public:
-	NuePskGoertzel();
-	void do_goertzel (qint16 f_samp);
-
-private:
-	// The Goretzel sample block size determines the CW bandwidth as follows:
-	// CW Bandwidth :  100, 125, 160, 200, 250, 400, 500, 800, 1000 Hz.
-	const int cw_bwa[9] = {80,  64,  50,  40,  32,  20,  16,  10,    8};
-	const int cw_bwa_index = 3;
-
-	int		cw_n; // Number of samples used for Goertzel algorithm
-
-	double	cw_f;		// CW frequency offset (start of bin)
-	double	g_coef;	// 2*cos(PI2*(cw_f+7.1825)/SAMPLING_RATE);
-	double  q0;
-	double	q1;
-	double	q2;
-	double	current;
-	int		g_t_lock;			// Goertzel threshold lock
-	int		cspm_lock;			// Character SPace Multiple lock
-	int		wspm_lock;			// Word SPace Multiple lock
-	int 	g_sample_count;
-	double 	g_sample;
-	double	g_current;
-	double	g_scale_factor;
-	volatile long	g_s;
-	volatile long g_ra;
-	volatile long g_threshold;
-	volatile int	do_g_ave;
-	int		g_dup_count;
-	int 	preKey;
-
-	//RL fixes
-	int RXKey;
-	int last_trans;
-	int cwPractice;
-
-
-};
 
 #endif // GOERTZEL_H

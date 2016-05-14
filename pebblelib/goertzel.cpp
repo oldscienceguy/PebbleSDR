@@ -121,7 +121,7 @@ The results are the real and imaginary parts of the DFT transform for frequency 
 ToneBit::ToneBit()
 {
 	m_freq = 0;
-	m_N = 0;
+	m_bitSamples = 0;
 	m_bandwidth = 0;
 	m_wn = 0;
 	m_wn1 = 0;
@@ -132,14 +132,31 @@ ToneBit::ToneBit()
 	//Todo: construct power and bit arrays
 }
 
+/*
+	Uses Lyons pg 738, 13.17.1
+	Same as Wikipedia, just differnt nomenclature
+	Wikipedia algorithm ...
+	s_prev = 0
+	s_prev2 = 0
+	normalized_frequency = target_frequency / sample_rate;
+	coeff = 2*cos(2*PI*normalized_frequency);
+	for each sample, x[n],
+	  s = x[n] + coeff*s_prev - s_prev2;
+	  s_prev2 = s_prev;
+	  s_prev = s;
+	end
+	power = s_prev2*s_prev2 + s_prev*s_prev - coeff*s_prev*s_prev2;
+
+*/
+
 //Call setTargetSampleRate before setToneFreq
 void ToneBit::setFreq(quint32 freq, quint32 N, quint32 sampleRate)
 {
 	m_freq = freq;
-	m_N = N;
-	m_bandwidth = sampleRate / m_N;
+	m_bitSamples = N;
+	m_bandwidth = sampleRate / m_bitSamples;
 	//time, in ms, that each bin represents
-	m_msPerBit = 1.0/sampleRate * m_N * 1000;
+	m_msPerBit = 1.0/sampleRate * m_bitSamples * 1000;
 
 #if 1
 	//Lyons coeff same result as Wikipedia coeff, but Wikipedia not dependent on N
@@ -205,9 +222,9 @@ bool ToneBit::processSample(double x_n)
 	m_wn2 = m_wn1;
 	m_wn1 = m_wn;
 
-	int normalize = m_N / 2;
+	double normalize = m_bitSamples / 2;
 
-	if (m_nCount++ >= m_N) {
+	if (m_nCount++ >= m_bitSamples) {
 		//We have enough samples to calculate a result
 		if (m_usePhaseAlgorithm) {
 			//Full algorithm with phase
@@ -240,9 +257,13 @@ Goertzel::Goertzel(quint32 sampleRate, quint32 numSamples)
 	m_decimateCount = 0;
 
 	m_thresholdType = TH_COMPARE;
-	m_threshold = 0.5;
+	m_compareThreshold = 4.0; //6db
 
 	m_debounceCounter = 0;
+	m_attackCounter = 0;
+	m_decayCounter = 0;
+
+	m_lastTone = false;
 }
 
 Goertzel::~Goertzel()
@@ -256,7 +277,7 @@ void Goertzel::setThresholdType(Goertzel::ThresholdType t)
 
 void Goertzel::setThreshold(double threshold)
 {
-	m_threshold = threshold;
+	m_compareThreshold = threshold;
 }
 
 /*
@@ -344,22 +365,27 @@ void Goertzel::setTargetSampleRate(quint32 targetSampleRate)
 
 }
 
-void Goertzel::setFreq(quint32 freq, quint32 N, quint32 debounce)
+void Goertzel::setFreq(quint32 freq, quint32 N, quint32 attackCount, quint32 decayCount)
 {
-	m_debounce = debounce;
+	m_attackCount = attackCount;
+	m_attackCounter = 0;
+	m_decayCount = decayCount;
+	m_decayCounter = 0;
 
 	/*
-		This creates 3 overlapping bins.  If main bin is 200hz wide
-				   Main
-			   |--- 200 ---|
-		|--- 200 ---||--- 200 ---|
-			 Low          High
+		This creates 3 bins.  If main bin is 200hz wide
+						Main
+					|--- 200 ---|
+		|--- 200 ---|           |--- 200 ---|
+			 Low                     High
 		With the averaging comparison, the effective bandwidth of Main is 150hz
-		Better than just using frequency to set high/low?
+
+		KA7OEI differential goertzel algorithm compares 5% below and 4% above bins
+		But comparison seems to work better with non-overlapping bins.
+		Tested with bw, bw/2, bw/4 using signal strength meter and receiver.cpp processIq() testing
 	*/
 	m_mainTone.setFreq(freq, N, m_internalSampleRate);
-	//Try bw, bw/2, bw/4
-	quint32 bwDelta = m_mainTone.m_bandwidth / 2;
+	quint32 bwDelta = m_mainTone.m_bandwidth;
 	m_highCompareTone.setFreq(freq + bwDelta, N, m_internalSampleRate);
 	m_lowCompareTone.setFreq(freq - bwDelta, N, m_internalSampleRate);
 	//KA7OEI differential goertzel algorithm compares 5% below and 4% above bins
@@ -368,21 +394,78 @@ void Goertzel::setFreq(quint32 freq, quint32 N, quint32 debounce)
 }
 
 /*
-	Uses Lyons pg 738, 13.17.1
-	Same as Wikipedia, just differnt nomenclature
-	Wikipedia algorithm ...
-	s_prev = 0
-	s_prev2 = 0
-	normalized_frequency = target_frequency / sample_rate;
-	coeff = 2*cos(2*PI*normalized_frequency);
-	for each sample, x[n],
-	  s = x[n] + coeff*s_prev - s_prev2;
-	  s_prev2 = s_prev;
-	  s_prev = s;
-	end
-	power = s_prev2*s_prev2 + s_prev*s_prev - coeff*s_prev*s_prev2;
+	Just like a switch, the threshold between a tone being on and off is subject to a bounce effect
+	debounce() gives us some control over how fast an off-tone is recognized as on-tone (m_attackCount) and
+	how fast an on-tone is recognized as off-tone (m_decayCount)
 
+	Debounce examples: m_attackCount = 2, m_decayCount = 2;
+	B = bitAboveThreshold, A = m_attackCount, D = m_decayCount, T = resulting tone on/off
+
+	Clean signal, no noise.
+	Note that timing is correct, but delayed by 1 bit on attack and decay
+	B: 0 0 0 0  1 1 1 1  1 1 1 1  0 0 0 0  0 0 0 0
+	A: 0 0 0 0  1 2 2 2  2 2 2 2  1 0 0 0  0 0 0 0
+	D: 1 2 2 2  0 0 0 0  0 0 0 0  1 2 2 2  2 2 2 2
+	T: 0 0 0 0  0 1 1 1  1 1 1 1  1 0 0 0  0 0 0 0
+
+	Alternating bits example (noise)
+	B: 0 1 0 1  0 1 0 1
+	A: 0 1 0 1  0 1 0 1
+	D: 1 0 1 0  1 0 1 0
+	T: 0 0 0 0  0 0 0 0 attackCount never gets above 2
+
+	Tone with short drops
+	B: 0 0 0 0  1 1 1 1  0 1 0 1  0 0 0 0
+	A: 0 0 0 0  1 2 2 2  0 1 0 1  0 0 0 0
+	D: 1 2 2 2  0 0 0 0  1 0 1 0  1 2 2 2
+	T: 0 0 0 0  0 1 1 1  1 1 1 1  1 0 0 0 Tone is on until decayCounter==2
+
+	Random noise example, but where 3 out of 4 bits could be recognized as a tone
+	B: 0 1 1 0  1 1 1 0  0 1 1 1  0 0 0 0
+	A: 0 1 2 0  1 2 2 0  0 1 2 2  0 0 0 0
+	D: 1 0 0 1  0 0 0 1  2 0 0 0  1 2 2 2
+	T: 0 0 1 1  1 1 1 1  0 0 1 1  1 0 0 0
+
+	Same example with decayCount = 3
+	B: 0 1 1 0  1 1 1 0  0 1 1 1  0 0 0 0
+	A: 0 1 2 0  1 2 2 0  0 1 2 2  0 0 0 0
+	D: 1 0 0 1  0 0 0 1  2 0 0 0  1 2 3 3
+	T: 0 0 1 1  1 1 1 1  0 0 1 1  1 1 0 0 Last tone is 1 bit longer than decayCount = 2
 */
+bool Goertzel::debounce(bool aboveThreshold)
+{
+	bool isTone = false;
+	if (aboveThreshold) {
+		m_attackCounter++;
+		m_decayCounter = 0;
+		//If lastTone was off, do we have enough 'on' bits to say we have an 'on' tone?
+		if (!m_lastTone && m_attackCounter >= m_attackCount) {
+			isTone = true;
+		} else {
+			//Even though we have aboveThreshold, not enough sequential on bits
+			isTone = m_lastTone;
+		}
+		//Keep at threshold
+		if (m_attackCounter >= m_attackCount)
+			m_attackCounter = m_attackCount;
+	} else {
+		m_decayCounter++;
+		m_attackCounter = 0;
+		//Do we have enough 'off' bits to say the tone is 'off'?
+		if (m_lastTone && m_decayCounter >= m_decayCount) {
+			//Transition from on to off
+			isTone = false;
+		} else {
+			//Tone is still on. Even though we are not aboveThreshold, we don't have enough 'off bits'
+			isTone = m_lastTone; //No change
+		}
+		//Keep at threshold
+		if (m_decayCounter >= m_decayCount)
+			m_decayCounter = m_decayCount;
+	}
+	m_lastTone = isTone;
+	return isTone;
+}
 
 /*
 	Excellent practical information from KA7OE1 on mcHf SDR DTMF implementation
@@ -430,6 +513,8 @@ bool Goertzel::processSample(double x_n, double &power)
 		power = 0;
 		return false;
 	}
+	m_decimateCount = 0;
+
 	//All the tones have the same N, just check the result of the main
 	bool result = m_mainTone.processSample(x_n);
 	m_highCompareTone.processSample(x_n);
@@ -437,44 +522,19 @@ bool Goertzel::processSample(double x_n, double &power)
 	m_mainTone.m_isValid = false;
 	power = 0;
 	if (result) {
+		if (false)
+			qDebug()<<DB::powerTodB(m_lowCompareTone.m_power)<<" "<<
+					  DB::powerTodB(m_mainTone.m_power)<<" "<<
+					  DB::powerTodB(m_highCompareTone.m_power);
 		//If we have a detectable tone, it should be strong in the main bin compared with surrounding bins
 		double avgComparePower = (m_highCompareTone.m_power + m_lowCompareTone.m_power) / 2;
 #if 1
 		//KA7OEI differential goertzel
 		double compareRatio = m_mainTone.m_power / avgComparePower;
-		if (compareRatio > 1.75) {
-			//We have a tone, check to see if it's consistent across debounce
-			if (m_lastResult) {
-				//If last result was a tone, see if we have enough in a row
-				m_debounceCounter++;
-			} else {
-				//Last result was unknown or no-tone, restart debounce counter
-				m_debounceCounter = 1;
-			}
-			m_lastResult = true;
-			//This will return valid result only if we have at least m_debounce consistent results
-			if (m_debounceCounter >= m_debounce) {
-				power = m_mainTone.m_power;
-				m_debounceCounter = 0;
-				m_mainTone.m_isValid = true;
-				return true; //Valid
-			}
-			return false; //No result yet
-		} else {
-			//We need consistent timing for both on and off keying
-			if (!m_lastResult)
-				m_debounceCounter++;
-			else
-				m_debounceCounter = 1;
-			m_lastResult = false;
-			if (m_debounceCounter >= m_debounce) {
-				power = 0;
-				m_debounceCounter = 0;
-				m_mainTone.m_isValid = false;
-				return true;
-			}
-			return false;
+		if (debounce(compareRatio > m_compareThreshold)) {
+			power = m_mainTone.m_power;
 		}
+		return true; //Valid result
 
 #else
 		//We want to see a 6db difference or 4x
@@ -491,7 +551,7 @@ bool Goertzel::processSample(double x_n, double &power)
 //For future use if we need to detect all the bits in a buffer at once
 double Goertzel::updateTonePower(CPX *cpxIn)
 {
-	if (m_mainTone.m_N == 0 || m_mainTone.m_freq == 0)
+	if (m_mainTone.m_bitSamples == 0 || m_mainTone.m_freq == 0)
 		//Not initialized
 		return 0;
 
