@@ -275,8 +275,7 @@ bool Receiver::turnPowerOn()
 
 	//Test goertzel
 	m_testGoertzel = new Goertzel(m_demodSampleRate, m_demodFrames);
-	//m_testGoertzel->setTargetSampleRate(8000);
-	m_testGoertzel->setTargetSampleRate(m_demodSampleRate);
+	m_testGoertzel->setTargetSampleRate(8000);
 	quint32 estN = m_testGoertzel->estNForShortestBit(5.0);
 	//estN = 512; //For testing
 	m_testGoertzel->setFreq(800, estN, 2, 2);

@@ -509,7 +509,7 @@ bool Goertzel::processSample(double x_n, double &power)
 {
 	//We decimate here so caller doesn't need to know details
 	//Ignore samples between decimation
-	if (m_decimateCount++ % m_decimate > 0) {
+	if (++m_decimateCount % m_decimate > 0) {
 		power = 0;
 		return false;
 	}
