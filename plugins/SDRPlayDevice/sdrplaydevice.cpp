@@ -530,7 +530,7 @@ bool SDRPlayDevice::setGainReduction(int gRdb, int abs, int syncUpdate)
 	if (newGainReduction == totalGainReduction)
 		return true; //Nothing to do
 	totalGainReduction = newGainReduction;
-	Q_ASSERT(totalGainReduction < 100);
+	Q_ASSERT(totalGainReduction <= 100);
 	if (errorCheck(mir_sdr_SetGr(gRdb, abs, syncUpdate))) {
 		pendingGainReduction = true;
 		//Update UI with new AGC values
