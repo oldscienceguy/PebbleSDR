@@ -12,7 +12,7 @@ public:
 
 	AGC(quint32 _sampleRate, quint32 _bufferSize);
 	~AGC(void);
-	void setAgcMode(AgcMode m);
+	void setAgcMode(AgcMode m, int threshold);
     void setAgcThreshold(int g);
     int getAgcThreshold();
 

@@ -109,7 +109,8 @@ Receiver::Receiver(ReceiverWidget *rw, QMainWindow *main)
 	connect(m_receiverWidget,SIGNAL(anfChanged(bool)), this, SLOT(anfChanged(bool)));
 	connect(m_receiverWidget,SIGNAL(nb1Changed(bool)), this, SLOT(nb1Changed(bool)));
 	connect(m_receiverWidget,SIGNAL(nb2Changed(bool)), this, SLOT(nb2Changed(bool)));
-	connect(m_receiverWidget,SIGNAL(agcModeChanged(AGC::AgcMode)), this, SLOT(agcModeChanged(AGC::AgcMode)));
+	connect(m_receiverWidget,SIGNAL(agcModeChanged(AGC::AgcMode, int)), this,
+			SLOT(agcModeChanged(AGC::AgcMode, int)));
 	connect(m_receiverWidget,SIGNAL(muteChanged(bool)), this, SLOT(muteChanged(bool)));
 }
 bool Receiver::turnPowerOn()
@@ -684,11 +685,9 @@ void Receiver::nb2Changed(bool b)
 	m_noiseBlanker->setNb2Enabled(b);
 }
 //Called by ReceiverWidget when UI changes AGC, returns new threshold for display
-void Receiver::agcModeChanged(AGC::AgcMode _mode)
+void Receiver::agcModeChanged(AGC::AgcMode _mode, int _threshold)
 {
-	m_agc->setAgcMode(_mode);
-	//AGC sets a default gain with mode
-	//return m_agc->getAgcThreshold();
+	m_agc->setAgcMode(_mode, _threshold);
 }
 //Called by ReceiverWidget
 void Receiver::agcThresholdChanged(int g)
@@ -937,6 +936,11 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 		numStepSamples = m_framesPerBuffer;
 		m_sampleBufLen = 0;
 		nextStep = m_sampleBuf;
+
+		//Restore gain lost in decimation
+		//https://www.intersil.com/content/dam/Intersil/documents/an94/an9401.pdf
+		//quint32 decimationLoss = m_demodDecimator->decBy2Stages();
+		//CPX::scaleCPX(nextStep,nextStep,DB::dBToAmplitude(15),numStepSamples);
 
 		//Create zoomed spectrum
 		//global->perform.StartPerformance("Signal Spectrum Zoomed");

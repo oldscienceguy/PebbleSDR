@@ -744,11 +744,17 @@ void ReceiverWidget::agcBoxChanged(int item)
     if (!m_powerOn)
         return;
 	AGC::AgcMode agcMode = (AGC::AgcMode)ui.agcBox->currentData().toInt();
+	int newThreshold;
 	if (agcMode == AGC::AgcMode::AGC_OFF)
-		ui.agcSlider->setValue(0); //0db gain
+		newThreshold = 0; //0db gain
 	else
-		ui.agcSlider->setValue(30);
-	emit agcModeChanged(agcMode);
+		newThreshold = 30;
+	//Reset slider, but don't emit change signal.  agcModeChanged signal will update agc with new threshold
+	ui.agcSlider->blockSignals(true);
+	ui.agcSlider->setValue(newThreshold);
+	ui.agcSlider->blockSignals(false);
+
+	emit agcModeChanged(agcMode, newThreshold);
 }
 void ReceiverWidget::muteButtonToggled(bool b)
 {

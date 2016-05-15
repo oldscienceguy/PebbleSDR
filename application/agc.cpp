@@ -25,7 +25,7 @@ AGC::AGC(quint32 _sampleRate, quint32 _bufferSize):ProcessStep(_sampleRate,_buff
 	m_sampleRate = 100.0; //Trigger init on first call to setup
 
 	uiSliderValueDb = 0;
-	setAgcMode(AGC_OFF);
+	setAgcMode(AGC_OFF, 1);
 
 }
 
@@ -44,72 +44,41 @@ void AGC::setAgcThreshold(int g)
 {
 	uiSliderValueDb = g; //Could be gain or threshold, used differently
 
-    //Set AGC mode so we can recalc values
-	setAgcMode(m_agcMode); //Not changing, just reseting
+	//Recalc parameters for current mode
+	setParameters(m_useHang, g, m_slopeFactor, m_decay);
+
 }
 
-void AGC::setAgcMode(AgcMode m)
+void AGC::setAgcMode(AgcMode m, int threshold)
 {
     bool useHang = false;
-    int threshold;
     int slopeFactor = 0; //0db to 10db
     int decay = 200; //20ms to 2000ms
 
-    switch (m) {
+	m_agcMode = m;
+	switch (m_agcMode) {
 		case AGC_OFF:
-			//If change, reset threshold
-			if (m_agcMode != m)
-				uiSliderValueDb = 0;
-			//convert uiSliderValue to linear manual gain value
-			//RL: We're converting a db gain figure to amplitude so we can scale with it
-			//Slider value is normally 0db to 99db, which is way to much simple gain
-			//Scale it back to a level where we're unlikely to overload
-			m_manualIFGainAmp = DB::dBToAmplitude(uiSliderValueDb / 5);
-			threshold = -20;
             break;
 		case ACG_FAST:
-			//If change, reset threshold
-			if (m_agcMode != m)
-				uiSliderValueDb = DEFAULT_THRESHOLD;
-			m_manualIFGainAmp = 1.0;
-			threshold = - uiSliderValueDb;
             //hang time 100ms (fixed value from other algorithms, not used)
             decay = 100;
             break;
 		case AGC_SLOW:
-			//If change, reset threshold
-			if (m_agcMode != m)
-				uiSliderValueDb = DEFAULT_THRESHOLD;
-			m_manualIFGainAmp = 1.0;
-			threshold = - uiSliderValueDb;
             //hang time 500ms
             decay = 500;
             break;
 		case AGC_MED:
-			//If change, reset threshold
-			if (m_agcMode != m)
-				uiSliderValueDb = DEFAULT_THRESHOLD;
-			m_manualIFGainAmp = 1.0;
-			threshold = - uiSliderValueDb;
             //hang time 250ms
             decay = 250;
             break;
 		case AGC_LONG:
-			//If change, reset threshold
-			if (m_agcMode != m)
-				uiSliderValueDb = DEFAULT_THRESHOLD;
-			m_manualIFGainAmp = 1.0;
-			threshold = - uiSliderValueDb;
             //hang time 750ms
             decay = 2000;
             break;
         default:
             break;
     }
-	m_agcMode = AGC_OFF; //stop processing while changing
 	setParameters(useHang, threshold, slopeFactor, decay);
-	m_agcMode = m;
-
 }
 
 CPX* AGC::processBlock(CPX *pInData)
@@ -267,6 +236,19 @@ CPX* AGC::processBlock(CPX *pInData)
 
 void AGC::setParameters(bool useHang, int threshold, int slopeFactor, int decay)
 {
+	if (m_agcMode == AGC::AGC_OFF) {
+		//Threshold is dbGain 0 to N
+		//RL: We're converting a db gain figure to amplitude so we can scale with it
+		//Slider value is normally 0db to 99db, which is way to much simple gain
+		//Scale it back to a level where we're unlikely to overload
+		m_manualIFGainAmp = DB::dBToAmplitude(threshold / 5);
+		return;
+	} else {
+		//Threshold is agc -120 to 0;
+		threshold = -threshold; //Convert for agc calculations
+		m_manualIFGainAmp = 1; //No gain
+	}
+
 	if((useHang == m_useHang) &&
 		(threshold == m_threshold) &&
 		(slopeFactor == m_slopeFactor) &&

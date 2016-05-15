@@ -94,7 +94,7 @@ public:
 		void anfChanged(bool b);
 		void nb1Changed(bool b);
 		void nb2Changed(bool b);
-		void agcModeChanged(AGC::AgcMode _mode);
+		void agcModeChanged(AGC::AgcMode _mode, int _threshold);
 		void muteChanged(bool b);
 
 private:
