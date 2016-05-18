@@ -10,7 +10,7 @@
 	Could be extended to support weighted moving average if needed
 	Moving average is a simple low pass FIR filter that is the fastest possible FIR filter algorithm
 	Useful for on/off keying like CW or RTTY where there is a sharp transition on the rising signal
-	The size of the filter is based on the estimated rise time of the signal, ie 10ms for CW
+	The size of the filter is based on the estimated rise or fall time of the signal, ie 10ms for CW
 	m_filterLen = sampleRate * msRiseTime -> 8000sps * .010 = 80
 */
 class MovingAvgFilter
@@ -23,6 +23,12 @@ public:
 	double newSample(double sample);
 	//Clears moving average and starts over
 	void reset();
+
+	//Simple 2 element weighted average, used in multiple places
+	//Weight is the factor to weight the input when calculating the average
+	//Weight=20: (input * 1/20) + average * (19/20) - Short average, only 20 loops to make average == steady input
+	//Weight=800: (input * 1/800) + average * (799/800) - Long average, stead input would take 800 to == average
+	static double weightedAvg(double prevAvg, double sample, quint32 weight);
 
 private:
 	bool m_primed; //Flag for special handling of first samples

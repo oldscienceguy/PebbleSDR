@@ -25,7 +25,7 @@ double MovingAvgFilter::newSample(double sample)
 	}
 
 	//New moving average = (oldMovingAverage - oldestSample + newSample) / filterLength
-	m_delayBufSum = (m_delayBufSum - m_delayBuf[m_ringIndex] + sample) / m_filterLen;
+	m_delayBufSum = m_delayBufSum - m_delayBuf[m_ringIndex] + sample;
 
 	//Replace oldestSample with new sample
 	m_delayBuf[m_ringIndex] = sample;
@@ -39,11 +39,15 @@ double MovingAvgFilter::newSample(double sample)
 
 void MovingAvgFilter::reset()
 {
-	for (quint32 i = 0; i< m_filterLen; i++) {
-		m_delayBuf[i] = 0;
-	}
 	m_ringIndex = 0;
 	m_delayBufSum = 0;
 	m_movingAvg = 0;
 	m_primed = false;
+}
+
+double MovingAvgFilter::weightedAvg(double prevAvg, double sample, quint32 weight)
+{
+	if (weight <= 1.0)
+		return sample;
+	return sample * (1.0 / weight) + prevAvg * (1.0 - (1.0 / weight));
 }
