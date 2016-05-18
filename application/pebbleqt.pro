@@ -268,7 +268,6 @@ HEADERS += \
     pebbleii.h \
 	noisefilter.h \
 	noiseblanker.h \
-	nco.h \
 	mixer.h \
 	demod.h \
 	#build.h \
@@ -302,7 +301,6 @@ SOURCES += \
     pebbleii.cpp \
 	noisefilter.cpp \
 	noiseblanker.cpp \
-	nco.cpp \
 	mixer.cpp \
     main.cpp \
 	demod.cpp \
