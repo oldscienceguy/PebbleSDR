@@ -2,9 +2,11 @@
 #include "gpl.h"
 #include "nco.h"
 
-NCO::NCO(quint32 _sampleRate, quint32 _bufferSize) :
-	ProcessStep(_sampleRate,_bufferSize)
+NCO::NCO(quint32 _sampleRate, quint32 _bufferSize)
 {
+	m_sampleRate = _sampleRate;
+	m_bufferSize = _bufferSize;
+
 	m_sweepInitialized = false;
 }
 
@@ -17,7 +19,7 @@ void NCO::setFrequency(double f)
 	//before step is set
 	m_mutex.lock();
 	//Saftey net, make sure freq is less than nyquist limit
-	int nyquist = (sampleRate / 2 ) -1;
+	int nyquist = (m_sampleRate / 2 ) -1;
 	if (f < - nyquist)
 		f = -nyquist;
 	else if (f > nyquist)
@@ -33,7 +35,7 @@ void NCO::setFrequency(double f)
 	//ie angularIncrement will be neg for neg freq and pos for pos freq
 
 	//Only need to calculate these when freq changes, not in main generate loop
-	m_oscInc = TWOPI * m_frequency / sampleRate;
+	m_oscInc = TWOPI * m_frequency / m_sampleRate;
 	m_oscCos = cos(m_oscInc);
 	m_oscSin = sin(m_oscInc);
 	m_lastOsc.re = 1.0;
@@ -62,7 +64,10 @@ So a 24khz signal will have 2 samples per cycle (48000/24000), which is the Nyqu
 */
 void NCO::genSingle(CPX *_in, quint32 _numSamples, double _dbGain, bool _mix)
 {
-	for (int i = 0; i < _numSamples; i++) {
+	Q_UNUSED(_dbGain);
+	Q_UNUSED(_mix);
+
+	for (quint32 i = 0; i < _numSamples; i++) {
 		nextSample(_in[i]);
 	}
 
@@ -82,7 +87,7 @@ void NCO::genNoise(CPX *_in, quint32 _numSamples, double _dbGain, bool _mix)
 	double y;
 
 	//R Knop
-	for (int i=0; i<_numSamples; i++) {
+	for (quint32 i=0; i<_numSamples; i++) {
 		do {
 			u1 = 1.0 - 2.0 * (double)rand()/(double)RAND_MAX;
 			u2 = 1.0 - 2.0 * (double)rand()/(double)RAND_MAX;
@@ -112,8 +117,8 @@ void NCO::initSweep(double _sweepStartFreq, double _sweepStopFreq, double _sweep
 	m_sweepFreq = m_sweepStartFreq;
 	m_sweepRate = _sweepRate;
 	m_sweepAcc = 0.0;
-	m_sweepRateInc = m_sweepRate / sampleRate;
-	m_sweepFreqNorm = TWOPI / sampleRate;
+	m_sweepRateInc = m_sweepRate / m_sampleRate;
+	m_sweepFreqNorm = TWOPI / m_sampleRate;
 	m_sweepPulseWidth = _pulseWidth;
 	m_sweepPulsePeriod = _pulsePeriod;
 	m_sweepPulseTimer = 0;
@@ -132,11 +137,11 @@ void NCO::genSweep(CPX *_in, quint32 _numSamples, double _dbGain, bool _mix)
 
 	double amp; //Used to toggle amplitude for pulses
 
-	for (int i=0; i<_numSamples; i++) {
+	for (quint32 i=0; i<_numSamples; i++) {
 		amp = _dbGain;
 		if(m_sweepPulseWidth > 0.0) {
 			//if pulse width is >0 create pulse modulation
-			m_sweepPulseTimer += (1.0 / sampleRate);
+			m_sweepPulseTimer += (1.0 / m_sampleRate);
 			if(m_sweepPulseTimer > m_sweepPulsePeriod)
 				m_sweepPulseTimer = 0.0;
 			if(m_sweepPulseTimer > m_sweepPulseWidth)

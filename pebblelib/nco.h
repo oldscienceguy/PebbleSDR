@@ -1,7 +1,7 @@
 #pragma once
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-#include "processstep.h"
+#include "cpx.h"
 #include <QMutex>
 /*
 Numerically Controlled Oscillator
@@ -14,7 +14,7 @@ sin(a+b) = sin(a) * cos(b) + cos(a) * sin(b)
 cos(a+b) = cos(a) * cos(b) - sin(a) * sin(b)
 http://en.wikipedia.org/wiki/List_of_trigonometric_identities
 */
-class NCO : public ProcessStep
+class NCO
 {
 public:
 	NCO(quint32 _sampleRate, quint32 _bufferSize);
@@ -61,6 +61,9 @@ public:
 	//Other test modulations?
 
 private:
+	quint32 m_sampleRate;
+	quint32 m_bufferSize;
+
 	double m_oscInc;
 	double m_oscCos;
 	double m_oscSin;
