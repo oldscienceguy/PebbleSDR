@@ -10,9 +10,9 @@ Mixer::Mixer(quint32 _sampleRate, quint32 _bufferSize)
 	m_out = CPX::memalign(m_numSamples);
 
 	//nco = new NCO(_sampleRate,_bufferSize);
-	SetFrequency(0);
-	gain = 1; //Testing shows no loss
-	oscTime = 0.0;
+	setFrequency(0);
+	m_gain = 1; //Testing shows no loss
+	m_oscTime = 0.0;
 
 }
 
@@ -22,20 +22,20 @@ Mixer::~Mixer(void)
 }
 
 //This sets the frequency we want to mix, typically -48k to +48k
-void Mixer::SetFrequency(double f)
+void Mixer::setFrequency(double f)
 {
 	//3/17/16: For some reason, mixer is inverting
 	//1. Instead of re:im = cos:sin, we can switch to re:im = sin:cos
 	//2. We can reverse the freq
 	//Todo: Understand why this is so
-	frequency = -f;
+	m_frequency = -f;
 	//nco->setFrequency(f);
 
-	oscInc = TWOPI * frequency / m_sampleRate;
-	oscCos = cos(oscInc);
-	oscSin = sin(oscInc);
-	lastOsc.re = 1.0;
-	lastOsc.im = 0.0;
+	m_oscInc = TWOPI * m_frequency / m_sampleRate;
+	m_oscCos = cos(m_oscInc);
+	m_oscSin = sin(m_oscInc);
+	m_lastOsc.re = 1.0;
+	m_lastOsc.im = 0.0;
 
 }
 /*
@@ -45,10 +45,10 @@ For j = 0 to Number of Samples -1
 	LSB Out Q(j) = NCOSin(j) * I(j) + NCOCos(j) * Q(j)
 Next j
 */
-CPX *Mixer::ProcessBlock(CPX *in)
+CPX *Mixer::processBlock(CPX *in)
 {
 	//If no mixing, just copy in to out
-	if (frequency == 0) {
+	if (m_frequency == 0) {
 		return in;
 	}
 	CPX osc;
@@ -58,13 +58,13 @@ CPX *Mixer::ProcessBlock(CPX *in)
 		//nco->nextSample(osc);
 		//This is executed at the highest sample rate and every usec counts
 		//Pulled code from NCO for performance gain
-		osc.re = lastOsc.re * oscCos - lastOsc.im * oscSin;
-		osc.im = lastOsc.re * oscSin + lastOsc.im * oscCos;
+		osc.re = m_lastOsc.re * m_oscCos - m_lastOsc.im * m_oscSin;
+		osc.im = m_lastOsc.re * m_oscSin + m_lastOsc.im * m_oscCos;
 		//oscGn is used to account for variations in the amplitude output as time increases
 		//Since oscillator variables are not bounded as they are in alternate implementation (fmod(...))
-		oscGn = 1.95 - (lastOsc.re * lastOsc.re + lastOsc.im * lastOsc.im);
-		lastOsc.re = oscGn * osc.re;
-		lastOsc.im = oscGn * osc.im;
+		oscGn = 1.95 - (m_lastOsc.re * m_lastOsc.re + m_lastOsc.im * m_lastOsc.im);
+		m_lastOsc.re = oscGn * osc.re;
+		m_lastOsc.im = oscGn * osc.im;
 #else
 		//Putting sin in re works with standard unfold, cos doesn't.  why?
 		osc.re = cos(oscTime);

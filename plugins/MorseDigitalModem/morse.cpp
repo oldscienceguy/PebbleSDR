@@ -594,14 +594,14 @@ CPX * Morse::processBlock(CPX *in)
     //Actual freq for CWU will be freq + modemFrequency for CWL will be freq -modemFrequency.
     //And we want actual freq to be at baseband
 	if (m_demodMode == DeviceInterface::dmCWL)
-		m_mixer->SetFrequency(-m_modemFrequency);
+		m_mixer->setFrequency(-m_modemFrequency);
 	else if (m_demodMode == DeviceInterface::dmCWU)
-		m_mixer->SetFrequency(m_modemFrequency);
+		m_mixer->setFrequency(m_modemFrequency);
     else
         //Other modes, like DIGU and DIGL will still work with cursor on signal, but we won't hear tones.  Feature?
-		m_mixer->SetFrequency(0);
+		m_mixer->setFrequency(0);
 
-	CPX *mixedBuf = m_mixer->ProcessBlock(m_workingBuf); //In place
+	CPX *mixedBuf = m_mixer->processBlock(m_workingBuf); //In place
 	int numModemSamples = m_decimate->process(mixedBuf,m_out,m_numSamples);
 
     //Now at lower modem rate with bandwidth set by modemDownConvert in constructor

@@ -279,7 +279,7 @@ bool Receiver::turnPowerOn()
 	m_testGoertzel->setTargetSampleRate(8000);
 	quint32 estN = m_testGoertzel->estNForShortestBit(5.0);
 	//estN = 512; //For testing
-	m_testGoertzel->setFreq(800, estN, 2, 2);
+	m_testGoertzel->setFreq(global->settings->m_modeOffset, estN, 2, 2);
 
     //Don't set title until we connect and start.
     //Some drivers handle multiple devices (RTL2832) and we need connection data
@@ -718,7 +718,7 @@ void Receiver::mixerChanged(int f)
 	m_mixerFrequency = f;
 
 	if (m_useDemodDecimator && m_mixer != NULL) {
-		m_mixer->SetFrequency(f);
+		m_mixer->setFrequency(f);
 		m_demod->resetDemod();
 	} else {
 		//Only if using downConvert
@@ -869,7 +869,7 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 			//We need a separated input/output buffer for downConvert
 			numStepSamples = m_downConvertWfm1.ProcessData(numStepSamples,nextStep,m_workingBuf);
 		} else {
-			nextStep = m_mixer->ProcessBlock(nextStep);
+			nextStep = m_mixer->processBlock(nextStep);
 			numStepSamples = m_demodWfmDecimator->process(nextStep, m_workingBuf, numStepSamples);
 		}
 
@@ -914,7 +914,7 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
         //Replaces Mixer.cpp
 			numStepSamples = m_downConvert1.ProcessData(numStepSamples, nextStep,m_workingBuf);
 		} else {
-			nextStep = m_mixer->ProcessBlock(nextStep);
+			nextStep = m_mixer->processBlock(nextStep);
 			numStepSamples = m_demodDecimator->process(nextStep, m_workingBuf, numStepSamples);
 		}
 		//global->perform.StopPerformance(1000);
@@ -939,8 +939,10 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 
 		//Restore gain lost in decimation
 		//https://www.intersil.com/content/dam/Intersil/documents/an94/an9401.pdf
-		//quint32 decimationLoss = m_demodDecimator->decBy2Stages();
-		//CPX::scaleCPX(nextStep,nextStep,DB::dBToAmplitude(15),numStepSamples);
+		quint32 decimationLoss = m_demodDecimator->decBy2Stages();
+		//3db per stage, but use 2db for some headroom
+		//Note: not clear to me if decimation affects time domain signal amplitude or just FFT power?
+		CPX::scaleCPX(nextStep,nextStep,DB::dBToAmplitude(decimationLoss * 2),numStepSamples);
 
 		//Create zoomed spectrum
 		//global->perform.StartPerformance("Signal Spectrum Zoomed");
@@ -984,15 +986,15 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 		//global->perform.StopPerformance(100);
 
 
-        //Data decoders come before demod
-		if (m_iDigitalModem != NULL)
-			nextStep = m_iDigitalModem->processBlock(nextStep);
 
 		//global->perform.StartPerformance("Demod");
 		nextStep = m_demod->processBlock(nextStep, numStepSamples);
 		//global->perform.StopPerformance(100);
 
 		//audioCpx from here on
+		//Data decoders come before demod
+		if (m_iDigitalModem != NULL)
+			nextStep = m_iDigitalModem->processBlock(nextStep);
 
 		//Testing goertzel
 		double power;

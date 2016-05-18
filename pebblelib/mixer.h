@@ -12,24 +12,24 @@ class Mixer
 public:
 	Mixer(quint32 _sampleRate, quint32 _bufferSize);
 	~Mixer(void);
-	CPX * ProcessBlock(CPX *in);
-	void SetFrequency(double f);
+	CPX * processBlock(CPX *in);
+	void setFrequency(double f);
 private:
 	quint32 m_sampleRate;
 	quint32 m_numSamples;
 	CPX* m_out;
 
-	double frequency;
-	double gain; //Adjust for mixer loss so we keep constant gain
-	//NCO *nco;
-	//CPX *mix;
+	double m_frequency;
+	double m_gain; //Adjust for mixer loss so we keep constant gain
+	//NCO *m_nco;
+	//CPX *m_mix;
 
 	//Testing inline osc instead of calling NCO
-	double oscInc;
-	double oscCos;
-	double oscSin;
-	CPX lastOsc;
+	double m_oscInc;
+	double m_oscCos;
+	double m_oscSin;
+	CPX m_lastOsc;
 
-	double oscTime; //For alternate implementation
+	double m_oscTime; //For alternate implementation
 
 };
