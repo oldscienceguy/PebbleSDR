@@ -9,6 +9,7 @@
 #include "QTextEdit"
 #include "ui_data-morse.h"
 #include "../../pebblelib/fldigifilters.h"
+#include "movingavgfilter.h"
 #include "morsecode.h"
 #include "../../pebblelib/downconvert.h"
 //#include "demod.h"
@@ -16,21 +17,6 @@
 #include "../../pebblelib/digital_modem_interfaces.h"
 
 class Receiver;
-
-//Utility functions from fldigi
-inline double clamp(double x, double min, double max)
-{
-    return (x < min) ? min : ((x > max) ? max : x);
-}
-
-//Weight is the factor to weight the input when calculating the average
-//Weight=20: (input * 1/20) + average * (19/20) - Short average, only 20 loops to make average == steady input
-//Weight=800: (input * 1/800) + average * (799/800) - Long average, stead input would take 800 to == average
-inline double decayavg(double average, double input, double weight)
-{
-    if (weight <= 1.0) return input;
-    return input * (1.0 / weight) + average * (1.0 - (1.0 / weight));
-}
 
 //We need to inherit from QObject so we can filter events.
 //Remove if we eventually create a separate 'morse widget' object for UI
@@ -113,7 +99,7 @@ protected:
     void syncFilterWithWpm();
 
 	MorseCode m_morseCode;
-    void decode_stream(double value);
+
 	double m_agc_peak; // threshold for tone detection
 
     void init();
@@ -126,14 +112,14 @@ protected:
 
     //Filters
     const static int TRACKING_FILTER_SIZE = 16;
-	C_FIR_filter	*m_hilbert;   // Hilbert filter precedes sinc filter
-    //!fftfilt			*cw_FFT_filter; // sinc / matched filter
-	C_FIR_filter	*m_cw_FIR_filter; // linear phase finite impulse response filter
+	C_FIR_filter	*m_toneFilter; // linear phase finite impulse response filter
 
-	Cmovavg		*m_bitfilter;
+	//Smooths bit detection on rise and decay of tone
+	MovingAvgFilter	*m_avgBitPowerFilter;
 
     //Received CW speed can be fixed (set by user) or track actual dot/dash lengths being received
-	Cmovavg *m_trackingfilter;
+	//Smooths changes in threshold between dot and dash
+	MovingAvgFilter *m_avgThresholdFilter;
     void updateAdaptiveThreshold(quint32 idotUsec, quint32 idashUsec);
 
 	const int m_trackingWPMRange = 10; //Tracking range for CWTRACK (WPM)
@@ -143,17 +129,12 @@ protected:
 
 	int m_bitfilterlen;
 
-	const bool m_useFFTFilter = false;
-
-	int m_filterFFTLen;
-
     //Use by NCO in mixer to mix cwToneFrequency
 	double		m_phaseacc;
 	double		m_FFTphase;
 	double		m_FIRphase;
 
 	double		m_FFTvalue;
-	double		m_FIRvalue;
 
 
     // Receive buffering

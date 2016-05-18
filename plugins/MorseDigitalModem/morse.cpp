@@ -99,10 +99,9 @@ Morse::Morse()
 {
 	m_dataUi = NULL;
 	m_workingBuf = NULL;
-	m_hilbert = NULL;
-	m_cw_FIR_filter = NULL;
-	m_bitfilter = NULL;
-	m_trackingfilter = NULL;
+	m_toneFilter = NULL;
+	m_avgBitPowerFilter = NULL;
+	m_avgThresholdFilter = NULL;
 
 }
 
@@ -149,28 +148,19 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 	m_FFTphase = 0.0;
 	m_FIRphase = 0.0;
 	m_FFTvalue = 0.0;
-	m_FIRvalue = 0.0;
 
 	m_agc_peak = 1.0;
 
-	m_hilbert = new C_FIR_filter(); // hilbert transform used by FFT filter
-	m_hilbert->init_hilbert(37, 1);
-
-	m_cw_FIR_filter = new C_FIR_filter();
+	m_toneFilter = new C_FIR_filter();
     //Filter is at modem sample rate
 	double f = m_wpmSpeedInit / (1.2 * m_modemSampleRate);
-	m_cw_FIR_filter->init_lowpass (CW_FIRLEN, DEC_RATIO, f);
-
-    //overlap and add filter length should be a factor of 2
-    // low pass implementation
-	m_filterFFTLen = 4096;
-    //!!cw_FFT_filter = new fftfilt(progdefaults.CWspeed/(1.2 * modemSampleRate), FilterFFTLen);
+	m_toneFilter->init_lowpass (CW_FIRLEN, DEC_RATIO, f);
 
     // bit filter based on 10 msec rise time of CW waveform
 	int bfv = (int)(m_modemSampleRate * .010 / DEC_RATIO); //8k*.01/16 = 5
-	m_bitfilter = new Cmovavg(bfv);
+	m_avgBitPowerFilter = new MovingAvgFilter(bfv);
 
-	m_trackingfilter = new Cmovavg(TRACKING_FILTER_SIZE);
+	m_avgThresholdFilter = new MovingAvgFilter(TRACKING_FILTER_SIZE);
 
     syncTiming();
 
@@ -197,11 +187,10 @@ Morse::~Morse()
 {
 	if (m_workingBuf != NULL) free (m_workingBuf);
 
-	if (m_hilbert) delete m_hilbert;
-	if (m_cw_FIR_filter) delete m_cw_FIR_filter;
+	if (m_toneFilter) delete m_toneFilter;
     //if (cw_FFT_filter) delete cw_FFT_filter;
-	if (m_bitfilter) delete m_bitfilter;
-	if (m_trackingfilter) delete m_trackingfilter;
+	if (m_avgBitPowerFilter) delete m_avgBitPowerFilter;
+	if (m_avgThresholdFilter) delete m_avgThresholdFilter;
 
 
 }
@@ -421,7 +410,7 @@ void Morse::syncFilterWithWpm()
         //	cw_FFT_filter->create_lpf(progdefaults.CWspeed/(1.2 * modemSampleRate));
         //	FFTphase = 0;
         //} else { // FIR filter
-			m_cw_FIR_filter->init_lowpass (CW_FIRLEN, DEC_RATIO , m_wpmSpeedCurrent / (1.2 * m_modemSampleRate));
+			m_toneFilter->init_lowpass (CW_FIRLEN, DEC_RATIO , m_wpmSpeedCurrent / (1.2 * m_modemSampleRate));
 			m_FIRphase = 0;
         //}
 
@@ -429,7 +418,6 @@ void Morse::syncFilterWithWpm()
 		m_FFTphase = 0.0;
 		m_FIRphase = 0.0;
 		m_FFTvalue = 0.0;
-		m_FIRvalue = 0.0;
 
 		m_agc_peak = 0;
     }
@@ -459,7 +447,7 @@ void Morse::init()
 	m_useNormalizingThreshold = true; //Fldigi mode
 	m_agc_peak = 0;
 	m_outputMode = CHAR_ONLY;
-	m_trackingfilter->reset();
+	m_avgThresholdFilter->reset();
     resetModemClock();
     resetDotDashBuf(); //So reset can refresh immediately
 	m_lastReceiveState = m_receiveState;
@@ -517,7 +505,7 @@ void Morse::updateAdaptiveThreshold(quint32 idotUsec, quint32 idashUsec)
 		dashUsec = m_usecDashInit;
 
     //Result is midway between last short and long mark, assumed to be dot and dash
-	m_usecAdaptiveThreshold = (quint32)m_trackingfilter->run((dashUsec + dotUsec) / 2);
+	m_usecAdaptiveThreshold = (quint32)m_avgThresholdFilter->newSample((dashUsec + dotUsec) / 2);
 
     //Current speed estimate
 	if (!m_lockWPM)
@@ -587,6 +575,7 @@ CPX * Morse::processBlock(CPX *in)
 {
 
     CPX z;
+	double tonePower;
 
     //If WPM changed in last block, dynamicall or by user, update filter with new speed
     syncFilterWithWpm();
@@ -626,22 +615,79 @@ CPX * Morse::processBlock(CPX *in)
 #endif
 		z = m_out[i] * 1.95; //A little gain - same as fldigi
 
+		//DEC_RATIO is the equivalent of N in Goertzel
         //cw_FIR_filter does MAC and returns 1 result every DEC_RATIO samples
         //LowPass filter establishes the detection bandwidth (freq)
         //and Detection time (DEC_RATIO)
         //If the LP filter passes the tone, we have detection
         //We need some sort of AGC here to get consistent tone thresholds
-		if (m_cw_FIR_filter->run ( z, z )) {
+		if (m_toneFilter->run ( z, z )) {
 
             // demodulate and get power in signal
-			m_FIRvalue = z.mag(); //sqrt sum of squares
+			tonePower = z.mag(); //sqrt sum of squares
             //or
-            //FIRvalue = z.sqrMag(); //just sum of squares
+			//tonePower = z.sqrMag(); //just sum of squares
 
             //Moving average to handle jitter during CW rise and fall periods
-			m_FIRvalue = m_bitfilter->run(m_FIRvalue);
+			tonePower = m_avgBitPowerFilter->newSample(tonePower);
+
             //Main logic for timing and character decoding
-			decode_stream(m_FIRvalue);
+			double thresholdUp;
+			double thresholdDown;
+
+			// Compute a variable threshold value for tone detection
+			// Fast attack and slow decay.
+			if (tonePower > m_agc_peak)
+				m_agc_peak = MovingAvgFilter::weightedAvg(m_agc_peak, tonePower, 20); //Input has more weight on increasing signal than decreasing
+			else
+				m_agc_peak = MovingAvgFilter::weightedAvg(m_agc_peak, tonePower, 800);
+
+			//metric is what we use to determine whether to squelch or not
+			//Also what could be displayed on 0-100 tuning bar
+			//Clamp to min max value, peak can never be higher or lower than this
+			m_squelchMetric = qBound(0.0, m_agc_peak * 2000 , 100.0);
+			//m_squelchMetric = qBound(0.0, m_agc_peak * 1000 , 100.0); //JSPR uses 1000, where does # come from?
+
+			//global->testBench->SendDebugTxt(QString().sprintf("V: %f A: %f, M: %f",value, agc_peak, metric));
+			//qDebug() << QString().sprintf("V: %f A: %f, M: %f",value, agc_peak, metric);
+
+			if (m_useNormalizingThreshold) {
+			// Calc threshold between rising and falling tones by normalizing value to agc_peak (Fldigi technique)
+				tonePower = m_agc_peak > 0 ? tonePower/m_agc_peak : 0;
+				thresholdUp = 0.60; //Fixed value because we normalize above
+				thresholdDown = 0.40;
+			} else {
+				//Super-Ratt and JSDR technique
+				//Divide agc_peak in thirds,  upper is rising, lower is falling, middle is stable
+				thresholdUp = m_agc_peak * 0.67;
+				thresholdDown = m_agc_peak * 0.33;
+			}
+
+			//Check squelch to avoid noise errors
+
+			if (!m_squelchEnabled || m_squelchMetric > m_squelchValue ) {
+				//State machine handles all transitions and decisions
+				//We just determine if value indicated key down or up status
+
+				// Power detection using hysterisis detector
+				// upward trend means tone starting
+				if (tonePower > thresholdUp) {
+					stateMachine(TONE_EVENT);
+				}
+
+				//Don't do anything if in the middle?  Prevents jitter that would occur if just compare with single value
+
+				// downward trend means tone stopping
+				if (tonePower < thresholdDown) {
+					stateMachine(NO_TONE_EVENT);
+				}
+
+			} else {
+				//Light in-squelch indicator (TBD)
+				//Keep timing
+				qDebug()<<"In squelch";
+			}
+
         }
 
 
@@ -652,65 +698,6 @@ CPX * Morse::processBlock(CPX *in)
     }
 
     return in;
-}
-
-//Called with value indicating level of tone detected
-void Morse::decode_stream(double value)
-{
-    double thresholdUp;
-    double thresholdDown;
-
-    // Compute a variable threshold value for tone detection
-    // Fast attack and slow decay.
-	if (value > m_agc_peak)
-		m_agc_peak = decayavg(m_agc_peak, value, 20); //Input has more weight on increasing signal than decreasing
-    else
-		m_agc_peak = decayavg(m_agc_peak, value, 800);
-
-    //metric is what we use to determine whether to squelch or not
-    //Also what could be displayed on 0-100 tuning bar
-	m_squelchMetric = clamp(m_agc_peak * 2000 , 0.0, 100.0); //Clamp to min max value, peak can never be higher or lower than this
-    //metric = clamp(agc_peak * 1000 , 0.0, 100.0); //JSPR uses 1000, where does # come from?
-
-    //global->testBench->SendDebugTxt(QString().sprintf("V: %f A: %f, M: %f",value, agc_peak, metric));
-    //qDebug() << QString().sprintf("V: %f A: %f, M: %f",value, agc_peak, metric);
-
-	if (m_useNormalizingThreshold) {
-    // Calc threshold between rising and falling tones by normalizing value to agc_peak (Fldigi technique)
-		value = m_agc_peak > 0 ? value/m_agc_peak : 0;
-        thresholdUp = 0.60; //Fixed value because we normalize above
-        thresholdDown = 0.40;
-    } else {
-        //Super-Ratt and JSDR technique
-        //Divide agc_peak in thirds,  upper is rising, lower is falling, middle is stable
-		thresholdUp = m_agc_peak * 0.67;
-		thresholdDown = m_agc_peak * 0.33;
-    }
-
-    //Check squelch to avoid noise errors
-
-	if (!m_squelchEnabled || m_squelchMetric > m_squelchValue ) {
-        //State machine handles all transitions and decisions
-        //We just determine if value indicated key down or up status
-
-        // Power detection using hysterisis detector
-        // upward trend means tone starting
-        if (value > thresholdUp) {
-            stateMachine(TONE_EVENT);
-        }
-
-        //Don't do anything if in the middle?  Prevents jitter that would occur if just compare with single value
-
-        // downward trend means tone stopping
-        if (value < thresholdDown) {
-            stateMachine(NO_TONE_EVENT);
-        }
-
-    } else {
-        //Light in-squelch indicator (TBD)
-        //Keep timing
-        qDebug()<<"In squelch";
-    }
 }
 
 
