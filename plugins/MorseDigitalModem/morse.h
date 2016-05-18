@@ -20,6 +20,45 @@
 
 class Receiver;
 
+//General purpose class for using incoming sample count for timing signals
+class SampleClock
+{
+public:
+	SampleClock(quint32 sampleRate);
+	~SampleClock();
+
+	//Call this on every new sample to update m_clock
+	void inline tick() {m_clock++;}
+
+	//Returns uSec delta between current clock and earlier clock
+	quint32 uSecToCurrent(quint32 earlierClock);
+
+	//Returns uSec delta between two clocks
+	quint32 uSecDelta(quint32 earlierClock, quint32 laterClock);
+
+	//Returns uSec from clock start
+	quint32 uSec();
+
+	//Returns current m_clock
+	quint32 inline clock() {return m_clock;}
+
+	//Starts everything over
+	void reset();
+
+	//Saves current clock for interval timing
+	void startInterval();
+	//Returns interval
+	quint32 uSecInterval();
+
+private:
+	quint32 m_sampleRate;
+	//quint32 can clock for 4294 sec (4,294,000,000 uSec) or 71 minutes
+	//So don't worry about wrap
+	quint32 m_clock;
+	quint32 m_startInterval;
+
+};
+
 //We need to inherit from QObject so we can filter events.
 //Remove if we eventually create a separate 'morse widget' object for UI
 class Morse : public QObject, public DigitalModemInterface
@@ -98,9 +137,6 @@ protected:
 	Decimator *m_decimate;
 	Mixer *m_mixer;
 
-    CPX mixer(CPX in);
-
-
     void syncFilterWithWpm();
 
 	MorseCode m_morseCode;
@@ -134,14 +170,6 @@ protected:
 
 	int m_bitfilterlen;
 
-    //Use by NCO in mixer to mix cwToneFrequency
-	double		m_phaseacc;
-	double		m_FFTphase;
-	double		m_FIRphase;
-
-	double		m_FFTvalue;
-
-
     // Receive buffering
 	const static int m_receiveCapacity = 256;
     //This holds dots and dashes as they are received, way longer than any letter or phrase
@@ -156,11 +184,7 @@ protected:
     //Tone timing
     //Modem clock ticks once for every sample, each tick represents 1/modemSampleRate second
     //Times tones and silence
-	const static int m_usecsPerSec = 1000000;	// Microseconds in a second
-    //All usec variable are quint32 because modemClock is quint32 and we don't want conversion errors
-    //quint32 is approx 71 minutes (70*60*USEC_PER_SEC)
-	quint32 m_modemClock; //!!Do we have to do anything special to handle overflow wrap back to 0?
-    quint32 modemClockToUsec(unsigned int earlier, unsigned int later);
+	SampleClock *m_sampleClock;
 
 	quint32 m_toneStart;		// Tone start timestamp
 	quint32 m_toneEnd;		// Tone end timestamp

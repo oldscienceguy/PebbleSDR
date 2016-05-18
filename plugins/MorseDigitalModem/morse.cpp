@@ -104,6 +104,7 @@ Morse::Morse()
 	m_avgThresholdFilter = NULL;
 	m_decimate = NULL;
 	m_mixer = NULL;
+	m_sampleClock = NULL;
 }
 
 void Morse::setSampleRate(int _sampleRate, int _sampleCount)
@@ -120,7 +121,6 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 
 	m_morseCode.init();
     resetDotDashBuf();
-	m_modemClock = 0; //Start timer over
 
 
     //Modem sample rate, device sample rate decimated to this before decoding
@@ -128,6 +128,10 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
     //See if we can decimate to this rate
 	int actualModemRate = m_decimate->buildDecimationChain(m_sampleRate, m_modemBandwidth, 8000);
 	m_modemSampleRate = actualModemRate;
+
+	if (m_sampleClock == NULL)
+		m_sampleClock = new SampleClock(m_modemSampleRate);
+	m_sampleClock->reset(); //Start timer over
 
     //Testing fixed limits
     //Determine shortest and longest mark we can time at this sample rate
@@ -149,11 +153,6 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
     //2 x usecDot
 	m_usecAdaptiveThreshold = 2 * DOT_MAGIC / m_wpmSpeedCurrent;
 	m_usecNoiseSpike = m_usecAdaptiveThreshold / 4;
-
-	m_phaseacc = 0.0;
-	m_FFTphase = 0.0;
-	m_FIRphase = 0.0;
-	m_FFTvalue = 0.0;
 
 	m_agc_peak = 1.0;
 
@@ -199,7 +198,7 @@ Morse::~Morse()
 	if (m_avgThresholdFilter != NULL) delete m_avgThresholdFilter;
 	if (m_decimate != NULL) delete m_decimate;
 	if (m_mixer != NULL) delete m_mixer;
-
+	if (m_sampleClock != NULL) delete m_sampleClock;
 }
 
 void Morse::setupDataUi(QWidget *parent)
@@ -408,41 +407,12 @@ filter returns result every DEC_RATIO samples
 void Morse::syncFilterWithWpm()
 {
     //If anything had changed from the defaults we started with, rest
-    //if (use_fft_filter != progdefaults.CWuse_fft_filter ||
 	if(	m_wpmSpeedCurrent != m_wpmSpeedFilter ) {
 
 		m_wpmSpeedFilter = m_wpmSpeedCurrent;
-
-        //if (use_fft_filter) { // FFT filter
-        //	cw_FFT_filter->create_lpf(progdefaults.CWspeed/(1.2 * modemSampleRate));
-        //	FFTphase = 0;
-        //} else { // FIR filter
-			m_toneFilter->init_lowpass (CW_FIRLEN, DEC_RATIO , m_wpmSpeedCurrent / (1.2 * m_modemSampleRate));
-			m_FIRphase = 0;
-        //}
-
-		m_phaseacc = 0.0;
-		m_FFTphase = 0.0;
-		m_FIRphase = 0.0;
-		m_FFTvalue = 0.0;
-
+		m_toneFilter->init_lowpass (CW_FIRLEN, DEC_RATIO , m_wpmSpeedCurrent / (1.2 * m_modemSampleRate));
 		m_agc_peak = 0;
     }
-}
-
-//Not used in fldigi, but there for CPX samples
-CPX Morse::mixer(CPX in)
-{
-	CPX z (cos(m_phaseacc), sin(m_phaseacc));
-    z = z * in;
-
-	m_phaseacc += TWOPI * m_modemFrequency / m_modemSampleRate;
-	if (m_phaseacc > M_PI)
-		m_phaseacc -= TWOPI;
-	else if (m_phaseacc < M_PI)
-		m_phaseacc += TWOPI;
-
-    return z;
 }
 
 void Morse::init()
@@ -459,20 +429,6 @@ void Morse::init()
     resetDotDashBuf(); //So reset can refresh immediately
 	m_lastReceiveState = m_receiveState;
 	m_receiveState = IDLE; //Will reset clock and dot dash
-}
-
-// Compare two timestamps, and return the difference between them in usecs.
-
-quint32 Morse::modemClockToUsec(unsigned int earlier, unsigned int later)
-{
-    quint32 usec = 0;
-    // Compare the timestamps.
-    // At 4 WPM, the dash length is 3*(1200000/4)=900,000 usecs, and
-    // the word gap is 2,100,000 usecs.
-    if (earlier < later) {
-		usec = (quint32) (((double) (later - earlier) * m_usecsPerSec) / m_modemSampleRate);
-    }
-    return usec;
 }
 
 //Recalcs all values that are speed related
@@ -552,7 +508,7 @@ void Morse::resetDotDashBuf()
 //Reset and sync all timing elements, usually called with resetDotDashBuf()
 void Morse::resetModemClock()
 {
-	m_modemClock = 0;
+	m_sampleClock->reset();
 	m_toneStart = 0;
 	m_toneEnd = 0;
 	m_usecMark = 0;
@@ -580,7 +536,6 @@ void Morse::resetModemClock()
 //My version of FIRprocess + rx_processing for Pebble
 CPX * Morse::processBlock(CPX *in)
 {
-
     CPX z;
 	double tonePower;
 
@@ -609,18 +564,8 @@ CPX * Morse::processBlock(CPX *in)
     //global->testBench->DisplayData(numModemSamples,this->out, modemSampleRate, PROFILE_5);
 
     for (int i = 0; i<numModemSamples; i++) {
-		m_modemClock++; //1 tick per sample
+		m_sampleClock->tick(); //1 tick per sample
 
-#if 0
-        //Mix to get modemFrequency at baseband so narrow filter can detect magnitude
-        z = CPX (cos(FIRphase), sin(FIRphase) ) * out[i];
-        z *= 1.95;
-        FIRphase += TWOPI * (double)modemFrequency / (double)modemSampleRate;
-        if (FIRphase > M_PI)
-            FIRphase -= TWOPI;
-        else if (FIRphase < M_PI)
-            FIRphase += TWOPI;
-#endif
 		z = m_out[i] * 1.95; //A little gain - same as fldigi
 
 		//DEC_RATIO is the equivalent of N in Goertzel
@@ -782,8 +727,8 @@ bool Morse::stateMachine(CW_EVENT event)
                 case NO_TONE_EVENT:
                     //Transition from mark to space
                     // Save the current timestamp so we can see how long tone was
-					m_toneEnd = m_modemClock;
-					m_usecMark = modemClockToUsec(m_toneStart, m_toneEnd);
+					m_toneEnd = m_sampleClock->clock();
+					m_usecMark = m_sampleClock->uSecDelta(m_toneStart, m_toneEnd);
                     // If the tone length is shorter than any noise cancelling
                     // threshold that has been set, then ignore this tone.
 					if (m_usecNoiseSpike > 0
@@ -827,7 +772,7 @@ bool Morse::stateMachine(CW_EVENT event)
                     break;
 
                 case NO_TONE_EVENT:
-					m_usecSpace = modemClockToUsec(m_toneEnd, m_modemClock); //Time from tone end to now
+					m_usecSpace = m_sampleClock->uSecToCurrent(m_toneEnd); //Time from tone end to now
 					if (!m_markHandled && m_usecSpace > m_usecElementThreshold) {
                         addMarkToDotDash();
 						m_markHandled = true;
@@ -866,7 +811,7 @@ bool Morse::stateMachine(CW_EVENT event)
                     break;
 
                 case NO_TONE_EVENT:
-					m_usecSpace = modemClockToUsec(m_toneEnd, m_modemClock); //Time from tone end to now
+					m_usecSpace = m_sampleClock->uSecToCurrent(m_toneEnd); //Time from tone end to now
                     //Anything waiting for output?
 					outStr = m_spaceTiming(false);
                     if (outStr != NULL) {
@@ -1055,7 +1000,7 @@ void Morse::dumpStateMachine(QString why)
 
 	qDebug()<<"From state: "<<stateToString(m_lastReceiveState)<<" To state: "<<stateToString(m_receiveState);
 
-	qDebug()<<"Clock: "<<m_modemClock<<" ToneStart: "<<m_toneStart<<" ToneEnd: "<<m_toneEnd;
+	qDebug()<<"Clock: "<<m_sampleClock->clock()<<" ToneStart: "<<m_toneStart<<" ToneEnd: "<<m_toneEnd;
 	qDebug()<<"Timing: Dot: "<<m_usecDotCurrent<<" Dash: "<<m_usecDashCurrent<<" Threshold: "<<m_usecAdaptiveThreshold<<" Element: "<<m_usecMark<<" Silence: "<<m_usecSpace;
 	qDebug()<<"Last Mark: "<<m_usecLastMark<<" Last Space: "<<m_usecLastSpace;
 	qDebug()<<"WPM: "<<m_wpmSpeedCurrent;
@@ -1232,3 +1177,49 @@ CWIN8    TXA              ;PUT CHAR IN ACCUM
          AST   80
 
 */
+
+//Returns uSec between clocks
+SampleClock::SampleClock(quint32 sampleRate)
+{
+	m_sampleRate = sampleRate;
+}
+
+SampleClock::~SampleClock()
+{
+
+}
+
+quint32 SampleClock::uSecToCurrent(quint32 earlierClock)
+{
+	return uSecDelta(earlierClock, m_clock);
+}
+
+quint32 SampleClock::uSecDelta(quint32 earlierClock, quint32 laterClock)
+{
+	if (earlierClock >= laterClock)
+		return 0; //earlier can't be > later
+	quint64 delta = ((double)(laterClock - earlierClock) * 1.0e6) / m_sampleRate;
+	return delta;
+}
+
+quint32 SampleClock::uSec()
+{
+	return uSecDelta(0, m_clock);
+}
+
+void SampleClock::reset()
+{
+	m_clock = 0;
+	m_startInterval = 0;
+}
+
+void SampleClock::startInterval()
+{
+	m_startInterval = m_clock;
+}
+
+quint32 SampleClock::uSecInterval()
+{
+	//Don't reset interval so we can call again to compare
+	return uSecDelta(m_startInterval, m_clock);
+}
