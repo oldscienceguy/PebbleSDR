@@ -126,7 +126,8 @@ SOURCES += pebblelib.cpp \
     decimator.cpp \
     goertzel.cpp \
     movingavgfilter.cpp \
-    nco.cpp
+    nco.cpp \
+    mixer.cpp
 
 HEADERS += pebblelib.h\
     pebblelib_global.h \
@@ -166,7 +167,8 @@ HEADERS += pebblelib.h\
     decimator.h \
     goertzel.h \
     movingavgfilter.h \
-    nco.h
+    nco.h \
+    mixer.h
 
 DISTFILES += \
     gpl.html
