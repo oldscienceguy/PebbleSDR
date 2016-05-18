@@ -12,6 +12,8 @@
 #include "movingavgfilter.h"
 #include "morsecode.h"
 #include "../../pebblelib/downconvert.h"
+#include "decimator.h"
+#include "mixer.h"
 //#include "demod.h"
 #include <QMutex>
 #include "../../pebblelib/digital_modem_interfaces.h"
@@ -93,9 +95,12 @@ protected:
 	QMutex m_outputBufMutex;
 	bool m_outputOn;
 
-	CDownConvert m_modemDownConvert; //Get to modem rate and mix
+	Decimator *m_decimate;
+	Mixer *m_mixer;
 
     CPX mixer(CPX in);
+
+
     void syncFilterWithWpm();
 
 	MorseCode m_morseCode;

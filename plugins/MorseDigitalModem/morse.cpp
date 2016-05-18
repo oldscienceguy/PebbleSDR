@@ -102,7 +102,8 @@ Morse::Morse()
 	m_toneFilter = NULL;
 	m_avgBitPowerFilter = NULL;
 	m_avgThresholdFilter = NULL;
-
+	m_decimate = NULL;
+	m_mixer = NULL;
 }
 
 void Morse::setSampleRate(int _sampleRate, int _sampleCount)
@@ -112,6 +113,11 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 	m_out = new CPX[m_numSamples];
 	m_workingBuf = CPX::memalign(m_numSamples);
 
+	if (m_decimate == NULL)
+		m_decimate = new Decimator(_sampleRate, _sampleCount);
+	if (m_mixer == NULL)
+		m_mixer = new Mixer(_sampleRate, _sampleCount);
+
 	m_morseCode.init();
     resetDotDashBuf();
 	m_modemClock = 0; //Start timer over
@@ -120,7 +126,7 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
     //Modem sample rate, device sample rate decimated to this before decoding
 	m_modemBandwidth = 1000; //8000; //Desired bandwidth, not sample rate
     //See if we can decimate to this rate
-	int actualModemRate = m_modemDownConvert.SetDataRate(m_sampleRate,m_modemBandwidth);
+	int actualModemRate = m_decimate->buildDecimationChain(m_sampleRate, m_modemBandwidth, 8000);
 	m_modemSampleRate = actualModemRate;
 
     //Testing fixed limits
@@ -187,11 +193,12 @@ Morse::~Morse()
 {
 	if (m_workingBuf != NULL) free (m_workingBuf);
 
-	if (m_toneFilter) delete m_toneFilter;
+	if (m_toneFilter != NULL) delete m_toneFilter;
     //if (cw_FFT_filter) delete cw_FFT_filter;
-	if (m_avgBitPowerFilter) delete m_avgBitPowerFilter;
-	if (m_avgThresholdFilter) delete m_avgThresholdFilter;
-
+	if (m_avgBitPowerFilter != NULL) delete m_avgBitPowerFilter;
+	if (m_avgThresholdFilter != NULL) delete m_avgThresholdFilter;
+	if (m_decimate != NULL) delete m_decimate;
+	if (m_mixer != NULL) delete m_mixer;
 
 }
 
@@ -587,15 +594,16 @@ CPX * Morse::processBlock(CPX *in)
     //Actual freq for CWU will be freq + modemFrequency for CWL will be freq -modemFrequency.
     //And we want actual freq to be at baseband
 	if (m_demodMode == DeviceInterface::dmCWL)
-		m_modemDownConvert.SetFrequency(-m_modemFrequency);
+		m_mixer->SetFrequency(-m_modemFrequency);
 	else if (m_demodMode == DeviceInterface::dmCWU)
-		m_modemDownConvert.SetFrequency(m_modemFrequency);
+		m_mixer->SetFrequency(m_modemFrequency);
     else
         //Other modes, like DIGU and DIGL will still work with cursor on signal, but we won't hear tones.  Feature?
-		m_modemDownConvert.SetFrequency(0);
+		m_mixer->SetFrequency(0);
 
-    //!!Bug - SampleRate 44100 (wav file) to 8000 should reduce sample size by 5.5, but is still 2048
-	int numModemSamples = m_modemDownConvert.ProcessData(m_numSamples, m_workingBuf, this->m_out);
+	CPX *mixedBuf = m_mixer->ProcessBlock(m_workingBuf); //In place
+	int numModemSamples = m_decimate->process(mixedBuf,m_out,m_numSamples);
+
     //Now at lower modem rate with bandwidth set by modemDownConvert in constructor
     //Verify that testbench post banpass signal looks the same, just at modemSampleRate
     //global->testBench->DisplayData(numModemSamples,this->out, modemSampleRate, PROFILE_5);
