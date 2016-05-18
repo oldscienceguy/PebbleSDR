@@ -2,8 +2,12 @@
 #include "gpl.h"
 #include "mixer.h"
 
-Mixer::Mixer(quint32 _sampleRate, quint32 _bufferSize):ProcessStep(_sampleRate,_bufferSize)
+Mixer::Mixer(quint32 _sampleRate, quint32 _bufferSize)
 {
+	m_sampleRate = _sampleRate;
+	m_numSamples = _bufferSize;
+
+	m_out = CPX::memalign(m_numSamples);
 
 	//nco = new NCO(_sampleRate,_bufferSize);
 	SetFrequency(0);
@@ -14,6 +18,7 @@ Mixer::Mixer(quint32 _sampleRate, quint32 _bufferSize):ProcessStep(_sampleRate,_
 
 Mixer::~Mixer(void)
 {
+	delete m_out;
 }
 
 //This sets the frequency we want to mix, typically -48k to +48k
@@ -26,7 +31,7 @@ void Mixer::SetFrequency(double f)
 	frequency = -f;
 	//nco->setFrequency(f);
 
-	oscInc = TWOPI * frequency / sampleRate;
+	oscInc = TWOPI * frequency / m_sampleRate;
 	oscCos = cos(oscInc);
 	oscSin = sin(oscInc);
 	lastOsc.re = 1.0;
@@ -48,7 +53,7 @@ CPX *Mixer::ProcessBlock(CPX *in)
 	}
 	CPX osc;
 	double oscGn = 1;
-	for (int i = 0; i < numSamples; i++) {
+	for (quint32 i = 0; i < m_numSamples; i++) {
 #if 1
 		//nco->nextSample(osc);
 		//This is executed at the highest sample rate and every usec counts
@@ -69,8 +74,8 @@ CPX *Mixer::ProcessBlock(CPX *in)
 
 #endif
 		//out[i]= in[i] * osc;
-		out[i].convolution(osc, in[i]); //Inline code
+		m_out[i].convolution(osc, in[i]); //Inline code
 	}
 
-	return out;
+	return m_out;
 }
