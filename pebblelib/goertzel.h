@@ -70,9 +70,6 @@ public:
 
 	void setFreq(quint32 freq, quint32 N, quint32 attackCount, quint32 decayCount);
 
-	//Updates tone1Power and tone2Power
-	double updateTonePower(CPX *cpxIn);
-
 	//Updates threshold power between 0 and 1 bit
 	void updateToneThreshold();
 
@@ -91,10 +88,7 @@ private:
 	ToneBit m_lowCompareTone;
 	ToneBit m_highCompareTone;
 
-	quint32 m_externalSampleRate;
-	quint32 m_internalSampleRate;
-	int m_decimate;
-	int m_decimateCount;
+	quint32 m_sampleRate;
 
 	int m_numSamples;
 	ThresholdType m_thresholdType;

@@ -299,12 +299,8 @@ bool ToneBit::processSample(double x_n)
 
 Goertzel::Goertzel(quint32 sampleRate, quint32 numSamples)
 {
-	m_externalSampleRate  = sampleRate;
-	m_internalSampleRate = m_externalSampleRate; //No decimation for now
+	m_sampleRate  = sampleRate;
 	m_numSamples = numSamples;
-
-	m_decimate = 1;
-	m_decimateCount = 0;
 
 	m_thresholdType = TH_COMPARE;
 	m_compareThreshold = 4.0; //6db
@@ -380,7 +376,7 @@ quint32 Goertzel::estNForShortestBit(double msShortestBit)
 {
 	//How many ms does each sample represent?
 	//ie for 8k sample rate and 2048 buffer, each sample is .125ms
-	double msPerSample = 1e3 / m_internalSampleRate; //result in ms, not seconds
+	double msPerSample = 1e3 / m_sampleRate; //result in ms, not seconds
 	//N has to be less than the shortest 'bit' or we lose data
 	//ie maxN for 120wpm morse = 10ms / .125ms = 80
 	return msShortestBit / msPerSample;
@@ -391,28 +387,14 @@ quint32 Goertzel::estNForBinBandwidth(quint32 bandwidth)
 {
 	//N has to be large enough for desired bandwidth
 	//ie minN for bandwidth of 100 = 100 / 3.90 = 25.6
-	double binWidth = (m_internalSampleRate / (m_numSamples/m_decimate));
+	double binWidth = m_sampleRate / m_numSamples;
 	return bandwidth / binWidth;
 }
 
 void Goertzel::setTargetSampleRate(quint32 targetSampleRate)
 {
-	//Find internal sample rate closest to intSampleRate, but with even decimation factor
-	quint32 dec = m_externalSampleRate / targetSampleRate;
-	//We process sample by sample cross buffer, so decimate can be any integer
-	m_decimate = dec;
-#if 0
-	//m_decimate = dec + (dec % 2);
-
-	if (dec > 2)
-		//Round up to nearest power of 2 so we can decimae numSamples evenly
-		m_decimate =  pow(2,(int(log2(dec-1))+1));
-	else
-		m_decimate = 2;
-#endif
-
-	m_internalSampleRate = m_externalSampleRate / m_decimate;
-
+	//Testing without decimation, caller decimates
+	m_sampleRate = targetSampleRate;
 }
 
 void Goertzel::setFreq(quint32 freq, quint32 N, quint32 attackCount, quint32 decayCount)
@@ -447,10 +429,10 @@ void Goertzel::setFreq(quint32 freq, quint32 N, quint32 attackCount, quint32 dec
 		(2) Results at the edge of each bin are in-accurate without windowing
 		(3) Results right between 2 bins give equal results for each bin
 	*/
-	m_mainTone.setFreq(freq, N, m_internalSampleRate);
+	m_mainTone.setFreq(freq, N, m_sampleRate);
 	quint32 bwDelta = m_mainTone.m_bandwidth;
-	m_highCompareTone.setFreq(freq + bwDelta, N, m_internalSampleRate);
-	m_lowCompareTone.setFreq(freq - bwDelta, N, m_internalSampleRate);
+	m_highCompareTone.setFreq(freq + bwDelta, N, m_sampleRate);
+	m_lowCompareTone.setFreq(freq - bwDelta, N, m_sampleRate);
 	//KA7OEI differential goertzel algorithm compares 5% below and 4% above bins
 	//m_lowCompareTone.setFreq(freq * 0.95, N, m_internalSampleRate);
 	//m_highCompareTone.setFreq(freq * 1.04, N, m_internalSampleRate);
@@ -570,13 +552,7 @@ bool Goertzel::debounce(bool aboveThreshold)
 //3 states: Not enough samples for result, result below threshold, result above threshold
 bool Goertzel::processSample(double x_n, double &power)
 {
-	//We decimate here so caller doesn't need to know details
-	//Ignore samples between decimation
-	if (++m_decimateCount % m_decimate > 0) {
-		power = 0;
-		return false;
-	}
-	m_decimateCount = 0;
+	//Caller is responsible for decimation, if needed
 
 	//All the tones have the same N, just check the result of the main
 	bool result = m_mainTone.processSample(x_n);
@@ -612,26 +588,6 @@ bool Goertzel::processSample(double x_n, double &power)
 #endif
 	} //End if (result)
 	return false; //Needs more samples
-}
-
-//For future use if we need to detect all the bits in a buffer at once
-double Goertzel::updateTonePower(CPX *cpxIn)
-{
-	if (m_mainTone.m_bitSamples == 0 || m_mainTone.m_freq == 0)
-		//Not initialized
-		return 0;
-
-	//We make sure that decimate an even divisor of m_numSamples
-	for (int i = 0; i < m_numSamples; i += m_decimate) {
-		//Todo: Do we need decimation filtering here?
-		double power;
-		bool result = processSample(cpxIn[i].re, power);
-		if (result) {
-			//power == 0 or power > 0 for on-off
-			//Save bits
-		}
-	}
-	return 0;
 }
 
 /*
