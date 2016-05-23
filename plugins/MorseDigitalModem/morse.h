@@ -8,12 +8,14 @@
 #include "qframe"
 #include "QTextEdit"
 #include "ui_data-morse.h"
+//Todo: replace with Fir
 #include "../../pebblelib/fldigifilters.h"
 #include "movingavgfilter.h"
 #include "morsecode.h"
-#include "../../pebblelib/downconvert.h"
+//#include "../../pebblelib/downconvert.h"
 #include "decimator.h"
 #include "mixer.h"
+#include "goertzel.h"
 //#include "demod.h"
 #include <QMutex>
 #include "../../pebblelib/digital_modem_interfaces.h"
@@ -148,7 +150,7 @@ protected:
     //Fldigi samplerate is 8x
     //Filter does MAC every DEC_RATIO samples
 
-    const static int DEC_RATIO	= 16; //Decimation Ratio replaced with modemDecimateFactor
+	const static int m_bitSamples	= 16; //Decimation Ratio replaced with modemDecimateFactor
     const static int CW_FIRLEN = 512;
 
     //Filters
@@ -156,7 +158,7 @@ protected:
 	C_FIR_filter	*m_toneFilter; // linear phase finite impulse response filter
 
 	//Smooths bit detection on rise and decay of tone
-	MovingAvgFilter	*m_avgBitPowerFilter;
+	MovingAvgFilter	*m_jitterFilter;
 
     //Received CW speed can be fixed (set by user) or track actual dot/dash lengths being received
 	//Smooths changes in threshold between dot and dash
@@ -246,6 +248,9 @@ protected:
 
     QString stateToString(DECODE_STATE state);
     void dumpStateMachine(QString why);
+
+	bool m_useGoertzel;
+	Goertzel *m_goertzel;
 };
 
 #endif // MORSE_H

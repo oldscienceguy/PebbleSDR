@@ -4,7 +4,7 @@
 #include "QPainter"
 #include "QDebug"
 #include "QEvent"
-//#include "receiver.h"
+#include "db.h"
 
 /*
   CW Notes for reference
@@ -100,11 +100,15 @@ Morse::Morse()
 	m_dataUi = NULL;
 	m_workingBuf = NULL;
 	m_toneFilter = NULL;
-	m_avgBitPowerFilter = NULL;
+	m_jitterFilter = NULL;
 	m_avgThresholdFilter = NULL;
 	m_decimate = NULL;
 	m_mixer = NULL;
 	m_sampleClock = NULL;
+	m_goertzel = NULL;
+	m_useGoertzel = false;
+	m_sampleRate = 0;
+	m_numSamples = 0;
 }
 
 void Morse::setSampleRate(int _sampleRate, int _sampleCount)
@@ -156,14 +160,25 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 
 	m_agc_peak = 1.0;
 
-	m_toneFilter = new C_FIR_filter();
-    //Filter is at modem sample rate
-	double f = m_wpmSpeedInit / (1.2 * m_modemSampleRate);
-	m_toneFilter->init_lowpass (CW_FIRLEN, DEC_RATIO, f);
+	// bit filter based on 10 msec rise time of CW waveform
+	int jitterCount = (int)(m_modemSampleRate * .010 / m_bitSamples); //8k*.01/16 = 5
+	m_jitterFilter = new MovingAvgFilter(jitterCount);
 
-    // bit filter based on 10 msec rise time of CW waveform
-	int bfv = (int)(m_modemSampleRate * .010 / DEC_RATIO); //8k*.01/16 = 5
-	m_avgBitPowerFilter = new MovingAvgFilter(bfv);
+	if (!m_useGoertzel) {
+		m_toneFilter = new C_FIR_filter();
+		//Filter is at modem sample rate
+		double f = m_wpmSpeedInit / (1.2 * m_modemSampleRate);
+		m_toneFilter->init_lowpass (CW_FIRLEN, m_bitSamples, f);
+	} else {
+		if (m_goertzel == NULL)
+			m_goertzel = new Goertzel(_sampleRate, _sampleCount);
+		m_goertzel->setTargetSampleRate(m_modemSampleRate);
+		//Todo: computer N based on WPM
+		//N=50 100bw N=25 200bw @5512 SR
+		//50 too long for timing?
+		m_goertzel->setFreq(m_modemFrequency, 16, 3);
+	}
+
 
 	m_avgThresholdFilter = new MovingAvgFilter(TRACKING_FILTER_SIZE);
 
@@ -171,7 +186,6 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 
 	m_demodMode = DeviceInterface::dmCWL;
 	m_outputBufIndex = 0;
-
 
     init();
 
@@ -194,11 +208,12 @@ Morse::~Morse()
 
 	if (m_toneFilter != NULL) delete m_toneFilter;
     //if (cw_FFT_filter) delete cw_FFT_filter;
-	if (m_avgBitPowerFilter != NULL) delete m_avgBitPowerFilter;
+	if (m_jitterFilter != NULL) delete m_jitterFilter;
 	if (m_avgThresholdFilter != NULL) delete m_avgThresholdFilter;
 	if (m_decimate != NULL) delete m_decimate;
 	if (m_mixer != NULL) delete m_mixer;
 	if (m_sampleClock != NULL) delete m_sampleClock;
+	if (m_goertzel != NULL) delete m_goertzel;
 }
 
 void Morse::setupDataUi(QWidget *parent)
@@ -217,9 +232,9 @@ void Morse::setupDataUi(QWidget *parent)
 		m_dataUi = new Ui::dataMorse();
 		m_dataUi->setupUi(parent);
 
-		m_dataUi->dataBar->setValue(0);
-		m_dataUi->dataBar->setMin(0);
-		m_dataUi->dataBar->setMax(10);
+		m_dataUi->dataBar->setValue(DB::minDb);
+		m_dataUi->dataBar->setMin(DB::minDb);
+		m_dataUi->dataBar->setMax(DB::maxDb);
 		m_dataUi->dataBar->setNumTicks(10);
 		m_dataUi->dataBar->start();
 
@@ -410,7 +425,8 @@ void Morse::syncFilterWithWpm()
 	if(	m_wpmSpeedCurrent != m_wpmSpeedFilter ) {
 
 		m_wpmSpeedFilter = m_wpmSpeedCurrent;
-		m_toneFilter->init_lowpass (CW_FIRLEN, DEC_RATIO , m_wpmSpeedCurrent / (1.2 * m_modemSampleRate));
+		if (!m_useGoertzel)
+			m_toneFilter->init_lowpass (CW_FIRLEN, m_bitSamples , m_wpmSpeedCurrent / (1.2 * m_modemSampleRate));
 		m_agc_peak = 0;
     }
 }
@@ -536,8 +552,9 @@ void Morse::resetModemClock()
 //My version of FIRprocess + rx_processing for Pebble
 CPX * Morse::processBlock(CPX *in)
 {
-    CPX z;
+	CPX cpxFilter;
 	double tonePower;
+	double meterValue = -120;
 
     //If WPM changed in last block, dynamicall or by user, update filter with new speed
     syncFilterWithWpm();
@@ -556,8 +573,14 @@ CPX * Morse::processBlock(CPX *in)
         //Other modes, like DIGU and DIGL will still work with cursor on signal, but we won't hear tones.  Feature?
 		m_mixer->setFrequency(0);
 
-	CPX *mixedBuf = m_mixer->processBlock(m_workingBuf); //In place
-	int numModemSamples = m_decimate->process(mixedBuf,m_out,m_numSamples);
+	int numModemSamples;
+	if (!m_useGoertzel) {
+		CPX *mixedBuf = m_mixer->processBlock(m_workingBuf); //In place
+		numModemSamples = m_decimate->process(mixedBuf,m_out,m_numSamples);
+	} else {
+		//Mixer not used for Goertzel
+		numModemSamples = m_decimate->process(m_workingBuf,m_out,m_numSamples);
+	}
 
     //Now at lower modem rate with bandwidth set by modemDownConvert in constructor
     //Verify that testbench post banpass signal looks the same, just at modemSampleRate
@@ -566,89 +589,104 @@ CPX * Morse::processBlock(CPX *in)
     for (int i = 0; i<numModemSamples; i++) {
 		m_sampleClock->tick(); //1 tick per sample
 
-		z = m_out[i] * 1.95; //A little gain - same as fldigi
-
-		//DEC_RATIO is the equivalent of N in Goertzel
-        //cw_FIR_filter does MAC and returns 1 result every DEC_RATIO samples
+		//m_bitSamples is the equivalent of N in Goertzel
+		//cw_FIR_filter does MAC and returns 1 result every m_bitSamples samples
         //LowPass filter establishes the detection bandwidth (freq)
-        //and Detection time (DEC_RATIO)
+		//and Detection time (m_bitSamples)
         //If the LP filter passes the tone, we have detection
         //We need some sort of AGC here to get consistent tone thresholds
-		if (m_toneFilter->run ( z, z )) {
+		bool result;
+		if (!m_useGoertzel) {
+			result = m_toneFilter->run (m_out[i], cpxFilter );
+			//toneFilter returns cpx, gertzel returns power
+			tonePower = DB::power(cpxFilter);
+			if (result) {
 
-            // demodulate and get power in signal
-			tonePower = z.mag(); //sqrt sum of squares
-            //or
-			//tonePower = z.sqrMag(); //just sum of squares
+				//Moving average to handle jitter during CW rise and fall periods
+				tonePower = m_jitterFilter->newSample(tonePower);
 
-            //Moving average to handle jitter during CW rise and fall periods
-			tonePower = m_avgBitPowerFilter->newSample(tonePower);
+				//Main logic for timing and character decoding
+				double thresholdUp;
+				double thresholdDown;
 
-            //Main logic for timing and character decoding
-			double thresholdUp;
-			double thresholdDown;
+				// Compute a variable threshold value for tone detection
+				// Fast attack and slow decay.
+				if (tonePower > m_agc_peak)
+					m_agc_peak = MovingAvgFilter::weightedAvg(m_agc_peak, tonePower, 20); //Input has more weight on increasing signal than decreasing
+				else
+					m_agc_peak = MovingAvgFilter::weightedAvg(m_agc_peak, tonePower, 800);
 
-			// Compute a variable threshold value for tone detection
-			// Fast attack and slow decay.
-			if (tonePower > m_agc_peak)
-				m_agc_peak = MovingAvgFilter::weightedAvg(m_agc_peak, tonePower, 20); //Input has more weight on increasing signal than decreasing
-			else
-				m_agc_peak = MovingAvgFilter::weightedAvg(m_agc_peak, tonePower, 800);
+				//metric is what we use to determine whether to squelch or not
+				//Also what could be displayed on 0-100 tuning bar
+				//Clamp to min max value, peak can never be higher or lower than this
+				m_squelchMetric = qBound(0.0, m_agc_peak * 2000 , 100.0);
+				//m_squelchMetric = qBound(0.0, m_agc_peak * 1000 , 100.0); //JSPR uses 1000, where does # come from?
 
-			//metric is what we use to determine whether to squelch or not
-			//Also what could be displayed on 0-100 tuning bar
-			//Clamp to min max value, peak can never be higher or lower than this
-			m_squelchMetric = qBound(0.0, m_agc_peak * 2000 , 100.0);
-			//m_squelchMetric = qBound(0.0, m_agc_peak * 1000 , 100.0); //JSPR uses 1000, where does # come from?
+				//global->testBench->SendDebugTxt(QString().sprintf("V: %f A: %f, M: %f",value, agc_peak, metric));
+				//qDebug() << QString().sprintf("V: %f A: %f, M: %f",value, agc_peak, metric);
 
-			//global->testBench->SendDebugTxt(QString().sprintf("V: %f A: %f, M: %f",value, agc_peak, metric));
-			//qDebug() << QString().sprintf("V: %f A: %f, M: %f",value, agc_peak, metric);
-
-			if (m_useNormalizingThreshold) {
-			// Calc threshold between rising and falling tones by normalizing value to agc_peak (Fldigi technique)
-				tonePower = m_agc_peak > 0 ? tonePower/m_agc_peak : 0;
-				thresholdUp = 0.60; //Fixed value because we normalize above
-				thresholdDown = 0.40;
-			} else {
-				//Super-Ratt and JSDR technique
-				//Divide agc_peak in thirds,  upper is rising, lower is falling, middle is stable
-				thresholdUp = m_agc_peak * 0.67;
-				thresholdDown = m_agc_peak * 0.33;
-			}
-
-			//Check squelch to avoid noise errors
-
-			if (!m_squelchEnabled || m_squelchMetric > m_squelchValue ) {
-				//State machine handles all transitions and decisions
-				//We just determine if value indicated key down or up status
-
-				// Power detection using hysterisis detector
-				// upward trend means tone starting
-				if (tonePower > thresholdUp) {
-					stateMachine(TONE_EVENT);
+				if (m_useNormalizingThreshold) {
+				// Calc threshold between rising and falling tones by normalizing value to agc_peak (Fldigi technique)
+					tonePower = m_agc_peak > 0 ? tonePower/m_agc_peak : 0;
+					thresholdUp = 0.60; //Fixed value because we normalize above
+					thresholdDown = 0.40;
+				} else {
+					//Super-Ratt and JSDR technique
+					//Divide agc_peak in thirds,  upper is rising, lower is falling, middle is stable
+					thresholdUp = m_agc_peak * 0.67;
+					thresholdDown = m_agc_peak * 0.33;
 				}
 
-				//Don't do anything if in the middle?  Prevents jitter that would occur if just compare with single value
+				//Check squelch to avoid noise errors
 
-				// downward trend means tone stopping
-				if (tonePower < thresholdDown) {
+				if (!m_squelchEnabled || m_squelchMetric > m_squelchValue ) {
+					//State machine handles all transitions and decisions
+					//We just determine if value indicated key down or up status
+
+					// Power detection using hysterisis detector
+					// upward trend means tone starting
+					if (tonePower > thresholdUp) {
+						meterValue = DB::powerTodB(tonePower);
+						stateMachine(TONE_EVENT);
+					}
+
+					//Don't do anything if in the middle?  Prevents jitter that would occur if just compare with single value
+
+					// downward trend means tone stopping
+					if (tonePower < thresholdDown) {
+						meterValue = -120;
+						stateMachine(NO_TONE_EVENT);
+					}
+
+				} else {
+					//Light in-squelch indicator (TBD)
+					//Keep timing
+					qDebug()<<"In squelch";
+				}
+
+			}
+		} else {
+			//Using goertzel
+			result = m_goertzel->processSample(m_out[i].re, tonePower);
+			if (result) {
+				//Goertzel handles debounce and threshold
+				if (tonePower > 0) {
+					meterValue = DB::powerTodB(tonePower);
+					stateMachine (TONE_EVENT);
+				} else {
+					meterValue = -120;
 					stateMachine(NO_TONE_EVENT);
 				}
-
-			} else {
-				//Light in-squelch indicator (TBD)
-				//Keep timing
-				qDebug()<<"In squelch";
 			}
-
-        }
+		}
 
 
         //Its possible we get called right after dataUi has been been instantiated
         //since receive loop is running when CW window is opened
-		if (m_dataUi != NULL && m_dataUi->dataBar!=NULL)
-			m_dataUi->dataBar->setValue(m_squelchMetric); //Tuning bar
-    }
+		if (m_dataUi != NULL && m_dataUi->dataBar!=NULL) {
+			m_dataUi->dataBar->setValue(meterValue); //Tuning bar
+		}
+	} //End for(...numSamples...)
 
     return in;
 }
@@ -729,6 +767,7 @@ bool Morse::stateMachine(CW_EVENT event)
                     // Save the current timestamp so we can see how long tone was
 					m_toneEnd = m_sampleClock->clock();
 					m_usecMark = m_sampleClock->uSecDelta(m_toneStart, m_toneEnd);
+					//qDebug()<<"Mark:"<<m_usecMark;
                     // If the tone length is shorter than any noise cancelling
                     // threshold that has been set, then ignore this tone.
 					if (m_usecNoiseSpike > 0
