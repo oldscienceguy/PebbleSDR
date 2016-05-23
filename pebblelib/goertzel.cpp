@@ -303,17 +303,29 @@ Goertzel::Goertzel(quint32 sampleRate, quint32 numSamples)
 	m_numSamples = numSamples;
 
 	m_thresholdType = TH_COMPARE;
-	m_compareThreshold = 4.0; //6db
+	//Higher thresholds mean stonger signals are required
+	//Low thresholds will be more sensitive, but more susceptible to noise and spikes
+	//Tested:2, 4, 8(no)
+	m_compareThreshold = 4;
 
 	m_debounceCounter = 0;
 	m_attackCounter = 0;
 	m_decayCounter = 0;
 
 	m_lastTone = false;
+	m_mainJitterFilter = NULL;
+	m_highJitterFilter = NULL;
+	m_lowJitterFilter = NULL;
 }
 
 Goertzel::~Goertzel()
 {
+	if (m_mainJitterFilter != NULL)
+		delete m_mainJitterFilter;
+	if (m_lowJitterFilter != NULL)
+		delete m_lowJitterFilter;
+	if (m_highJitterFilter != NULL)
+		delete m_highJitterFilter;
 }
 
 void Goertzel::setThresholdType(Goertzel::ThresholdType t)
@@ -397,12 +409,19 @@ void Goertzel::setTargetSampleRate(quint32 targetSampleRate)
 	m_sampleRate = targetSampleRate;
 }
 
-void Goertzel::setFreq(quint32 freq, quint32 N, quint32 attackCount, quint32 decayCount)
+void Goertzel::setFreq(quint32 freq, quint32 N, quint32 jitterCount)
 {
-	m_attackCount = attackCount;
+	m_attackCount = jitterCount;
 	m_attackCounter = 0;
-	m_decayCount = decayCount;
+	m_decayCount = jitterCount;
 	m_decayCounter = 0;
+	m_jitterCount = jitterCount;
+
+	// bit filter based on 10 msec rise time of CW waveform
+	//int bfv = (int)(m_sampleRate * .010 / N); //8k*.01/16 = 5
+	m_mainJitterFilter = new MovingAvgFilter(m_jitterCount);
+	m_lowJitterFilter = new MovingAvgFilter(m_jitterCount);
+	m_highJitterFilter = new MovingAvgFilter(m_jitterCount);
 
 	/*
 
@@ -414,20 +433,24 @@ void Goertzel::setFreq(quint32 freq, quint32 N, quint32 attackCount, quint32 dec
 					  Low		    Main          High
 							  |---- 200 ----|
 				|---- 200 ----|             |----- 200 -----|
-			   500hz  600hz  700hz  800hz  900hz  1000hz  1100hz
+			   500hz  600hz  700hz  800hz  900hz  1000hz  1100hz   db over avg
 		  Mixer
-		---------------------------------------------
-		1: 8500      -31db         - 40db         - 43db
+		-----------------------------------------------------------------
+		1: 8500      -31db         - 40db         - 43db           4db
 		2: 8600      -28db(1)      -106db(2)      -106db(2)
-		3: 8700      -31db(3)      - 32db(3)      - 42db
+								   - 36db(4)      - 42.4(4)
+		3: 8700      -31db(3)      - 32db(3)      - 42db           4db
 		4: 8800      -78db(2)      - 28db(1)      - 78db(2)
-		5: 8900      -42db         - 32db(3)      - 31db(3)
+					 -36db(4)                     - -36db(4)       8db
+		5: 8900      -42db         - 32db(3)      - 31db(3)        4db
 		6: 9000      -78db(2)      - 78db(2)      - 28db(1)
-		7: 9100      -44db         - 40db         - 31db
+					 -43db(4)      - 36db(4)                       2db
+		7: 9100      -44db         - 40db         - 31db           4db
 		Test results with TestBench generating an 8khz signal at -40db, lsb, SR 8000, N=44
 		(1) Highest db of -28 is at center frequency for each bin, as expected.
-		(2) Results at the edge of each bin are in-accurate without windowing
+		(2) Results at the edge of each bin are not accurate without windowing
 		(3) Results right between 2 bins give equal results for each bin
+		(4) Estimated accurate result if we used windowing
 	*/
 	m_mainTone.setFreq(freq, N, m_sampleRate);
 	quint32 bwDelta = m_mainTone.m_bandwidth;
@@ -477,6 +500,7 @@ void Goertzel::setFreq(quint32 freq, quint32 N, quint32 attackCount, quint32 dec
 	D: 1 0 0 1  0 0 0 1  2 0 0 0  1 2 3 3
 	T: 0 0 1 1  1 1 1 1  0 0 1 1  1 1 0 0 Last tone is 1 bit longer than decayCount = 2
 */
+//Replaced with moving average filter, here for reference during testing
 bool Goertzel::debounce(bool aboveThreshold)
 {
 	bool isTone = false;
@@ -550,7 +574,7 @@ bool Goertzel::debounce(bool aboveThreshold)
 */
 //Process one sample at a time
 //3 states: Not enough samples for result, result below threshold, result above threshold
-bool Goertzel::processSample(double x_n, double &power)
+bool Goertzel::processSample(double x_n, double &retPower)
 {
 	//Caller is responsible for decimation, if needed
 
@@ -559,33 +583,43 @@ bool Goertzel::processSample(double x_n, double &power)
 	m_highCompareTone.processSample(x_n);
 	m_lowCompareTone.processSample(x_n);
 	m_mainTone.m_isValid = false;
-	power = 0;
+	retPower = 0;
+	double mainPower = 0;
+	double highPower = 0;
+	double lowPower = 0;
 	if (result) {
-		if (false)
-			qDebug()<<DB::powerTodB(m_lowCompareTone.m_power)<<" "<<
-					  DB::powerTodB(m_mainTone.m_power)<<" "<<
-					  DB::powerTodB(m_highCompareTone.m_power);
 		//If we have a detectable tone, it should be strong in the main bin compared with surrounding bins
-		double avgComparePower = (m_highCompareTone.m_power + m_lowCompareTone.m_power) / 2;
-#if 1
+
+		//Handle jitter
+		//Todo: move jitter process to ToneBit?
+		mainPower = m_mainJitterFilter->newSample(m_mainTone.m_power);
+		lowPower = m_lowJitterFilter->newSample(m_lowCompareTone.m_power);
+		highPower = m_highJitterFilter->newSample(m_highCompareTone.m_power);
+		//lowPower = m_lowCompareTone.m_power;
+		//highPower = m_highCompareTone.m_power;
+
+		double avgComparePower = (highPower + lowPower) / 2;
+
 		//KA7OEI differential goertzel
 		double compareRatio = 0;
 		if (avgComparePower > 0)
 			//Avoid dev by zero for Nan
-			compareRatio = m_mainTone.m_power / avgComparePower;
-		if (debounce(compareRatio > m_compareThreshold)) {
-			power = m_mainTone.m_power;
+			compareRatio = mainPower / avgComparePower;
+
+		if (false)
+			qDebug()<<"Low:"<<
+					  DB::powerTodB(lowPower)<<" Main:"<<
+					  DB::powerTodB(mainPower)<<" High:"<<
+					  DB::powerTodB(highPower)<<" Ratio:"<<
+					  compareRatio;
+
+		//if (debounce(compareRatio > m_compareThreshold)) {
+		if (compareRatio > m_compareThreshold) {
+			retPower = mainPower;
 		}
+
 		return true; //Valid result
 
-#else
-		//We want to see a 6db difference or 4x
-		m_threshold = avgComparePower * 16;
-		if (m_mainTone.m_power > m_threshold)
-			power = m_mainTone.m_power;
-		else
-			power = 0;
-#endif
 	} //End if (result)
 	return false; //Needs more samples
 }

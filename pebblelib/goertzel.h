@@ -7,7 +7,7 @@
 #include "QtGlobal"
 #include "cpx.h"
 #include "windowfunction.h"
-#include "qbitarray.h"
+#include "movingavgfilter.h"
 
 //All of the internal data needed to decode a tone
 //Allows us to specify multiple tones that can be decoded at the same time
@@ -68,7 +68,11 @@ public:
 	void setThreshold(double threshold);
 	double threshold(){return m_compareThreshold;}
 
-	void setFreq(quint32 freq, quint32 N, quint32 attackCount, quint32 decayCount);
+	void setTargetSampleRate(quint32 targetSampleRate);
+
+	//Set the size of the jitter filter (moving average)
+	//Typically based on the rise/fall time of the signal since that's where jitter usually occurs
+	void setFreq(quint32 freq, quint32 N, quint32 jitterCount);
 
 	//Updates threshold power between 0 and 1 bit
 	void updateToneThreshold();
@@ -80,13 +84,19 @@ public:
 	quint32 estNForShortestBit(double msShortestBit);
 	quint32 estNForBinBandwidth(quint32 bandwidth);
 
-	void setTargetSampleRate(quint32 targetSampleRate);
 	bool processSample(double x_n, double &power);
 private:
 
 	ToneBit m_mainTone;
+	MovingAvgFilter *m_mainJitterFilter;
+
 	ToneBit m_lowCompareTone;
+	MovingAvgFilter *m_lowJitterFilter;
+
 	ToneBit m_highCompareTone;
+	MovingAvgFilter *m_highJitterFilter;
+
+	quint32 m_jitterCount; //Size of moving average filter
 
 	quint32 m_sampleRate;
 
@@ -102,6 +112,7 @@ private:
 
 	quint32 m_debounceCounter;
 	bool debounce(bool aboveThreshold);
+
 };
 
 
