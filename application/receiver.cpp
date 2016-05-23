@@ -270,16 +270,16 @@ bool Receiver::turnPowerOn()
 	m_converterMode = m_sdr->get(DeviceInterface::Key_ConverterMode).toBool();
 	m_converterOffset = m_sdr->get(DeviceInterface::Key_ConverterOffset).toDouble();
 
+	//Test goertzel, 8x decimation for testing
+	m_testGoertzel = new Goertzel(m_demodSampleRate, m_demodFrames);
+	m_testGoertzel->setTargetSampleRate(m_demodSampleRate / 8);
+	quint32 estN = m_testGoertzel->estNForShortestBit(5.0);
+	//estN = 512; //For testing
+	m_testGoertzel->setFreq(global->settings->m_modeOffset, estN, 3);
+
 	//This should always be last because it starts samples flowing through the processBlocks
 	m_audioOutput->StartOutput(m_sdr->get(DeviceInterface::Key_OutputDeviceName).toString(), m_audioOutRate);
 	m_sdr->command(DeviceInterface::Cmd_Start,0);
-
-	//Test goertzel
-	m_testGoertzel = new Goertzel(m_demodSampleRate, m_demodFrames);
-	m_testGoertzel->setTargetSampleRate(8000);
-	quint32 estN = m_testGoertzel->estNForShortestBit(5.0);
-	//estN = 512; //For testing
-	m_testGoertzel->setFreq(global->settings->m_modeOffset, estN, 2, 2);
 
     //Don't set title until we connect and start.
     //Some drivers handle multiple devices (RTL2832) and we need connection data
@@ -999,7 +999,8 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 		//Testing goertzel
 		double power;
 		bool result;
-		for (int i=0; i<numStepSamples; i++) {
+		//hardwired decimation 8 for testing
+		for (int i=0; i<numStepSamples; i += 8) {
 			result = m_testGoertzel->processSample(nextStep[i].re, power);
 			if (result)
 				m_signalStrength->setExtValue(DB::powerTodB(power));
@@ -1107,21 +1108,26 @@ void Receiver::setDigitalModem(QString _name, QWidget *_parent)
 		m_iDigitalModem = NULL;
         return;
     }
-	m_iDigitalModem = m_plugins->GetModemInterface(_name);
-	if (m_iDigitalModem != NULL) {
+	//processIQ checks m_iDigitalModem != NULL to see if modem is active
+	//Don't set it until modem has been completely set up
+	DigitalModemInterface *modem = m_plugins->GetModemInterface(_name);
+	if (modem != NULL) {
 
         //Display array of CPX data in TestBench
-		connect(m_iDigitalModem->asQObject(), SIGNAL(testbench(int, CPX*, double, int)),global->testBench,SLOT(displayData(int, CPX*, double, int)));
+		connect(modem->asQObject(), SIGNAL(testbench(int, CPX*, double, int)),global->testBench,SLOT(displayData(int, CPX*, double, int)));
 
         //Display array of double data in TestBench
-		connect(m_iDigitalModem->asQObject(), SIGNAL(testbench(int, double*, double, int)),global->testBench,SLOT(displayData(int, double*, double, int)));
+		connect(modem->asQObject(), SIGNAL(testbench(int, double*, double, int)),global->testBench,SLOT(displayData(int, double*, double, int)));
 
-		connect(m_iDigitalModem->asQObject(), SIGNAL(addProfile(QString,int)), global->testBench,SLOT(addProfile(QString,int)));
+		connect(modem->asQObject(), SIGNAL(addProfile(QString,int)), global->testBench,SLOT(addProfile(QString,int)));
 
-		connect(m_iDigitalModem->asQObject(), SIGNAL(removeProfile(quint16)), global->testBench,SLOT(removeProfile(quint16)));
+		connect(modem->asQObject(), SIGNAL(removeProfile(quint16)), global->testBench,SLOT(removeProfile(quint16)));
 
-		m_iDigitalModem->setSampleRate(m_demodSampleRate, m_demodFrames);
-		m_iDigitalModem->setupDataUi(_parent);
+		modem->setSampleRate(m_demodSampleRate, m_demodFrames);
+		modem->setupDataUi(_parent);
+
+		//processIQ can start directing samples
+		m_iDigitalModem = modem;
     }
 
 }
