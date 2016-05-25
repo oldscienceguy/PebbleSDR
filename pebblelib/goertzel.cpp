@@ -353,34 +353,8 @@ void Goertzel::setThreshold(double threshold)
 
 	For morse code, the shortest 'bit' is 100ms @ 12wpm and 10ms @120wpm for example.  See morse.cpp
 	For morse code, typical bandwidths run from 50hz to 1000hz
+	See morse.cpp
 
-	(move to morse.cpp)
-	For reference and testing, these are correct values for 8khz sample rate (note doesn't change with fTone)
-	The more samples we process, the 'sharper' the filter but the more time per result
-
-	Tcw = 60/(wpm*50) //See morse.cpp for details
-	msPerSample = 1 / sampleRate, 1/8000 = .125ms
-	maxN = Tcw / msPerSample, any bigger and we miss Tcw's (aka bits)
-	N = maxN / 4, For better granularity 4 bits = 1 tcw
-	N must be an integer, truncate if necessary
-	bandwidth = sampleRate / N
-	Ideal freq is one that is centered in the bin, ie an even multiple of binWidth/2
-	Max  Tcw   Max       BW     Ideal
-	WPM  ms    N    N    for N  freq
-	-------------------------------
-	 20  60.0  480  120   66hz  792
-	 30  40.0  320   80  100hz  800 (Ideal)
-	 40  30.0  240   60  133hz  798
-	 50  24.0  192   48  166hz  830
-	 60  20.0  160   40  200hz  800 (Ideal)
-	 70  17.1  137   34  235hz  705
-	 80  15.0  120   30  266hz  798
-	 90  13.3  106   26  307hz  614 or 921 (bad choice)
-	100  12.0   96   24  333hz  666 or 999 (bad choice)
-	120  10.0   80   20  400hz  800  (Ideal - Good default to start auto wpm)
-	200   6.0   48   12  666hz  666 or 1332 (bad choice)
-	240   5.0   40   10  800hz  800 (Ideal)
-	300   4.0   32    8  1khz   500 or 1000 (bad choice)
 */
 
 //Returns an estimated N based on shortest bit length
