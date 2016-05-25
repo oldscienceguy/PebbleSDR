@@ -114,6 +114,9 @@ signals:
 
 
 protected:
+	//Max dots and dashes in a morse symbol
+	static const int m_maxMorseLen = 7;
+
     //From SignalProcessing
 	int m_numSamples;
 	int m_sampleRate;
@@ -137,6 +140,7 @@ protected:
 	bool m_outputOn;
 
 	Decimator *m_decimate;
+	int m_decimationRate;
 	Mixer *m_mixer;
 
     void syncFilterWithWpm();
@@ -150,11 +154,14 @@ protected:
     //Fldigi samplerate is 8x
     //Filter does MAC every DEC_RATIO samples
 
-	const static int m_bitSamples	= 16; //Decimation Ratio replaced with modemDecimateFactor
-    const static int CW_FIRLEN = 512;
 
     //Filters
-    const static int TRACKING_FILTER_SIZE = 16;
+	//
+	const static int m_lpFilterLen = 512;
+	//N = binWidth = #samples per bin
+	int m_filterSamplesPerResult; //For Fldigi algorithm
+	int m_goertzelSamplesPerResult; //For Goertzel algorithm
+
 	C_FIR_filter	*m_toneFilter; // linear phase finite impulse response filter
 
 	//Smooths bit detection on rise and decay of tone
@@ -162,7 +169,9 @@ protected:
 
     //Received CW speed can be fixed (set by user) or track actual dot/dash lengths being received
 	//Smooths changes in threshold between dot and dash
-	MovingAvgFilter *m_avgThresholdFilter;
+	//Used for moving average thresholdFilter, why isn't just always the same as m_bitSamples?
+	const static int m_thresholdFilterSize = 16;
+	MovingAvgFilter *m_thresholdFilter;
     void updateAdaptiveThreshold(quint32 idotUsec, quint32 idashUsec);
 
 	const int m_trackingWPMRange = 10; //Tracking range for CWTRACK (WPM)
@@ -170,7 +179,6 @@ protected:
 	const int m_upperWPMLimit = 50; // Upper RX limit (WPM)
 
 
-	int m_bitfilterlen;
 
     // Receive buffering
 	const static int m_receiveCapacity = 256;
@@ -220,7 +228,7 @@ protected:
 	quint32 m_usecDotCurrent;		// Length of a receive Dot, in Usec based on receiveSpeed
 	quint32 m_usecDashCurrent;		// Length of a receive Dash, in Usec based on receiveSpeed
     //Used to restore to base case when something changes or we get lost
-	const int m_wpmSpeedInit = 18;
+	const int m_wpmSpeedInit = 20;
 	quint32 m_usecDotInit; //Was cw_send_dot_length
 	quint32 m_usecDashInit;
 
@@ -228,7 +236,6 @@ protected:
 
 
     //Fastest we can handle at sample rate
-	quint32 m_usecPerSample;
 	quint32 m_usecLongestMark;
 	quint32 m_usecShortestMark;
     // Receiving parameters:

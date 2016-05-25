@@ -7,47 +7,21 @@
 #include "db.h"
 
 /*
-  CW Notes for reference
-  Tcw is basic unit of measurement in ms
-  Dash = 3 Tcw, Dot = 1Tcw, Element Space = 1 Tcw, Character Space = 3 Tcw, Word Space = 7 Tcw (min)
-  Standard for measuring WPM is to use the word "PARIS", which is exactly 50Tcw
-  So Tcw (ms) = 60 (sec) / (WPM * 50)
-  and WPM = 1200/Tcw(ms)
+	CW Notes for reference
+	Tcw is basic unit of measurement in ms
+	Dash = 3 Tcw, Dot = 1Tcw, Element Space = 1 Tcw, Character Space = 3 Tcw, Word Space = 7 Tcw (min)
+	Standard for measuring WPM is to use the word "PARIS", which is exactly 50Tcw
+	So Tcw (ms) = 60 (sec) / (WPM * 50)
+	and WPM = 1200/Tcw(ms)
 
-  Use DOT_MAGIC to convert WPM to/from usec is 1,200,000
-  DOT_MAGIC / WPM = usec per TCW
+	Use DOT_MAGIC to convert WPM to/from usec is 1,200,000
+	DOT_MAGIC / WPM = usec per TCW
 
-  Tcw for 12wpm = 60 / (12 * 50) = 60 / 600 = .100 sec  100ms
-  Tcw for 30wpm = 60 / 1500 = .040 40ms
-  Tcw for 120wpm = 60 / (120 * 50) = 60 / 6000 = .01 sec  10ms
+	Tcw for 12wpm = 60 / (12 * 50) = 60 / 600 = .100 sec  100ms
+	Tcw for 30wpm = 60 / 1500 = .040 40ms
+	Tcw for 120wpm = 60 / (120 * 50) = 60 / 6000 = .01 sec  10ms
 
-  The 'binWidth' in the Goertzel algorithm determines how many samples should be processed before returning a result.
-  The smaller the binWidth, the more samples we need to process.  See goertzel.cpp for detail
-  There is a potential trade off between binWidth and Tcw resolution
-  We need to make sure the 'timePerBin' (#samples per bin * timePerSample) syncs up with Tcw requirements
-
-  Each Goertzel 'bin' should be at least Tcw * 0.25, so we get at least 4 bins per Tcw
-  15wpm example
-  Sampling at 8khz, each sample is 1/8000 = .000125sec
-  for 20ms bin (25% of 80ms) we need to accumulate 160 samples, which also gives us a binWidth of 50hz, ie too sharp
-
-  30wpm example
-  for 10ms bin (25% of 40ms) we need to accumulate 80 samples, which also gives us a binWidth of 100hz, ie very sharp
-
-  60wpm example
-  for 5ms bin (25% of 20ms) we need to accumulate 40 samples, which also gives us a binWidth of 200hz, ie not as sharp
-  Therefore, as WPM goes up, goertzel bandwidth (binWidth) goes up
-  If we set for 60wpm, we can also handle 15 and 30 by accumulating 16 and 8 results instead of 4;
-
-  A 5ms bin will handle any WPM up to 60, we just need to keep track of how many bins we need per Tcw
-  For any binWidth, the maximum WPM is calculated as
-  maxWpm = 1200 / (timePerBin * 4)
-
-  If we tried to use Goertzel directly on a 96k sample rate, we would need to process 9600 samples to get a 100ms block!!!
-  So to make Goertzel practical, we will need to decimate to a lower rate, like 8k
-
-
-  Wikipedia reference  http://en.wikipedia.org/wiki/Morse_code
+	Wikipedia reference  http://en.wikipedia.org/wiki/Morse_code
 
     International Morse code is composed of five elements:
 
@@ -80,6 +54,43 @@
     James E. Gilley
     http://www.efjohnsontechnologies.com/resources/dyn/files/75829/_fn/analog_tone_detection.pdf
 
+	From MorseWpmTcw.xlsx spreadsheet in source directory
+	The 'binWidth' in the Goertzel algorithm determines how many samples should be processed before returning a result.
+	The more samples we process, the 'sharper' the filter but the more time per result
+	Ideal tone freq is one that is centered in the bin, ie an even multiple of binWidth/2
+	Tcw = 60/(wpm*50) * 1000
+	Goertzel N = BW/SR
+	msTcw = how many ms per Tcw at this WPM
+	SR = Sample Rate. Must be at least 2x tone freq for Nyquist
+	msPerSmp = how many ms each sample respresents
+	msN = how many ms for N samples
+	NforMinBW = N calculated for whatever is in MinBW cell
+	MaxNperResult = If N is larger than this, we are too slow and miss Tcw's
+	N = NMinBW or MaxN, whichever is smaller
+	ActBW = If N is set for timing, what is the actual bandwidth
+	As SR increases, minBW gets wider
+	As SR increases, ResultsPerTcw gets smaller to maintain equivalent bandwidth
+	Num Results = How many results from Goertzel do we want for each Tcw.
+		Chosen to optimize MinBW and msPerResult
+
+	Min BW	100 (configurable in spreadsheet)
+
+	Max	Tcw			Smp		Min N	Num		Max N			Actual
+	Wpm	ms	SR		ms		BW		Results	Results	N		Bw
+	------	------	------	------	------	------	------	------
+	5	240	8000	0.125	80		6		320		80		100
+	10	120	8000	0.125	80		6		160		80		100
+	20	60	8000	0.125	80		6		80		80		100
+	30	40	8000	0.125	80		4		80		80		100
+	40	30	8000	0.125	80		3		80		80		100
+	50	24	8000	0.125	80		2		96		80		100
+	60	20	8000	0.125	80		2		80		80		100
+	70	17	8000	0.125	80		1		136		80		100
+	80	15	8000	0.125	80		1		120		80		100
+	90	13	8000	0.125	80		1		104		80		100
+	100	12	8000	0.125	80		1		96		80		100
+	120	10	8000	0.125	80		1		80		80		100
+	130	9	8000	0.125	80		1		72		72		111
 */
 
 // Tone and timing magic numbers.
@@ -92,8 +103,9 @@
 #define TCW_ELEMENT 1
 #define TCW_WORD 7
 
+//Used to calc shortest and longest mark we should see
 #define MIN_WPM 5
-#define MIN_SAMPLES_PER_TCW 100
+#define MAX_WPM 60
 
 Morse::Morse()
 {
@@ -101,7 +113,7 @@ Morse::Morse()
 	m_workingBuf = NULL;
 	m_toneFilter = NULL;
 	m_jitterFilter = NULL;
-	m_avgThresholdFilter = NULL;
+	m_thresholdFilter = NULL;
 	m_decimate = NULL;
 	m_mixer = NULL;
 	m_sampleClock = NULL;
@@ -109,6 +121,8 @@ Morse::Morse()
 	m_useGoertzel = false;
 	m_sampleRate = 0;
 	m_numSamples = 0;
+	m_filterSamplesPerResult = 16;
+	m_goertzelSamplesPerResult = 80;
 }
 
 void Morse::setSampleRate(int _sampleRate, int _sampleCount)
@@ -132,6 +146,16 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
     //See if we can decimate to this rate
 	int actualModemRate = m_decimate->buildDecimationChain(m_sampleRate, m_modemBandwidth, 8000);
 	m_modemSampleRate = actualModemRate;
+	m_decimationRate = m_sampleRate / m_modemSampleRate;
+
+	//A tcw bit requires N samples to be processed by Goertzel or m_toneFilter
+	//The larger N is, the narrower the filter bandwidth
+	//So there's a trade off here
+	//If we get as close to a 8ksps rate as possible
+	//At 8ksps, each sample is .125ms, so a TCW at 30wpm or 40ms would require 320 samples
+	//If N = 32, we get 10 bits (results) for each TCW
+	//If WPM = 120wpm, then TCW is 10ms and requires 80 samples
+	//To get 10 bits, N would have to be 8! which is going to be a very wide bandwidth
 
 	if (m_sampleClock == NULL)
 		m_sampleClock = new SampleClock(m_modemSampleRate);
@@ -139,8 +163,7 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 
     //Testing fixed limits
     //Determine shortest and longest mark we can time at this sample rate
-	m_usecPerSample = (1.0 / m_modemSampleRate) * 1000000;
-	m_usecShortestMark =  m_usecPerSample * MIN_SAMPLES_PER_TCW; //100 samples per TCW
+	m_usecShortestMark =  DOT_MAGIC / MAX_WPM; //Shortest dot at highest speed we support
 	m_usecLongestMark = DOT_MAGIC / MIN_WPM; //Longest dot at slowest speed we support 5wpm
 
 	m_modemFrequency = 1000; //global->settings->modeOffset;
@@ -160,27 +183,31 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 
 	m_agc_peak = 1.0;
 
-	// bit filter based on 10 msec rise time of CW waveform
-	int jitterCount = (int)(m_modemSampleRate * .010 / m_bitSamples); //8k*.01/16 = 5
-	m_jitterFilter = new MovingAvgFilter(jitterCount);
 
 	if (!m_useGoertzel) {
 		m_toneFilter = new C_FIR_filter();
 		//Filter is at modem sample rate
 		double f = m_wpmSpeedInit / (1.2 * m_modemSampleRate);
-		m_toneFilter->init_lowpass (CW_FIRLEN, m_bitSamples, f);
+		m_toneFilter->init_lowpass (m_lpFilterLen, m_filterSamplesPerResult, f);
+		// bit filter based on 10 msec rise time of CW waveform
+		int jitterCount = (int)(m_modemSampleRate * .010 / m_filterSamplesPerResult); //8k*.01/16 = 5
+		m_jitterFilter = new MovingAvgFilter(jitterCount);
+
 	} else {
 		if (m_goertzel == NULL)
 			m_goertzel = new Goertzel(_sampleRate, _sampleCount);
 		m_goertzel->setTargetSampleRate(m_modemSampleRate);
-		//Todo: computer N based on WPM
-		//N=50 100bw N=25 200bw @5512 SR
-		//50 too long for timing?
-		m_goertzel->setFreq(m_modemFrequency, 16, 3);
+		// bit filter based on 10 msec rise time of CW waveform
+		int jitterCount = (int)(m_modemSampleRate * .010 / m_goertzelSamplesPerResult);
+		m_jitterFilter = new MovingAvgFilter(jitterCount);
+
+		//Todo: computer N based on WPM to get 2-30hz bandwidth
+		//m_bitSamples hard coded to 512 from fldigi
+		m_goertzel->setFreq(m_modemFrequency, m_goertzelSamplesPerResult, jitterCount);
 	}
 
 
-	m_avgThresholdFilter = new MovingAvgFilter(TRACKING_FILTER_SIZE);
+	m_thresholdFilter = new MovingAvgFilter(m_thresholdFilterSize);
 
     syncTiming();
 
@@ -209,7 +236,7 @@ Morse::~Morse()
 	if (m_toneFilter != NULL) delete m_toneFilter;
     //if (cw_FFT_filter) delete cw_FFT_filter;
 	if (m_jitterFilter != NULL) delete m_jitterFilter;
-	if (m_avgThresholdFilter != NULL) delete m_avgThresholdFilter;
+	if (m_thresholdFilter != NULL) delete m_thresholdFilter;
 	if (m_decimate != NULL) delete m_decimate;
 	if (m_mixer != NULL) delete m_mixer;
 	if (m_sampleClock != NULL) delete m_sampleClock;
@@ -426,7 +453,7 @@ void Morse::syncFilterWithWpm()
 
 		m_wpmSpeedFilter = m_wpmSpeedCurrent;
 		if (!m_useGoertzel)
-			m_toneFilter->init_lowpass (CW_FIRLEN, m_bitSamples , m_wpmSpeedCurrent / (1.2 * m_modemSampleRate));
+			m_toneFilter->init_lowpass (m_lpFilterLen, m_filterSamplesPerResult , m_wpmSpeedCurrent / (1.2 * m_modemSampleRate));
 		m_agc_peak = 0;
     }
 }
@@ -440,7 +467,7 @@ void Morse::init()
 	m_useNormalizingThreshold = true; //Fldigi mode
 	m_agc_peak = 0;
 	m_outputMode = CHAR_ONLY;
-	m_avgThresholdFilter->reset();
+	m_thresholdFilter->reset();
     resetModemClock();
     resetDotDashBuf(); //So reset can refresh immediately
 	m_lastReceiveState = m_receiveState;
@@ -483,13 +510,18 @@ void Morse::updateAdaptiveThreshold(quint32 idotUsec, quint32 idashUsec)
     else
 		dashUsec = m_usecDashInit;
 
-    //Result is midway between last short and long mark, assumed to be dot and dash
-	m_usecAdaptiveThreshold = (quint32)m_avgThresholdFilter->newSample((dashUsec + dotUsec) / 2);
-
     //Current speed estimate
-	if (!m_lockWPM)
-		m_wpmSpeedCurrent = DOT_MAGIC / (m_usecAdaptiveThreshold / 2);
-
+	if (!m_lockWPM) {
+		//Only update if delta greater then 5wpm to avoid 'adaptive jitter'
+		//Result is midway between last short and long mark, assumed to be dot and dash
+		int newAdaptiveThreshold = (quint32)m_thresholdFilter->newSample((dashUsec + dotUsec) / 2);
+		int newWpm = DOT_MAGIC / (newAdaptiveThreshold / 2);
+		newWpm = (newWpm / 5) * 5;  //Increment in units of 5wpm
+		if (abs(m_wpmSpeedCurrent - newWpm) >= 5) {
+			m_usecAdaptiveThreshold = newAdaptiveThreshold;
+			m_wpmSpeedCurrent = newWpm;
+		}
+	}
 
 }
 
@@ -573,13 +605,16 @@ CPX * Morse::processBlock(CPX *in)
         //Other modes, like DIGU and DIGL will still work with cursor on signal, but we won't hear tones.  Feature?
 		m_mixer->setFrequency(0);
 
-	int numModemSamples;
+	int numModemSamples = m_numSamples;
+	CPX *nextBuf;
 	if (!m_useGoertzel) {
-		CPX *mixedBuf = m_mixer->processBlock(m_workingBuf); //In place
-		numModemSamples = m_decimate->process(mixedBuf,m_out,m_numSamples);
+		nextBuf = m_mixer->processBlock(m_workingBuf); //In place
+		numModemSamples = m_decimate->process(nextBuf,m_out,m_numSamples);
+		nextBuf = m_out;
 	} else {
 		//Mixer not used for Goertzel
 		numModemSamples = m_decimate->process(m_workingBuf,m_out,m_numSamples);
+		nextBuf = m_out;
 	}
 
     //Now at lower modem rate with bandwidth set by modemDownConvert in constructor
@@ -597,7 +632,9 @@ CPX * Morse::processBlock(CPX *in)
         //We need some sort of AGC here to get consistent tone thresholds
 		bool result;
 		if (!m_useGoertzel) {
-			result = m_toneFilter->run (m_out[i], cpxFilter );
+			//m_toneFilter runs at modem sample rate and further decimates internally by only returning
+			//results for every N samples
+			result = m_toneFilter->run (nextBuf[i], cpxFilter );
 			//toneFilter returns cpx, gertzel returns power
 			tonePower = DB::power(cpxFilter);
 			if (result) {
@@ -648,15 +685,15 @@ CPX * Morse::processBlock(CPX *in)
 					if (tonePower > thresholdUp) {
 						meterValue = DB::powerTodB(tonePower);
 						stateMachine(TONE_EVENT);
+					} else {
+						meterValue = -120;
+						stateMachine(NO_TONE_EVENT);
 					}
 
 					//Don't do anything if in the middle?  Prevents jitter that would occur if just compare with single value
 
 					// downward trend means tone stopping
-					if (tonePower < thresholdDown) {
-						meterValue = -120;
-						stateMachine(NO_TONE_EVENT);
-					}
+
 
 				} else {
 					//Light in-squelch indicator (TBD)
@@ -664,10 +701,10 @@ CPX * Morse::processBlock(CPX *in)
 					qDebug()<<"In squelch";
 				}
 
-			}
+			} //End if (result)
 		} else {
 			//Using goertzel
-			result = m_goertzel->processSample(m_out[i].re, tonePower);
+			result = m_goertzel->processSample(nextBuf[i].re, tonePower);
 			if (result) {
 				//Goertzel handles debounce and threshold
 				if (tonePower > 0) {
