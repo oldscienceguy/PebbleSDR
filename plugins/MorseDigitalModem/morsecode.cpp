@@ -21,6 +21,7 @@ static CW_TABLE cw_table[] = {
     //Non English extensions (TBD from Wikipedia)
 
     //I don't think the char matters because we're not supporting send, can use '*' for everything
+	//Char  Display   Dot/Dash
     {'=',	"<BT>",   "-...-"	}, // 2 LF or new paragraph
     {'~',	"<AA>",   ".-.-"	}, // CR/LF
     {'<',	"<AS>",   ".-..."	}, // Please Wait
