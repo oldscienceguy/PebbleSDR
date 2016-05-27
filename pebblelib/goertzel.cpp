@@ -245,6 +245,7 @@ bool ToneBit::processSample(CPX cpx)
 bool ToneBit::processSample(double x_n)
 {
 	if (m_calcRunningMean) {
+		double power = x_n*x_n;
 		//See Knuth TAOCP vol 2, 3rd edition, page 232
 		//for each incoming sample x:
 		//    prev_mean = m;
@@ -254,8 +255,8 @@ bool ToneBit::processSample(double x_n)
 		//	standardDev = sqrt(S/n) or sqrt(S/n-1) depending on who you listen to
 		double prevMean = 0;
 		prevMean = m_runningMean;
-		m_runningMean += (x_n - m_runningMean) / m_runningMeanCount;
-		m_S += (x_n - m_runningMean) * (x_n - prevMean);
+		m_runningMean += (power - m_runningMean) / m_runningMeanCount;
+		m_S += (power - m_runningMean) * (power - prevMean);
 		//Dividing by N-1 (Bessel's correction) returns unbiased variance, dividing by N returns variance across the entire sample set
 		m_variance = m_S / (m_runningMeanCount - 1);
 		m_stdDev = sqrt(m_variance);
@@ -292,6 +293,10 @@ bool ToneBit::processSample(double x_n)
 		}
 		m_wn1 = m_wn2 = 0;
 		m_nCount = 0;
+
+		//m_runningMean = 0;
+		//m_S = 0;
+		//m_runningMeanCount = 1;
 		return true;
 	}
 	return false;
@@ -427,7 +432,7 @@ void Goertzel::setFreq(quint32 freq, quint32 N, quint32 jitterCount)
 		(4) Estimated accurate result if we used windowing
 	*/
 	m_mainTone.setFreq(freq, N, m_sampleRate);
-	quint32 bwDelta = m_mainTone.m_bandwidth;
+	quint32 bwDelta = m_mainTone.m_bandwidth *.75;
 	m_highCompareTone.setFreq(freq + bwDelta, N, m_sampleRate);
 	m_lowCompareTone.setFreq(freq - bwDelta, N, m_sampleRate);
 	//KA7OEI differential goertzel algorithm compares 5% below and 4% above bins
@@ -561,6 +566,9 @@ bool Goertzel::processSample(double x_n, double &retPower)
 	double mainPower = 0;
 	double highPower = 0;
 	double lowPower = 0;
+	double bufMean = 0;
+	double bufDev = 0;
+	double snr = 0;
 	if (result) {
 		//If we have a detectable tone, it should be strong in the main bin compared with surrounding bins
 
@@ -569,6 +577,20 @@ bool Goertzel::processSample(double x_n, double &retPower)
 		mainPower = m_mainJitterFilter->newSample(m_mainTone.m_power);
 		lowPower = m_lowJitterFilter->newSample(m_lowCompareTone.m_power);
 		highPower = m_highJitterFilter->newSample(m_highCompareTone.m_power);
+		bufDev = m_mainTone.m_stdDev;
+		bufMean = m_mainTone.m_runningMean;
+		snr = mainPower/bufMean;
+
+#if 1
+		if (false)
+			qDebug()<<"Power:"<<
+					  DB::powerTodB(mainPower)<<" Mean:"<<
+					  DB::powerTodB(bufMean)<<" Dev:"<<
+					  DB::powerTodB(bufDev);
+		if (snr > 2 )
+			retPower = mainPower;
+
+#else
 		//lowPower = m_lowCompareTone.m_power;
 		//highPower = m_highCompareTone.m_power;
 
@@ -591,7 +613,7 @@ bool Goertzel::processSample(double x_n, double &retPower)
 		if (compareRatio > m_compareThreshold) {
 			retPower = mainPower;
 		}
-
+#endif
 		return true; //Valid result
 
 	} //End if (result)
