@@ -73,24 +73,63 @@
 	Num Results = How many results from Goertzel do we want for each Tcw.
 		Chosen to optimize MinBW and msPerResult
 
-	Min BW	100 (configurable in spreadsheet)
+	Var for table					Reference
+	100		Minimum BW				N	BW		ms
+	8000	SampleRate				8	1000	1
+	0.125	ms Per Sample			16	500		2
+	80		N for min BW			24	333		3
+	4		Min results per Tcw		32	250		4
+									40	200		5
+									48	166		6
+									64	125		8
+									72	111		9
+									80	100		10
 
-	Max	Tcw			Smp		Min N	Num		Max N			Actual
-	Wpm	ms	SR		ms		BW		Results	Results	N		Bw
-	------	------	------	------	------	------	------	------
-	5	240	8000	0.125	80		6		320		80		100
-	10	120	8000	0.125	80		6		160		80		100
-	20	60	8000	0.125	80		6		80		80		100
-	30	40	8000	0.125	80		4		80		80		100
-	40	30	8000	0.125	80		3		80		80		100
-	50	24	8000	0.125	80		2		96		80		100
-	60	20	8000	0.125	80		2		80		80		100
-	70	17	8000	0.125	80		1		136		80		100
-	80	15	8000	0.125	80		1		120		80		100
-	90	13	8000	0.125	80		1		104		80		100
-	100	12	8000	0.125	80		1		96		80		100
-	120	10	8000	0.125	80		1		80		80		100
-	130	9	8000	0.125	80		1		72		72		111
+		ms	ms		Est		ms	BW 	Res
+	Wpm	Tcw	Res		N	N	N	N	Tcw
+	---	---	---		---	---	---	--- ---
+	5	240	60		480	20	2.5	400	96
+	10	120	30		240	20	2.5	400	48
+	20	60	15		120	20	2.5	400	24
+	30	40	10		80	20	2.5	400	16
+	40	30	7.5		60	20	2.5	400	12
+	50	24	6		48	20	2.5	400	9.6
+	60	20	5		40	20	2.5	400	8
+	70	17	4.25	34	20	2.5	400	6.8
+	80	15	3.75	30	20	2.5	400	6
+	90	13	3.25	26	20	2.5	400	5.2
+	100	12	3		24	20	2.5	400	4.8
+	120	10	2.5		20	20	2.5	400	4	Max speed with 4 results per Tcw
+
+	Waveforms: see http://www.w8ji.com/cw_bandwidth_described.htm for detailed examples
+				___      ---100% (full power)
+			  /  .  \
+			 /   .   \
+			/    .    \
+	-------/-----.-----\------- 50% threshold
+		  /.     .     .\
+		 / .     .     . \
+		/  .     .     .  \
+	 __    .     .     .    __ 0% (zero power)
+		   |--on time--|
+
+	 Tcw for different rise/fall times over a 40ms interval
+	 60wpm = 20ms Tcw
+	 Tcw starts at 50% threshold during rise and ends 50% threshold during fall
+	 Rise/Fall times: 20ms, 10ms, 5ms (ARRL recommended)
+
+	   20ms rise/fall. 10ms resolution needed to catch 50% threshold. Smoothest gausian curve
+	   |------20ms-------|------20ms-------|
+				|----20ms Tcw-----|
+
+	   10ms rise/fall. 5ms resolution needed to catch 50% threshold
+	   |--10ms--|--10ms--|--10ms--|--10ms--|
+		   |----20ms Tcw----|
+
+	   5ms rise/fall. 2.5ms resolution needed to catch 50% threshold
+	   |-5ms|--10ms--|-5ms|------20ms------|
+		 |---20ms Tcw---|
+
 */
 
 // Tone and timing magic numbers.
@@ -118,11 +157,11 @@ Morse::Morse()
 	m_mixer = NULL;
 	m_sampleClock = NULL;
 	m_goertzel = NULL;
-	m_useGoertzel = false;
+	m_useGoertzel = true;
 	m_sampleRate = 0;
 	m_numSamples = 0;
 	m_filterSamplesPerResult = 16;
-	m_goertzelSamplesPerResult = 80;
+	m_goertzelSamplesPerResult = 20;
 }
 
 void Morse::setSampleRate(int _sampleRate, int _sampleCount)
@@ -201,8 +240,6 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 		int jitterCount = (int)(m_modemSampleRate * .010 / m_goertzelSamplesPerResult);
 		m_jitterFilter = new MovingAvgFilter(jitterCount);
 
-		//Todo: computer N based on WPM to get 2-30hz bandwidth
-		//m_bitSamples hard coded to 512 from fldigi
 		m_goertzel->setFreq(m_modemFrequency, m_goertzelSamplesPerResult, jitterCount);
 	}
 
@@ -336,6 +373,7 @@ int Morse::usecToWPM(quint32 u)
 
 void Morse::setDemodMode(DeviceInterface::DemodMode _demodMode)
 {
+	//If demodMode changes, mixer freq will also change in processBlock()
 	m_demodMode = _demodMode;
 }
 
@@ -597,9 +635,9 @@ CPX * Morse::processBlock(CPX *in)
     //We need to account for modemOffset in ReceiverWidget added so we hear tone but freq display is correct
     //Actual freq for CWU will be freq + modemFrequency for CWL will be freq -modemFrequency.
     //And we want actual freq to be at baseband
-	if (m_demodMode == DeviceInterface::dmCWL)
+	if (m_demodMode == DeviceInterface::dmCWL || m_demodMode == DeviceInterface::dmLSB)
 		m_mixer->setFrequency(-m_modemFrequency);
-	else if (m_demodMode == DeviceInterface::dmCWU)
+	else if (m_demodMode == DeviceInterface::dmCWU || m_demodMode == DeviceInterface::dmUSB)
 		m_mixer->setFrequency(m_modemFrequency);
     else
         //Other modes, like DIGU and DIGL will still work with cursor on signal, but we won't hear tones.  Feature?
