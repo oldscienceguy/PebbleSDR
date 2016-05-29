@@ -307,7 +307,7 @@ Goertzel::Goertzel(quint32 sampleRate, quint32 numSamples)
 	m_sampleRate  = sampleRate;
 	m_numSamples = numSamples;
 
-	m_thresholdType = TH_COMPARE;
+	m_thresholdType = TH_PEAK;
 	//Higher thresholds mean stonger signals are required
 	//Low thresholds will be more sensitive, but more susceptible to noise and spikes
 	//Tested:2, 4, 8(no)
@@ -321,6 +321,7 @@ Goertzel::Goertzel(quint32 sampleRate, quint32 numSamples)
 	m_mainJitterFilter = NULL;
 	m_highJitterFilter = NULL;
 	m_lowJitterFilter = NULL;
+	m_peakPower = 0;
 }
 
 Goertzel::~Goertzel()
@@ -578,50 +579,86 @@ bool Goertzel::processSample(double x_n, double &retPower, bool &aboveThreshold)
 		mainPower = m_mainJitterFilter->newSample(m_mainTone.m_power);
 		lowPower = m_lowJitterFilter->newSample(m_lowCompareTone.m_power);
 		highPower = m_highJitterFilter->newSample(m_highCompareTone.m_power);
+		//lowPower = m_lowCompareTone.m_power;
+		//highPower = m_highCompareTone.m_power;
 		bufDev = m_mainTone.m_stdDev;
 		bufMean = m_mainTone.m_runningMean;
 		snr = mainPower/bufMean;
 		retPower = mainPower;
 
-#if 1
-		if (false)
-			qDebug()<<"Power:"<<
-					  DB::powerTodB(mainPower)<<" Mean:"<<
-					  DB::powerTodB(bufMean)<<" Dev:"<<
-					  DB::powerTodB(bufDev);
-		if (snr > 5 ) {
-			aboveThreshold = true;
-		} else {
-			aboveThreshold = false;
+		switch (m_thresholdType) {
+			case TH_COMPARE:{
+				//Compares high/low tone poser
+				double avgComparePower = (highPower + lowPower) / 2;
+				retPower = mainPower;
+
+				//KA7OEI differential goertzel
+				double compareRatio = 0;
+				if (avgComparePower > 0)
+					//Avoid dev by zero for Nan
+					compareRatio = mainPower / avgComparePower;
+
+				if (false)
+					qDebug()<<"Low:"<<
+							  DB::powerTodB(lowPower)<<" Main:"<<
+							  DB::powerTodB(mainPower)<<" High:"<<
+							  DB::powerTodB(highPower)<<" Ratio:"<<
+							  compareRatio;
+
+				//if (debounce(compareRatio > m_compareThreshold)) {
+				if (compareRatio > m_compareThreshold) {
+					aboveThreshold = true;
+				} else {
+					aboveThreshold = false;
+				}
+			}
+				break;
+			case TH_PEAK:
+				//Uses percentage of peak power for comparison
+				// Compute a variable threshold value for tone detection
+				// Fast attack and slow decay.
+				if (mainPower > m_peakPower)
+					m_peakPower = MovingAvgFilter::weightedAvg(m_peakPower, mainPower, 20); //Input has more weight on increasing signal than decreasing
+				else
+					m_peakPower = MovingAvgFilter::weightedAvg(m_peakPower, mainPower, 800);
+
+				//Super-Ratt and JSDR technique
+				//Divide agc_peak in thirds,  upper is rising, lower is falling, middle is stable
+				m_thresholdUp = m_peakPower * 0.67; //fldigi uses 0.60
+				m_thresholdDown = m_peakPower * 0.33; //fldigi uses 0.40
+
+				if (mainPower > m_thresholdUp) {
+					aboveThreshold = true;
+				} else if (mainPower < m_thresholdDown) {
+					aboveThreshold = false;
+				} else if (m_lastTone && mainPower > m_thresholdDown){
+					//Last result was a tone and we're in between thresholdUp and thresholdDown
+					aboveThreshold = true;
+				}
+
+				break;
+			case TH_MANUAL:
+				//Uses manual threshold
+				break;
+			case TH_AVERAGE:
+				//Compares power to running mean power in samples
+				if (false)
+					qDebug()<<"Power:"<<
+							  DB::powerTodB(mainPower)<<" Mean:"<<
+							  DB::powerTodB(bufMean)<<" Dev:"<<
+							  DB::powerTodB(bufDev);
+				if (snr > 5 ) {
+					aboveThreshold = true;
+				} else {
+					aboveThreshold = false;
+				}
+				break;
+			default:
+				aboveThreshold = false;
+				break;
 		}
+		m_lastTone = aboveThreshold;
 
-#else
-		//lowPower = m_lowCompareTone.m_power;
-		//highPower = m_highCompareTone.m_power;
-
-		double avgComparePower = (highPower + lowPower) / 2;
-		retPower = mainPower;
-
-		//KA7OEI differential goertzel
-		double compareRatio = 0;
-		if (avgComparePower > 0)
-			//Avoid dev by zero for Nan
-			compareRatio = mainPower / avgComparePower;
-
-		if (false)
-			qDebug()<<"Low:"<<
-					  DB::powerTodB(lowPower)<<" Main:"<<
-					  DB::powerTodB(mainPower)<<" High:"<<
-					  DB::powerTodB(highPower)<<" Ratio:"<<
-					  compareRatio;
-
-		//if (debounce(compareRatio > m_compareThreshold)) {
-		if (compareRatio > m_compareThreshold) {
-			aboveThreshold = true;
-		} else {
-			aboveThreshold = false;
-		}
-#endif
 		return true; //Valid result
 
 	} //End if (result)

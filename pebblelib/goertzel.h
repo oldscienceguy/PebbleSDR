@@ -62,7 +62,7 @@ public:
 	//TH_COMPARE uses 2 extra bins, above and below the target freq
 	//TH_AVERAGE uses the average power in the buffer
 	//TH_MANUAL uses specific target
-	enum ThresholdType {TH_COMPARE, TH_AVERAGE, TH_MIN_MAX, TH_MANUAL};
+	enum ThresholdType {TH_COMPARE, TH_AVERAGE, TH_PEAK, TH_MIN_MAX, TH_MANUAL};
 	void setThresholdType(ThresholdType t);
 	ThresholdType thresholdType() {return m_thresholdType;}
 	void setThreshold(double threshold);
@@ -103,6 +103,9 @@ private:
 	int m_numSamples;
 	ThresholdType m_thresholdType;
 	double m_compareThreshold;
+	double m_thresholdUp;
+	double m_thresholdDown;
+	double m_peakPower;
 
 	bool m_lastTone; //For debounce counting
 	quint32 m_attackCount;
