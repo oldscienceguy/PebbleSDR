@@ -12,10 +12,10 @@
 	Dash = 3 Tcw, Dot = 1Tcw, Element Space = 1 Tcw, Character Space = 3 Tcw, Word Space = 7 Tcw (min)
 	Standard for measuring WPM is to use the word "PARIS", which is exactly 50Tcw
 	So Tcw (ms) = 60 (sec) / (WPM * 50)
-	and WPM = 1200/Tcw(ms)
+	and WPM = c_mSecDotMagic/Tcw(ms)
 
-	Use DOT_MAGIC to convert WPM to/from usec is 1,200,000
-	DOT_MAGIC / WPM = usec per TCW
+	Use c_uSecDotMagic to convert WPM to/from usec is 1,200,000
+	c_uSecDotMagic / WPM = usec per TCW
 
 	Tcw for 12wpm = 60 / (12 * 50) = 60 / 600 = .100 sec  100ms
 	Tcw for 30wpm = 60 / 1500 = .040 40ms
@@ -132,19 +132,12 @@
 
 */
 
-// Tone and timing magic numbers.
-#define	DOT_MAGIC	1200000	// Dot length magic number - shortcut for full math.  The Dot length is 1200000/WPM Usec
-
 //Relative lengths of elements in Tcw terms
 #define TCW_DOT 1
 #define TCW_DASH 3
 #define TCW_CHAR 3
 #define TCW_ELEMENT 1
 #define TCW_WORD 7
-
-//Used to calc shortest and longest mark we should see
-#define MIN_WPM 5
-#define MAX_WPM 60
 
 Morse::Morse()
 {
@@ -200,10 +193,9 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 		m_sampleClock = new SampleClock(m_modemSampleRate);
 	m_sampleClock->reset(); //Start timer over
 
-    //Testing fixed limits
     //Determine shortest and longest mark we can time at this sample rate
-	m_usecShortestMark =  DOT_MAGIC / MAX_WPM; //Shortest dot at highest speed we support
-	m_usecLongestMark = DOT_MAGIC / MIN_WPM; //Longest dot at slowest speed we support 5wpm
+	m_usecShortestMark =  c_uSecDotMagic / (c_upperWPMLimit*1.10); //Slightly faster than highest speed we support
+	m_usecLongestMark = c_uSecDotMagic / (c_lowerWPMLimit*0.90); //SLightly longer than slowest speed we support 5wpm
 
 	m_modemFrequency = 1000; //global->settings->modeOffset;
 
@@ -213,22 +205,25 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 	m_squelchValue = 0;
 	m_squelchEnabled = false;
 
-	m_wpmSpeedCurrent = m_wpmSpeedFilter = m_wpmSpeedInit;
-	calcDotDashLength(m_wpmSpeedInit, m_usecDotInit, m_usecDashInit);
+	m_wpmSpeedCurrent = m_wpmSpeedFilter = c_wpmSpeedInit;
+	calcDotDashLength(c_wpmSpeedInit, m_usecDotInit, m_usecDashInit);
 
     //2 x usecDot
-	m_usecAdaptiveThreshold = 2 * DOT_MAGIC / m_wpmSpeedCurrent;
-	m_usecNoiseSpike = m_usecAdaptiveThreshold / 4;
+	m_usecDotDashThreshold = 2 * c_uSecDotMagic / m_wpmSpeedCurrent;
+	m_usecNoiseSpike = m_usecDotDashThreshold / 4;
 
 	m_agc_peak = 1.0;
 
 
 	if (!m_useGoertzel) {
 		m_toneFilter = new C_FIR_filter();
-		//Filter is at modem sample rate
-		double f = m_wpmSpeedInit / (1.2 * m_modemSampleRate);
-		m_toneFilter->init_lowpass (m_lpFilterLen, m_filterSamplesPerResult, f);
+		//Filter width changes with wpm, higher wpm = narrower filter
+		//20wpm @8ksps = 480hz normalized
+		//40wpm #8ksps = 240hz normalized
+		double f = c_wpmSpeedInit / (c_secDotMagic * m_modemSampleRate);
+		m_toneFilter->init_lowpass (c_lpFilterLen, m_filterSamplesPerResult, f);
 		// bit filter based on 10 msec rise time of CW waveform
+		//Effective sample rate post toneFilter is modemSampleRate / filterSamplesPerResult (decimation factor)
 		int jitterCount = (int)(m_modemSampleRate * .010 / m_filterSamplesPerResult); //8k*.01/16 = 5
 		m_jitterFilter = new MovingAvgFilter(jitterCount);
 
@@ -244,7 +239,7 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 	}
 
 
-	m_thresholdFilter = new MovingAvgFilter(m_thresholdFilterSize);
+	m_thresholdFilter = new MovingAvgFilter(c_thresholdFilterSize);
 
     syncTiming();
 
@@ -355,7 +350,7 @@ int Morse::wpmToTcw(int w)
 //Returns wpm for any given tcw (in ms)
 int Morse::tcwToWpm(int t)
 {
-    int wpm = 1200/t;
+	int wpm = c_mSecDotMagic/t;
     return wpm;
 }
 
@@ -364,11 +359,11 @@ int Morse::tcwToWpm(int t)
 // WPM = DM / Usec
 quint32 Morse::wpmToUsec(int w)
 {
-    return DOT_MAGIC / w;
+	return c_uSecDotMagic / w;
 }
 int Morse::usecToWPM(quint32 u)
 {
-    return DOT_MAGIC / u;
+	return c_uSecDotMagic / u;
 }
 
 void Morse::setDemodMode(DeviceInterface::DemodMode _demodMode)
@@ -490,16 +485,21 @@ void Morse::syncFilterWithWpm()
 	if(	m_wpmSpeedCurrent != m_wpmSpeedFilter ) {
 
 		m_wpmSpeedFilter = m_wpmSpeedCurrent;
-		if (!m_useGoertzel)
-			m_toneFilter->init_lowpass (m_lpFilterLen, m_filterSamplesPerResult , m_wpmSpeedCurrent / (1.2 * m_modemSampleRate));
+		if (!m_useGoertzel) {
+			//Filter width changes with wpm, higher wpm = narrower filter
+			//20wpm @8ksps = 480hz normalized
+			//40wpm #8ksps = 240hz normalized
+			double f = m_wpmSpeedCurrent / (c_secDotMagic * m_modemSampleRate);
+			m_toneFilter->init_lowpass (c_lpFilterLen, m_filterSamplesPerResult, f);
+		}
 		m_agc_peak = 0;
     }
 }
 
 void Morse::init()
 {
-	m_wpmSpeedCurrent = m_wpmSpeedInit;
-	m_usecAdaptiveThreshold = 2 * DOT_MAGIC / m_wpmSpeedCurrent;
+	m_wpmSpeedCurrent = c_wpmSpeedInit;
+	m_usecDotDashThreshold = 2 * c_uSecDotMagic / m_wpmSpeedCurrent;
     syncTiming(); //Based on wpmSpeedCurrent & adaptive threshold
 
 	m_useNormalizingThreshold = true; //Fldigi mode
@@ -519,9 +519,9 @@ void Morse::calcDotDashLength(int _speed, quint32 & _usecDot, quint32 & _usecDas
 {
     //Special case where _speed is zero
     if (_speed > 0)
-        _usecDot = DOT_MAGIC / _speed;
+		_usecDot = c_uSecDotMagic / _speed;
     else
-        _usecDot = DOT_MAGIC / 5;
+		_usecDot = c_uSecDotMagic / 5;
 
     _usecDash = 3 * _usecDot;
 
@@ -536,7 +536,7 @@ void Morse::calcDotDashLength(int _speed, quint32 & _usecDot, quint32 & _usecDas
 //=======================================================================
 
 //This should be only place where adaptiveThreshold and wpmSpeedCurrent are changed
-void Morse::updateAdaptiveThreshold(quint32 idotUsec, quint32 idashUsec)
+void Morse::updateDotDashThreshold(quint32 idotUsec, quint32 idashUsec)
 {
     quint32 dotUsec, dashUsec;
 	if (idotUsec > m_usecShortestMark && idotUsec < m_usecLongestMark)
@@ -553,12 +553,19 @@ void Morse::updateAdaptiveThreshold(quint32 idotUsec, quint32 idashUsec)
 		//Only update if delta greater then 5wpm to avoid 'adaptive jitter'
 		//Result is midway between last short and long mark, assumed to be dot and dash
 		int newAdaptiveThreshold = (quint32)m_thresholdFilter->newSample((dashUsec + dotUsec) / 2);
-		int newWpm = DOT_MAGIC / (newAdaptiveThreshold / 2);
-		newWpm = (newWpm / 5) * 5;  //Increment in units of 5wpm
+		int newWpm = c_uSecDotMagic / (newAdaptiveThreshold / 2);
+#if 0
+		//Round up or down
+		newWpm = ((newWpm+2) / 5) * 5;  //Increment in units of 5wpm
 		if (abs(m_wpmSpeedCurrent - newWpm) >= 5) {
 			m_usecAdaptiveThreshold = newAdaptiveThreshold;
 			m_wpmSpeedCurrent = newWpm;
 		}
+#else
+		m_usecDotDashThreshold = newAdaptiveThreshold;
+		m_wpmSpeedCurrent = newWpm;
+#endif
+
 	}
 
 }
@@ -577,10 +584,10 @@ void Morse::syncTiming()
     //CalcDotDash handles special case where speed is zero
 	calcDotDashLength(m_wpmSpeedCurrent, m_usecDotCurrent, m_usecDashCurrent);
     //Adaptive threshold is roughly 2 TCW, so midway between dot and dash
-	m_usecNoiseSpike = m_usecAdaptiveThreshold / 4;
+	m_usecNoiseSpike = m_usecDotDashThreshold / 4;
     //Make this zero to accept any inter mark space as valid
     //Adaptive threshold is typically 2TCW so /8 = .25TCW
-	m_usecElementThreshold = m_usecAdaptiveThreshold / 8;
+	m_usecElementThreshold = m_usecDotDashThreshold / 8;
 
 }
 
@@ -669,6 +676,7 @@ CPX * Morse::processBlock(CPX *in)
         //If the LP filter passes the tone, we have detection
         //We need some sort of AGC here to get consistent tone thresholds
 		bool result;
+		bool aboveThreshold;
 		if (!m_useGoertzel) {
 			//m_toneFilter runs at modem sample rate and further decimates internally by only returning
 			//results for every N samples
@@ -678,7 +686,9 @@ CPX * Morse::processBlock(CPX *in)
 			if (result) {
 
 				//Moving average to handle jitter during CW rise and fall periods
-				tonePower = m_jitterFilter->newSample(tonePower);
+				//Broken if jitterFilter is used, not sure why since works in Goertzel
+				//Remove for now
+				//tonePower = m_jitterFilter->newSample(tonePower);
 
 				//Main logic for timing and character decoding
 				double thresholdUp;
@@ -742,14 +752,13 @@ CPX * Morse::processBlock(CPX *in)
 			} //End if (result)
 		} else {
 			//Using goertzel
-			result = m_goertzel->processSample(nextBuf[i].re, tonePower);
+			result = m_goertzel->processSample(nextBuf[i].re, tonePower, aboveThreshold);
 			if (result) {
 				//Goertzel handles debounce and threshold
-				if (tonePower > 0) {
-					meterValue = DB::powerTodB(tonePower);
+				meterValue = DB::powerTodB(tonePower);
+				if (aboveThreshold) {
 					stateMachine (TONE_EVENT);
 				} else {
-					meterValue = -120;
 					stateMachine(NO_TONE_EVENT);
 				}
 			}
@@ -961,17 +970,24 @@ void Morse::addMarkToDotDash()
     // quite variable, but with most faster cw sent with electronic keyers, this is one relationship that is
     // quite reliable. Lawrence Glaister (ve7it@shaw.ca)
 	if (m_usecLastMark > 0) {
+		//If we have two marks in a row, there are four options
+		//dot - dash Update timing
+		//dot - dot Don't do anything
+		//dash - dot Update timing
+		//dash - dash Don't do anything
+
         // check for dot dash sequence (current should be 3 x last)
 		if ((m_usecMark > 2 * m_usecLastMark) &&
 			(m_usecMark < 4 * m_usecLastMark)) {
-            //usecLastMark is dot
-			updateAdaptiveThreshold(m_usecLastMark, m_usecMark);
-        }
-        // check for dash dot sequence (last should be 3 x current)
-		if ((m_usecLastMark > 2 * m_usecMark) &&
+			//If currentMark is between 2x and 4x lastMark, then its average is 3*lastMark and its a dash
+			//usecMark is a dash and usecLastMark is a dot
+			updateDotDashThreshold(m_usecLastMark, m_usecMark);
+		} else if ((m_usecLastMark > 2 * m_usecMark) &&
 			(m_usecLastMark < 4 * m_usecMark)) {
-            //usecMark is dot and useLastMark is dash
-			updateAdaptiveThreshold(m_usecMark, m_usecLastMark);
+			//If lastMark is between 2x and 4x currentMark, then lastMark was a dash,a and currentMark is a dot
+			// check for dash dot sequence (last should be 3 x current)
+			//usecMark is dot and useLastMark is dash
+			updateDotDashThreshold(m_usecMark, m_usecLastMark);
         }
 
     }
@@ -981,7 +997,7 @@ void Morse::addMarkToDotDash()
     //RL We don't care about checking inter dot/dash spacing?  Should be 1 TCW
     // ok... do we have a dit or a dah?
     // a dot is anything shorter than 2 dot times
-	if (m_usecMark <= m_usecAdaptiveThreshold) {
+	if (m_usecMark <= m_usecDotDashThreshold) {
 		m_dotDashBuf[m_dotDashBufIndex++] = CW_DOT_REPRESENTATION;
     } else {
         // a dash is anything longer than 2 dot times
@@ -990,7 +1006,7 @@ void Morse::addMarkToDotDash()
 
     // We just added a representation to the receive buffer.
     // If it's full, then reset everything as it probably noise
-	if (m_dotDashBufIndex == m_receiveCapacity - 1) {
+	if (m_dotDashBufIndex == c_receiveCapacity - 1) {
 		m_lastReceiveState = m_receiveState;
 		m_receiveState = IDLE;
         return;
@@ -1015,7 +1031,7 @@ void Morse::outputString(const char *outStr) {
 		while ((unsigned long)m_outputBufIndex < sizeof(m_outputBuf) &&
                outStr[i] != 0x00) {
             c = outStr[i++];
-			m_outputBuf[m_outputBufIndex++] = m_useLowercase ? tolower(c) : c;
+			m_outputBuf[m_outputBufIndex++] = c_useLowercase ? tolower(c) : c;
         }
         //Always null terminate
 		m_outputBuf[m_outputBufIndex++] = 0x00;
@@ -1115,7 +1131,7 @@ void Morse::dumpStateMachine(QString why)
 	qDebug()<<"From state: "<<stateToString(m_lastReceiveState)<<" To state: "<<stateToString(m_receiveState);
 
 	qDebug()<<"Clock: "<<m_sampleClock->clock()<<" ToneStart: "<<m_toneStart<<" ToneEnd: "<<m_toneEnd;
-	qDebug()<<"Timing: Dot: "<<m_usecDotCurrent<<" Dash: "<<m_usecDashCurrent<<" Threshold: "<<m_usecAdaptiveThreshold<<" Element: "<<m_usecMark<<" Silence: "<<m_usecSpace;
+	qDebug()<<"Timing: Dot: "<<m_usecDotCurrent<<" Dash: "<<m_usecDashCurrent<<" Threshold: "<<m_usecDotDashThreshold<<" Element: "<<m_usecMark<<" Silence: "<<m_usecSpace;
 	qDebug()<<"Last Mark: "<<m_usecLastMark<<" Last Space: "<<m_usecLastSpace;
 	qDebug()<<"WPM: "<<m_wpmSpeedCurrent;
 }
@@ -1292,48 +1308,3 @@ CWIN8    TXA              ;PUT CHAR IN ACCUM
 
 */
 
-//Returns uSec between clocks
-SampleClock::SampleClock(quint32 sampleRate)
-{
-	m_sampleRate = sampleRate;
-}
-
-SampleClock::~SampleClock()
-{
-
-}
-
-quint32 SampleClock::uSecToCurrent(quint32 earlierClock)
-{
-	return uSecDelta(earlierClock, m_clock);
-}
-
-quint32 SampleClock::uSecDelta(quint32 earlierClock, quint32 laterClock)
-{
-	if (earlierClock >= laterClock)
-		return 0; //earlier can't be > later
-	quint64 delta = ((double)(laterClock - earlierClock) * 1.0e6) / m_sampleRate;
-	return delta;
-}
-
-quint32 SampleClock::uSec()
-{
-	return uSecDelta(0, m_clock);
-}
-
-void SampleClock::reset()
-{
-	m_clock = 0;
-	m_startInterval = 0;
-}
-
-void SampleClock::startInterval()
-{
-	m_startInterval = m_clock;
-}
-
-quint32 SampleClock::uSecInterval()
-{
-	//Don't reset interval so we can call again to compare
-	return uSecDelta(m_startInterval, m_clock);
-}

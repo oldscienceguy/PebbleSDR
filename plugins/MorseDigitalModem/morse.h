@@ -3,8 +3,6 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 
-//#include "processstep.h"
-//#include "goertzel.h"
 #include "qframe"
 #include "QTextEdit"
 #include "ui_data-morse.h"
@@ -19,47 +17,9 @@
 //#include "demod.h"
 #include <QMutex>
 #include "../../pebblelib/digital_modem_interfaces.h"
+#include "sampleclock.h"
 
 class Receiver;
-
-//General purpose class for using incoming sample count for timing signals
-class SampleClock
-{
-public:
-	SampleClock(quint32 sampleRate);
-	~SampleClock();
-
-	//Call this on every new sample to update m_clock
-	void inline tick() {m_clock++;}
-
-	//Returns uSec delta between current clock and earlier clock
-	quint32 uSecToCurrent(quint32 earlierClock);
-
-	//Returns uSec delta between two clocks
-	quint32 uSecDelta(quint32 earlierClock, quint32 laterClock);
-
-	//Returns uSec from clock start
-	quint32 uSec();
-
-	//Returns current m_clock
-	quint32 inline clock() {return m_clock;}
-
-	//Starts everything over
-	void reset();
-
-	//Saves current clock for interval timing
-	void startInterval();
-	//Returns interval
-	quint32 uSecInterval();
-
-private:
-	quint32 m_sampleRate;
-	//quint32 can clock for 4294 sec (4,294,000,000 uSec) or 71 minutes
-	//So don't worry about wrap
-	quint32 m_clock;
-	quint32 m_startInterval;
-
-};
 
 //We need to inherit from QObject so we can filter events.
 //Remove if we eventually create a separate 'morse widget' object for UI
@@ -115,7 +75,14 @@ signals:
 
 protected:
 	//Max dots and dashes in a morse symbol
-	static const int m_maxMorseLen = 7;
+	static const int c_maxMorseLen = 7;
+	//Use DOT_MAGIC to convert WPM to/from usec is 1,200,000
+	//c_uSecDotMagic / WPM = usec per TCW
+	//c_mSecDotMagic / WPM = msec per TCW
+	//c_secDotMagic / WPM = sec per TCW
+	static const quint32 c_uSecDotMagic = 1200000; //units are micro-seconts
+	static const quint32 c_mSecDotMagic = 1200; //units are milli-seconds
+	static constexpr double c_secDotMagic = 1.2; //units are seconds
 
     //From SignalProcessing
 	int m_numSamples;
@@ -157,7 +124,7 @@ protected:
 
     //Filters
 	//
-	const static int m_lpFilterLen = 512;
+	const static int c_lpFilterLen = 512;
 	//N = binWidth = #samples per bin
 	int m_filterSamplesPerResult; //For Fldigi algorithm
 	int m_goertzelSamplesPerResult; //For Goertzel algorithm
@@ -170,20 +137,20 @@ protected:
     //Received CW speed can be fixed (set by user) or track actual dot/dash lengths being received
 	//Smooths changes in threshold between dot and dash
 	//Used for moving average thresholdFilter, why isn't just always the same as m_bitSamples?
-	const static int m_thresholdFilterSize = 16;
+	const static int c_thresholdFilterSize = 16;
 	MovingAvgFilter *m_thresholdFilter;
-    void updateAdaptiveThreshold(quint32 idotUsec, quint32 idashUsec);
+	void updateDotDashThreshold(quint32 idotUsec, quint32 idashUsec);
 
-	const int m_trackingWPMRange = 10; //Tracking range for CWTRACK (WPM)
-	const int m_lowerWPMLimit = 5; //Lower RX limit (WPM)
-	const int m_upperWPMLimit = 50; // Upper RX limit (WPM)
+	const int c_trackingWPMRange = 10; //Tracking range for CWTRACK (WPM)
+	const int c_lowerWPMLimit = 5; //Lower RX limit (WPM)
+	const int c_upperWPMLimit = 60; // Upper RX limit (WPM)
 
 
 
     // Receive buffering
-	const static int m_receiveCapacity = 256;
+	const static int c_receiveCapacity = 256;
     //This holds dots and dashes as they are received, way longer than any letter or phrase
-	char m_dotDashBuf[m_receiveCapacity];
+	char m_dotDashBuf[c_receiveCapacity];
 
     // dotDash buffer current location
 	int m_dotDashBufIndex;
@@ -223,16 +190,16 @@ protected:
 	bool m_squelchEnabled;
 
     //Fixed speed or computed speed based on actual dot/dash timing
-	int m_wpmSpeedCurrent;				// Initially 18 WPM
+	int m_wpmSpeedCurrent;				// Initially 20 WPM
 	int m_wpmSpeedFilter;     //Speed filter is initialized for
 	quint32 m_usecDotCurrent;		// Length of a receive Dot, in Usec based on receiveSpeed
 	quint32 m_usecDashCurrent;		// Length of a receive Dash, in Usec based on receiveSpeed
     //Used to restore to base case when something changes or we get lost
-	const int m_wpmSpeedInit = 20;
+	const int c_wpmSpeedInit = 20;
 	quint32 m_usecDotInit; //Was cw_send_dot_length
 	quint32 m_usecDashInit;
 
-	const bool m_useLowercase = false; //Print Rx in lowercase for CW, RTTY, CONTESTIA and THROB
+	const bool c_useLowercase = false; //Print Rx in lowercase for CW, RTTY, CONTESTIA and THROB
 
 
     //Fastest we can handle at sample rate
@@ -240,7 +207,7 @@ protected:
 	quint32 m_usecShortestMark;
     // Receiving parameters:
 
-	quint32 m_usecAdaptiveThreshold;		// 2-dot threshold for adaptive speed
+	quint32 m_usecDotDashThreshold;		// 2-dot threshold for adaptive speed
 
 	const char *m_spaceTiming(bool lookingForChar);
     void outputString(const char *outStr);
