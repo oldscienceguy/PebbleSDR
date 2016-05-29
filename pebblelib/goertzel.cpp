@@ -553,7 +553,7 @@ bool Goertzel::debounce(bool aboveThreshold)
 */
 //Process one sample at a time
 //3 states: Not enough samples for result, result below threshold, result above threshold
-bool Goertzel::processSample(double x_n, double &retPower)
+bool Goertzel::processSample(double x_n, double &retPower, bool &aboveThreshold)
 {
 	//Caller is responsible for decimation, if needed
 
@@ -563,6 +563,7 @@ bool Goertzel::processSample(double x_n, double &retPower)
 	m_lowCompareTone.processSample(x_n);
 	m_mainTone.m_isValid = false;
 	retPower = 0;
+	aboveThreshold = false;
 	double mainPower = 0;
 	double highPower = 0;
 	double lowPower = 0;
@@ -580,6 +581,7 @@ bool Goertzel::processSample(double x_n, double &retPower)
 		bufDev = m_mainTone.m_stdDev;
 		bufMean = m_mainTone.m_runningMean;
 		snr = mainPower/bufMean;
+		retPower = mainPower;
 
 #if 1
 		if (false)
@@ -587,14 +589,18 @@ bool Goertzel::processSample(double x_n, double &retPower)
 					  DB::powerTodB(mainPower)<<" Mean:"<<
 					  DB::powerTodB(bufMean)<<" Dev:"<<
 					  DB::powerTodB(bufDev);
-		if (snr > 2 )
-			retPower = mainPower;
+		if (snr > 5 ) {
+			aboveThreshold = true;
+		} else {
+			aboveThreshold = false;
+		}
 
 #else
 		//lowPower = m_lowCompareTone.m_power;
 		//highPower = m_highCompareTone.m_power;
 
 		double avgComparePower = (highPower + lowPower) / 2;
+		retPower = mainPower;
 
 		//KA7OEI differential goertzel
 		double compareRatio = 0;
@@ -611,7 +617,9 @@ bool Goertzel::processSample(double x_n, double &retPower)
 
 		//if (debounce(compareRatio > m_compareThreshold)) {
 		if (compareRatio > m_compareThreshold) {
-			retPower = mainPower;
+			aboveThreshold = true;
+		} else {
+			aboveThreshold = false;
 		}
 #endif
 		return true; //Valid result

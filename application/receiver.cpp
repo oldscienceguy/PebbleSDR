@@ -999,9 +999,10 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 		//Testing goertzel
 		double power;
 		bool result;
+		bool aboveThreshold;
 		//hardwired decimation 8 for testing
 		for (int i=0; i<numStepSamples; i += 8) {
-			result = m_testGoertzel->processSample(nextStep[i].re, power);
+			result = m_testGoertzel->processSample(nextStep[i].re, power, aboveThreshold);
 			if (result)
 				m_signalStrength->setExtValue(DB::powerTodB(power));
 		}

@@ -84,7 +84,7 @@ public:
 	quint32 estNForShortestBit(double msShortestBit);
 	quint32 estNForBinBandwidth(quint32 bandwidth);
 
-	bool processSample(double x_n, double &power);
+	bool processSample(double x_n, double &power, bool &aboveThreshold);
 private:
 
 	ToneBit m_mainTone;
