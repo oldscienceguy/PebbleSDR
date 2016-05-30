@@ -7,9 +7,10 @@
 #pragma clang diagnostic ignored "-Wc++11-extensions"
 
 struct MorseSymbol {
-	char chr;				//ASCII character used to send
+	quint8 chr;				//ASCII character used to send
 	const char *display;	//Printable string
 	const char *dotDash;	//Dot-Dash string
+	quint8 token;			//Leading 1 followed by 1 for dash and 0 for dot
 };
 
 struct CW_XMT_TABLE {
@@ -24,7 +25,7 @@ public:
     void init();
 	//Returns a table entry for the dot/dash representation
 	MorseSymbol *rxLookup(char *r);
-	unsigned long txLookup(char c);
+	quint8 txLookup(char c);
 	const char *txPrint(char c);
 
 	//Returns Tcw in ms for wpm
@@ -37,6 +38,9 @@ public:
 
 	//Max dots and dashes in a morse symbol
 	static const int c_maxMorseLen = 7;
+	//Max number of Tcw's we can see in a symbol
+	// 7 dashes (21), with 7 interelement spaces(7), with 1 char space(7)
+	static const quint32 c_maxTcwPerSymbol = 35;
 
 	//Use DOT_MAGIC to convert WPM to/from usec is 1,200,000
 	//c_uSecDotMagic / WPM = usec per TCW
@@ -66,7 +70,8 @@ private:
 	MorseSymbol *m_rxLookup[c_morseTableSize];
 
 	//In character order
-	CW_XMT_TABLE 	m_txLookup[c_morseTableSize];
+	MorseSymbol *m_txLookup[c_morseTableSize];
+
 	quint8 	tokenizeSymbol(const char *symbol);
 	const bool c_useParen = false; //Use open paren character; typically used in MARS ops
 };
