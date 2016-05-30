@@ -316,31 +316,38 @@ unsigned int MorseCode::tokenize_representation(const char *representation)
 
 /* ---------------------------------------------------------------------- */
 
+MorseCode::MorseCode() {
+	init();
+}
+
+MorseCode::~MorseCode() {
+}
+
 void MorseCode::init()
 {
-    CW_TABLE *cw;	/* Pointer to table entry */
+	CW_TABLE *cw;	/* Pointer to table entry */
     unsigned int i;
     long code;
     int len;
 
     // Clear the RX & TX tables
     for (i = 0; i < MorseTableSize; i++) {
-        cw_tx_lookup[i].code = 0x04;
-        cw_tx_lookup[i].prt = 0;
-        cw_rx_lookup[i] = 0;
+		m_txLookup[i].code = 0x04;
+		m_txLookup[i].prt = 0;
+		m_rxLookup[i] = 0;
     }
     // For each main table entry, create a token entry.
     for (cw = cw_table; cw->chr != 0; cw++) {
-        if ((cw->chr == '(') && !useParen) continue;
-        if ((cw->chr == '<') && useParen) continue;
+		if ((cw->chr == '(') && !c_useParen) continue;
+		if ((cw->chr == '<') && c_useParen) continue;
         i = tokenize_representation(cw->dotDash);
         if (i != 0)
-            cw_rx_lookup[i] = cw;
+			m_rxLookup[i] = cw;
     }
     // Build TX table
     for (cw = cw_table; cw->chr != 0; cw++) {
-        if ((cw->chr == '(') && !useParen) continue;
-        if ((cw->chr == '<') && useParen) continue;
+		if ((cw->chr == '(') && !c_useParen) continue;
+		if ((cw->chr == '<') && c_useParen) continue;
         len = strlen(cw->dotDash);
         code = 0x04;
         while (len-- > 0) {
@@ -352,8 +359,8 @@ void MorseCode::init()
                 code = (code << 1) | 1;
             code <<= 1;
         }
-        cw_tx_lookup[(int)cw->chr].code = code;
-        cw_tx_lookup[(int)cw->chr].prt = cw->display;
+		m_txLookup[(int)cw->chr].code = code;
+		m_txLookup[(int)cw->chr].prt = cw->display;
     }
 }
 
@@ -366,7 +373,7 @@ CW_TABLE *MorseCode::rx_lookup(char *r)
     if ((token = tokenize_representation(r)) == 0)
         return NULL;
 
-    if ((cw = cw_rx_lookup[token]) == NULL)
+	if ((cw = m_rxLookup[token]) == NULL)
         return NULL;
 
     return cw;
@@ -374,15 +381,42 @@ CW_TABLE *MorseCode::rx_lookup(char *r)
 
 const char *MorseCode::tx_print(int c)
 {
-    if (cw_tx_lookup[toupper(c)].prt)
-        return cw_tx_lookup[toupper(c)].prt;
+	if (m_txLookup[toupper(c)].prt)
+		return m_txLookup[toupper(c)].prt;
     else
-        return "";
+		return "";
 }
+
+quint32 MorseCode::wpmToTcwMs(quint32 wpm)
+{
+	//quint32 tcw = 60.0 / (wpm * 50) * 1000;
+	quint32 tcw = c_mSecDotMagic / wpm;
+	return tcw;
+}
+
+quint32 MorseCode::tcwMsToWpm(quint32 msTcw)
+{
+	quint32 wpm = c_mSecDotMagic / msTcw;
+	return wpm;
+}
+
+// Usec = DM / WPM
+// DM = WPM * Usec
+// WPM = DM / Usec
+quint32 MorseCode::wpmToTcwUsec(quint32 wpm)
+{
+	return c_uSecDotMagic / wpm;
+}
+
+quint32  MorseCode::tcwUsecToWpm(quint32 tcwUsec)
+{
+	return c_uSecDotMagic / tcwUsec;
+}
+
 
 unsigned long MorseCode::tx_lookup(int c)
 {
-    return cw_tx_lookup[toupper(c)].code;
+	return m_txLookup[toupper(c)].code;
 }
 
 

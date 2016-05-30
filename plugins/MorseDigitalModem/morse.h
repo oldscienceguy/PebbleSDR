@@ -45,17 +45,8 @@ public:
 	QString getPluginDescription();
     QObject *asQObject() {return (QObject *)this;}
 
-
-    //Returns tcw in ms for any given WPM
-	int wpmToTcw(int w);
-    //Returns wpm for any given tcw
-	int tcwToWpm(int t);
-
 	void outputData(const char *d);
 	void outputData(const char c);
-
-	quint32 wpmToUsec(int w);
-	int usecToWPM(quint32 u);
 
 public slots:
     void squelchChanged(int v);
@@ -74,8 +65,6 @@ signals:
 
 
 protected:
-	//Max dots and dashes in a morse symbol
-	static const int c_maxMorseLen = 7;
 	//Use DOT_MAGIC to convert WPM to/from usec is 1,200,000
 	//c_uSecDotMagic / WPM = usec per TCW
 	//c_mSecDotMagic / WPM = msec per TCW

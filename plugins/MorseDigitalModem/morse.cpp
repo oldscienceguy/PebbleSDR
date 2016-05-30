@@ -132,13 +132,6 @@
 
 */
 
-//Relative lengths of elements in Tcw terms
-#define TCW_DOT 1
-#define TCW_DASH 3
-#define TCW_CHAR 3
-#define TCW_ELEMENT 1
-#define TCW_WORD 7
-
 Morse::Morse()
 {
 	m_dataUi = NULL;
@@ -339,31 +332,6 @@ QString Morse::getPluginName()
 QString Morse::getPluginDescription()
 {
     return "Morse code";
-}
-
-//Returns tcw in ms for any given WPM
-int Morse::wpmToTcw(int w)
-{
-    int tcw = 60.0 / (w * 50) * 1000;
-    return tcw;
-}
-//Returns wpm for any given tcw (in ms)
-int Morse::tcwToWpm(int t)
-{
-	int wpm = c_mSecDotMagic/t;
-    return wpm;
-}
-
-// Usec = DM / WPM
-// DM = WPM * Usec
-// WPM = DM / Usec
-quint32 Morse::wpmToUsec(int w)
-{
-	return c_uSecDotMagic / w;
-}
-int Morse::usecToWPM(quint32 u)
-{
-	return c_uSecDotMagic / u;
 }
 
 void Morse::setDemodMode(DeviceInterface::DemodMode _demodMode)
