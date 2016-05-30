@@ -2,19 +2,10 @@
 #include "gpl.h"
 #include "morsecode.h"
 
-/*
- * Morse code characters table.  This table allows lookup of the Morse
- * shape of a given alphanumeric character.  Shapes are held as a string,
- * with '-' representing dash, and '.' representing dot.  The table ends
- * with a NULL entry.
- *
- * This is the main table from which the other tables are computed.
- *
- */
-
+//Main table used to generate fast lookup tables
 //DotDash must be unique for each entry
 //7 Elements max
-static CW_TABLE cw_table[] = {
+MorseSymbol MorseCode::m_morseTable[] = {
     //Prosigns, no interletter spacing http://en.wikipedia.org/wiki/Prosigns_for_Morse_Code
     //Special abreviations http://en.wikipedia.org/wiki/Morse_code_abbreviations
     //Supposed to have inter-letter spacing, but often sent as single 'letter'
@@ -277,7 +268,7 @@ ZX	Zero beat
  * is viewable as an integer in the range 2 (".") to 255 ("-------"), and can
  * be used as an index into a fast lookup array.
  */
-unsigned int MorseCode::tokenize_representation(const char *representation)
+quint8 MorseCode::tokenizeSymbol(const char *symbol)
 {
     unsigned int token;	/* Return token value */
     const char *sptr;	/* Pointer through string */
@@ -286,14 +277,14 @@ unsigned int MorseCode::tokenize_representation(const char *representation)
      * Our algorithm can handle only 6 characters of representation.
      * And we insist on there being at least one character, too.
      */
-    if (strlen(representation) > 6 || strlen(representation) < 1)
+	if (strlen(symbol) > 6 || strlen(symbol) < 1)
         return 0;
 
     /*
      * Build up the token value based on the dots and dashes.  Start the
      * token at 1 - the sentinel (start) bit.
      */
-    for (sptr = representation, token = 1; *sptr != 0; sptr++) {
+	for (sptr = symbol, token = 1; *sptr != 0; sptr++) {
         /*
          * Left-shift the sentinel (start) bit.
          */
@@ -304,9 +295,9 @@ unsigned int MorseCode::tokenize_representation(const char *representation)
          * not a dash or a dot, then there is an error in the repres-
          * entation string.
          */
-        if (*sptr == CW_DASH_REPRESENTATION)
+		if (*sptr == c_dashChar)
             token |= 1;
-        else if (*sptr != CW_DOT_REPRESENTATION)
+		else if (*sptr != c_dotChar)
             return 0;
     }
 
@@ -325,33 +316,34 @@ MorseCode::~MorseCode() {
 
 void MorseCode::init()
 {
-	CW_TABLE *cw;	/* Pointer to table entry */
-    unsigned int i;
+	MorseSymbol *cw;	/* Pointer to table entry */
     long code;
     int len;
+	quint8 token;
 
     // Clear the RX & TX tables
-    for (i = 0; i < MorseTableSize; i++) {
-		m_txLookup[i].code = 0x04;
+	for (quint32 i = 0; i < c_morseTableSize; i++) {
+		m_txLookup[i].code = 0x04; //0000 0100
 		m_txLookup[i].prt = 0;
 		m_rxLookup[i] = 0;
     }
+
     // For each main table entry, create a token entry.
-    for (cw = cw_table; cw->chr != 0; cw++) {
+	for (cw = m_morseTable; cw->chr != 0; cw++) {
 		if ((cw->chr == '(') && !c_useParen) continue;
 		if ((cw->chr == '<') && c_useParen) continue;
-        i = tokenize_representation(cw->dotDash);
-        if (i != 0)
-			m_rxLookup[i] = cw;
+		token = tokenizeSymbol(cw->dotDash);
+		if (token != 0)
+			m_rxLookup[token] = cw;
     }
     // Build TX table
-    for (cw = cw_table; cw->chr != 0; cw++) {
+	for (cw = m_morseTable; cw->chr != 0; cw++) {
 		if ((cw->chr == '(') && !c_useParen) continue;
 		if ((cw->chr == '<') && c_useParen) continue;
         len = strlen(cw->dotDash);
         code = 0x04;
         while (len-- > 0) {
-            if (cw->dotDash[len] == CW_DASH_REPRESENTATION) {
+			if (cw->dotDash[len] == c_dashChar) {
                 code = (code << 1) | 1;
                 code = (code << 1) | 1;
                 code = (code << 1) | 1;
@@ -365,12 +357,12 @@ void MorseCode::init()
 }
 
 //Return CW_TABLE element so caller can access anything from it, not just display
-CW_TABLE *MorseCode::rx_lookup(char *r)
+MorseSymbol *MorseCode::rxLookup(char *r)
 {
     int			token;
-    CW_TABLE *cw;
+	MorseSymbol *cw;
 
-    if ((token = tokenize_representation(r)) == 0)
+	if ((token = tokenizeSymbol(r)) == 0)
         return NULL;
 
 	if ((cw = m_rxLookup[token]) == NULL)
@@ -379,7 +371,7 @@ CW_TABLE *MorseCode::rx_lookup(char *r)
     return cw;
 }
 
-const char *MorseCode::tx_print(int c)
+const char *MorseCode::txPrint(char c)
 {
 	if (m_txLookup[toupper(c)].prt)
 		return m_txLookup[toupper(c)].prt;
@@ -414,7 +406,7 @@ quint32  MorseCode::tcwUsecToWpm(quint32 tcwUsec)
 }
 
 
-unsigned long MorseCode::tx_lookup(int c)
+unsigned long MorseCode::txLookup(char c)
 {
 	return m_txLookup[toupper(c)].code;
 }

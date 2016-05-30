@@ -966,10 +966,10 @@ void Morse::addMarkToDotDash()
     // ok... do we have a dit or a dah?
     // a dot is anything shorter than 2 dot times
 	if (m_usecMark <= m_usecDotDashThreshold) {
-		m_dotDashBuf[m_dotDashBufIndex++] = CW_DOT_REPRESENTATION;
+		m_dotDashBuf[m_dotDashBufIndex++] = MorseCode::c_dotChar;
     } else {
         // a dash is anything longer than 2 dot times
-		m_dotDashBuf[m_dotDashBufIndex++] = CW_DASH_REPRESENTATION;
+		m_dotDashBuf[m_dotDashBufIndex++] = MorseCode::c_dashChar;
     }
 
     // We just added a representation to the receive buffer.
@@ -1016,7 +1016,7 @@ void Morse::outputString(const char *outStr) {
 //Uses dotDashBuf, could use usec silence
 const char* Morse::m_spaceTiming(bool lookingForChar)
 {
-    CW_TABLE *cw;
+	MorseSymbol *cw;
     const char *outStr;
 
     if (lookingForChar) {
@@ -1036,7 +1036,7 @@ const char* Morse::m_spaceTiming(bool lookingForChar)
             // Look up the representation
             outStr = NULL;
 			if (*m_dotDashBuf != 0x00) {
-				cw = m_morseCode.rx_lookup(m_dotDashBuf);
+				cw = m_morseCode.rxLookup(m_dotDashBuf);
                 if (cw != NULL) {
 					if (m_outputMode == CHAR_ONLY)
                         outStr = cw->display;

@@ -6,10 +6,10 @@
 #include "global.h"
 #pragma clang diagnostic ignored "-Wc++11-extensions"
 
-struct CW_TABLE {
-    char chr;	/* The character(s) represented */
-    const char *display;	/* The printable representation of the character */
-    const char *dotDash;	/* Dot-dash shape of the character */
+struct MorseSymbol {
+	char chr;				//ASCII character used to send
+	const char *display;	//Printable string
+	const char *dotDash;	//Dot-Dash string
 };
 
 struct CW_XMT_TABLE {
@@ -17,19 +17,15 @@ struct CW_XMT_TABLE {
     const    char *prt;
 };
 
-#define	CW_DOT_REPRESENTATION	'.'
-#define	CW_DASH_REPRESENTATION	'-'
-
-#define	MorseTableSize	256
-
 class MorseCode {
 public:
 	MorseCode();
 	~MorseCode();
     void init();
-    CW_TABLE *rx_lookup(char *r);
-    unsigned long	tx_lookup(int c);
-    const char *tx_print(int c);
+	//Returns a table entry for the dot/dash representation
+	MorseSymbol *rxLookup(char *r);
+	unsigned long txLookup(char c);
+	const char *txPrint(char c);
 
 	//Returns Tcw in ms for wpm
 	static quint32 wpmToTcwMs(quint32 wpm);
@@ -57,11 +53,21 @@ public:
 	static const quint32 c_tcwElementSpace = 1;
 	static const quint32 c_tcwWordSpace = 7;
 
+	static const quint8 c_dotChar = '.';
+	static const quint8 c_dashChar = '-';
+
 private:
 
-	CW_TABLE 		*m_rxLookup[256];
-	CW_XMT_TABLE 	m_txLookup[256];
-    unsigned int 	tokenize_representation(const char *representation);
+	static const quint32 c_morseTableSize = 256;
+	//Main table used to generate fast lookup tables for receive and transmit
+	static MorseSymbol m_morseTable[c_morseTableSize];
+
+	//Array of pointers to cw_table dot/dash tokenized order
+	MorseSymbol *m_rxLookup[c_morseTableSize];
+
+	//In character order
+	CW_XMT_TABLE 	m_txLookup[c_morseTableSize];
+	quint8 	tokenizeSymbol(const char *symbol);
 	const bool c_useParen = false; //Use open paren character; typically used in MARS ops
 };
 
