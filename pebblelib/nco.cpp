@@ -64,11 +64,18 @@ So a 24khz signal will have 2 samples per cycle (48000/24000), which is the Nyqu
 */
 void NCO::genSingle(CPX *_in, quint32 _numSamples, double _dbGain, bool _mix)
 {
-	Q_UNUSED(_dbGain);
-	Q_UNUSED(_mix);
-
+	CPX cpx;
 	for (quint32 i = 0; i < _numSamples; i++) {
-		nextSample(_in[i]);
+		nextSample(cpx);
+		cpx.re *= _dbGain;
+		cpx.im *= _dbGain;
+		if (_mix) {
+			_in[i].re += cpx.re;
+			_in[i].im += cpx.im;
+		} else {
+			_in[i].re = cpx.re;
+			_in[i].im = cpx.im;
+		}
 	}
 
 }
