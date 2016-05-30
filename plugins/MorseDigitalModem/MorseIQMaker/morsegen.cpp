@@ -13,6 +13,7 @@ MorseGen::MorseGen(double sampleRate, double frequency, double dbAmplitude, quin
 	m_dbAmplitude = dbAmplitude;
 	m_amplitude = DB::dBToAmplitude(dbAmplitude);
 	m_wpm = wpm;
+	m_msRiseFall = 10; //10ms attack/decay, 5ms ARRL recomendation, 20ms max
 
 	//Calculate size of output elements
 	quint32 msTcw = MorseCode::wpmToTcwMs(wpm);
@@ -36,17 +37,59 @@ MorseGen::MorseGen(double sampleRate, double frequency, double dbAmplitude, quin
 	//Build IQ data for each element
 	double phase = TWOPI * m_frequency / m_sampleRate;
 	double acc = 0;
-	for (quint32 i=0; i<m_numSamplesDot; i++) {
+	quint32 numSamplesRise = m_msRiseFall / (1000/m_sampleRate);
+	quint32 numSamplesFall = m_msRiseFall / (1000/m_sampleRate);
+	quint32 numSamplesSteady = m_numSamplesDot - numSamplesRise - numSamplesFall;
+	//Dot samples
+	//Ramp amplitude during rise
+	double ampInc = m_amplitude / numSamplesRise;
+	double amplitude = ampInc;
+	for (quint32 i=0; i<numSamplesRise; i++) {
+		m_dotSamples[i].re = cos(acc) * amplitude;
+		m_dotSamples[i].im = sin(acc) * amplitude;
+		amplitude += ampInc;
+		acc += phase;
+	}
+	//Steady signal
+	for (quint32 i=numSamplesRise; i< numSamplesSteady; i++) {
 		m_dotSamples[i].re = cos(acc) * m_amplitude;
 		m_dotSamples[i].im = sin(acc) * m_amplitude;
 		acc += phase;
 	}
+	//Decline amplitude during fall
+	amplitude = m_amplitude - ampInc;
+	for (quint32 i= numSamplesSteady; i< m_numSamplesDot; i++) {
+		m_dotSamples[i].re = cos(acc) * amplitude;
+		m_dotSamples[i].im = sin(acc) * amplitude;
+		amplitude -= ampInc;
+		acc += phase;
+	}
+
+	numSamplesSteady = m_numSamplesDash - numSamplesRise - numSamplesFall;
 	acc = 0;
-	for (quint32 i=0; i<m_numSamplesDash; i++) {
+	ampInc = m_amplitude / numSamplesFall;
+	amplitude = ampInc;
+	for (quint32 i=0; i<numSamplesRise; i++) {
+		m_dashSamples[i].re = cos(acc) * amplitude;
+		m_dashSamples[i].im = sin(acc) * amplitude;
+		amplitude += ampInc;
+		acc += phase;
+	}
+	//Steady signal
+	for (quint32 i=numSamplesRise; i< numSamplesSteady; i++) {
 		m_dashSamples[i].re = cos(acc) * m_amplitude;
 		m_dashSamples[i].im = sin(acc) * m_amplitude;
 		acc += phase;
 	}
+	//Decline amplitude during fall
+	amplitude = m_amplitude - ampInc;
+	for (quint32 i= numSamplesSteady; i< m_numSamplesDot; i++) {
+		m_dashSamples[i].re = cos(acc) * amplitude;
+		m_dashSamples[i].im = sin(acc) * amplitude;
+		amplitude -= ampInc;
+		acc += phase;
+	}
+
 	for (quint32 i=0; i<m_numSamplesElement; i++) {
 		m_elementSamples[i].re = 0;
 		m_elementSamples[i].im = 0;

@@ -25,6 +25,7 @@ private:
 	double m_dbAmplitude; //In db
 	double m_amplitude;
 	quint32 m_wpm;
+	quint32 m_msRiseFall;
 
 	//Output buffers for morse elements
 	quint32 m_numSamplesDot;
