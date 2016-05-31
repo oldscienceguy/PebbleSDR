@@ -13,13 +13,10 @@ struct MorseSymbol {
 	quint8 token;			//Leading 1 followed by 1 for dash and 0 for dot
 };
 
-struct CW_XMT_TABLE {
-    unsigned long code;
-    const    char *prt;
-};
-
 class MorseCode {
 public:
+	enum MorseSymbolTypes {DOT, DASH, EL_SPACE, CH_SPACE, WORD_SPACE};
+
 	MorseCode();
 	~MorseCode();
     void init();
