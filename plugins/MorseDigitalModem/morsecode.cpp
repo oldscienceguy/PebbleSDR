@@ -416,7 +416,7 @@ MorseSymbol *MorseCode::tableLookup(quint32 index)
 	return symbol;
 }
 
-const char *MorseCode::txPrint(char c)
+QString MorseCode::txPrint(char c)
 {
 	MorseSymbol *symbol = m_txLookup[toupper(c)];
 	if (symbol != NULL)

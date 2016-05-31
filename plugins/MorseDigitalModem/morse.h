@@ -90,8 +90,7 @@ protected:
     //Characters are output from the main receive thread and can't be output directly to textedit
     //due to Qt requirement that only main thread does Gui output
     //So we put characters into this buffer in thread and pick them up in GUI with timer
-	char m_outputBuf[256]; //Way bigger than we need
-	int m_outputBufIndex; //Position in output buf of next char, zero means buffer is empty
+	QString m_output; //UTF-8 compatible for international char
 	QMutex m_outputBufMutex;
 	bool m_outputOn;
 
@@ -198,8 +197,8 @@ protected:
 
 	quint32 m_usecDotDashThreshold;		// 2-dot threshold for adaptive speed
 
-	const char *m_spaceTiming(bool lookingForChar);
-    void outputString(const char *outStr);
+	QString m_spaceTiming(bool lookingForChar);
+	void outputString(QString outStr);
     void addMarkToDotDash();
 	bool m_markHandled;
 

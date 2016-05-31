@@ -8,7 +8,7 @@
 
 struct MorseSymbol {
 	quint8 ascii;			//ASCII character used to send
-	const char *display;	//Printable string
+	const QString display;	//UTF-8 Printable string
 	const char *dotDash;	//Dot-Dash string
 	quint8 token;			//Leading 1 followed by 1 for dash and 0 for dot
 };
@@ -26,7 +26,7 @@ public:
 	//Used to iterate through the entire table for testing and possible future use
 	MorseSymbol *tableLookup(quint32 index);
 
-	const char *txPrint(char c);
+	QString txPrint(char c);
 
 	//Returns Tcw in ms for wpm
 	static quint32 wpmToTcwMs(quint32 wpm);

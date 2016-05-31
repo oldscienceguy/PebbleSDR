@@ -235,10 +235,7 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 	m_thresholdFilter = new MovingAvgFilter(c_thresholdFilterSize);
 
     syncTiming();
-
 	m_demodMode = DeviceInterface::dmCWL;
-	m_outputBufIndex = 0;
-
     init();
 
     //Used to update display from main thread.
@@ -373,11 +370,9 @@ void Morse::refreshOutput()
 	m_outputBufMutex.lock();
 	m_dataUi->wpmLabel->setText(QString().sprintf("%d WPM",m_wpmSpeedCurrent));
 
-	for (int i=0; i<m_outputBufIndex; i++) {
-		m_dataUi->dataEdit->insertPlainText(QString(m_outputBuf[i])); //At cursor
-		m_dataUi->dataEdit->moveCursor(QTextCursor::End);
-    }
-	m_outputBufIndex = 0;
+	m_dataUi->dataEdit->insertPlainText(m_output); //At cursor
+	m_dataUi->dataEdit->moveCursor(QTextCursor::End); //Scrolls window so new text is always visible
+
 	m_outputBufMutex.unlock();
 }
 
@@ -787,7 +782,7 @@ CPX * Morse::processBlock(CPX *in)
 //We could return next state just to be useful
 bool Morse::stateMachine(CW_EVENT event)
 {
-    const char *outStr;
+	QString outStr;
     //State sequence normally follows the same order as the switch statement
     //For each state, handle all possible events
 	switch (m_receiveState) {
@@ -984,26 +979,19 @@ void Morse::addMarkToDotDash()
     }
 }
 
-void Morse::outputString(const char *outStr) {
+void Morse::outputString(QString outStr) {
 	if (!m_outputOn)
         return;
 
     if (outStr != NULL) {
-        char c;
 
         //Display can be accessing at same time, so we need to lock
 		m_outputBufMutex.lock();
-
-        //Output character(s)
-        int i = 0;
-		while ((unsigned long)m_outputBufIndex < sizeof(m_outputBuf) &&
-               outStr[i] != 0x00) {
-            c = outStr[i++];
-			m_outputBuf[m_outputBufIndex++] = c_useLowercase ? tolower(c) : c;
-        }
-        //Always null terminate
-		m_outputBuf[m_outputBufIndex++] = 0x00;
-
+		if (c_useLowercase) {
+			m_output = outStr.toLower();
+		} else {
+			m_output = outStr;
+		}
 		m_outputBufMutex.unlock();
         emit newOutput();
 
@@ -1014,10 +1002,10 @@ void Morse::outputString(const char *outStr) {
 //Returns true if space was long enough to output something
 //Return char or string as needed
 //Uses dotDashBuf, could use usec silence
-const char* Morse::m_spaceTiming(bool lookingForChar)
+QString Morse::m_spaceTiming(bool lookingForChar)
 {
 	MorseSymbol *cw;
-    const char *outStr;
+	QString outStr;
 
     if (lookingForChar) {
         // SHORT time since keyup... nothing to do yet
@@ -1034,16 +1022,16 @@ const char* Morse::m_spaceTiming(bool lookingForChar)
             //Char space is 3 TCW per spec, but accept 2 to 4
 
             // Look up the representation
-            outStr = NULL;
+			outStr.clear(); //Empty
 			if (*m_dotDashBuf != 0x00) {
 				cw = m_morseCode.rxLookup(m_dotDashBuf);
                 if (cw != NULL) {
 					if (m_outputMode == CHAR_ONLY)
                         outStr = cw->display;
 					else if (m_outputMode == CHAR_AND_DOTDASH)
-                        outStr = QString().sprintf("%s [ %s ] ",cw->display,cw->dotDash).toLocal8Bit();
+						outStr = QString("%1 [ %2 ] ").arg(cw->display).arg(cw->dotDash);
 					else if (m_outputMode == DOTDASH)
-                        outStr = QString().sprintf(" [ %s ] ",cw->dotDash).toLocal8Bit();
+						outStr = QString(" [ %s ] ").arg(cw->dotDash);
                 } else {
                     // invalid decode... let user see error
                     outStr = "*";
