@@ -11,94 +11,128 @@ MorseSymbol MorseCode::m_morseTable[] = {
     //Supposed to have inter-letter spacing, but often sent as single 'letter'
     //Non English extensions (TBD from Wikipedia)
 
-    //I don't think the char matters because we're not supporting send, can use '*' for everything
-	//Char  Display   Dot/Dash
-	{'=',	"<BT>",   "-...-",	0	}, // 2 LF or new paragraph
-	{'~',	"<AA>",   ".-.-",	0	}, // CR/LF
-	{'<',	"<AS>",   ".-...",	0	}, // Please Wait
-	{'>',	"<AR>",   ".-.-.",	0	}, // End of Message, sometimes shown as '+'
-	{'%',	"<SK>",   "...-.-",	0	}, // End of QSO or End of Work
-	{'+',	"<KN>",   "-.--.",	0	}, // Invitation to a specific station to transmit, compared to K which is general
-	{'&',	"<INT>",  "..-.-",	0	}, //
-	{'{',	"<HM>",   "....--",	0	}, //
-	{'}',	"<VE>",   "...-.",	0	}, //
-	//{'*',   "(ER)",   "·······.",	0},  //Error (8 elements, too long)
-	{'*',   "(SN)",   "···-·",	0	},    //Understood
-	//{'*',   "(CL)",   "-·-··-··",	0}, //Going off air (8 elements, too long)
-	{'*',   "(CT)",   "-·-·-",	0	},   //Start copying (same as KA)
-	{'*',   "(DT)",   "-··---",	0	},  //Shift to Wabun code
-	//{'*',   "(SOS)",  "···---···",	0}, //SOS (Too long)
-	{'*',   "(BK)",   "-...-.-",	0}, //Break (Bk)
+	//Todo: Support for 8 elelement Morse like (ER)
+	//ASCII codes must be unique, no duplicates allowed in table
 
-    /* ASCII 7bit letters */
-	{'A',	"A",	".-",	0	},
-	{'B',	"B",	"-...",	0	},
-	{'C',	"C",	"-.-.",	0	},
-	{'D',	"D",	"-..",	0	},
-	{'E',	"E",	".",	0	},
-	{'F',	"F",	"..-.",	0	},
-	{'G',	"G",	"--.",	0	},
-	{'H',	"H",	"....",	0	},
-	{'I',	"I",	"..",	0	},
-	{'J',	"J",	".---",	0	},
-	{'K',	"K",	"-.-",	0	},
-	{'L',	"L",	".-..",	0	},
-	{'M',	"M",	"--",	0	},
-	{'N',	"N",	"-.",	0	},
-	{'O',	"O",	"---",	0	},
-	{'P',	"P",	".--.",	0	},
-	{'Q',	"Q",	"--.-",	0	},
-	{'R',	"R",	".-.",	0	},
-	{'S',	"S",	"...",	0	},
-	{'T',	"T",	"-",	0	},
-	{'U',	"U",	"..-",	0	},
-	{'V',	"V",	"...-",	0	},
-	{'W',	"W",	".--",	0	},
-	{'X',	"X",	"-..-",	0	},
-	{'Y',	"Y",	"-.--",	0	},
-	{'Z',	"Z",	"--..",	0	},
-    /* Numerals */
-	{'0',	"0",	"-----",	0	},
-	{'1',	"1",	".----",	0	},
-	{'2',	"2",	"..---",	0	},
-	{'3',	"3",	"...--",	0	},
-	{'4',	"4",	"....-",	0	},
-	{'5',	"5",	".....",	0	},
-	{'6',	"6",	"-....",	0	},
-	{'7',	"7",	"--...",	0	},
-	{'8',	"8",	"---..",	0	},
-	{'9',	"9",	"----.",	0	},
-    /* Punctuation */
-	{'\\',	"\\",	".-..-.",	0	},
-	{'\'',	"'",	".----.",	0	},
-	{'$',	"$",	"...-..-",	0	},
-	{'(',	"(",	"-.--.",	0	},
-	{')',	")",	"-.--.-",	0	},
-	{',',	",",	"--..--",	0	},
-	{'-',	"-",	"-....-",	0	},
-	{'.',	".",	".-.-.-",	0	},
-	{'/',	"/",	"-..-.",	0	},
-	{':',	":",	"---...",	0	},
-	{';',	";",	"-.-.-.",	0	},
-	{'?',	"?",	"..--..",	0	},
-	{'_',	"_",	"..--.-",	0	},
-	{'@',	"@",	".--.-.",	0	},
-	{'!',	"!",	"-.-.--",	0	},
-	{0, NULL, NULL, 0} //Must terminate table
+	//Ascii  Display   Dot/Dash	Token
+	{0x21,	"!",	"-.-.--",	0	}, // exclamation
+	{0x22,   "<CT>",   "-·-·-",	0	}, // '"' Attention or Start copying (same as KA)
+	{0x23,   "<NJ>",   "-··---",	0	},  // '#' Shift to Wabun code
+	{0x24,	"$",	"...-..-",	0	},
+	{0x25,	"<SK>",   "...-.-",	0	}, // '%' End of QSO or End of Work
+	{0x26,	"<INT>",  "..-.-",	0	}, // '&'
+	{0x27,	"'",	".----.",	0	}, // apostrophe
+	{0x28,	"(",	"-.--.",	0	}, // open paren
+	{0x29,	")",	"-.--.-",	0	}, // close paren
+	{0x2a,   "<SN>",   "···-·",	0	}, //Understood
+	{0x2b,	"<KN>",   "-.--.",	0	}, // '+' Invitation to a specific station to transmit, compared to K which is general
+	{0x2c,	",",	"--..--",	0	}, // comma
+	{0x2d,	"-",	"-....-",	0	}, // dash
+	{0x2e,	".",	".-.-.-",	0	}, // period
+	{0x2f,	"/",	"-..-.",	0	}, // forward slash
+
+	{0x30,	"0",	"-----",	0	},
+	{0x31,	"1",	".----",	0	},
+	{0x32,	"2",	"..---",	0	},
+	{0x33,	"3",	"...--",	0	},
+	{0x34,	"4",	"....-",	0	},
+	{0x35,	"5",	".....",	0	},
+	{0x36,	"6",	"-....",	0	},
+	{0x37,	"7",	"--...",	0	},
+	{0x38,	"8",	"---..",	0	},
+	{0x39,	"9",	"----.",	0	},
+	{0x3a,	":",	"---...",	0	}, // colon
+	{0x3b,	";",	"-.-.-.",	0	}, // semi colon
+	{0x3c,	"<AS>",   ".-...",	0	}, // '<' Please Wait or '&'
+	{0x3d,	"<BT>\n",   "-...-",	0	}, // '='  2 LF or new paragraph
+	{0x3e,	"<AR>",   ".-.-.",	0	}, // '>' End of Message, sometimes shown as '+'
+	{0x3f,	"?",	"..--..",	0	}, // question
+	{0x40,	"@",	".--.-.",	0	}, // At sign (Added to ITU standard in 2004)
+
+	//ASCII letters (always converted to UC for typing, 'a' same as 'A'
+	{0x41,	"A",	".-",	0	},
+	{0x42,	"B",	"-...",	0	},
+	{0x43,	"C",	"-.-.",	0	},
+	{0x44,	"D",	"-..",	0	},
+	{0x45,	"E",	".",	0	},
+	{0x46,	"F",	"..-.",	0	},
+	{0x47,	"G",	"--.",	0	},
+	{0x48,	"H",	"....",	0	},
+	{0x49,	"I",	"..",	0	},
+	{0x4a,	"J",	".---",	0	},
+	{0x4b,	"K",	"-.-",	0	}, //Also <K>
+	{0x4c,	"L",	".-..",	0	},
+	{0x4d,	"M",	"--",	0	},
+	{0x4e,	"N",	"-.",	0	},
+	{0x4f,	"O",	"---",	0	},
+	{0x50,	"P",	".--.",	0	},
+	{0x51,	"Q",	"--.-",	0	},
+	{0x52,	"R",	".-.",	0	},
+	{0x53,	"S",	"...",	0	},
+	{0x54,	"T",	"-",	0	},
+	{0x55,	"U",	"..-",	0	},
+	{0x56,	"V",	"...-",	0	},
+	{0x57,	"W",	".--",	0	},
+	{0x58,	"X",	"-..-",	0	},
+	{0x59,	"Y",	"-.--",	0	},
+	{0x5a,	"Z",	"--..",	0	},
+	{0x5b,   "<BK>",   "-...-.-",	0}, // '[' Break (Bk)
+	{0x5c,	"\\",	".-..-.",	0	}, // '\' back slash
+	//{0x5d,   "<HH>",   "·······.",	0},  // ']' Error (8 elements, too long)
+	//{0x5e,   "<CL>",   "-·-··-··",	0}, // '^' Going off air (8 elements, too long)
+	{0x5f,	"_",	"..--.-",	0	}, // '_' underscore
+
+	{0x7b,	"<HM>",   "....--",	0	}, // '{'
+	//{0x7c,   "<SOS>",  "···---···",	0}, // '|' SOS (Too long)
+	{0x7d,	"<VE>",   "...-.",	0	}, // '}'
+	{0x7e,	"<AA>",   ".-.-",	0	}, // '~' CR/LF
+
+	//International characters
+	//Todo: update display so characters are readable in morse window
+
+	//WARNING: There are duplicate morse codes which must be handled
+	//Lookup by ascii will work, but init() will skip duplicate tokens to lookup isn't broken
+	//Typing the ascii code will send the right morse
+	//But decoding will print the first symbol found
+
+	//These map to extended ascii
+	{0x80,	"Ç",	"-.-..",	0	}, //C cedila ISO 8859-1
+	{0x85,	"À",	".--.-",	0	}, //A grave
+	{0x8a,	"È",	".-..-",	0	}, //E grave ISO 8859-1
+	{0x8e,	"Ä",	".-.-",		0	}, //A diaeresis ISO 8859-1
+	{0x8f,	"Ȧ",	".--.-",	0	}, //A dot ISO 8859-1
+	{0x90,	"É",	"..-..",	0	}, //E acute ISO 8859-1
+	{0x92,	"Æ",	".-.-",		0	}, //AE
+	{0x99,	"Ö",	"---.",		0	}, //O diaeresis ISO 8859-1
+	{0x9a,	"Ü",	"..--",		0	}, //U diaeresis ISO 8859-1
+	{0xa2,	"Ó",	"---.",		0	}, //O acute
+	{0xa5,	"Ñ",	"--.--",	0	}, //N tilde ISO 8859-1
+
+	//These don't map to any ascii, just assign sequential codes for now until we can figure out typeing codes
+	{0xb0,	"Ą",	".-.-",		0	}, //A cedila
+	{0xb1,	"Ć",	"-.-..",	0	}, //C acute
+	{0xb2,	"Ĉ",	"-.-..",	0	}, //C circumflex
+	{0xb3,	"(Ch)",	"----",		0	}, //Ch not printable?
+	{0xb4,	"Đ",	"..-..",	0	}, //D with stroke
+	{0xb5,	"Ð",	"..--.",	0	}, //Eth
+	{0xb6,	"Ȩ",	"..-..",	0	}, //E cedila
+	{0xb7,	"Ĝ",	"--.-.",	0	}, //G circumflex
+	{0xb8,	"Ĥ",	"----",		0	}, //H circumflex
+	{0xb9,	"Ĵ",	".---.",	0	}, //J circumflex
+	{0xba,	"Ł",	".-..-",	0	}, //L stroke
+	{0xbb,	"Ń",	"--.--",	0	}, //N acute
+	{0xbc,	"Ø",	"---.",		0	}, //O stroke
+	{0xbd,	"Ś",	"...-...",	0	}, //S acute
+	{0xbe,	"Ŝ",	"...-.",	0	}, //S circumflex, also prosign for understood
+	{0xbf,	"Š",	"----",		0	}, //S caron ISO 8859-2
+	{0xc0,	"Ᵽ",	".--..",	0	}, //P stroke?
+	{0xc1,	"Ǔ",	"..--",		0	}, //U caron
+	{0xc2,	"Ź",	"--..-.",	0	}, //Z acute
+	{0xc3,	"Ż",	"--..-",	0	}, //Z dot ISO 8859-2
+
+
+	{0,		NULL,	NULL,		0	} //Must terminate table
 };
-
-// ISO 8859-1 accented characters
-//	{"\334\374",	"\334\374",	"..--"},	// U diaeresis
-//	{"\304\344",	"\304\344",	".-.-"},	// A diaeresis
-//	{"\307\347",	"\307\347",	"-.-.."},	// C cedilla
-//	{"\326\366",	"\325\366",	"---."},	// O diaeresis
-//	{"\311\351",	"\311\351",	"..-.."},	// E acute
-//	{"\310\350",	"\310\350",".-..-"},	// E grave
-//	{"\305\345",	"\305\345",	".--.-"},	// A ring
-//	{"\321\361",	"\321\361",	"--.--"},	// N tilde
-//	ISO 8859-2 accented characters
-//	{"\252",		"\252",		"----" },	// S cedilla
-//	{"\256",		"\256",		"--..-"},	// Z dot above
 
 /*
   Abbreviations, assume letter space between char or not?
@@ -327,19 +361,29 @@ void MorseCode::init()
 
 	// For each main table entry, create a pointer to symbol in rxLookup in token order
 	//Then we can do fast lookup by morse token in rxLookup
-	for (symbol = m_morseTable; symbol->chr != 0; symbol++) {
-		if ((symbol->chr == '(') && !c_useParen)
+	for (symbol = m_morseTable; symbol->ascii != 0; symbol++) {
+		if ((symbol->ascii == '(') && !c_useParen)
 			continue;
-		if ((symbol->chr == '<') && c_useParen)
+		if ((symbol->ascii == '<') && c_useParen)
 			continue;
 		//tokens start with a 1 bit followed by 1's for dash and 0's for dots
 		token = tokenizeSymbol(symbol->dotDash);
 		if (token != 0) {
 			symbol->token = token;
 			//In token order
-			m_rxLookup[token] = symbol;
+			if (m_rxLookup[token] != 0) {
+				//We already have an entry, skip this one and output warning
+				qWarning()<<"Duplicate token in morse table for -"<<symbol->ascii<<" "<<symbol->display;
+			} else {
+				m_rxLookup[token] = symbol;
+			}
 			//In character order
-			m_txLookup[symbol->chr] = symbol;
+			if (m_txLookup[symbol->ascii] != 0) {
+				//We already have an entry, skip this one and output warning
+				qWarning()<<"Duplicate ascii in morse table for -"<<symbol->ascii<<" "<<symbol->display;
+			} else {
+				m_txLookup[symbol->ascii] = symbol;
+			}
 		}
     }
 }
@@ -362,6 +406,14 @@ MorseSymbol *MorseCode::rxLookup(char *r)
 quint8 MorseCode::txLookup(char c)
 {
 	return m_txLookup[toupper(c)]->token;
+}
+
+MorseSymbol *MorseCode::tableLookup(quint32 index)
+{
+	if (index >= c_morseTableSize)
+		return NULL;
+	MorseSymbol *symbol = &m_morseTable[index];
+	return symbol;
 }
 
 const char *MorseCode::txPrint(char c)

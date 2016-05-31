@@ -7,7 +7,7 @@
 #pragma clang diagnostic ignored "-Wc++11-extensions"
 
 struct MorseSymbol {
-	quint8 chr;				//ASCII character used to send
+	quint8 ascii;			//ASCII character used to send
 	const char *display;	//Printable string
 	const char *dotDash;	//Dot-Dash string
 	quint8 token;			//Leading 1 followed by 1 for dash and 0 for dot
@@ -26,6 +26,9 @@ public:
 	//Returns a table entry for the dot/dash representation
 	MorseSymbol *rxLookup(char *r);
 	quint8 txLookup(char c);
+	//Used to iterate through the entire table for testing and possible future use
+	MorseSymbol *tableLookup(quint32 index);
+
 	const char *txPrint(char c);
 
 	//Returns Tcw in ms for wpm
