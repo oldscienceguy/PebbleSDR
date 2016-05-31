@@ -299,7 +299,7 @@ void Morse::setupDataUi(QWidget *parent)
 		connect(m_dataUi->squelchSlider,SIGNAL(valueChanged(int)),this,SLOT(squelchChanged(int)));
 
 		m_dataUi->dataEdit->setAutoFormatting(QTextEdit::AutoNone);
-		m_dataUi->dataEdit->setAcceptRichText(false);
+		m_dataUi->dataEdit->setAcceptRichText(true); //For international characters
 		m_dataUi->dataEdit->setReadOnly(true);
 		m_dataUi->dataEdit->setUndoRedoEnabled(false);
 		m_dataUi->dataEdit->setWordWrapMode(QTextOption::WordWrap);

@@ -56,7 +56,7 @@ QMainWindow {
         background-color: @SteelGrey;
 }
 
-QLineEdit, QTextEdit {
+QLineEdit {
 	height: 16px;
 	font-family: "Lucida Grande";
 	font-size: 10px;
@@ -65,6 +65,15 @@ QLineEdit, QTextEdit {
         background-color: @LightSteelGrey;
 }
 
+/*Morse data window, Band data window, TestBench debug */
+QTextEdit {
+        height: 16px;
+        font-family: "Lucida Grande";
+        font-size: 10px;
+        font-weight: "normal";
+        color: black;
+        background-color: @LightSteelGrey;
+}
 
 /* All the up/down nixie buttons */
 #nixieFrame QPushButton {
