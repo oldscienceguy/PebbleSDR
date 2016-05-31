@@ -3,7 +3,7 @@
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include "../morseCode.h"
-#include "nco.h"
+#include "cpx.h"
 
 class MorseGen
 {
@@ -18,6 +18,9 @@ public:
 	quint32 genElement(CPX * out);
 	quint32 genChar(CPX *out);
 	quint32 genWord(CPX *out);
+	//For testing, dump whole table
+	quint32 genToken(CPX *out, quint8 token);
+	quint32 genTable(CPX* out, quint32 index);
 
 private:
 	double m_sampleRate;
@@ -26,22 +29,30 @@ private:
 	double m_amplitude;
 	quint32 m_wpm;
 	quint32 m_msRiseFall;
+	MorseCode::MorseSymbolTypes m_lastSymbol;
 
 	//Output buffers for morse elements
-	quint32 m_numSamplesDot;
-	CPX* m_dotSamples;
+	quint32 m_numSamplesRise;
+	quint32 m_numSamplesFall;
 
-	quint32 m_numSamplesDash;
-	CPX* m_dashSamples;
+	quint32 m_numSamplesDot; //Full power, not including rise/fall
+	quint32 m_numSamplesDotBuf;
+	CPX* m_dotSampleBuf;
 
-	quint32 m_numSamplesElement;
-	CPX* m_elementSamples;
+	quint32 m_numSamplesDash; //Full power, not including rise/fall
+	quint32 m_numSamplesDashBuf;
+	CPX* m_dashSampleBuf;
 
-	quint32 m_numSamplesChar;
-	CPX *m_charSamples;
+	quint32 m_numSamplesElementBuf;
+	CPX* m_elementSampleBuf;
 
-	quint32 m_numSamplesWord;
-	CPX* m_wordSamples;
+	quint32 m_numSamplesCharBuf;
+	CPX *m_charSampleBuf;
+
+	quint32 m_numSamplesWordBuf;
+	CPX* m_wordSampleBuf;
+
+	MorseCode m_morseCode;
 };
 
 #endif // MORSEGEN_H

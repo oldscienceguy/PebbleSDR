@@ -24,21 +24,35 @@ MainWindow::MainWindow(QWidget *parent) :
 	//dmCWL=8 from device_interfaces.h
 	QString outFileName = pebbleRecordingPath + "testmorseiq.wav";
 	bool result = wavOutFile.OpenWrite(outFileName,48000,24000,8,0);
-	outBuf = CPX::memalign(32000);
 	morseGen = new MorseGen(48000, 1000, -50, 20);
+	quint32 tcwMs = MorseCode::wpmToTcwMs(20);
+	quint32 maxSymbolMs = MorseCode::c_maxTcwPerSymbol * tcwMs;
+	quint32 outBufLen = maxSymbolMs / (1000.0/48000.0);
+	outBuf = CPX::memalign(outBufLen);
 	quint32 len = 0;
-	for (int i=0; i<1024; i++) {
-		len = morseGen->genDot(outBuf);
+
+#if 1
+	for (int i=0; i<256; i++) {
+		len = morseGen->genTable(outBuf,i);
 		wavOutFile.WriteSamples(outBuf,len);
-		len = morseGen->genElement(outBuf);
+	}
+#else
+	for (int i=0; i<10; i++) {
+		len = morseGen->genText(outBuf,'a');
 		wavOutFile.WriteSamples(outBuf,len);
-		len = morseGen->genDash(outBuf);
+		len = morseGen->genText(outBuf,'b');
 		wavOutFile.WriteSamples(outBuf,len);
-		len = morseGen->genChar(outBuf);
+		len = morseGen->genText(outBuf,'c');
+		wavOutFile.WriteSamples(outBuf,len);
+		len = morseGen->genText(outBuf,' ');
+		wavOutFile.WriteSamples(outBuf,len);
+		len = morseGen->genText(outBuf,'1');
 		wavOutFile.WriteSamples(outBuf,len);
 		len = morseGen->genWord(outBuf);
 		wavOutFile.WriteSamples(outBuf,len);
 	}
+#endif
+
 }
 
 MainWindow::~MainWindow()
