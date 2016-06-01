@@ -864,8 +864,8 @@ bool Morse::stateMachine(CW_EVENT event)
 						m_markHandled = true;
                     }
                     //Anything waiting for output?
-					outStr = m_spaceTiming(true); //Looking for char
-                    if (outStr != NULL) {
+					outStr = spaceTiming(true); //Looking for char
+					if (!outStr.isEmpty()) {
                         //We will only get a char between 2 and 4 TCW of space
                         outputString(outStr);
                         //dumpStateMachine(outStr);
@@ -884,7 +884,7 @@ bool Morse::stateMachine(CW_EVENT event)
 #if 0
                     //Anything waiting for output?
                     outStr = spaceTiming(false);
-                    if (outStr != NULL) {
+					if (!outStr.isEmpty()) {
                         outputChar(outStr);
                         //dumpStateMachine(*outStr);
                     }
@@ -899,8 +899,8 @@ bool Morse::stateMachine(CW_EVENT event)
                 case NO_TONE_EVENT:
 					m_usecSpace = m_sampleClock->uSecToCurrent(m_toneEnd); //Time from tone end to now
                     //Anything waiting for output?
-					outStr = m_spaceTiming(false);
-                    if (outStr != NULL) {
+					outStr = spaceTiming(false);
+					if (!outStr.isEmpty()) {
                         outputString(outStr);
 						m_usecLastSpace = m_usecSpace;
 
@@ -983,7 +983,7 @@ void Morse::outputString(QString outStr) {
 	if (!m_outputOn)
         return;
 
-    if (outStr != NULL) {
+	if (!outStr.isEmpty()) {
 
         //Display can be accessing at same time, so we need to lock
 		m_outputBufMutex.lock();
@@ -999,10 +999,9 @@ void Morse::outputString(QString outStr) {
 }
 
 //Processes post tone space timing
-//Returns true if space was long enough to output something
-//Return char or string as needed
+//Returns non-empty QString if space was long enough to output something
 //Uses dotDashBuf, could use usec silence
-QString Morse::m_spaceTiming(bool lookingForChar)
+QString Morse::spaceTiming(bool lookingForChar)
 {
 	MorseSymbol *cw;
 	QString outStr;
@@ -1011,7 +1010,7 @@ QString Morse::m_spaceTiming(bool lookingForChar)
         // SHORT time since keyup... nothing to do yet
         //Could be inter-element space (1 TCW)
 		if (m_usecSpace < (2 * m_usecDotCurrent)) {
-            return NULL; //Keep timing silence
+			return outStr; //Keep timing silence
 
 		} else if (m_usecSpace >= (2 * m_usecDotCurrent) &&
 			m_usecSpace <= (4 * m_usecDotCurrent)) {
@@ -1022,7 +1021,6 @@ QString Morse::m_spaceTiming(bool lookingForChar)
             //Char space is 3 TCW per spec, but accept 2 to 4
 
             // Look up the representation
-			outStr.clear(); //Empty
 			if (*m_dotDashBuf != 0x00) {
 				cw = m_morseCode.rxLookup(m_dotDashBuf);
                 if (cw != NULL) {
@@ -1054,7 +1052,7 @@ QString Morse::m_spaceTiming(bool lookingForChar)
             return outStr;
         } else {
             //Do nothing, char output and not long enough for word space
-            return NULL;
+			return outStr;
         }
     }
     //If we get here it means that usecSilence wasn't reset properly, should be impossible

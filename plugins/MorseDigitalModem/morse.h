@@ -64,7 +64,7 @@ signals:
 	void removeProfile(quint16 profileNumber);
 
 
-protected:
+private:
 	//Use DOT_MAGIC to convert WPM to/from usec is 1,200,000
 	//c_uSecDotMagic / WPM = usec per TCW
 	//c_mSecDotMagic / WPM = msec per TCW
@@ -197,7 +197,7 @@ protected:
 
 	quint32 m_usecDotDashThreshold;		// 2-dot threshold for adaptive speed
 
-	QString m_spaceTiming(bool lookingForChar);
+	QString spaceTiming(bool lookingForChar);
 	void outputString(QString outStr);
     void addMarkToDotDash();
 	bool m_markHandled;
