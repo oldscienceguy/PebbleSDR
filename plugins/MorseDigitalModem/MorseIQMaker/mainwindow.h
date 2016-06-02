@@ -22,8 +22,11 @@ private:
 
 	WavFile wavOutFile;
 	CPX *outBuf;
+	CPX *outBuf1;
+	CPX *outBuf2;
 
-	MorseGen *morseGen;
+	MorseGen *morseGen1;
+	MorseGen *morseGen2;
 };
 
 #endif // MAINWINDOW_H

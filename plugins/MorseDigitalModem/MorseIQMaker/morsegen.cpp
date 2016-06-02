@@ -6,14 +6,14 @@
 //Todo: add noise option
 //Todo: add timed tuning option before output
 //Todo: add random non-morse option
-MorseGen::MorseGen(double sampleRate, double frequency, double dbAmplitude, quint32 wpm)
+MorseGen::MorseGen(double sampleRate, double frequency, double dbAmplitude, quint32 wpm, quint32 msRise)
 {
 	m_sampleRate = sampleRate;
 	m_frequency = frequency;
 	m_dbAmplitude = dbAmplitude;
 	m_amplitude = DB::dBToAmplitude(dbAmplitude);
 	m_wpm = wpm;
-	m_msRiseFall = 10; //10ms attack/decay, 5ms ARRL recomendation, 20ms max
+	m_msRiseFall = msRise; //10ms attack/decay, 5ms ARRL recomendation, 20ms max
 
 	//Calculate size of output elements
 	quint32 msTcw = MorseCode::wpmToTcwMs(wpm);
@@ -21,6 +21,10 @@ MorseGen::MorseGen(double sampleRate, double frequency, double dbAmplitude, quin
 	quint32 samplesPerTcw = msTcw / (1000.0/sampleRate);
 
 	//Samples for dot and dash have to include 50% of the rise and fall time
+	// |--5ms--|--5ms--|------50ms------|--5ms--|--5ms--|
+	// |    rise time  |    dot time    |     fall time |
+	// |       |  Total Tcw time of 60ms        |       |
+	// |               Total buffer size                |
 	//So are longer than just based on Tcw
 	m_numSamplesRise = m_msRiseFall / (1000/m_sampleRate);
 	m_numSamplesFall = m_msRiseFall / (1000/m_sampleRate);
@@ -115,6 +119,50 @@ MorseGen::MorseGen(double sampleRate, double frequency, double dbAmplitude, quin
 	}
 
 	m_lastSymbol = MorseCode::WORD_SPACE;
+}
+
+void MorseGen::setTextOut(QString textOut)
+{
+	m_textOut = textOut;
+	//Todo: Calc and limit
+	m_outSampleBufLen = 128000; //Long enough for highest WPM at highest SR
+	m_outSampleBuf = CPX::memalign(m_outSampleBufLen);
+	m_outSampleBufIndex = 0;
+	m_numSamplesOutBuf = 0;
+	m_textOutIndex = 0;
+}
+
+bool MorseGen::hasOutputSamples()
+{
+	//If we have remaining characters or samples, return true
+	if (m_textOutIndex < m_textOut.length() || m_numSamplesOutBuf > 0)
+		return true;
+	else
+		return false;
+}
+
+CPX MorseGen::nextOutputSample()
+{
+	//If no samples in CPX buf
+	if (m_numSamplesOutBuf == 0) {
+		//No more samples, fill buffer with next char
+		QChar nextSymbol;
+		//If no more text, start over
+		if (m_textOutIndex >= m_textOut.length()) {
+			//Start over or return flag for end of output
+			m_textOutIndex = 0;
+		}
+		nextSymbol = m_textOut[m_textOutIndex++];
+		m_numSamplesOutBuf = genText(m_outSampleBuf, nextSymbol.toLatin1());
+		if (m_numSamplesOutBuf == 0) {
+			//Error
+			qDebug()<<"Symbol not found "<<nextSymbol;
+			return CPX();
+		}
+		m_outSampleBufIndex = 0;
+	}
+	m_numSamplesOutBuf--;
+	return m_outSampleBuf[m_outSampleBufIndex++];
 }
 
 quint32 MorseGen::genText(CPX *out, quint8 text)

@@ -26,3 +26,5 @@ SdrGarage/*MacRelease/
 /DevicePluginTemplate/
 cpp-markdown
 .gitignore
+plugins/MorseDigitalModem/MorseIQMaker/MocMacDebug
+plugins/MorseDigitalModem/MorseIQMaker/UIMacDebug

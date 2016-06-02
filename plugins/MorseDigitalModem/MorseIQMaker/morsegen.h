@@ -8,7 +8,14 @@
 class MorseGen
 {
 public:
-	MorseGen(double sampleRate, double frequency, double dbAmplitude, quint32 wpm);
+	MorseGen(double sampleRate, double frequency, double dbAmplitude, quint32 wpm, quint32 msRise);
+
+	//Sets the text that will be generated
+	void setTextOut(QString textOut);
+
+	//Returns next sample to be output
+	bool hasOutputSamples();
+	CPX nextOutputSample();
 
 	//Generates the IQ data for element and puts in out.
 	//Returns #samples added to out
@@ -53,6 +60,13 @@ private:
 	CPX* m_wordSampleBuf;
 
 	MorseCode m_morseCode;
+
+	QString m_textOut;
+	qint32 m_textOutIndex;
+	quint32 m_outSampleBufLen;
+	quint32 m_numSamplesOutBuf;
+	CPX* m_outSampleBuf;
+	quint32 m_outSampleBufIndex;
 };
 
 #endif // MORSEGEN_H
