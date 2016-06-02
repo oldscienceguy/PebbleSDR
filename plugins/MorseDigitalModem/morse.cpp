@@ -176,6 +176,9 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 		delete m_mixer;
 	m_mixer = new Mixer(_sampleRate, _sampleCount);
 
+	//ms rise/fall Adjust for WPM?
+	m_secRiseFall = .005;
+
     resetDotDashBuf();
 
     //Modem sample rate, device sample rate decimated to this before decoding
@@ -233,7 +236,7 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 		m_toneFilter->init_lowpass (c_lpFilterLen, m_filterSamplesPerResult, f);
 		// bit filter based on 10 msec rise time of CW waveform
 		//Effective sample rate post toneFilter is modemSampleRate / filterSamplesPerResult (decimation factor)
-		int jitterCount = (int)(m_modemSampleRate * .010 / m_filterSamplesPerResult); //8k*.01/16 = 5
+		int jitterCount = (int)(m_modemSampleRate * m_secRiseFall / m_filterSamplesPerResult); //8k*.01/16 = 5
 		if (m_jitterFilter != NULL)
 			delete m_jitterFilter;
 		m_jitterFilter = new MovingAvgFilter(jitterCount);
@@ -244,7 +247,7 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 		m_goertzel = new Goertzel(_sampleRate, _sampleCount);
 		m_goertzel->setTargetSampleRate(m_modemSampleRate);
 		// bit filter based on 10 msec rise time of CW waveform
-		int jitterCount = (int)(m_modemSampleRate * .010 / m_goertzelSamplesPerResult);
+		int jitterCount = (int)(m_modemSampleRate * m_secRiseFall / m_goertzelSamplesPerResult);
 		if (m_jitterFilter != NULL)
 			delete m_jitterFilter;
 		m_jitterFilter = new MovingAvgFilter(jitterCount);

@@ -120,6 +120,8 @@ private:
 	C_FIR_filter	*m_toneFilter; // linear phase finite impulse response filter
 
 	//Smooths bit detection on rise and decay of tone
+	double m_secRiseFall; //Adjust to sync with low and high speed WPM .005, .010, .020
+
 	MovingAvgFilter	*m_jitterFilter;
 
     //Received CW speed can be fixed (set by user) or track actual dot/dash lengths being received
@@ -131,7 +133,7 @@ private:
 
 	const int c_trackingWPMRange = 10; //Tracking range for CWTRACK (WPM)
 	const int c_lowerWPMLimit = 5; //Lower RX limit (WPM)
-	const int c_upperWPMLimit = 60; // Upper RX limit (WPM)
+	const int c_upperWPMLimit = 80; // Upper RX limit (WPM)
 
 
 
@@ -183,7 +185,7 @@ private:
 	quint32 m_usecDotCurrent;		// Length of a receive Dot, in Usec based on receiveSpeed
 	quint32 m_usecDashCurrent;		// Length of a receive Dash, in Usec based on receiveSpeed
     //Used to restore to base case when something changes or we get lost
-	const int c_wpmSpeedInit = 20;
+	const int c_wpmSpeedInit = 18; //At or below use Farnsworth spacing, above normal spacing
 	quint32 m_usecDotInit; //Was cw_send_dot_length
 	quint32 m_usecDashInit;
 
