@@ -132,6 +132,7 @@
 
 */
 
+//Constructor is only called once with Pebble is started and plugins are loaded, not on powerOn
 Morse::Morse()
 {
 	m_dataUi = NULL;
@@ -148,23 +149,34 @@ Morse::Morse()
 	m_numSamples = 0;
 	m_filterSamplesPerResult = 16;
 	m_goertzelSamplesPerResult = 20;
+	m_out = NULL;
+
+	//Used to update display from main thread.
+	connect(this, SIGNAL(newOutput()), this, SLOT(refreshOutput()));
 }
 
+//setSampleRate is called everytime powerOn(), so make sure we clean up from previous run if power is toggled
 void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 {
 	m_sampleRate = _sampleRate;
 	m_numSamples = _sampleCount;
-	m_out = new CPX[m_numSamples];
+	if (m_out != NULL)
+		delete m_out;
+	m_out = CPX::memalign(m_numSamples);
+
+	if (m_workingBuf != NULL)
+		delete m_workingBuf;
 	m_workingBuf = CPX::memalign(m_numSamples);
 
-	if (m_decimate == NULL)
-		m_decimate = new Decimator(_sampleRate, _sampleCount);
-	if (m_mixer == NULL)
-		m_mixer = new Mixer(_sampleRate, _sampleCount);
+	if (m_decimate != NULL)
+		delete m_decimate;
+	m_decimate = new Decimator(_sampleRate, _sampleCount);
 
-	m_morseCode.init();
+	if (m_mixer != NULL)
+		delete m_mixer;
+	m_mixer = new Mixer(_sampleRate, _sampleCount);
+
     resetDotDashBuf();
-
 
     //Modem sample rate, device sample rate decimated to this before decoding
 	m_modemBandwidth = 1000; //8000; //Desired bandwidth, not sample rate
@@ -182,8 +194,9 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 	//If WPM = 120wpm, then TCW is 10ms and requires 80 samples
 	//To get 10 bits, N would have to be 8! which is going to be a very wide bandwidth
 
-	if (m_sampleClock == NULL)
-		m_sampleClock = new SampleClock(m_modemSampleRate);
+	if (m_sampleClock != NULL)
+		delete m_sampleClock;
+	m_sampleClock = new SampleClock(m_modemSampleRate);
 	m_sampleClock->reset(); //Start timer over
 
     //Determine shortest and longest mark we can time at this sample rate
@@ -209,7 +222,10 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 
 
 	if (!m_useGoertzel) {
+		if (m_toneFilter != NULL)
+			delete m_toneFilter;
 		m_toneFilter = new C_FIR_filter();
+
 		//Filter width changes with wpm, higher wpm = narrower filter
 		//20wpm @8ksps = 480hz normalized
 		//40wpm #8ksps = 240hz normalized
@@ -218,28 +234,32 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 		// bit filter based on 10 msec rise time of CW waveform
 		//Effective sample rate post toneFilter is modemSampleRate / filterSamplesPerResult (decimation factor)
 		int jitterCount = (int)(m_modemSampleRate * .010 / m_filterSamplesPerResult); //8k*.01/16 = 5
+		if (m_jitterFilter != NULL)
+			delete m_jitterFilter;
 		m_jitterFilter = new MovingAvgFilter(jitterCount);
 
 	} else {
-		if (m_goertzel == NULL)
-			m_goertzel = new Goertzel(_sampleRate, _sampleCount);
+		if (m_goertzel != NULL)
+			delete m_goertzel;
+		m_goertzel = new Goertzel(_sampleRate, _sampleCount);
 		m_goertzel->setTargetSampleRate(m_modemSampleRate);
 		// bit filter based on 10 msec rise time of CW waveform
 		int jitterCount = (int)(m_modemSampleRate * .010 / m_goertzelSamplesPerResult);
+		if (m_jitterFilter != NULL)
+			delete m_jitterFilter;
 		m_jitterFilter = new MovingAvgFilter(jitterCount);
 
 		m_goertzel->setFreq(m_modemFrequency, m_goertzelSamplesPerResult, jitterCount);
 	}
 
 
+	if (m_thresholdFilter != NULL)
+		delete m_thresholdFilter;
 	m_thresholdFilter = new MovingAvgFilter(c_thresholdFilterSize);
 
     syncTiming();
 	m_demodMode = DeviceInterface::dmCWL;
     init();
-
-    //Used to update display from main thread.
-    connect(this, SIGNAL(newOutput()), this, SLOT(refreshOutput()));
 
 	m_outputOn = false;
 
