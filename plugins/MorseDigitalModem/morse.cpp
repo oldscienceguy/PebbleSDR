@@ -939,6 +939,12 @@ bool Morse::stateMachine(CW_EVENT event)
 //Got a tone that was long enough with a post tone space that was long enough
 void Morse::addMarkToDotDash()
 {
+	//If we already have max bits in dotDash buf, then trigger error
+	if (m_dotDashBufIndex >= MorseCode::c_maxMorseLen) {
+		m_lastReceiveState = m_receiveState;
+		m_receiveState = IDLE;
+		return;
+	}
     //Process last mark element
     //uSecMark has timing
     // make sure our timing values are up to date after every tone
@@ -987,16 +993,8 @@ void Morse::addMarkToDotDash()
 		m_dotDashBuf[m_dotDashBufIndex++] = MorseCode::c_dashChar;
     }
 
-    // We just added a representation to the receive buffer.
-    // If it's full, then reset everything as it probably noise
-	if (m_dotDashBufIndex == c_receiveCapacity - 1) {
-		m_lastReceiveState = m_receiveState;
-		m_receiveState = IDLE;
-        return;
-    } else {
-        // zero terminate representation so we can handle as char* string
-		m_dotDashBuf[m_dotDashBufIndex] = 0;
-    }
+	// zero terminate representation so we can handle as char* string
+	m_dotDashBuf[m_dotDashBufIndex] = 0;
 }
 
 void Morse::outputString(QString outStr) {

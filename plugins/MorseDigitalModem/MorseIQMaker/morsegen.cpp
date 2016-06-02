@@ -177,15 +177,16 @@ quint32 MorseGen::genText(CPX *out, quint8 text)
 	return 0;
 }
 
-quint32 MorseGen::genToken(CPX *out, quint8 token)
+quint32 MorseGen::genToken(CPX *out, quint16 token)
 {
 	quint32 len = 0;
-	quint8 bit;
+	quint16 bit;
 	bool hasHighBit = false;
 	//Shift out each bit off token and ouput
 	if (token > 0) {
-		for (int i=0; i<8; i++) {
-			bit = token & 0x80; //Check high order bit
+		//Max bits in token is 9
+		for (int i=0; i<9; i++) {
+			bit = token & 0x100; //Check high order bit (9)
 			if (!hasHighBit && bit == 0) {
 				//Looking for high order start bit
 				token = token << 1;

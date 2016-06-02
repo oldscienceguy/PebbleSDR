@@ -26,7 +26,7 @@ public:
 	quint32 genChar(CPX *out);
 	quint32 genWord(CPX *out);
 	//For testing, dump whole table
-	quint32 genToken(CPX *out, quint8 token);
+	quint32 genToken(CPX *out, quint16 token);
 	quint32 genTable(CPX* out, quint32 index);
 
 private:

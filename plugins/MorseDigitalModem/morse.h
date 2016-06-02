@@ -136,9 +136,9 @@ private:
 
 
     // Receive buffering
-	const static int c_receiveCapacity = 256;
+	const static int c_dotDashBufLen = 256;
     //This holds dots and dashes as they are received, way longer than any letter or phrase
-	char m_dotDashBuf[c_receiveCapacity];
+	char m_dotDashBuf[c_dotDashBufLen];
 
     // dotDash buffer current location
 	int m_dotDashBufIndex;
