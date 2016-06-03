@@ -72,7 +72,7 @@ bool WavFile::OpenRead(QString fname, quint32 _maxNumberOfSamples)
             qDebug()<<"SR:"<<fmtSubChunk.sampleRate<<" Bits/Sample:"<<fmtSubChunk.bitsPerSample<<" Channels:"<<fmtSubChunk.channels<< "Fmt:"<<fmtSubChunk.format;
 
             //If compressed data, we need to read additional data
-            if (fmtSubChunk.format != 1 && fmtSubChunk.format != 3) {
+			if (fmtSubChunk.format != PCM_FORMAT && fmtSubChunk.format != FLOAT_FORMAT) {
                 quint16 extraParamSize;
                 len = wavFile->read((char*)&extraParamSize,2);
                 if (len)
@@ -194,12 +194,12 @@ bool WavFile::OpenWrite(QString fname, int sampleRate, quint32 _loFreq, quint8 _
     fmtSubChunkPre.id[3] = ' ';
     fmtSubChunkPre.size = 16;
 
-    fmtSubChunk.format = 1; //1 = PCM, 3 = FLOAT
+	fmtSubChunk.format = PCM_FORMAT; //1 = PCM, 3 = FLOAT
     fmtSubChunk.channels = 2;
     fmtSubChunk.sampleRate = sampleRate;
     fmtSubChunk.byteRate = sampleRate * 2 * (16/8);  //SampleRate * NumChannels * BitsPerSample/8
     fmtSubChunk.blockAlign = 2 * (16/8);  //NumChannels * BitsPerSample/8
-    fmtSubChunk.bitsPerSample = sizeof(FMT_SUB_CHUNK);
+	fmtSubChunk.bitsPerSample = 16;
 
 #if 0
     factSubChunkPre.id[0] = 'f';
@@ -285,7 +285,7 @@ int WavFile::ReadSamples(CPX *buf, int numSamples)
     int bytesToRead;
     int samplesRead = 0;
 
-    if (fmtSubChunk.format == 1) {
+	if (fmtSubChunk.format == PCM_FORMAT) {
         if (fmtChannels == 2) {
             bytesToRead = sizeof(PCM_DATA_2CH) * numSamples;
 
@@ -319,7 +319,7 @@ int WavFile::ReadSamples(CPX *buf, int numSamples)
             }
         }
 
-    } else if (fmtSubChunk.format == 3) {
+	} else if (fmtSubChunk.format == FLOAT_FORMAT) {
         bytesToRead = sizeof(FLOAT_DATA) * numSamples;
         bytesRead = wavFile->read((char*)floatBuf,bytesToRead);
         if (bytesRead == -1)
@@ -349,9 +349,9 @@ CPX WavFile::ReadSample()
     if (wavFile->atEnd())
         wavFile->seek(dataStart);
 
-    if (fmtSubChunk.format == 1)
+	if (fmtSubChunk.format == PCM_FORMAT)
         len = wavFile->read((char*)&pcmData,sizeof(pcmData));
-    else if (fmtSubChunk.format == 3)
+	else if (fmtSubChunk.format == FLOAT_FORMAT)
         len = wavFile->read((char*)&floatData,sizeof(floatData));
     else
         return sample; //unsupported format
@@ -359,7 +359,7 @@ CPX WavFile::ReadSample()
     if (len <= 0) {
         return sample;
     }
-    if (fmtSubChunk.format == 1) {
+	if (fmtSubChunk.format == PCM_FORMAT) {
         //Convert wav 16 bit (-32767 to +32767) int to sound card float32.  Values are -1 to +1
         sample.re = pcmData.left/32767.0;
         sample.im = pcmData.right/32767.0;

@@ -162,6 +162,7 @@ typedef struct FLOAT_DATA
 class WavFile
 {
 public:
+	enum AudioFormt {PCM_FORMAT=1, FLOAT_FORMAT=3};
     WavFile();
     ~WavFile();
 	bool OpenRead(QString fname, quint32 _maxNumberOfSamples);
