@@ -157,8 +157,8 @@ CPX MorseGen::nextOutputSample()
 		QChar nextSymbol;
 		//If no more text, start over
 		if (m_textOutIndex >= m_textOut.length()) {
-			//end of output
-			return CPX();
+			//Restart
+			m_textOutIndex = 0;
 		}
 		nextSymbol = m_textOut[m_textOutIndex++];
 		m_numSamplesOutBuf = genText(m_outSampleBuf, nextSymbol.toLatin1());
@@ -179,7 +179,7 @@ quint32 MorseGen::genText(CPX *out, quint8 text)
 		return genWord(out);
 	}
 	//Look up character
-	quint32 token = m_morseCode.txLookup(text);
+	quint32 token = m_morseCode.asciiLookup(text);
 	if (token > 0)
 		return genToken(out, token);
 	return 0;

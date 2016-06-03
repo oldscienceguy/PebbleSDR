@@ -6,7 +6,8 @@
 //DotDash must be unique for each entry
 //7 Elements max
 MorseSymbol MorseCode::m_morseTable[] = {
-    //Prosigns, no interletter spacing http://en.wikipedia.org/wiki/Prosigns_for_Morse_Code
+	//Prosigns are 2 letters with no interletter spacing
+	//http://en.wikipedia.org/wiki/Prosigns_for_Morse_Code
     //Special abreviations http://en.wikipedia.org/wiki/Morse_code_abbreviations
     //Supposed to have inter-letter spacing, but often sent as single 'letter'
     //Non English extensions (TBD from Wikipedia)
@@ -22,10 +23,11 @@ MorseSymbol MorseCode::m_morseTable[] = {
 	{0x25,	"<SK>",		"...-.-",	0	}, // '%' End of QSO or End of Work
 	{0x26,	"<INT>",	"..-.-",	0	}, // '&'
 	{0x27,	"'",		".----.",	0	}, // apostrophe
-	{0x28,	"(",		"-.--.",	0	}, // open paren
-	{0x29,	")",		"-.--.-",	0	}, // close paren
+	{0x28,	"(",		"-.--.",	0	}, // open paren. MARS may use this to send/receive KN instead of +
+	{0x29,	")",		"-.--.-",	0	}, // close paren. Sometimes used for both open and closed paren
 	{0x2a,   "<SN>",	"...-.",	0	}, //Understood
-	{0x2b,	"<KN>",		"-.--.",	0	}, // '+' Invitation to a specific station to transmit, compared to K which is general
+	//'(' and <KN> use same code.  Defer to '('
+	//{0x2b,	"<KN>",		"-.--.",	0	}, // '+' Invitation to a specific station to transmit, compared to K which is general
 	{0x2c,	",",		"--..--",	0	}, // comma
 	{0x2d,	"-",		"-....-",	0	}, // dash
 	{0x2e,	".",		".-.-.-",	0	}, // period
@@ -84,7 +86,7 @@ MorseSymbol MorseCode::m_morseTable[] = {
 
 	{0x7b,	"<HM>",		"....--",	0	}, // '{'
 	//{0x7c,  "<SOS>",	"···---···",	0}, // '|' SOS (9 bits too long)
-	{0x7d,	"<VE>",		"...-.",	0	}, // '}'
+	{0x7d,	"<VE>",		"...-.",	0	}, // '}' Same as <SN>?Not sure where this came from
 	{0x7e,	"\n",		".-.-",		0	}, // '~' <AA> CR/LF
 
 	//International characters
@@ -130,8 +132,7 @@ MorseSymbol MorseCode::m_morseTable[] = {
 	{0xc2,	"Ź",		"--..-.",	0	}, //Z acute
 	{0xc3,	"Ż",		"--..-",	0	}, //Z dot ISO 8859-2
 
-
-	{0,		NULL,	NULL,		0	} //Must terminate table
+	{0x00,		NULL,	NULL,		0	} //Must terminate table
 };
 
 /*
@@ -407,25 +408,25 @@ YOUR
  * is viewable as an integer in the range 2 (".") to 512 ("--------"), and can
  * be used as an index into a fast lookup array.
  */
-quint16 MorseCode::tokenizeSymbol(const char *symbol)
+quint16 MorseCode::tokenizeDotDash(const char *dotDash)
 {
 	//token starts with 1 to set hob as flag start of token
 	quint16 token = 1;	//Return token value
 	const char *sptr;	// Pointer through string
 
 	//Max 8 bit symbol plus 1 hob flag
-	if (strlen(symbol) > 8 || strlen(symbol) < 1) {
-		qDebug()<<"Morse token too long or empty:"<<symbol;
+	if (strlen(dotDash) > 8 || strlen(dotDash) < 1) {
+		qDebug()<<"Morse token too long or empty:"<<dotDash;
         return 0;
 	}
 
-	for (sptr = symbol; *sptr != 0; sptr++) {
+	for (sptr = dotDash; *sptr != 0; sptr++) {
         token <<= 1;
 		//Set the next bit to 1 if dash or leave as 0 if dot
 		if (*sptr == c_dashChar)
             token |= 1;
 		else if (*sptr != c_dotChar) {
-			qDebug()<<"Symbol contains characters other than '.' or '-':"<<symbol;
+			qDebug()<<"Symbol contains characters other than '.' or '-':"<<dotDash;
 			return 0; //Error
 		}
     }
@@ -447,57 +448,67 @@ void MorseCode::init()
 
     // Clear the RX & TX tables
 	for (quint32 i = 0; i < c_morseTableSize; i++) {
-		m_rxLookup[i] = 0; //Flag invalid entry
-		m_txLookup[i] = 0;
+		m_asciiOrderTable[i] = 0;
     }
+	for (quint32 i = 0; i < c_tokenTableSize; i++) {
+		m_tokenOrderTable[i] = 0; //Flag invalid entry
+	}
 
 	// For each main table entry, create a pointer to symbol in rxLookup in token order
 	//Then we can do fast lookup by morse token in rxLookup
 	for (symbol = m_morseTable; symbol->ascii != 0; symbol++) {
-		if ((symbol->ascii == '(') && !c_useParen)
+		//Option for special handling for possible MARS use
+		//'(' used to send/receive <KN> in this option
+#if 0
+		if ((symbol->ascii == '(') && !c_marsMode)
 			continue;
-		if ((symbol->ascii == '<') && c_useParen)
+		if ((symbol->ascii == '<') && c_marsMode)
 			continue;
+#endif
 		//tokens start with a 1 bit followed by 1's for dash and 0's for dots
-		token = tokenizeSymbol(symbol->dotDash);
+		token = tokenizeDotDash(symbol->dotDash);
 		if (token != 0) {
 			symbol->token = token;
 			//In token order
-			if (m_rxLookup[token] != 0) {
+			if (m_tokenOrderTable[token] != 0) {
 				//We already have an entry, skip this one and output warning
 				qWarning()<<"Duplicate token in morse table for -"<<symbol->ascii<<" "<<symbol->display;
 			} else {
-				m_rxLookup[token] = symbol;
+				m_tokenOrderTable[token] = symbol;
 			}
 			//In character order
-			if (m_txLookup[symbol->ascii] != 0) {
+			if (m_asciiOrderTable[symbol->ascii] != 0) {
 				//We already have an entry, skip this one and output warning
 				qWarning()<<"Duplicate ascii in morse table for -"<<symbol->ascii<<" "<<symbol->display;
 			} else {
-				m_txLookup[symbol->ascii] = symbol;
+				m_asciiOrderTable[symbol->ascii] = symbol;
 			}
 		}
     }
 }
 
 //Return CW_TABLE element so caller can access anything from it, not just display
-MorseSymbol *MorseCode::rxLookup(char *r)
+MorseSymbol *MorseCode::tokenLookup(const char *r)
 {
-    int			token;
+	quint32	token;
 	MorseSymbol *cw;
 
-	if ((token = tokenizeSymbol(r)) == 0)
+	if ((token = tokenizeDotDash(r)) == 0)
         return NULL;
 
-	if ((cw = m_rxLookup[token]) == NULL)
+	if ((cw = m_tokenOrderTable[token]) == NULL)
         return NULL;
 
     return cw;
 }
 
-quint16 MorseCode::txLookup(char c)
+quint16 MorseCode::asciiLookup(quint8 c)
 {
-	return m_txLookup[toupper(c)]->token;
+	MorseSymbol *symbol = m_asciiOrderTable[toupper(c)];
+	if (symbol != NULL)
+		return symbol->token;
+	else
+		return 0;
 }
 
 MorseSymbol *MorseCode::tableLookup(quint32 index)
@@ -508,9 +519,9 @@ MorseSymbol *MorseCode::tableLookup(quint32 index)
 	return symbol;
 }
 
-QString MorseCode::txPrint(char c)
+QString MorseCode::txPrint(quint8 c)
 {
-	MorseSymbol *symbol = m_txLookup[toupper(c)];
+	MorseSymbol *symbol = m_asciiOrderTable[toupper(c)];
 	if (symbol != NULL)
 		return symbol->display;
     else

@@ -1043,7 +1043,7 @@ QString Morse::spaceTiming(bool lookingForChar)
 
             // Look up the representation
 			if (*m_dotDashBuf != 0x00) {
-				cw = m_morseCode.rxLookup(m_dotDashBuf);
+				cw = m_morseCode.tokenLookup(m_dotDashBuf);
                 if (cw != NULL) {
 					if (m_outputMode == CHAR_ONLY)
                         outStr = cw->display;

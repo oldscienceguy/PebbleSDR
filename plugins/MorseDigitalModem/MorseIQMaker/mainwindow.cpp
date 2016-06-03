@@ -31,7 +31,6 @@ MainWindow::MainWindow(QWidget *parent) :
 	m_outBuf = CPX::memalign(outBufLen);
 	m_outBuf1 = CPX::memalign(outBufLen);
 	m_outBuf2 = CPX::memalign(outBufLen);
-	quint32 len = 0;
 
 	//Sample rate must be same for all gen and same as wav file
 	m_morseGen1 = new MorseGen(m_sampleRate);
@@ -42,13 +41,23 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
 	//Trailing '=' is morse <BT> for new paragraph
-	m_sampleText[0] = "The quick brown fox jumped over the lazy dog 1,2,3,4,5,6,7,8,9,0 times=";
-	m_sampleText[1] = "Now is the time for all good men to come to the aid of their country=";
-	m_sampleText[2] = "Now is the time for all good men to come to the aid of their country=";
-	m_sampleText[3] = "Now is the time for all good men to come to the aid of their country=";
-	m_sampleText[4] = "Now is the time for all good men to come to the aid of their country=";
+	m_sampleText[0] = "=The quick brown fox jumped over the lazy dog 1,2,3,4,5,6,7,8,9,0 times=";
+	m_sampleText[1] = "=Now is the time for all good men to come to the aid of their country=";
+	m_sampleText[2] = "=Now is the time for all good men to come to the aid of their country=";
+	m_sampleText[3] = "=Now is the time for all good men to come to the aid of their country=";
+	//m_sampleText[4] = "=Now is the time for all good men to come to the aid of their country=";
 
-
+	//Build text for all characters
+	MorseSymbol *symbol;
+	m_sampleText[4] = "=";
+	for (quint32 i=0; i<MorseCode::c_morseTableSize; i++) {
+		symbol = &MorseCode::m_morseTable[i];
+		if (symbol->ascii == 0x00) {
+			break; //End of table
+		}
+		m_sampleText[4].append(symbol->ascii);
+	}
+	m_sampleText[4].append("=");
 }
 
 MainWindow::~MainWindow()
@@ -58,16 +67,16 @@ MainWindow::~MainWindow()
 
 void MainWindow::setupUi()
 {
-	ui->enabledBox_1->setChecked(true);
-
-	ui->freqencyEdit_1->setText("1000");
+	ui->timeBox->addItem("1 min", 60);
+	ui->timeBox->addItem("2 min", 120);
+	ui->timeBox->addItem("5 min", 300);
+	ui->timeBox->addItem("10 min",600);
 
 	ui->sourceBox_1->addItem("Sample1",0);
 	ui->sourceBox_1->addItem("Sample2",1);
 	ui->sourceBox_1->addItem("Sample3",2);
 	ui->sourceBox_1->addItem("Sample4",3);
-	ui->sourceBox_1->addItem("Sample5",4);
-	ui->sourceBox_1->setCurrentIndex(0);
+	ui->sourceBox_1->addItem("Table",4);
 
 	ui->wpmBox_1->addItem("5 wpm", 5);
 	ui->wpmBox_1->addItem("10 wpm", 10);
@@ -79,8 +88,6 @@ void MainWindow::setupUi()
 	ui->wpmBox_1->addItem("60 wpm", 60);
 	ui->wpmBox_1->addItem("70 wpm", 70);
 	ui->wpmBox_1->addItem("80 wpm", 80);
-	ui->wpmBox_1->setCurrentIndex(3);
-
 
 	ui->dbBox_1->addItem("-30db", -30);
 	ui->dbBox_1->addItem("-35db", -35);
@@ -89,19 +96,13 @@ void MainWindow::setupUi()
 	ui->dbBox_1->addItem("-50db", -50);
 	ui->dbBox_1->addItem("-55db", -55);
 	ui->dbBox_1->addItem("-60db", -60);
-	ui->dbBox_1->setCurrentIndex(2);
 
 	//2
-	ui->enabledBox_2->setChecked(true);
-
-	ui->freqencyEdit_2->setText("1500");
-
 	ui->sourceBox_2->addItem("Sample1",0);
 	ui->sourceBox_2->addItem("Sample2",1);
 	ui->sourceBox_2->addItem("Sample3",2);
 	ui->sourceBox_2->addItem("Sample4",3);
-	ui->sourceBox_2->addItem("Sample5",4);
-	ui->sourceBox_2->setCurrentIndex(1);
+	ui->sourceBox_2->addItem("Table",4);
 
 	ui->wpmBox_2->addItem("5 wpm", 5);
 	ui->wpmBox_2->addItem("10 wpm", 10);
@@ -113,8 +114,6 @@ void MainWindow::setupUi()
 	ui->wpmBox_2->addItem("60 wpm", 60);
 	ui->wpmBox_2->addItem("70 wpm", 70);
 	ui->wpmBox_2->addItem("80 wpm", 80);
-	ui->wpmBox_2->setCurrentIndex(4);
-
 
 	ui->dbBox_2->addItem("-30db", -30);
 	ui->dbBox_2->addItem("-35db", -35);
@@ -123,19 +122,13 @@ void MainWindow::setupUi()
 	ui->dbBox_2->addItem("-50db", -50);
 	ui->dbBox_2->addItem("-55db", -55);
 	ui->dbBox_2->addItem("-60db", -60);
-	ui->dbBox_2->setCurrentIndex(2);
 
 	//3
-	ui->enabledBox_3->setChecked(true);
-
-	ui->freqencyEdit_3->setText("2000");
-
 	ui->sourceBox_3->addItem("Sample1",0);
 	ui->sourceBox_3->addItem("Sample2",1);
 	ui->sourceBox_3->addItem("Sample3",2);
 	ui->sourceBox_3->addItem("Sample4",3);
-	ui->sourceBox_3->addItem("Sample5",4);
-	ui->sourceBox_3->setCurrentIndex(2);
+	ui->sourceBox_3->addItem("Table",4);
 
 	ui->wpmBox_3->addItem("5 wpm", 5);
 	ui->wpmBox_3->addItem("10 wpm", 10);
@@ -147,8 +140,6 @@ void MainWindow::setupUi()
 	ui->wpmBox_3->addItem("60 wpm", 60);
 	ui->wpmBox_3->addItem("70 wpm", 70);
 	ui->wpmBox_3->addItem("80 wpm", 80);
-	ui->wpmBox_3->setCurrentIndex(5);
-
 
 	ui->dbBox_3->addItem("-30db", -30);
 	ui->dbBox_3->addItem("-35db", -35);
@@ -157,19 +148,13 @@ void MainWindow::setupUi()
 	ui->dbBox_3->addItem("-50db", -50);
 	ui->dbBox_3->addItem("-55db", -55);
 	ui->dbBox_3->addItem("-60db", -60);
-	ui->dbBox_3->setCurrentIndex(2);
 
 	//4
-	ui->enabledBox_4->setChecked(true);
-
-	ui->freqencyEdit_4->setText("2500");
-
 	ui->sourceBox_4->addItem("Sample1",0);
 	ui->sourceBox_4->addItem("Sample2",1);
 	ui->sourceBox_4->addItem("Sample3",2);
 	ui->sourceBox_4->addItem("Sample4",3);
-	ui->sourceBox_4->addItem("Sample5",4);
-	ui->sourceBox_4->setCurrentIndex(3);
+	ui->sourceBox_4->addItem("Table",4);
 
 	ui->wpmBox_4->addItem("5 wpm", 5);
 	ui->wpmBox_4->addItem("10 wpm", 10);
@@ -181,8 +166,6 @@ void MainWindow::setupUi()
 	ui->wpmBox_4->addItem("60 wpm", 60);
 	ui->wpmBox_4->addItem("70 wpm", 70);
 	ui->wpmBox_4->addItem("80 wpm", 80);
-	ui->wpmBox_4->setCurrentIndex(6);
-
 
 	ui->dbBox_4->addItem("-30db", -30);
 	ui->dbBox_4->addItem("-35db", -35);
@@ -191,19 +174,13 @@ void MainWindow::setupUi()
 	ui->dbBox_4->addItem("-50db", -50);
 	ui->dbBox_4->addItem("-55db", -55);
 	ui->dbBox_4->addItem("-60db", -60);
-	ui->dbBox_4->setCurrentIndex(2);
 
 	//5
-	ui->enabledBox_5->setChecked(true);
-
-	ui->freqencyEdit_5->setText("3000");
-
 	ui->sourceBox_5->addItem("Sample1",0);
 	ui->sourceBox_5->addItem("Sample2",1);
 	ui->sourceBox_5->addItem("Sample3",2);
 	ui->sourceBox_5->addItem("Sample4",3);
-	ui->sourceBox_5->addItem("Sample5",4);
-	ui->sourceBox_5->setCurrentIndex(4);
+	ui->sourceBox_5->addItem("Table",4);
 
 	ui->wpmBox_5->addItem("5 wpm", 5);
 	ui->wpmBox_5->addItem("10 wpm", 10);
@@ -215,8 +192,6 @@ void MainWindow::setupUi()
 	ui->wpmBox_5->addItem("60 wpm", 60);
 	ui->wpmBox_5->addItem("70 wpm", 70);
 	ui->wpmBox_5->addItem("80 wpm", 80);
-	ui->wpmBox_5->setCurrentIndex(7);
-
 
 	ui->dbBox_5->addItem("-30db", -30);
 	ui->dbBox_5->addItem("-35db", -35);
@@ -225,16 +200,60 @@ void MainWindow::setupUi()
 	ui->dbBox_5->addItem("-50db", -50);
 	ui->dbBox_5->addItem("-55db", -55);
 	ui->dbBox_5->addItem("-60db", -60);
-	ui->dbBox_5->setCurrentIndex(2);
-
 
 	connect(ui->generateButton,SIGNAL(clicked(bool)),this,SLOT(generateButtonClicked(bool)));
+	connect(ui->resetButton,SIGNAL(clicked(bool)),this,SLOT(resetButtonClicked(bool)));
+
+	resetButtonClicked(true);
+}
+
+void MainWindow::resetButtonClicked(bool clicked)
+{
+	Q_UNUSED(clicked);
+
+	ui->timeBox->setCurrentIndex(0);
+
+	ui->enabledBox_1->setChecked(true);
+	ui->freqencyEdit_1->setText("1000");
+	ui->sourceBox_1->setCurrentIndex(0);
+	ui->wpmBox_1->setCurrentIndex(3);
+	ui->dbBox_1->setCurrentIndex(2);
+
+	ui->enabledBox_2->setChecked(true);
+	ui->freqencyEdit_2->setText("1500");
+	ui->sourceBox_2->setCurrentIndex(1);
+	ui->wpmBox_2->setCurrentIndex(4);
+	ui->dbBox_2->setCurrentIndex(2);
+
+	ui->enabledBox_3->setChecked(true);
+	ui->freqencyEdit_3->setText("2000");
+	ui->sourceBox_3->setCurrentIndex(2);
+	ui->wpmBox_3->setCurrentIndex(5);
+	ui->dbBox_3->setCurrentIndex(2);
+
+	ui->enabledBox_4->setChecked(true);
+	ui->freqencyEdit_4->setText("2500");
+	ui->sourceBox_4->setCurrentIndex(3);
+	ui->wpmBox_4->setCurrentIndex(6);
+	ui->dbBox_4->setCurrentIndex(2);
+
+	ui->enabledBox_5->setChecked(true);
+	ui->freqencyEdit_5->setText("3000");
+	ui->sourceBox_5->setCurrentIndex(4);
+	ui->wpmBox_5->setCurrentIndex(7);
+	ui->dbBox_5->setCurrentIndex(2);
 }
 
 void MainWindow::generateButtonClicked(bool clicked)
 {
+	Q_UNUSED(clicked);
+
 	//dmCWL=8 from device_interfaces.h
 	bool result = m_wavOutFile.OpenWrite(m_outFileName,m_sampleRate,m_sampleRate/2,8,0);
+	if (!result) {
+		qDebug()<<"Error opening file "<<m_outFileName;
+		return;
+	}
 
 	double gen1Freq = ui->freqencyEdit_1->text().toDouble();
 	double gen1Amp = ui->dbBox_1->currentData().toDouble();
@@ -291,12 +310,12 @@ void MainWindow::generateButtonClicked(bool clicked)
 		m_morseGen5->setTextOut(m_sampleText[gen5Text]);
 	}
 
+	//How many samples do we need for time setting
+	quint32 secTime = ui->timeBox->currentData().toUInt();
+	quint32 numSamples = m_sampleRate * secTime;
+
 	CPX cpx1,cpx2,cpx3,cpx4,cpx5,out;
-	while (m_morseGen1->hasOutputSamples() ||
-		   m_morseGen2->hasOutputSamples() ||
-		   m_morseGen3->hasOutputSamples() ||
-		   m_morseGen4->hasOutputSamples() ||
-		   m_morseGen5->hasOutputSamples()) {
+	for (quint32 i=0; i<numSamples; i++) {
 		if (gen1Enabled)
 			cpx1 = m_morseGen1->nextOutputSample();
 		if (gen2Enabled)
@@ -330,12 +349,6 @@ void MainWindow::generateButtonClicked(bool clicked)
 		for (int j=0; j<len; j++) {
 			outBuf[j] = outBuf1[j] + outBuf2[j];
 		}
-		wavOutFile.WriteSamples(outBuf,len);
-	}
-#endif
-#if 0
-	for (int i=0; i<512; i++) {
-		len = morseGen1->genTable(outBuf,i);
 		wavOutFile.WriteSamples(outBuf,len);
 	}
 #endif

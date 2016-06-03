@@ -23,12 +23,12 @@ public:
 	~MorseCode();
     void init();
 	//Returns a table entry for the dot/dash representation
-	MorseSymbol *rxLookup(char *r);
-	quint16 txLookup(char c);
+	MorseSymbol *tokenLookup(const char *r);
+	quint16 asciiLookup(quint8 c);
 	//Used to iterate through the entire table for testing and possible future use
 	MorseSymbol *tableLookup(quint32 index);
 
-	QString txPrint(char c);
+	QString txPrint(quint8 c);
 
 	//Returns Tcw in ms for wpm
 	static quint32 wpmToTcwMs(quint32 wpm);
@@ -62,20 +62,20 @@ public:
 	static const quint8 c_dotChar = '.';
 	static const quint8 c_dashChar = '-';
 
-private:
-
-	static const quint32 c_morseTableSize = 512; //9 bit tokens
+	static const quint32 c_morseTableSize = 256; //Max characters we can put in main table
 	//Main table used to generate fast lookup tables for receive and transmit
 	static MorseSymbol m_morseTable[c_morseTableSize];
 
+private:
+	static const quint32 c_tokenTableSize = 512; //9 bit tokens
 	//Array of pointers to cw_table dot/dash tokenized order
-	MorseSymbol *m_rxLookup[c_morseTableSize];
+	MorseSymbol *m_tokenOrderTable[c_tokenTableSize];
 
-	//In character order
-	MorseSymbol *m_txLookup[c_morseTableSize];
+	//In ascii character order
+	MorseSymbol *m_asciiOrderTable[c_morseTableSize];
 
-	quint16 tokenizeSymbol(const char *symbol);
-	const bool c_useParen = false; //Use open paren character; typically used in MARS ops
+	quint16 tokenizeDotDash(const char *dotDash);
+	const bool c_marsMode = false; //Use open paren character; typically used in MARS ops
 };
 
 

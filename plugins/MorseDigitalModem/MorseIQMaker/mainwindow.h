@@ -20,6 +20,8 @@ public:
 	void setupUi();
 private slots:
 	void generateButtonClicked(bool clicked);
+	void resetButtonClicked(bool Clicked);
+
 private:
 	Ui::MainWindow *ui;
 
