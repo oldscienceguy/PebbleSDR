@@ -1050,7 +1050,7 @@ QString Morse::spaceTiming(bool lookingForChar)
 					else if (m_outputMode == CHAR_AND_DOTDASH)
 						outStr = QString("%1 [ %2 ] ").arg(cw->display).arg(cw->dotDash);
 					else if (m_outputMode == DOTDASH)
-						outStr = QString(" [ %s ] ").arg(cw->dotDash);
+						outStr = QString(" [ %1 ] ").arg(cw->dotDash);
                 } else {
                     // invalid decode... let user see error
                     outStr = "*";

@@ -75,7 +75,7 @@ private:
 	MorseSymbol *m_asciiOrderTable[c_morseTableSize];
 
 	quint16 tokenizeDotDash(const char *dotDash);
-	const bool c_marsMode = false; //Use open paren character; typically used in MARS ops
+	//const bool c_marsMode = false; //Use open paren character; typically used in MARS ops
 };
 
 
