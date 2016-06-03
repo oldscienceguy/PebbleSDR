@@ -6,9 +6,13 @@
 //Todo: add noise option
 //Todo: add timed tuning option before output
 //Todo: add random non-morse option
-MorseGen::MorseGen(double sampleRate, double frequency, double dbAmplitude, quint32 wpm, quint32 msRise)
+MorseGen::MorseGen(double sampleRate)
 {
 	m_sampleRate = sampleRate;
+}
+
+void MorseGen::setParams(double frequency, double dbAmplitude, quint32 wpm, quint32 msRise)
+{
 	m_frequency = frequency;
 	m_dbAmplitude = dbAmplitude;
 	m_amplitude = DB::dBToAmplitude(dbAmplitude);
@@ -18,7 +22,7 @@ MorseGen::MorseGen(double sampleRate, double frequency, double dbAmplitude, quin
 	//Calculate size of output elements
 	quint32 msTcw = MorseCode::wpmToTcwMs(wpm);
 	//How many samples do we need for each tcw
-	quint32 samplesPerTcw = msTcw / (1000.0/sampleRate);
+	quint32 samplesPerTcw = msTcw / (1000.0/m_sampleRate);
 
 	//Samples for dot and dash have to include 50% of the rise and fall time
 	// |--5ms--|--5ms--|------50ms------|--5ms--|--5ms--|
@@ -121,6 +125,7 @@ MorseGen::MorseGen(double sampleRate, double frequency, double dbAmplitude, quin
 	m_lastSymbol = MorseCode::WORD_SPACE;
 }
 
+
 void MorseGen::setTextOut(QString textOut)
 {
 	m_textOut = textOut;
@@ -143,14 +148,17 @@ bool MorseGen::hasOutputSamples()
 
 CPX MorseGen::nextOutputSample()
 {
+	if (m_textOut.length() == 0)
+		return CPX();
+
 	//If no samples in CPX buf
 	if (m_numSamplesOutBuf == 0) {
 		//No more samples, fill buffer with next char
 		QChar nextSymbol;
 		//If no more text, start over
 		if (m_textOutIndex >= m_textOut.length()) {
-			//Start over or return flag for end of output
-			m_textOutIndex = 0;
+			//end of output
+			return CPX();
 		}
 		nextSymbol = m_textOut[m_textOutIndex++];
 		m_numSamplesOutBuf = genText(m_outSampleBuf, nextSymbol.toLatin1());

@@ -8,7 +8,9 @@
 class MorseGen
 {
 public:
-	MorseGen(double sampleRate, double frequency, double dbAmplitude, quint32 wpm, quint32 msRise);
+	MorseGen(double sampleRate);
+
+	void setParams(double frequency, double dbAmplitude, quint32 wpm, quint32 msRise);
 
 	//Sets the text that will be generated
 	void setTextOut(QString textOut);
