@@ -27,6 +27,7 @@ SUBDIRS =   pebblelib/pebblelib.pro \
             plugins/Ghpsdr3Device \
             plugins/SDRPlayDevice \
             plugins/HackRFDevice \
+            plugins/MorseGenDevice \
             application/pebbleqt.pro \
             SdrGarage \
     plugins/MorseDigitalModem/MorseIQMaker
