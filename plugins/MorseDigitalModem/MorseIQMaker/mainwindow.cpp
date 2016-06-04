@@ -341,16 +341,51 @@ void MainWindow::generateButtonClicked(bool clicked)
 
 	CPX cpx1,cpx2,cpx3,cpx4,cpx5,cpx6, out;
 	for (quint32 i=0; i<numSamples; i++) {
-		if (gen1Enabled)
+		if (gen1Enabled) {
 			cpx1 = m_morseGen1->nextOutputSample();
-		if (gen2Enabled)
+			if (ui->fadeBox_1->isChecked()) {
+				//Fading
+				double dbRand = -rand() % c_dbFadeRange;
+				double ampRand = DB::dBToAmplitude(dbRand);
+				cpx1 *= ampRand;
+			}
+		}
+		if (gen2Enabled) {
 			cpx2 = m_morseGen2->nextOutputSample();
-		if (gen3Enabled)
+			if (ui->fadeBox_2->isChecked()) {
+				//Fading
+				double dbRand = -rand() % c_dbFadeRange;
+				double ampRand = DB::dBToAmplitude(dbRand);
+				cpx2 *= ampRand;
+			}
+		}
+		if (gen3Enabled) {
 			cpx3 = m_morseGen3->nextOutputSample();
-		if (gen4Enabled)
+			if (ui->fadeBox_3->isChecked()) {
+				//Fading
+				double dbRand = -rand() % c_dbFadeRange;
+				double ampRand = DB::dBToAmplitude(dbRand);
+				cpx3 *= ampRand;
+			}
+		}
+		if (gen4Enabled) {
 			cpx4 = m_morseGen4->nextOutputSample();
-		if (gen5Enabled)
+			if (ui->fadeBox_4->isChecked()) {
+				//Fading
+				double dbRand = -rand() % c_dbFadeRange;
+				double ampRand = DB::dBToAmplitude(dbRand);
+				cpx4 *= ampRand;
+			}
+		}
+		if (gen5Enabled) {
 			cpx5 = m_morseGen5->nextOutputSample();
+			if (ui->fadeBox_5->isChecked()) {
+				//Fading
+				double dbRand = -rand() % c_dbFadeRange;
+				double ampRand = DB::dBToAmplitude(dbRand);
+				cpx5 *= ampRand;
+			}
+		}
 		cpx6 = nextNoiseSample(noiseAmp);
 		out = cpx1 + cpx2 + cpx3 + cpx4 + cpx5 + cpx6;
 		m_wavOutFile.WriteSamples(&out, 1);

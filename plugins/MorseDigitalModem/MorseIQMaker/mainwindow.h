@@ -25,6 +25,7 @@ private slots:
 private:
 	Ui::MainWindow *ui;
 
+	static const quint32 c_dbFadeRange = 20; //For random fade generation
 	quint32 m_sampleRate;
 
 	QString m_outFileName;
