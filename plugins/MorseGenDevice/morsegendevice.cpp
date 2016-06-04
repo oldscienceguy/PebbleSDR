@@ -75,6 +75,12 @@ bool MorseGenDevice::command(DeviceInterface::StandardCommands _cmd, QVariant _a
 		case Cmd_Start:
 			DeviceInterfaceBase::startDevice();
 			//Device specific code follows
+
+			//How often do we need to read samples from files to get framesPerBuffer at sampleRate
+			nsPerBuffer = (1000000000.0 / m_deviceSampleRate) * framesPerBuffer;
+			//qDebug()<<"nsPerBuffer"<<nsPerBuffer;
+			elapsedTimer.start();
+
 			return true;
 
 		case Cmd_Stop:
@@ -155,10 +161,25 @@ void MorseGenDevice::producerWorker(cbProducerConsumerEvents _event)
 	static short maxSample = 0;
 	static short minSample = 0;
 #endif
+	timespec req, rem;
+	qint64 nsRemaining = nsPerBuffer - elapsedTimer.nsecsElapsed();
+
 	switch (_event) {
 		case cbProducerConsumerEvents::Start:
 			break;
 		case cbProducerConsumerEvents::Run:
+			//Govern output rate to match sampleRate, same as if actual device was outputing samples
+			if (nsRemaining > 0) {
+				req.tv_sec = 0;
+				//We want to get close to exact time, but not go over
+				//So we sleep for 1/2 of the remaining time each sequence
+				req.tv_nsec = nsRemaining;
+				if (nanosleep(&req,&rem) < 0) {
+					qDebug()<<"nanosleep failed";
+				}
+			}
+			elapsedTimer.start(); //Restart elapsed timer
+
 			if ((producerFreeBufPtr = (CPX*)m_producerConsumer.AcquireFreeBuffer()) == NULL)
 				return;
 #if 0

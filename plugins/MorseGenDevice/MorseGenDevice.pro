@@ -27,9 +27,13 @@ VERSION = 1.0.0
 TEMPLATE = lib
 CONFIG += plugin
 
-SOURCES += morsegendevice.cpp
+SOURCES += morsegendevice.cpp \
+    morsegen.cpp \
+    ../MorseDigitalModem/morsecode.cpp
 
-HEADERS += morsegendevice.h
+HEADERS += morsegendevice.h \
+    morsegen.h \
+    ../MorseDigitalModem/morsecode.h
 
 LIBS += -L$${PWD}/../../pebblelib/$${LIB_DIR} -lpebblelib
 

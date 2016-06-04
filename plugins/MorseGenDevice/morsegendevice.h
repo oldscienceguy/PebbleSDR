@@ -43,6 +43,8 @@ private:
 
 	Ui::MorseGenOptions *optionUi;
 
+	QElapsedTimer elapsedTimer;
+	qint64 nsPerBuffer; //How fast do we have to output a buffer of data to match recorded sample rate
 
 };
 #endif // EXAMPLESDRDEVICE_H
