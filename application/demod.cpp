@@ -72,6 +72,7 @@ Demod::~Demod()
 {
 }
 
+//Move to plugin
 void Demod::setupDataUi(QWidget *parent)
 {
     if (parent == NULL) {

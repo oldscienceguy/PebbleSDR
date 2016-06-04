@@ -895,44 +895,40 @@ void ReceiverWidget::dataSelectionChanged(int s)
 
     //Clear any previous data selection
     if (m_dataSelection.fileName == "Band_Data") {
-			m_receiver->getDemod()->setupDataUi(NULL);
-            //Delete all children
-            foreach (QObject *obj, ui.dataFrame->children()) {
-                //Normally we get a grid layout object, uiFrame, dataFrame
-                delete obj;
-            }
+		m_receiver->getDemod()->setupDataUi(NULL);
+		//Delete all children
+		foreach (QObject *obj, ui.dataFrame->children()) {
+			//Normally we get a grid layout object, uiFrame, dataFrame
+			delete obj;
+		}
     } else if (m_dataSelection.fileName == "No_Data") {
+		; //Do nothing
     } else {
-           //Reset decoder
-            m_receiver->setDigitalModem(NULL,NULL);
-            //Delete all children
-            foreach (QObject *obj, ui.dataFrame->children()) {
-                //Normally we get a grid layout object, uiFrame, dataFrame
-                delete obj;
-            }
+	   //Reset decoder
+		m_receiver->setDigitalModem(NULL,NULL);
+		//Delete all children
+		foreach (QObject *obj, ui.dataFrame->children()) {
+			//Normally we get a grid layout object, uiFrame, dataFrame
+			delete obj;
+		}
     }
+
 
     //enums are stored as user data with each menu item
     m_dataSelection = ui.dataSelectionBox->itemData(s).value<PluginInfo>();
 
-    QWidget *parent;
-
     if (m_dataSelection.fileName == "No_Data") {
             //Data frame is always open if we get here
             ui.dataFrame->setVisible(false);
-            parent = ui.dataFrame;
-            while (parent) {
-                //Warning, adj size will use all layout hints, including h/v spacer sizing.  So overall size may change
-                parent->adjustSize();
-                parent = parent->parentWidget();
-            }
             update();
     } else if (m_dataSelection.fileName == "Band_Data") {
 			m_receiver->getDemod()->setupDataUi(ui.dataFrame);
             ui.dataFrame->setVisible(true);
+			update();
     } else {
             m_receiver->setDigitalModem(ui.dataSelectionBox->currentText(), ui.dataFrame);
             ui.dataFrame->setVisible(true);
+			update();
     }
 }
 
