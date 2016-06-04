@@ -28,13 +28,13 @@ bool ExampleSDRDevice::initialize(CB_ProcessIQData _callback,
 	//This is set so we always get framesPerBuffer samples (factor in any necessary decimation)
 	//ProducerConsumer allocates as array of bytes, so factor in size of sample data
 	quint16 sampleDataSize = sizeof(double);
-	m_readBufferSize = framesPerBuffer * sampleDataSize * 2; //2 samples per frame (I/Q)
+	m_readBufferSize = m_framesPerBuffer * sampleDataSize * 2; //2 samples per frame (I/Q)
 
 	m_producerConsumer.Initialize(std::bind(&ExampleSDRDevice::producerWorker, this, std::placeholders::_1),
 		std::bind(&ExampleSDRDevice::consumerWorker, this, std::placeholders::_1),m_numProducerBuffers, m_readBufferSize);
 	//Must be called after Initialize
-	m_producerConsumer.SetProducerInterval(m_deviceSampleRate,framesPerBuffer);
-	m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,framesPerBuffer);
+	m_producerConsumer.SetProducerInterval(m_deviceSampleRate,m_framesPerBuffer);
+	m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,m_framesPerBuffer);
 
 	//Start this immediately, before connect, so we don't miss any data
 	m_producerConsumer.Start(true,true);
@@ -219,7 +219,7 @@ void ExampleSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 				//Process data in filled buffer and convert to Pebble format in consumerBuffer
 
 				//perform.StartPerformance("ProcessIQ");
-				processIQData(consumerBuffer,framesPerBuffer);
+				processIQData(consumerBuffer,m_framesPerBuffer);
 				//perform.StopPerformance(1000);
 				//We don't release a free buffer until ProcessIQData returns because that would also allow inBuffer to be reused
 				m_producerConsumer.ReleaseFreeBuffer();

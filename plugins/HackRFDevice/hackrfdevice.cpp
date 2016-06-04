@@ -32,7 +32,7 @@ bool HackRFDevice::initialize(CB_ProcessIQData _callback,
 {
 	DeviceInterfaceBase::initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
 	//If we are decimating, we need to collect more samples
-	deviceSamplesPerBuffer = framesPerBuffer * m_decimateFactor;
+	deviceSamplesPerBuffer = m_framesPerBuffer * m_decimateFactor;
 	producerBuf = (CPX8*)new qint8[deviceSamplesPerBuffer * sizeof(CPX8)];
 	decimatorBuf = CPX::memalign(deviceSamplesPerBuffer);
 
@@ -55,7 +55,7 @@ bool HackRFDevice::initialize(CB_ProcessIQData _callback,
 	//Producer checks at device rate
 	m_producerConsumer.SetProducerInterval(m_deviceSampleRate,deviceSamplesPerBuffer);
 	//Consumer checks at decimated rate set in setSampleRate()
-	m_producerConsumer.SetConsumerInterval(m_sampleRate,framesPerBuffer);
+	m_producerConsumer.SetConsumerInterval(m_sampleRate,m_framesPerBuffer);
 
 	if (useSignals)
 		connect(this,SIGNAL(newIQData()),this,SLOT(consumerSlot()));
@@ -486,7 +486,7 @@ int HackRFDevice::rx_callback(hackrf_transfer*transfer)
 
 		hackRf->normalizeIQ(&hackRf->producerFreeBufPtr[hackRf->producerIndex], buf[i], buf[i+1]);
 		hackRf->producerIndex++;
-		if (hackRf->producerIndex >= hackRf->framesPerBuffer) {
+		if (hackRf->producerIndex >= hackRf->m_framesPerBuffer) {
 			hackRf->producerIndex = 0;
 			hackRf->producerFreeBufPtr = NULL;
 			hackRf->m_producerConsumer.ReleaseFilledBuffer();
@@ -535,7 +535,7 @@ void HackRFDevice::producerWorker(cbProducerConsumerEvents _event)
 					numDecimatedSamples = decimator->process(decimatorBuf, producerFreeBufPtr, deviceSamplesPerBuffer);
 				} else {
 					//No decimation, direct to producer/consumer buffer
-					normalizeIQ(producerFreeBufPtr, producerBuf, framesPerBuffer);
+					normalizeIQ(producerFreeBufPtr, producerBuf, m_framesPerBuffer);
 				}
 
 				m_producerConsumer.ReleaseFilledBuffer();
@@ -563,7 +563,7 @@ void HackRFDevice::consumerSlot()
 		//Process data in filled buffer and convert to Pebble format in consumerBuffer
 
 		//perform.StartPerformance("ProcessIQ");
-		processIQData((CPX *)consumerFilledBufferPtr,framesPerBuffer);
+		processIQData((CPX *)consumerFilledBufferPtr,m_framesPerBuffer);
 		//perform.StopPerformance(1000);
 		//We don't release a free buffer until ProcessIQData returns because that would also allow inBuffer to be reused
 		m_producerConsumer.ReleaseFreeBuffer();

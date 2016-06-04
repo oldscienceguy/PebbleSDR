@@ -66,15 +66,15 @@ bool DeviceInterfaceBase::initialize(CB_ProcessIQData _callback,
 	processIQData = _callback;
 	processBandscopeData = _callbackBandscope;
 	processAudioData = _callbackAudio;
-	framesPerBuffer = _framesPerBuffer;
+	m_framesPerBuffer = _framesPerBuffer;
 	m_connected = false;
 
 	using namespace std::placeholders;
 	if (get(DeviceInterface::Key_DeviceType).toInt() == DT_AUDIO_IQ_DEVICE) {
-		m_audioInput = Audio::Factory(std::bind(&DeviceInterfaceBase::audioProducer, this, _1, _2), framesPerBuffer);
+		m_audioInput = Audio::Factory(std::bind(&DeviceInterfaceBase::audioProducer, this, _1, _2), m_framesPerBuffer);
 	}
 
-	m_audioInputBuffer = CPX::memalign(framesPerBuffer);
+	m_audioInputBuffer = CPX::memalign(m_framesPerBuffer);
 
 	return true;
 }
@@ -917,12 +917,12 @@ void DeviceInterfaceBase::audioProducer(float *samples, quint16 numSamples)
 #ifdef USE_PORT_AUDIO
 	normalizeIQGain = DB::dBToAmplitude(-4.00);
 #endif
-	if (numSamples / 2 != framesPerBuffer) {
+	if (numSamples / 2 != m_framesPerBuffer) {
 		qDebug()<<"Invalid number of audio samples";
 		return;
 	}
-	for (int i=0, j=0; i<framesPerBuffer; i++, j+=2) {
+	for (int i=0, j=0; i<m_framesPerBuffer; i++, j+=2) {
 		normalizeIQ( &m_audioInputBuffer[i], samples[j], samples[j+1]);
 	}
-	processIQData(m_audioInputBuffer, framesPerBuffer);
+	processIQData(m_audioInputBuffer, m_framesPerBuffer);
 }

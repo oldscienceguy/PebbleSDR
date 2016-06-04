@@ -27,7 +27,7 @@ bool FileSDRDevice::initialize(CB_ProcessIQData _callback,
 {
 	DeviceInterfaceBase::initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
 	m_producerConsumer.Initialize(std::bind(&FileSDRDevice::producerWorker, this, std::placeholders::_1),
-		std::bind(&FileSDRDevice::consumerWorker, this, std::placeholders::_1),50,framesPerBuffer * sizeof(CPX));
+		std::bind(&FileSDRDevice::consumerWorker, this, std::placeholders::_1),50,m_framesPerBuffer * sizeof(CPX));
 
     return true;
 }
@@ -70,15 +70,15 @@ bool FileSDRDevice::connectDevice()
     QFileInfo fi(fileName);
     recordingPath = fi.path()+"/*";
 
-	bool res = wavFileRead.OpenRead(fileName, framesPerBuffer);
+	bool res = wavFileRead.OpenRead(fileName, m_framesPerBuffer);
     if (!res)
         return false;
 
 	m_deviceSampleRate = wavFileRead.GetSampleRate();
 	//We have sample rate for file, set polling interval
 	//We don't use producer thread, sampleRateTimer and producerSlot() instead
-	m_producerConsumer.SetProducerInterval(m_deviceSampleRate, framesPerBuffer);
-	m_producerConsumer.SetConsumerInterval(m_deviceSampleRate, framesPerBuffer);
+	m_producerConsumer.SetProducerInterval(m_deviceSampleRate, m_framesPerBuffer);
+	m_producerConsumer.SetConsumerInterval(m_deviceSampleRate, m_framesPerBuffer);
 
     if (copyTest) {
 		res = wavFileWrite.OpenWrite(fileName + "2", m_deviceSampleRate,0,0,0);
@@ -96,7 +96,7 @@ bool FileSDRDevice::disconnectDevice()
 void FileSDRDevice::startDevice()
 {
 	//How often do we need to read samples from files to get framesPerBuffer at sampleRate
-	nsPerBuffer = (1000000000.0 / m_deviceSampleRate) * framesPerBuffer;
+	nsPerBuffer = (1000000000.0 / m_deviceSampleRate) * m_framesPerBuffer;
 	//qDebug()<<"nsPerBuffer"<<nsPerBuffer;
 
 	m_producerConsumer.Start(true,true);
@@ -253,8 +253,8 @@ void FileSDRDevice::producerSlot()
 	if ((producerBuf = (CPX*)m_producerConsumer.AcquireFreeBuffer()) == NULL)
 		return;
 
-	samplesRead = wavFileRead.ReadSamples(producerBuf,framesPerBuffer);
-	normalizeIQ(producerBuf, producerBuf,framesPerBuffer,false);
+	samplesRead = wavFileRead.ReadSamples(producerBuf,m_framesPerBuffer);
+	normalizeIQ(producerBuf, producerBuf,m_framesPerBuffer,false);
 
 	//ProcessIQData(producerBuf,framesPerBuffer);
 
@@ -278,9 +278,9 @@ void FileSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 					return;
 
 				if (copyTest)
-					wavFileWrite.WriteSamples(bufPtr, framesPerBuffer);
+					wavFileWrite.WriteSamples(bufPtr, m_framesPerBuffer);
 
-				processIQData(bufPtr,framesPerBuffer);
+				processIQData(bufPtr,m_framesPerBuffer);
 				m_producerConsumer.ReleaseFreeBuffer();
 			}
             break;

@@ -76,10 +76,10 @@ bool RFSpaceDevice::initialize(CB_ProcessIQData _callback,
 		DeviceInterfaceBase::initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
 		m_producerConsumer.Initialize(std::bind(&RFSpaceDevice::producerWorker, this, std::placeholders::_1),
 			std::bind(&RFSpaceDevice::consumerWorker, this, std::placeholders::_1),
-			m_numProducerBuffers, framesPerBuffer * sizeof(CPX), ProducerConsumer::PRODUCER_MODE::POLL);
+			m_numProducerBuffers, m_framesPerBuffer * sizeof(CPX), ProducerConsumer::PRODUCER_MODE::POLL);
 		//SR * 2 bytes for I * 2 bytes for Q .  dataBlockSize is 8192
-		m_producerConsumer.SetProducerInterval(m_deviceSampleRate,framesPerBuffer);
-		m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,framesPerBuffer);
+		m_producerConsumer.SetProducerInterval(m_deviceSampleRate,m_framesPerBuffer);
+		m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,m_framesPerBuffer);
 		//Normalizes signal +/- db. -10 will decrease signal by 10db, +10 will increase by 10db
 		//Use 10mhz signal generator with .0005vpp (Red Pitaya) should result in approx -60db signal
 		//Test with normalizeGain = 1 to get baseline, then calculate db gain/loss adjustment
@@ -92,13 +92,13 @@ bool RFSpaceDevice::initialize(CB_ProcessIQData _callback,
 		//More efficient and robust compared with POLL, but either one works
 		m_producerConsumer.Initialize(std::bind(&RFSpaceDevice::producerWorker, this, std::placeholders::_1),
 			std::bind(&RFSpaceDevice::consumerWorker, this, std::placeholders::_1),
-			m_numProducerBuffers, framesPerBuffer * sizeof(CPX), ProducerConsumer::PRODUCER_MODE::NOTIFY);
+			m_numProducerBuffers, m_framesPerBuffer * sizeof(CPX), ProducerConsumer::PRODUCER_MODE::NOTIFY);
 		//Get get UDP datagrams of 1024 bytes, 4bytes per CPX or 256 CPX samples
 		//Not needed if producer is running in NOTIFY mode
 		m_producerConsumer.SetProducerInterval(m_deviceSampleRate,udpBlockSize / sizeof(CPX16));
 
 		//Consumer only has to run once every 2048 CPX samples
-		m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,framesPerBuffer);
+		m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,m_framesPerBuffer);
 		m_normalizeIQGain = DB::dBToAmplitude(7);
 
 	} else if (m_deviceNumber == AFEDRI_USB) {
@@ -722,7 +722,7 @@ void RFSpaceDevice::DoUSBProducer()
 			m_producerConsumer.ReleaseFreeBuffer(); //Put back what we acquired
 			return;
 		}
-		normalizeIQ(producerFreeBufPtr, usbReadBuf, framesPerBuffer, false);
+		normalizeIQ(producerFreeBufPtr, usbReadBuf, m_framesPerBuffer, false);
 		//Increment the number of data buffers that are filled so consumer thread can access
 		m_producerConsumer.ReleaseFilledBuffer();
 		return;
@@ -761,7 +761,7 @@ void RFSpaceDevice::consumerWorker(cbProducerConsumerEvents _event)
 				//SendAck();
 
 				//perform.StartPerformance("ProcessIQ");
-				processIQData(consumerFilledBufPtr,framesPerBuffer);
+				processIQData(consumerFilledBufPtr,m_framesPerBuffer);
 				//perform.StopPerformance(100);
 
 				//Update lastDataBuf & release dataBuf
@@ -894,10 +894,10 @@ void RFSpaceDevice::UDPSocketNewData()
 		memcpy(&readBuf[readBufferIndex], &udpReadBuf[4], udpBlockSize); //256 I/Q samples
 		readBufferIndex += udpBlockSize / sizeof(CPX16);
 
-		if (readBufferIndex == framesPerBuffer) {
+		if (readBufferIndex == m_framesPerBuffer) {
 			readBufferIndex = 0;
 			//Reverse IQ order
-			normalizeIQ(producerFreeBufPtr, readBuf, framesPerBuffer, true);
+			normalizeIQ(producerFreeBufPtr, readBuf, m_framesPerBuffer, true);
 			//Increment the number of data buffers that are filled so consumer thread can access
 			m_producerConsumer.ReleaseFilledBuffer();
 		}

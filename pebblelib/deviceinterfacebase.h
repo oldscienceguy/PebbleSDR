@@ -56,7 +56,7 @@ protected:
 
 
 	//Todo: Flag which of these is just a convenience for Pebble, vs required for the interface
-	quint16 framesPerBuffer;
+	quint16 m_framesPerBuffer;
 
 	int m_lastSpectrumMode; //Spectrum, waterfall, etc
 	StartupType m_startupType;

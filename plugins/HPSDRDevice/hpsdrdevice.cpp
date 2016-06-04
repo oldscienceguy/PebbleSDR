@@ -59,7 +59,7 @@ bool HPSDRDevice::initialize(CB_ProcessIQData _callback,
 	//Each sample is 3 bytes(24 bits) x 2 for I and Q plus 2 bytes for Mic-Line
 	//Experiment with different values here
 	//Lets start with makeing sure every fetch gets at least 2048 samples
-	inputBufferSize = OZY_FRAME_SIZE * qRound(framesPerBuffer / 63.0 * 0.5);
+	inputBufferSize = OZY_FRAME_SIZE * qRound(m_framesPerBuffer / 63.0 * 0.5);
 
 	if (outputBuffer != NULL)
 		delete[] outputBuffer;
@@ -70,7 +70,7 @@ bool HPSDRDevice::initialize(CB_ProcessIQData _callback,
 	inputBuffer = new unsigned char[inputBufferSize];
 
 	m_numProducerBuffers = 50;
-	m_readBufferSize = framesPerBuffer * sizeof(CPX);
+	m_readBufferSize = m_framesPerBuffer * sizeof(CPX);
 	m_producerConsumer.Initialize(std::bind(&HPSDRDevice::producerWorker, this, std::placeholders::_1),
 		std::bind(&HPSDRDevice::consumerWorker, this, std::placeholders::_1),m_numProducerBuffers, m_readBufferSize);
 
@@ -78,11 +78,11 @@ bool HPSDRDevice::initialize(CB_ProcessIQData _callback,
 		//Must be called after Initialize
 		//Sample rate and size must be in consistent units - cpx samples
 		m_producerConsumer.SetProducerInterval(m_deviceSampleRate,inputBufferSize / sizeof(CPX));
-		m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,framesPerBuffer);
+		m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,m_framesPerBuffer);
 	} else {
 		//Producer triggered by readyRead signal, so set polling for long time 1 sec
 		m_producerConsumer.SetProducerInterval(inputBufferSize,inputBufferSize);
-		m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,framesPerBuffer);
+		m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,m_framesPerBuffer);
 	}
 	return true;
 }
@@ -546,7 +546,7 @@ bool HPSDRDevice::ProcessInputFrame(unsigned char *buf, int len)
 
 			//Add to dataBuf and see if we have enough samples
 			producerFreeBufPtr[sampleCount++] = cpx;
-			if (sampleCount == framesPerBuffer) {
+			if (sampleCount == m_framesPerBuffer) {
 				sampleCount = 0;
 				producerFreeBufPtr = NULL;
 				m_producerConsumer.ReleaseFilledBuffer(); //Triggers signal that calls consumer
@@ -576,7 +576,7 @@ void HPSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 			}
 
 			//Got data, process
-			processIQData((CPX *)dataBuf,framesPerBuffer); //!!Check size, CPX samples?
+			processIQData((CPX *)dataBuf,m_framesPerBuffer); //!!Check size, CPX samples?
 
 			m_producerConsumer.ReleaseFreeBuffer();
 			break;

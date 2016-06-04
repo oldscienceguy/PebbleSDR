@@ -38,7 +38,7 @@ bool Ghpsdr3Device::initialize(CB_ProcessIQData _callback,
 	DeviceInterfaceBase::initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
 	m_numProducerBuffers = 50;
 	m_producerConsumer.Initialize(std::bind(&Ghpsdr3Device::producerWorker, this, std::placeholders::_1),
-		std::bind(&Ghpsdr3Device::consumerWorker, this, std::placeholders::_1),m_numProducerBuffers, framesPerBuffer*sizeof(CPX));
+		std::bind(&Ghpsdr3Device::consumerWorker, this, std::placeholders::_1),m_numProducerBuffers, m_framesPerBuffer*sizeof(CPX));
 	//Review interval since we're gettin audio rates not IQ sample rates
 	m_producerConsumer.SetConsumerInterval(8000,AUDIO_OUTPUT_SIZE);
 	m_producerConsumer.SetProducerInterval(8000,AUDIO_OUTPUT_SIZE);

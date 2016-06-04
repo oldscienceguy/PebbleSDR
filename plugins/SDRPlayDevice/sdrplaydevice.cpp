@@ -31,17 +31,17 @@ bool SDRPlayDevice::initialize(CB_ProcessIQData _callback,
 	//This is set so we always get framesPerBuffer samples (factor in any necessary decimation)
 	//ProducerConsumer allocates as array of bytes, so factor in size of sample data
 	quint16 sampleDataSize = sizeof(CPX);
-	m_readBufferSize = framesPerBuffer * sampleDataSize;
+	m_readBufferSize = m_framesPerBuffer * sampleDataSize;
 
-	packetIBuf = new short[framesPerBuffer * 2]; //2X what we need so we have overflow space
-	packetQBuf = new short[framesPerBuffer * 2];
+	packetIBuf = new short[m_framesPerBuffer * 2]; //2X what we need so we have overflow space
+	packetQBuf = new short[m_framesPerBuffer * 2];
 	producerIndex = 0;
 
 	m_producerConsumer.Initialize(std::bind(&SDRPlayDevice::producerWorker, this, std::placeholders::_1),
 		std::bind(&SDRPlayDevice::consumerWorker, this, std::placeholders::_1),m_numProducerBuffers, m_readBufferSize);
 	//Must be called after Initialize
-	m_producerConsumer.SetProducerInterval(m_deviceSampleRate,framesPerBuffer);
-	m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,framesPerBuffer);
+	m_producerConsumer.SetProducerInterval(m_deviceSampleRate,m_framesPerBuffer);
+	m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,m_framesPerBuffer);
 
 #endif
 
@@ -685,14 +685,14 @@ void SDRPlayDevice::producerWorker(cbProducerConsumerEvents _event)
 				//Save in producerBuffer (sized to handle overflow
 				//Make sure samplesPerPacket is initialized before producer starts
 
-				qint32 samplesNeeded = framesPerBuffer - producerIndex;
+				qint32 samplesNeeded = m_framesPerBuffer - producerIndex;
 				samplesNeeded = samplesPerPacket <= samplesNeeded ? samplesPerPacket : samplesNeeded;
 				qint32 samplesExtra = samplesPerPacket - samplesNeeded;
 
 				normalizeIQ(&producerFreeBufPtr[producerIndex], packetIBuf, packetQBuf, samplesNeeded, reverseIQ);
 				producerIndex += samplesNeeded;
 
-				if (producerIndex >= framesPerBuffer) {
+				if (producerIndex >= m_framesPerBuffer) {
 #if 0
 					double avgPwrInPacket = 0;
 					//AGC Logic
@@ -773,7 +773,7 @@ void SDRPlayDevice::consumerWorker(cbProducerConsumerEvents _event)
 				}
 
 				//perform.StartPerformance("ProcessIQ");
-				processIQData(consumerFilledBufferPtr,framesPerBuffer);
+				processIQData(consumerFilledBufferPtr,m_framesPerBuffer);
 				//perform.StopPerformance(1000);
 				//We don't release a free buffer until ProcessIQData returns because that would also allow inBuffer to be reused
 				m_producerConsumer.ReleaseFreeBuffer();

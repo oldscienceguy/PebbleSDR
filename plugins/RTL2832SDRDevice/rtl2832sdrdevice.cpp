@@ -87,7 +87,7 @@ bool RTL2832SDRDevice::initialize(CB_ProcessIQData _callback,
 */
 	//1 byte per I + 1 byte per Q
 	//This is set so we always get framesPerBuffer samples after decimating to lower sampleRate
-	m_readBufferSize = framesPerBuffer * sizeof(CPXU8);
+	m_readBufferSize = m_framesPerBuffer * sizeof(CPXU8);
 	inBuffer = (CPXU8 *)malloc(m_readBufferSize);
 
     haveDongleInfo = false; //Look for first bytes
@@ -103,10 +103,10 @@ bool RTL2832SDRDevice::initialize(CB_ProcessIQData _callback,
 
 	m_numProducerBuffers = 50;
 	m_producerConsumer.Initialize(std::bind(&RTL2832SDRDevice::producerWorker, this, std::placeholders::_1),
-		std::bind(&RTL2832SDRDevice::consumerWorker, this, std::placeholders::_1),m_numProducerBuffers, framesPerBuffer * sizeof(CPX));
+		std::bind(&RTL2832SDRDevice::consumerWorker, this, std::placeholders::_1),m_numProducerBuffers, m_framesPerBuffer * sizeof(CPX));
 	//Must be called after Initialize
-	m_producerConsumer.SetProducerInterval(m_deviceSampleRate,framesPerBuffer);
-	m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,framesPerBuffer);
+	m_producerConsumer.SetProducerInterval(m_deviceSampleRate,m_framesPerBuffer);
+	m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,m_framesPerBuffer);
 
     readBufferIndex = 0;
 
@@ -150,7 +150,7 @@ void RTL2832SDRDevice::Reset()
     qDebug()<<"RTL reset signal received";
 	stopDevice();
 	disconnectDevice();
-	initialize(processIQData, NULL, NULL, framesPerBuffer);
+	initialize(processIQData, NULL, NULL, m_framesPerBuffer);
 	connectDevice();
 	startDevice();
 }
@@ -299,7 +299,7 @@ void RTL2832SDRDevice::TCPSocketNewData()
 		readBufferIndex %= m_readBufferSize;
         if (readBufferIndex == 0) {
 			//IQ normally reversed
-			normalizeIQ(producerFreeBufPtr, inBuffer, framesPerBuffer, true);
+			normalizeIQ(producerFreeBufPtr, inBuffer, m_framesPerBuffer, true);
 			m_producerConsumer.ReleaseFilledBuffer();
             producerFreeBufPtr = NULL; //Trigger new Acquire next loop
 		}
@@ -1073,7 +1073,7 @@ void RTL2832SDRDevice::producerWorker(cbProducerConsumerEvents _event)
 
 				//rtl data is 0-255, we need to normalize to -1 to +1
 				//I/Q are normally reversed
-				normalizeIQ(producerFreeBufPtr, inBuffer, framesPerBuffer, true);
+				normalizeIQ(producerFreeBufPtr, inBuffer, m_framesPerBuffer, true);
 
 				m_producerConsumer.ReleaseFilledBuffer();
 			} //End while(running)
@@ -1118,7 +1118,7 @@ void RTL2832SDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 						return;
 					}
 				//perform.StartPerformance("ProcessIQ");
-				processIQData(consumerFilledBufferPtr,framesPerBuffer);
+				processIQData(consumerFilledBufferPtr,m_framesPerBuffer);
 				//perform.StopPerformance(1000);
 				//We don't release a free buffer until ProcessIQData returns because that would also allow inBuffer to be reused
 				m_producerConsumer.ReleaseFreeBuffer();
