@@ -9,9 +9,9 @@ PebbleLibGlobal *pebbleLibGlobal;
 FileSDRDevice::FileSDRDevice():DeviceInterfaceBase()
 {
 	initSettings("WavFileSDR");
-    copyTest = false; //Write what we read
-    fileName = "";
-    recordingPath = "";
+	m_copyTest = false; //Write what we read
+	m_fileName = "";
+	m_recordingPath = "";
 	pebbleLibGlobal = new PebbleLibGlobal();
 }
 
@@ -36,16 +36,16 @@ bool FileSDRDevice::connectDevice()
 {
 
     //Use last recording path and filename for convenience
-    if (recordingPath.isEmpty()) {
-		recordingPath = pebbleLibGlobal->appDirPath;
+	if (m_recordingPath.isEmpty()) {
+		m_recordingPath = pebbleLibGlobal->appDirPath;
         //QT QTBUG-35779 Trailing '*' is required to workaround QT 5.2 bug where directory arg was ignored
-		recordingPath += "/PebbleRecordings/*";
+		m_recordingPath += "/PebbleRecordings/*";
     }
 
 #if 1
     //Passing NULL for dir shows current/last directory, which may be inside the mac application bundle
     //Mavericks native file open dialog doesn't respect passed directory arg, QT (Non-native) version works, but is ugly
-    fileName = QFileDialog::getOpenFileName(NULL,tr("Open Wave File"), recordingPath, tr("Wave Files (*.wav)"));
+	m_fileName = QFileDialog::getOpenFileName(NULL,tr("Open Wave File"), m_recordingPath, tr("Wave Files (*.wav)"));
     //fileName = QFileDialog::getOpenFileName(NULL,tr("Open Wave File"), recordingPath, tr("Wave Files (*.wav)"),0,QFileDialog::DontUseNativeDialog);
 
 #else
@@ -63,45 +63,45 @@ bool FileSDRDevice::connectDevice()
     fileName = files[0];
 #endif
 
-    if (fileName == NULL)
+	if (m_fileName == NULL)
         return false; //User canceled out of dialog
 
     //Save recordingPath for later use
-    QFileInfo fi(fileName);
-    recordingPath = fi.path()+"/*";
+	QFileInfo fi(m_fileName);
+	m_recordingPath = fi.path()+"/*";
 
-	bool res = wavFileRead.OpenRead(fileName, m_framesPerBuffer);
+	bool res = m_wavFileRead.OpenRead(m_fileName, m_framesPerBuffer);
     if (!res)
         return false;
 
-	m_deviceSampleRate = wavFileRead.GetSampleRate();
+	m_deviceSampleRate = m_wavFileRead.GetSampleRate();
 	//We have sample rate for file, set polling interval
 	//We don't use producer thread, sampleRateTimer and producerSlot() instead
 	m_producerConsumer.SetProducerInterval(m_deviceSampleRate, m_framesPerBuffer);
 	m_producerConsumer.SetConsumerInterval(m_deviceSampleRate, m_framesPerBuffer);
 
-    if (copyTest) {
-		res = wavFileWrite.OpenWrite(fileName + "2", m_deviceSampleRate,0,0,0);
+	if (m_copyTest) {
+		res = m_wavFileWrite.OpenWrite(m_fileName + "2", m_deviceSampleRate,0,0,0);
     }
     return true;
 }
 
 bool FileSDRDevice::disconnectDevice()
 {
-    wavFileRead.Close();
-    wavFileWrite.Close();
+	m_wavFileRead.Close();
+	m_wavFileWrite.Close();
     return true;
 }
 
 void FileSDRDevice::startDevice()
 {
 	//How often do we need to read samples from files to get framesPerBuffer at sampleRate
-	nsPerBuffer = (1000000000.0 / m_deviceSampleRate) * m_framesPerBuffer;
+	m_nsPerBuffer = (1000000000.0 / m_deviceSampleRate) * m_framesPerBuffer;
 	//qDebug()<<"nsPerBuffer"<<nsPerBuffer;
 
 	m_producerConsumer.Start(true,true);
 
-	elapsedTimer.start();
+	m_elapsedTimer.start();
 }
 
 void FileSDRDevice::stopDevice()
@@ -114,16 +114,16 @@ void FileSDRDevice::readSettings()
 
 	DeviceInterfaceBase::readSettings();
 
-	fileName = m_qSettings->value("FileName", "").toString();
-	recordingPath = m_qSettings->value("RecordingPath", "").toString();
+	m_fileName = m_qSettings->value("FileName", "").toString();
+	m_recordingPath = m_qSettings->value("RecordingPath", "").toString();
 }
 
 void FileSDRDevice::writeSettings()
 {
 	DeviceInterfaceBase::writeSettings();
 
-	m_qSettings->setValue("FileName", fileName);
-	m_qSettings->setValue("RecordingPath", recordingPath);
+	m_qSettings->setValue("FileName", m_fileName);
+	m_qSettings->setValue("RecordingPath", m_recordingPath);
 }
 
 QVariant FileSDRDevice::get(DeviceInterface::StandardKeys _key, QVariant _option)
@@ -138,20 +138,20 @@ QVariant FileSDRDevice::get(DeviceInterface::StandardKeys _key, QVariant _option
 			return "Plays back I/Q WAV file";
 			break;
 		case Key_DeviceName:
-			return "SDRFile: " + QFileInfo(fileName).fileName() + "-" + QString::number(m_deviceSampleRate);
+			return "SDRFile: " + QFileInfo(m_fileName).fileName() + "-" + QString::number(m_deviceSampleRate);
 		case Key_DeviceType:
 			return DT_IQ_DEVICE;
 		case Key_StartupType:
 			return DeviceInterface::ST_DEFAULTFREQ; //Fixed, can't change freq
 		case Key_HighFrequency: {
-			quint32 loFreq = wavFileRead.GetLoFreq();
+			quint32 loFreq = m_wavFileRead.GetLoFreq();
 			if (loFreq == 0)
 				return m_deviceSampleRate;
 			else
 				return loFreq + m_deviceSampleRate / 2.0;
 		}
 		case Key_LowFrequency: {
-			quint32 loFreq = wavFileRead.GetLoFreq();
+			quint32 loFreq = m_wavFileRead.GetLoFreq();
 			if (loFreq == 0)
 				return 0;
 			else
@@ -159,7 +159,7 @@ QVariant FileSDRDevice::get(DeviceInterface::StandardKeys _key, QVariant _option
 		}
 		case Key_StartupFrequency: {
 			//If it's a pebble wav file, we should have LO freq
-			quint32 loFreq = wavFileRead.GetLoFreq();
+			quint32 loFreq = m_wavFileRead.GetLoFreq();
 			if (loFreq == 0)
 				return m_deviceSampleRate / 2.0; //Default
 			else
@@ -167,7 +167,7 @@ QVariant FileSDRDevice::get(DeviceInterface::StandardKeys _key, QVariant _option
 			break;
 		}
 		case Key_StartupDemodMode: {
-			int startupMode =  wavFileRead.GetMode();
+			int startupMode =  m_wavFileRead.GetMode();
 			if (startupMode < 255)
 				return startupMode;
 			else
@@ -189,7 +189,7 @@ bool FileSDRDevice::set(StandardKeys _key, QVariant _value, QVariant _option)
 
 	switch (_key) {
 		case Key_DeviceFrequency: {
-			quint32 loFreq = wavFileRead.GetLoFreq();
+			quint32 loFreq = m_wavFileRead.GetLoFreq();
 			if (loFreq == 0)
 				return get(DeviceInterface::Key_StartupFrequency).toDouble();
 			else
@@ -233,7 +233,7 @@ void FileSDRDevice::producerSlot()
 	timespec req, rem;
 	//Note: timer(0) averages 30,000ns between calls to this slot
 	//Govern output rate to match sampleRate, same as if actual device was outputing samples
-	qint64 nsRemaining = nsPerBuffer - elapsedTimer.nsecsElapsed();
+	qint64 nsRemaining = m_nsPerBuffer - m_elapsedTimer.nsecsElapsed();
 	if (nsRemaining > 0) {
 		req.tv_sec = 0;
 		//We want to get close to exact time, but not go over
@@ -243,18 +243,18 @@ void FileSDRDevice::producerSlot()
 			qDebug()<<"nanosleep failed";
 		}
 	}
-	elapsedTimer.start(); //Restart elapsed timer
+	m_elapsedTimer.start(); //Restart elapsed timer
 
 
 	//pebbleLibGlobal->perform.StartPerformance("Wav file producer");
 	int samplesRead;
 
 	//Fill one buffer with data
-	if ((producerBuf = (CPX*)m_producerConsumer.AcquireFreeBuffer()) == NULL)
+	if ((m_producerBuf = (CPX*)m_producerConsumer.AcquireFreeBuffer()) == NULL)
 		return;
 
-	samplesRead = wavFileRead.ReadSamples(producerBuf,m_framesPerBuffer);
-	normalizeIQ(producerBuf, producerBuf,m_framesPerBuffer,false);
+	samplesRead = m_wavFileRead.ReadSamples(m_producerBuf,m_framesPerBuffer);
+	normalizeIQ(m_producerBuf, m_producerBuf,m_framesPerBuffer,false);
 
 	//ProcessIQData(producerBuf,framesPerBuffer);
 
@@ -277,8 +277,8 @@ void FileSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 				if ((bufPtr = (CPX*)m_producerConsumer.AcquireFilledBuffer()) == NULL)
 					return;
 
-				if (copyTest)
-					wavFileWrite.WriteSamples(bufPtr, m_framesPerBuffer);
+				if (m_copyTest)
+					m_wavFileWrite.WriteSamples(bufPtr, m_framesPerBuffer);
 
 				processIQData(bufPtr,m_framesPerBuffer);
 				m_producerConsumer.ReleaseFreeBuffer();

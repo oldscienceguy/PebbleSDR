@@ -43,16 +43,16 @@ private:
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
 
-	QString fileName;
-    QString recordingPath;
+	QString m_fileName;
+	QString m_recordingPath;
 
-    WavFile wavFileRead;
-    WavFile wavFileWrite;
-    bool copyTest; //True if we're reading from one file and writing to another file for testing
+	WavFile m_wavFileRead;
+	WavFile m_wavFileWrite;
+	bool m_copyTest; //True if we're reading from one file and writing to another file for testing
 
-	QElapsedTimer elapsedTimer;
-	qint64 nsPerBuffer; //How fast do we have to output a buffer of data to match recorded sample rate
-	CPX *producerBuf;
+	QElapsedTimer m_elapsedTimer;
+	qint64 m_nsPerBuffer; //How fast do we have to output a buffer of data to match recorded sample rate
+	CPX *m_producerBuf;
 };
 
 
