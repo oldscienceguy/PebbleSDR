@@ -1,9 +1,6 @@
 #include "morsegen.h"
 #include "db.h"
 
-//Todo: add variability to amplitude to simulate fading
-//Todo: add variability to wpm to simulate real fists
-//Todo: add noise option
 //Todo: add timed tuning option before output
 //Todo: add random non-morse option
 MorseGen::MorseGen(double sampleRate)
