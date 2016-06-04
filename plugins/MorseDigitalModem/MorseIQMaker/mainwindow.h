@@ -44,6 +44,7 @@ private:
 	MorseGen *m_morseGen5;
 
 	QString m_sampleText[5];
+	CPX nextNoiseSample(double _dbGain);
 };
 
 #endif // MAINWINDOW_H

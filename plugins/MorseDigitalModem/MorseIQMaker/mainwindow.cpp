@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "QDir"
+#include "db.h"
 
 MainWindow::MainWindow(QWidget *parent) :
 	QMainWindow(parent),
@@ -9,22 +10,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui->setupUi(this);
 	setupUi();
 
-	QString appDirPath = QCoreApplication::applicationDirPath();
-	QDir appDir = QDir(appDirPath);
-#if defined(Q_OS_MAC)
-	if (appDir.dirName() == "MacOS") {
-		//We're in the mac package and need to get back to the package to access relative directories
-		appDir.cdUp();
-		appDir.cdUp();
-		appDir.cdUp(); //Root dir where app is located
-		appDirPath = appDir.absolutePath();
-	}
-#endif
-
-	QString pebbleRecordingPath = appDirPath + "/PebbleRecordings/";
-
 	m_sampleRate = 48000;
-	m_outFileName = pebbleRecordingPath + "testmorseiq.wav";
 	quint32 tcwMs = MorseCode::wpmToTcwMs(20);
 	quint32 maxSymbolMs = MorseCode::c_maxTcwPerSymbol * tcwMs;
 	quint32 outBufLen = maxSymbolMs / (1000.0/m_sampleRate);
@@ -71,6 +57,17 @@ void MainWindow::setupUi()
 	ui->timeBox->addItem("2 min", 120);
 	ui->timeBox->addItem("5 min", 300);
 	ui->timeBox->addItem("10 min",600);
+
+	ui->noiseBox->addItem("-40db", -40);
+	ui->noiseBox->addItem("-45db", -45);
+	ui->noiseBox->addItem("-50db", -50);
+	ui->noiseBox->addItem("-55db", -55);
+	ui->noiseBox->addItem("-60db", -60);
+	ui->noiseBox->addItem("-60db", -65);
+	ui->noiseBox->addItem("-60db", -70);
+	ui->noiseBox->addItem("-60db", -75);
+	ui->noiseBox->addItem("-60db", -80);
+	ui->noiseBox->setCurrentText("-60db");
 
 	ui->sourceBox_1->addItem("Sample1",0);
 	ui->sourceBox_1->addItem("Sample2",1);
@@ -247,6 +244,29 @@ void MainWindow::resetButtonClicked(bool clicked)
 void MainWindow::generateButtonClicked(bool clicked)
 {
 	Q_UNUSED(clicked);
+	QString appDirPath = QCoreApplication::applicationDirPath();
+	QDir appDir = QDir(appDirPath);
+#if defined(Q_OS_MAC)
+	if (appDir.dirName() == "MacOS") {
+		//We're in the mac package and need to get back to the package to access relative directories
+		appDir.cdUp();
+		appDir.cdUp();
+		appDir.cdUp(); //Root dir where app is located
+		appDirPath = appDir.absolutePath();
+	}
+#endif
+
+	//Gen a unique name for output file
+	QString baseName = "MorseIQ_";
+	QString recordingPath = appDirPath + "/PebbleRecordings/";
+	QFileInfo fInfo;
+	for (int i=1; i<1000; i++) {
+		m_outFileName = recordingPath + baseName + QString::number(i) + ".wav";
+		fInfo.setFile(m_outFileName);
+		if (!fInfo.exists())
+			break; //Got a unique name
+		//When we overrun counter, last filename will be continually overwritten
+	}
 
 	//dmCWL=8 from device_interfaces.h
 	bool result = m_wavOutFile.OpenWrite(m_outFileName,m_sampleRate,m_sampleRate/2,8,0);
@@ -314,7 +334,12 @@ void MainWindow::generateButtonClicked(bool clicked)
 	quint32 secTime = ui->timeBox->currentData().toUInt();
 	quint32 numSamples = m_sampleRate * secTime;
 
-	CPX cpx1,cpx2,cpx3,cpx4,cpx5,out;
+	double dbNoiseAmp = ui->noiseBox->currentData().toDouble();
+	//Because noise is averaged, fudget +30db so it matches with generator values
+	//ie -30db gen and -30db noise should be 0snr
+	double noiseAmp = DB::dBToAmplitude(dbNoiseAmp+20);
+
+	CPX cpx1,cpx2,cpx3,cpx4,cpx5,cpx6, out;
 	for (quint32 i=0; i<numSamples; i++) {
 		if (gen1Enabled)
 			cpx1 = m_morseGen1->nextOutputSample();
@@ -326,7 +351,8 @@ void MainWindow::generateButtonClicked(bool clicked)
 			cpx4 = m_morseGen4->nextOutputSample();
 		if (gen5Enabled)
 			cpx5 = m_morseGen5->nextOutputSample();
-		out = cpx1+cpx2+cpx3+cpx4+cpx5;
+		cpx6 = nextNoiseSample(noiseAmp);
+		out = cpx1 + cpx2 + cpx3 + cpx4 + cpx5 + cpx6;
 		m_wavOutFile.WriteSamples(&out, 1);
 	}
 	m_wavOutFile.Close();
@@ -353,4 +379,32 @@ void MainWindow::generateButtonClicked(bool clicked)
 	}
 #endif
 
+}
+
+//Derived from nco.cpp
+//Algorithm from http://dspguru.com/dsp/howtos/how-to-generate-white-gaussian-noise
+//Uses Box-Muller Method, optimized to Polar Method [Ros88] A First Course on Probability
+//Also http://www.dspguide.com/ch2/6.htm
+//https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform R Knop algorithm
+CPX MainWindow::nextNoiseSample(double _dbGain)
+{
+	double u1;
+	double u2;
+	double s;
+	double rad;
+	double x;
+	double y;
+
+	//R Knop
+	do {
+		u1 = 1.0 - 2.0 * (double)rand()/(double)RAND_MAX;
+		u2 = 1.0 - 2.0 * (double)rand()/(double)RAND_MAX;
+		//Collapsing steps
+		s = u1 * u1 + u2 * u2;
+	} while (s >= 1.0 || s == 0.0);
+	// 0 < s < 1
+	rad = sqrt(-2.0 * log(s) / s);
+	x = _dbGain * u1 * rad;
+	y = _dbGain * u2 * rad;
+	return CPX(x,y);
 }
