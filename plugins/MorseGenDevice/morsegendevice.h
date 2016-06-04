@@ -1,11 +1,12 @@
-#ifndef EXAMPLESDRDEVICE_H
-#define EXAMPLESDRDEVICE_H
+#ifndef MORSEGENDEVICE_H
+#define MORSEGENDEVICE_H
 
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
 #include <QObject>
 #include "deviceinterfacebase.h"
 #include "ui_morsegendevice.h"
+#include "morsegen.h"
 
 class MorseGenDevice : public QObject, public DeviceInterfaceBase
 {
@@ -30,11 +31,14 @@ public:
 	QVariant get(StandardKeys _key, QVariant _option = 0);
 	bool set(StandardKeys _key, QVariant _value, QVariant _option = 0);
 
+private slots:
+	void resetButtonClicked(bool clicked);
 private:
 	void readSettings();
 	void writeSettings();
 	void producerWorker(cbProducerConsumerEvents _event);
 	void consumerWorker(cbProducerConsumerEvents _event);
+	void setupOptionUi(QWidget *parent);
 
 	//Work buffer for consumer to convert device format data to CPX Pebble format data
 	CPX *consumerBuffer;
@@ -46,5 +50,26 @@ private:
 	QElapsedTimer elapsedTimer;
 	qint64 nsPerBuffer; //How fast do we have to output a buffer of data to match recorded sample rate
 
+	static const quint32 c_dbFadeRange = 20; //For random fade generation
+
+	CPX *m_outBuf;
+
+	CPX *m_outBuf1;
+	CPX *m_outBuf2;
+	CPX *m_outBuf3;
+	CPX *m_outBuf4;
+	CPX *m_outBuf5;
+
+	MorseGen *m_morseGen1;
+	MorseGen *m_morseGen2;
+	MorseGen *m_morseGen3;
+	MorseGen *m_morseGen4;
+	MorseGen *m_morseGen5;
+
+	QString m_sampleText[5];
+	CPX nextNoiseSample(double _dbGain);
+
+
+	void generate();
 };
-#endif // EXAMPLESDRDEVICE_H
+#endif // MORSEGENDEVICE_H
