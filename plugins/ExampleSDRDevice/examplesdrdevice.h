@@ -37,12 +37,11 @@ private:
 	void consumerWorker(cbProducerConsumerEvents _event);
 
 	//Work buffer for consumer to convert device format data to CPX Pebble format data
-	CPX *consumerBuffer;
-	quint16 producerIndex;
-	CPX *producerFreeBufPtr; //Treat as array of CPX
+	CPX *m_consumerBuffer;
+	quint16 m_producerIndex;
+	CPX *m_producerFreeBufPtr; //Treat as array of CPX
 
-	Ui::ExampleSdrOptions *optionUi;
-
+	Ui::ExampleSdrOptions *m_optionUi;
 
 };
 #endif // EXAMPLESDRDEVICE_H

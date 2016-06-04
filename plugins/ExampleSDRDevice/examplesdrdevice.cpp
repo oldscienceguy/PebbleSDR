@@ -6,7 +6,7 @@
 ExampleSDRDevice::ExampleSDRDevice():DeviceInterfaceBase()
 {
 	initSettings("ExampleSDR");
-	optionUi = NULL;
+	m_optionUi = NULL;
 }
 
 //Called when the plugins object is deleted in the ~Receiver()
@@ -22,7 +22,7 @@ bool ExampleSDRDevice::initialize(CB_ProcessIQData _callback,
 {
 	DeviceInterfaceBase::initialize(_callback, _callbackBandscope, _callbackAudio, _framesPerBuffer);
 	m_numProducerBuffers = 50;
-	producerFreeBufPtr = NULL;
+	m_producerFreeBufPtr = NULL;
 #if 1
 	//Remove if producer/consumer buffers are not used
 	//This is set so we always get framesPerBuffer samples (factor in any necessary decimation)
@@ -101,12 +101,12 @@ bool ExampleSDRDevice::command(DeviceInterface::StandardCommands _cmd, QVariant 
 			//Arg is QWidget *parent
 			//Use QVariant::fromValue() to pass, and value<type passed>() to get back
 			QWidget *parent = _arg.value<QWidget*>();
-			if (optionUi != NULL)
-				delete optionUi;
+			if (m_optionUi != NULL)
+				delete m_optionUi;
 
 			//Change .h and this to correct class name for ui
-			optionUi = new Ui::ExampleSdrOptions();
-			optionUi->setupUi(parent);
+			m_optionUi = new Ui::ExampleSdrOptions();
+			m_optionUi->setupUi(parent);
 			parent->setVisible(true);
 			return true;
 		}
@@ -159,7 +159,7 @@ void ExampleSDRDevice::producerWorker(cbProducerConsumerEvents _event)
 		case cbProducerConsumerEvents::Start:
 			break;
 		case cbProducerConsumerEvents::Run:
-			if ((producerFreeBufPtr = (CPX*)m_producerConsumer.AcquireFreeBuffer()) == NULL)
+			if ((m_producerFreeBufPtr = (CPX*)m_producerConsumer.AcquireFreeBuffer()) == NULL)
 				return;
 #if 0
 			while (running) {
@@ -219,7 +219,7 @@ void ExampleSDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 				//Process data in filled buffer and convert to Pebble format in consumerBuffer
 
 				//perform.StartPerformance("ProcessIQ");
-				processIQData(consumerBuffer,m_framesPerBuffer);
+				processIQData(m_consumerBuffer,m_framesPerBuffer);
 				//perform.StopPerformance(1000);
 				//We don't release a free buffer until ProcessIQData returns because that would also allow inBuffer to be reused
 				m_producerConsumer.ReleaseFreeBuffer();
