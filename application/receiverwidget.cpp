@@ -62,9 +62,7 @@ void ReceiverWidget::setReceiver(Receiver *r)
         v.setValue(p);
         ui.dataSelectionBox->addItem(p.name, v);
     }
-
     connect(ui.dataSelectionBox,SIGNAL(currentIndexChanged(int)),this,SLOT(dataSelectionChanged(int)));
-    setDataMode(0);
 
 	m_loMode = true;
 	ui.gainSlider->setValue(0);
@@ -672,12 +670,18 @@ void ReceiverWidget::powerToggled(bool on)
 		//Also sets loFreq
 		setLoMode(true);
 
+		//Load last data plugin
+		QString pluginName = global->settings->m_dataPluginName;
+		quint32 dataSelection = ui.dataSelectionBox->findText(pluginName);
+		ui.dataSelectionBox->blockSignals(true);
+		ui.dataSelectionBox->setCurrentIndex(dataSelection); //Triggers connection
+		ui.dataSelectionBox->blockSignals(false);
+		loadDataPlugin(pluginName); //Skip clearing previous plugins
 
 	} else {
 		//Turning power off, shut down receiver widget display BEFORE telling receiver to clean up
 		//Objects
-        //Make sure we reset data frame
-        setDataMode(0);
+
         m_powerOn = false;
 
 		powerStyle(m_powerOn);
@@ -696,6 +700,8 @@ void ReceiverWidget::powerToggled(bool on)
         ui.sMeterWidget->stop();
 		//We have to make sure that widgets are stopped before cleaning up supporting objects
 		m_receiver->togglePower(false);
+
+		ui.dataFrame->hide();
 
 	}
 }
@@ -894,14 +900,14 @@ void ReceiverWidget::dataSelectionChanged(int s)
         return;
 
     //Clear any previous data selection
-    if (m_dataSelection.fileName == "Band_Data") {
+	if (m_dataSelection.name == "Band Data") {
 		m_receiver->getDemod()->setupDataUi(NULL);
 		//Delete all children
 		foreach (QObject *obj, ui.dataFrame->children()) {
 			//Normally we get a grid layout object, uiFrame, dataFrame
 			delete obj;
 		}
-    } else if (m_dataSelection.fileName == "No_Data") {
+	} else if (m_dataSelection.name == "No Data") {
 		; //Do nothing
     } else {
 	   //Reset decoder
@@ -913,22 +919,32 @@ void ReceiverWidget::dataSelectionChanged(int s)
 		}
     }
 
+	QString pluginName = ui.dataSelectionBox->currentText();
+	loadDataPlugin(pluginName);
+}
 
-    //enums are stored as user data with each menu item
-    m_dataSelection = ui.dataSelectionBox->itemData(s).value<PluginInfo>();
+//Called on power on and when data selection changes
+void ReceiverWidget::loadDataPlugin(QString pluginName)
+{
+	//Set pluginInfo using dataSelectionBox as index
+	int dataSelection = ui.dataSelectionBox->findText(pluginName);
+	m_dataSelection = ui.dataSelectionBox->itemData(dataSelection).value<PluginInfo>();
 
-    if (m_dataSelection.fileName == "No_Data") {
-            //Data frame is always open if we get here
-            ui.dataFrame->setVisible(false);
-            update();
-    } else if (m_dataSelection.fileName == "Band_Data") {
-			m_receiver->getDemod()->setupDataUi(ui.dataFrame);
-            ui.dataFrame->setVisible(true);
-			update();
+	//Save for reload on next power on
+	global->settings->m_dataPluginName=pluginName;
+
+	if (pluginName == "No Data") {
+		//Data frame is always open if we get here
+		ui.dataFrame->setVisible(false);
+		update();
+	} else if (pluginName == "Band Data") {
+		m_receiver->getDemod()->setupDataUi(ui.dataFrame);
+		ui.dataFrame->setVisible(true);
+		update();
     } else {
-            m_receiver->setDigitalModem(ui.dataSelectionBox->currentText(), ui.dataFrame);
-            ui.dataFrame->setVisible(true);
-			update();
+		m_receiver->setDigitalModem(pluginName, ui.dataFrame);
+		ui.dataFrame->setVisible(true);
+		update();
     }
 }
 

@@ -264,7 +264,7 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 	m_demodMode = DeviceInterface::dmCWL;
     init();
 
-	m_outputOn = false;
+	m_outputOn = true;
 
 }
 

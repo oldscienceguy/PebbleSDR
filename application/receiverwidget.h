@@ -120,6 +120,8 @@ private:
 	void updateSlaveInfo();
 	void powerStyle(bool on);
 
+	void loadDataPlugin(QString pluginName);
+
 private slots:
 		void receiverChanged(int i);
 

@@ -72,6 +72,8 @@ void Settings::readSettings()
 
 	m_updatesPerSecond = m_qSettings->value("UpdatesPerSec", 10).toInt();
 
+	m_dataPluginName = m_qSettings->value("DataPluginName","No Data").toString();
+
 	m_qSettings->beginGroup(tr("Testbench"));
 	global->testBench->m_sweepStartFrequency = m_qSettings->value(tr("SweepStartFrequency"),0.0).toDouble();
 	global->testBench->m_sweepStopFrequency = m_qSettings->value(tr("SweepStopFrequency"),1.0).toDouble();
@@ -127,6 +129,8 @@ void Settings::writeSettings()
 	m_qSettings->setValue("AutoScaleMin",m_autoScaleMin);
 
 	m_qSettings->setValue("UpdatesPerSec",m_updatesPerSecond);
+
+	m_qSettings->setValue("DataPluginName",m_dataPluginName);
 
 	m_qSettings->beginGroup(tr("Testbench"));
 

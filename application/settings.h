@@ -49,6 +49,9 @@ public:
 	bool m_autoScaleMax;
 	bool m_autoScaleMin;
 
+	//Plugin settings
+	QString m_dataPluginName;
+
 	public slots:
 
 private:
