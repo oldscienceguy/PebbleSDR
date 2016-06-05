@@ -2,7 +2,7 @@
 
 MovingAvgFilter::MovingAvgFilter(quint32 filterLen)
 {
-	if (!filterLen > 0)
+	if (filterLen == 0)
 		filterLen = 1;
 	m_delayBuf = new double[filterLen];
 	m_filterLen = filterLen;
