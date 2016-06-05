@@ -6,7 +6,7 @@
 MorseGenDevice::MorseGenDevice():DeviceInterfaceBase()
 {
 	initSettings("morsegen");
-	optionUi = NULL;
+	m_optionUi = NULL;
 }
 
 //Called when the plugins object is deleted in the ~Receiver()
@@ -57,9 +57,7 @@ bool MorseGenDevice::initialize(CB_ProcessIQData _callback,
 	m_sampleText[4].append("=");
 
 	m_numProducerBuffers = 50;
-	producerFreeBufPtr = NULL;
-#if 1
-	//Remove if producer/consumer buffers are not used
+	m_producerFreeBufPtr = NULL;
 	//This is set so we always get framesPerBuffer samples (factor in any necessary decimation)
 	//ProducerConsumer allocates as array of bytes, so factor in size of sample data
 	quint16 sampleDataSize = sizeof(double);
@@ -68,13 +66,8 @@ bool MorseGenDevice::initialize(CB_ProcessIQData _callback,
 	m_producerConsumer.Initialize(std::bind(&MorseGenDevice::producerWorker, this, std::placeholders::_1),
 		std::bind(&MorseGenDevice::consumerWorker, this, std::placeholders::_1),m_numProducerBuffers, m_readBufferSize);
 	//Must be called after Initialize
-	m_producerConsumer.SetProducerInterval(m_deviceSampleRate,m_framesPerBuffer);
-	m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,m_framesPerBuffer);
-
-	//Start this immediately, before connect, so we don't miss any data
-	m_producerConsumer.Start(true,true);
-
-#endif
+	//m_producerConsumer.SetProducerInterval(m_deviceSampleRate,m_framesPerBuffer);
+	//m_producerConsumer.SetConsumerInterval(m_deviceSampleRate,m_framesPerBuffer);
 
 	return true;
 }
@@ -87,11 +80,158 @@ void MorseGenDevice::readSettings()
 
 	//Set defaults before calling DeviceInterfaceBase
 	DeviceInterfaceBase::readSettings();
+
+	m_dbNoiseAmp = m_qSettings->value("DbNoiseAmp",-60).toDouble();
+	m_gen1Enabled = m_qSettings->value("Gen1Enabled",true).toBool();
+	m_gen1Freq = m_qSettings->value("Gen1Freq",1000).toDouble();
+	m_gen1Amp = m_qSettings->value("Gen1Amp",-50).toDouble();
+	m_gen1Wpm = m_qSettings->value("Gen1Wpm",20).toUInt();
+	m_gen1Rise = m_qSettings->value("Gen1Rise",5).toUInt();
+	m_gen1Text = m_qSettings->value("Gen1Text",0).toUInt();
+	m_gen1Fade = m_qSettings->value("Gen1Fade",false).toBool();
+	m_gen1Fist = m_qSettings->value("Gen1Fist",false).toBool();
+
+	m_gen2Enabled = m_qSettings->value("Gen2Enabled",true).toBool();
+	m_gen2Freq = m_qSettings->value("Gen2Freq",1500).toDouble();
+	m_gen2Amp = m_qSettings->value("Gen2Amp",-50).toDouble();
+	m_gen2Wpm = m_qSettings->value("Gen2Wpm",30).toUInt();
+	m_gen2Rise = m_qSettings->value("Gen2Rise",5).toUInt();
+	m_gen2Text = m_qSettings->value("Gen2Text",0).toUInt();
+	m_gen2Fade = m_qSettings->value("Gen2Fade",false).toBool();
+	m_gen2Fist = m_qSettings->value("Gen2Fist",false).toBool();
+
+	m_gen3Enabled = m_qSettings->value("Gen3Enabled",true).toBool();
+	m_gen3Freq = m_qSettings->value("Gen3Freq",2000).toDouble();
+	m_gen3Amp = m_qSettings->value("Gen3Amp",-50).toDouble();
+	m_gen3Wpm = m_qSettings->value("Gen3Wpm",40).toUInt();
+	m_gen3Rise = m_qSettings->value("Gen3Rise",5).toUInt();
+	m_gen3Text = m_qSettings->value("Gen3Text",0).toUInt();
+	m_gen3Fade = m_qSettings->value("Gen3Fade",false).toBool();
+	m_gen3Fist = m_qSettings->value("Gen3Fist",false).toBool();
+
+	m_gen4Enabled = m_qSettings->value("Gen4Enabled",true).toBool();
+	m_gen4Freq = m_qSettings->value("Gen4Freq",2500).toDouble();
+	m_gen4Amp = m_qSettings->value("Gen4Amp",-50).toDouble();
+	m_gen4Wpm = m_qSettings->value("Gen4Wpm",50).toUInt();
+	m_gen4Rise = m_qSettings->value("Gen4Rise",5).toUInt();
+	m_gen4Text = m_qSettings->value("Gen4Text",0).toUInt();
+	m_gen4Fade = m_qSettings->value("Gen4Fade",false).toBool();
+	m_gen4Fist = m_qSettings->value("Gen4Fist",false).toBool();
+
+	m_gen5Enabled = m_qSettings->value("Gen5Enabled",true).toBool();
+	m_gen5Freq = m_qSettings->value("Gen5Freq",2500).toDouble();
+	m_gen5Amp = m_qSettings->value("Gen5Amp",-50).toDouble();
+	m_gen5Wpm = m_qSettings->value("Gen5Wpm",60).toUInt();
+	m_gen5Rise = m_qSettings->value("Gen5Rise",5).toUInt();
+	m_gen5Text = m_qSettings->value("Gen5Text",0).toUInt();
+	m_gen5Fade = m_qSettings->value("Gen5Fade",false).toBool();
+	m_gen5Fist = m_qSettings->value("Gen5Fist",false).toBool();
 }
 
 void MorseGenDevice::writeSettings()
 {
 	DeviceInterfaceBase::writeSettings();
+
+	m_qSettings->setValue("DbNoiseAmp", m_dbNoiseAmp);
+	m_qSettings->setValue("Gen1Enabled", m_gen1Enabled);
+	m_qSettings->setValue("Gen1Freq",m_gen1Freq);
+	m_qSettings->setValue("Gen1Amp",m_gen1Amp);
+	m_qSettings->setValue("Gen1Wpm",m_gen1Wpm);
+	m_qSettings->setValue("Gen1Rise",m_gen1Rise);
+	m_qSettings->setValue("Gen1Text",m_gen1Text);
+	m_qSettings->setValue("Gen1Fade",m_gen1Fade);
+	m_qSettings->setValue("Gen1Fist",m_gen1Fist);
+
+	m_qSettings->setValue("Gen2Enabled", m_gen2Enabled);
+	m_qSettings->setValue("Gen2Freq",m_gen2Freq);
+	m_qSettings->setValue("Gen2Amp",m_gen2Amp);
+	m_qSettings->setValue("Gen2Wpm",m_gen2Wpm);
+	m_qSettings->setValue("Gen2Rise",m_gen2Rise);
+	m_qSettings->setValue("Gen2Text",m_gen2Text);
+	m_qSettings->setValue("Gen2Fade",m_gen2Fade);
+	m_qSettings->setValue("Gen2Fist",m_gen2Fist);
+
+	m_qSettings->setValue("Gen3Enabled", m_gen3Enabled);
+	m_qSettings->setValue("Gen3Freq",m_gen3Freq);
+	m_qSettings->setValue("Gen3Amp",m_gen3Amp);
+	m_qSettings->setValue("Gen3Wpm",m_gen3Wpm);
+	m_qSettings->setValue("Gen3Rise",m_gen3Rise);
+	m_qSettings->setValue("Gen3Text",m_gen3Text);
+	m_qSettings->setValue("Gen3Fade",m_gen3Fade);
+	m_qSettings->setValue("Gen3Fist",m_gen3Fist);
+
+	m_qSettings->setValue("Gen4Enabled", m_gen4Enabled);
+	m_qSettings->setValue("Gen4Freq",m_gen4Freq);
+	m_qSettings->setValue("Gen4Amp",m_gen4Amp);
+	m_qSettings->setValue("Gen4Wpm",m_gen4Wpm);
+	m_qSettings->setValue("Gen4Rise",m_gen4Rise);
+	m_qSettings->setValue("Gen4Text",m_gen4Text);
+	m_qSettings->setValue("Gen4Fade",m_gen4Fade);
+	m_qSettings->setValue("Gen4Fist",m_gen4Fist);
+
+	m_qSettings->setValue("Gen5Enabled", m_gen5Enabled);
+	m_qSettings->setValue("Gen5Freq",m_gen5Freq);
+	m_qSettings->setValue("Gen5Amp",m_gen5Amp);
+	m_qSettings->setValue("Gen5Wpm",m_gen5Wpm);
+	m_qSettings->setValue("Gen5Rise",m_gen5Rise);
+	m_qSettings->setValue("Gen5Text",m_gen5Text);
+	m_qSettings->setValue("Gen5Fade",m_gen5Fade);
+	m_qSettings->setValue("Gen5Fist",m_gen5Fist);
+}
+
+void MorseGenDevice::updateGenerators()
+{
+	m_morseGen1->setParams(m_gen1Freq,m_gen1Amp,m_gen1Wpm,m_gen1Rise);
+	m_morseGen1->setTextOut(m_sampleText[m_gen1Text]);
+	m_morseGen2->setParams(m_gen2Freq,m_gen2Amp,m_gen2Wpm,m_gen2Rise);
+	m_morseGen2->setTextOut(m_sampleText[m_gen2Text]);
+	m_morseGen3->setParams(m_gen3Freq,m_gen3Amp,m_gen3Wpm,m_gen3Rise);
+	m_morseGen3->setTextOut(m_sampleText[m_gen3Text]);
+	m_morseGen4->setParams(m_gen4Freq,m_gen4Amp,m_gen4Wpm,m_gen4Rise);
+	m_morseGen4->setTextOut(m_sampleText[m_gen4Text]);
+	m_morseGen5->setParams(m_gen5Freq,m_gen5Amp,m_gen5Wpm,m_gen5Rise);
+	m_morseGen5->setTextOut(m_sampleText[m_gen5Text]);
+	//Because noise is averaged, fudget +30db so it matches with generator values
+	//ie -30db gen and -30db noise should be 0snr
+	m_noiseAmp = DB::dBToAmplitude(m_dbNoiseAmp+20);
+
+}
+
+void MorseGenDevice::updateFields()
+{
+	//!!! Move to slots that handle changes in real time
+	m_gen1Freq = m_optionUi->freqencyEdit_1->text().toDouble();
+	m_gen1Amp = m_optionUi->dbBox_1->currentData().toDouble();
+	m_gen1Wpm = m_optionUi->wpmBox_1->currentData().toUInt();
+	m_gen1Rise = 5; //Add to UI?
+	m_gen1Text = m_optionUi->sourceBox_1->currentData().toUInt();
+
+	m_gen2Freq = m_optionUi->freqencyEdit_2->text().toDouble();
+	m_gen2Amp = m_optionUi->dbBox_2->currentData().toDouble();
+	m_gen2Wpm = m_optionUi->wpmBox_2->currentData().toUInt();
+	m_gen2Rise = 5; //Add to UI?
+	m_gen2Text = m_optionUi->sourceBox_2->currentData().toUInt();
+
+	m_gen3Freq = m_optionUi->freqencyEdit_3->text().toDouble();
+	m_gen3Amp = m_optionUi->dbBox_3->currentData().toDouble();
+	m_gen3Wpm = m_optionUi->wpmBox_3->currentData().toUInt();
+	m_gen3Rise = 5; //Add to UI?
+	m_gen3Text = m_optionUi->sourceBox_3->currentData().toUInt();
+
+	m_gen4Freq = m_optionUi->freqencyEdit_4->text().toDouble();
+	m_gen4Amp = m_optionUi->dbBox_4->currentData().toDouble();
+	m_gen4Wpm = m_optionUi->wpmBox_4->currentData().toUInt();
+	m_gen4Rise = 5; //Add to UI?
+	m_gen4Text = m_optionUi->sourceBox_4->currentData().toUInt();
+
+	m_gen5Freq = m_optionUi->freqencyEdit_5->text().toDouble();
+	m_gen5Amp = m_optionUi->dbBox_5->currentData().toDouble();
+	m_gen5Wpm = m_optionUi->wpmBox_5->currentData().toUInt();
+	m_gen5Rise = 5; //Add to UI?
+	m_gen5Text = m_optionUi->sourceBox_5->currentData().toUInt();
+
+	m_dbNoiseAmp = m_optionUi->noiseBox->currentData().toDouble();
+
 }
 
 bool MorseGenDevice::command(DeviceInterface::StandardCommands _cmd, QVariant _arg)
@@ -111,16 +251,20 @@ bool MorseGenDevice::command(DeviceInterface::StandardCommands _cmd, QVariant _a
 			DeviceInterfaceBase::startDevice();
 			//Device specific code follows
 
-			//How often do we need to read samples from files to get framesPerBuffer at sampleRate
-			nsPerBuffer = (1000000000.0 / m_deviceSampleRate) * m_framesPerBuffer;
-			//qDebug()<<"nsPerBuffer"<<nsPerBuffer;
-			elapsedTimer.start();
+			updateGenerators();
 
+			//How often do we need to read samples from files to get framesPerBuffer at sampleRate
+			m_nsPerBuffer = (1000000000.0 / m_deviceSampleRate) * m_framesPerBuffer;
+			//qDebug()<<"nsPerBuffer"<<nsPerBuffer;
+			m_producerConsumer.Start(true,true);
+			m_elapsedTimer.start();
 			return true;
 
 		case Cmd_Stop:
 			DeviceInterfaceBase::stopDevice();
 			//Device specific code follows
+			m_producerConsumer.Stop();
+
 			return true;
 
 		case Cmd_ReadSettings:
@@ -158,7 +302,7 @@ QVariant MorseGenDevice::get(DeviceInterface::StandardKeys _key, QVariant _optio
 		case Key_DeviceName:
 			return "MorseGenDevice";
 		case Key_DeviceType:
-			return DeviceInterfaceBase::DT_AUDIO_IQ_DEVICE;
+			return DeviceInterfaceBase::DT_IQ_DEVICE;
 		default:
 			return DeviceInterfaceBase::get(_key, _option);
 	}
@@ -185,7 +329,7 @@ void MorseGenDevice::producerWorker(cbProducerConsumerEvents _event)
 	static short minSample = 0;
 #endif
 	timespec req, rem;
-	qint64 nsRemaining = nsPerBuffer - elapsedTimer.nsecsElapsed();
+	qint64 nsRemaining = m_nsPerBuffer - m_elapsedTimer.nsecsElapsed();
 
 	switch (_event) {
 		case cbProducerConsumerEvents::Start:
@@ -201,40 +345,13 @@ void MorseGenDevice::producerWorker(cbProducerConsumerEvents _event)
 					qDebug()<<"nanosleep failed";
 				}
 			}
-			elapsedTimer.start(); //Restart elapsed timer
+			m_elapsedTimer.start(); //Restart elapsed timer
 
-			if ((producerFreeBufPtr = (CPX*)m_producerConsumer.AcquireFreeBuffer()) == NULL)
+			if ((m_producerFreeBufPtr = (CPX*)m_producerConsumer.AcquireFreeBuffer()) == NULL)
 				return;
-#if 0
-			while (running) {
-				//This ignores producer thread slices and runs as fast as possible to get samples
-				//May be used for sample rates where thread slice is less than 1ms
-				//Get data from device and put into producerFreeBufPtr
-			}
-#else
 			//Get data from device and put into producerFreeBufPtr
+			generate(m_producerFreeBufPtr);
 			//Return and wait for next producer time slice
-#endif
-#if 0
-			//For testing device sample format
-			if (producerIBuf[i] > maxSample) {
-				maxSample = producerIBuf[i];
-				qDebug()<<"New Max sample "<<maxSample;
-			}
-			if (producerQBuf[i] > maxSample) {
-				maxSample = producerQBuf[i];
-				qDebug()<<"New Max sample "<<maxSample;
-			}
-			if (producerIBuf[i] < minSample) {
-				minSample = producerIBuf[i];
-				qDebug()<<"New Min sample "<<minSample;
-			}
-			if (producerQBuf[i] < minSample) {
-				minSample = producerQBuf[i];
-				qDebug()<<"New Min sample "<<minSample;
-			}
-#endif
-
 			m_producerConsumer.ReleaseFilledBuffer();
 			return;
 
@@ -246,8 +363,6 @@ void MorseGenDevice::producerWorker(cbProducerConsumerEvents _event)
 
 void MorseGenDevice::consumerWorker(cbProducerConsumerEvents _event)
 {
-	unsigned char *consumerFilledBufferPtr;
-
 	switch (_event) {
 		case cbProducerConsumerEvents::Start:
 			break;
@@ -255,7 +370,7 @@ void MorseGenDevice::consumerWorker(cbProducerConsumerEvents _event)
 			//We always want to consume everything we have, producer will eventually block if we're not consuming fast enough
 			while (m_producerConsumer.GetNumFilledBufs() > 0) {
 				//Wait for data to be available from producer
-				if ((consumerFilledBufferPtr = m_producerConsumer.AcquireFilledBuffer()) == NULL) {
+				if ((m_consumerFilledBufPtr = (CPX*)m_producerConsumer.AcquireFilledBuffer()) == NULL) {
 					//qDebug()<<"No filled buffer available";
 					return;
 				}
@@ -263,7 +378,7 @@ void MorseGenDevice::consumerWorker(cbProducerConsumerEvents _event)
 				//Process data in filled buffer and convert to Pebble format in consumerBuffer
 
 				//perform.StartPerformance("ProcessIQ");
-				processIQData(consumerBuffer,m_framesPerBuffer);
+				processIQData(m_consumerFilledBufPtr,m_framesPerBuffer);
 				//perform.StopPerformance(1000);
 				//We don't release a free buffer until ProcessIQData returns because that would also allow inBuffer to be reused
 				m_producerConsumer.ReleaseFreeBuffer();
@@ -277,154 +392,154 @@ void MorseGenDevice::consumerWorker(cbProducerConsumerEvents _event)
 
 void MorseGenDevice::setupOptionUi(QWidget *parent)
 {
-	if (optionUi != NULL)
-		delete optionUi;
+	if (m_optionUi != NULL)
+		delete m_optionUi;
 
-	optionUi = new Ui::MorseGenOptions();
-	optionUi->setupUi(parent);
+	m_optionUi = new Ui::MorseGenOptions();
+	m_optionUi->setupUi(parent);
 	parent->setVisible(true);
 
-	optionUi->noiseBox->addItem("-40db", -40);
-	optionUi->noiseBox->addItem("-45db", -45);
-	optionUi->noiseBox->addItem("-50db", -50);
-	optionUi->noiseBox->addItem("-55db", -55);
-	optionUi->noiseBox->addItem("-60db", -60);
-	optionUi->noiseBox->addItem("-60db", -65);
-	optionUi->noiseBox->addItem("-60db", -70);
-	optionUi->noiseBox->addItem("-60db", -75);
-	optionUi->noiseBox->addItem("-60db", -80);
-	optionUi->noiseBox->setCurrentText("-60db");
+	m_optionUi->noiseBox->addItem("-40db", -40);
+	m_optionUi->noiseBox->addItem("-45db", -45);
+	m_optionUi->noiseBox->addItem("-50db", -50);
+	m_optionUi->noiseBox->addItem("-55db", -55);
+	m_optionUi->noiseBox->addItem("-60db", -60);
+	m_optionUi->noiseBox->addItem("-60db", -65);
+	m_optionUi->noiseBox->addItem("-60db", -70);
+	m_optionUi->noiseBox->addItem("-60db", -75);
+	m_optionUi->noiseBox->addItem("-60db", -80);
+	m_optionUi->noiseBox->setCurrentText("-60db");
 
-	optionUi->sourceBox_1->addItem("Sample1",0);
-	optionUi->sourceBox_1->addItem("Sample2",1);
-	optionUi->sourceBox_1->addItem("Sample3",2);
-	optionUi->sourceBox_1->addItem("Sample4",3);
-	optionUi->sourceBox_1->addItem("Table",4);
+	m_optionUi->sourceBox_1->addItem("Sample1",0);
+	m_optionUi->sourceBox_1->addItem("Sample2",1);
+	m_optionUi->sourceBox_1->addItem("Sample3",2);
+	m_optionUi->sourceBox_1->addItem("Sample4",3);
+	m_optionUi->sourceBox_1->addItem("Table",4);
 
-	optionUi->wpmBox_1->addItem("5 wpm", 5);
-	optionUi->wpmBox_1->addItem("10 wpm", 10);
-	optionUi->wpmBox_1->addItem("15 wpm", 15);
-	optionUi->wpmBox_1->addItem("20 wpm", 20);
-	optionUi->wpmBox_1->addItem("30 wpm", 30);
-	optionUi->wpmBox_1->addItem("40 wpm", 40);
-	optionUi->wpmBox_1->addItem("50 wpm", 50);
-	optionUi->wpmBox_1->addItem("60 wpm", 60);
-	optionUi->wpmBox_1->addItem("70 wpm", 70);
-	optionUi->wpmBox_1->addItem("80 wpm", 80);
+	m_optionUi->wpmBox_1->addItem("5 wpm", 5);
+	m_optionUi->wpmBox_1->addItem("10 wpm", 10);
+	m_optionUi->wpmBox_1->addItem("15 wpm", 15);
+	m_optionUi->wpmBox_1->addItem("20 wpm", 20);
+	m_optionUi->wpmBox_1->addItem("30 wpm", 30);
+	m_optionUi->wpmBox_1->addItem("40 wpm", 40);
+	m_optionUi->wpmBox_1->addItem("50 wpm", 50);
+	m_optionUi->wpmBox_1->addItem("60 wpm", 60);
+	m_optionUi->wpmBox_1->addItem("70 wpm", 70);
+	m_optionUi->wpmBox_1->addItem("80 wpm", 80);
 
-	optionUi->dbBox_1->addItem("-30db", -30);
-	optionUi->dbBox_1->addItem("-35db", -35);
-	optionUi->dbBox_1->addItem("-40db", -40);
-	optionUi->dbBox_1->addItem("-45db", -45);
-	optionUi->dbBox_1->addItem("-50db", -50);
-	optionUi->dbBox_1->addItem("-55db", -55);
-	optionUi->dbBox_1->addItem("-60db", -60);
+	m_optionUi->dbBox_1->addItem("-30db", -30);
+	m_optionUi->dbBox_1->addItem("-35db", -35);
+	m_optionUi->dbBox_1->addItem("-40db", -40);
+	m_optionUi->dbBox_1->addItem("-45db", -45);
+	m_optionUi->dbBox_1->addItem("-50db", -50);
+	m_optionUi->dbBox_1->addItem("-55db", -55);
+	m_optionUi->dbBox_1->addItem("-60db", -60);
 
 	//2
-	optionUi->sourceBox_2->addItem("Sample1",0);
-	optionUi->sourceBox_2->addItem("Sample2",1);
-	optionUi->sourceBox_2->addItem("Sample3",2);
-	optionUi->sourceBox_2->addItem("Sample4",3);
-	optionUi->sourceBox_2->addItem("Table",4);
+	m_optionUi->sourceBox_2->addItem("Sample1",0);
+	m_optionUi->sourceBox_2->addItem("Sample2",1);
+	m_optionUi->sourceBox_2->addItem("Sample3",2);
+	m_optionUi->sourceBox_2->addItem("Sample4",3);
+	m_optionUi->sourceBox_2->addItem("Table",4);
 
-	optionUi->wpmBox_2->addItem("5 wpm", 5);
-	optionUi->wpmBox_2->addItem("10 wpm", 10);
-	optionUi->wpmBox_2->addItem("15 wpm", 15);
-	optionUi->wpmBox_2->addItem("20 wpm", 20);
-	optionUi->wpmBox_2->addItem("30 wpm", 30);
-	optionUi->wpmBox_2->addItem("40 wpm", 40);
-	optionUi->wpmBox_2->addItem("50 wpm", 50);
-	optionUi->wpmBox_2->addItem("60 wpm", 60);
-	optionUi->wpmBox_2->addItem("70 wpm", 70);
-	optionUi->wpmBox_2->addItem("80 wpm", 80);
+	m_optionUi->wpmBox_2->addItem("5 wpm", 5);
+	m_optionUi->wpmBox_2->addItem("10 wpm", 10);
+	m_optionUi->wpmBox_2->addItem("15 wpm", 15);
+	m_optionUi->wpmBox_2->addItem("20 wpm", 20);
+	m_optionUi->wpmBox_2->addItem("30 wpm", 30);
+	m_optionUi->wpmBox_2->addItem("40 wpm", 40);
+	m_optionUi->wpmBox_2->addItem("50 wpm", 50);
+	m_optionUi->wpmBox_2->addItem("60 wpm", 60);
+	m_optionUi->wpmBox_2->addItem("70 wpm", 70);
+	m_optionUi->wpmBox_2->addItem("80 wpm", 80);
 
-	optionUi->dbBox_2->addItem("-30db", -30);
-	optionUi->dbBox_2->addItem("-35db", -35);
-	optionUi->dbBox_2->addItem("-40db", -40);
-	optionUi->dbBox_2->addItem("-45db", -45);
-	optionUi->dbBox_2->addItem("-50db", -50);
-	optionUi->dbBox_2->addItem("-55db", -55);
-	optionUi->dbBox_2->addItem("-60db", -60);
+	m_optionUi->dbBox_2->addItem("-30db", -30);
+	m_optionUi->dbBox_2->addItem("-35db", -35);
+	m_optionUi->dbBox_2->addItem("-40db", -40);
+	m_optionUi->dbBox_2->addItem("-45db", -45);
+	m_optionUi->dbBox_2->addItem("-50db", -50);
+	m_optionUi->dbBox_2->addItem("-55db", -55);
+	m_optionUi->dbBox_2->addItem("-60db", -60);
 
 	//3
-	optionUi->sourceBox_3->addItem("Sample1",0);
-	optionUi->sourceBox_3->addItem("Sample2",1);
-	optionUi->sourceBox_3->addItem("Sample3",2);
-	optionUi->sourceBox_3->addItem("Sample4",3);
-	optionUi->sourceBox_3->addItem("Table",4);
+	m_optionUi->sourceBox_3->addItem("Sample1",0);
+	m_optionUi->sourceBox_3->addItem("Sample2",1);
+	m_optionUi->sourceBox_3->addItem("Sample3",2);
+	m_optionUi->sourceBox_3->addItem("Sample4",3);
+	m_optionUi->sourceBox_3->addItem("Table",4);
 
-	optionUi->wpmBox_3->addItem("5 wpm", 5);
-	optionUi->wpmBox_3->addItem("10 wpm", 10);
-	optionUi->wpmBox_3->addItem("15 wpm", 15);
-	optionUi->wpmBox_3->addItem("20 wpm", 20);
-	optionUi->wpmBox_3->addItem("30 wpm", 30);
-	optionUi->wpmBox_3->addItem("40 wpm", 40);
-	optionUi->wpmBox_3->addItem("50 wpm", 50);
-	optionUi->wpmBox_3->addItem("60 wpm", 60);
-	optionUi->wpmBox_3->addItem("70 wpm", 70);
-	optionUi->wpmBox_3->addItem("80 wpm", 80);
+	m_optionUi->wpmBox_3->addItem("5 wpm", 5);
+	m_optionUi->wpmBox_3->addItem("10 wpm", 10);
+	m_optionUi->wpmBox_3->addItem("15 wpm", 15);
+	m_optionUi->wpmBox_3->addItem("20 wpm", 20);
+	m_optionUi->wpmBox_3->addItem("30 wpm", 30);
+	m_optionUi->wpmBox_3->addItem("40 wpm", 40);
+	m_optionUi->wpmBox_3->addItem("50 wpm", 50);
+	m_optionUi->wpmBox_3->addItem("60 wpm", 60);
+	m_optionUi->wpmBox_3->addItem("70 wpm", 70);
+	m_optionUi->wpmBox_3->addItem("80 wpm", 80);
 
-	optionUi->dbBox_3->addItem("-30db", -30);
-	optionUi->dbBox_3->addItem("-35db", -35);
-	optionUi->dbBox_3->addItem("-40db", -40);
-	optionUi->dbBox_3->addItem("-45db", -45);
-	optionUi->dbBox_3->addItem("-50db", -50);
-	optionUi->dbBox_3->addItem("-55db", -55);
-	optionUi->dbBox_3->addItem("-60db", -60);
+	m_optionUi->dbBox_3->addItem("-30db", -30);
+	m_optionUi->dbBox_3->addItem("-35db", -35);
+	m_optionUi->dbBox_3->addItem("-40db", -40);
+	m_optionUi->dbBox_3->addItem("-45db", -45);
+	m_optionUi->dbBox_3->addItem("-50db", -50);
+	m_optionUi->dbBox_3->addItem("-55db", -55);
+	m_optionUi->dbBox_3->addItem("-60db", -60);
 
 	//4
-	optionUi->sourceBox_4->addItem("Sample1",0);
-	optionUi->sourceBox_4->addItem("Sample2",1);
-	optionUi->sourceBox_4->addItem("Sample3",2);
-	optionUi->sourceBox_4->addItem("Sample4",3);
-	optionUi->sourceBox_4->addItem("Table",4);
+	m_optionUi->sourceBox_4->addItem("Sample1",0);
+	m_optionUi->sourceBox_4->addItem("Sample2",1);
+	m_optionUi->sourceBox_4->addItem("Sample3",2);
+	m_optionUi->sourceBox_4->addItem("Sample4",3);
+	m_optionUi->sourceBox_4->addItem("Table",4);
 
-	optionUi->wpmBox_4->addItem("5 wpm", 5);
-	optionUi->wpmBox_4->addItem("10 wpm", 10);
-	optionUi->wpmBox_4->addItem("15 wpm", 15);
-	optionUi->wpmBox_4->addItem("20 wpm", 20);
-	optionUi->wpmBox_4->addItem("30 wpm", 30);
-	optionUi->wpmBox_4->addItem("40 wpm", 40);
-	optionUi->wpmBox_4->addItem("50 wpm", 50);
-	optionUi->wpmBox_4->addItem("60 wpm", 60);
-	optionUi->wpmBox_4->addItem("70 wpm", 70);
-	optionUi->wpmBox_4->addItem("80 wpm", 80);
+	m_optionUi->wpmBox_4->addItem("5 wpm", 5);
+	m_optionUi->wpmBox_4->addItem("10 wpm", 10);
+	m_optionUi->wpmBox_4->addItem("15 wpm", 15);
+	m_optionUi->wpmBox_4->addItem("20 wpm", 20);
+	m_optionUi->wpmBox_4->addItem("30 wpm", 30);
+	m_optionUi->wpmBox_4->addItem("40 wpm", 40);
+	m_optionUi->wpmBox_4->addItem("50 wpm", 50);
+	m_optionUi->wpmBox_4->addItem("60 wpm", 60);
+	m_optionUi->wpmBox_4->addItem("70 wpm", 70);
+	m_optionUi->wpmBox_4->addItem("80 wpm", 80);
 
-	optionUi->dbBox_4->addItem("-30db", -30);
-	optionUi->dbBox_4->addItem("-35db", -35);
-	optionUi->dbBox_4->addItem("-40db", -40);
-	optionUi->dbBox_4->addItem("-45db", -45);
-	optionUi->dbBox_4->addItem("-50db", -50);
-	optionUi->dbBox_4->addItem("-55db", -55);
-	optionUi->dbBox_4->addItem("-60db", -60);
+	m_optionUi->dbBox_4->addItem("-30db", -30);
+	m_optionUi->dbBox_4->addItem("-35db", -35);
+	m_optionUi->dbBox_4->addItem("-40db", -40);
+	m_optionUi->dbBox_4->addItem("-45db", -45);
+	m_optionUi->dbBox_4->addItem("-50db", -50);
+	m_optionUi->dbBox_4->addItem("-55db", -55);
+	m_optionUi->dbBox_4->addItem("-60db", -60);
 
 	//5
-	optionUi->sourceBox_5->addItem("Sample1",0);
-	optionUi->sourceBox_5->addItem("Sample2",1);
-	optionUi->sourceBox_5->addItem("Sample3",2);
-	optionUi->sourceBox_5->addItem("Sample4",3);
-	optionUi->sourceBox_5->addItem("Table",4);
+	m_optionUi->sourceBox_5->addItem("Sample1",0);
+	m_optionUi->sourceBox_5->addItem("Sample2",1);
+	m_optionUi->sourceBox_5->addItem("Sample3",2);
+	m_optionUi->sourceBox_5->addItem("Sample4",3);
+	m_optionUi->sourceBox_5->addItem("Table",4);
 
-	optionUi->wpmBox_5->addItem("5 wpm", 5);
-	optionUi->wpmBox_5->addItem("10 wpm", 10);
-	optionUi->wpmBox_5->addItem("15 wpm", 15);
-	optionUi->wpmBox_5->addItem("20 wpm", 20);
-	optionUi->wpmBox_5->addItem("30 wpm", 30);
-	optionUi->wpmBox_5->addItem("40 wpm", 40);
-	optionUi->wpmBox_5->addItem("50 wpm", 50);
-	optionUi->wpmBox_5->addItem("60 wpm", 60);
-	optionUi->wpmBox_5->addItem("70 wpm", 70);
-	optionUi->wpmBox_5->addItem("80 wpm", 80);
+	m_optionUi->wpmBox_5->addItem("5 wpm", 5);
+	m_optionUi->wpmBox_5->addItem("10 wpm", 10);
+	m_optionUi->wpmBox_5->addItem("15 wpm", 15);
+	m_optionUi->wpmBox_5->addItem("20 wpm", 20);
+	m_optionUi->wpmBox_5->addItem("30 wpm", 30);
+	m_optionUi->wpmBox_5->addItem("40 wpm", 40);
+	m_optionUi->wpmBox_5->addItem("50 wpm", 50);
+	m_optionUi->wpmBox_5->addItem("60 wpm", 60);
+	m_optionUi->wpmBox_5->addItem("70 wpm", 70);
+	m_optionUi->wpmBox_5->addItem("80 wpm", 80);
 
-	optionUi->dbBox_5->addItem("-30db", -30);
-	optionUi->dbBox_5->addItem("-35db", -35);
-	optionUi->dbBox_5->addItem("-40db", -40);
-	optionUi->dbBox_5->addItem("-45db", -45);
-	optionUi->dbBox_5->addItem("-50db", -50);
-	optionUi->dbBox_5->addItem("-55db", -55);
-	optionUi->dbBox_5->addItem("-60db", -60);
+	m_optionUi->dbBox_5->addItem("-30db", -30);
+	m_optionUi->dbBox_5->addItem("-35db", -35);
+	m_optionUi->dbBox_5->addItem("-40db", -40);
+	m_optionUi->dbBox_5->addItem("-45db", -45);
+	m_optionUi->dbBox_5->addItem("-50db", -50);
+	m_optionUi->dbBox_5->addItem("-55db", -55);
+	m_optionUi->dbBox_5->addItem("-60db", -60);
 
-	connect(optionUi->resetButton,SIGNAL(clicked(bool)),this,SLOT(resetButtonClicked(bool)));
+	connect(m_optionUi->resetButton,SIGNAL(clicked(bool)),this,SLOT(resetButtonClicked(bool)));
 
 	resetButtonClicked(true);
 }
@@ -433,152 +548,90 @@ void MorseGenDevice::resetButtonClicked(bool clicked)
 {
 	Q_UNUSED(clicked);
 
-	optionUi->enabledBox_1->setChecked(true);
-	optionUi->freqencyEdit_1->setText("1000");
-	optionUi->sourceBox_1->setCurrentIndex(0);
-	optionUi->wpmBox_1->setCurrentIndex(3);
-	optionUi->dbBox_1->setCurrentIndex(2);
+	m_optionUi->enabledBox_1->setChecked(true);
+	m_optionUi->freqencyEdit_1->setText("1000");
+	m_optionUi->sourceBox_1->setCurrentIndex(0);
+	m_optionUi->wpmBox_1->setCurrentIndex(3);
+	m_optionUi->dbBox_1->setCurrentIndex(2);
 
-	optionUi->enabledBox_2->setChecked(true);
-	optionUi->freqencyEdit_2->setText("1500");
-	optionUi->sourceBox_2->setCurrentIndex(1);
-	optionUi->wpmBox_2->setCurrentIndex(4);
-	optionUi->dbBox_2->setCurrentIndex(2);
+	m_optionUi->enabledBox_2->setChecked(true);
+	m_optionUi->freqencyEdit_2->setText("1500");
+	m_optionUi->sourceBox_2->setCurrentIndex(1);
+	m_optionUi->wpmBox_2->setCurrentIndex(4);
+	m_optionUi->dbBox_2->setCurrentIndex(2);
 
-	optionUi->enabledBox_3->setChecked(true);
-	optionUi->freqencyEdit_3->setText("2000");
-	optionUi->sourceBox_3->setCurrentIndex(2);
-	optionUi->wpmBox_3->setCurrentIndex(5);
-	optionUi->dbBox_3->setCurrentIndex(2);
+	m_optionUi->enabledBox_3->setChecked(true);
+	m_optionUi->freqencyEdit_3->setText("2000");
+	m_optionUi->sourceBox_3->setCurrentIndex(2);
+	m_optionUi->wpmBox_3->setCurrentIndex(5);
+	m_optionUi->dbBox_3->setCurrentIndex(2);
 
-	optionUi->enabledBox_4->setChecked(true);
-	optionUi->freqencyEdit_4->setText("2500");
-	optionUi->sourceBox_4->setCurrentIndex(3);
-	optionUi->wpmBox_4->setCurrentIndex(6);
-	optionUi->dbBox_4->setCurrentIndex(2);
+	m_optionUi->enabledBox_4->setChecked(true);
+	m_optionUi->freqencyEdit_4->setText("2500");
+	m_optionUi->sourceBox_4->setCurrentIndex(3);
+	m_optionUi->wpmBox_4->setCurrentIndex(6);
+	m_optionUi->dbBox_4->setCurrentIndex(2);
 
-	optionUi->enabledBox_5->setChecked(true);
-	optionUi->freqencyEdit_5->setText("3000");
-	optionUi->sourceBox_5->setCurrentIndex(4);
-	optionUi->wpmBox_5->setCurrentIndex(7);
-	optionUi->dbBox_5->setCurrentIndex(2);
+	m_optionUi->enabledBox_5->setChecked(true);
+	m_optionUi->freqencyEdit_5->setText("3000");
+	m_optionUi->sourceBox_5->setCurrentIndex(4);
+	m_optionUi->wpmBox_5->setCurrentIndex(7);
+	m_optionUi->dbBox_5->setCurrentIndex(2);
 
 }
 
-void MorseGenDevice::generate()
+void MorseGenDevice::generate(CPX *out)
 {
+	CPX cpx1, cpx2, cpx3, cpx4, cpx5, cpx6;
 
-	double gen1Freq = optionUi->freqencyEdit_1->text().toDouble();
-	double gen1Amp = optionUi->dbBox_1->currentData().toDouble();
-	quint32 gen1Wpm = optionUi->wpmBox_1->currentData().toUInt();
-	quint32 gen1Rise = 5; //Add to UI?
-	quint32 gen1Text = optionUi->sourceBox_1->currentData().toUInt();
-	bool gen1Enabled = optionUi->enabledBox_1->isChecked();
-	if (gen1Enabled) {
-		m_morseGen1->setParams(gen1Freq,gen1Amp,gen1Wpm,gen1Rise);
-		m_morseGen1->setTextOut(m_sampleText[gen1Text]);
-	}
-
-	double gen2Freq = optionUi->freqencyEdit_2->text().toDouble();
-	double gen2Amp = optionUi->dbBox_2->currentData().toDouble();
-	quint32 gen2Wpm = optionUi->wpmBox_2->currentData().toUInt();
-	quint32 gen2Rise = 5; //Add to UI?
-	quint32 gen2Text = optionUi->sourceBox_2->currentData().toUInt();
-	bool gen2Enabled = optionUi->enabledBox_2->isChecked();
-	if (gen2Enabled) {
-		m_morseGen2->setParams(gen2Freq,gen2Amp,gen2Wpm,gen2Rise);
-		m_morseGen2->setTextOut(m_sampleText[gen2Text]);
-	}
-
-	double gen3Freq = optionUi->freqencyEdit_3->text().toDouble();
-	double gen3Amp = optionUi->dbBox_3->currentData().toDouble();
-	quint32 gen3Wpm = optionUi->wpmBox_3->currentData().toUInt();
-	quint32 gen3Rise = 5; //Add to UI?
-	quint32 gen3Text = optionUi->sourceBox_3->currentData().toUInt();
-	bool gen3Enabled = optionUi->enabledBox_3->isChecked();
-	if (gen3Enabled) {
-		m_morseGen3->setParams(gen3Freq,gen3Amp,gen3Wpm,gen3Rise);
-		m_morseGen3->setTextOut(m_sampleText[gen3Text]);
-	}
-
-	double gen4Freq = optionUi->freqencyEdit_4->text().toDouble();
-	double gen4Amp = optionUi->dbBox_4->currentData().toDouble();
-	quint32 gen4Wpm = optionUi->wpmBox_4->currentData().toUInt();
-	quint32 gen4Rise = 5; //Add to UI?
-	quint32 gen4Text = optionUi->sourceBox_4->currentData().toUInt();
-	bool gen4Enabled = optionUi->enabledBox_4->isChecked();
-	if (gen4Enabled) {
-		m_morseGen4->setParams(gen4Freq,gen4Amp,gen4Wpm,gen4Rise);
-		m_morseGen4->setTextOut(m_sampleText[gen4Text]);
-	}
-
-	double gen5Freq = optionUi->freqencyEdit_5->text().toDouble();
-	double gen5Amp = optionUi->dbBox_5->currentData().toDouble();
-	quint32 gen5Wpm = optionUi->wpmBox_5->currentData().toUInt();
-	quint32 gen5Rise = 5; //Add to UI?
-	quint32 gen5Text = optionUi->sourceBox_5->currentData().toUInt();
-	bool gen5Enabled = optionUi->enabledBox_5->isChecked();
-	if (gen5Enabled) {
-		m_morseGen5->setParams(gen5Freq,gen5Amp,gen5Wpm,gen5Rise);
-		m_morseGen5->setTextOut(m_sampleText[gen5Text]);
-	}
-
-	double dbNoiseAmp = optionUi->noiseBox->currentData().toDouble();
-	//Because noise is averaged, fudget +30db so it matches with generator values
-	//ie -30db gen and -30db noise should be 0snr
-	double noiseAmp = DB::dBToAmplitude(dbNoiseAmp+20);
-
-	CPX cpx1,cpx2,cpx3,cpx4,cpx5,cpx6, out;
-	//!!!!
 	for (quint32 i=0; i<m_framesPerBuffer; i++) {
-		if (gen1Enabled) {
+		if (m_gen1Enabled) {
 			cpx1 = m_morseGen1->nextOutputSample();
-			if (optionUi->fadeBox_1->isChecked()) {
+			if (m_gen1Fade) {
 				//Fading
 				double dbRand = -rand() % c_dbFadeRange;
 				double ampRand = DB::dBToAmplitude(dbRand);
 				cpx1 *= ampRand;
 			}
 		}
-		if (gen2Enabled) {
+		if (m_gen2Enabled) {
 			cpx2 = m_morseGen2->nextOutputSample();
-			if (optionUi->fadeBox_2->isChecked()) {
+			if (m_gen2Fade) {
 				//Fading
 				double dbRand = -rand() % c_dbFadeRange;
 				double ampRand = DB::dBToAmplitude(dbRand);
 				cpx2 *= ampRand;
 			}
 		}
-		if (gen3Enabled) {
+		if (m_gen3Enabled) {
 			cpx3 = m_morseGen3->nextOutputSample();
-			if (optionUi->fadeBox_3->isChecked()) {
+			if (m_gen3Fade) {
 				//Fading
 				double dbRand = -rand() % c_dbFadeRange;
 				double ampRand = DB::dBToAmplitude(dbRand);
 				cpx3 *= ampRand;
 			}
 		}
-		if (gen4Enabled) {
+		if (m_gen4Enabled) {
 			cpx4 = m_morseGen4->nextOutputSample();
-			if (optionUi->fadeBox_4->isChecked()) {
+			if (m_gen4Fade) {
 				//Fading
 				double dbRand = -rand() % c_dbFadeRange;
 				double ampRand = DB::dBToAmplitude(dbRand);
 				cpx4 *= ampRand;
 			}
 		}
-		if (gen5Enabled) {
+		if (m_gen5Enabled) {
 			cpx5 = m_morseGen5->nextOutputSample();
-			if (optionUi->fadeBox_5->isChecked()) {
+			if (m_gen5Fade) {
 				//Fading
 				double dbRand = -rand() % c_dbFadeRange;
 				double ampRand = DB::dBToAmplitude(dbRand);
 				cpx5 *= ampRand;
 			}
 		}
-		cpx6 = nextNoiseSample(noiseAmp);
-		out = cpx1 + cpx2 + cpx3 + cpx4 + cpx5 + cpx6;
-		//m_wavOutFile.WriteSamples(&out, 1);
+		cpx6 = nextNoiseSample(m_noiseAmp);
+		out[i] = cpx1 + cpx2 + cpx3 + cpx4 + cpx5 + cpx6;
 	}
 }
 
