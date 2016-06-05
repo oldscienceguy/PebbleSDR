@@ -52,12 +52,12 @@ void RFSpaceDevice::initSettings(QString fname)
 	Q_UNUSED(fname);
 
 	DeviceInterfaceBase::initSettings("SDR_IQ");
-	sdriqSettings = m_qSettings;
+	sdriqSettings = m_settings;
 	DeviceInterfaceBase::initSettings("SDR_IP");
-	sdripSettings = m_qSettings;
+	sdripSettings = m_settings;
 	DeviceInterfaceBase::initSettings("AFEDRI_USB");
-	afedri_usbSettings = m_qSettings;
-	m_qSettings = NULL; //Catch errors
+	afedri_usbSettings = m_settings;
+	m_settings = NULL; //Catch errors
 }
 
 bool RFSpaceDevice::initialize(CB_ProcessIQData _callback,
@@ -291,11 +291,11 @@ void RFSpaceDevice::stopDevice()
 void RFSpaceDevice::readSettings()
 {
 	if (m_deviceNumber == SDR_IQ) {
-		m_qSettings = sdriqSettings;
+		m_settings = sdriqSettings;
 	} else if (m_deviceNumber == SDR_IP) {
-		m_qSettings = sdripSettings;
+		m_settings = sdripSettings;
 	} else if (m_deviceNumber == AFEDRI_USB) {
-		m_qSettings = afedri_usbSettings;
+		m_settings = afedri_usbSettings;
 		m_inputDeviceName = "AFEDRI-SDR-Net Audio"; //Default if not overridden by user in dialog
 		m_iqOrder = IQO_QI; //AFEDRI uses audio device and IQ is reversed compared to SDR-IQ
 	} else {
@@ -307,11 +307,11 @@ void RFSpaceDevice::readSettings()
 	m_highFrequency = 33000000;
 	DeviceInterfaceBase::readSettings();
 	//Device specific settings follow
-	sRFGain = m_qSettings->value("RFGain",0).toInt();
-	sIFGain = m_qSettings->value("IFGain",18).toInt();
-	deviceAddress = QHostAddress(m_qSettings->value("DeviceAddress","10.0.1.100").toString());
-	devicePort = m_qSettings->value("DevicePort",50000).toInt();
-	autoDiscover = m_qSettings->value("AutoDiscover",true).toBool();
+	sRFGain = m_settings->value("RFGain",0).toInt();
+	sIFGain = m_settings->value("IFGain",18).toInt();
+	deviceAddress = QHostAddress(m_settings->value("DeviceAddress","10.0.1.100").toString());
+	devicePort = m_settings->value("DevicePort",50000).toInt();
+	autoDiscover = m_settings->value("AutoDiscover",true).toBool();
 
 	sBandwidth = MapIQSampleRateToBandwidth(m_deviceSampleRate);
 }
@@ -359,23 +359,23 @@ AD6620::BANDWIDTH RFSpaceDevice::MapIQSampleRateToBandwidth(quint32 iqSampleRate
 void RFSpaceDevice::writeSettings()
 {
 	if (m_deviceNumber == SDR_IQ)
-		m_qSettings = sdriqSettings;
+		m_settings = sdriqSettings;
 	else if (m_deviceNumber == SDR_IP)
-		m_qSettings = sdripSettings;
+		m_settings = sdripSettings;
 	else if (m_deviceNumber == AFEDRI_USB)
-		m_qSettings = afedri_usbSettings;
+		m_settings = afedri_usbSettings;
 	else
 		return;
 
 	DeviceInterfaceBase::writeSettings();
 	//Device specific settings follow
-	m_qSettings->setValue("RFGain",sRFGain);
-	m_qSettings->setValue("IFGain",sIFGain);
-	m_qSettings->setValue("DeviceAddress",deviceAddress.toString());
-	m_qSettings->setValue("DevicePort",devicePort);
-	m_qSettings->setValue("AutoDiscover",autoDiscover);
+	m_settings->setValue("RFGain",sRFGain);
+	m_settings->setValue("IFGain",sIFGain);
+	m_settings->setValue("DeviceAddress",deviceAddress.toString());
+	m_settings->setValue("DevicePort",devicePort);
+	m_settings->setValue("AutoDiscover",autoDiscover);
 
-	m_qSettings->sync();
+	m_settings->sync();
 }
 
 QVariant RFSpaceDevice::get(DeviceInterface::StandardKeys _key, QVariant _option)

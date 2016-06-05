@@ -77,19 +77,19 @@ void HackRFDevice::readSettings()
 	m_decimateFactor = 1;
 	DeviceInterfaceBase::readSettings();
 	//Recommended defaults from hackRf wiki
-	rfGain = m_qSettings->value("rfGain",false).toBool();
-	lnaGain = m_qSettings->value("lnaGain",16).toUInt();
-	vgaGain = m_qSettings->value("vgaGain",16).toUInt();
+	rfGain = m_settings->value("rfGain",false).toBool();
+	lnaGain = m_settings->value("lnaGain",16).toUInt();
+	vgaGain = m_settings->value("vgaGain",16).toUInt();
 
 }
 
 void HackRFDevice::writeSettings()
 {
 	DeviceInterfaceBase::writeSettings();
-	m_qSettings->setValue("rfGain",rfGain);
-	m_qSettings->setValue("lnaGain",lnaGain);
-	m_qSettings->setValue("vgaGain",vgaGain);
-	m_qSettings->sync();
+	m_settings->setValue("rfGain",rfGain);
+	m_settings->setValue("lnaGain",lnaGain);
+	m_settings->setValue("vgaGain",vgaGain);
+	m_settings->sync();
 }
 
 void HackRFDevice::setSampleRate(quint32 _sampleRate)
@@ -345,7 +345,7 @@ void HackRFDevice::rfGainChanged(bool _value)
 	}
 	if (hackrfDevice != NULL)
 		apiCheck(hackrf_set_amp_enable(hackrfDevice, rfGain),"amp enable");
-	m_qSettings->sync();
+	m_settings->sync();
 }
 
 int HackRFDevice::hackrf_set_transceiver_mode(hackrf_transceiver_mode value)
@@ -438,7 +438,7 @@ void HackRFDevice::lnaGainChanged(int _value)
 	}
 	optionUi->lnaValue->setText(QString::number(db)+"dB");
 	lnaGain = db;
-	m_qSettings->sync();
+	m_settings->sync();
 }
 
 void HackRFDevice::vgaGainChanged(int _value)
@@ -453,14 +453,14 @@ void HackRFDevice::vgaGainChanged(int _value)
 	}
 	optionUi->vgaValue->setText(QString::number(db)+"dB");
 	vgaGain = db;
-	m_qSettings->sync();
+	m_settings->sync();
 }
 
 void HackRFDevice::decimationChanged(int _index)
 {
 	Q_UNUSED(_index);
 	m_decimateFactor = optionUi->decimationBox->currentData().toUInt();
-	m_qSettings->sync();
+	m_settings->sync();
 }
 
 //typedef int(*hackrf_sample_block_cb_fn)(hackrf_transfer*transfer)

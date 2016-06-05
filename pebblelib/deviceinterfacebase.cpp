@@ -274,15 +274,15 @@ QVariant DeviceInterfaceBase::get(StandardKeys _key, QVariant _option) {
 		case Key_DeviceSlave:			//RO bool true if device is controled by somthing other than Pebble
 			return false;
 		case Key_SettingsFile:
-			if (m_qSettings != NULL)
-				return m_qSettings->fileName();
+			if (m_settings != NULL)
+				return m_settings->fileName();
 			return false;
 		case Key_ConverterMode:
 			return m_converterMode;
 		case Key_ConverterOffset:
 			return m_converterOffset;
 		case Key_Setting:
-			return m_qSettings->value(_option.toString());
+			return m_settings->value(_option.toString());
 			break;
 		case Key_DecimateFactor:
 			return m_decimateFactor;
@@ -418,9 +418,9 @@ bool DeviceInterfaceBase::set(StandardKeys _key, QVariant _value, QVariant _opti
 			m_converterOffset = _value.toDouble();
 			break;
 		case Key_Setting:
-			if (m_qSettings == NULL)
+			if (m_settings == NULL)
 				return false;
-			m_qSettings->setValue(_value.toString(), _option);
+			m_settings->setValue(_value.toString(), _option);
 			break;
 		case Key_DecimateFactor:
 			m_decimateFactor = _value.toUInt();
@@ -458,61 +458,61 @@ void DeviceInterfaceBase::readSettings()
 
 	}
 	//These are common settings for every device, variables are defined in DeviceInterface
-	m_startupType = (StartupType)m_qSettings->value("StartupType", m_startupType).toInt();
-	m_userFrequency = m_qSettings->value("UserFrequency", m_userFrequency).toDouble();
+	m_startupType = (StartupType)m_settings->value("StartupType", m_startupType).toInt();
+	m_userFrequency = m_settings->value("UserFrequency", m_userFrequency).toDouble();
 	//Allow the device to specify a fixed inputDeviceName, see rfspacedevice for example
-	m_inputDeviceName = m_qSettings->value("InputDeviceName", m_inputDeviceName).toString();
-	m_outputDeviceName = m_qSettings->value("OutputDeviceName", m_outputDeviceName).toString();
+	m_inputDeviceName = m_settings->value("InputDeviceName", m_inputDeviceName).toString();
+	m_outputDeviceName = m_settings->value("OutputDeviceName", m_outputDeviceName).toString();
 	//sampleRate is returned by device and not saved
 	//sampleRate = qSettings->value("SampleRate", sampleRate).toUInt();
-	m_deviceSampleRate = m_qSettings->value("DeviceSampleRate", m_deviceSampleRate).toUInt();
+	m_deviceSampleRate = m_settings->value("DeviceSampleRate", m_deviceSampleRate).toUInt();
 	//Default sampleRate to deviceSampleRate for compatibility, device will override if necessary
 	m_sampleRate = m_deviceSampleRate;
-	m_userIQGain = m_qSettings->value("IQGain",m_userIQGain).toDouble();
-	m_iqOrder = (IQOrder)m_qSettings->value("IQOrder", m_iqOrder).toInt();
-	m_iqBalanceGain = m_qSettings->value("IQBalanceGain",m_iqBalanceGain).toDouble();
-	m_iqBalancePhase = m_qSettings->value("IQBalancePhase",m_iqBalancePhase).toDouble();
-	m_iqBalanceEnable = m_qSettings->value("IQBalanceEnable",m_iqBalanceEnable).toBool();
-	m_lastFreq = m_qSettings->value("LastFreq", m_lastFreq).toDouble();
-	m_lastDemodMode = m_qSettings->value("LastDemodMode",m_lastDemodMode).toInt();
-	m_lastSpectrumMode = m_qSettings->value("LastSpectrumMode",m_lastSpectrumMode).toInt();
-	m_deviceNumber = m_qSettings->value("DeviceNumber",m_deviceNumber).toInt();
-	m_startupFrequency = m_qSettings->value("StartupFrequency",m_startupFrequency).toDouble();
-	m_lowFrequency = m_qSettings->value("LowFrequency",m_lowFrequency).toDouble();
-	m_highFrequency = m_qSettings->value("HighFrequency",m_highFrequency).toDouble();
-	m_startupDemodMode = m_qSettings->value("StartupDemodMode",m_startupDemodMode).toInt();
-	m_converterMode = m_qSettings->value("ConverterMode", false).toBool();
-	m_converterOffset = m_qSettings->value("ConverterOffset", 0).toDouble();
-	m_decimateFactor = m_qSettings->value("DecimateFactor",m_decimateFactor).toUInt();
-	m_removeDC = m_qSettings->value("RemoveDC",false).toBool();
+	m_userIQGain = m_settings->value("IQGain",m_userIQGain).toDouble();
+	m_iqOrder = (IQOrder)m_settings->value("IQOrder", m_iqOrder).toInt();
+	m_iqBalanceGain = m_settings->value("IQBalanceGain",m_iqBalanceGain).toDouble();
+	m_iqBalancePhase = m_settings->value("IQBalancePhase",m_iqBalancePhase).toDouble();
+	m_iqBalanceEnable = m_settings->value("IQBalanceEnable",m_iqBalanceEnable).toBool();
+	m_lastFreq = m_settings->value("LastFreq", m_lastFreq).toDouble();
+	m_lastDemodMode = m_settings->value("LastDemodMode",m_lastDemodMode).toInt();
+	m_lastSpectrumMode = m_settings->value("LastSpectrumMode",m_lastSpectrumMode).toInt();
+	m_deviceNumber = m_settings->value("DeviceNumber",m_deviceNumber).toInt();
+	m_startupFrequency = m_settings->value("StartupFrequency",m_startupFrequency).toDouble();
+	m_lowFrequency = m_settings->value("LowFrequency",m_lowFrequency).toDouble();
+	m_highFrequency = m_settings->value("HighFrequency",m_highFrequency).toDouble();
+	m_startupDemodMode = m_settings->value("StartupDemodMode",m_startupDemodMode).toInt();
+	m_converterMode = m_settings->value("ConverterMode", false).toBool();
+	m_converterOffset = m_settings->value("ConverterOffset", 0).toDouble();
+	m_decimateFactor = m_settings->value("DecimateFactor",m_decimateFactor).toUInt();
+	m_removeDC = m_settings->value("RemoveDC",false).toBool();
 }
 
 void DeviceInterfaceBase::writeSettings()
 {
-	m_qSettings->setValue("StartupType",m_startupType);
-	m_qSettings->setValue("UserFrequency",m_userFrequency);
-	m_qSettings->setValue("InputDeviceName", m_inputDeviceName);
-	m_qSettings->setValue("OutputDeviceName", m_outputDeviceName);
+	m_settings->setValue("StartupType",m_startupType);
+	m_settings->setValue("UserFrequency",m_userFrequency);
+	m_settings->setValue("InputDeviceName", m_inputDeviceName);
+	m_settings->setValue("OutputDeviceName", m_outputDeviceName);
 	//sampleRate is returned by device and not saved
 	//qSettings->setValue("SampleRate",sampleRate);
-	m_qSettings->setValue("DeviceSampleRate",m_deviceSampleRate);
-	m_qSettings->setValue("IQGain",m_userIQGain);
-	m_qSettings->setValue("IQOrder", m_iqOrder);
-	m_qSettings->setValue("IQBalanceGain", m_iqBalanceGain);
-	m_qSettings->setValue("IQBalancePhase", m_iqBalancePhase);
-	m_qSettings->setValue("IQBalanceEnable", m_iqBalanceEnable);
-	m_qSettings->setValue("LastFreq",m_lastFreq);
-	m_qSettings->setValue("LastDemodMode",m_lastDemodMode);
-	m_qSettings->setValue("LastSpectrumMode",m_lastSpectrumMode);
-	m_qSettings->setValue("DeviceNumber",m_deviceNumber);
-	m_qSettings->setValue("StartupFrequency",m_startupFrequency);
-	m_qSettings->setValue("LowFrequency",m_lowFrequency);
-	m_qSettings->setValue("HighFrequency",m_highFrequency);
-	m_qSettings->setValue("StartupDemodMode",m_startupDemodMode);
-	m_qSettings->setValue("ConverterMode",m_converterMode);
-	m_qSettings->setValue("ConverterOffset",m_converterOffset);
-	m_qSettings->setValue("DecimateFactor",m_decimateFactor);
-	m_qSettings->setValue("RemoveDC",m_removeDC);
+	m_settings->setValue("DeviceSampleRate",m_deviceSampleRate);
+	m_settings->setValue("IQGain",m_userIQGain);
+	m_settings->setValue("IQOrder", m_iqOrder);
+	m_settings->setValue("IQBalanceGain", m_iqBalanceGain);
+	m_settings->setValue("IQBalancePhase", m_iqBalancePhase);
+	m_settings->setValue("IQBalanceEnable", m_iqBalanceEnable);
+	m_settings->setValue("LastFreq",m_lastFreq);
+	m_settings->setValue("LastDemodMode",m_lastDemodMode);
+	m_settings->setValue("LastSpectrumMode",m_lastSpectrumMode);
+	m_settings->setValue("DeviceNumber",m_deviceNumber);
+	m_settings->setValue("StartupFrequency",m_startupFrequency);
+	m_settings->setValue("LowFrequency",m_lowFrequency);
+	m_settings->setValue("HighFrequency",m_highFrequency);
+	m_settings->setValue("StartupDemodMode",m_startupDemodMode);
+	m_settings->setValue("ConverterMode",m_converterMode);
+	m_settings->setValue("ConverterOffset",m_converterOffset);
+	m_settings->setValue("DecimateFactor",m_decimateFactor);
+	m_settings->setValue("RemoveDC",m_removeDC);
 }
 
 
@@ -523,7 +523,7 @@ void DeviceInterfaceBase::initSettings(QString fname)
 	//Scope::UserScope puts file C:\Users\...\AppData\Roaming\N1DDY
 	//Scope::SystemScope puts file c:\ProgramData\n1ddy
 
-	m_qSettings = new QSettings(pebbleLibGlobal->appDirPath + "/PebbleData/" + fname +".ini",QSettings::IniFormat);
+	m_settings = new QSettings(pebbleLibGlobal->appDirPath + "/PebbleData/" + fname +".ini",QSettings::IniFormat);
 
 }
 

@@ -84,7 +84,7 @@ protected:
 	int m_lastDemodMode;
 
 	//Device needs to manage QSettings since it knows its own settings file name
-	QSettings *m_qSettings;
+	QSettings *m_settings;
 
 	int m_deviceNumber; //For plugins that support multiple devices
 	bool m_connected;

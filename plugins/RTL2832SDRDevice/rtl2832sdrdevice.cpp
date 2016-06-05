@@ -533,9 +533,9 @@ bool RTL2832SDRDevice::SetRtlIfGain(quint16 _stage, quint16 _gain)
 void RTL2832SDRDevice::readSettings()
 {
 	if (m_deviceNumber == RTL_USB)
-		m_qSettings = usbSettings;
+		m_settings = usbSettings;
 	else if (m_deviceNumber == RTL_TCP)
-		m_qSettings = tcpSettings;
+		m_settings = tcpSettings;
 
 	//Defaults for initial ini file
 	m_deviceSampleRate = 2048000;
@@ -547,35 +547,35 @@ void RTL2832SDRDevice::readSettings()
     //-10, 15, 40, 65, 90, 115, 140, 165, 190,
     //215, 240, 290, 340, 420, 430, 450, 470, 490
     //0 for automatic gain
-	rtlTunerGain = m_qSettings->value("RtlGain",250).toInt();
-	rtlServerIP = QHostAddress(m_qSettings->value("IPAddr","127.0.0.1").toString());
-	rtlServerPort = m_qSettings->value("Port","1234").toInt();
-	rtlTunerGainMode = m_qSettings->value("RtlGainMode",GAIN_MODE_MANUAL).toUInt();
-	rtlFreqencyCorrection = m_qSettings->value("RtlFrequencyCorrection",0).toInt();
-	rtlSampleMode = (SAMPLING_MODES)m_qSettings->value("RtlSampleMode",NORMAL).toInt();
-	rtlAgcMode = m_qSettings->value("RtlAgcMode",false).toBool();
-	rtlOffsetMode = m_qSettings->value("RtlOffsetMode",false).toBool();
+	rtlTunerGain = m_settings->value("RtlGain",250).toInt();
+	rtlServerIP = QHostAddress(m_settings->value("IPAddr","127.0.0.1").toString());
+	rtlServerPort = m_settings->value("Port","1234").toInt();
+	rtlTunerGainMode = m_settings->value("RtlGainMode",GAIN_MODE_MANUAL).toUInt();
+	rtlFreqencyCorrection = m_settings->value("RtlFrequencyCorrection",0).toInt();
+	rtlSampleMode = (SAMPLING_MODES)m_settings->value("RtlSampleMode",NORMAL).toInt();
+	rtlAgcMode = m_settings->value("RtlAgcMode",false).toBool();
+	rtlOffsetMode = m_settings->value("RtlOffsetMode",false).toBool();
 }
 
 void RTL2832SDRDevice::writeSettings()
 {
 	if (m_deviceNumber == RTL_USB)
-		m_qSettings = usbSettings;
+		m_settings = usbSettings;
 	else if (m_deviceNumber == RTL_TCP)
-		m_qSettings = tcpSettings;
+		m_settings = tcpSettings;
 
 	DeviceInterfaceBase::writeSettings();
 
-	m_qSettings->setValue("RtlGain",rtlTunerGain);
-	m_qSettings->setValue("IPAddr",rtlServerIP.toString());
-	m_qSettings->setValue("Port",rtlServerPort);
-	m_qSettings->setValue("RtlGainMode",rtlTunerGainMode);
-	m_qSettings->setValue("RtlFrequencyCorrection",rtlFreqencyCorrection);
-	m_qSettings->setValue("RtlSampleMode",rtlSampleMode);
-	m_qSettings->setValue("RtlAgcMode",rtlAgcMode);
-	m_qSettings->setValue("RtlOffsetMode",rtlOffsetMode);
+	m_settings->setValue("RtlGain",rtlTunerGain);
+	m_settings->setValue("IPAddr",rtlServerIP.toString());
+	m_settings->setValue("Port",rtlServerPort);
+	m_settings->setValue("RtlGainMode",rtlTunerGainMode);
+	m_settings->setValue("RtlFrequencyCorrection",rtlFreqencyCorrection);
+	m_settings->setValue("RtlSampleMode",rtlSampleMode);
+	m_settings->setValue("RtlAgcMode",rtlAgcMode);
+	m_settings->setValue("RtlOffsetMode",rtlOffsetMode);
 
-	m_qSettings->sync();
+	m_settings->sync();
 
 }
 
@@ -1136,8 +1136,8 @@ void RTL2832SDRDevice::consumerWorker(cbProducerConsumerEvents _event)
 void RTL2832SDRDevice::initSettings(QString fname)
 {
 	DeviceInterfaceBase::initSettings(fname + "_usb");
-	usbSettings = m_qSettings;
+	usbSettings = m_settings;
 	DeviceInterfaceBase::initSettings(fname + "_tcp");
-	tcpSettings = m_qSettings;
+	tcpSettings = m_settings;
 
 }

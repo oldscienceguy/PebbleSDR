@@ -209,28 +209,28 @@ void SDRPlayDevice::readSettings()
 	//normalizeIQGain = DB::dbToAmplitude(-14.0);
 
 	DeviceInterfaceBase::readSettings();
-	dcCorrectionMode = m_qSettings->value("dcCorrectionMode",0).toInt(); //0 = off
-	totalGainReduction = m_qSettings->value("totalGainReduction",60).toInt(); //60db
-	bandwidthKhz = (mir_sdr_Bw_MHzT) m_qSettings->value("bandwidthKhz",mir_sdr_BW_1_536).toInt();
+	dcCorrectionMode = m_settings->value("dcCorrectionMode",0).toInt(); //0 = off
+	totalGainReduction = m_settings->value("totalGainReduction",60).toInt(); //60db
+	bandwidthKhz = (mir_sdr_Bw_MHzT) m_settings->value("bandwidthKhz",mir_sdr_BW_1_536).toInt();
 	//bandwidth can not be > sampleRate which is a problem is ini is manually edited
 
-	IFKhz = (mir_sdr_If_kHzT) m_qSettings->value("IFKhz",mir_sdr_IF_Zero).toInt();
+	IFKhz = (mir_sdr_If_kHzT) m_settings->value("IFKhz",mir_sdr_IF_Zero).toInt();
 
-	agcEnabled = m_qSettings->value("agcEnabled",false).toBool();
-	dbFS = m_qSettings->value("dbFS",-15).toInt();
+	agcEnabled = m_settings->value("agcEnabled",false).toBool();
+	dbFS = m_settings->value("dbFS",-15).toInt();
 }
 
 void SDRPlayDevice::writeSettings()
 {
 	DeviceInterfaceBase::writeSettings();
-	m_qSettings->setValue("dcCorrectionMode",dcCorrectionMode);
-	m_qSettings->setValue("totalGainReduction",totalGainReduction);
-	m_qSettings->setValue("bandwidthKhz",bandwidthKhz);
-	m_qSettings->setValue("IFKhz",IFKhz);
-	m_qSettings->setValue("agcEnabled",agcEnabled);
-	m_qSettings->setValue("dbFS",dbFS);
+	m_settings->setValue("dcCorrectionMode",dcCorrectionMode);
+	m_settings->setValue("totalGainReduction",totalGainReduction);
+	m_settings->setValue("bandwidthKhz",bandwidthKhz);
+	m_settings->setValue("IFKhz",IFKhz);
+	m_settings->setValue("agcEnabled",agcEnabled);
+	m_settings->setValue("dbFS",dbFS);
 
-	m_qSettings->sync();
+	m_settings->sync();
 }
 
 void SDRPlayDevice::setupOptionUi(QWidget *parent)

@@ -133,8 +133,8 @@ void ElektorDevice::readSettings()
 {
 	DeviceInterfaceBase::readSettings();
 	//Device specific settings follow
-	ELEKTOR_Low = m_qSettings->value("Low",150000).toDouble();
-	ELEKTOR_High = m_qSettings->value("High",30000000).toDouble();
+	ELEKTOR_Low = m_settings->value("Low",150000).toDouble();
+	ELEKTOR_High = m_settings->value("High",30000000).toDouble();
 
 
 }
@@ -143,10 +143,10 @@ void ElektorDevice::writeSettings()
 {
 	DeviceInterfaceBase::writeSettings();
 	//Device specific settings follow
-	m_qSettings->setValue("Low",ELEKTOR_Low);
-	m_qSettings->setValue("High",ELEKTOR_High);
+	m_settings->setValue("Low",ELEKTOR_Low);
+	m_settings->setValue("High",ELEKTOR_High);
 
-	m_qSettings->sync();
+	m_settings->sync();
 
 }
 

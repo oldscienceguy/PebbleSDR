@@ -4,9 +4,9 @@
 FunCubeSDRDevice::FunCubeSDRDevice():DeviceInterfaceBase()
 {
 	initSettings("FuncubePro");
-	funCubeProSettings = m_qSettings;
+	funCubeProSettings = m_settings;
 	initSettings("FuncubeProPlus");
-	funCubeProPlusSettings = m_qSettings;
+	funCubeProPlusSettings = m_settings;
 
 	optionUi = NULL;
 
@@ -1177,7 +1177,7 @@ void FunCubeSDRDevice::setupOptionUi(QWidget *parent)
 void FunCubeSDRDevice::readSettings()
 {
 	if (m_deviceNumber == FUNCUBE_PRO) {
-		m_qSettings = funCubeProSettings;
+		m_settings = funCubeProSettings;
 		m_deviceSampleRate = 96000;
 		m_startupFrequency = 162450000;
 		//FCD official range is 64 to 1.7 with no gaps
@@ -1188,7 +1188,7 @@ void FunCubeSDRDevice::readSettings()
 		sPID = FCD_PID;
 		sVID = VID;
 	} else {
-		m_qSettings = funCubeProPlusSettings;
+		m_settings = funCubeProPlusSettings;
 		m_deviceSampleRate = 192000;
 		m_startupFrequency = 10000000;
 		//FCDPlus 240mhz to 420mhz gap is not handled
@@ -1202,70 +1202,70 @@ void FunCubeSDRDevice::readSettings()
 
 	DeviceInterfaceBase::readSettings();
 
-	sPID = m_qSettings->value("FCD_PID",sPID).toInt();
+	sPID = m_settings->value("FCD_PID",sPID).toInt();
 
-	sVID = m_qSettings->value("VID",sVID).toInt();
+	sVID = m_settings->value("VID",sVID).toInt();
 
-	sOffset = m_qSettings->value("Offset",999885.0).toDouble();
+	sOffset = m_settings->value("Offset",999885.0).toDouble();
 
 	//All settings default to -1 which will force the device default values to be set
-	fcdLNAGain = m_qSettings->value("LNAGain",-1).toInt();
-	fcdLNAEnhance = m_qSettings->value("LNAEnhance",-1).toInt();
-	fcdBand = m_qSettings->value("Band",-1).toInt();
-	fcdRFFilter = m_qSettings->value("RFFilter",-1).toInt();
-	fcdMixerGain = m_qSettings->value("MixerGain",-1).toInt();
-	fcdBiasCurrent = m_qSettings->value("BiasCurrent",-1).toInt();
-	fcdBiasTee = m_qSettings->value("BiasTee",0).toInt();
-	fcdMixerFilter = m_qSettings->value("MixerFilter",-1).toInt();
-	fcdIFGain1 = m_qSettings->value("IFGain1",-1).toInt();
-	fcdIFGain2 = m_qSettings->value("IFGain2",-1).toInt();
-	fcdIFGain3 = m_qSettings->value("IFGain3",-1).toInt();
-	fcdIFGain4 = m_qSettings->value("IFGain4",-1).toInt();
-	fcdIFGain5 = m_qSettings->value("IFGain5",-1).toInt();
-	fcdIFGain6 = m_qSettings->value("IFGain6",-1).toInt();
-	fcdIFGainMode = m_qSettings->value("IFGainMode",-1).toInt();
-	fcdIFRCFilter = m_qSettings->value("IFRCFilter",-1).toInt();
-	fcdIFFilter = m_qSettings->value("IFFilter",-1).toInt();
-	fcdSetFreqHz = m_qSettings->value("SetFreqHz",true).toBool();
-	fcdDCICorrection = m_qSettings->value("DCICorrection",0).toInt();
-	fcdDCQCorrection = m_qSettings->value("DCQCorrection",0).toInt();
-	fcdIQPhaseCorrection = m_qSettings->value("IQPhaseCorrection",0).toInt();
-	fcdIQGainCorrection = m_qSettings->value("IQGainCorrection",32768).toInt();
+	fcdLNAGain = m_settings->value("LNAGain",-1).toInt();
+	fcdLNAEnhance = m_settings->value("LNAEnhance",-1).toInt();
+	fcdBand = m_settings->value("Band",-1).toInt();
+	fcdRFFilter = m_settings->value("RFFilter",-1).toInt();
+	fcdMixerGain = m_settings->value("MixerGain",-1).toInt();
+	fcdBiasCurrent = m_settings->value("BiasCurrent",-1).toInt();
+	fcdBiasTee = m_settings->value("BiasTee",0).toInt();
+	fcdMixerFilter = m_settings->value("MixerFilter",-1).toInt();
+	fcdIFGain1 = m_settings->value("IFGain1",-1).toInt();
+	fcdIFGain2 = m_settings->value("IFGain2",-1).toInt();
+	fcdIFGain3 = m_settings->value("IFGain3",-1).toInt();
+	fcdIFGain4 = m_settings->value("IFGain4",-1).toInt();
+	fcdIFGain5 = m_settings->value("IFGain5",-1).toInt();
+	fcdIFGain6 = m_settings->value("IFGain6",-1).toInt();
+	fcdIFGainMode = m_settings->value("IFGainMode",-1).toInt();
+	fcdIFRCFilter = m_settings->value("IFRCFilter",-1).toInt();
+	fcdIFFilter = m_settings->value("IFFilter",-1).toInt();
+	fcdSetFreqHz = m_settings->value("SetFreqHz",true).toBool();
+	fcdDCICorrection = m_settings->value("DCICorrection",0).toInt();
+	fcdDCQCorrection = m_settings->value("DCQCorrection",0).toInt();
+	fcdIQPhaseCorrection = m_settings->value("IQPhaseCorrection",0).toInt();
+	fcdIQGainCorrection = m_settings->value("IQGainCorrection",32768).toInt();
 }
 
 void FunCubeSDRDevice::writeSettings()
 {
 	if (m_deviceNumber == FUNCUBE_PRO)
-		m_qSettings = funCubeProSettings;
+		m_settings = funCubeProSettings;
 	else
-		m_qSettings = funCubeProPlusSettings;
+		m_settings = funCubeProPlusSettings;
 
 	DeviceInterfaceBase::writeSettings();
-	m_qSettings->setValue("FCD_PID",sPID);
-	m_qSettings->setValue("VID",sVID);
-	m_qSettings->setValue("Offset",sOffset);
-	m_qSettings->setValue("LNAGain",fcdLNAGain);
-	m_qSettings->setValue("LNAEnhance",fcdLNAEnhance);
-	m_qSettings->setValue("Band",fcdBand);
-	m_qSettings->setValue("RFFilter",fcdRFFilter);
-	m_qSettings->setValue("MixerGain",fcdMixerGain);
-	m_qSettings->setValue("BiasCurrent",fcdBiasCurrent);
-	m_qSettings->setValue("BiasTee",fcdBiasTee);
-	m_qSettings->setValue("MixerFilter",fcdMixerFilter);
-	m_qSettings->setValue("IFGain1",fcdIFGain1);
-	m_qSettings->setValue("IFGain2",fcdIFGain2);
-	m_qSettings->setValue("IFGain3",fcdIFGain3);
-	m_qSettings->setValue("IFGain4",fcdIFGain4);
-	m_qSettings->setValue("IFGain5",fcdIFGain5);
-	m_qSettings->setValue("IFGain6",fcdIFGain6);
-	m_qSettings->setValue("IFGainMode",fcdIFGainMode);
-	m_qSettings->setValue("IFRCFilter",fcdIFRCFilter);
-	m_qSettings->setValue("IFFilter",fcdIFFilter);
-	m_qSettings->setValue("SetFreqHz",fcdSetFreqHz);
-	m_qSettings->setValue("DCICorrection",fcdDCICorrection);
-	m_qSettings->setValue("DCQCorrection",fcdDCQCorrection);
-	m_qSettings->setValue("IQPhaseCorrection",fcdIQPhaseCorrection);
-	m_qSettings->setValue("IQGainCorrection",fcdIQGainCorrection);
+	m_settings->setValue("FCD_PID",sPID);
+	m_settings->setValue("VID",sVID);
+	m_settings->setValue("Offset",sOffset);
+	m_settings->setValue("LNAGain",fcdLNAGain);
+	m_settings->setValue("LNAEnhance",fcdLNAEnhance);
+	m_settings->setValue("Band",fcdBand);
+	m_settings->setValue("RFFilter",fcdRFFilter);
+	m_settings->setValue("MixerGain",fcdMixerGain);
+	m_settings->setValue("BiasCurrent",fcdBiasCurrent);
+	m_settings->setValue("BiasTee",fcdBiasTee);
+	m_settings->setValue("MixerFilter",fcdMixerFilter);
+	m_settings->setValue("IFGain1",fcdIFGain1);
+	m_settings->setValue("IFGain2",fcdIFGain2);
+	m_settings->setValue("IFGain3",fcdIFGain3);
+	m_settings->setValue("IFGain4",fcdIFGain4);
+	m_settings->setValue("IFGain5",fcdIFGain5);
+	m_settings->setValue("IFGain6",fcdIFGain6);
+	m_settings->setValue("IFGainMode",fcdIFGainMode);
+	m_settings->setValue("IFRCFilter",fcdIFRCFilter);
+	m_settings->setValue("IFFilter",fcdIFFilter);
+	m_settings->setValue("SetFreqHz",fcdSetFreqHz);
+	m_settings->setValue("DCICorrection",fcdDCICorrection);
+	m_settings->setValue("DCQCorrection",fcdDCQCorrection);
+	m_settings->setValue("IQPhaseCorrection",fcdIQPhaseCorrection);
+	m_settings->setValue("IQGainCorrection",fcdIQGainCorrection);
 
-	m_qSettings->sync();
+	m_settings->sync();
 }

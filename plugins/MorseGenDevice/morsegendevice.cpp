@@ -82,102 +82,102 @@ void MorseGenDevice::readSettings()
 	//Set defaults before calling DeviceInterfaceBase
 	DeviceInterfaceBase::readSettings();
 
-	m_dbNoiseAmp = m_qSettings->value("DbNoiseAmp",-60).toDouble();
-	m_gen1Enabled = m_qSettings->value("Gen1Enabled",true).toBool();
-	m_gen1Freq = m_qSettings->value("Gen1Freq",1000).toDouble();
-	m_gen1Amp = m_qSettings->value("Gen1Amp",-40).toDouble();
-	m_gen1Wpm = m_qSettings->value("Gen1Wpm",20).toUInt();
-	m_gen1Rise = m_qSettings->value("Gen1Rise",5).toUInt();
-	m_gen1Text = m_qSettings->value("Gen1Text",0).toUInt();
-	m_gen1Fade = m_qSettings->value("Gen1Fade",false).toBool();
-	m_gen1Fist = m_qSettings->value("Gen1Fist",false).toBool();
+	m_dbNoiseAmp = m_settings->value("DbNoiseAmp",-60).toDouble();
+	m_gen1Enabled = m_settings->value("Gen1Enabled",true).toBool();
+	m_gen1Freq = m_settings->value("Gen1Freq",1000).toDouble();
+	m_gen1Amp = m_settings->value("Gen1Amp",-40).toDouble();
+	m_gen1Wpm = m_settings->value("Gen1Wpm",20).toUInt();
+	m_gen1Rise = m_settings->value("Gen1Rise",5).toUInt();
+	m_gen1Text = m_settings->value("Gen1Text",0).toUInt();
+	m_gen1Fade = m_settings->value("Gen1Fade",false).toBool();
+	m_gen1Fist = m_settings->value("Gen1Fist",false).toBool();
 
-	m_gen2Enabled = m_qSettings->value("Gen2Enabled",true).toBool();
-	m_gen2Freq = m_qSettings->value("Gen2Freq",1500).toDouble();
-	m_gen2Amp = m_qSettings->value("Gen2Amp",-40).toDouble();
-	m_gen2Wpm = m_qSettings->value("Gen2Wpm",30).toUInt();
-	m_gen2Rise = m_qSettings->value("Gen2Rise",5).toUInt();
-	m_gen2Text = m_qSettings->value("Gen2Text",0).toUInt();
-	m_gen2Fade = m_qSettings->value("Gen2Fade",false).toBool();
-	m_gen2Fist = m_qSettings->value("Gen2Fist",false).toBool();
+	m_gen2Enabled = m_settings->value("Gen2Enabled",true).toBool();
+	m_gen2Freq = m_settings->value("Gen2Freq",1500).toDouble();
+	m_gen2Amp = m_settings->value("Gen2Amp",-40).toDouble();
+	m_gen2Wpm = m_settings->value("Gen2Wpm",30).toUInt();
+	m_gen2Rise = m_settings->value("Gen2Rise",5).toUInt();
+	m_gen2Text = m_settings->value("Gen2Text",0).toUInt();
+	m_gen2Fade = m_settings->value("Gen2Fade",false).toBool();
+	m_gen2Fist = m_settings->value("Gen2Fist",false).toBool();
 
-	m_gen3Enabled = m_qSettings->value("Gen3Enabled",true).toBool();
-	m_gen3Freq = m_qSettings->value("Gen3Freq",2000).toDouble();
-	m_gen3Amp = m_qSettings->value("Gen3Amp",-40).toDouble();
-	m_gen3Wpm = m_qSettings->value("Gen3Wpm",40).toUInt();
-	m_gen3Rise = m_qSettings->value("Gen3Rise",5).toUInt();
-	m_gen3Text = m_qSettings->value("Gen3Text",0).toUInt();
-	m_gen3Fade = m_qSettings->value("Gen3Fade",false).toBool();
-	m_gen3Fist = m_qSettings->value("Gen3Fist",false).toBool();
+	m_gen3Enabled = m_settings->value("Gen3Enabled",true).toBool();
+	m_gen3Freq = m_settings->value("Gen3Freq",2000).toDouble();
+	m_gen3Amp = m_settings->value("Gen3Amp",-40).toDouble();
+	m_gen3Wpm = m_settings->value("Gen3Wpm",40).toUInt();
+	m_gen3Rise = m_settings->value("Gen3Rise",5).toUInt();
+	m_gen3Text = m_settings->value("Gen3Text",0).toUInt();
+	m_gen3Fade = m_settings->value("Gen3Fade",false).toBool();
+	m_gen3Fist = m_settings->value("Gen3Fist",false).toBool();
 
-	m_gen4Enabled = m_qSettings->value("Gen4Enabled",true).toBool();
-	m_gen4Freq = m_qSettings->value("Gen4Freq",2500).toDouble();
-	m_gen4Amp = m_qSettings->value("Gen4Amp",-40).toDouble();
-	m_gen4Wpm = m_qSettings->value("Gen4Wpm",50).toUInt();
-	m_gen4Rise = m_qSettings->value("Gen4Rise",5).toUInt();
-	m_gen4Text = m_qSettings->value("Gen4Text",0).toUInt();
-	m_gen4Fade = m_qSettings->value("Gen4Fade",false).toBool();
-	m_gen4Fist = m_qSettings->value("Gen4Fist",false).toBool();
+	m_gen4Enabled = m_settings->value("Gen4Enabled",true).toBool();
+	m_gen4Freq = m_settings->value("Gen4Freq",2500).toDouble();
+	m_gen4Amp = m_settings->value("Gen4Amp",-40).toDouble();
+	m_gen4Wpm = m_settings->value("Gen4Wpm",50).toUInt();
+	m_gen4Rise = m_settings->value("Gen4Rise",5).toUInt();
+	m_gen4Text = m_settings->value("Gen4Text",0).toUInt();
+	m_gen4Fade = m_settings->value("Gen4Fade",false).toBool();
+	m_gen4Fist = m_settings->value("Gen4Fist",false).toBool();
 
-	m_gen5Enabled = m_qSettings->value("Gen5Enabled",true).toBool();
-	m_gen5Freq = m_qSettings->value("Gen5Freq",2500).toDouble();
-	m_gen5Amp = m_qSettings->value("Gen5Amp",-40).toDouble();
-	m_gen5Wpm = m_qSettings->value("Gen5Wpm",60).toUInt();
-	m_gen5Rise = m_qSettings->value("Gen5Rise",5).toUInt();
-	m_gen5Text = m_qSettings->value("Gen5Text",0).toUInt();
-	m_gen5Fade = m_qSettings->value("Gen5Fade",false).toBool();
-	m_gen5Fist = m_qSettings->value("Gen5Fist",false).toBool();
+	m_gen5Enabled = m_settings->value("Gen5Enabled",true).toBool();
+	m_gen5Freq = m_settings->value("Gen5Freq",2500).toDouble();
+	m_gen5Amp = m_settings->value("Gen5Amp",-40).toDouble();
+	m_gen5Wpm = m_settings->value("Gen5Wpm",60).toUInt();
+	m_gen5Rise = m_settings->value("Gen5Rise",5).toUInt();
+	m_gen5Text = m_settings->value("Gen5Text",0).toUInt();
+	m_gen5Fade = m_settings->value("Gen5Fade",false).toBool();
+	m_gen5Fist = m_settings->value("Gen5Fist",false).toBool();
 }
 
 void MorseGenDevice::writeSettings()
 {
 	DeviceInterfaceBase::writeSettings();
 
-	m_qSettings->setValue("DbNoiseAmp", m_dbNoiseAmp);
-	m_qSettings->setValue("Gen1Enabled", m_gen1Enabled);
-	m_qSettings->setValue("Gen1Freq",m_gen1Freq);
-	m_qSettings->setValue("Gen1Amp",m_gen1Amp);
-	m_qSettings->setValue("Gen1Wpm",m_gen1Wpm);
-	m_qSettings->setValue("Gen1Rise",m_gen1Rise);
-	m_qSettings->setValue("Gen1Text",m_gen1Text);
-	m_qSettings->setValue("Gen1Fade",m_gen1Fade);
-	m_qSettings->setValue("Gen1Fist",m_gen1Fist);
+	m_settings->setValue("DbNoiseAmp", m_dbNoiseAmp);
+	m_settings->setValue("Gen1Enabled", m_gen1Enabled);
+	m_settings->setValue("Gen1Freq",m_gen1Freq);
+	m_settings->setValue("Gen1Amp",m_gen1Amp);
+	m_settings->setValue("Gen1Wpm",m_gen1Wpm);
+	m_settings->setValue("Gen1Rise",m_gen1Rise);
+	m_settings->setValue("Gen1Text",m_gen1Text);
+	m_settings->setValue("Gen1Fade",m_gen1Fade);
+	m_settings->setValue("Gen1Fist",m_gen1Fist);
 
-	m_qSettings->setValue("Gen2Enabled", m_gen2Enabled);
-	m_qSettings->setValue("Gen2Freq",m_gen2Freq);
-	m_qSettings->setValue("Gen2Amp",m_gen2Amp);
-	m_qSettings->setValue("Gen2Wpm",m_gen2Wpm);
-	m_qSettings->setValue("Gen2Rise",m_gen2Rise);
-	m_qSettings->setValue("Gen2Text",m_gen2Text);
-	m_qSettings->setValue("Gen2Fade",m_gen2Fade);
-	m_qSettings->setValue("Gen2Fist",m_gen2Fist);
+	m_settings->setValue("Gen2Enabled", m_gen2Enabled);
+	m_settings->setValue("Gen2Freq",m_gen2Freq);
+	m_settings->setValue("Gen2Amp",m_gen2Amp);
+	m_settings->setValue("Gen2Wpm",m_gen2Wpm);
+	m_settings->setValue("Gen2Rise",m_gen2Rise);
+	m_settings->setValue("Gen2Text",m_gen2Text);
+	m_settings->setValue("Gen2Fade",m_gen2Fade);
+	m_settings->setValue("Gen2Fist",m_gen2Fist);
 
-	m_qSettings->setValue("Gen3Enabled", m_gen3Enabled);
-	m_qSettings->setValue("Gen3Freq",m_gen3Freq);
-	m_qSettings->setValue("Gen3Amp",m_gen3Amp);
-	m_qSettings->setValue("Gen3Wpm",m_gen3Wpm);
-	m_qSettings->setValue("Gen3Rise",m_gen3Rise);
-	m_qSettings->setValue("Gen3Text",m_gen3Text);
-	m_qSettings->setValue("Gen3Fade",m_gen3Fade);
-	m_qSettings->setValue("Gen3Fist",m_gen3Fist);
+	m_settings->setValue("Gen3Enabled", m_gen3Enabled);
+	m_settings->setValue("Gen3Freq",m_gen3Freq);
+	m_settings->setValue("Gen3Amp",m_gen3Amp);
+	m_settings->setValue("Gen3Wpm",m_gen3Wpm);
+	m_settings->setValue("Gen3Rise",m_gen3Rise);
+	m_settings->setValue("Gen3Text",m_gen3Text);
+	m_settings->setValue("Gen3Fade",m_gen3Fade);
+	m_settings->setValue("Gen3Fist",m_gen3Fist);
 
-	m_qSettings->setValue("Gen4Enabled", m_gen4Enabled);
-	m_qSettings->setValue("Gen4Freq",m_gen4Freq);
-	m_qSettings->setValue("Gen4Amp",m_gen4Amp);
-	m_qSettings->setValue("Gen4Wpm",m_gen4Wpm);
-	m_qSettings->setValue("Gen4Rise",m_gen4Rise);
-	m_qSettings->setValue("Gen4Text",m_gen4Text);
-	m_qSettings->setValue("Gen4Fade",m_gen4Fade);
-	m_qSettings->setValue("Gen4Fist",m_gen4Fist);
+	m_settings->setValue("Gen4Enabled", m_gen4Enabled);
+	m_settings->setValue("Gen4Freq",m_gen4Freq);
+	m_settings->setValue("Gen4Amp",m_gen4Amp);
+	m_settings->setValue("Gen4Wpm",m_gen4Wpm);
+	m_settings->setValue("Gen4Rise",m_gen4Rise);
+	m_settings->setValue("Gen4Text",m_gen4Text);
+	m_settings->setValue("Gen4Fade",m_gen4Fade);
+	m_settings->setValue("Gen4Fist",m_gen4Fist);
 
-	m_qSettings->setValue("Gen5Enabled", m_gen5Enabled);
-	m_qSettings->setValue("Gen5Freq",m_gen5Freq);
-	m_qSettings->setValue("Gen5Amp",m_gen5Amp);
-	m_qSettings->setValue("Gen5Wpm",m_gen5Wpm);
-	m_qSettings->setValue("Gen5Rise",m_gen5Rise);
-	m_qSettings->setValue("Gen5Text",m_gen5Text);
-	m_qSettings->setValue("Gen5Fade",m_gen5Fade);
-	m_qSettings->setValue("Gen5Fist",m_gen5Fist);
+	m_settings->setValue("Gen5Enabled", m_gen5Enabled);
+	m_settings->setValue("Gen5Freq",m_gen5Freq);
+	m_settings->setValue("Gen5Amp",m_gen5Amp);
+	m_settings->setValue("Gen5Wpm",m_gen5Wpm);
+	m_settings->setValue("Gen5Rise",m_gen5Rise);
+	m_settings->setValue("Gen5Text",m_gen5Text);
+	m_settings->setValue("Gen5Fade",m_gen5Fade);
+	m_settings->setValue("Gen5Fist",m_gen5Fist);
 }
 
 void MorseGenDevice::updateGenerators()

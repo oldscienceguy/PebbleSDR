@@ -114,16 +114,16 @@ void FileSDRDevice::readSettings()
 
 	DeviceInterfaceBase::readSettings();
 
-	m_fileName = m_qSettings->value("FileName", "").toString();
-	m_recordingPath = m_qSettings->value("RecordingPath", "").toString();
+	m_fileName = m_settings->value("FileName", "").toString();
+	m_recordingPath = m_settings->value("RecordingPath", "").toString();
 }
 
 void FileSDRDevice::writeSettings()
 {
 	DeviceInterfaceBase::writeSettings();
 
-	m_qSettings->setValue("FileName", m_fileName);
-	m_qSettings->setValue("RecordingPath", m_recordingPath);
+	m_settings->setValue("FileName", m_fileName);
+	m_settings->setValue("RecordingPath", m_recordingPath);
 }
 
 QVariant FileSDRDevice::get(DeviceInterface::StandardKeys _key, QVariant _option)

@@ -305,61 +305,61 @@ void HPSDRDevice::readSettings()
 	}
 
 
-	sGainPreampOn = m_qSettings->value("GainPreampOn",3.0).toDouble();
-	sGainPreampOff = m_qSettings->value("GainPreampOff",20.0).toDouble();
-	sPID = m_qSettings->value("PID",0x0007).toInt();
-	sVID = m_qSettings->value("VID",0xfffe).toInt();
+	sGainPreampOn = m_settings->value("GainPreampOn",3.0).toDouble();
+	sGainPreampOff = m_settings->value("GainPreampOff",20.0).toDouble();
+	sPID = m_settings->value("PID",0x0007).toInt();
+	sVID = m_settings->value("VID",0xfffe).toInt();
 	//NOTE: I had problems with various combinations of hex and rbf files
 	//The most current ones I found were the 'PennyMerge' version which can be found here
 	//svn://64.245.179.219/svn/repos_sdr_windows/PowerSDR/branches/kd5tfd/PennyMerge
-	sFpga = m_qSettings->value("FPGA","ozy_janus.rbf").toString();
-	sFW = m_qSettings->value("FW","ozyfw-sdr1k.hex").toString();
+	sFpga = m_settings->value("FPGA","ozy_janus.rbf").toString();
+	sFW = m_settings->value("FW","ozyfw-sdr1k.hex").toString();
 
 	//SDR-WIDGET
 	//Skips firmware check and upload
-	sNoInit = m_qSettings->value("NoInit",false).toBool();
+	sNoInit = m_settings->value("NoInit",false).toBool();
 
 	//Harware options
 	//sSpeed = qSettings->value("Speed",C1_SPEED_48KHZ).toInt();
-	sPTT = m_qSettings->value("PTT",C0_MOX_INACTIVE).toInt();
-	s10Mhz = m_qSettings->value("10Mhz",C1_10MHZ_MERCURY).toInt();
-	s122Mhz = m_qSettings->value("122Mhz",C1_122MHZ_MERCURY).toInt();
-	sConfig = m_qSettings->value("AtlasConfig",C1_CONFIG_MERCURY).toInt();
-	sMic = m_qSettings->value("MicSource",C1_MIC_PENELOPE).toInt();
-	sMode = m_qSettings->value("Mode",C2_MODE_OTHERS).toInt();
-	sPreamp = m_qSettings->value("LT2208Preamp",C3_LT2208_PREAMP_ON).toInt();
-	sDither = m_qSettings->value("LT2208Dither",C3_LT2208_DITHER_OFF).toInt();
-	sRandom = m_qSettings->value("LT2208Random",C3_LT2208_RANDOM_OFF).toInt();
-	discovery = (DISCOVERY)m_qSettings->value("Discovery",HPSDRDevice::USE_AUTO_DISCOVERY).toInt();
-	metisAddress = m_qSettings->value("MetisAddress","").toString();
-	metisPort = m_qSettings->value("MetisPort",1024).toUInt();
+	sPTT = m_settings->value("PTT",C0_MOX_INACTIVE).toInt();
+	s10Mhz = m_settings->value("10Mhz",C1_10MHZ_MERCURY).toInt();
+	s122Mhz = m_settings->value("122Mhz",C1_122MHZ_MERCURY).toInt();
+	sConfig = m_settings->value("AtlasConfig",C1_CONFIG_MERCURY).toInt();
+	sMic = m_settings->value("MicSource",C1_MIC_PENELOPE).toInt();
+	sMode = m_settings->value("Mode",C2_MODE_OTHERS).toInt();
+	sPreamp = m_settings->value("LT2208Preamp",C3_LT2208_PREAMP_ON).toInt();
+	sDither = m_settings->value("LT2208Dither",C3_LT2208_DITHER_OFF).toInt();
+	sRandom = m_settings->value("LT2208Random",C3_LT2208_RANDOM_OFF).toInt();
+	discovery = (DISCOVERY)m_settings->value("Discovery",HPSDRDevice::USE_AUTO_DISCOVERY).toInt();
+	metisAddress = m_settings->value("MetisAddress","").toString();
+	metisPort = m_settings->value("MetisPort",1024).toUInt();
 }
 
 void HPSDRDevice::writeSettings()
 {
 	DeviceInterfaceBase::writeSettings();
 	//Device specific settings follow
-	m_qSettings->setValue("GainPreampOn",sGainPreampOn);
-	m_qSettings->setValue("GainPreampOff",sGainPreampOff);
-	m_qSettings->setValue("PID",sPID);
-	m_qSettings->setValue("VID",sVID);
-	m_qSettings->setValue("FPGA",sFpga);
-	m_qSettings->setValue("FW",sFW);
-	m_qSettings->setValue("NoInit",sNoInit);
-	m_qSettings->setValue("PTT",sPTT);
-	m_qSettings->setValue("10Mhz",s10Mhz);
-	m_qSettings->setValue("122Mhz",s122Mhz);
-	m_qSettings->setValue("AtlasConfig",sConfig);
-	m_qSettings->setValue("MicSource",sMic);
-	m_qSettings->setValue("Mode",sMode);
-	m_qSettings->setValue("LT2208Preamp",sPreamp);
-	m_qSettings->setValue("LT2208Dither",sDither);
-	m_qSettings->setValue("LT2208Random",sRandom);
-	m_qSettings->setValue("Discovery",discovery);
-	m_qSettings->setValue("MetisAddress",metisAddress);
-	m_qSettings->setValue("MetisPort",metisPort);
+	m_settings->setValue("GainPreampOn",sGainPreampOn);
+	m_settings->setValue("GainPreampOff",sGainPreampOff);
+	m_settings->setValue("PID",sPID);
+	m_settings->setValue("VID",sVID);
+	m_settings->setValue("FPGA",sFpga);
+	m_settings->setValue("FW",sFW);
+	m_settings->setValue("NoInit",sNoInit);
+	m_settings->setValue("PTT",sPTT);
+	m_settings->setValue("10Mhz",s10Mhz);
+	m_settings->setValue("122Mhz",s122Mhz);
+	m_settings->setValue("AtlasConfig",sConfig);
+	m_settings->setValue("MicSource",sMic);
+	m_settings->setValue("Mode",sMode);
+	m_settings->setValue("LT2208Preamp",sPreamp);
+	m_settings->setValue("LT2208Dither",sDither);
+	m_settings->setValue("LT2208Random",sRandom);
+	m_settings->setValue("Discovery",discovery);
+	m_settings->setValue("MetisAddress",metisAddress);
+	m_settings->setValue("MetisPort",metisPort);
 
-	m_qSettings->sync();
+	m_settings->sync();
 }
 
 QVariant HPSDRDevice::get(DeviceInterface::StandardKeys _key, QVariant _option)

@@ -164,8 +164,8 @@ void Ghpsdr3Device::readSettings()
 {
 	DeviceInterfaceBase::readSettings();
 	//Device specific settings follow
-	deviceAddress = QHostAddress(m_qSettings->value("DeviceAddress","127.0.0.1").toString());
-	devicePort = m_qSettings->value("DevicePort",8000).toUInt();
+	deviceAddress = QHostAddress(m_settings->value("DeviceAddress","127.0.0.1").toString());
+	devicePort = m_settings->value("DevicePort",8000).toUInt();
 
 }
 
@@ -173,9 +173,9 @@ void Ghpsdr3Device::writeSettings()
 {
 	DeviceInterfaceBase::writeSettings();
 	//Device specific settings follow
-	m_qSettings->setValue("DeviceAddress",deviceAddress.toString());
-	m_qSettings->setValue("DevicePort",devicePort);
-	m_qSettings->sync();
+	m_settings->setValue("DeviceAddress",deviceAddress.toString());
+	m_settings->setValue("DevicePort",devicePort);
+	m_settings->sync();
 }
 
 QVariant Ghpsdr3Device::get(DeviceInterface::StandardKeys _key, QVariant _option)

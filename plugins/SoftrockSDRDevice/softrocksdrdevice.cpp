@@ -111,21 +111,21 @@ void SoftrockSDRDevice::initSettings(QString fname)
 	Q_UNUSED(fname);
 
 	DeviceInterfaceBase::initSettings("SREnsemble");
-	srEnsembleSettings = m_qSettings;
+	srEnsembleSettings = m_settings;
 	DeviceInterfaceBase::initSettings("SREnsemble2M");
-	srEnsemble2MSettings = m_qSettings;
+	srEnsemble2MSettings = m_settings;
 	DeviceInterfaceBase::initSettings("SREnsemble4M");
-	srEnsemble4MSettings = m_qSettings;
+	srEnsemble4MSettings = m_settings;
 	DeviceInterfaceBase::initSettings("SREnsemble6M");
-	srEnsemble6MSettings = m_qSettings;
+	srEnsemble6MSettings = m_settings;
 	DeviceInterfaceBase::initSettings("SREnsembleLF");
-	srEnsembleLFSettings = m_qSettings;
+	srEnsembleLFSettings = m_settings;
 	DeviceInterfaceBase::initSettings("SRLite");
-	srLiteSettings = m_qSettings;
+	srLiteSettings = m_settings;
 	DeviceInterfaceBase::initSettings("SRV9");
-	srV9Settings = m_qSettings;
+	srV9Settings = m_settings;
 	DeviceInterfaceBase::initSettings("SRFifi");
-	srFifiSettings = m_qSettings;
+	srFifiSettings = m_settings;
 }
 
 void SoftrockSDRDevice::readSettings()
@@ -133,16 +133,16 @@ void SoftrockSDRDevice::readSettings()
 	int currentDeviceNumber = m_deviceNumber; //Save until we remove it from settings
 	switch (m_deviceNumber)
 	{
-		case FiFi: m_qSettings = srFifiSettings; break;
-		case SR_V9: m_qSettings = srV9Settings; break;
-		case SR_LITE: m_qSettings = srLiteSettings; break;
-		case SR_ENSEMBLE: m_qSettings = srEnsembleSettings; break;
-		case SR_ENSEMBLE_LF: m_qSettings = srEnsembleLFSettings; break;
-		case SR_ENSEMBLE_2M: m_qSettings = srEnsemble2MSettings; break;
-		case SR_ENSEMBLE_4M: m_qSettings = srEnsemble4MSettings; break;
-		case SR_ENSEMBLE_6M: m_qSettings = srEnsemble6MSettings; break;
+		case FiFi: m_settings = srFifiSettings; break;
+		case SR_V9: m_settings = srV9Settings; break;
+		case SR_LITE: m_settings = srLiteSettings; break;
+		case SR_ENSEMBLE: m_settings = srEnsembleSettings; break;
+		case SR_ENSEMBLE_LF: m_settings = srEnsembleLFSettings; break;
+		case SR_ENSEMBLE_2M: m_settings = srEnsemble2MSettings; break;
+		case SR_ENSEMBLE_4M: m_settings = srEnsemble4MSettings; break;
+		case SR_ENSEMBLE_6M: m_settings = srEnsemble6MSettings; break;
 		default:
-			m_qSettings = NULL; break;
+			m_settings = NULL; break;
 	}
 
 	//Device Settings
@@ -216,7 +216,7 @@ void SoftrockSDRDevice::readSettings()
 
 	m_deviceNumber = currentDeviceNumber; //Restore
 
-	sdrNumber = m_qSettings->value("SDRNumber",-1).toInt();
+	sdrNumber = m_settings->value("SDRNumber",-1).toInt();
 	//useABPF = qSettings->value("UseABPF",true).toInt();
 
 }
@@ -225,22 +225,22 @@ void SoftrockSDRDevice::writeSettings()
 {
 	switch (m_deviceNumber)
 	{
-		case FiFi: m_qSettings = srFifiSettings; break;
-		case SR_V9: m_qSettings = srV9Settings; break;
-		case SR_LITE: m_qSettings = srLiteSettings; break;
-		case SR_ENSEMBLE: m_qSettings = srEnsembleSettings; break;
-		case SR_ENSEMBLE_LF: m_qSettings = srEnsembleLFSettings; break;
-		case SR_ENSEMBLE_2M: m_qSettings = srEnsemble2MSettings; break;
-		case SR_ENSEMBLE_4M: m_qSettings = srEnsemble4MSettings; break;
-		case SR_ENSEMBLE_6M: m_qSettings = srEnsemble6MSettings; break;
+		case FiFi: m_settings = srFifiSettings; break;
+		case SR_V9: m_settings = srV9Settings; break;
+		case SR_LITE: m_settings = srLiteSettings; break;
+		case SR_ENSEMBLE: m_settings = srEnsembleSettings; break;
+		case SR_ENSEMBLE_LF: m_settings = srEnsembleLFSettings; break;
+		case SR_ENSEMBLE_2M: m_settings = srEnsemble2MSettings; break;
+		case SR_ENSEMBLE_4M: m_settings = srEnsemble4MSettings; break;
+		case SR_ENSEMBLE_6M: m_settings = srEnsemble6MSettings; break;
 		default:
-			m_qSettings = NULL; break;
+			m_settings = NULL; break;
 	}
 
 	DeviceInterfaceBase::writeSettings();
-	m_qSettings->setValue("SDRNumber",sdrNumber);
+	m_settings->setValue("SDRNumber",sdrNumber);
 
-	m_qSettings->sync();
+	m_settings->sync();
 
 }
 
