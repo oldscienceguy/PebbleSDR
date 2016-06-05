@@ -29,8 +29,7 @@ SUBDIRS =   pebblelib/pebblelib.pro \
             plugins/HackRFDevice \
             plugins/MorseGenDevice \
             application/pebbleqt.pro \
-            SdrGarage \
-    plugins/MorseDigitalModem/MorseIQMaker
+            SdrGarage
 
 # build must be last:
 #build in the order listed
