@@ -6,6 +6,25 @@
 MorseGen::MorseGen(double sampleRate)
 {
 	m_sampleRate = sampleRate;
+	m_dotSampleBuf = NULL;
+	m_dashSampleBuf = NULL;
+	m_elementSampleBuf = NULL;
+	m_charSampleBuf = NULL;
+	m_wordSampleBuf = NULL;
+}
+
+MorseGen::~MorseGen()
+{
+	if (m_dotSampleBuf != NULL)
+		delete m_dotSampleBuf;
+	if (m_dashSampleBuf != NULL)
+		delete m_dashSampleBuf;
+	if (m_elementSampleBuf != NULL)
+		delete m_elementSampleBuf;
+	if (m_charSampleBuf != NULL)
+		delete m_charSampleBuf;
+	if (m_wordSampleBuf != NULL)
+		delete m_wordSampleBuf;
 }
 
 void MorseGen::setParams(double frequency, double dbAmplitude, quint32 wpm, quint32 msRise)
@@ -34,21 +53,31 @@ void MorseGen::setParams(double frequency, double dbAmplitude, quint32 wpm, quin
 	m_numSamplesDot = samplesPerTcw * MorseCode::c_tcwDot - tcwRiseFall;
 	//Full buffer size, including rise and fall
 	m_numSamplesDotBuf = m_numSamplesRise + m_numSamplesFall + m_numSamplesDot;
+	if (m_dotSampleBuf != NULL)
+		delete m_dotSampleBuf;
 	m_dotSampleBuf = CPX::memalign(m_numSamplesDotBuf);
 
 	m_numSamplesDash = samplesPerTcw * MorseCode::c_tcwDash - tcwRiseFall;
 	m_numSamplesDashBuf =  m_numSamplesRise + m_numSamplesFall + m_numSamplesDash;
+	if (m_dashSampleBuf != NULL)
+		delete m_dashSampleBuf;
 	m_dashSampleBuf = CPX::memalign(m_numSamplesDashBuf);
 
 	m_numSamplesElementBuf = samplesPerTcw * MorseCode::c_tcwElementSpace;
+	if (m_elementSampleBuf != NULL)
+		delete m_elementSampleBuf;
 	m_elementSampleBuf = CPX::memalign(m_numSamplesElementBuf);
 
 	m_numSamplesCharBuf = samplesPerTcw * MorseCode::c_tcwCharSpace;
+	if (m_charSampleBuf != NULL)
+		delete m_charSampleBuf;
 	m_charSampleBuf = CPX::memalign(m_numSamplesCharBuf);
 
 	//A word space already has a character space (3 Tcws)
 	//So adjust accordingly
 	m_numSamplesWordBuf = samplesPerTcw * MorseCode::c_tcwWordSpace - 3;
+	if (m_wordSampleBuf != NULL)
+		delete m_wordSampleBuf;
 	m_wordSampleBuf = CPX::memalign(m_numSamplesWordBuf);
 
 	//Build IQ data for each element

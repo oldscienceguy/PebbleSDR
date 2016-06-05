@@ -9,6 +9,7 @@ class MorseGen
 {
 public:
 	MorseGen(double sampleRate);
+	~MorseGen();
 
 	void setParams(double frequency, double dbAmplitude, quint32 wpm, quint32 msRise);
 

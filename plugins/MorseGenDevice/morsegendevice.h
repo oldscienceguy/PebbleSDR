@@ -33,6 +33,14 @@ public:
 
 private slots:
 	void resetButtonClicked(bool clicked);
+	void updateAllFields();
+	void updateGen1Fields();
+	void updateGen2Fields();
+	void updateGen3Fields();
+	void updateGen4Fields();
+	void updateGen5Fields();
+	void updateNoiseFields();
+
 private:
 	void readSettings();
 	void writeSettings();
@@ -120,7 +128,8 @@ private:
 	bool m_gen5Fade;
 	bool m_gen5Fist;
 
-	void updateFields();
 	void updateGenerators();
+
+	QMutex m_mutex; //Locks generator changes when producer thead is calling generate()
 };
 #endif // MORSEGENDEVICE_H

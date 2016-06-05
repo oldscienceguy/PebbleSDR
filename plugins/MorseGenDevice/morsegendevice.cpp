@@ -7,6 +7,7 @@ MorseGenDevice::MorseGenDevice():DeviceInterfaceBase()
 {
 	initSettings("morsegen");
 	m_optionUi = NULL;
+	m_running = false;
 }
 
 //Called when the plugins object is deleted in the ~Receiver()
@@ -77,14 +78,14 @@ void MorseGenDevice::readSettings()
 	// +/- db gain required to normalize to fixed level input
 	// Default is 0db gain, or a factor of 1.0
 	m_normalizeIQGain = DB::dBToAmplitude(0);
-
+	m_startupDemodMode = DemodMode::dmCWL;
 	//Set defaults before calling DeviceInterfaceBase
 	DeviceInterfaceBase::readSettings();
 
 	m_dbNoiseAmp = m_qSettings->value("DbNoiseAmp",-60).toDouble();
 	m_gen1Enabled = m_qSettings->value("Gen1Enabled",true).toBool();
 	m_gen1Freq = m_qSettings->value("Gen1Freq",1000).toDouble();
-	m_gen1Amp = m_qSettings->value("Gen1Amp",-50).toDouble();
+	m_gen1Amp = m_qSettings->value("Gen1Amp",-40).toDouble();
 	m_gen1Wpm = m_qSettings->value("Gen1Wpm",20).toUInt();
 	m_gen1Rise = m_qSettings->value("Gen1Rise",5).toUInt();
 	m_gen1Text = m_qSettings->value("Gen1Text",0).toUInt();
@@ -93,7 +94,7 @@ void MorseGenDevice::readSettings()
 
 	m_gen2Enabled = m_qSettings->value("Gen2Enabled",true).toBool();
 	m_gen2Freq = m_qSettings->value("Gen2Freq",1500).toDouble();
-	m_gen2Amp = m_qSettings->value("Gen2Amp",-50).toDouble();
+	m_gen2Amp = m_qSettings->value("Gen2Amp",-40).toDouble();
 	m_gen2Wpm = m_qSettings->value("Gen2Wpm",30).toUInt();
 	m_gen2Rise = m_qSettings->value("Gen2Rise",5).toUInt();
 	m_gen2Text = m_qSettings->value("Gen2Text",0).toUInt();
@@ -102,7 +103,7 @@ void MorseGenDevice::readSettings()
 
 	m_gen3Enabled = m_qSettings->value("Gen3Enabled",true).toBool();
 	m_gen3Freq = m_qSettings->value("Gen3Freq",2000).toDouble();
-	m_gen3Amp = m_qSettings->value("Gen3Amp",-50).toDouble();
+	m_gen3Amp = m_qSettings->value("Gen3Amp",-40).toDouble();
 	m_gen3Wpm = m_qSettings->value("Gen3Wpm",40).toUInt();
 	m_gen3Rise = m_qSettings->value("Gen3Rise",5).toUInt();
 	m_gen3Text = m_qSettings->value("Gen3Text",0).toUInt();
@@ -111,7 +112,7 @@ void MorseGenDevice::readSettings()
 
 	m_gen4Enabled = m_qSettings->value("Gen4Enabled",true).toBool();
 	m_gen4Freq = m_qSettings->value("Gen4Freq",2500).toDouble();
-	m_gen4Amp = m_qSettings->value("Gen4Amp",-50).toDouble();
+	m_gen4Amp = m_qSettings->value("Gen4Amp",-40).toDouble();
 	m_gen4Wpm = m_qSettings->value("Gen4Wpm",50).toUInt();
 	m_gen4Rise = m_qSettings->value("Gen4Rise",5).toUInt();
 	m_gen4Text = m_qSettings->value("Gen4Text",0).toUInt();
@@ -120,7 +121,7 @@ void MorseGenDevice::readSettings()
 
 	m_gen5Enabled = m_qSettings->value("Gen5Enabled",true).toBool();
 	m_gen5Freq = m_qSettings->value("Gen5Freq",2500).toDouble();
-	m_gen5Amp = m_qSettings->value("Gen5Amp",-50).toDouble();
+	m_gen5Amp = m_qSettings->value("Gen5Amp",-40).toDouble();
 	m_gen5Wpm = m_qSettings->value("Gen5Wpm",60).toUInt();
 	m_gen5Rise = m_qSettings->value("Gen5Rise",5).toUInt();
 	m_gen5Text = m_qSettings->value("Gen5Text",0).toUInt();
@@ -181,6 +182,8 @@ void MorseGenDevice::writeSettings()
 
 void MorseGenDevice::updateGenerators()
 {
+	if (!m_running)
+		return;
 	m_morseGen1->setParams(m_gen1Freq,m_gen1Amp,m_gen1Wpm,m_gen1Rise);
 	m_morseGen1->setTextOut(m_sampleText[m_gen1Text]);
 	m_morseGen2->setParams(m_gen2Freq,m_gen2Amp,m_gen2Wpm,m_gen2Rise);
@@ -197,41 +200,92 @@ void MorseGenDevice::updateGenerators()
 
 }
 
-void MorseGenDevice::updateFields()
+void MorseGenDevice::updateAllFields()
 {
-	//!!! Move to slots that handle changes in real time
+}
+void MorseGenDevice::updateGen1Fields()
+{
+	m_mutex.lock();
+	m_gen1Enabled = m_optionUi->enabledBox_1->isChecked();
 	m_gen1Freq = m_optionUi->freqencyEdit_1->text().toDouble();
 	m_gen1Amp = m_optionUi->dbBox_1->currentData().toDouble();
 	m_gen1Wpm = m_optionUi->wpmBox_1->currentData().toUInt();
 	m_gen1Rise = 5; //Add to UI?
 	m_gen1Text = m_optionUi->sourceBox_1->currentData().toUInt();
-
+	if (m_running) {
+		m_morseGen1->setParams(m_gen1Freq,m_gen1Amp,m_gen1Wpm,m_gen1Rise);
+		m_morseGen1->setTextOut(m_sampleText[m_gen1Text]);
+	}
+	m_mutex.unlock();
+}
+void MorseGenDevice::updateGen2Fields()
+{
+	m_mutex.lock();
+	m_gen2Enabled = m_optionUi->enabledBox_1->isChecked();
 	m_gen2Freq = m_optionUi->freqencyEdit_2->text().toDouble();
 	m_gen2Amp = m_optionUi->dbBox_2->currentData().toDouble();
 	m_gen2Wpm = m_optionUi->wpmBox_2->currentData().toUInt();
 	m_gen2Rise = 5; //Add to UI?
 	m_gen2Text = m_optionUi->sourceBox_2->currentData().toUInt();
-
+	if (m_running) {
+		m_morseGen2->setParams(m_gen2Freq,m_gen2Amp,m_gen2Wpm,m_gen2Rise);
+		m_morseGen2->setTextOut(m_sampleText[m_gen2Text]);
+	}
+	m_mutex.unlock();
+}
+void MorseGenDevice::updateGen3Fields()
+{
+	m_mutex.lock();
+	m_gen3Enabled = m_optionUi->enabledBox_1->isChecked();
 	m_gen3Freq = m_optionUi->freqencyEdit_3->text().toDouble();
 	m_gen3Amp = m_optionUi->dbBox_3->currentData().toDouble();
 	m_gen3Wpm = m_optionUi->wpmBox_3->currentData().toUInt();
 	m_gen3Rise = 5; //Add to UI?
 	m_gen3Text = m_optionUi->sourceBox_3->currentData().toUInt();
-
+	if (m_running) {
+		m_morseGen3->setParams(m_gen3Freq,m_gen3Amp,m_gen3Wpm,m_gen3Rise);
+		m_morseGen3->setTextOut(m_sampleText[m_gen3Text]);
+	}
+	m_mutex.unlock();
+}
+void MorseGenDevice::updateGen4Fields()
+{
+	m_mutex.lock();
+	m_gen4Enabled = m_optionUi->enabledBox_1->isChecked();
 	m_gen4Freq = m_optionUi->freqencyEdit_4->text().toDouble();
 	m_gen4Amp = m_optionUi->dbBox_4->currentData().toDouble();
 	m_gen4Wpm = m_optionUi->wpmBox_4->currentData().toUInt();
 	m_gen4Rise = 5; //Add to UI?
 	m_gen4Text = m_optionUi->sourceBox_4->currentData().toUInt();
-
+	if (m_running) {
+		m_morseGen4->setParams(m_gen4Freq,m_gen4Amp,m_gen4Wpm,m_gen4Rise);
+		m_morseGen4->setTextOut(m_sampleText[m_gen4Text]);
+	}
+	m_mutex.unlock();
+}
+void MorseGenDevice::updateGen5Fields()
+{
+	m_mutex.lock();
+	m_gen5Enabled = m_optionUi->enabledBox_1->isChecked();
 	m_gen5Freq = m_optionUi->freqencyEdit_5->text().toDouble();
 	m_gen5Amp = m_optionUi->dbBox_5->currentData().toDouble();
 	m_gen5Wpm = m_optionUi->wpmBox_5->currentData().toUInt();
 	m_gen5Rise = 5; //Add to UI?
 	m_gen5Text = m_optionUi->sourceBox_5->currentData().toUInt();
-
+	if (m_running) {
+		m_morseGen5->setParams(m_gen5Freq,m_gen5Amp,m_gen5Wpm,m_gen5Rise);
+		m_morseGen5->setTextOut(m_sampleText[m_gen5Text]);
+	}
+	m_mutex.unlock();
+}
+void MorseGenDevice::updateNoiseFields()
+{
+	m_mutex.lock();
 	m_dbNoiseAmp = m_optionUi->noiseBox->currentData().toDouble();
-
+	//Because noise is averaged, fudget +30db so it matches with generator values
+	//ie -30db gen and -30db noise should be 0snr
+	m_noiseAmp = DB::dBToAmplitude(m_dbNoiseAmp+20);
+	m_mutex.unlock();
 }
 
 bool MorseGenDevice::command(DeviceInterface::StandardCommands _cmd, QVariant _arg)
@@ -250,7 +304,7 @@ bool MorseGenDevice::command(DeviceInterface::StandardCommands _cmd, QVariant _a
 		case Cmd_Start:
 			DeviceInterfaceBase::startDevice();
 			//Device specific code follows
-
+			m_running = true;
 			updateGenerators();
 
 			//How often do we need to read samples from files to get framesPerBuffer at sampleRate
@@ -262,6 +316,7 @@ bool MorseGenDevice::command(DeviceInterface::StandardCommands _cmd, QVariant _a
 
 		case Cmd_Stop:
 			DeviceInterfaceBase::stopDevice();
+			m_running = false;
 			//Device specific code follows
 			m_producerConsumer.Stop();
 
@@ -399,16 +454,20 @@ void MorseGenDevice::setupOptionUi(QWidget *parent)
 	m_optionUi->setupUi(parent);
 	parent->setVisible(true);
 
+	quint32 index;
+
 	m_optionUi->noiseBox->addItem("-40db", -40);
 	m_optionUi->noiseBox->addItem("-45db", -45);
 	m_optionUi->noiseBox->addItem("-50db", -50);
 	m_optionUi->noiseBox->addItem("-55db", -55);
 	m_optionUi->noiseBox->addItem("-60db", -60);
-	m_optionUi->noiseBox->addItem("-60db", -65);
-	m_optionUi->noiseBox->addItem("-60db", -70);
-	m_optionUi->noiseBox->addItem("-60db", -75);
-	m_optionUi->noiseBox->addItem("-60db", -80);
-	m_optionUi->noiseBox->setCurrentText("-60db");
+	m_optionUi->noiseBox->addItem("-65db", -65);
+	m_optionUi->noiseBox->addItem("-70db", -70);
+	m_optionUi->noiseBox->addItem("-90db", -90);
+	m_optionUi->noiseBox->addItem("-120db", -120);
+	index = m_optionUi->noiseBox->findData(m_dbNoiseAmp);
+	m_optionUi->noiseBox->setCurrentIndex(index);
+	connect(m_optionUi->noiseBox,SIGNAL(currentIndexChanged(int)),this,SLOT(updateNoiseFields()));
 
 	m_optionUi->sourceBox_1->addItem("Sample1",0);
 	m_optionUi->sourceBox_1->addItem("Sample2",1);
@@ -434,6 +493,25 @@ void MorseGenDevice::setupOptionUi(QWidget *parent)
 	m_optionUi->dbBox_1->addItem("-50db", -50);
 	m_optionUi->dbBox_1->addItem("-55db", -55);
 	m_optionUi->dbBox_1->addItem("-60db", -60);
+
+	m_optionUi->enabledBox_1->setChecked(m_gen1Enabled);
+	index = m_optionUi->sourceBox_1->findData(m_gen1Text);
+	m_optionUi->sourceBox_1->setCurrentIndex(index);
+	m_optionUi->freqencyEdit_1->setText(QString::number(m_gen1Freq,'f',0));
+	index = m_optionUi->wpmBox_1->findData(m_gen1Wpm);
+	m_optionUi->wpmBox_1->setCurrentIndex(index);
+	index = m_optionUi->dbBox_1->findData(m_gen1Amp);
+	m_optionUi->dbBox_1->setCurrentIndex(index);
+	m_optionUi->fadeBox_1->setChecked(m_gen1Fade);
+	m_optionUi->fistBox_1->setChecked(m_gen1Fist);
+
+	connect(m_optionUi->enabledBox_1,SIGNAL(clicked(bool)),this,SLOT(updateGen1Fields()));
+	connect(m_optionUi->sourceBox_1,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen1Fields()));
+	connect(m_optionUi->freqencyEdit_1,SIGNAL(textChanged(QString)),this,SLOT(updateGen1Fields()));
+	connect(m_optionUi->wpmBox_1,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen1Fields()));
+	connect(m_optionUi->dbBox_1,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen1Fields()));
+	connect(m_optionUi->fadeBox_1,SIGNAL(clicked(bool)),this,SLOT(updateGen1Fields()));
+	connect(m_optionUi->fistBox_1,SIGNAL(clicked(bool)),this,SLOT(updateGen1Fields()));
 
 	//2
 	m_optionUi->sourceBox_2->addItem("Sample1",0);
@@ -461,6 +539,25 @@ void MorseGenDevice::setupOptionUi(QWidget *parent)
 	m_optionUi->dbBox_2->addItem("-55db", -55);
 	m_optionUi->dbBox_2->addItem("-60db", -60);
 
+	m_optionUi->enabledBox_2->setChecked(m_gen2Enabled);
+	index = m_optionUi->sourceBox_2->findData(m_gen2Text);
+	m_optionUi->sourceBox_2->setCurrentIndex(index);
+	m_optionUi->freqencyEdit_2->setText(QString::number(m_gen2Freq,'f',0));
+	index = m_optionUi->wpmBox_2->findData(m_gen2Wpm);
+	m_optionUi->wpmBox_2->setCurrentIndex(index);
+	index = m_optionUi->dbBox_2->findData(m_gen2Amp);
+	m_optionUi->dbBox_2->setCurrentIndex(index);
+	m_optionUi->fadeBox_2->setChecked(m_gen2Fade);
+	m_optionUi->fistBox_2->setChecked(m_gen2Fist);
+
+	connect(m_optionUi->enabledBox_2,SIGNAL(clicked(bool)),this,SLOT(updateGen2Fields()));
+	connect(m_optionUi->sourceBox_2,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen2Fields()));
+	connect(m_optionUi->freqencyEdit_2,SIGNAL(textChanged(QString)),this,SLOT(updateGen2Fields()));
+	connect(m_optionUi->wpmBox_2,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen2Fields()));
+	connect(m_optionUi->dbBox_2,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen2Fields()));
+	connect(m_optionUi->fadeBox_2,SIGNAL(clicked(bool)),this,SLOT(updateGen2Fields()));
+	connect(m_optionUi->fistBox_2,SIGNAL(clicked(bool)),this,SLOT(updateGen2Fields()));
+
 	//3
 	m_optionUi->sourceBox_3->addItem("Sample1",0);
 	m_optionUi->sourceBox_3->addItem("Sample2",1);
@@ -486,6 +583,25 @@ void MorseGenDevice::setupOptionUi(QWidget *parent)
 	m_optionUi->dbBox_3->addItem("-50db", -50);
 	m_optionUi->dbBox_3->addItem("-55db", -55);
 	m_optionUi->dbBox_3->addItem("-60db", -60);
+
+	m_optionUi->enabledBox_3->setChecked(m_gen3Enabled);
+	index = m_optionUi->sourceBox_3->findData(m_gen3Text);
+	m_optionUi->sourceBox_3->setCurrentIndex(index);
+	m_optionUi->freqencyEdit_3->setText(QString::number(m_gen3Freq,'f',0));
+	index = m_optionUi->wpmBox_3->findData(m_gen3Wpm);
+	m_optionUi->wpmBox_3->setCurrentIndex(index);
+	index = m_optionUi->dbBox_3->findData(m_gen3Amp);
+	m_optionUi->dbBox_3->setCurrentIndex(index);
+	m_optionUi->fadeBox_3->setChecked(m_gen3Fade);
+	m_optionUi->fistBox_3->setChecked(m_gen3Fist);
+
+	connect(m_optionUi->enabledBox_3,SIGNAL(clicked(bool)),this,SLOT(updateGen3Fields()));
+	connect(m_optionUi->sourceBox_3,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen3Fields()));
+	connect(m_optionUi->freqencyEdit_3,SIGNAL(textChanged(QString)),this,SLOT(updateGen3Fields()));
+	connect(m_optionUi->wpmBox_3,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen3Fields()));
+	connect(m_optionUi->dbBox_3,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen3Fields()));
+	connect(m_optionUi->fadeBox_3,SIGNAL(clicked(bool)),this,SLOT(updateGen3Fields()));
+	connect(m_optionUi->fistBox_3,SIGNAL(clicked(bool)),this,SLOT(updateGen3Fields()));
 
 	//4
 	m_optionUi->sourceBox_4->addItem("Sample1",0);
@@ -513,6 +629,25 @@ void MorseGenDevice::setupOptionUi(QWidget *parent)
 	m_optionUi->dbBox_4->addItem("-55db", -55);
 	m_optionUi->dbBox_4->addItem("-60db", -60);
 
+	m_optionUi->enabledBox_4->setChecked(m_gen4Enabled);
+	index = m_optionUi->sourceBox_4->findData(m_gen4Text);
+	m_optionUi->sourceBox_4->setCurrentIndex(index);
+	m_optionUi->freqencyEdit_4->setText(QString::number(m_gen4Freq,'f',0));
+	index = m_optionUi->wpmBox_4->findData(m_gen4Wpm);
+	m_optionUi->wpmBox_4->setCurrentIndex(index);
+	index = m_optionUi->dbBox_4->findData(m_gen4Amp);
+	m_optionUi->dbBox_4->setCurrentIndex(index);
+	m_optionUi->fadeBox_4->setChecked(m_gen4Fade);
+	m_optionUi->fistBox_4->setChecked(m_gen4Fist);
+
+	connect(m_optionUi->enabledBox_4,SIGNAL(clicked(bool)),this,SLOT(updateGen4Fields()));
+	connect(m_optionUi->sourceBox_4,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen4Fields()));
+	connect(m_optionUi->freqencyEdit_4,SIGNAL(textChanged(QString)),this,SLOT(updateGen4Fields()));
+	connect(m_optionUi->wpmBox_4,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen4Fields()));
+	connect(m_optionUi->dbBox_4,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen4Fields()));
+	connect(m_optionUi->fadeBox_4,SIGNAL(clicked(bool)),this,SLOT(updateGen4Fields()));
+	connect(m_optionUi->fistBox_4,SIGNAL(clicked(bool)),this,SLOT(updateGen4Fields()));
+
 	//5
 	m_optionUi->sourceBox_5->addItem("Sample1",0);
 	m_optionUi->sourceBox_5->addItem("Sample2",1);
@@ -539,9 +674,27 @@ void MorseGenDevice::setupOptionUi(QWidget *parent)
 	m_optionUi->dbBox_5->addItem("-55db", -55);
 	m_optionUi->dbBox_5->addItem("-60db", -60);
 
+	m_optionUi->enabledBox_5->setChecked(m_gen5Enabled);
+	index = m_optionUi->sourceBox_5->findData(m_gen5Text);
+	m_optionUi->sourceBox_5->setCurrentIndex(index);
+	m_optionUi->freqencyEdit_5->setText(QString::number(m_gen5Freq,'f',0));
+	index = m_optionUi->wpmBox_5->findData(m_gen5Wpm);
+	m_optionUi->wpmBox_5->setCurrentIndex(index);
+	index = m_optionUi->dbBox_5->findData(m_gen5Amp);
+	m_optionUi->dbBox_5->setCurrentIndex(index);
+	m_optionUi->fadeBox_5->setChecked(m_gen5Fade);
+	m_optionUi->fistBox_5->setChecked(m_gen5Fist);
+
+	connect(m_optionUi->enabledBox_5,SIGNAL(clicked(bool)),this,SLOT(updateGen5Fields()));
+	connect(m_optionUi->sourceBox_5,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen5Fields()));
+	connect(m_optionUi->freqencyEdit_5,SIGNAL(textChanged(QString)),this,SLOT(updateGen5Fields()));
+	connect(m_optionUi->wpmBox_5,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen5Fields()));
+	connect(m_optionUi->dbBox_5,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen5Fields()));
+	connect(m_optionUi->fadeBox_5,SIGNAL(clicked(bool)),this,SLOT(updateGen5Fields()));
+	connect(m_optionUi->fistBox_5,SIGNAL(clicked(bool)),this,SLOT(updateGen5Fields()));
+
 	connect(m_optionUi->resetButton,SIGNAL(clicked(bool)),this,SLOT(resetButtonClicked(bool)));
 
-	resetButtonClicked(true);
 }
 
 void MorseGenDevice::resetButtonClicked(bool clicked)
@@ -584,6 +737,7 @@ void MorseGenDevice::generate(CPX *out)
 {
 	CPX cpx1, cpx2, cpx3, cpx4, cpx5, cpx6;
 
+	m_mutex.lock();
 	for (quint32 i=0; i<m_framesPerBuffer; i++) {
 		if (m_gen1Enabled) {
 			cpx1 = m_morseGen1->nextOutputSample();
@@ -633,6 +787,7 @@ void MorseGenDevice::generate(CPX *out)
 		cpx6 = nextNoiseSample(m_noiseAmp);
 		out[i] = cpx1 + cpx2 + cpx3 + cpx4 + cpx5 + cpx6;
 	}
+	m_mutex.unlock();
 }
 
 //Derived from nco.cpp
