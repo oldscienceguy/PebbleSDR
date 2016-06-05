@@ -358,6 +358,13 @@ QVariant MorseGenDevice::get(DeviceInterface::StandardKeys _key, QVariant _optio
 			return "MorseGenDevice";
 		case Key_DeviceType:
 			return DeviceInterfaceBase::DT_IQ_DEVICE;
+
+		case Key_HighFrequency:
+			return m_sampleRate;
+		case Key_LowFrequency:
+			return 0;
+		case Key_StartupFrequency:
+			return m_sampleRate/2;
 		default:
 			return DeviceInterfaceBase::get(_key, _option);
 	}
@@ -369,7 +376,8 @@ bool MorseGenDevice::set(DeviceInterface::StandardKeys _key, QVariant _value, QV
 
 	switch (_key) {
 		case Key_DeviceFrequency:
-			return true; //Must be handled by device
+			//Fixed, so return false so it won't change in UI.  Only mixer should work
+			return false;
 
 		default:
 			return DeviceInterfaceBase::set(_key, _value, _option);

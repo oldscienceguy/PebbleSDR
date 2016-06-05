@@ -188,13 +188,10 @@ bool FileSDRDevice::set(StandardKeys _key, QVariant _value, QVariant _option)
 	Q_UNUSED(_option);
 
 	switch (_key) {
-		case Key_DeviceFrequency: {
-			quint32 loFreq = m_wavFileRead.GetLoFreq();
-			if (loFreq == 0)
-				return get(DeviceInterface::Key_StartupFrequency).toDouble();
-			else
-				return loFreq;
-		}
+		case Key_DeviceFrequency:
+			//Fixed, so return false so it won't change in UI.  Only mixer should work
+			return false;
+
 		default:
 			return DeviceInterfaceBase::set(_key, _value, _option);
 
