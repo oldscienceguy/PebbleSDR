@@ -37,14 +37,6 @@ bool MorseGenDevice::initialize(CB_ProcessIQData _callback,
 	m_morseGen4 = new MorseGen(m_deviceSampleRate);
 	m_morseGen5 = new MorseGen(m_deviceSampleRate);
 
-
-	//Trailing '=' is morse <BT> for new paragraph
-	m_sampleText[0] = "=The quick brown fox jumped over the lazy dog 1,2,3,4,5,6,7,8,9,0 times=";
-	m_sampleText[1] = "=Now is the time for all good men to come to the aid of their country=";
-	m_sampleText[2] = "=Now is the time for all good men to come to the aid of their country=";
-	m_sampleText[3] = "=Now is the time for all good men to come to the aid of their country=";
-	//m_sampleText[4] = "=Now is the time for all good men to come to the aid of their country=";
-
 	//Build text for all characters
 	MorseSymbol *symbol;
 	m_sampleText[4] = "=";
@@ -127,6 +119,16 @@ void MorseGenDevice::readSettings()
 	m_gen5Text = m_settings->value("Gen5Text",0).toUInt();
 	m_gen5Fade = m_settings->value("Gen5Fade",false).toBool();
 	m_gen5Fist = m_settings->value("Gen5Fist",false).toBool();
+
+	//Text output, read only settings
+	//Trailing '=' is morse <BT> for new paragraph
+	QString str1 = "=The quick brown fox jumped over the lazy dog 1,2,3,4,5,6,7,8,9,0 times=";
+	QString str2 = "=Now is the time for all good men to come to the aid of their country=";
+	m_sampleText[0] = m_settings->value("Text1",str1).toString();
+	m_sampleText[1] = m_settings->value("Text2",str2).toString();
+	m_sampleText[2] = m_settings->value("Text3",str2).toString();
+	m_sampleText[3] = m_settings->value("Text4",str2).toString();
+
 }
 
 void MorseGenDevice::writeSettings()
@@ -178,6 +180,11 @@ void MorseGenDevice::writeSettings()
 	m_settings->setValue("Gen5Text",m_gen5Text);
 	m_settings->setValue("Gen5Fade",m_gen5Fade);
 	m_settings->setValue("Gen5Fist",m_gen5Fist);
+
+	m_settings->setValue("Text1",m_sampleText[0]);
+	m_settings->setValue("Text2",m_sampleText[1]);
+	m_settings->setValue("Text3",m_sampleText[2]);
+	m_settings->setValue("Text4",m_sampleText[3]);
 }
 
 void MorseGenDevice::updateGenerators()
@@ -221,7 +228,7 @@ void MorseGenDevice::updateGen1Fields()
 void MorseGenDevice::updateGen2Fields()
 {
 	m_mutex.lock();
-	m_gen2Enabled = m_optionUi->enabledBox_1->isChecked();
+	m_gen2Enabled = m_optionUi->enabledBox_2->isChecked();
 	m_gen2Freq = m_optionUi->freqencyEdit_2->text().toDouble();
 	m_gen2Amp = m_optionUi->dbBox_2->currentData().toDouble();
 	m_gen2Wpm = m_optionUi->wpmBox_2->currentData().toUInt();
@@ -236,7 +243,7 @@ void MorseGenDevice::updateGen2Fields()
 void MorseGenDevice::updateGen3Fields()
 {
 	m_mutex.lock();
-	m_gen3Enabled = m_optionUi->enabledBox_1->isChecked();
+	m_gen3Enabled = m_optionUi->enabledBox_3->isChecked();
 	m_gen3Freq = m_optionUi->freqencyEdit_3->text().toDouble();
 	m_gen3Amp = m_optionUi->dbBox_3->currentData().toDouble();
 	m_gen3Wpm = m_optionUi->wpmBox_3->currentData().toUInt();
@@ -251,7 +258,7 @@ void MorseGenDevice::updateGen3Fields()
 void MorseGenDevice::updateGen4Fields()
 {
 	m_mutex.lock();
-	m_gen4Enabled = m_optionUi->enabledBox_1->isChecked();
+	m_gen4Enabled = m_optionUi->enabledBox_4->isChecked();
 	m_gen4Freq = m_optionUi->freqencyEdit_4->text().toDouble();
 	m_gen4Amp = m_optionUi->dbBox_4->currentData().toDouble();
 	m_gen4Wpm = m_optionUi->wpmBox_4->currentData().toUInt();
@@ -266,7 +273,7 @@ void MorseGenDevice::updateGen4Fields()
 void MorseGenDevice::updateGen5Fields()
 {
 	m_mutex.lock();
-	m_gen5Enabled = m_optionUi->enabledBox_1->isChecked();
+	m_gen5Enabled = m_optionUi->enabledBox_5->isChecked();
 	m_gen5Freq = m_optionUi->freqencyEdit_5->text().toDouble();
 	m_gen5Amp = m_optionUi->dbBox_5->currentData().toDouble();
 	m_gen5Wpm = m_optionUi->wpmBox_5->currentData().toUInt();
