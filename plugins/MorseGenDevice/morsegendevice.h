@@ -42,6 +42,15 @@ private slots:
 	void updateNoiseFields();
 
 private:
+	enum SampleTextChoices {
+		ST_SAMPLE1, //Sample1 text from ini file
+		ST_SAMPLE2, //Sample2 text from ini file
+		ST_SAMPLE3, //Sample3 text from ini file
+		ST_SAMPLE4, //Sample4 text from ini file
+		ST_WORDS,	//Random words from table
+		ST_ABBREV,	//Random morse abbeviations
+		ST_TABLE,	//All characters in morse table
+		ST_END};
 	void readSettings();
 	void writeSettings();
 	void producerWorker(cbProducerConsumerEvents _event);
@@ -75,7 +84,7 @@ private:
 	MorseGen *m_morseGen4;
 	MorseGen *m_morseGen5;
 
-	QString m_sampleText[5];
+	QString m_sampleText[ST_END];
 	CPX nextNoiseSample(double _dbGain);
 	qint32 m_dbNoiseAmp;
 	double m_noiseAmp;

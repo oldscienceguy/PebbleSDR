@@ -39,15 +39,15 @@ bool MorseGenDevice::initialize(CB_ProcessIQData _callback,
 
 	//Build text for all characters
 	MorseSymbol *symbol;
-	m_sampleText[4] = "=";
+	m_sampleText[ST_TABLE] = "=";
 	for (quint32 i=0; i<MorseCode::c_morseTableSize; i++) {
 		symbol = &MorseCode::m_morseTable[i];
 		if (symbol->ascii == 0x00) {
 			break; //End of table
 		}
-		m_sampleText[4].append(symbol->ascii);
+		m_sampleText[ST_TABLE].append(symbol->ascii);
 	}
-	m_sampleText[4].append("=");
+	m_sampleText[ST_TABLE].append("=");
 
 	m_numProducerBuffers = 50;
 	m_producerFreeBufPtr = NULL;
@@ -124,10 +124,10 @@ void MorseGenDevice::readSettings()
 	//Trailing '=' is morse <BT> for new paragraph
 	QString str1 = "=The quick brown fox jumped over the lazy dog 1,2,3,4,5,6,7,8,9,0 times=";
 	QString str2 = "=Now is the time for all good men to come to the aid of their country=";
-	m_sampleText[0] = m_settings->value("Text1",str1).toString();
-	m_sampleText[1] = m_settings->value("Text2",str2).toString();
-	m_sampleText[2] = m_settings->value("Text3",str2).toString();
-	m_sampleText[3] = m_settings->value("Text4",str2).toString();
+	m_sampleText[ST_SAMPLE1] = m_settings->value("Sample1",str1).toString();
+	m_sampleText[ST_SAMPLE2] = m_settings->value("Sample2",str2).toString();
+	m_sampleText[ST_SAMPLE3] = m_settings->value("Sample3",str2).toString();
+	m_sampleText[ST_SAMPLE4] = m_settings->value("Sample4",str2).toString();
 
 }
 
@@ -181,10 +181,10 @@ void MorseGenDevice::writeSettings()
 	m_settings->setValue("Gen5Fade",m_gen5Fade);
 	m_settings->setValue("Gen5Fist",m_gen5Fist);
 
-	m_settings->setValue("Text1",m_sampleText[0]);
-	m_settings->setValue("Text2",m_sampleText[1]);
-	m_settings->setValue("Text3",m_sampleText[2]);
-	m_settings->setValue("Text4",m_sampleText[3]);
+	m_settings->setValue("Sample1",m_sampleText[ST_SAMPLE1]);
+	m_settings->setValue("Sample2",m_sampleText[ST_SAMPLE2]);
+	m_settings->setValue("Sample3",m_sampleText[ST_SAMPLE3]);
+	m_settings->setValue("Sample4",m_sampleText[ST_SAMPLE4]);
 }
 
 void MorseGenDevice::updateGenerators()
@@ -297,6 +297,8 @@ void MorseGenDevice::updateNoiseFields()
 
 bool MorseGenDevice::command(DeviceInterface::StandardCommands _cmd, QVariant _arg)
 {
+	quint32 randomIndex;
+
 	switch (_cmd) {
 		case Cmd_Connect:
 			DeviceInterfaceBase::connectDevice();
@@ -311,6 +313,24 @@ bool MorseGenDevice::command(DeviceInterface::StandardCommands _cmd, QVariant _a
 		case Cmd_Start:
 			DeviceInterfaceBase::startDevice();
 			//Device specific code follows
+			//Update random word option on each start
+			m_sampleText[ST_WORDS] = "="; //CR
+			for (quint32 i=0; i<MorseCode::c_commonWordsSize; i++) {
+				randomIndex = rand() % MorseCode::c_commonWordsSize;
+				m_sampleText[ST_WORDS].append(MorseCode::c_commonWords[randomIndex]);
+				m_sampleText[ST_WORDS].append(" ");
+			}
+			m_sampleText[ST_WORDS].append("=");
+
+			//Update random abbreviations option on each start
+			m_sampleText[ST_ABBREV] = "="; //CR
+			for (quint32 i=0; i<MorseCode::c_abbreviationsSize; i++) {
+				randomIndex = rand() % MorseCode::c_abbreviationsSize;
+				m_sampleText[ST_ABBREV].append(MorseCode::c_abbreviations[randomIndex]);
+				m_sampleText[ST_ABBREV].append(" ");
+			}
+			m_sampleText[ST_ABBREV].append("=");
+
 			m_running = true;
 			updateGenerators();
 
@@ -484,11 +504,13 @@ void MorseGenDevice::setupOptionUi(QWidget *parent)
 	m_optionUi->noiseBox->setCurrentIndex(index);
 	connect(m_optionUi->noiseBox,SIGNAL(currentIndexChanged(int)),this,SLOT(updateNoiseFields()));
 
-	m_optionUi->sourceBox_1->addItem("Sample1",0);
-	m_optionUi->sourceBox_1->addItem("Sample2",1);
-	m_optionUi->sourceBox_1->addItem("Sample3",2);
-	m_optionUi->sourceBox_1->addItem("Sample4",3);
-	m_optionUi->sourceBox_1->addItem("Table",4);
+	m_optionUi->sourceBox_1->addItem("Sample1",ST_SAMPLE1);
+	m_optionUi->sourceBox_1->addItem("Sample2",ST_SAMPLE2);
+	m_optionUi->sourceBox_1->addItem("Sample3",ST_SAMPLE3);
+	m_optionUi->sourceBox_1->addItem("Sample4",ST_SAMPLE4);
+	m_optionUi->sourceBox_1->addItem("Words",ST_WORDS);
+	m_optionUi->sourceBox_1->addItem("Abbrev",ST_ABBREV);
+	m_optionUi->sourceBox_1->addItem("Table",ST_TABLE);
 
 	m_optionUi->wpmBox_1->addItem("5 wpm", 5);
 	m_optionUi->wpmBox_1->addItem("10 wpm", 10);
@@ -529,11 +551,13 @@ void MorseGenDevice::setupOptionUi(QWidget *parent)
 	connect(m_optionUi->fistBox_1,SIGNAL(clicked(bool)),this,SLOT(updateGen1Fields()));
 
 	//2
-	m_optionUi->sourceBox_2->addItem("Sample1",0);
-	m_optionUi->sourceBox_2->addItem("Sample2",1);
-	m_optionUi->sourceBox_2->addItem("Sample3",2);
-	m_optionUi->sourceBox_2->addItem("Sample4",3);
-	m_optionUi->sourceBox_2->addItem("Table",4);
+	m_optionUi->sourceBox_2->addItem("Sample1",ST_SAMPLE1);
+	m_optionUi->sourceBox_2->addItem("Sample2",ST_SAMPLE2);
+	m_optionUi->sourceBox_2->addItem("Sample3",ST_SAMPLE3);
+	m_optionUi->sourceBox_2->addItem("Sample4",ST_SAMPLE4);
+	m_optionUi->sourceBox_2->addItem("Words",ST_WORDS);
+	m_optionUi->sourceBox_2->addItem("Abbrev",ST_ABBREV);
+	m_optionUi->sourceBox_2->addItem("Table",ST_TABLE);
 
 	m_optionUi->wpmBox_2->addItem("5 wpm", 5);
 	m_optionUi->wpmBox_2->addItem("10 wpm", 10);
@@ -574,11 +598,13 @@ void MorseGenDevice::setupOptionUi(QWidget *parent)
 	connect(m_optionUi->fistBox_2,SIGNAL(clicked(bool)),this,SLOT(updateGen2Fields()));
 
 	//3
-	m_optionUi->sourceBox_3->addItem("Sample1",0);
-	m_optionUi->sourceBox_3->addItem("Sample2",1);
-	m_optionUi->sourceBox_3->addItem("Sample3",2);
-	m_optionUi->sourceBox_3->addItem("Sample4",3);
-	m_optionUi->sourceBox_3->addItem("Table",4);
+	m_optionUi->sourceBox_3->addItem("Sample1",ST_SAMPLE1);
+	m_optionUi->sourceBox_3->addItem("Sample2",ST_SAMPLE2);
+	m_optionUi->sourceBox_3->addItem("Sample3",ST_SAMPLE3);
+	m_optionUi->sourceBox_3->addItem("Sample4",ST_SAMPLE4);
+	m_optionUi->sourceBox_3->addItem("Words",ST_WORDS);
+	m_optionUi->sourceBox_3->addItem("Abbrev",ST_ABBREV);
+	m_optionUi->sourceBox_3->addItem("Table",ST_TABLE);
 
 	m_optionUi->wpmBox_3->addItem("5 wpm", 5);
 	m_optionUi->wpmBox_3->addItem("10 wpm", 10);
@@ -619,11 +645,13 @@ void MorseGenDevice::setupOptionUi(QWidget *parent)
 	connect(m_optionUi->fistBox_3,SIGNAL(clicked(bool)),this,SLOT(updateGen3Fields()));
 
 	//4
-	m_optionUi->sourceBox_4->addItem("Sample1",0);
-	m_optionUi->sourceBox_4->addItem("Sample2",1);
-	m_optionUi->sourceBox_4->addItem("Sample3",2);
-	m_optionUi->sourceBox_4->addItem("Sample4",3);
-	m_optionUi->sourceBox_4->addItem("Table",4);
+	m_optionUi->sourceBox_4->addItem("Sample1",ST_SAMPLE1);
+	m_optionUi->sourceBox_4->addItem("Sample2",ST_SAMPLE2);
+	m_optionUi->sourceBox_4->addItem("Sample3",ST_SAMPLE3);
+	m_optionUi->sourceBox_4->addItem("Sample4",ST_SAMPLE4);
+	m_optionUi->sourceBox_4->addItem("Words",ST_WORDS);
+	m_optionUi->sourceBox_4->addItem("Abbrev",ST_ABBREV);
+	m_optionUi->sourceBox_4->addItem("Table",ST_TABLE);
 
 	m_optionUi->wpmBox_4->addItem("5 wpm", 5);
 	m_optionUi->wpmBox_4->addItem("10 wpm", 10);
@@ -664,11 +692,13 @@ void MorseGenDevice::setupOptionUi(QWidget *parent)
 	connect(m_optionUi->fistBox_4,SIGNAL(clicked(bool)),this,SLOT(updateGen4Fields()));
 
 	//5
-	m_optionUi->sourceBox_5->addItem("Sample1",0);
-	m_optionUi->sourceBox_5->addItem("Sample2",1);
-	m_optionUi->sourceBox_5->addItem("Sample3",2);
-	m_optionUi->sourceBox_5->addItem("Sample4",3);
-	m_optionUi->sourceBox_5->addItem("Table",4);
+	m_optionUi->sourceBox_5->addItem("Sample1",ST_SAMPLE1);
+	m_optionUi->sourceBox_5->addItem("Sample2",ST_SAMPLE2);
+	m_optionUi->sourceBox_5->addItem("Sample3",ST_SAMPLE3);
+	m_optionUi->sourceBox_5->addItem("Sample4",ST_SAMPLE4);
+	m_optionUi->sourceBox_5->addItem("Words",ST_WORDS);
+	m_optionUi->sourceBox_5->addItem("Abbrev",ST_ABBREV);
+	m_optionUi->sourceBox_5->addItem("Table",ST_TABLE);
 
 	m_optionUi->wpmBox_5->addItem("5 wpm", 5);
 	m_optionUi->wpmBox_5->addItem("10 wpm", 10);
