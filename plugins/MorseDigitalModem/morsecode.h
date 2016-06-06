@@ -28,6 +28,16 @@ public:
 	//Used to iterate through the entire table for testing and possible future use
 	MorseSymbol *tableLookup(quint32 index);
 
+	static const quint32 c_morseTableSize = 256;
+	//Main table used to generate fast lookup tables for receive and transmit
+	static MorseSymbol m_morseTable[c_morseTableSize];
+
+	//Common morse words
+	static const QString c_commonWords[];
+	static const quint32 c_commonWordsSize; //Calculated based on initializers
+	static const QString c_abbreviations[];
+	static const quint32 c_abbreviationsSize; //Calculaed based on initializers
+
 	QString txPrint(quint8 c);
 
 	//Returns Tcw in ms for wpm
@@ -62,17 +72,13 @@ public:
 	static const quint8 c_dotChar = '.';
 	static const quint8 c_dashChar = '-';
 
-	static const quint32 c_morseTableSize = 256; //Max characters we can put in main table
-	//Main table used to generate fast lookup tables for receive and transmit
-	static MorseSymbol m_morseTable[c_morseTableSize];
-
 private:
 	static const quint32 c_tokenTableSize = 512; //9 bit tokens
 	//Array of pointers to cw_table dot/dash tokenized order
-	MorseSymbol *m_tokenOrderTable[c_tokenTableSize];
+	static MorseSymbol *m_tokenOrderTable[c_tokenTableSize];
 
 	//In ascii character order
-	MorseSymbol *m_asciiOrderTable[c_morseTableSize];
+	static MorseSymbol *m_asciiOrderTable[c_morseTableSize];
 
 	quint16 tokenizeDotDash(const char *dotDash);
 	//const bool c_marsMode = false; //Use open paren character; typically used in MARS ops

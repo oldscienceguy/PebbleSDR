@@ -136,278 +136,18 @@ MorseSymbol MorseCode::m_morseTable[] = {
 };
 
 /*
-  Abbreviations, assume letter space between char or not?
-AA	All after (used after question mark to request a repetition)
-AB	All before (similarly)
-ARRL	American Radio Relay League
-ABT	About
-ADR	Address
-AGN	Again
-ANT	Antenna
-ARND	Around
-BCI	Broadcast interference
-BK	Break (to pause transmission of a message, say)
-BN	All between
-BTR	Better
-BUG	Semiautomatic mechanical key
-BURO	Bureau (usually used in the phrase PLS QSL VIA BURO, "Please send QSL card via my local/national QSL bureau")
-B4	Before
-C	Yes; correct
-CBA	Callbook address
-CFM	Confirm
-CK	Check
-CL	Clear (I am closing my station)
-CLG	Calling
-CQ	Calling any station
-CQD	Original International Distress Call, fell out of use before 1915
-CS	Callsign
-CTL	Control
-CUD	Could
-CUL	See you later
-CUZ	Because
-CW	Continuous wave (i.e., radiotelegraph)
-CX	Conditions
-DE	From (or "this is")
-DN	Down
-DR	Dear
-DSW	Goodbye (Russian: до свидания [Do svidanya])
-DX	Distance (sometimes refers to long distance contact), foreign countries
-EMRG	Emergency
-ENUF	Enough
-ES	And
-FB	Fine business (Analogous to "OK")
-FCC	Federal Communications Commission
-FER	For
-FM	From
-FREQ	Frequency
-FWD	Forward
-GA	Good afternoon or Go ahead (depending on context)
-GE	Good evening
-GG	Going
-GL	Good luck
-GM	Good morning
-GN	Good night
-GND	Ground (ground potential)
-GUD	Good
-GX	Ground
-HEE	Humour intended (often repeated, e.g. HEE HEE)
-HI	Humour intended (possibly derived from HEE)
-HR	Here, hear
-HV	Have
-HW	How
-II	I say again
-IMP	Impedance
-K	Over
-KN	Over; only the station named should respond (e.g. W7PTH DE W1AW KN)
-LID	Poor operator
-MILS	Milliamperes
-MNI	Many
-MSG	Message
-N	No; nine
-NIL	Nothing
-NM	Name
-NR	Number
-NW	Now
-NX	Noise; noisy
-OB	Old boy
-OC	Old chap
-OM	Old man (any male amateur radio operator is an OM regardless of age)
-OO	Official observer
-OP	Operator
-OT	Old timer
-OTC	Old timers club (ARRL-sponsored organization for radio amateurs first licensed 20 or more years ago)
-OOTC	Old old timers club (organization for those whose first two-way radio contact occurred 40 or more years ago; separate from OTC and ARRL)
-PLS	Please
-PSE	Please
-PWR	Power
-PX	Prefix
-QCWA	Quarter Century Wireless Association (organization for radio amateurs who have been licensed 25 or more years)
-R	Are; received as transmitted (origin of "Roger"), or decimal point (depending on context)
-RCVR	Receiver (radio)
-RFI	Radio Frequency Interference
-RIG	Radio apparatus
-RPT	Repeat or report (depending on context)
-RPRT	Report
-RST	Signal report format (Readability-Signal Strength-Tone)
-RTTY	Radioteletype
-RX	Receiver, radio
-SAE	Self-addressed envelope
-SASE	Self-addressed, stamped envelope
-SED	Said
-SEZ	Says
-SFR	So far (proword)
-SIG	Signal or signature
-SIGS	Signals
-SK	Out (proword), end of contact
-SK	Silent Key (a deceased radio amateur)
-SKED	Schedule
-SMS	Short message service
-SN	Soon
-SNR	Signal-to-noise ratio
-SRI	Sorry
-SSB	Single sideband
-STN	Station
-T	Zero (usually an elongated dah)
-TEMP	Temperature
-TFC	Traffic
-TKS	Thanks
-TMW	Tomorrow
-TNX	Thanks
-TT	That
-TU	Thank you
-TVI	Television interference
-TX	Transmit, transmitter
-TXT	Text
-U	You
-UR	Your or You're (depending on context)
-URS	Yours
-VX	Voice; phone
-VY	Very
-W	Watts
-WA	Word after
-WB	Word before
-WC	Wilco
-WDS	Words
-WID	With
-WKD	Worked
-WKG	Working
-WL	Will
-WUD	Would
-WTC	Whats the craic? (Irish Language: [Conas atá tú?])
-WX	Weather
-XCVR	Transceiver
-XMTR	Transmitter
-XYL	Wife (ex-YL)
-YF	Wife
-YL	Young lady (originally an unmarried female operator, now used for any female)
-ZX	Zero beat
-73	Best regards
-88	Love and kisses
-[edit]
+	Return a token value, in the range 2-512, for a lookup table representation.
+	The routine returns 0 if no valid token could be made from the string.
 
+	This token algorithm is designed ONLY for valid CW representations; that is,
+	strings composed of only '.' and '-', and in this case, strings shorter than
+	8 characters.  The algorithm simply turns the representation into a
+	'bitmask', based on occurrences of '.' and '-'.  The first bit set in the
+	mask indicates the start of data.
+	The bitmask is limited to 9 bits, 1 'start bit' and 8 data bits.
+	So the largest bitmask is 1 1111 1111, 0x1ff, or 511.  This is used to lookup tokens in token order.
+	The 8 data bits give us a range of 0-255 which is used to look up tokens in character order
 */
-
-/*
-   100 Top morse words from http://lcwo.net/forum/563
-   Possible use in training or error correction
-
-73
-/AR
-/AS
-/BK
-/KN
-/SK
-A
-ABOUT
-AGN
-ALL
-AND
-ANT
-ARE
-AS
-AT
-BUT
-BY
-CAN
-CQ
-DO
-DON'T
-DX
-ES
-FB
-FOR
-FROM
-GA
-GE
-HAD
-HAVE
-HE
-HI
-HIS
-HR
-HW
-I
-IF
-IN
-IS
-IT
-IT'S
-JUST
-KNOW
-LIKE
-MEAN
-MY
-NAME
-NOT
-NR
-OF
-OH
-OM
-ON
-ONE
-OR
-OTHER
-OUT
-PSE
-PWR
-QRL
-QRM
-QRN
-QRQ
-QRS
-QRZ
-QSB
-QSY
-QTH
-R
-REALLY
-RIGHT
-RST
-RTU
-SO
-SOME
-THAT'S
-THAT
-THE
-THEM
-THERE
-THEY
-THINK
-TNX
-TO
-TU
-UH
-UP
-WAS
-WE
-WELL
-WERE
-WHAT
-WHEN
-WHERE
-WITH
-WX
-YEAH
-YOU
-YOUR
-  */
-
-/**
- * cw_tokenize_representation()
- *
- * Return a token value, in the range 2-512, for a lookup table representation.
- * The routine returns 0 if no valid token could be made from the string.  To
- * avoid casting the value a lot in the caller (we want to use it as an array
- * index), we actually return an unsigned int.
- *
- * This token algorithm is designed ONLY for valid CW representations; that is,
- * strings composed of only '.' and '-', and in this case, strings shorter than
- * 8 characters.  The algorithm simply turns the representation into a
- * 'bitmask', based on occurrences of '.' and '-'.  The first bit set in the
- * mask indicates the start of data (hence the 8-character limit).  This mask
- * is viewable as an integer in the range 2 (".") to 512 ("--------"), and can
- * be used as an index into a fast lookup array.
- */
 quint16 MorseCode::tokenizeDotDash(const char *dotDash)
 {
 	//token starts with 1 to set hob as flag start of token
@@ -448,10 +188,10 @@ void MorseCode::init()
 
     // Clear the RX & TX tables
 	for (quint32 i = 0; i < c_morseTableSize; i++) {
-		m_asciiOrderTable[i] = 0;
+		MorseCode::m_asciiOrderTable[i] = 0;
     }
 	for (quint32 i = 0; i < c_tokenTableSize; i++) {
-		m_tokenOrderTable[i] = 0; //Flag invalid entry
+		MorseCode::m_tokenOrderTable[i] = 0; //Flag invalid entry
 	}
 
 	// For each main table entry, create a pointer to symbol in rxLookup in token order
@@ -470,18 +210,18 @@ void MorseCode::init()
 		if (token != 0) {
 			symbol->token = token;
 			//In token order
-			if (m_tokenOrderTable[token] != 0) {
+			if (MorseCode::m_tokenOrderTable[token] != 0) {
 				//We already have an entry, skip this one and output warning
-				qWarning()<<"Duplicate token in morse table for -"<<symbol->ascii<<" "<<symbol->display;
+				//qWarning()<<"Duplicate token in morse table for -"<<symbol->ascii<<" "<<symbol->display;
 			} else {
-				m_tokenOrderTable[token] = symbol;
+				MorseCode::m_tokenOrderTable[token] = symbol;
 			}
 			//In character order
-			if (m_asciiOrderTable[symbol->ascii] != 0) {
+			if (MorseCode::m_asciiOrderTable[symbol->ascii] != 0) {
 				//We already have an entry, skip this one and output warning
-				qWarning()<<"Duplicate ascii in morse table for -"<<symbol->ascii<<" "<<symbol->display;
+				//qWarning()<<"Duplicate ascii in morse table for -"<<symbol->ascii<<" "<<symbol->display;
 			} else {
-				m_asciiOrderTable[symbol->ascii] = symbol;
+				MorseCode::m_asciiOrderTable[symbol->ascii] = symbol;
 			}
 		}
     }
@@ -496,7 +236,7 @@ MorseSymbol *MorseCode::tokenLookup(const char *r)
 	if ((token = tokenizeDotDash(r)) == 0)
         return NULL;
 
-	if ((cw = m_tokenOrderTable[token]) == NULL)
+	if ((cw = MorseCode::m_tokenOrderTable[token]) == NULL)
         return NULL;
 
     return cw;
@@ -555,5 +295,269 @@ quint32  MorseCode::tcwUsecToWpm(quint32 tcwUsec)
 }
 
 
+/*
+   100 Top morse words from http://lcwo.net/forum/563
+   Possible use in training or error correction
+*/
+const QString MorseCode::c_commonWords[] = {
+	"73",
+	"/AR",
+	"/AS",
+	"/BK",
+	"/KN",
+	"/SK",
+	"A",
+	"ABOUT",
+	"AGN",
+	"ALL",
+	"AND",
+	"ANT",
+	"ARE",
+	"AS",
+	"AT",
+	"BUT",
+	"BY",
+	"CAN",
+	"CQ",
+	"DO",
+	"DON'T",
+	"DX",
+	"ES",
+	"FB",
+	"FOR",
+	"FROM",
+	"GA",
+	"GE",
+	"HAD",
+	"HAVE",
+	"HE",
+	"HI",
+	"HIS",
+	"HR",
+	"HW",
+	"I",
+	"IF",
+	"IN",
+	"IS",
+	"IT",
+	"IT'S",
+	"JUST",
+	"KNOW",
+	"LIKE",
+	"MEAN",
+	"MY",
+	"NAME",
+	"NOT",
+	"NR",
+	"OF",
+	"OH",
+	"OM",
+	"ON",
+	"ONE",
+	"OR",
+	"OTHER",
+	"OUT",
+	"PSE",
+	"PWR",
+	"QRL",
+	"QRM",
+	"QRN",
+	"QRQ",
+	"QRS",
+	"QRZ",
+	"QSB",
+	"QSY",
+	"QTH",
+	"R",
+	"REALLY",
+	"RIGHT",
+	"RST",
+	"RTU",
+	"SO",
+	"SOME",
+	"THAT'S",
+	"THAT",
+	"THE",
+	"THEM",
+	"THERE",
+	"THEY",
+	"THINK",
+	"TNX",
+	"TO",
+	"TU",
+	"UH",
+	"UP",
+	"WAS",
+	"WE",
+	"WELL",
+	"WERE",
+	"WHAT",
+	"WHEN",
+	"WHERE",
+	"WITH",
+	"WX",
+	"YEAH",
+	"YOU",
+	"YOUR"
+};
 
+//Must come after static initialization
+const quint32 MorseCode::c_commonWordsSize = sizeof(MorseCode::c_commonWords)/sizeof(MorseCode::c_commonWords[0]);
 
+//Abbreviations, assume letter space between char or not?
+const QString MorseCode::c_abbreviations[] = {
+"AA", //	All after (used after question mark to request a repetition)
+"AB", //	All before (similarly)
+"ARRL", //	American Radio Relay League
+"ABT", //	About
+"ADR", //	Address
+"AGN", //	Again
+"ANT", //	Antenna
+"ARND", //	Around
+"BCI", //	Broadcast interference
+"BK", //	Break (to pause transmission of a message, say)
+"BN", //	All between
+"BTR", //	Better
+"BUG", //	Semiautomatic mechanical key
+"BURO", //	Bureau (usually used in the phrase PLS QSL VIA BURO, "Please send QSL card via my local/national QSL bureau")
+"B4", //	Before
+"C", //	Yes; correct
+"CBA", //	Callbook address
+"CFM", //	Confirm
+"CK", //	Check
+"CL", //	Clear (I am closing my station)
+"CLG", //	Calling
+"CQ", //	Calling any station
+"CQD", //	Original International Distress Call, fell out of use before 1915
+"CS", //	Callsign
+"CTL", //	Control
+"CUD", //	Could
+"CUL", //	See you later
+"CUZ", //	Because
+"CW", //	Continuous wave (i.e., radiotelegraph)
+"CX", //	Conditions
+"DE", //	From (or "this is")
+"DN", //	Down
+"DR", //	Dear
+"DSW", //	Goodbye (Russian: до свидания [Do svidanya])
+"DX", //	Distance (sometimes refers to long distance contact), foreign countries
+"EMRG", //	Emergency
+"ENUF", //	Enough
+"ES", //	And
+"FB", //	Fine business (Analogous to "OK")
+"FCC", //	Federal Communications Commission
+"FER", //	For
+"FM", //	From
+"FREQ", //	Frequency
+"FWD", //	Forward
+"GA", //	Good afternoon or Go ahead (depending on context)
+"GE", //	Good evening
+"GG", //	Going
+"GL", //	Good luck
+"GM", //	Good morning
+"GN", //	Good night
+"GND", //	Ground (ground potential)
+"GUD", //	Good
+"GX", //	Ground
+"HEE", //	Humour intended (often repeated, e.g. HEE HEE)
+"HI", //	Humour intended (possibly derived from HEE)
+"HR", //	Here, hear
+"HV", //	Have
+"HW", //	How
+"II", //	I say again
+"IMP", //	Impedance
+"K", //	Over
+"KN", //	Over; only the station named should respond (e.g. W7PTH DE W1AW KN)
+"LID", //	Poor operator
+"MILS", //	Milliamperes
+"MNI", //	Many
+"MSG", //	Message
+"N", //	No; nine
+"NIL", //	Nothing
+"NM", //	Name
+"NR", //	Number
+"NW", //	Now
+"NX", //	Noise; noisy
+"OB", //	Old boy
+"OC", //	Old chap
+"OM", //	Old man (any male amateur radio operator is an OM regardless of age)
+"OO", //	Official observer
+"OP", //	Operator
+"OT", //	Old timer
+"OTC", //	Old timers club (ARRL-sponsored organization for radio amateurs first licensed 20 or more years ago)
+"OOTC", //	Old old timers club (organization for those whose first two-way radio contact occurred 40 or more years ago; separate from OTC and ARRL)
+"PLS", //	Please
+"PSE", //	Please
+"PWR", //	Power
+"PX", //	Prefix
+"QCWA", //	Quarter Century Wireless Association (organization for radio amateurs who have been licensed 25 or more years)
+"R", //	Are; received as transmitted (origin of "Roger"), or decimal point (depending on context)
+"RCVR", //	Receiver (radio)
+"RFI", //	Radio Frequency Interference
+"RIG", //	Radio apparatus
+"RPT", //	Repeat or report (depending on context)
+"RPRT", //	Report
+"RST", //	Signal report format (Readability-Signal Strength-Tone)
+"RTTY", //	Radioteletype
+"RX", //	Receiver, radio
+"SAE", //	Self-addressed envelope
+"SASE", //	Self-addressed, stamped envelope
+"SED", //	Said
+"SEZ", //	Says
+"SFR", //	So far (proword)
+"SIG", //	Signal or signature
+"SIGS", //	Signals
+"SK", //	Out (proword), end of contact
+"SK", //	Silent Key (a deceased radio amateur)
+"SKED", //	Schedule
+"SMS", //	Short message service
+"SN", //	Soon
+"SNR", //	Signal-to-noise ratio
+"SRI", //	Sorry
+"SSB", //	Single sideband
+"STN", //	Station
+"T", //	Zero (usually an elongated dah)
+"TEMP", //	Temperature
+"TFC", //	Traffic
+"TKS", //	Thanks
+"TMW", //	Tomorrow
+"TNX", //	Thanks
+"TT", //	That
+"TU", //	Thank you
+"TVI", //	Television interference
+"TX", //	Transmit, transmitter
+"TXT", //	Text
+"U", //	You
+"UR", //	Your or You're (depending on context)
+"URS", //	Yours
+"VX", //	Voice; phone
+"VY", //	Very
+"W", //	Watts
+"WA", //	Word after
+"WB", //	Word before
+"WC", //	Wilco
+"WDS", //	Words
+"WID", //	With
+"WKD", //	Worked
+"WKG", //	Working
+"WL", //	Will
+"WUD", //	Would
+"WTC", //	Whats the craic? (Irish Language: [Conas atá tú?])
+"WX", //	Weather
+"XCVR", //	Transceiver
+"XMTR", //	Transmitter
+"XYL", //	Wife (ex-YL)
+"YF", //	Wife
+"YL", //	Young lady (originally an unmarried female operator, now used for any female)
+"ZX", //	Zero beat
+"73", //	Best regards
+"88", //	Love and kisses
+};
+//Must come after static initialization
+const quint32 MorseCode::c_abbreviationsSize = sizeof(MorseCode::c_abbreviations)/sizeof(MorseCode::c_abbreviations[0]);
+
+//Array of pointers to cw_table dot/dash tokenized order
+MorseSymbol *MorseCode::m_tokenOrderTable[c_tokenTableSize];
+
+//In ascii character order
+MorseSymbol *MorseCode::m_asciiOrderTable[c_morseTableSize];
