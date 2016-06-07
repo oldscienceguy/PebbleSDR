@@ -91,51 +91,23 @@ private:
 
 	void generate(CPX *out);
 
-	//Settings values for all options
-	bool m_gen1Enabled;
-	double m_gen1Freq;
-	double m_gen1Amp;
-	quint32 m_gen1Wpm;
-	quint32 m_gen1Rise;
-	quint32 m_gen1Text;
-	bool m_gen1Fade;
-	bool m_gen1Fist;
+	struct GenSettings {
+		bool enabled;
+		double freq;
+		double amp;
+		quint32 wpm;
+		quint32 rise;
+		quint32 text;
+		bool fade;
+		bool fist;
 
-	bool m_gen2Enabled;
-	double m_gen2Freq;
-	double m_gen2Amp;
-	quint32 m_gen2Wpm;
-	quint32 m_gen2Rise;
-	quint32 m_gen2Text;
-	bool m_gen2Fade;
-	bool m_gen2Fist;
+	};
 
-	bool m_gen3Enabled;
-	double m_gen3Freq;
-	double m_gen3Amp;
-	quint32 m_gen3Wpm;
-	quint32 m_gen3Rise;
-	quint32 m_gen3Text;
-	bool m_gen3Fade;
-	bool m_gen3Fist;
-
-	bool m_gen4Enabled;
-	double m_gen4Freq;
-	double m_gen4Amp;
-	quint32 m_gen4Wpm;
-	quint32 m_gen4Rise;
-	quint32 m_gen4Text;
-	bool m_gen4Fade;
-	bool m_gen4Fist;
-
-	bool m_gen5Enabled;
-	double m_gen5Freq;
-	double m_gen5Amp;
-	quint32 m_gen5Wpm;
-	quint32 m_gen5Rise;
-	quint32 m_gen5Text;
-	bool m_gen5Fade;
-	bool m_gen5Fist;
+	GenSettings m_gs1;
+	GenSettings m_gs2;
+	GenSettings m_gs3;
+	GenSettings m_gs4;
+	GenSettings m_gs5;
 
 	void updateGenerators();
 

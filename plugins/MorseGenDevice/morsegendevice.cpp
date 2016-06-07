@@ -75,50 +75,60 @@ void MorseGenDevice::readSettings()
 	DeviceInterfaceBase::readSettings();
 
 	m_dbNoiseAmp = m_settings->value("DbNoiseAmp",-60).toDouble();
-	m_gen1Enabled = m_settings->value("Gen1Enabled",true).toBool();
-	m_gen1Freq = m_settings->value("Gen1Freq",1000).toDouble();
-	m_gen1Amp = m_settings->value("Gen1Amp",-40).toDouble();
-	m_gen1Wpm = m_settings->value("Gen1Wpm",20).toUInt();
-	m_gen1Rise = m_settings->value("Gen1Rise",5).toUInt();
-	m_gen1Text = m_settings->value("Gen1Text",0).toUInt();
-	m_gen1Fade = m_settings->value("Gen1Fade",false).toBool();
-	m_gen1Fist = m_settings->value("Gen1Fist",false).toBool();
+	m_settings->beginGroup("Gen1");
+	m_gs1.enabled = m_settings->value("Enabled",true).toBool();
+	m_gs1.freq = m_settings->value("Freq",1000).toDouble();
+	m_gs1.amp = m_settings->value("Amp",-40).toDouble();
+	m_gs1.wpm = m_settings->value("Wpm",20).toUInt();
+	m_gs1.rise = m_settings->value("Rise",5).toUInt();
+	m_gs1.text = m_settings->value("Text",0).toUInt();
+	m_gs1.fade = m_settings->value("Fade",false).toBool();
+	m_gs1.fist = m_settings->value("Fist",false).toBool();
+	m_settings->endGroup();
 
-	m_gen2Enabled = m_settings->value("Gen2Enabled",true).toBool();
-	m_gen2Freq = m_settings->value("Gen2Freq",1500).toDouble();
-	m_gen2Amp = m_settings->value("Gen2Amp",-40).toDouble();
-	m_gen2Wpm = m_settings->value("Gen2Wpm",30).toUInt();
-	m_gen2Rise = m_settings->value("Gen2Rise",5).toUInt();
-	m_gen2Text = m_settings->value("Gen2Text",0).toUInt();
-	m_gen2Fade = m_settings->value("Gen2Fade",false).toBool();
-	m_gen2Fist = m_settings->value("Gen2Fist",false).toBool();
+	m_settings->beginGroup("Gen2");
+	m_gs2.enabled = m_settings->value("Enabled",true).toBool();
+	m_gs2.freq = m_settings->value("Freq",1500).toDouble();
+	m_gs2.amp = m_settings->value("Amp",-40).toDouble();
+	m_gs2.wpm = m_settings->value("Wpm",30).toUInt();
+	m_gs2.rise = m_settings->value("Rise",5).toUInt();
+	m_gs2.text = m_settings->value("Text",0).toUInt();
+	m_gs2.fade = m_settings->value("Fade",false).toBool();
+	m_gs2.fist = m_settings->value("Fist",false).toBool();
+	m_settings->endGroup();
 
-	m_gen3Enabled = m_settings->value("Gen3Enabled",true).toBool();
-	m_gen3Freq = m_settings->value("Gen3Freq",2000).toDouble();
-	m_gen3Amp = m_settings->value("Gen3Amp",-40).toDouble();
-	m_gen3Wpm = m_settings->value("Gen3Wpm",40).toUInt();
-	m_gen3Rise = m_settings->value("Gen3Rise",5).toUInt();
-	m_gen3Text = m_settings->value("Gen3Text",0).toUInt();
-	m_gen3Fade = m_settings->value("Gen3Fade",false).toBool();
-	m_gen3Fist = m_settings->value("Gen3Fist",false).toBool();
+	m_settings->beginGroup("Gen3");
+	m_gs3.enabled = m_settings->value("Enabled",true).toBool();
+	m_gs3.freq = m_settings->value("Freq",2000).toDouble();
+	m_gs3.amp = m_settings->value("Amp",-40).toDouble();
+	m_gs3.wpm = m_settings->value("Wpm",40).toUInt();
+	m_gs3.rise = m_settings->value("Rise",5).toUInt();
+	m_gs3.text = m_settings->value("Text",0).toUInt();
+	m_gs3.fade = m_settings->value("Fade",false).toBool();
+	m_gs3.fist = m_settings->value("Fist",false).toBool();
+	m_settings->endGroup();
 
-	m_gen4Enabled = m_settings->value("Gen4Enabled",true).toBool();
-	m_gen4Freq = m_settings->value("Gen4Freq",2500).toDouble();
-	m_gen4Amp = m_settings->value("Gen4Amp",-40).toDouble();
-	m_gen4Wpm = m_settings->value("Gen4Wpm",50).toUInt();
-	m_gen4Rise = m_settings->value("Gen4Rise",5).toUInt();
-	m_gen4Text = m_settings->value("Gen4Text",0).toUInt();
-	m_gen4Fade = m_settings->value("Gen4Fade",false).toBool();
-	m_gen4Fist = m_settings->value("Gen4Fist",false).toBool();
+	m_settings->beginGroup("Gen4");
+	m_gs4.enabled = m_settings->value("Enabled",true).toBool();
+	m_gs4.freq = m_settings->value("Freq",2500).toDouble();
+	m_gs4.amp = m_settings->value("Amp",-40).toDouble();
+	m_gs4.wpm = m_settings->value("Wpm",50).toUInt();
+	m_gs4.rise = m_settings->value("Rise",5).toUInt();
+	m_gs4.text = m_settings->value("Text",0).toUInt();
+	m_gs4.fade = m_settings->value("Fade",false).toBool();
+	m_gs4.fist = m_settings->value("Fist",false).toBool();
+	m_settings->endGroup();
 
-	m_gen5Enabled = m_settings->value("Gen5Enabled",true).toBool();
-	m_gen5Freq = m_settings->value("Gen5Freq",2500).toDouble();
-	m_gen5Amp = m_settings->value("Gen5Amp",-40).toDouble();
-	m_gen5Wpm = m_settings->value("Gen5Wpm",60).toUInt();
-	m_gen5Rise = m_settings->value("Gen5Rise",5).toUInt();
-	m_gen5Text = m_settings->value("Gen5Text",0).toUInt();
-	m_gen5Fade = m_settings->value("Gen5Fade",false).toBool();
-	m_gen5Fist = m_settings->value("Gen5Fist",false).toBool();
+	m_settings->beginGroup("Gen5");
+	m_gs5.enabled = m_settings->value("Enabled",true).toBool();
+	m_gs5.freq = m_settings->value("Freq",2500).toDouble();
+	m_gs5.amp = m_settings->value("Amp",-40).toDouble();
+	m_gs5.wpm = m_settings->value("Wpm",60).toUInt();
+	m_gs5.rise = m_settings->value("Rise",5).toUInt();
+	m_gs5.text = m_settings->value("Text",0).toUInt();
+	m_gs5.fade = m_settings->value("Fade",false).toBool();
+	m_gs5.fist = m_settings->value("Fist",false).toBool();
+	m_settings->endGroup();
 
 	//Text output, read only settings
 	//Trailing '=' is morse <BT> for new paragraph
@@ -136,50 +146,60 @@ void MorseGenDevice::writeSettings()
 	DeviceInterfaceBase::writeSettings();
 
 	m_settings->setValue("DbNoiseAmp", m_dbNoiseAmp);
-	m_settings->setValue("Gen1Enabled", m_gen1Enabled);
-	m_settings->setValue("Gen1Freq",m_gen1Freq);
-	m_settings->setValue("Gen1Amp",m_gen1Amp);
-	m_settings->setValue("Gen1Wpm",m_gen1Wpm);
-	m_settings->setValue("Gen1Rise",m_gen1Rise);
-	m_settings->setValue("Gen1Text",m_gen1Text);
-	m_settings->setValue("Gen1Fade",m_gen1Fade);
-	m_settings->setValue("Gen1Fist",m_gen1Fist);
+	m_settings->beginGroup("Gen1");
+	m_settings->setValue("Enabled", m_gs1.enabled);
+	m_settings->setValue("Freq",m_gs1.freq);
+	m_settings->setValue("Amp",m_gs1.amp);
+	m_settings->setValue("Wpm",m_gs1.wpm);
+	m_settings->setValue("Rise",m_gs1.rise);
+	m_settings->setValue("Text",m_gs1.text);
+	m_settings->setValue("Fade",m_gs1.fade);
+	m_settings->setValue("Fist",m_gs1.fist);
+	m_settings->endGroup();
 
-	m_settings->setValue("Gen2Enabled", m_gen2Enabled);
-	m_settings->setValue("Gen2Freq",m_gen2Freq);
-	m_settings->setValue("Gen2Amp",m_gen2Amp);
-	m_settings->setValue("Gen2Wpm",m_gen2Wpm);
-	m_settings->setValue("Gen2Rise",m_gen2Rise);
-	m_settings->setValue("Gen2Text",m_gen2Text);
-	m_settings->setValue("Gen2Fade",m_gen2Fade);
-	m_settings->setValue("Gen2Fist",m_gen2Fist);
+	m_settings->beginGroup("Gen2");
+	m_settings->setValue("Enabled", m_gs2.enabled);
+	m_settings->setValue("Freq",m_gs2.freq);
+	m_settings->setValue("Amp",m_gs2.amp);
+	m_settings->setValue("Wpm",m_gs2.wpm);
+	m_settings->setValue("Rise",m_gs2.rise);
+	m_settings->setValue("Text",m_gs2.text);
+	m_settings->setValue("Fade",m_gs2.fade);
+	m_settings->setValue("Fist",m_gs2.fist);
+	m_settings->endGroup();
 
-	m_settings->setValue("Gen3Enabled", m_gen3Enabled);
-	m_settings->setValue("Gen3Freq",m_gen3Freq);
-	m_settings->setValue("Gen3Amp",m_gen3Amp);
-	m_settings->setValue("Gen3Wpm",m_gen3Wpm);
-	m_settings->setValue("Gen3Rise",m_gen3Rise);
-	m_settings->setValue("Gen3Text",m_gen3Text);
-	m_settings->setValue("Gen3Fade",m_gen3Fade);
-	m_settings->setValue("Gen3Fist",m_gen3Fist);
+	m_settings->beginGroup("Gen3");
+	m_settings->setValue("Enabled", m_gs3.enabled);
+	m_settings->setValue("Freq",m_gs3.freq);
+	m_settings->setValue("Amp",m_gs3.amp);
+	m_settings->setValue("Wpm",m_gs3.wpm);
+	m_settings->setValue("Rise",m_gs3.rise);
+	m_settings->setValue("Text",m_gs3.text);
+	m_settings->setValue("Fade",m_gs3.fade);
+	m_settings->setValue("Fist",m_gs3.fist);
+	m_settings->endGroup();
 
-	m_settings->setValue("Gen4Enabled", m_gen4Enabled);
-	m_settings->setValue("Gen4Freq",m_gen4Freq);
-	m_settings->setValue("Gen4Amp",m_gen4Amp);
-	m_settings->setValue("Gen4Wpm",m_gen4Wpm);
-	m_settings->setValue("Gen4Rise",m_gen4Rise);
-	m_settings->setValue("Gen4Text",m_gen4Text);
-	m_settings->setValue("Gen4Fade",m_gen4Fade);
-	m_settings->setValue("Gen4Fist",m_gen4Fist);
+	m_settings->beginGroup("Gen4");
+	m_settings->setValue("Enabled", m_gs4.enabled);
+	m_settings->setValue("Freq",m_gs4.freq);
+	m_settings->setValue("Amp",m_gs4.amp);
+	m_settings->setValue("Wpm",m_gs4.wpm);
+	m_settings->setValue("Rise",m_gs4.rise);
+	m_settings->setValue("Text",m_gs4.text);
+	m_settings->setValue("Fade",m_gs4.fade);
+	m_settings->setValue("Fist",m_gs4.fist);
+	m_settings->endGroup();
 
-	m_settings->setValue("Gen5Enabled", m_gen5Enabled);
-	m_settings->setValue("Gen5Freq",m_gen5Freq);
-	m_settings->setValue("Gen5Amp",m_gen5Amp);
-	m_settings->setValue("Gen5Wpm",m_gen5Wpm);
-	m_settings->setValue("Gen5Rise",m_gen5Rise);
-	m_settings->setValue("Gen5Text",m_gen5Text);
-	m_settings->setValue("Gen5Fade",m_gen5Fade);
-	m_settings->setValue("Gen5Fist",m_gen5Fist);
+	m_settings->beginGroup("Gen5");
+	m_settings->setValue("Enabled", m_gs5.enabled);
+	m_settings->setValue("Freq",m_gs5.freq);
+	m_settings->setValue("Amp",m_gs5.amp);
+	m_settings->setValue("Wpm",m_gs5.wpm);
+	m_settings->setValue("Rise",m_gs5.rise);
+	m_settings->setValue("Text",m_gs5.text);
+	m_settings->setValue("Fade",m_gs5.fade);
+	m_settings->setValue("Fist",m_gs5.fist);
+	m_settings->endGroup();
 
 	m_settings->setValue("Sample1",m_sampleText[ST_SAMPLE1]);
 	m_settings->setValue("Sample2",m_sampleText[ST_SAMPLE2]);
@@ -191,16 +211,16 @@ void MorseGenDevice::updateGenerators()
 {
 	if (!m_running)
 		return;
-	m_morseGen1->setParams(m_gen1Freq,m_gen1Amp,m_gen1Wpm,m_gen1Rise);
-	m_morseGen1->setTextOut(m_sampleText[m_gen1Text]);
-	m_morseGen2->setParams(m_gen2Freq,m_gen2Amp,m_gen2Wpm,m_gen2Rise);
-	m_morseGen2->setTextOut(m_sampleText[m_gen2Text]);
-	m_morseGen3->setParams(m_gen3Freq,m_gen3Amp,m_gen3Wpm,m_gen3Rise);
-	m_morseGen3->setTextOut(m_sampleText[m_gen3Text]);
-	m_morseGen4->setParams(m_gen4Freq,m_gen4Amp,m_gen4Wpm,m_gen4Rise);
-	m_morseGen4->setTextOut(m_sampleText[m_gen4Text]);
-	m_morseGen5->setParams(m_gen5Freq,m_gen5Amp,m_gen5Wpm,m_gen5Rise);
-	m_morseGen5->setTextOut(m_sampleText[m_gen5Text]);
+	m_morseGen1->setParams(m_gs1.freq,m_gs1.amp,m_gs1.wpm,m_gs1.rise);
+	m_morseGen1->setTextOut(m_sampleText[m_gs1.text]);
+	m_morseGen2->setParams(m_gs2.freq,m_gs2.amp,m_gs2.wpm,m_gs2.rise);
+	m_morseGen2->setTextOut(m_sampleText[m_gs2.text]);
+	m_morseGen3->setParams(m_gs3.freq,m_gs3.amp,m_gs3.wpm,m_gs3.rise);
+	m_morseGen3->setTextOut(m_sampleText[m_gs3.text]);
+	m_morseGen4->setParams(m_gs4.freq,m_gs4.amp,m_gs4.wpm,m_gs4.rise);
+	m_morseGen4->setTextOut(m_sampleText[m_gs4.text]);
+	m_morseGen5->setParams(m_gs5.freq,m_gs5.amp,m_gs5.wpm,m_gs5.rise);
+	m_morseGen5->setTextOut(m_sampleText[m_gs5.text]);
 	//Because noise is averaged, fudget +30db so it matches with generator values
 	//ie -30db gen and -30db noise should be 0snr
 	m_noiseAmp = DB::dBToAmplitude(m_dbNoiseAmp+20);
@@ -213,75 +233,75 @@ void MorseGenDevice::updateAllFields()
 void MorseGenDevice::updateGen1Fields()
 {
 	m_mutex.lock();
-	m_gen1Enabled = m_optionUi->enabledBox_1->isChecked();
-	m_gen1Freq = m_optionUi->freqencyEdit_1->text().toDouble();
-	m_gen1Amp = m_optionUi->dbBox_1->currentData().toDouble();
-	m_gen1Wpm = m_optionUi->wpmBox_1->currentData().toUInt();
-	m_gen1Rise = 5; //Add to UI?
-	m_gen1Text = m_optionUi->sourceBox_1->currentData().toUInt();
+	m_gs1.enabled = m_optionUi->enabledBox_1->isChecked();
+	m_gs1.freq = m_optionUi->freqencyEdit_1->text().toDouble();
+	m_gs1.amp = m_optionUi->dbBox_1->currentData().toDouble();
+	m_gs1.wpm = m_optionUi->wpmBox_1->currentData().toUInt();
+	m_gs1.rise = 5; //Add to UI?
+	m_gs1.text = m_optionUi->sourceBox_1->currentData().toUInt();
 	if (m_running) {
-		m_morseGen1->setParams(m_gen1Freq,m_gen1Amp,m_gen1Wpm,m_gen1Rise);
-		m_morseGen1->setTextOut(m_sampleText[m_gen1Text]);
+		m_morseGen1->setParams(m_gs1.freq,m_gs1.amp,m_gs1.wpm,m_gs1.rise);
+		m_morseGen1->setTextOut(m_sampleText[m_gs1.text]);
 	}
 	m_mutex.unlock();
 }
 void MorseGenDevice::updateGen2Fields()
 {
 	m_mutex.lock();
-	m_gen2Enabled = m_optionUi->enabledBox_2->isChecked();
-	m_gen2Freq = m_optionUi->freqencyEdit_2->text().toDouble();
-	m_gen2Amp = m_optionUi->dbBox_2->currentData().toDouble();
-	m_gen2Wpm = m_optionUi->wpmBox_2->currentData().toUInt();
-	m_gen2Rise = 5; //Add to UI?
-	m_gen2Text = m_optionUi->sourceBox_2->currentData().toUInt();
+	m_gs2.enabled = m_optionUi->enabledBox_2->isChecked();
+	m_gs2.freq = m_optionUi->freqencyEdit_2->text().toDouble();
+	m_gs2.amp = m_optionUi->dbBox_2->currentData().toDouble();
+	m_gs2.wpm = m_optionUi->wpmBox_2->currentData().toUInt();
+	m_gs2.rise = 5; //Add to UI?
+	m_gs2.text = m_optionUi->sourceBox_2->currentData().toUInt();
 	if (m_running) {
-		m_morseGen2->setParams(m_gen2Freq,m_gen2Amp,m_gen2Wpm,m_gen2Rise);
-		m_morseGen2->setTextOut(m_sampleText[m_gen2Text]);
+		m_morseGen2->setParams(m_gs2.freq,m_gs2.amp,m_gs2.wpm,m_gs2.rise);
+		m_morseGen2->setTextOut(m_sampleText[m_gs2.text]);
 	}
 	m_mutex.unlock();
 }
 void MorseGenDevice::updateGen3Fields()
 {
 	m_mutex.lock();
-	m_gen3Enabled = m_optionUi->enabledBox_3->isChecked();
-	m_gen3Freq = m_optionUi->freqencyEdit_3->text().toDouble();
-	m_gen3Amp = m_optionUi->dbBox_3->currentData().toDouble();
-	m_gen3Wpm = m_optionUi->wpmBox_3->currentData().toUInt();
-	m_gen3Rise = 5; //Add to UI?
-	m_gen3Text = m_optionUi->sourceBox_3->currentData().toUInt();
+	m_gs3.enabled = m_optionUi->enabledBox_3->isChecked();
+	m_gs3.freq = m_optionUi->freqencyEdit_3->text().toDouble();
+	m_gs3.amp = m_optionUi->dbBox_3->currentData().toDouble();
+	m_gs3.wpm = m_optionUi->wpmBox_3->currentData().toUInt();
+	m_gs3.rise = 5; //Add to UI?
+	m_gs3.text = m_optionUi->sourceBox_3->currentData().toUInt();
 	if (m_running) {
-		m_morseGen3->setParams(m_gen3Freq,m_gen3Amp,m_gen3Wpm,m_gen3Rise);
-		m_morseGen3->setTextOut(m_sampleText[m_gen3Text]);
+		m_morseGen3->setParams(m_gs3.freq,m_gs3.amp,m_gs3.wpm,m_gs3.rise);
+		m_morseGen3->setTextOut(m_sampleText[m_gs3.text]);
 	}
 	m_mutex.unlock();
 }
 void MorseGenDevice::updateGen4Fields()
 {
 	m_mutex.lock();
-	m_gen4Enabled = m_optionUi->enabledBox_4->isChecked();
-	m_gen4Freq = m_optionUi->freqencyEdit_4->text().toDouble();
-	m_gen4Amp = m_optionUi->dbBox_4->currentData().toDouble();
-	m_gen4Wpm = m_optionUi->wpmBox_4->currentData().toUInt();
-	m_gen4Rise = 5; //Add to UI?
-	m_gen4Text = m_optionUi->sourceBox_4->currentData().toUInt();
+	m_gs4.enabled = m_optionUi->enabledBox_4->isChecked();
+	m_gs4.freq = m_optionUi->freqencyEdit_4->text().toDouble();
+	m_gs4.amp = m_optionUi->dbBox_4->currentData().toDouble();
+	m_gs4.wpm = m_optionUi->wpmBox_4->currentData().toUInt();
+	m_gs4.rise = 5; //Add to UI?
+	m_gs4.text = m_optionUi->sourceBox_4->currentData().toUInt();
 	if (m_running) {
-		m_morseGen4->setParams(m_gen4Freq,m_gen4Amp,m_gen4Wpm,m_gen4Rise);
-		m_morseGen4->setTextOut(m_sampleText[m_gen4Text]);
+		m_morseGen4->setParams(m_gs4.freq,m_gs4.amp,m_gs4.wpm,m_gs4.rise);
+		m_morseGen4->setTextOut(m_sampleText[m_gs4.text]);
 	}
 	m_mutex.unlock();
 }
 void MorseGenDevice::updateGen5Fields()
 {
 	m_mutex.lock();
-	m_gen5Enabled = m_optionUi->enabledBox_5->isChecked();
-	m_gen5Freq = m_optionUi->freqencyEdit_5->text().toDouble();
-	m_gen5Amp = m_optionUi->dbBox_5->currentData().toDouble();
-	m_gen5Wpm = m_optionUi->wpmBox_5->currentData().toUInt();
-	m_gen5Rise = 5; //Add to UI?
-	m_gen5Text = m_optionUi->sourceBox_5->currentData().toUInt();
+	m_gs5.enabled = m_optionUi->enabledBox_5->isChecked();
+	m_gs5.freq = m_optionUi->freqencyEdit_5->text().toDouble();
+	m_gs5.amp = m_optionUi->dbBox_5->currentData().toDouble();
+	m_gs5.wpm = m_optionUi->wpmBox_5->currentData().toUInt();
+	m_gs5.rise = 5; //Add to UI?
+	m_gs5.text = m_optionUi->sourceBox_5->currentData().toUInt();
 	if (m_running) {
-		m_morseGen5->setParams(m_gen5Freq,m_gen5Amp,m_gen5Wpm,m_gen5Rise);
-		m_morseGen5->setTextOut(m_sampleText[m_gen5Text]);
+		m_morseGen5->setParams(m_gs5.freq,m_gs5.amp,m_gs5.wpm,m_gs5.rise);
+		m_morseGen5->setTextOut(m_sampleText[m_gs5.text]);
 	}
 	m_mutex.unlock();
 }
@@ -531,16 +551,16 @@ void MorseGenDevice::setupOptionUi(QWidget *parent)
 	m_optionUi->dbBox_1->addItem("-55db", -55);
 	m_optionUi->dbBox_1->addItem("-60db", -60);
 
-	m_optionUi->enabledBox_1->setChecked(m_gen1Enabled);
-	index = m_optionUi->sourceBox_1->findData(m_gen1Text);
+	m_optionUi->enabledBox_1->setChecked(m_gs1.enabled);
+	index = m_optionUi->sourceBox_1->findData(m_gs1.text);
 	m_optionUi->sourceBox_1->setCurrentIndex(index);
-	m_optionUi->freqencyEdit_1->setText(QString::number(m_gen1Freq,'f',0));
-	index = m_optionUi->wpmBox_1->findData(m_gen1Wpm);
+	m_optionUi->freqencyEdit_1->setText(QString::number(m_gs1.freq,'f',0));
+	index = m_optionUi->wpmBox_1->findData(m_gs1.wpm);
 	m_optionUi->wpmBox_1->setCurrentIndex(index);
-	index = m_optionUi->dbBox_1->findData(m_gen1Amp);
+	index = m_optionUi->dbBox_1->findData(m_gs1.amp);
 	m_optionUi->dbBox_1->setCurrentIndex(index);
-	m_optionUi->fadeBox_1->setChecked(m_gen1Fade);
-	m_optionUi->fistBox_1->setChecked(m_gen1Fist);
+	m_optionUi->fadeBox_1->setChecked(m_gs1.fade);
+	m_optionUi->fistBox_1->setChecked(m_gs1.fist);
 
 	connect(m_optionUi->enabledBox_1,SIGNAL(clicked(bool)),this,SLOT(updateGen1Fields()));
 	connect(m_optionUi->sourceBox_1,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen1Fields()));
@@ -578,16 +598,16 @@ void MorseGenDevice::setupOptionUi(QWidget *parent)
 	m_optionUi->dbBox_2->addItem("-55db", -55);
 	m_optionUi->dbBox_2->addItem("-60db", -60);
 
-	m_optionUi->enabledBox_2->setChecked(m_gen2Enabled);
-	index = m_optionUi->sourceBox_2->findData(m_gen2Text);
+	m_optionUi->enabledBox_2->setChecked(m_gs2.enabled);
+	index = m_optionUi->sourceBox_2->findData(m_gs2.text);
 	m_optionUi->sourceBox_2->setCurrentIndex(index);
-	m_optionUi->freqencyEdit_2->setText(QString::number(m_gen2Freq,'f',0));
-	index = m_optionUi->wpmBox_2->findData(m_gen2Wpm);
+	m_optionUi->freqencyEdit_2->setText(QString::number(m_gs2.freq,'f',0));
+	index = m_optionUi->wpmBox_2->findData(m_gs2.wpm);
 	m_optionUi->wpmBox_2->setCurrentIndex(index);
-	index = m_optionUi->dbBox_2->findData(m_gen2Amp);
+	index = m_optionUi->dbBox_2->findData(m_gs2.amp);
 	m_optionUi->dbBox_2->setCurrentIndex(index);
-	m_optionUi->fadeBox_2->setChecked(m_gen2Fade);
-	m_optionUi->fistBox_2->setChecked(m_gen2Fist);
+	m_optionUi->fadeBox_2->setChecked(m_gs2.fade);
+	m_optionUi->fistBox_2->setChecked(m_gs2.fist);
 
 	connect(m_optionUi->enabledBox_2,SIGNAL(clicked(bool)),this,SLOT(updateGen2Fields()));
 	connect(m_optionUi->sourceBox_2,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen2Fields()));
@@ -625,16 +645,16 @@ void MorseGenDevice::setupOptionUi(QWidget *parent)
 	m_optionUi->dbBox_3->addItem("-55db", -55);
 	m_optionUi->dbBox_3->addItem("-60db", -60);
 
-	m_optionUi->enabledBox_3->setChecked(m_gen3Enabled);
-	index = m_optionUi->sourceBox_3->findData(m_gen3Text);
+	m_optionUi->enabledBox_3->setChecked(m_gs3.enabled);
+	index = m_optionUi->sourceBox_3->findData(m_gs3.text);
 	m_optionUi->sourceBox_3->setCurrentIndex(index);
-	m_optionUi->freqencyEdit_3->setText(QString::number(m_gen3Freq,'f',0));
-	index = m_optionUi->wpmBox_3->findData(m_gen3Wpm);
+	m_optionUi->freqencyEdit_3->setText(QString::number(m_gs3.freq,'f',0));
+	index = m_optionUi->wpmBox_3->findData(m_gs3.wpm);
 	m_optionUi->wpmBox_3->setCurrentIndex(index);
-	index = m_optionUi->dbBox_3->findData(m_gen3Amp);
+	index = m_optionUi->dbBox_3->findData(m_gs3.amp);
 	m_optionUi->dbBox_3->setCurrentIndex(index);
-	m_optionUi->fadeBox_3->setChecked(m_gen3Fade);
-	m_optionUi->fistBox_3->setChecked(m_gen3Fist);
+	m_optionUi->fadeBox_3->setChecked(m_gs3.fade);
+	m_optionUi->fistBox_3->setChecked(m_gs3.fist);
 
 	connect(m_optionUi->enabledBox_3,SIGNAL(clicked(bool)),this,SLOT(updateGen3Fields()));
 	connect(m_optionUi->sourceBox_3,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen3Fields()));
@@ -672,16 +692,16 @@ void MorseGenDevice::setupOptionUi(QWidget *parent)
 	m_optionUi->dbBox_4->addItem("-55db", -55);
 	m_optionUi->dbBox_4->addItem("-60db", -60);
 
-	m_optionUi->enabledBox_4->setChecked(m_gen4Enabled);
-	index = m_optionUi->sourceBox_4->findData(m_gen4Text);
+	m_optionUi->enabledBox_4->setChecked(m_gs4.enabled);
+	index = m_optionUi->sourceBox_4->findData(m_gs4.text);
 	m_optionUi->sourceBox_4->setCurrentIndex(index);
-	m_optionUi->freqencyEdit_4->setText(QString::number(m_gen4Freq,'f',0));
-	index = m_optionUi->wpmBox_4->findData(m_gen4Wpm);
+	m_optionUi->freqencyEdit_4->setText(QString::number(m_gs4.freq,'f',0));
+	index = m_optionUi->wpmBox_4->findData(m_gs4.wpm);
 	m_optionUi->wpmBox_4->setCurrentIndex(index);
-	index = m_optionUi->dbBox_4->findData(m_gen4Amp);
+	index = m_optionUi->dbBox_4->findData(m_gs4.amp);
 	m_optionUi->dbBox_4->setCurrentIndex(index);
-	m_optionUi->fadeBox_4->setChecked(m_gen4Fade);
-	m_optionUi->fistBox_4->setChecked(m_gen4Fist);
+	m_optionUi->fadeBox_4->setChecked(m_gs4.fade);
+	m_optionUi->fistBox_4->setChecked(m_gs4.fist);
 
 	connect(m_optionUi->enabledBox_4,SIGNAL(clicked(bool)),this,SLOT(updateGen4Fields()));
 	connect(m_optionUi->sourceBox_4,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen4Fields()));
@@ -719,16 +739,16 @@ void MorseGenDevice::setupOptionUi(QWidget *parent)
 	m_optionUi->dbBox_5->addItem("-55db", -55);
 	m_optionUi->dbBox_5->addItem("-60db", -60);
 
-	m_optionUi->enabledBox_5->setChecked(m_gen5Enabled);
-	index = m_optionUi->sourceBox_5->findData(m_gen5Text);
+	m_optionUi->enabledBox_5->setChecked(m_gs5.enabled);
+	index = m_optionUi->sourceBox_5->findData(m_gs5.text);
 	m_optionUi->sourceBox_5->setCurrentIndex(index);
-	m_optionUi->freqencyEdit_5->setText(QString::number(m_gen5Freq,'f',0));
-	index = m_optionUi->wpmBox_5->findData(m_gen5Wpm);
+	m_optionUi->freqencyEdit_5->setText(QString::number(m_gs5.freq,'f',0));
+	index = m_optionUi->wpmBox_5->findData(m_gs5.wpm);
 	m_optionUi->wpmBox_5->setCurrentIndex(index);
-	index = m_optionUi->dbBox_5->findData(m_gen5Amp);
+	index = m_optionUi->dbBox_5->findData(m_gs5.amp);
 	m_optionUi->dbBox_5->setCurrentIndex(index);
-	m_optionUi->fadeBox_5->setChecked(m_gen5Fade);
-	m_optionUi->fistBox_5->setChecked(m_gen5Fist);
+	m_optionUi->fadeBox_5->setChecked(m_gs5.fade);
+	m_optionUi->fistBox_5->setChecked(m_gs5.fist);
 
 	connect(m_optionUi->enabledBox_5,SIGNAL(clicked(bool)),this,SLOT(updateGen5Fields()));
 	connect(m_optionUi->sourceBox_5,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen5Fields()));
@@ -784,45 +804,45 @@ void MorseGenDevice::generate(CPX *out)
 
 	m_mutex.lock();
 	for (quint32 i=0; i<m_framesPerBuffer; i++) {
-		if (m_gen1Enabled) {
+		if (m_gs1.enabled) {
 			cpx1 = m_morseGen1->nextOutputSample();
-			if (m_gen1Fade) {
+			if (m_gs1.fade) {
 				//Fading
 				double dbRand = -rand() % c_dbFadeRange;
 				double ampRand = DB::dBToAmplitude(dbRand);
 				cpx1 *= ampRand;
 			}
 		}
-		if (m_gen2Enabled) {
+		if (m_gs2.enabled) {
 			cpx2 = m_morseGen2->nextOutputSample();
-			if (m_gen2Fade) {
+			if (m_gs2.fade) {
 				//Fading
 				double dbRand = -rand() % c_dbFadeRange;
 				double ampRand = DB::dBToAmplitude(dbRand);
 				cpx2 *= ampRand;
 			}
 		}
-		if (m_gen3Enabled) {
+		if (m_gs3.enabled) {
 			cpx3 = m_morseGen3->nextOutputSample();
-			if (m_gen3Fade) {
+			if (m_gs3.fade) {
 				//Fading
 				double dbRand = -rand() % c_dbFadeRange;
 				double ampRand = DB::dBToAmplitude(dbRand);
 				cpx3 *= ampRand;
 			}
 		}
-		if (m_gen4Enabled) {
+		if (m_gs4.enabled) {
 			cpx4 = m_morseGen4->nextOutputSample();
-			if (m_gen4Fade) {
+			if (m_gs4.fade) {
 				//Fading
 				double dbRand = -rand() % c_dbFadeRange;
 				double ampRand = DB::dBToAmplitude(dbRand);
 				cpx4 *= ampRand;
 			}
 		}
-		if (m_gen5Enabled) {
+		if (m_gs5.enabled) {
 			cpx5 = m_morseGen5->nextOutputSample();
-			if (m_gen5Fade) {
+			if (m_gs5.fade) {
 				//Fading
 				double dbRand = -rand() % c_dbFadeRange;
 				double ampRand = DB::dBToAmplitude(dbRand);
