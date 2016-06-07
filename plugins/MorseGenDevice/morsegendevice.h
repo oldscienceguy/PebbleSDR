@@ -32,7 +32,8 @@ public:
 	bool set(StandardKeys _key, QVariant _value, QVariant _option = 0);
 
 private slots:
-	void resetButtonClicked(bool clicked);
+	void loadPresetClicked(bool clicked);
+	void savePresetClicked(bool clicked);
 	void updateAllFields();
 	void updateGen1Fields();
 	void updateGen2Fields();
@@ -78,6 +79,7 @@ private:
 	CPX *m_outBuf4;
 	CPX *m_outBuf5;
 
+	static const quint32 c_numGenerators = 5;
 	MorseGen *m_morseGen1;
 	MorseGen *m_morseGen2;
 	MorseGen *m_morseGen3;
@@ -109,8 +111,27 @@ private:
 	GenSettings m_gs4;
 	GenSettings m_gs5;
 
+	static const quint32 c_numPresets = 5;
+	GenSettings m_preset1[c_numGenerators];
+	GenSettings m_preset2[c_numGenerators];
+	GenSettings m_preset3[c_numGenerators];
+	GenSettings m_preset4[c_numGenerators];
+	GenSettings m_preset5[c_numGenerators];
+
+	GenSettings m_gsDefault;
+
 	void updateGenerators();
 
 	QMutex m_mutex; //Locks generator changes when producer thead is calling generate()
+	void setGen1Ui(GenSettings gs);
+	void setGen2Ui(GenSettings gs);
+	void setGen3Ui(GenSettings gs);
+	void setGen4Ui(GenSettings gs);
+	void setGen5Ui(GenSettings gs);
+	void initSourceBox(QComboBox *box);
+	void initWpmBox(QComboBox *box);
+	void initDbBox(QComboBox *box);
+	void readGenSettings(QString group, GenSettings *gs);
+	void writeGenSettings(QString group, GenSettings *gs);
 };
 #endif // MORSEGENDEVICE_H
