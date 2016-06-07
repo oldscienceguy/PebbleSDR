@@ -477,9 +477,9 @@ bool Receiver::turnPowerOff()
 		m_noiseFilter = NULL;
 	}
 
-	disconnect(m_signalStrength, SIGNAL(newSignalStrength(double,double,double,double,double)),
-			m_receiverWidget, SLOT(newSignalStrength(double,double,double,double,double)));
 	if (m_signalStrength != NULL) {
+		disconnect(m_signalStrength, SIGNAL(newSignalStrength(double,double,double,double,double)),
+				   m_receiverWidget, SLOT(newSignalStrength(double,double,double,double,double)));
 		delete m_signalStrength;
 		m_signalStrength = NULL;
 	}
