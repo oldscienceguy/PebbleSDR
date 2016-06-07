@@ -65,17 +65,30 @@ bool MorseGenDevice::initialize(CB_ProcessIQData _callback,
 	return true;
 }
 
-void MorseGenDevice::readGenSettings(QString group, GenSettings *gs)
+void MorseGenDevice::readGenSettings(quint32 genNum, GenSettings *gs)
 {
+	//Some variation in initial default values
+	GenSettings gsd; //Default values
+	switch (genNum) {
+		case 1: gsd = m_gs1Default; break;
+		case 2: gsd = m_gs2Default; break;
+		case 3: gsd = m_gs3Default; break;
+		case 4: gsd = m_gs4Default; break;
+		case 5: gsd = m_gs5Default; break;
+		default: break;
+	}
+
+	QString group = "Gen" + QString::number(genNum);
+
 	m_settings->beginGroup(group);
-	gs->enabled = m_settings->value("Enabled",true).toBool();
-	gs->freq = m_settings->value("Freq",1000).toDouble();
-	gs->amp = m_settings->value("Amp",-40).toDouble();
-	gs->wpm = m_settings->value("Wpm",20).toUInt();
-	gs->rise = m_settings->value("Rise",5).toUInt();
-	gs->text = m_settings->value("Text",0).toUInt();
-	gs->fade = m_settings->value("Fade",false).toBool();
-	gs->fist = m_settings->value("Fist",false).toBool();
+	gs->enabled = m_settings->value("Enabled", gsd.enabled).toBool();
+	gs->freq = m_settings->value("Freq", gsd.freq).toDouble();
+	gs->amp = m_settings->value("Amp", gsd.amp).toDouble();
+	gs->wpm = m_settings->value("Wpm", gsd.wpm).toUInt();
+	gs->rise = m_settings->value("Rise", gsd.rise).toUInt();
+	gs->text = m_settings->value("Text", gsd.text).toUInt();
+	gs->fade = m_settings->value("Fade", gsd.fade).toBool();
+	gs->fist = m_settings->value("Fist", gsd.fist).toBool();
 	m_settings->endGroup();
 }
 
@@ -90,53 +103,56 @@ void MorseGenDevice::readSettings()
 
 	m_dbNoiseAmp = m_settings->value("DbNoiseAmp",-60).toDouble();
 
-	readGenSettings("Gen1",&m_gs1);
-	readGenSettings("Gen2",&m_gs2);
-	readGenSettings("Gen3",&m_gs3);
-	readGenSettings("Gen4",&m_gs4);
-	readGenSettings("Gen5",&m_gs5);
-
-	readGenSettings("Default",&m_gsDefault);
+	readGenSettings(1,&m_gs1);
+	readGenSettings(2,&m_gs2);
+	readGenSettings(3,&m_gs3);
+	readGenSettings(4,&m_gs4);
+	readGenSettings(5,&m_gs5);
 
 	//Preset 1
+	m_preset1Name = m_settings->value("Preset1Name","Preset 1").toString();
 	m_settings->beginGroup("Preset1");
-	readGenSettings("Gen1",&m_preset1[0]);
-	readGenSettings("Gen2",&m_preset1[1]);
-	readGenSettings("Gen3",&m_preset1[2]);
-	readGenSettings("Gen4",&m_preset1[3]);
-	readGenSettings("Gen5",&m_preset1[4]);
+	readGenSettings(1,&m_preset1[0]);
+	readGenSettings(2,&m_preset1[1]);
+	readGenSettings(3,&m_preset1[2]);
+	readGenSettings(4,&m_preset1[3]);
+	readGenSettings(5,&m_preset1[4]);
 	m_settings->endGroup();
 
+	m_preset2Name = m_settings->value("Preset2Name","Preset 2").toString();
 	m_settings->beginGroup("Preset2");
-	readGenSettings("Gen1",&m_preset2[0]);
-	readGenSettings("Gen2",&m_preset2[1]);
-	readGenSettings("Gen3",&m_preset2[2]);
-	readGenSettings("Gen4",&m_preset2[3]);
-	readGenSettings("Gen5",&m_preset2[4]);
+	readGenSettings(1,&m_preset2[0]);
+	readGenSettings(2,&m_preset2[1]);
+	readGenSettings(3,&m_preset2[2]);
+	readGenSettings(4,&m_preset2[3]);
+	readGenSettings(5,&m_preset2[4]);
 	m_settings->endGroup();
 
+	m_preset3Name = m_settings->value("Preset3Name","Preset 3").toString();
 	m_settings->beginGroup("Preset3");
-	readGenSettings("Gen1",&m_preset3[0]);
-	readGenSettings("Gen2",&m_preset3[1]);
-	readGenSettings("Gen3",&m_preset3[2]);
-	readGenSettings("Gen4",&m_preset3[3]);
-	readGenSettings("Gen5",&m_preset3[4]);
+	readGenSettings(1,&m_preset3[0]);
+	readGenSettings(2,&m_preset3[1]);
+	readGenSettings(3,&m_preset3[2]);
+	readGenSettings(4,&m_preset3[3]);
+	readGenSettings(5,&m_preset3[4]);
 	m_settings->endGroup();
 
+	m_preset4Name = m_settings->value("Preset4Name","Preset 4").toString();
 	m_settings->beginGroup("Preset4");
-	readGenSettings("Gen1",&m_preset4[0]);
-	readGenSettings("Gen2",&m_preset4[1]);
-	readGenSettings("Gen3",&m_preset4[2]);
-	readGenSettings("Gen4",&m_preset4[3]);
-	readGenSettings("Gen5",&m_preset4[4]);
+	readGenSettings(1,&m_preset4[0]);
+	readGenSettings(2,&m_preset4[1]);
+	readGenSettings(3,&m_preset4[2]);
+	readGenSettings(4,&m_preset4[3]);
+	readGenSettings(5,&m_preset4[4]);
 	m_settings->endGroup();
 
+	m_preset5Name = m_settings->value("Preset5Name","Preset 5").toString();
 	m_settings->beginGroup("Preset5");
-	readGenSettings("Gen1",&m_preset5[0]);
-	readGenSettings("Gen2",&m_preset5[1]);
-	readGenSettings("Gen3",&m_preset5[2]);
-	readGenSettings("Gen4",&m_preset5[3]);
-	readGenSettings("Gen5",&m_preset5[4]);
+	readGenSettings(1,&m_preset5[0]);
+	readGenSettings(2,&m_preset5[1]);
+	readGenSettings(3,&m_preset5[2]);
+	readGenSettings(4,&m_preset5[3]);
+	readGenSettings(5,&m_preset5[4]);
 	m_settings->endGroup();
 
 	//Text output, read only settings
@@ -150,8 +166,9 @@ void MorseGenDevice::readSettings()
 
 }
 
-void MorseGenDevice::writeGenSettings(QString group, GenSettings *gs)
+void MorseGenDevice::writeGenSettings(quint32 genNum, GenSettings *gs)
 {
+	QString group = "Gen"+QString::number(genNum);
 	m_settings->beginGroup(group);
 	m_settings->setValue("Enabled", gs->enabled);
 	m_settings->setValue("Freq",gs->freq);
@@ -169,52 +186,55 @@ void MorseGenDevice::writeSettings()
 	DeviceInterfaceBase::writeSettings();
 
 	m_settings->setValue("DbNoiseAmp", m_dbNoiseAmp);
-	writeGenSettings("Gen1", &m_gs1);
-	writeGenSettings("Gen2", &m_gs2);
-	writeGenSettings("Gen3", &m_gs3);
-	writeGenSettings("Gen4", &m_gs4);
-	writeGenSettings("Gen5", &m_gs5);
+	writeGenSettings(1, &m_gs1);
+	writeGenSettings(2, &m_gs2);
+	writeGenSettings(3, &m_gs3);
+	writeGenSettings(4, &m_gs4);
+	writeGenSettings(5, &m_gs5);
 
-	writeGenSettings("Default", &m_gsDefault);
-
+	m_settings->setValue("Preset1Name",m_preset1Name);
 	m_settings->beginGroup("Preset1");
-	writeGenSettings("Gen1",&m_preset1[0]);
-	writeGenSettings("Gen2",&m_preset1[1]);
-	writeGenSettings("Gen3",&m_preset1[2]);
-	writeGenSettings("Gen4",&m_preset1[3]);
-	writeGenSettings("Gen5",&m_preset1[4]);
+	writeGenSettings(1,&m_preset1[0]);
+	writeGenSettings(2,&m_preset1[1]);
+	writeGenSettings(3,&m_preset1[2]);
+	writeGenSettings(4,&m_preset1[3]);
+	writeGenSettings(5,&m_preset1[4]);
 	m_settings->endGroup();
 
+	m_settings->setValue("Preset2Name",m_preset2Name);
 	m_settings->beginGroup("Preset2");
-	writeGenSettings("Gen1",&m_preset2[0]);
-	writeGenSettings("Gen2",&m_preset2[1]);
-	writeGenSettings("Gen3",&m_preset2[2]);
-	writeGenSettings("Gen4",&m_preset2[3]);
-	writeGenSettings("Gen5",&m_preset2[4]);
+	writeGenSettings(1,&m_preset2[0]);
+	writeGenSettings(2,&m_preset2[1]);
+	writeGenSettings(3,&m_preset2[2]);
+	writeGenSettings(4,&m_preset2[3]);
+	writeGenSettings(5,&m_preset2[4]);
 	m_settings->endGroup();
 
+	m_settings->setValue("Preset3Name",m_preset3Name);
 	m_settings->beginGroup("Preset3");
-	writeGenSettings("Gen1",&m_preset3[0]);
-	writeGenSettings("Gen2",&m_preset3[1]);
-	writeGenSettings("Gen3",&m_preset3[2]);
-	writeGenSettings("Gen4",&m_preset3[3]);
-	writeGenSettings("Gen5",&m_preset3[4]);
+	writeGenSettings(1,&m_preset3[0]);
+	writeGenSettings(2,&m_preset3[1]);
+	writeGenSettings(3,&m_preset3[2]);
+	writeGenSettings(4,&m_preset3[3]);
+	writeGenSettings(5,&m_preset3[4]);
 	m_settings->endGroup();
 
+	m_settings->setValue("Preset4Name",m_preset4Name);
 	m_settings->beginGroup("Preset4");
-	writeGenSettings("Gen1",&m_preset4[0]);
-	writeGenSettings("Gen2",&m_preset4[1]);
-	writeGenSettings("Gen3",&m_preset4[2]);
-	writeGenSettings("Gen4",&m_preset4[3]);
-	writeGenSettings("Gen5",&m_preset4[4]);
+	writeGenSettings(1,&m_preset4[0]);
+	writeGenSettings(2,&m_preset4[1]);
+	writeGenSettings(3,&m_preset4[2]);
+	writeGenSettings(4,&m_preset4[3]);
+	writeGenSettings(5,&m_preset4[4]);
 	m_settings->endGroup();
 
+	m_settings->setValue("Preset5Name",m_preset5Name);
 	m_settings->beginGroup("Preset5");
-	writeGenSettings("Gen1",&m_preset5[0]);
-	writeGenSettings("Gen2",&m_preset5[1]);
-	writeGenSettings("Gen3",&m_preset5[2]);
-	writeGenSettings("Gen4",&m_preset5[3]);
-	writeGenSettings("Gen5",&m_preset5[4]);
+	writeGenSettings(1,&m_preset5[0]);
+	writeGenSettings(2,&m_preset5[1]);
+	writeGenSettings(3,&m_preset5[2]);
+	writeGenSettings(4,&m_preset5[3]);
+	writeGenSettings(5,&m_preset5[4]);
 	m_settings->endGroup();
 
 	m_settings->setValue("Sample1",m_sampleText[ST_SAMPLE1]);
@@ -329,6 +349,34 @@ void MorseGenDevice::updateNoiseFields()
 	//ie -30db gen and -30db noise should be 0snr
 	m_noiseAmp = DB::dBToAmplitude(m_dbNoiseAmp+20);
 	m_mutex.unlock();
+}
+
+void MorseGenDevice::updatePresetName()
+{
+	quint32 index = m_optionUi->presetsBox->currentIndex();
+	switch (index) {
+		case 0:
+			m_preset1Name = m_optionUi->presetsBox->currentText();
+			m_optionUi->presetsBox->setItemText(index,m_preset1Name);
+			break;
+		case 1:
+			m_preset2Name = m_optionUi->presetsBox->currentText();
+			m_optionUi->presetsBox->setItemText(index,m_preset2Name);
+			break;
+		case 2:
+			m_preset3Name = m_optionUi->presetsBox->currentText();
+			m_optionUi->presetsBox->setItemText(index,m_preset3Name);
+			break;
+		case 3:
+			m_preset4Name = m_optionUi->presetsBox->currentText();
+			m_optionUi->presetsBox->setItemText(index,m_preset4Name);
+			break;
+		case 4:
+			m_preset5Name = m_optionUi->presetsBox->currentText();
+			m_optionUi->presetsBox->setItemText(index,m_preset5Name);
+			break;
+		default: break;
+	}
 }
 
 bool MorseGenDevice::command(DeviceInterface::StandardCommands _cmd, QVariant _arg)
@@ -574,11 +622,12 @@ void MorseGenDevice::setupOptionUi(QWidget *parent)
 	m_optionUi->noiseBox->setCurrentIndex(index);
 	connect(m_optionUi->noiseBox,SIGNAL(currentIndexChanged(int)),this,SLOT(updateNoiseFields()));
 
-	m_optionUi->presetsBox->addItem("Preset1",1);
-	m_optionUi->presetsBox->addItem("Preset2",2);
-	m_optionUi->presetsBox->addItem("Preset3",3);
-	m_optionUi->presetsBox->addItem("Preset4",4);
-	m_optionUi->presetsBox->addItem("Preset5",5);
+	m_optionUi->presetsBox->addItem(m_preset1Name,1);
+	m_optionUi->presetsBox->addItem(m_preset2Name,2);
+	m_optionUi->presetsBox->addItem(m_preset3Name,3);
+	m_optionUi->presetsBox->addItem(m_preset4Name,4);
+	m_optionUi->presetsBox->addItem(m_preset5Name,5);
+	connect(m_optionUi->presetsBox,SIGNAL(currentTextChanged(QString)),this,SLOT(updatePresetName()));
 
 	initSourceBox(m_optionUi->sourceBox_1);
 	initWpmBox(m_optionUi->wpmBox_1);

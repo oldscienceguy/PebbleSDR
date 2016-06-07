@@ -41,6 +41,7 @@ private slots:
 	void updateGen4Fields();
 	void updateGen5Fields();
 	void updateNoiseFields();
+	void updatePresetName();
 
 private:
 	enum SampleTextChoices {
@@ -93,6 +94,7 @@ private:
 
 	void generate(CPX *out);
 
+	//Do not change order without update default initializers below
 	struct GenSettings {
 		bool enabled;
 		double freq;
@@ -110,15 +112,23 @@ private:
 	GenSettings m_gs3;
 	GenSettings m_gs4;
 	GenSettings m_gs5;
+	GenSettings m_gs1Default = {true, 1000, -40, 10, 5, 0, false, false};
+	GenSettings m_gs2Default = {true, 2000, -40, 20, 5, 1, false, false};
+	GenSettings m_gs3Default = {true, 3000, -40, 30, 5, 2, false, false};
+	GenSettings m_gs4Default = {true, 4000, -40, 40, 5, 3, false, false};
+	GenSettings m_gs5Default = {true, 5000, -40, 50, 5, 4, false, false};
 
 	static const quint32 c_numPresets = 5;
+	QString m_preset1Name;
 	GenSettings m_preset1[c_numGenerators];
+	QString m_preset2Name;
 	GenSettings m_preset2[c_numGenerators];
+	QString m_preset3Name;
 	GenSettings m_preset3[c_numGenerators];
+	QString m_preset4Name;
 	GenSettings m_preset4[c_numGenerators];
+	QString m_preset5Name;
 	GenSettings m_preset5[c_numGenerators];
-
-	GenSettings m_gsDefault;
 
 	void updateGenerators();
 
@@ -128,10 +138,12 @@ private:
 	void setGen3Ui(GenSettings gs);
 	void setGen4Ui(GenSettings gs);
 	void setGen5Ui(GenSettings gs);
+
 	void initSourceBox(QComboBox *box);
 	void initWpmBox(QComboBox *box);
 	void initDbBox(QComboBox *box);
-	void readGenSettings(QString group, GenSettings *gs);
-	void writeGenSettings(QString group, GenSettings *gs);
+
+	void readGenSettings(quint32 genNum, GenSettings *gs);
+	void writeGenSettings(quint32 genNum, GenSettings *gs);
 };
 #endif // MORSEGENDEVICE_H

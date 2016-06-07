@@ -1185,19 +1185,6 @@
        <number>0</number>
       </property>
       <item>
-       <spacer name="horizontalSpacer_2">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item>
        <widget class="QLabel" name="label_9">
         <property name="maximumSize">
          <size>
@@ -1253,13 +1240,13 @@
        <widget class="QComboBox" name="presetsBox">
         <property name="minimumSize">
          <size>
-          <width>0</width>
+          <width>150</width>
           <height>18</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>100</width>
+          <width>16777215</width>
           <height>18</height>
          </size>
         </property>
@@ -1268,13 +1255,16 @@
           <pointsize>10</pointsize>
          </font>
         </property>
+        <property name="editable">
+         <bool>true</bool>
+        </property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="saveButton">
         <property name="maximumSize">
          <size>
-          <width>100</width>
+          <width>80</width>
           <height>16777215</height>
          </size>
         </property>
@@ -1292,7 +1282,7 @@
        <widget class="QPushButton" name="loadButton">
         <property name="maximumSize">
          <size>
-          <width>100</width>
+          <width>80</width>
           <height>16777215</height>
          </size>
         </property>
