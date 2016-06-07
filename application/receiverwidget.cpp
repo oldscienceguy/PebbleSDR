@@ -251,6 +251,10 @@ bool ReceiverWidget::eventFilter(QObject *o, QEvent *e)
     static int scrollCounter = 0; //Used to slow down and smooth freq changes from scroll wheel
     static const int smoothing = 10;
 
+	//If we're not active, ie options window is open, no filtering
+	if (!isActiveWindow())
+		return false;
+
 	//First check for application level shortcuts
 	if (e->type() == QEvent::KeyPress) {
 		QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
