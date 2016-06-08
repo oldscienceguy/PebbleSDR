@@ -48,7 +48,7 @@ private:
 		ST_SAMPLE1, //Sample1 text from ini file
 		ST_SAMPLE2, //Sample2 text from ini file
 		ST_SAMPLE3, //Sample3 text from ini file
-		ST_SAMPLE4, //Sample4 text from ini file
+		ST_FILE, //Sample4 text from ini file
 		ST_WORDS,	//Random words from table
 		ST_ABBREV,	//Random morse abbeviations
 		ST_TABLE,	//All characters in morse table
@@ -145,5 +145,7 @@ private:
 
 	void readGenSettings(quint32 genNum, GenSettings *gs);
 	void writeGenSettings(quint32 genNum, GenSettings *gs);
+
+	QString m_morseFileName;
 };
 #endif // MORSEGENDEVICE_H

@@ -37,6 +37,11 @@ HEADERS += morsegendevice.h \
 
 LIBS += -L$${PWD}/../../pebblelib/$${LIB_DIR} -lpebblelib
 
+#Copy sample file(s) to PebbleData
+sampleFiles.files = morsesample.txt
+sampleFiles.path = $${DESTDIR}/../PebbleData
+INSTALLS += sampleFiles
+
 OTHER_FILES += \
         fix_plugin_libraries.pri
 

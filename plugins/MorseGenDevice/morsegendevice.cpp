@@ -157,13 +157,43 @@ void MorseGenDevice::readSettings()
 
 	//Text output, read only settings
 	//Trailing '=' is morse <BT> for new paragraph
-	QString str1 = "=The quick brown fox jumped over the lazy dog 1,2,3,4,5,6,7,8,9,0 times=";
-	QString str2 = "=Now is the time for all good men to come to the aid of their country=";
+	QString str1 = "\nThe quick brown fox jumped over the lazy dog 1,2,3,4,5,6,7,8,9,0 times.";
+	QString str2 = "\nNow is the time for all good men to come to the aid of their country.";
+
+	QString appDirPath = QCoreApplication::applicationDirPath();
+	QDir appDir = QDir(appDirPath);
+#if defined(Q_OS_MAC)
+	if (appDir.dirName() == "MacOS") {
+		//We're in the mac package and need to get back to the package to access relative directories
+		appDir.cdUp();
+		appDir.cdUp();
+		appDir.cdUp(); //Root dir where app is located
+		appDirPath = appDir.absolutePath();
+	}
+#endif
+
+	QString pebbleDataPath = appDirPath + "/PebbleData/";
+
+	m_morseFileName = m_settings->value("MorseFileName","morsesample.txt").toString();
+
+	m_sampleText[ST_FILE] = "\n";
+	QFile file(pebbleDataPath + m_morseFileName);
+	 if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+		 QTextStream in(&file);
+		 QString line;
+		 while (!in.atEnd()) {
+			 line = in.readLine();
+			 m_sampleText[ST_FILE].append(line);
+			 m_sampleText[ST_FILE].append('\n');
+		 }
+	 } else {
+		 m_sampleText[ST_FILE] = "=morsesample.txt not found.";
+	 }
+
+
 	m_sampleText[ST_SAMPLE1] = m_settings->value("Sample1",str1).toString();
 	m_sampleText[ST_SAMPLE2] = m_settings->value("Sample2",str2).toString();
 	m_sampleText[ST_SAMPLE3] = m_settings->value("Sample3",str2).toString();
-	m_sampleText[ST_SAMPLE4] = m_settings->value("Sample4",str2).toString();
-
 }
 
 void MorseGenDevice::writeGenSettings(quint32 genNum, GenSettings *gs)
@@ -240,7 +270,8 @@ void MorseGenDevice::writeSettings()
 	m_settings->setValue("Sample1",m_sampleText[ST_SAMPLE1]);
 	m_settings->setValue("Sample2",m_sampleText[ST_SAMPLE2]);
 	m_settings->setValue("Sample3",m_sampleText[ST_SAMPLE3]);
-	m_settings->setValue("Sample4",m_sampleText[ST_SAMPLE4]);
+
+	m_settings->setValue("MorseFileName",m_morseFileName);
 }
 
 void MorseGenDevice::updateGenerators()
@@ -569,7 +600,7 @@ void MorseGenDevice::initSourceBox(QComboBox *box)
 	box->addItem("Sample1",ST_SAMPLE1);
 	box->addItem("Sample2",ST_SAMPLE2);
 	box->addItem("Sample3",ST_SAMPLE3);
-	box->addItem("Sample4",ST_SAMPLE4);
+	box->addItem("File", ST_FILE);
 	box->addItem("Words",ST_WORDS);
 	box->addItem("Abbrev",ST_ABBREV);
 	box->addItem("Table",ST_TABLE);
