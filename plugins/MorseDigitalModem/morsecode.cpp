@@ -12,10 +12,11 @@ MorseSymbol MorseCode::m_morseTable[] = {
     //Supposed to have inter-letter spacing, but often sent as single 'letter'
     //Non English extensions (TBD from Wikipedia)
 
-	//Todo: Support for 8 elelement Morse like (ER)
 	//ASCII codes must be unique, no duplicates allowed in table
 
 	//Ascii  Display   Dot/Dash	Token
+	{0x0a,	"\n",		".-.-",		0	}, // For text files. lf same as '\n'
+	{0x0d,	"\n",		".-.-",		0	}, // For text files. Same as '~' <AA> CR/LF
 	{0x21,	"!",		"-.-.--",	0	}, // exclamation
 	{0x22,   "<CT>",	"-.-.-",	0	}, // '"' Attention or Start copying (same as KA)
 	{0x23,   "<NJ>",	"-..---",	0	},  // '#' Shift to Wabun code
@@ -46,7 +47,7 @@ MorseSymbol MorseCode::m_morseTable[] = {
 	{0x3a,	":",		"---...",	0	}, // colon
 	{0x3b,	";",		"-.-.-.",	0	}, // semi colon
 	{0x3c,	"<AS>",		".-...",	0	}, // '<' Please Wait or '&'
-	{0x3d,	"\n\n",   "-...-",	0	}, // '='  <BT>2 LF or new paragraph
+	{0x3d,	"\n\n",		"-...-",	0	}, // '='  <BT>2 LF or new paragraph
 	{0x3e,	"\n\n\n",		".-.-.",	0	}, // '>' <AR> New Page, End of Message, sometimes shown as '+'
 	{0x3f,	"?",		"..--..",	0	}, // question
 	{0x40,	"@",		".--.-.",	0	}, // At sign (Added to ITU standard in 2004)
