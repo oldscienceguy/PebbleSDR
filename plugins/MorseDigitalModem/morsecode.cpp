@@ -19,7 +19,7 @@ MorseSymbol MorseCode::m_morseTable[] = {
 	{0x0d,	"\n",		".-.-",		0	}, // For text files. Same as '~' <AA> CR/LF
 	{0x21,	"!",		"-.-.--",	0	}, // exclamation
 	{0x22,   "<CT>",	"-.-.-",	0	}, // '"' Attention or Start copying (same as KA)
-	{0x23,   "<NJ>",	"-..---",	0	},  // '#' Shift to Wabun code
+	{0x23,   "<DO>",	"-..---",	0	},  // '#' Shift to Wabun code, also <NJ>
 	{0x24,	"$",		"...-..-",	0	},
 	{0x25,	"<SK>",		"...-.-",	0	}, // '%' End of QSO or End of Work
 	{0x26,	"<INT>",	"..-.-",	0	}, // '&'
@@ -46,9 +46,15 @@ MorseSymbol MorseCode::m_morseTable[] = {
 	{0x39,	"9",		"----.",	0	},
 	{0x3a,	":",		"---...",	0	}, // colon
 	{0x3b,	";",		"-.-.-.",	0	}, // semi colon
-	{0x3c,	"<AS>",		".-...",	0	}, // '<' Please Wait or '&'
+	//{0x3c,	"&",		".-...",	0	}, // '<' Please Wait 10 secondsor sometimes used as'&'
+	{0x3c,	"<AS>",		".-...",	0	}, // '<' Please Wait 10 secondsor '&'
+	//{0x3d,	"<BT>",		"-...-",	0	}, // '='  <BT>2 LF or new paragraph
+	//{0x3d,	"=",		"-...-",	0	}, // '='  <BT>2 LF or new paragraph
 	{0x3d,	"\n\n",		"-...-",	0	}, // '='  <BT>2 LF or new paragraph
-	{0x3e,	"\n\n\n",		".-.-.",	0	}, // '>' <AR> New Page, End of Message, sometimes shown as '+'
+	//Three choices for Stop (end of message).  Choose 1 or configure
+	//{0x3e,	"<AR>",		".-.-.",	0	}, // '>' <AR> New Page, End of Message
+	//{0x3e,	"+",		".-.-.",	0	}, // '>' <AR> New Page, End of Message
+	{0x3e,	"\n\n\n",	".-.-.",	0	}, // '>' <AR> New Page, End of Message
 	{0x3f,	"?",		"..--..",	0	}, // question
 	{0x40,	"@",		".--.-.",	0	}, // At sign (Added to ITU standard in 2004)
 
@@ -81,6 +87,7 @@ MorseSymbol MorseCode::m_morseTable[] = {
 	{0x5a,	"Z",		"--..",		0	},
 	{0x5b,  "<BK>",		"-...-.-",	0	}, // '[' Break (Bk)
 	{0x5c,	"\\",		".-..-.",	0	}, // '\' back slash
+	//{0x5d,  "<ERROR>",		"........",	0	}, // ']' <HH> Error
 	{0x5d,  "????",		"........",	0	}, // ']' <HH> Error
 	{0x5e,  "<CL>",		"-.-..-..",	0	}, // '^' Going off air
 	{0x5f,	"_",		"..--.-",	0	}, // '_' underscore
@@ -99,19 +106,20 @@ MorseSymbol MorseCode::m_morseTable[] = {
 	//But decoding will print the first symbol found
 
 	//These map to extended ascii
-	{0x80,	"Ç",		"-.-..",	0	}, //C cedila ISO 8859-1
-	{0x85,	"À",		".--.-",	0	}, //A grave
-	{0x8a,	"È",		".-..-",	0	}, //E grave ISO 8859-1
-	{0x8e,	"Ä",		".-.-",		0	}, //A diaeresis ISO 8859-1
-	{0x8f,	"Ȧ",		".--.-",	0	}, //A dot ISO 8859-1
-	{0x90,	"É",		"..-..",	0	}, //E acute ISO 8859-1
+	//Duplicate morse is allowed, but only 1 display value
+	{0x80,	"Ç",		"-.-..",	0	}, //(1) C cedila ISO 8859-1
+	{0x85,	"À",		".--.-",	0	}, //(1) A grave
+	{0x8a,	"È",		".-..-",	0	}, //(1) E grave ISO 8859-1
+	{0x8e,	"Ä",		".-.-",		0	}, //(1) A diaeresis ISO 8859-1
+	{0x8f,	"Ȧ",		".--.-",	0	}, //A dot ISO 8859-1 also a acute
+	{0x90,	"É",		"..-..",	0	}, //(1) E acute ISO 8859-1
 	{0x92,	"Æ",		".-.-",		0	}, //AE
-	{0x99,	"Ö",		"---.",		0	}, //O diaeresis ISO 8859-1
-	{0x9a,	"Ü",		"..--",		0	}, //U diaeresis ISO 8859-1
+	{0x99,	"Ö",		"---.",		0	}, //(1) O diaeresis ISO 8859-1
+	{0x9a,	"Ü",		"..--",		0	}, //(1) U diaeresis ISO 8859-1
 	{0xa2,	"Ó",		"---.",		0	}, //O acute
-	{0xa5,	"Ñ",		"--.--",	0	}, //N tilde ISO 8859-1
+	{0xa5,	"Ñ",		"--.--",	0	}, //(1) N tilde ISO 8859-1
 
-	//These don't map to any ascii, just assign sequential codes for now until we can figure out typeing codes
+	//These don't map to any ascii key, just assign sequential codes for now until we can figure out typeing codes
 	{0xb0,	"Ą",		".-.-",		0	}, //A cedila
 	{0xb1,	"Ć",		"-.-..",	0		}, //C acute
 	{0xb2,	"Ĉ",		"-.-..",	0	}, //C circumflex
