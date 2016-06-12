@@ -195,7 +195,4 @@ private:
 
 	double m_avgDb; //Average signal strength, used for squelch
 
-	//Testing goertzel
-	Goertzel *m_testGoertzel;
-
 };

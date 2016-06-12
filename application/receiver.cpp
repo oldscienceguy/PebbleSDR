@@ -270,13 +270,6 @@ bool Receiver::turnPowerOn()
 	m_converterMode = m_sdr->get(DeviceInterface::Key_ConverterMode).toBool();
 	m_converterOffset = m_sdr->get(DeviceInterface::Key_ConverterOffset).toDouble();
 
-	//Test goertzel, 8x decimation for testing
-	m_testGoertzel = new Goertzel(m_demodSampleRate, m_demodFrames);
-	m_testGoertzel->setTargetSampleRate(m_demodSampleRate / 8);
-	quint32 estN = m_testGoertzel->estNForShortestBit(5.0);
-	//estN = 512; //For testing
-	m_testGoertzel->setFreq(global->settings->m_modeOffset, estN, 3);
-
 	//This should always be last because it starts samples flowing through the processBlocks
 	m_audioOutput->StartOutput(m_sdr->get(DeviceInterface::Key_OutputDeviceName).toString(), m_audioOutRate);
 	m_sdr->command(DeviceInterface::Cmd_Start,0);
@@ -995,17 +988,6 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 		//Data decoders come before demod
 		if (m_iDigitalModem != NULL)
 			nextStep = m_iDigitalModem->processBlock(nextStep);
-
-		//Testing goertzel
-		double power;
-		bool result;
-		bool aboveThreshold;
-		//hardwired decimation 8 for testing
-		for (int i=0; i<numStepSamples; i += 8) {
-			result = m_testGoertzel->processSample(nextStep[i].re, power, aboveThreshold);
-			if (result)
-				m_signalStrength->setExtValue(DB::powerTodB(power));
-		}
 
 		global->testBench->displayData(numStepSamples,nextStep,m_demodSampleRate,TB_POST_DEMOD);
 
