@@ -202,9 +202,11 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 	m_sampleClock = new SampleClock(m_modemSampleRate);
 	m_sampleClock->reset(); //Start timer over
 
-    //Determine shortest and longest mark we can time at this sample rate
+	//Todo: Should this be for slowest/fastest we support, or +/- tracking speed from current wpm setting?
+	//Shortest mark we can time.  Dot time at upper wpm limit
 	m_usecShortestMark =  c_uSecDotMagic / (c_upperWPMLimit*1.10); //Slightly faster than highest speed we support
-	m_usecLongestMark = c_uSecDotMagic / (c_lowerWPMLimit*0.90); //SLightly longer than slowest speed we support 5wpm
+	//Longest mark we can time. Dash time at slowest wpm limit
+	m_usecLongestMark = 3 * (c_uSecDotMagic / (c_lowerWPMLimit*0.90)); //SLightly longer than slowest speed we support 5wpm
 
 	m_modemFrequency = 1000; //global->settings->modeOffset;
 
