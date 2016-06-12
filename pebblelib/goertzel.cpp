@@ -613,6 +613,8 @@ bool Goertzel::processSample(double x_n, double &retPower, bool &aboveThreshold)
 				}
 			}
 				break;
+
+			//5/29/16: Best detection yet, tested with -40db noise gen
 			case TH_PEAK:
 				//Uses percentage of peak power for comparison
 				// Compute a variable threshold value for tone detection
@@ -627,6 +629,8 @@ bool Goertzel::processSample(double x_n, double &retPower, bool &aboveThreshold)
 				m_thresholdUp = m_peakPower * 0.67; //fldigi uses 0.60
 				m_thresholdDown = m_peakPower * 0.33; //fldigi uses 0.40
 
+				//Todo: Consider running mean from tone to set a lower floor to avoid random noise results
+				//or user slider to set squelch level
 				if (mainPower > m_thresholdUp) {
 					aboveThreshold = true;
 				} else if (mainPower < m_thresholdDown) {
