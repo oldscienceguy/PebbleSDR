@@ -842,33 +842,32 @@ void ReceiverWidget::filterSelectionChanged(QString f)
 		hi=filter/2;
 		break;
     /*
-     * This gets very confusing, so for the record ...
-     * Let F = freq of actual CW carrier.  This is what we want to see on freq and spectrum Display
-     * But we actuall want to hear a tone of 'modeOffset' or 800hz
-     * If mode is CWU we expect to tune from low to high, so we subtact 800hz to set device/mixer frequency
-     * So lets say F=10k and Pebble shows 10k.  Device will be set to 9200 and we hear 800hz tone
-     * Tuning higher decreases tone, tuning lower increases
-     *
-     * If mode is CWL, tuneing higher increases tone, tuning lower decreases
-     * This is all taken care of when we set the mixer frequency by offsetting modemOffset
-     *
-     * So far so good, but now we have to make sure our filters always keep the freq including offset in band
-     * To test this we should be able to go from 1200 to 250 hz filter without losing 1k audio tone.
-     * We want to put our 800hz tone in the middle of the filter
-     * So we take the filter width and add 1/2 it to the modeOffset and 1/2 to the filter itself
-     *
+	 This gets very confusing, so for the record ...
+	 Let F = freq of actual CW carrier.  This is what we want to see on freq and spectrum Display
+	 But we actuall want to hear a tone of 'modeOffset' or 1khz
+	 In USB, this means we have to tune 1khz below the carrier to hear the tone
+	 But in CWU, we want to show user that we're on the carrier freq, so to hear the tone
+	 we tune 1khz (modeOffset) below the carrier, but keep displayed freq at the carrier
+	 ie display reads 7,005,000 for carrier, but lo/mixer is actually set to 7,004,000
+	 But we want to filter around the carrier, not 1khz below, so we have to adjust the filter lo/hi
+	 Note: If mode is CWU, tuning higher decreases tone, tuning lower increases
+
+	 Just the reverse for CWL, we add 1khz (modeOffset)
+	 ie display reads 7,005,000 for carrier, but lo/mixer is actually set to 7,006,000
+	 Note: If mode is CWL, tuning higher increases tone, tuning lower decreases
+
+	 This is all taken care of when we set the mixer frequency by offsetting modemOffset
+	 but we need to make sure bandpass filters reflect actual freq, not displayed freq
     */
 	case DeviceInterface::dmCWU:
-        //modeOffset = -1000 (so we can use it directly in other places without comparing cwu and cwl)
-        //We want 500hz filter to run from 750 to 1250 so modeOffset is right in the middle
-        lo = -m_modeOffset - (filter/2); // --1000 - 250 = 750
-        hi = -m_modeOffset + (filter/2); // --1000 + 250 = 1250
+		//We are tuned 1khz below carrier (modeOffset = -1khz)
+		lo = -m_modeOffset; // --1000 = 1000
+		hi = -m_modeOffset + filter; // --1000 + 500 = +1500
 		break;
 	case DeviceInterface::dmCWL:
-        //modeOffset = +1000 (default)
-        //We want 500hz filter to run from -1250 to -750 so modeOffset is right in the middle
-        lo = -m_modeOffset - (filter/2); // - +1000 - 250 = -1250
-        hi = -m_modeOffset + (filter/2); // +1000 + 250 = -750
+		//We are tuned 1khz above carrier (modeOffset = +1khz)
+		lo = -m_modeOffset - filter; // - +1000 - 500 = -1500
+		hi = -m_modeOffset; // -+1000 = -1000
         break;
     //Same as CW but with no offset tone, drop if not needed
 	case DeviceInterface::dmDIGU:
