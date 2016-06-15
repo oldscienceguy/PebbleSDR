@@ -44,7 +44,7 @@ void IIRFilter::locatePolesAndZeros(){
           i = 2.0*tanw1*sin(t)/b3;
           break;
         case CHEBYSHEV:
-		
+
           double d = 1.0 - exp(-0.05*ripple*ln10);
           double e = 1.0 / sqrt(1.0 / sqr(1.0 - d) - 1.0);
           double x = pow(sqrt(e*e + 1.0) + e, 1.0/(double)n);
@@ -343,7 +343,7 @@ void IIRFilter::locatePolesAndZeros(){
 	//Testing
 	if (false)
 	{
-		
+
 		for (int i=0; i<=order; i++)
 		{
 			qDebug()<<"aCoeff:["<<i<<"] = "<<aCoeff[i]<<" : "<<"bCoeff:["<<i<<"] = "<<bCoeff[i];
@@ -423,5 +423,3 @@ void IIRFilter::locatePolesAndZeros(){
 	yv[order] += (aCoeff[order] * xv[order]);
     return yv[order];
 }
-
-

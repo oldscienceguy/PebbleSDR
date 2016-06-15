@@ -34,7 +34,7 @@ float Butterworth::Filter(float input)
 	memcpy(xv, &xv[1], nZeros*sizeof(float));
     //xv[0] = xv[1]; xv[1] = xv[2]; xv[2] = xv[3]; xv[3] = xv[4]; xv[4] = xv[5];
     xv[nZeros] = input / gain;
-    
+
 	memcpy(yv, &yv[1], nPoles*sizeof(float));
     //yv[0] = yv[1]; yv[1] = yv[2]; yv[2] = yv[3]; yv[3] = yv[4]; yv[4] = yv[5];
     yv[nPoles] = 0;
@@ -46,5 +46,3 @@ float Butterworth::Filter(float input)
     yv[nPoles] += (xTbl[nPoles] * xv[nPoles]);
     return yv[nPoles];
 }
-
-
