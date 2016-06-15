@@ -4,7 +4,6 @@
 #include "math.h"
 #include "QtDebug"
 #include "firfilter.h"
-#include <complex>
 
 /*
 From SILabs DTMF paper http://www.silabs.com/Support%20Documents/TechnicalDocs/an218.pdf
@@ -192,27 +191,11 @@ void ToneBit::setFreq(quint32 freq, quint32 N, quint32 sampleRate)
 	//Combining, k = freq / (sampleRate / N);
 	double k = (float)m_freq / (sampleRate / N);
 
-#if 0
-	 Alpha = TWOPI * k / m_bitSamples;
-	 Beta = TWOPI * k * (m_bitSamples-1) / m_bitSamples;
-
-
-	//Precompute network coefficients
-	 Two_cos_Alpha = 2*cos(Alpha);
-	 a = cos(Beta);
-	 b = -sin(Beta);
-	 c = sin(Alpha)*sin(Beta) -cos(Alpha)*cos(Beta);
-	 d = sin(TWOPI * k);
-	 //Init. delay line contents
-	 w0 = 0;
-	 w1 = 0;
-	 w2 = 0;
-#endif
-	 std::complex<double> c_j(6.123233995736766e-17,1);
-	 a = TWOPI * k/N;
-	 b = 2 * cos(a);
-	 c = exp(-c_j * a);
-	 d = exp(-c_j * a * ((double)N-1.0));
+	std::complex<double> c_j(6.123233995736766e-17,1);
+	c_A = TWOPI * k/N;
+	c_B = 2 * cos(c_A);
+	c_C = exp(-c_j * c_A);
+	c_D = exp(-c_j * c_A * ((double)N-1.0));
 }
 
 #if 0
@@ -230,120 +213,60 @@ y_i(n). After that, the two complex-valued partial results can be recombined:
 //We just need CPX delay variables
 bool ToneBit::processSample(CPX x_n)
 {
-	//C++ Alias syntax
-	using NewCpx = std::complex<double>;
-	//Using std::complex to make sure we get the complex math rigt
-	//Using 'j' as it appears in DSP math and matlab, move to CPX as constant eventually
-	//std::complex<double> c_j = -1; // {-1, 0} {re,im}
-	//Just doing sqrt(-1) will result in a complex number with Nan, which is invalid
-	//c_j = sqrt(c_j); //Ensure we get sqrt(cpx) {6.123233995736766e-17,1}
-	//square it and we get a value really close to original {-1, 0}
-	//c_j = c_j * c_j; //{-1, 1.2246467991473532e-16}
-	//Conclusion, just define c_j without doing all the math
-	NewCpx c_j(6.123233995736766e-17,1);
-
-	//std::literals (only if _LIBCPP_STD_VER > 14) defines i, il operators as simply {0.0, arg}
-	//This allows the use of complex notation like '4i' or 'i(4)' or {0.0, 4}
-
-	//Eventually we will switch to std::complex, but it will result in many changes
-	//class CPX: public std::complex<double> {
-	//		//Add old CPX:: statics
-	//		//Rename .re to .real(), which is declared inline
-	//		//Rename .im to .imag()
-	//};
-
 	//Goertzel algorithm for non-integer frequency index (complex input)
 	//http://asp.eurasipjournals.springeropen.com/articles/10.1186/1687-6180-2012-56
 	//https://www.dsprelated.com/showarticle/495.php
-	//Code from Lyons article, converted to C++
+	//Computes single DFT bin at specified frequency
 
-
-	//Convert arg to NewCpx
-	NewCpx samp(x_n.re, x_n.im);
-
-#if 0
-	w0 = samp + (w1 * Two_cos_Alpha) - w2;
-	//Delay line data shifting
-	w2 = w1;
-	w1 = w0;
-
-	if (m_nCount++ >= m_bitSamples) {
-		w0 = w1 * a + w2 * c + c_j * (w1*b + w2 * d);
-		m_nCount = 0;
-		w1 = 0;
-		w2 = 0;
-		m_power = w0.real();
-		return true;
+	if (m_calcRunningMean) {
+		double power = x_n.re*x_n.re + x_n.im*x_n.im;
+		//See Knuth TAOCP vol 2, 3rd edition, page 232
+		//for each incoming sample x:
+		//    prev_mean = m;
+		//    n = n + 1;
+		//    m = m + (x-m)/n;
+		//    S = S + (x-m)*(x-prev_mean);
+		//	standardDev = sqrt(S/n) or sqrt(S/n-1) depending on who you listen to
+		double prevMean = 0;
+		prevMean = m_runningMean;
+		m_runningMean += (power - m_runningMean) / m_runningMeanCount;
+		m_S += (power - m_runningMean) * (power - prevMean);
+		//Dividing by N-1 (Bessel's correction) returns unbiased variance, dividing by N returns variance across the entire sample set
+		m_variance = m_S / (m_runningMeanCount - 1);
+		m_stdDev = sqrt(m_variance);
+		m_runningMeanCount++;
+		//Not tested, here for future use
 	}
-	return false;
-#endif
-	// one iteration less than traditionally
+
+	//Convert arg to StdCpx
+	StdCpx samp(x_n.re, x_n.im);
+
+	// one iteration less than traditionally, so one less that num samples needed for result
 	if (m_nCount < m_bitSamples - 1) {
-		w0 = samp + b * w1 - w2;
-		w2 = w1;
-		w1 = w0;
+		m_s0 = samp + c_B * m_s1 - m_s2;
+		m_s2 = m_s1;
+		m_s1 = m_s0;
 		m_nCount++;
 	} else {
-		//last sample needed
-		std::complex<double> y0;
+		//Process the last sample needed for result
+		StdCpx y0;
+		//double normalize = m_bitSamples / 2;
+
 		// Finalizing calculations
-		w0 = samp + b * w1 - w2;
-		y0 = w0 - w1*c; // resultant complex coefficient
-		y0 = y0*d; // constant substituting the iteration N-1, and correcting the phase at the same
+		m_s0 = samp + c_B * m_s1 - m_s2;
+		y0 = m_s0 - m_s1 * c_C; // resultant complex coefficient
+		y0 = y0 * c_D; // constant substituting the iteration N-1, and correcting the phase at the same
 		m_nCount = 0;
-		w1 = 0;
-		w2 = 0;
+		m_s1 = 0;
+		m_s2 = 0;
 		m_power = y0.real()*y0.real() + y0.imag()*y0.imag();
+		//m_power = y0.real(); //This or above?
+		//m_phase = y0.imag(); //???
+		//m_power /= normalize; //Do we need this?
+
 		return true;
 	}
 	return false;
-
-#if 0
-	//6/13/16: Just using CPX with same algorithm doesn't work, needs debugginh
-	//m_wn = x_n + m_wn1 * (2 * cos((TWOPI * m_m )/ N)) - m_wn2; //Lyons 13-80 re-arranged
-	//Same as m_wn = x+n + m_coeff * w_wn1 - m_wn2;
-	//m_wn = x_n + (m_wn1 * m_coeff) + (m_wn2 * -1); //Same as simplified version below
-	m_wnCpx = x_n + (m_wn1Cpx * m_coeff) - m_wn2Cpx;
-
-	//Update delay line
-	m_wn2Cpx = m_wn1Cpx;
-	m_wn1Cpx = m_wnCpx;
-
-	double normalize = m_bitSamples / 2;
-
-	if (m_nCount++ >= m_bitSamples) {
-		//We have enough samples to calculate a result
-		if (m_usePhaseAlgorithm) {
-#if 0
-			//Full algorithm with phase
-			double re = (0.5 * m_coeff * m_wn1Cpx - m_wn2Cpx);
-			double im = (0.5 * m_coeff2 * m_wn1Cpx - m_wn2Cpx);
-			m_power = re * re + im * im;
-			m_power /= normalize; //Normalize?
-			//Phase compared to prev result phase, for phase change detection
-			m_phase = atan2(im, re); //Result not tested or confirmed
-#endif
-		} else {
-			//Simplified algorithm without phase
-			m_powerCpx = (m_wn1Cpx * m_wn1Cpx) + (m_wn2Cpx * m_wn2Cpx) - (m_wn1Cpx * m_wn2Cpx * m_coeff); //Lyons 13-83
-			//m_powerCpx.re /= normalize; //Normalize?
-			//m_powerCpx.im /= normalize; //Normalize?
-			m_phase = 0;
-
-			//For compatibility
-			m_power = m_powerCpx.re;
-		}
-		m_wn1Cpx = m_wn2Cpx = 0;
-		m_nCount = 0;
-
-		//m_runningMean = 0;
-		//m_S = 0;
-		//m_runningMeanCount = 1;
-		return true;
-	}
-	return false;
-#endif
-
 }
 
 /*
