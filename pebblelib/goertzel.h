@@ -123,6 +123,7 @@ public:
 	bool processSample(double x_n, double &power, bool &aboveThreshold);
 	bool processSample(CPX x_n, double &retPower, bool &aboveThreshold);
 private:
+	bool processResult(double &retPower, bool &aboveThreshold);
 
 	ToneBit m_mainTone;
 	MovingAvgFilter *m_mainJitterFilter;

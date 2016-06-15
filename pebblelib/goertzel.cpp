@@ -631,110 +631,10 @@ bool Goertzel::processSample(double x_n, double &retPower, bool &aboveThreshold)
 	m_highCompareTone.processSample(x_n);
 	m_lowCompareTone.processSample(x_n);
 	m_mainTone.m_isValid = false;
-	retPower = 0;
-	aboveThreshold = false;
-	double mainPower = 0;
-	double highPower = 0;
-	double lowPower = 0;
-	double bufMean = 0;
-	double bufDev = 0;
-	double snr = 0;
-	if (result) {
-		//If we have a detectable tone, it should be strong in the main bin compared with surrounding bins
-
-		//Handle jitter
-		//Todo: move jitter process to ToneBit?
-		mainPower = m_mainJitterFilter->newSample(m_mainTone.m_power);
-		lowPower = m_lowJitterFilter->newSample(m_lowCompareTone.m_power);
-		highPower = m_highJitterFilter->newSample(m_highCompareTone.m_power);
-		//lowPower = m_lowCompareTone.m_power;
-		//highPower = m_highCompareTone.m_power;
-		bufDev = m_mainTone.m_stdDev;
-		bufMean = m_mainTone.m_runningMean;
-		snr = mainPower/bufMean;
-		retPower = mainPower;
-
-		switch (m_thresholdType) {
-			case TH_COMPARE:{
-				//Compares high/low tone poser
-				double avgComparePower = (highPower + lowPower) / 2;
-				retPower = mainPower;
-
-				//KA7OEI differential goertzel
-				double compareRatio = 0;
-				if (avgComparePower > 0)
-					//Avoid dev by zero for Nan
-					compareRatio = mainPower / avgComparePower;
-
-				if (false)
-					qDebug()<<"Low:"<<
-							  DB::powerTodB(lowPower)<<" Main:"<<
-							  DB::powerTodB(mainPower)<<" High:"<<
-							  DB::powerTodB(highPower)<<" Ratio:"<<
-							  compareRatio;
-
-				//if (debounce(compareRatio > m_compareThreshold)) {
-				if (compareRatio > m_compareThreshold) {
-					aboveThreshold = true;
-				} else {
-					aboveThreshold = false;
-				}
-			}
-				break;
-
-			//5/29/16: Best detection yet, tested with -40db noise gen
-			case TH_PEAK:
-				//Uses percentage of peak power for comparison
-				// Compute a variable threshold value for tone detection
-				// Fast attack and slow decay.
-				if (mainPower > m_peakPower)
-					m_peakPower = MovingAvgFilter::weightedAvg(m_peakPower, mainPower, 20); //Input has more weight on increasing signal than decreasing
-				else
-					m_peakPower = MovingAvgFilter::weightedAvg(m_peakPower, mainPower, 800);
-
-				//Super-Ratt and JSDR technique
-				//Divide agc_peak in thirds,  upper is rising, lower is falling, middle is stable
-				m_thresholdUp = m_peakPower * 0.67; //fldigi uses 0.60
-				m_thresholdDown = m_peakPower * 0.33; //fldigi uses 0.40
-
-				//Todo: Consider running mean from tone to set a lower floor to avoid random noise results
-				//or user slider to set squelch level
-				if (mainPower > m_thresholdUp) {
-					aboveThreshold = true;
-				} else if (mainPower < m_thresholdDown) {
-					aboveThreshold = false;
-				} else if (m_lastTone && mainPower > m_thresholdDown){
-					//Last result was a tone and we're in between thresholdUp and thresholdDown
-					aboveThreshold = true;
-				}
-
-				break;
-			case TH_MANUAL:
-				//Uses manual threshold
-				break;
-			case TH_AVERAGE:
-				//Compares power to running mean power in samples
-				if (false)
-					qDebug()<<"Power:"<<
-							  DB::powerTodB(mainPower)<<" Mean:"<<
-							  DB::powerTodB(bufMean)<<" Dev:"<<
-							  DB::powerTodB(bufDev);
-				if (snr > 5 ) {
-					aboveThreshold = true;
-				} else {
-					aboveThreshold = false;
-				}
-				break;
-			default:
-				aboveThreshold = false;
-				break;
-		}
-		m_lastTone = aboveThreshold;
-
-		return true; //Valid result
-
-	} //End if (result)
-	return false; //Needs more samples
+	if (result)
+		return processResult(retPower,aboveThreshold);
+	else
+		return false;
 }
 
 bool Goertzel::processSample(CPX x_n, double &retPower, bool &aboveThreshold)
@@ -746,6 +646,14 @@ bool Goertzel::processSample(CPX x_n, double &retPower, bool &aboveThreshold)
 	m_highCompareTone.processSample(x_n);
 	m_lowCompareTone.processSample(x_n);
 	m_mainTone.m_isValid = false;
+	if (result)
+		return processResult(retPower,aboveThreshold);
+	else
+		return false;
+}
+//Checks the results from the ToneBit to see if greater than threshold
+bool Goertzel::processResult(double &retPower, bool &aboveThreshold)
+{
 	retPower = 0;
 	aboveThreshold = false;
 	double mainPower = 0;
@@ -754,102 +662,99 @@ bool Goertzel::processSample(CPX x_n, double &retPower, bool &aboveThreshold)
 	double bufMean = 0;
 	double bufDev = 0;
 	double snr = 0;
-	if (result) {
-		//If we have a detectable tone, it should be strong in the main bin compared with surrounding bins
+	//If we have a detectable tone, it should be strong in the main bin compared with surrounding bins
 
-		//Handle jitter
-		//Todo: move jitter process to ToneBit?
-		mainPower = m_mainJitterFilter->newSample(m_mainTone.m_power);
-		lowPower = m_lowJitterFilter->newSample(m_lowCompareTone.m_power);
-		highPower = m_highJitterFilter->newSample(m_highCompareTone.m_power);
-		//lowPower = m_lowCompareTone.m_power;
-		//highPower = m_highCompareTone.m_power;
-		bufDev = m_mainTone.m_stdDev;
-		bufMean = m_mainTone.m_runningMean;
-		snr = mainPower/bufMean;
-		retPower = mainPower;
+	//Handle jitter
+	//Todo: move jitter process to ToneBit?
+	mainPower = m_mainJitterFilter->newSample(m_mainTone.m_power);
+	lowPower = m_lowJitterFilter->newSample(m_lowCompareTone.m_power);
+	highPower = m_highJitterFilter->newSample(m_highCompareTone.m_power);
+	//lowPower = m_lowCompareTone.m_power;
+	//highPower = m_highCompareTone.m_power;
+	bufDev = m_mainTone.m_stdDev;
+	bufMean = m_mainTone.m_runningMean;
+	snr = mainPower/bufMean;
+	retPower = mainPower;
 
-		switch (m_thresholdType) {
-			case TH_COMPARE:{
-				//Compares high/low tone poser
-				double avgComparePower = (highPower + lowPower) / 2;
-				retPower = mainPower;
+	switch (m_thresholdType) {
+		case TH_COMPARE:{
+			//Compares high/low tone poser
+			double avgComparePower = (highPower + lowPower) / 2;
+			retPower = mainPower;
 
-				//KA7OEI differential goertzel
-				double compareRatio = 0;
-				if (avgComparePower > 0)
-					//Avoid dev by zero for Nan
-					compareRatio = mainPower / avgComparePower;
+			//KA7OEI differential goertzel
+			double compareRatio = 0;
+			if (avgComparePower > 0)
+				//Avoid dev by zero for Nan
+				compareRatio = mainPower / avgComparePower;
 
-				if (false)
-					qDebug()<<"Low:"<<
-							  DB::powerTodB(lowPower)<<" Main:"<<
-							  DB::powerTodB(mainPower)<<" High:"<<
-							  DB::powerTodB(highPower)<<" Ratio:"<<
-							  compareRatio;
+			if (false)
+				qDebug()<<"Low:"<<
+						  DB::powerTodB(lowPower)<<" Main:"<<
+						  DB::powerTodB(mainPower)<<" High:"<<
+						  DB::powerTodB(highPower)<<" Ratio:"<<
+						  compareRatio;
 
-				//if (debounce(compareRatio > m_compareThreshold)) {
-				if (compareRatio > m_compareThreshold) {
-					aboveThreshold = true;
-				} else {
-					aboveThreshold = false;
-				}
-			}
-				break;
-
-			//5/29/16: Best detection yet, tested with -40db noise gen
-			case TH_PEAK:
-				//Uses percentage of peak power for comparison
-				// Compute a variable threshold value for tone detection
-				// Fast attack and slow decay.
-				if (mainPower > m_peakPower)
-					m_peakPower = MovingAvgFilter::weightedAvg(m_peakPower, mainPower, 20); //Input has more weight on increasing signal than decreasing
-				else
-					m_peakPower = MovingAvgFilter::weightedAvg(m_peakPower, mainPower, 800);
-
-				//Super-Ratt and JSDR technique
-				//Divide agc_peak in thirds,  upper is rising, lower is falling, middle is stable
-				m_thresholdUp = m_peakPower * 0.67; //fldigi uses 0.60
-				m_thresholdDown = m_peakPower * 0.33; //fldigi uses 0.40
-
-				//Todo: Consider running mean from tone to set a lower floor to avoid random noise results
-				//or user slider to set squelch level
-				if (mainPower > m_thresholdUp) {
-					aboveThreshold = true;
-				} else if (mainPower < m_thresholdDown) {
-					aboveThreshold = false;
-				} else if (m_lastTone && mainPower > m_thresholdDown){
-					//Last result was a tone and we're in between thresholdUp and thresholdDown
-					aboveThreshold = true;
-				}
-
-				break;
-			case TH_MANUAL:
-				//Uses manual threshold
-				break;
-			case TH_AVERAGE:
-				//Compares power to running mean power in samples
-				if (false)
-					qDebug()<<"Power:"<<
-							  DB::powerTodB(mainPower)<<" Mean:"<<
-							  DB::powerTodB(bufMean)<<" Dev:"<<
-							  DB::powerTodB(bufDev);
-				if (snr > 5 ) {
-					aboveThreshold = true;
-				} else {
-					aboveThreshold = false;
-				}
-				break;
-			default:
+			//if (debounce(compareRatio > m_compareThreshold)) {
+			if (compareRatio > m_compareThreshold) {
+				aboveThreshold = true;
+			} else {
 				aboveThreshold = false;
-				break;
+			}
 		}
-		m_lastTone = aboveThreshold;
+			break;
 
-		return true; //Valid result
+		//5/29/16: Best detection yet, tested with -40db noise gen
+		case TH_PEAK:
+			//Uses percentage of peak power for comparison
+			// Compute a variable threshold value for tone detection
+			// Fast attack and slow decay.
+			if (mainPower > m_peakPower)
+				m_peakPower = MovingAvgFilter::weightedAvg(m_peakPower, mainPower, 20); //Input has more weight on increasing signal than decreasing
+			else
+				m_peakPower = MovingAvgFilter::weightedAvg(m_peakPower, mainPower, 800);
 
-	} //End if (result)
-	return false; //Needs more samples
+			//Super-Ratt and JSDR technique
+			//Divide agc_peak in thirds,  upper is rising, lower is falling, middle is stable
+			m_thresholdUp = m_peakPower * 0.67; //fldigi uses 0.60
+			m_thresholdDown = m_peakPower * 0.33; //fldigi uses 0.40
+
+			//Todo: Consider running mean from tone to set a lower floor to avoid random noise results
+			//or user slider to set squelch level
+			if (mainPower > m_thresholdUp) {
+				aboveThreshold = true;
+			} else if (mainPower < m_thresholdDown) {
+				aboveThreshold = false;
+			} else if (m_lastTone && mainPower > m_thresholdDown){
+				//Last result was a tone and we're in between thresholdUp and thresholdDown
+				aboveThreshold = true;
+			}
+
+			break;
+		case TH_MANUAL:
+			//Uses manual threshold
+			break;
+		case TH_AVERAGE:
+			//Compares power to running mean power in samples
+			if (false)
+				qDebug()<<"Power:"<<
+						  DB::powerTodB(mainPower)<<" Mean:"<<
+						  DB::powerTodB(bufMean)<<" Dev:"<<
+						  DB::powerTodB(bufDev);
+			if (snr > 5 ) {
+				aboveThreshold = true;
+			} else {
+				aboveThreshold = false;
+			}
+			break;
+		default:
+			aboveThreshold = false;
+			break;
+	}
+	m_lastTone = aboveThreshold;
+
+	return true; //Valid result
+
 }
 
 /*
