@@ -740,7 +740,10 @@ CPX * Morse::processBlock(CPX *in)
 			} //End if (result)
 		} else {
 			//Using goertzel
-			result = m_goertzel->processSample(nextBuf[i].re, tonePower, aboveThreshold);
+			//FP works
+			//result = m_goertzel->processSample(nextBuf[i].re, tonePower, aboveThreshold);
+			//CPX with non-integer k Goertzel works
+			result = m_goertzel->processSample(nextBuf[i], tonePower, aboveThreshold);
 			if (result) {
 				//Goertzel handles debounce and threshold
 				meterValue = DB::powerTodB(tonePower);
