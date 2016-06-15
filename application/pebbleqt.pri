@@ -1,8 +1,9 @@
 #Common to all Pebble projects
 cache()
 
-#Compile with C++11 so we can use <funtional>
-CONFIG += c++11
+#Compile with > C++11 so we can use <funtional>
+#Compile with C++14 so we can use complex with literal support (il, i)
+CONFIG += c++14
 #QMAKE_CXXFLAGS += -mmacosx-version-min=10.8
 #QMAKE_CXXFLAGS += -std=c++11
 #QMAKE_CXXFLAGS += -stdlib=libc++
