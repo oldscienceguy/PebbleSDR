@@ -87,11 +87,11 @@ void FFT::fftParams(quint32 _fftSize, double _dBCompensation, double _sampleRate
 
 	m_sampleRate = _sampleRate;
 
-	m_timeDomain = CPX::memalign(m_fftSize);
-	m_freqDomain = CPX::memalign(m_fftSize);
-	m_workingBuf = CPX::memalign(m_fftSize);
-	m_overlap = CPX::memalign(m_fftSize);
-	CPX::clearCPX(m_overlap, m_fftSize);
+	m_timeDomain = memalign(m_fftSize);
+	m_freqDomain = memalign(m_fftSize);
+	m_workingBuf = memalign(m_fftSize);
+	m_overlap = memalign(m_fftSize);
+	clearCPX(m_overlap, m_fftSize);
 
 	if (m_windowFunction != NULL) {
 		delete m_windowFunction;
@@ -133,7 +133,7 @@ bool FFT::m_applyWindow(const CPX *in, int numSamples)
 		if (m_windowType != WindowFunction::NONE && numSamples == m_samplesPerBuffer) {
 			//Smooth the input data with our window
 			m_isOverload = false;
-			//CPX::multCPX(timeDomain, in, windowFunction->windowCpx, samplesPerBuffer);
+			//multCPX(timeDomain, in, windowFunction->windowCpx, samplesPerBuffer);
 			for (int i=0; i<m_samplesPerBuffer; i++) {
 				if (fabs(in[i].re) > m_overLimit || fabs(in[i].im) > m_overLimit) {
 					m_isOverload = true;
@@ -148,9 +148,9 @@ bool FFT::m_applyWindow(const CPX *in, int numSamples)
 		} else {
 			//Make sure that buffer which does not have samples is zero'd out
 			//We can pad samples in the time domain because it does not impact frequency results in FFT
-			CPX::clearCPX(m_timeDomain,m_fftSize);
+			clearCPX(m_timeDomain,m_fftSize);
 			//Put the data in properly aligned FFTW buffer
-			CPX::copyCPX(m_timeDomain, in, numSamples);
+			copyCPX(m_timeDomain, in, numSamples);
 		}
 	}
 	return m_isOverload;
@@ -206,8 +206,8 @@ void FFT::m_unfoldInOrder(CPX *inBuf, CPX *outBuf)
 	// move in[0] to in[1023] to out[1024] to out[2047]
 	// move in[1024] to in[2047] to out[0] to out[1023]
 
-	CPX::copyCPX(&outBuf[fftMid], &inBuf[0], fftMid);
-	CPX::copyCPX(&outBuf[0], &inBuf[fftMid], fftMid);
+	copyCPX(&outBuf[fftMid], &inBuf[0], fftMid);
+	copyCPX(&outBuf[0], &inBuf[fftMid], fftMid);
 
 #else
 	// FFT output index 0 to N/2-1 - frequency output 0 to +Fs/2 Hz  ( 0 Hz DC term, positive frequencies )
@@ -244,10 +244,10 @@ void FFT::overlapAdd(CPX *out, int numSamples)
     //Do Overlap-Add to reduce from 1/2 fftSize
 
     //Add the samples in 'in' to last overlap
-	CPX::addCPX(out, m_timeDomain, m_overlap, numSamples);
+	addCPX(out, m_timeDomain, m_overlap, numSamples);
 
     //Save the upper 50% samples to  overlap for next run
-	CPX::copyCPX(m_overlap, (m_timeDomain+numSamples), numSamples);
+	copyCPX(m_overlap, (m_timeDomain+numSamples), numSamples);
 
 }
 

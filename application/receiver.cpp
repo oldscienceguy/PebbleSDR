@@ -234,9 +234,9 @@ bool Receiver::turnPowerOn()
     //Sets the Mixer NCO frequency
     //downConvert.SetFrequency(-RDS_FREQUENCY);
 
-	m_workingBuf = CPX::memalign(m_framesPerBuffer);
-	m_sampleBuf = CPX::memalign(m_framesPerBuffer);
-	m_audioBuf = CPX::memalign(m_framesPerBuffer);
+	m_workingBuf = memalign(m_framesPerBuffer);
+	m_sampleBuf = memalign(m_framesPerBuffer);
+	m_audioBuf = memalign(m_framesPerBuffer);
 	m_sampleBufLen = 0;
 	m_dbSpectrumBuf = new double[m_framesPerBuffer];
 
@@ -935,7 +935,7 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 		quint32 decimationLoss = m_demodDecimator->decBy2Stages();
 		//3db per stage, but use 2db for some headroom
 		//Note: not clear to me if decimation affects time domain signal amplitude or just FFT power?
-		CPX::scaleCPX(nextStep,nextStep,DB::dBToAmplitude(decimationLoss * 2),numStepSamples);
+		scaleCPX(nextStep,nextStep,DB::dBToAmplitude(decimationLoss * 2),numStepSamples);
 
 		//Create zoomed spectrum
 		//global->perform.StartPerformance("Signal Spectrum Zoomed");
@@ -966,7 +966,7 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 
         //Tune only mode, no demod or output
 		if (m_demod->demodMode() == DeviceInterface::dmNONE){
-			CPX::clearCPX(m_audioBuf,m_framesPerBuffer);
+			clearCPX(m_audioBuf,m_framesPerBuffer);
             return;
         }
 
@@ -1004,7 +1004,7 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 	if (resampRate != 1)
 		numStepSamples = m_fractResampler.Resample(numStepSamples,resampRate,nextStep,m_audioBuf);
 	else
-		CPX::copyCPX(m_audioBuf,nextStep,numStepSamples);
+		copyCPX(m_audioBuf,nextStep,numStepSamples);
 	//global->perform.StopPerformance(100);
 
 	//global->perform.StartPerformance("Process Audio");
@@ -1077,9 +1077,9 @@ void Receiver::ProcessBlockFreqDomain(CPX *in, CPX *out, int frameCount)
 
 
 	if (mute)
-		CPX::clearCPX(out, demodFrames);
+		clearCPX(out, demodFrames);
 	else
-		CPX::scaleCPX(out, nextStep, gain, demodFrames);
+		scaleCPX(out, nextStep, gain, demodFrames);
 
     audioOutput->SendToOutput(out,demodFrames);
 

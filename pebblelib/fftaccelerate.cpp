@@ -66,7 +66,7 @@ void FFTAccelerate::fftForward(CPX *in, CPX *out, int numSamples)
 
 	//If out == NULL, just leave result in freqDomain buffer and let caller get it
 	if (out != NULL)
-		CPX::copyCPX(out, m_freqDomain, m_fftSize);
+		copyCPX(out, m_freqDomain, m_fftSize);
 
 }
 
@@ -78,9 +78,9 @@ void FFTAccelerate::fftInverse(CPX *in, CPX *out, int numSamples)
 	//If in==NULL, use whatever is in freqDomain buffer
 	if (in != NULL ) {
 		if (numSamples < m_fftSize)
-			CPX::clearCPX(m_freqDomain,m_fftSize);
+			clearCPX(m_freqDomain,m_fftSize);
 		//Put the data in properly aligned FFTW buffer
-		CPX::copyCPX(m_freqDomain, in, numSamples);
+		copyCPX(m_freqDomain, in, numSamples);
 	}
 
 	//Copy freqDomain to splitComplex
@@ -99,7 +99,7 @@ void FFTAccelerate::fftInverse(CPX *in, CPX *out, int numSamples)
 
 	//If out == NULL, just leave result in freqDomain buffer and let caller get it
 	if (out != NULL)
-		CPX::copyCPX(out, m_timeDomain, m_fftSize);
+		copyCPX(out, m_timeDomain, m_fftSize);
 
 }
 

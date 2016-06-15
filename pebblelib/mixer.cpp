@@ -7,7 +7,7 @@ Mixer::Mixer(quint32 _sampleRate, quint32 _bufferSize)
 	m_sampleRate = _sampleRate;
 	m_numSamples = _bufferSize;
 
-	m_out = CPX::memalign(m_numSamples);
+	m_out = memalign(m_numSamples);
 
 	//nco = new NCO(_sampleRate,_bufferSize);
 	setFrequency(0);

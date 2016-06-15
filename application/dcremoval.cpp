@@ -10,7 +10,7 @@ DCRemoval::DCRemoval(quint32 _sampleRate, quint32 _bufferSize) : ProcessStep(_sa
 
 CPX* DCRemoval::process(CPX* in, quint32 _numSamples) {
 	if (!enabled) {
-		CPX::copyCPX(out, in, _numSamples);
+		copyCPX(out, in, _numSamples);
 		return out;
 	}
 #if 1

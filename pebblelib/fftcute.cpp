@@ -202,16 +202,16 @@ void CFft::fftForward(CPX * in, CPX * out, int numSamples)
 
 	}
 	//Ooura is inplace, so copy to working dir so timedomain is intact
-	CPX::copyCPX(m_workingBuf,m_timeDomain,m_fftSize);
+	copyCPX(m_workingBuf,m_timeDomain,m_fftSize);
 
     bitrv2(m_fftSize*2, m_pWorkArea + 2, (TYPEREAL*)m_workingBuf);
     CpxFFT(m_fftSize*2, (TYPEREAL*)m_workingBuf, m_pSinCosTbl);
 
-	CPX::copyCPX(m_freqDomain,m_workingBuf,m_fftSize) ;
+	copyCPX(m_freqDomain,m_workingBuf,m_fftSize) ;
 
     //If out == NULL, just leave result in freqDomain buffer and let caller get it
     if (out != NULL)
-		CPX::copyCPX(out, m_freqDomain, m_fftSize);
+		copyCPX(out, m_freqDomain, m_fftSize);
 
 #if 0
     //Test Pebble restuls with original cuteSDR calculations
@@ -254,22 +254,22 @@ void CFft::fftInverse(CPX * in, CPX * out, int numSamples)
 	if (in != NULL) {
 		if (numSamples < m_fftSize)
 			//Make sure that buffer which does not have samples is zero'd out
-			CPX::clearCPX(m_freqDomain,m_fftSize);
+			clearCPX(m_freqDomain,m_fftSize);
 
-		CPX::copyCPX(m_freqDomain,in, numSamples);  //In-place functions, use workingBuf to keep other buffers intact
+		copyCPX(m_freqDomain,in, numSamples);  //In-place functions, use workingBuf to keep other buffers intact
 
 	}
 	//Ooura is inplace, so copy to working dir so freqdomain is intact
-	CPX::copyCPX(m_workingBuf,m_freqDomain,m_fftSize);
+	copyCPX(m_workingBuf,m_freqDomain,m_fftSize);
 
     bitrv2conj(m_fftSize*2, m_pWorkArea + 2, (TYPEREAL*)m_workingBuf);
 	cftbsub(m_fftSize*2, (TYPEREAL*)m_workingBuf, m_pSinCosTbl);
 
     //in and out are same buffer so we need to copy to freqDomain buffer to be consistent
-	CPX::copyCPX(m_timeDomain, m_workingBuf, m_fftSize);
+	copyCPX(m_timeDomain, m_workingBuf, m_fftSize);
 
     if (out != NULL)
-		CPX::copyCPX(out, m_timeDomain, m_fftSize);
+		copyCPX(out, m_timeDomain, m_fftSize);
 
 }
 

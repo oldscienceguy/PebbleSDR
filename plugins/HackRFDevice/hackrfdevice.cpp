@@ -34,7 +34,7 @@ bool HackRFDevice::initialize(CB_ProcessIQData _callback,
 	//If we are decimating, we need to collect more samples
 	deviceSamplesPerBuffer = m_framesPerBuffer * m_decimateFactor;
 	producerBuf = (CPX8*)new qint8[deviceSamplesPerBuffer * sizeof(CPX8)];
-	decimatorBuf = CPX::memalign(deviceSamplesPerBuffer);
+	decimatorBuf = memalign(deviceSamplesPerBuffer);
 
 	decimator = new Decimator(m_deviceSampleRate, deviceSamplesPerBuffer);
 	setSampleRate(m_deviceSampleRate); //Builds decimation chain

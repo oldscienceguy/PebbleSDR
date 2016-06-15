@@ -33,7 +33,7 @@ double CPX::phase() const
 }
 
 //Allocates a block of 16byte aligned memory, optimal for FFT and SIMD
-CPX *CPX::memalign(int _numCPX)
+CPX *CpxUtil::memalign(int _numCPX)
 {
 	void * buf;
 	size_t align = 16;
@@ -45,22 +45,22 @@ CPX *CPX::memalign(int _numCPX)
 }
 
 //Todo: Remove non constant versions
-void CPX::copyCPX(CPX *out, CPX *in, int size)
+void CpxUtil::copyCPX(CPX *out, CPX *in, int size)
 {
 	memcpy(out,in,sizeof(CPX) * size);
 }
-void CPX::copyCPX(CPX *out, const CPX *in, int size)
+void CpxUtil::copyCPX(CPX *out, const CPX *in, int size)
 {
 	memcpy(out,in,sizeof(CPX) * size);
 }
 
-void CPX::multCPX(CPX * out, const CPX * in, const CPX *in2, int size)
+void CpxUtil::multCPX(CPX * out, const CPX * in, const CPX *in2, int size)
 {
 	for (int i=0; i<size; i++)
 		out[i] = in[i] * in2[i];
 }
 
-void CPX::multCPX(CPX * out, CPX * in, CPX *in2, int size)
+void CpxUtil::multCPX(CPX * out, CPX * in, CPX *in2, int size)
 {
 	if(SIMD)
 		return SSEMultCPX(out,in,in2,size);
@@ -69,13 +69,13 @@ void CPX::multCPX(CPX * out, CPX * in, CPX *in2, int size)
 		out[i] = in[i] * in2[i];
 }
 
-void CPX::scaleCPX(CPX *out, const CPX *in, double a, int size)
+void CpxUtil::scaleCPX(CPX *out, const CPX *in, double a, int size)
 {
 	for (int i=0; i<size; i++)
 		out[i] = in[i].scale(a);
 }
 
-void CPX::scaleCPX(CPX *out, CPX *in, double a, int size)
+void CpxUtil::scaleCPX(CPX *out, CPX *in, double a, int size)
 {
 	if(SIMD)
 		return SSEScaleCPX(out,in,a,size);
@@ -84,13 +84,13 @@ void CPX::scaleCPX(CPX *out, CPX *in, double a, int size)
 		out[i] = in[i].scale(a);
 }
 
-void CPX::addCPX(CPX * out, const CPX * in, const CPX *in2, int size)
+void CpxUtil::addCPX(CPX * out, const CPX * in, const CPX *in2, int size)
 {
 	for (int i=0; i<size; i++)
 		out[i] = in[i] + in2[i];
 }
 
-void CPX::addCPX(CPX * out, CPX * in, CPX *in2, int size)
+void CpxUtil::addCPX(CPX * out, CPX * in, CPX *in2, int size)
 {
 	if (SIMD)
 		return SSEAddCPX(out,in,in2,size);
@@ -99,7 +99,7 @@ void CPX::addCPX(CPX * out, CPX * in, CPX *in2, int size)
 		out[i] = in[i] + in2[i];
 }
 
-void CPX::magCPX(CPX *out, const CPX *in, int size)
+void CpxUtil::magCPX(CPX *out, const CPX *in, int size)
 {
 	for (int i=0; i<size; i++){
 		out[i].re = in[i].mag();
@@ -107,7 +107,7 @@ void CPX::magCPX(CPX *out, const CPX *in, int size)
 	}
 }
 
-void CPX::sqrMagCPX(CPX *out, const CPX *in, int size)
+void CpxUtil::sqrMagCPX(CPX *out, const CPX *in, int size)
 {
 	for (int i = 0; i < size; i++) {
 		out[i].re = in[i].sqrMag();
@@ -115,7 +115,7 @@ void CPX::sqrMagCPX(CPX *out, const CPX *in, int size)
 	}
 }
 
-void CPX::clearCPX(CPX *out, int size)
+void CpxUtil::clearCPX(CPX *out, int size)
 {
 	memset(out,0,sizeof(CPX) * size);
 }
@@ -124,7 +124,7 @@ void CPX::clearCPX(CPX *out, int size)
 //Copy every 'by' samples from in to out
 //decimate(out,in,2,numSamples) //Copy 0,2,4... to in
 //decimate(out,in,3,numSamples) //COpy 0,3,6 ...
-void CPX::decimateCPX(CPX *out, const CPX *in, int by, int size)
+void CpxUtil::decimateCPX(CPX *out, const CPX *in, int by, int size)
 {
     for (int i = 0, j = 0; i < size; i+=by, j++)
     {
@@ -132,7 +132,7 @@ void CPX::decimateCPX(CPX *out, const CPX *in, int by, int size)
     }  
 }
 //
-double CPX::normSqrCPX(const CPX *in, int size)
+double CpxUtil::normSqrCPX(const CPX *in, int size)
 {
     double sum = 0.0;
 	for (int i=0; i<size; i++)
@@ -140,7 +140,7 @@ double CPX::normSqrCPX(const CPX *in, int size)
 	return sum;
 }
 
-double CPX::normCPX(const CPX *in, int size)
+double CpxUtil::normCPX(const CPX *in, int size)
 {
     double sum = 0.0;
 	for (int i=0; i<size; i++)
@@ -149,14 +149,14 @@ double CPX::normCPX(const CPX *in, int size)
 }
 
 //Returns max mag() in buffer
-double CPX::peakCPX(const CPX *in, int size)
+double CpxUtil::peakCPX(const CPX *in, int size)
 {
 	double maxMag=0.0;
 	for (int i=0; i<size; i++)
 		maxMag = std::max(in[i].mag(),maxMag);
 	return maxMag;
 }
-double CPX::peakPowerCPX(const CPX *in, int size)
+double CpxUtil::peakPowerCPX(const CPX *in, int size)
 {
 	double maxPower = 0.0;
 	for (int i=0; i<size; i++)
@@ -171,7 +171,7 @@ CPXBuf::CPXBuf(int _size)
 {
 	size = _size;
 	int msz = sizeof(CPX) * size;
-	cpxBuffer = CPX::memalign(msz); //16byte aligned
+	cpxBuffer = memalign(msz); //16byte aligned
 }
 CPXBuf::~CPXBuf()
 {

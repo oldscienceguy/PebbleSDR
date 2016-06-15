@@ -9,7 +9,7 @@ ProcessStep::ProcessStep(quint32 _sampleRate, quint32 _bufferSize)
 	numSamples = _bufferSize;
 	bufferSize = _bufferSize; //Will eventually replace numSamples
 	numSamplesX2 = _bufferSize*2; //Frequency used
-	out = CPX::memalign(numSamples);
+	out = memalign(numSamples);
 	enabled = false;
 }
 

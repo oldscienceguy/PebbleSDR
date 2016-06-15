@@ -268,9 +268,9 @@ CPX* SignalStrength::tdEstimate(CPX *in, quint32 numSamples, bool estNoise, bool
 		//squelch is a form of AGC and should have an attack/decay component to smooth out the response
 		//we fudge that by just looking at the average of the entire buffer
 		if (m_avgDb < m_squelchDb) {
-			CPX::clearCPX(out,numSamples);
+			clearCPX(out,numSamples);
 		} else {
-			CPX::copyCPX(out, in, numSamples);
+			copyCPX(out, in, numSamples);
 		}
 
 		if (updateTimer.elapsed() > updateInterval) {

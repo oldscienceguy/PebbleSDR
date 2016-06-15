@@ -89,16 +89,16 @@ void FFTOoura::fftForward(CPX *in, CPX *out, int numSamples)
 
 	}
 	//Ooura is inplace, so copy to working dir so timedomain is intact
-	CPX::copyCPX(m_workingBuf,m_timeDomain,m_fftSize);
+	copyCPX(m_workingBuf,m_timeDomain,m_fftSize);
 
 	//Size is 2x fftSize because offt works on double[] re-im-re-im etc
 	cdft(2*m_fftSize, +1, (double*)m_workingBuf, offtWorkArea, offtSinCosTable);
 
-	CPX::copyCPX(m_freqDomain,m_workingBuf,m_fftSize) ;
+	copyCPX(m_freqDomain,m_workingBuf,m_fftSize) ;
 
     //If out == NULL, just leave result in freqDomain buffer and let caller get it
     if (out != NULL)
-		CPX::copyCPX(out, m_freqDomain, m_fftSize);
+		copyCPX(out, m_freqDomain, m_fftSize);
 
 }
 
@@ -125,21 +125,21 @@ void FFTOoura::fftInverse(CPX *in, CPX *out, int numSamples)
 	if (in != NULL) {
 		if (numSamples < m_fftSize)
 			//Make sure that buffer which does not have samples is zero'd out
-			CPX::clearCPX(m_freqDomain,m_fftSize);
+			clearCPX(m_freqDomain,m_fftSize);
 
-		CPX::copyCPX(m_freqDomain,in, numSamples);  //In-place functions, use workingBuf to keep other buffers intact
+		copyCPX(m_freqDomain,in, numSamples);  //In-place functions, use workingBuf to keep other buffers intact
 	}
 
 	//Ooura is inplace, so copy to working dir so freqdomain is intact
-	CPX::copyCPX(m_workingBuf,m_freqDomain,m_fftSize);
+	copyCPX(m_workingBuf,m_freqDomain,m_fftSize);
 
     //Size is 2x fftSize because offt works on double[] re-im-re-im et
 	cdft(2*m_fftSize, -1, (double*)m_workingBuf, offtWorkArea, offtSinCosTable);
 
-	CPX::copyCPX(m_timeDomain, m_workingBuf, m_fftSize);
+	copyCPX(m_timeDomain, m_workingBuf, m_fftSize);
 
     if (out != NULL)
-		CPX::copyCPX(out, m_timeDomain, m_fftSize);
+		copyCPX(out, m_timeDomain, m_fftSize);
 }
 
 

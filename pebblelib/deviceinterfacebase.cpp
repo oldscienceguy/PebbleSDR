@@ -74,7 +74,7 @@ bool DeviceInterfaceBase::initialize(CB_ProcessIQData _callback,
 		m_audioInput = Audio::Factory(std::bind(&DeviceInterfaceBase::audioProducer, this, _1, _2), m_framesPerBuffer);
 	}
 
-	m_audioInputBuffer = CPX::memalign(m_framesPerBuffer);
+	m_audioInputBuffer = memalign(m_framesPerBuffer);
 
 	return true;
 }

@@ -12,7 +12,7 @@ SignalSpectrum::SignalSpectrum(quint32 _sampleRate, quint32 _hiResSampleRate, qu
 
 	m_hiResSampleRate = _hiResSampleRate;
 	//Output buffers
-	m_rawIQ = CPX::memalign(numSamples);
+	m_rawIQ = memalign(numSamples);
 
 	m_fftUnprocessed = FFT::factory("Unprocessed spectrum");
 	m_unprocessedSpectrum = new double[m_numSpectrumBins];
@@ -20,7 +20,7 @@ SignalSpectrum::SignalSpectrum(quint32 _sampleRate, quint32 _hiResSampleRate, qu
 	m_fftHiRes = FFT::factory("HiRes spectrum");
 	m_hiResSpectrum = new double[m_numHiResSpectrumBins];
 
-	m_tmp_cpx = CPX::memalign(m_numSpectrumBins);
+	m_tmp_cpx = memalign(m_numSpectrumBins);
 
 	//db calibration
 	m_dbOffset  = global->settings->m_dbOffset;
@@ -77,7 +77,7 @@ void SignalSpectrum::unprocessed(CPX * in, int _numSamples)
     }
 
     //Keep a copy raw I/Q to local buffer for display
-	//CPX::copyCPX(rawIQ, in, numSamples);
+	//copyCPX(rawIQ, in, numSamples);
 	//global->perform.StartPerformance("MakeSpectrum");
 	makeSpectrum(m_fftUnprocessed, in, m_unprocessedSpectrum, _numSamples);
 	//global->perform.StopPerformance(10);

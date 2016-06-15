@@ -26,9 +26,9 @@ bool MorseGenDevice::initialize(CB_ProcessIQData _callback,
 	quint32 tcwMs = MorseCode::wpmToTcwMs(20);
 	quint32 maxSymbolMs = MorseCode::c_maxTcwPerSymbol * tcwMs;
 	quint32 outBufLen = maxSymbolMs / (1000.0/m_deviceSampleRate);
-	m_outBuf = CPX::memalign(outBufLen);
-	m_outBuf1 = CPX::memalign(outBufLen);
-	m_outBuf2 = CPX::memalign(outBufLen);
+	m_outBuf = memalign(outBufLen);
+	m_outBuf1 = memalign(outBufLen);
+	m_outBuf2 = memalign(outBufLen);
 
 	//Sample rate must be same for all gen and same as wav file
 	m_morseGen1 = new MorseGen(m_deviceSampleRate);

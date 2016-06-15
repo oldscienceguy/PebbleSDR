@@ -162,11 +162,11 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 	m_numSamples = _sampleCount;
 	if (m_out != NULL)
 		delete m_out;
-	m_out = CPX::memalign(m_numSamples);
+	m_out = memalign(m_numSamples);
 
 	if (m_workingBuf != NULL)
 		delete m_workingBuf;
-	m_workingBuf = CPX::memalign(m_numSamples);
+	m_workingBuf = memalign(m_numSamples);
 
 	if (m_decimate != NULL)
 		delete m_decimate;
@@ -625,7 +625,7 @@ CPX * Morse::processBlock(CPX *in)
     syncFilterWithWpm();
 
     //Downconverter first mixes in place, ie changes in!  So we have to work with a copy
-	CPX::copyCPX(m_workingBuf,in,m_numSamples);
+	copyCPX(m_workingBuf,in,m_numSamples);
 
     //We need to account for modemOffset in ReceiverWidget added so we hear tone but freq display is correct
     //Actual freq for CWU will be freq + modemFrequency for CWL will be freq -modemFrequency.

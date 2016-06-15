@@ -376,7 +376,7 @@ CPX *WWVDigitalModem::processBlock(CPX *in)
         return in; //Not initialized yet
 
     //Downconverter first mixes in place, ie changes in!  So we have to work with a copy
-    CPX::copyCPX(workingBuf,in,numSamples);
+    copyCPX(workingBuf,in,numSamples);
 
     //Downconvert and mix
     modemDownConvert.SetFrequency(0); //No additional mixing

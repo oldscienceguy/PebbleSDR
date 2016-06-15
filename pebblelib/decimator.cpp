@@ -24,8 +24,8 @@ Decimator::Decimator(quint32 _sampleRate, quint32 _bufferSize)
 	m_decimationChain.clear();
 	initFilters();
 
-	m_workingBuf1 = CPX::memalign(m_bufferSize * 2);
-	m_workingBuf2 = CPX::memalign(m_bufferSize * 2);
+	m_workingBuf1 = memalign(m_bufferSize * 2);
+	m_workingBuf2 = memalign(m_bufferSize * 2);
 
 	if (m_useVdsp) {
 		//Use osX Accelerate vector library
@@ -154,7 +154,7 @@ quint32 Decimator::process(CPX *_in, CPX *_out, quint32 _numSamples)
 	m_mutex.lock();
 	if (m_decimationChain.isEmpty()) {
 		//No decimation, just return
-		CPX::copyCPX(_out,_in,_numSamples);
+		copyCPX(_out,_in,_numSamples);
 		m_mutex.unlock();
 		return _numSamples;
 	}
@@ -205,7 +205,7 @@ quint32 Decimator::process(CPX *_in, CPX *_out, quint32 _numSamples)
 
 	} else {
 		HalfbandFilter *chain = NULL;
-		CPX::copyCPX(m_workingBuf1, _in, _numSamples);
+		copyCPX(m_workingBuf1, _in, _numSamples);
 		CPX* nextIn = m_workingBuf1;
 		CPX* nextOut = m_workingBuf2;
 		CPX* lastOut;
@@ -218,7 +218,7 @@ quint32 Decimator::process(CPX *_in, CPX *_out, quint32 _numSamples)
 			nextOut = nextIn;
 			nextIn = lastOut;
 		}
-		CPX::copyCPX(_out, lastOut, remainingSamples);
+		copyCPX(_out, lastOut, remainingSamples);
 
 	}
 	m_mutex.unlock();
@@ -255,10 +255,10 @@ HalfbandFilter::HalfbandFilter(quint16 _numTaps, double _wPass, double *_coeff)
 	memset(m_lastXVDsp.realp,0,maxResultLen);
 	memset(m_lastXVDsp.imagp,0,maxResultLen);
 
-	m_lastX = CPX::memalign(maxResultLen);
-	CPX::clearCPX(m_lastX, maxResultLen);
-	m_tmpX = CPX::memalign(maxResultLen); //Largest output size we'll see
-	CPX::clearCPX(m_tmpX,maxResultLen);
+	m_lastX = memalign(maxResultLen);
+	clearCPX(m_lastX, maxResultLen);
+	m_tmpX = memalign(maxResultLen); //Largest output size we'll see
+	clearCPX(m_tmpX,maxResultLen);
 	m_decimate = 2;
 }
 
@@ -354,7 +354,7 @@ quint32 HalfbandFilter::convolveOS(const CPX *x, quint32 xLen, const double *h,
 
 	//Create a unified buffer with lastX[] and x[]
 	//First part of lastX already has last hLen samples;
-	CPX::copyCPX(&m_lastX[dLen], x, xLen);
+	copyCPX(&m_lastX[dLen], x, xLen);
 
 	for (quint32 n = 0; n < xLen; n += decimate) {
 		y[yCnt].clear();
@@ -372,7 +372,7 @@ quint32 HalfbandFilter::convolveOS(const CPX *x, quint32 xLen, const double *h,
 		yCnt++;
 	}
 	//Save the last hLen -1 samples for next call
-	CPX::copyCPX(m_lastX, &x[xLen - dLen], dLen);
+	copyCPX(m_lastX, &x[xLen - dLen], dLen);
 
 	return yCnt;
 }
@@ -491,11 +491,11 @@ quint32 HalfbandFilter::convolveOA(const CPX *x, quint32 xLen, const double *h,
 	}
 
 	//Save last overlap results, remember we're decimated
-	CPX::copyCPX(m_lastX,&yOut[xLen / decimate], dLen);
+	copyCPX(m_lastX,&yOut[xLen / decimate], dLen);
 
 	//And return in out
 	if (yOut != y)
-		CPX::copyCPX(y,m_tmpX,yCnt);
+		copyCPX(y,m_tmpX,yCnt);
 
 	return xLen / decimate; //yCnt will have extra results that we save to lastX
 }

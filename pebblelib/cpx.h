@@ -70,6 +70,51 @@ public:
 	float im;
 };
 
+class CPX;
+
+namespace CpxUtil {
+	//adds in + in2 and returns in out, SIMD enabled
+	void addCPX(CPX * out, CPX * in, CPX *in2, int size);
+	void addCPX(CPX * out, const CPX * in, const CPX *in2, int size);
+	//Allocates a block of 16byte aligned memory, optimal for FFT and SIMD
+	CPX *memalign(int _numCPX);
+	//Just copies in to out
+	void copyCPX(CPX *out, CPX *in, int size);
+	void copyCPX(CPX *out, const CPX *in, int size);
+
+	//Clears buffer to zeros, equiv to CPX(0,0)
+	void clearCPX(CPX *out, int size);
+
+	//scales in by a and returns in out, SIMD enabled
+	void scaleCPX(CPX * out, CPX * in, double a, int size);
+	void scaleCPX(CPX * out, const CPX * in, double a, int size);
+
+	void multCPX(CPX * out, CPX * in, CPX *in2, int size);
+	void multCPX(CPX * out, const CPX * in, const CPX *in2, int size);
+
+	//out.re = mag, out.im = original out.re SIMD enabled
+	void magCPX(CPX *out, const CPX *in, int size);
+
+	//out.re = sqrMag, out.im = original out.reSIMD enabled
+	void sqrMagCPX(CPX *out, const CPX *in, int size);
+
+	//Copy every N samples from in to out
+	void decimateCPX(CPX *out, const CPX *in, int by, int size);
+
+	//Hypot version of norm
+	double normCPX(const CPX *in, int size);
+
+	//Squared version of norm
+	double normSqrCPX(const CPX *in, int size);
+
+	//Return max mag()
+	double peakCPX(const CPX *in, int size);
+	double peakPowerCPX(const CPX *in, int size);
+
+}
+
+using namespace CpxUtil;
+
 //Inline simple methods for performance
 class PEBBLELIBSHARED_EXPORT CPX
 {
@@ -86,44 +131,6 @@ public:
 	double re, im;
 
 	//Static methods that work on CPX* buffers, was in CPXBuf
-	//Allocates a block of 16byte aligned memory, optimal for FFT and SIMD
-	static CPX *memalign(int _numCPX);
-	//Just copies in to out
-	static void copyCPX(CPX *out, CPX *in, int size);
-	static void copyCPX(CPX *out, const CPX *in, int size);
-
-	//Clears buffer to zeros, equiv to CPX(0,0)
-	static void clearCPX(CPX *out, int size);
-
-	//scales in by a and returns in out, SIMD enabled
-	static void scaleCPX(CPX * out, CPX * in, double a, int size);
-	static void scaleCPX(CPX * out, const CPX * in, double a, int size);
-
-	static void multCPX(CPX * out, CPX * in, CPX *in2, int size);
-	static void multCPX(CPX * out, const CPX * in, const CPX *in2, int size);
-
-	//adds in + in2 and returns in out, SIMD enabled
-	static void addCPX(CPX * out, CPX * in, CPX *in2, int size);
-	static void addCPX(CPX * out, const CPX * in, const CPX *in2, int size);
-
-	//out.re = mag, out.im = original out.re SIMD enabled
-	static void magCPX(CPX *out, const CPX *in, int size);
-
-	//out.re = sqrMag, out.im = original out.reSIMD enabled
-	static void sqrMagCPX(CPX *out, const CPX *in, int size);
-
-	//Copy every N samples from in to out
-	static void decimateCPX(CPX *out, const CPX *in, int by, int size);
-
-	//Hypot version of norm
-	static double normCPX(const CPX *in, int size);
-
-	//Squared version of norm
-	static double normSqrCPX(const CPX *in, int size);
-
-	//Return max mag()
-	static double peakCPX(const CPX *in, int size);
-	static double peakPowerCPX(const CPX *in, int size);
 
 	inline double real() const { return re; }
 	inline void real(double R) {re=R;}
