@@ -4,8 +4,38 @@ filenames should be all lower case, even if class names are not.  Mixed case fil
 
 Classnames should always start with UC and use camel case.  Consider starting all Pebble classes with Pb or similar
 
+Enums should start with UC and use camel case.  Enum members should be UC
 
-As a start, this is the QT5 guidleines, not all of which I agree with
+Variables should always start with LC and use camel case.
+
+Variables should use prefixes wherever it makes sense.
+I used to think this was bad, but am coming around to the benefits
+of knowing the usage and avoiding errors caused by duplicate member and local variable names
+
+m_foo For member variables to distinguish from method arguments and method variables
+c_foo For member constants
+_foo For method arguments (optional)
+foo For method variables
+
+s_foo For static (optional)
+sc_foo For static constants
+
+Property functions
+foo() //returns m_foo
+setFoo(x) //sets m_foo
+
+Comment blocks.  I hate extraneous noise (ie lots of '*'s) in source code.
+/*
+ Comment
+ Comment
+*/
+#if 0
+ Comment
+ Comment
+#endif
+
+This is the QT5 guidleines, not all of which I agree with
+
 
 Qt Coding Style
 This is an overview of the coding conventions we use when writing Qt code.
