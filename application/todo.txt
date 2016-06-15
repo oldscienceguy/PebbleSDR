@@ -3,16 +3,14 @@ BUGS
 
 _ Bug: qt.conf already exists warning.  Occurs if Pebble.app already exists when we build
 _ Bug: Try using OSX USB first before D2XX to avoid driver conflict
-_ Bug: No Display doesn't collapse hidden frames any more.  Cosmetic
 _ Bug: HPSDR has not been tested or firmware updated in a long time.  Test Ozzy and Mettis
 _ Bug: Check FunCube dongle device settings.  Seems dead when tested 12/30/15
 _ Bug: Unplugging FCD while Pebble is open (not running) crashes in hid-mac.c
-_ Bug: Can't debug main Pebble application.  Libraries and plugins are ok.  I think there may be a problem
-    with all the fixups we do during install
 
 FEATURES
+
 _ Hi-res spectrum has slightly lower signal strength than unprocessed spectrum.  Losing gain in downConvert?
-    We need to normalize.\
+    We need to normalize and add approx 5db gain
 _ IQ correction (based on signals above median noise)
 _ Freq correction for devices that support it (like FCD) in ppm
 
@@ -21,6 +19,7 @@ _ Revisit tuning increments.  Select digit on freq display, that's the new units
 _ Calibrate all devices by injecting known signal and adjust normalizeIQ Gain
 _ RTL2832 ADSB decoder plugin
 _ RTL2832 read whatever is there each thread slice and don't wait for full buffer with read_sync.
+_ RTL2832 add bias tee option for devices like RTL-SDR that support it.  Use to power converters and preamps
 
 _ Add peak option to spectrum display
 
@@ -29,23 +28,37 @@ _ Fifi: Add support for Fifi built in demod (Fifi-SDR AM/FM/SSB Receiver) audio 
 
 _ ACARS (118-136mhz) aircraft decoder
 _ Direct tuning mode for RTL2832 and other.  LO and mixer are internal, user just sees frequency
+    3 modes: LO, Mixer, Direct
 _ Add auto to FS and Base dB.  Uses median noise to set base level and peak signal to set FS db.
-_ Move spectrum cursor tracking to display next to cursor instead of fixed label
+
 _ Scan mode.  Builds special memory file scan.csv
 
 _ KX3 Slave mode: Track freq from KX3, IQ out to audio for basic spectrum.  Advanced, click on spectrum
     to adjust KX3.  Maybe full remote mode?  Open QT Serial connection at 38400 and set terminal commands.
 _ AirSpy when I get repaired unit back
 _ Elad FDM S2
-_ HackRF
 
-_ Higher res FFT option, 4096 etc?
+_ Convert all userIQGain settings into db using DB::dbToAmplitude(), change settings spinner to db instead
+    of 1x 2x .01x etc (Done: RFSpace, Fifi)
+
+_ Replace qDebug() with something that can be directed to pebblelog.txt with a runtime configuration to make
+    remote debugging easier.  Or maybe there's already a way to do this with Qt already.
+_ Update ProcessIQ so timing is consistent, ie max and min close.  To to this, we'll have to update to allow
+    buffers smaller than framesPerBuffer.  Change framesPerBuffer to maxFramesPerBuffer
+_ Consider using lower spectrum frame for data instead of separate window.  Top frame would be spectrum or waterfall
+
+_ CF32 IQ files for use with inspectrum and gnuradio.
+    *.cf32, *.cfile - Complex 32-bit floating point samples (GNURadio, osmocom_fft)
+    *.cs32 - Complex 8-bit signed integer samples (HackRF)
+    *.cu32 - Complex 8-bit unsigned integer samples (RTL-SDR)
 
 INTERNAL
 _ Pick coding standard and update everything
 _ Clean up SpectrumWidget / ReceiverWidget / Receiver logic.  Widgets should just handle UI (View) and send
     signals that Reciever (Model) (and any other interested class) can connect to.  In this mode, Receiver knows about
     widgets, but widgets don't have to know about Receiver
+_ Get rid of usbutil.  The original idea was to unify USB access across FTDI, LibUSB, HID, etc.  But it
+    never worked out.  Replace with explicit libusb class to abstract library location, handle errors, etc
 
 INVESTIGATE
 _ Investigate DSDPlus www.dsdplus.com for police, fire, etc decoders https://github.com/szechyjs/dsd
@@ -54,3 +67,26 @@ _ Investigate Codec2 voice compression http://www.rowetel.com/
 _ Investigate Liquid-DSP DSP library for compatibility
 _ Investigate SoapySDR for device driver compatibility
 _ Investigate SDR-J for decoder compatibility
+_ Investigate Aquila C++ DSP package when 3.0 is ready
+    https://github.com/zsiciarz/aquila.git
+    http://aquila-dsp.org
+    cmake ../aquila/
+    make
+    make aquila_test
+    ctest
+_ Investigate Artemis spectra examples, also www.sigidwiki.com
+
+
+Notes IMHO you shouldn't. Polling requires being in a forever loop. You must do
+this in QThread's run function so there is no way to re-implement a function
+without sub-classing first. Even if you were to try and workaround it with a
+single shot timer I don't recommend it. You are better off(this is how i like
+to do it) sub-classing QThread, calling moveToThread(), not call exec() and put
+a forever loop in run. For an example of this look at the Fortune Blocking
+Client example from qt. If you don't call moveToThread() on QThread then the
+QThread object still resides in the GUI main thread and they both share the
+same event loop (which is bad when using polling functions). Calling
+moveToThread(QThread) without calling exec() means the QThread will not have an
+event loop(which is good in your case). Calling exec() would start it's own
+event loop but is not used for polling schemes and you would leave the run
+function.
