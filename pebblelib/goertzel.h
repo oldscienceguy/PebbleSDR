@@ -8,6 +8,7 @@
 #include "cpx.h"
 #include "windowfunction.h"
 #include "movingavgfilter.h"
+#include <complex>
 
 //All of the internal data needed to decode a tone
 //Allows us to specify multiple tones that can be decoded at the same time
@@ -18,7 +19,7 @@ public:
 	ToneBit();
 	void setFreq(quint32 freq, quint32 N, quint32 sampleRate);
 	bool processSample (double x_n); //For audio data
-	bool processSample (CPX cpx); //For IQ data - Not implemented yet
+	bool processSample (CPX x_n); //For IQ data - Not implemented yet
 
 	//Use simplified goertzel or full which includes phase information
 	bool m_usePhaseAlgorithm;
@@ -40,6 +41,26 @@ public:
 	double m_wn1; //Lyons w(n-1), Wikipedia s_prev
 	double m_wn2; //Lyons w(n-2), Wikipedia s_prev2
 	int m_nCount; //# samples processed
+
+	//CPX Testing new goertzel
+	double Alpha;
+	double Beta;
+	double Two_cos_Alpha;
+	double a;
+	double b;
+	std::complex<double> c;
+	std::complex<double> d;
+	std::complex<double> w0;
+	std::complex<double> w1;
+	std::complex<double> w2;
+
+
+	//CPX Testing
+	CPX m_wnCpx;
+	CPX m_wn1Cpx;
+	CPX m_wn2Cpx;
+	CPX m_powerCpx;
+	CPX m_coeffCpx; //Not sure if we need cpx, testing
 
 	//Used for runningMean and StdDev calculations
 	bool m_calcRunningMean;
@@ -85,6 +106,7 @@ public:
 	quint32 estNForBinBandwidth(quint32 bandwidth);
 
 	bool processSample(double x_n, double &power, bool &aboveThreshold);
+	bool processSample(CPX x_n, double &retPower, bool &aboveThreshold);
 private:
 
 	ToneBit m_mainTone;

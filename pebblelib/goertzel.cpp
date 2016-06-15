@@ -4,7 +4,7 @@
 #include "math.h"
 #include "QtDebug"
 #include "firfilter.h"
-
+#include <complex>
 
 /*
 From SILabs DTMF paper http://www.silabs.com/Support%20Documents/TechnicalDocs/an218.pdf
@@ -184,21 +184,166 @@ void ToneBit::setFreq(quint32 freq, quint32 N, quint32 sampleRate)
 
 #endif
 
+	//Goertzel algorithm for non-integer frequency index (complex input)
+	//k represents the fft bin that would contain the frequency of interest
+	//In this algorithm is does NOT have to be an integer and can therefor put our freq in the exact center of a bin
+	//In an FFT, the width of each bin would be (sampleRate / FFT size), here its (sampleRate / N ). ie 8000/80 = 100
+	//To find which bin our freq is in, (freq / binWidth), ie 1000hz / 100 = bin 10
+	//Combining, k = freq / (sampleRate / N);
+	double k = (float)m_freq / (sampleRate / N);
+
+#if 0
+	 Alpha = TWOPI * k / m_bitSamples;
+	 Beta = TWOPI * k * (m_bitSamples-1) / m_bitSamples;
+
+
+	//Precompute network coefficients
+	 Two_cos_Alpha = 2*cos(Alpha);
+	 a = cos(Beta);
+	 b = -sin(Beta);
+	 c = sin(Alpha)*sin(Beta) -cos(Alpha)*cos(Beta);
+	 d = sin(TWOPI * k);
+	 //Init. delay line contents
+	 w0 = 0;
+	 w1 = 0;
+	 w2 = 0;
+#endif
+	 std::complex<double> c_j(6.123233995736766e-17,1);
+	 a = TWOPI * k/N;
+	 b = 2 * cos(a);
+	 c = exp(-c_j * a);
+	 d = exp(-c_j * a * ((double)N-1.0));
 }
 
 #if 0
-	We can also process complex input, like spectrum data, not just audio
-	From Wikipedia ...
-	Complex signals in real arithmetic[edit]
-	Since complex signals decompose linearly into real and imaginary parts, the Goertzel algorithm can be computed in real arithmetic separately over the sequence of real parts, yielding y_r(n); and over the sequence of imaginary parts, yielding y_i(n). After that, the two complex-valued partial results can be recombined:
+We can also process complex input, like spectrum data, not just audio
+From Wikipedia ... Complex signals in real arithmetic[edit]
+Since complex signals decompose linearly into real and imaginary parts, the Goertzel
+algorithm can be computed in real arithmetic separately over the sequence of
+real parts, yielding y_r(n); and over the sequence of imaginary parts, yielding
+y_i(n). After that, the two complex-valued partial results can be recombined:
 
 	(15) y(n) = y_r(n) + i\ y_i(n)
 #endif
 
-bool ToneBit::processSample(CPX cpx)
+//Goertzel algorithm is defined for complex inputs as well as floats, same algorithm
+//We just need CPX delay variables
+bool ToneBit::processSample(CPX x_n)
 {
-	Q_UNUSED(cpx);
+	//C++ Alias syntax
+	using NewCpx = std::complex<double>;
+	//Using std::complex to make sure we get the complex math rigt
+	//Using 'j' as it appears in DSP math and matlab, move to CPX as constant eventually
+	//std::complex<double> c_j = -1; // {-1, 0} {re,im}
+	//Just doing sqrt(-1) will result in a complex number with Nan, which is invalid
+	//c_j = sqrt(c_j); //Ensure we get sqrt(cpx) {6.123233995736766e-17,1}
+	//square it and we get a value really close to original {-1, 0}
+	//c_j = c_j * c_j; //{-1, 1.2246467991473532e-16}
+	//Conclusion, just define c_j without doing all the math
+	NewCpx c_j(6.123233995736766e-17,1);
+
+	//std::literals (only if _LIBCPP_STD_VER > 14) defines i, il operators as simply {0.0, arg}
+	//This allows the use of complex notation like '4i' or 'i(4)' or {0.0, 4}
+
+	//Eventually we will switch to std::complex, but it will result in many changes
+	//class CPX: public std::complex<double> {
+	//		//Add old CPX:: statics
+	//		//Rename .re to .real(), which is declared inline
+	//		//Rename .im to .imag()
+	//};
+
+	//Goertzel algorithm for non-integer frequency index (complex input)
+	//http://asp.eurasipjournals.springeropen.com/articles/10.1186/1687-6180-2012-56
+	//https://www.dsprelated.com/showarticle/495.php
+	//Code from Lyons article, converted to C++
+
+
+	//Convert arg to NewCpx
+	NewCpx samp(x_n.re, x_n.im);
+
+#if 0
+	w0 = samp + (w1 * Two_cos_Alpha) - w2;
+	//Delay line data shifting
+	w2 = w1;
+	w1 = w0;
+
+	if (m_nCount++ >= m_bitSamples) {
+		w0 = w1 * a + w2 * c + c_j * (w1*b + w2 * d);
+		m_nCount = 0;
+		w1 = 0;
+		w2 = 0;
+		m_power = w0.real();
+		return true;
+	}
 	return false;
+#endif
+	// one iteration less than traditionally
+	if (m_nCount < m_bitSamples - 1) {
+		w0 = samp + b * w1 - w2;
+		w2 = w1;
+		w1 = w0;
+		m_nCount++;
+	} else {
+		//last sample needed
+		std::complex<double> y0;
+		// Finalizing calculations
+		w0 = samp + b * w1 - w2;
+		y0 = w0 - w1*c; // resultant complex coefficient
+		y0 = y0*d; // constant substituting the iteration N-1, and correcting the phase at the same
+		m_nCount = 0;
+		w1 = 0;
+		w2 = 0;
+		m_power = y0.real()*y0.real() + y0.imag()*y0.imag();
+		return true;
+	}
+	return false;
+
+#if 0
+	//6/13/16: Just using CPX with same algorithm doesn't work, needs debugginh
+	//m_wn = x_n + m_wn1 * (2 * cos((TWOPI * m_m )/ N)) - m_wn2; //Lyons 13-80 re-arranged
+	//Same as m_wn = x+n + m_coeff * w_wn1 - m_wn2;
+	//m_wn = x_n + (m_wn1 * m_coeff) + (m_wn2 * -1); //Same as simplified version below
+	m_wnCpx = x_n + (m_wn1Cpx * m_coeff) - m_wn2Cpx;
+
+	//Update delay line
+	m_wn2Cpx = m_wn1Cpx;
+	m_wn1Cpx = m_wnCpx;
+
+	double normalize = m_bitSamples / 2;
+
+	if (m_nCount++ >= m_bitSamples) {
+		//We have enough samples to calculate a result
+		if (m_usePhaseAlgorithm) {
+#if 0
+			//Full algorithm with phase
+			double re = (0.5 * m_coeff * m_wn1Cpx - m_wn2Cpx);
+			double im = (0.5 * m_coeff2 * m_wn1Cpx - m_wn2Cpx);
+			m_power = re * re + im * im;
+			m_power /= normalize; //Normalize?
+			//Phase compared to prev result phase, for phase change detection
+			m_phase = atan2(im, re); //Result not tested or confirmed
+#endif
+		} else {
+			//Simplified algorithm without phase
+			m_powerCpx = (m_wn1Cpx * m_wn1Cpx) + (m_wn2Cpx * m_wn2Cpx) - (m_wn1Cpx * m_wn2Cpx * m_coeff); //Lyons 13-83
+			//m_powerCpx.re /= normalize; //Normalize?
+			//m_powerCpx.im /= normalize; //Normalize?
+			m_phase = 0;
+
+			//For compatibility
+			m_power = m_powerCpx.re;
+		}
+		m_wn1Cpx = m_wn2Cpx = 0;
+		m_nCount = 0;
+
+		//m_runningMean = 0;
+		//m_S = 0;
+		//m_runningMeanCount = 1;
+		return true;
+	}
+	return false;
+#endif
+
 }
 
 /*
@@ -555,6 +700,121 @@ bool Goertzel::debounce(bool aboveThreshold)
 //Process one sample at a time
 //3 states: Not enough samples for result, result below threshold, result above threshold
 bool Goertzel::processSample(double x_n, double &retPower, bool &aboveThreshold)
+{
+	//Caller is responsible for decimation, if needed
+
+	//All the tones have the same N, just check the result of the main
+	bool result = m_mainTone.processSample(x_n);
+	m_highCompareTone.processSample(x_n);
+	m_lowCompareTone.processSample(x_n);
+	m_mainTone.m_isValid = false;
+	retPower = 0;
+	aboveThreshold = false;
+	double mainPower = 0;
+	double highPower = 0;
+	double lowPower = 0;
+	double bufMean = 0;
+	double bufDev = 0;
+	double snr = 0;
+	if (result) {
+		//If we have a detectable tone, it should be strong in the main bin compared with surrounding bins
+
+		//Handle jitter
+		//Todo: move jitter process to ToneBit?
+		mainPower = m_mainJitterFilter->newSample(m_mainTone.m_power);
+		lowPower = m_lowJitterFilter->newSample(m_lowCompareTone.m_power);
+		highPower = m_highJitterFilter->newSample(m_highCompareTone.m_power);
+		//lowPower = m_lowCompareTone.m_power;
+		//highPower = m_highCompareTone.m_power;
+		bufDev = m_mainTone.m_stdDev;
+		bufMean = m_mainTone.m_runningMean;
+		snr = mainPower/bufMean;
+		retPower = mainPower;
+
+		switch (m_thresholdType) {
+			case TH_COMPARE:{
+				//Compares high/low tone poser
+				double avgComparePower = (highPower + lowPower) / 2;
+				retPower = mainPower;
+
+				//KA7OEI differential goertzel
+				double compareRatio = 0;
+				if (avgComparePower > 0)
+					//Avoid dev by zero for Nan
+					compareRatio = mainPower / avgComparePower;
+
+				if (false)
+					qDebug()<<"Low:"<<
+							  DB::powerTodB(lowPower)<<" Main:"<<
+							  DB::powerTodB(mainPower)<<" High:"<<
+							  DB::powerTodB(highPower)<<" Ratio:"<<
+							  compareRatio;
+
+				//if (debounce(compareRatio > m_compareThreshold)) {
+				if (compareRatio > m_compareThreshold) {
+					aboveThreshold = true;
+				} else {
+					aboveThreshold = false;
+				}
+			}
+				break;
+
+			//5/29/16: Best detection yet, tested with -40db noise gen
+			case TH_PEAK:
+				//Uses percentage of peak power for comparison
+				// Compute a variable threshold value for tone detection
+				// Fast attack and slow decay.
+				if (mainPower > m_peakPower)
+					m_peakPower = MovingAvgFilter::weightedAvg(m_peakPower, mainPower, 20); //Input has more weight on increasing signal than decreasing
+				else
+					m_peakPower = MovingAvgFilter::weightedAvg(m_peakPower, mainPower, 800);
+
+				//Super-Ratt and JSDR technique
+				//Divide agc_peak in thirds,  upper is rising, lower is falling, middle is stable
+				m_thresholdUp = m_peakPower * 0.67; //fldigi uses 0.60
+				m_thresholdDown = m_peakPower * 0.33; //fldigi uses 0.40
+
+				//Todo: Consider running mean from tone to set a lower floor to avoid random noise results
+				//or user slider to set squelch level
+				if (mainPower > m_thresholdUp) {
+					aboveThreshold = true;
+				} else if (mainPower < m_thresholdDown) {
+					aboveThreshold = false;
+				} else if (m_lastTone && mainPower > m_thresholdDown){
+					//Last result was a tone and we're in between thresholdUp and thresholdDown
+					aboveThreshold = true;
+				}
+
+				break;
+			case TH_MANUAL:
+				//Uses manual threshold
+				break;
+			case TH_AVERAGE:
+				//Compares power to running mean power in samples
+				if (false)
+					qDebug()<<"Power:"<<
+							  DB::powerTodB(mainPower)<<" Mean:"<<
+							  DB::powerTodB(bufMean)<<" Dev:"<<
+							  DB::powerTodB(bufDev);
+				if (snr > 5 ) {
+					aboveThreshold = true;
+				} else {
+					aboveThreshold = false;
+				}
+				break;
+			default:
+				aboveThreshold = false;
+				break;
+		}
+		m_lastTone = aboveThreshold;
+
+		return true; //Valid result
+
+	} //End if (result)
+	return false; //Needs more samples
+}
+
+bool Goertzel::processSample(CPX x_n, double &retPower, bool &aboveThreshold)
 {
 	//Caller is responsible for decimation, if needed
 
