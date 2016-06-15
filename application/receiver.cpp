@@ -978,6 +978,13 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 		nextStep = m_agc->processBlock(nextStep);
 		//global->perform.StopPerformance(100);
 
+		//Test giving data plugins full post mixer buffer, with TD and FD buffers
+		//Todo: Should agc and noise filter come before or after demod?
+		//Todo: Should data plugin only get post bandpass data?  Post bandpass has same bin resolution so
+		//what's the advantage?
+		if (m_iDigitalModem != NULL)
+			nextStep = m_iDigitalModem->processBlock(nextStep);
+
 
 
 		//global->perform.StartPerformance("Demod");
@@ -985,9 +992,6 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 		//global->perform.StopPerformance(100);
 
 		//audioCpx from here on
-		//Data decoders come before demod
-		if (m_iDigitalModem != NULL)
-			nextStep = m_iDigitalModem->processBlock(nextStep);
 
 		global->testBench->displayData(numStepSamples,nextStep,m_demodSampleRate,TB_POST_DEMOD);
 
