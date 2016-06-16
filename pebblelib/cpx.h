@@ -126,17 +126,6 @@ public:
         return *this;
     }
 
-    //cpx1 = cpx2 * cpx3 (Convolution)
-	//Commonly used in tight DSP loops.  Avoids overhead of operator* which creates a new CPX object
-	inline void convolution(const CPX& cx1, const CPX& cx2) {
-		re = ((cx1.re * cx2.re) - (cx1.im * cx2.im));
-		im = ((cx1.re * cx2.im) + (cx1.im * cx2.re));
-	}
-	inline void convolution(const CPX& cx1, const CPX& cx2, double gain) {
-		re = ((cx1.re * cx2.re) - (cx1.im * cx2.im)) * gain;
-		im = ((cx1.re * cx2.im) + (cx1.im * cx2.re)) * gain;
-	}
-
 	inline CPX& operator*= (const CPX& a) {
         double temp = re * a.re - im * a.im;
         im = re * a.im + im * a.re;
@@ -158,12 +147,6 @@ public:
         im *= a;
         return *this;
     }
-
-    //Same as '*'
-	inline CPX scale (double a) const {
-        return *this * a;
-    }
-
 
     //cpx1 = cpx2 / cpx3
     inline CPX& operator/=(const CPX& y) {
@@ -201,28 +184,6 @@ public:
         return z;
     }
 
-    // n = |Z| * |Z|
-    inline double norm() const {
-        return (re * re + im * im);
-    }
-
-    // Z = x + jy
-    // Z = |Z|exp(jP)
-    // arg returns P
-    inline double arg() const {
-        return atan2(im, re);
-    }
-
-    //Alternative implementation from Pebble
-    //Convert to Polar phase()
-    //This is also the arg() function (see wikipedia)
-    /*
-    inline double arg() {
-        return this->phase();
-    }
-    */
-
-
 	inline bool operator ==(CPX a) const {
 		return re == a.re && im == a.im;
 	}
@@ -231,11 +192,6 @@ public:
 		return re != a.re || im != a.im;
 	}
 	
-	//Complex conjugate (see wikipedia).  im has opposite sign of original
-	inline CPX conj() const {
-        return CPX(re,-im);
-    }
-
 };
 
 //Tells Qt it can use memmove on this type instead of repeated copy constructors
@@ -283,6 +239,48 @@ namespace CpxUtil {
 	//CPX class methods moved
 	inline void clearCpx(CPX &cpx) {cpx.real(0); cpx.imag(0);}
 
+	//cpx1 = cpx2 * cpx3 (Convolution)
+	//Commonly used in tight DSP loops.  Avoids overhead of operator* which creates a new CPX object
+	inline void convolutionCpx(CPX &cpx, const CPX& cx1, const CPX& cx2) {
+		cpx.real(((cx1.real() * cx2.real()) - (cx1.imag() * cx2.imag())));
+		cpx.imag(((cx1.real() * cx2.imag()) + (cx1.imag() * cx2.real())));
+	}
+
+	inline void convolutionCpx(CPX &cpx, const CPX& cx1, const CPX& cx2, double gain) {
+		cpx.real(((cx1.real() * cx2.real()) - (cx1.imag() * cx2.imag())) * gain);
+		cpx.imag(((cx1.real() * cx2.imag()) + (cx1.imag() * cx2.real())) * gain);
+	}
+
+	//Same as '*'
+	inline CPX scaleCpx(const CPX &cpx, double a) {
+		return cpx * a;
+	}
+
+	// n = |Z| * |Z|
+	inline double normCpx(CPX &cpx) {
+		return (cpx.real() * cpx.real() + cpx.imag() * cpx.imag());
+	}
+
+	// Z = x + jy
+	// Z = |Z|exp(jP)
+	// arg returns P
+	inline double argCpx(CPX &cpx) {
+		return atan2(cpx.imag(), cpx.real());
+	}
+
+	//Alternative implementation from Pebble
+	//Convert to Polar phase()
+	//This is also the arg() function (see wikipedia)
+	/*
+	inline double argCpx(CPX &cpx) {
+		return phaseCpx(cpx);
+	}
+	*/
+
+	//Complex conjugate (see wikipedia).  im has opposite sign of original
+	inline CPX conjCpx(CPX &cpx) {
+		return CPX(cpx.real(),-cpx.imag());
+	}
 
 	//Squared version of magnitudeMagnitude = re^2 + im^2
 	inline double sqrMagCpx(CPX &cpx){

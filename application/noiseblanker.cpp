@@ -86,7 +86,7 @@ CPX * NoiseBlanker::ProcessBlock2(CPX *in)
 	{
 		mag = magCpx(in[i]);
 		//Weighted average 75/25
-		nb2AverageCPX = nb2AverageCPX.scale(0.75) + in[i].scale(0.25);	
+		nb2AverageCPX = scaleCpx(nb2AverageCPX, 0.75) + scaleCpx(in[i],0.25);
 		nb2AverageMag = 0.999 * nb2AverageMag + 0.001 * mag;
 		if (mag > (nbThreshold * nb2AverageMag))
 			out[i] = nb2AverageCPX;

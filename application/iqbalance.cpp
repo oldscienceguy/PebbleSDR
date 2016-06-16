@@ -77,8 +77,8 @@ CPX *IQBalance::ProcessBlock(CPX *in)
 		//Adj .im with a portion of .re
 		out[i].im = in[i].im + (in[i].re * phaseFactor);
 
-		t1 = out[i] + (t2 * out[i].conj());
-		t2 = (t2.scale(1.0 - mu * 0.000001)) - ((t1*t1).scale(mu));
+		t1 = out[i] + (t2 * conjCpx(out[i]));
+		t2 = (scaleCpx(t2, 1.0 - mu * 0.000001)) - (scaleCpx(t1*t1, mu));
 		out[i] = t1;
 	}
 	return out;

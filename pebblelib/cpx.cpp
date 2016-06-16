@@ -72,7 +72,7 @@ void CpxUtil::multCPX(CPX * out, CPX * in, CPX *in2, int size)
 void CpxUtil::scaleCPX(CPX *out, const CPX *in, double a, int size)
 {
 	for (int i=0; i<size; i++)
-		out[i] = in[i].scale(a);
+		out[i] = scaleCpx(in[i],a);
 }
 
 void CpxUtil::scaleCPX(CPX *out, CPX *in, double a, int size)
@@ -81,7 +81,7 @@ void CpxUtil::scaleCPX(CPX *out, CPX *in, double a, int size)
 		return SSEScaleCPX(out,in,a,size);
 
 	for (int i=0; i<size; i++)
-		out[i] = in[i].scale(a);
+		out[i] = scaleCpx(in[i], a);
 }
 
 void CpxUtil::addCPX(CPX * out, const CPX * in, const CPX *in2, int size)

@@ -74,7 +74,7 @@ CPX *Mixer::processBlock(CPX *in)
 
 #endif
 		//out[i]= in[i] * osc;
-		m_out[i].convolution(osc, in[i]); //Inline code
+		convolutionCpx(m_out[i], osc, in[i]); //Inline code
 	}
 
 	return m_out;
