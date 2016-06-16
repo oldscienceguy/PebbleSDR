@@ -87,8 +87,10 @@ public:
 	inline CPX(double r) : re(r), im(0){}
 
     ~CPX(void){}
-
-	double re, im;
+private:
+	double re;
+public:
+	double im;
 
 	//Static methods that work on CPX* buffers, was in CPXBuf
 

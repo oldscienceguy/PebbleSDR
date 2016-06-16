@@ -322,7 +322,7 @@ void AudioPA::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
 		//UI returns gain from 0 to 100
 		out[i] *= (gain / 100); //1 is full gain
 
-        temp = out[i].re;
+		temp = out[i].real();
         //Cap at -1 to +1 to make sure we don't overdrive
 		if (temp > maxOutput)
 			temp = maxOutput;

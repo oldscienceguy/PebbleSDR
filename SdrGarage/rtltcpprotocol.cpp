@@ -207,8 +207,8 @@ void RtlTcpProtocol::ProcessIQData(CPX *in, quint16 numSamples)
     double sampleGain = 1/128.0;
     //Stupid, but we need to convert to 0 to 255 1 byte samples rtl_tcp generates
     for (int i=0, j=0; i<numSamples; i++, j+=2) {
-        out[j] = (in[i].re / sampleGain) * 128.0 + 127.0;
-        out[j+1] = (in[i].im /sampleGain) * 128.0 + 127.0;
+		out[j] = (in[i].real() / sampleGain) * 128.0 + 127.0;
+		out[j+1] = (in[i].imag() /sampleGain) * 128.0 + 127.0;
     }
 
     qint64 bytesWritten = threadSocket->write(out, numSamples*2);

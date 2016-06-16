@@ -73,9 +73,9 @@ CPX *IQBalance::ProcessBlock(CPX *in)
 	for (int i = 0; i < numSamples; i++) {
 		//Standard math for adj iq bal, used in several algorithms
 		//Adj .re gain relative to .im
-		out[i].real(in[i].re * gainFactor);
+		out[i].real(in[i].real() * gainFactor);
 		//Adj .im with a portion of .re
-		out[i].im = in[i].im + (in[i].re * phaseFactor);
+		out[i].im = in[i].imag() + (in[i].real() * phaseFactor);
 
 		t1 = out[i] + (t2 * conjCpx(out[i]));
 		t2 = (scaleCpx(t2, 1.0 - mu * 0.000001)) - (scaleCpx(t1*t1, mu));
