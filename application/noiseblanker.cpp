@@ -23,7 +23,7 @@ void NoiseBlanker::setNbEnabled(bool b)
 	if (b) {
 		nbSpikeCount = 0;
 		nbAverageMag = 0;
-		nbAverageCPX.clear();
+		clearCpx(nbAverageCPX);
 	}
 	nbEnabled = b;
 }
@@ -31,7 +31,7 @@ void NoiseBlanker::setNb2Enabled(bool b)
 {
 	if (b) {
 		nb2AverageMag = 0;
-		nb2AverageCPX.clear();
+		clearCpx(nb2AverageCPX);
 	}
 	nb2Enabled = b;
 }

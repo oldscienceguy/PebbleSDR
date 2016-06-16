@@ -140,7 +140,7 @@ MatchedFilter::MatchedFilter(quint16 _sampleRate, quint16 _detectedSignalMs, qui
     outBuf = new double[lenFilter];
     delayPtr = 0;
     ncoPtr = 0;
-    out.clear();
+    clearCpx(out);
     phase = 0;
 
     ncoPhase = 0;

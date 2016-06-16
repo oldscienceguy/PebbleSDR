@@ -51,8 +51,8 @@ CPX * NoiseFilter::ProcessBlock(CPX *in)
 		//Add the current sample to the delay line
 		anfDelay->NewSample(in[i]);
 
-        accum.clear();
-        sos.clear();
+        clearCpx(accum);
+        clearCpx(sos);
 		//We don't have to run through entire delay line, just enough to calc noise data
 		//For each sample, accumulate 256 (adapt size) samples, delayed by 64 samples
 		//This is the basic filter step and the coefficients tell us how to weigh historical samples

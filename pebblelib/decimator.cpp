@@ -357,7 +357,7 @@ quint32 HalfbandFilter::convolveOS(const CPX *x, quint32 xLen, const double *h,
 	copyCPX(&m_lastX[dLen], x, xLen);
 
 	for (quint32 n = 0; n < xLen; n += decimate) {
-		y[yCnt].clear();
+		clearCpx(y[yCnt]);
 
 		//in this scenario, we always have hLen samples from the previous call, so no bounds check needed
 		//We don't know if we have halfband filter, so need to process all the coefficients
@@ -429,7 +429,7 @@ quint32 HalfbandFilter::convolveOA(const CPX *x, quint32 xLen, const double *h,
 #endif
 
 	for (quint32 n = 0; n < yLen; n += decimate) {
-		yOut[yCnt].clear();
+		clearCpx(yOut[yCnt]);
 
 /*
 	For hLen = 3, dLen = 2 (hLen - 1), xLen = 8, yLen = 10 (xLen + dLen)
@@ -566,7 +566,7 @@ quint32 HalfbandFilter::convolveVDsp1(const DSPDoubleSplitComplex *x, quint32 xL
 #if 0
 		//Checking dot product results, ok
 		CPX acc;
-		acc.clear();
+		clearCpx(acc);
 		for (int i=0; i<hLen; i++) {
 			acc.re += tmpIn.realp[i] * coeff[i];
 			acc.im += tmpIn.imagp[i] * coeff[i];

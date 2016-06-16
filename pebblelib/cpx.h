@@ -70,50 +70,6 @@ public:
 	float im;
 };
 
-class CPX;
-
-namespace CpxUtil {
-	//adds in + in2 and returns in out, SIMD enabled
-	void addCPX(CPX * out, CPX * in, CPX *in2, int size);
-	void addCPX(CPX * out, const CPX * in, const CPX *in2, int size);
-	//Allocates a block of 16byte aligned memory, optimal for FFT and SIMD
-	CPX *memalign(int _numCPX);
-	//Just copies in to out
-	void copyCPX(CPX *out, CPX *in, int size);
-	void copyCPX(CPX *out, const CPX *in, int size);
-
-	//Clears buffer to zeros, equiv to CPX(0,0)
-	void clearCPX(CPX *out, int size);
-
-	//scales in by a and returns in out, SIMD enabled
-	void scaleCPX(CPX * out, CPX * in, double a, int size);
-	void scaleCPX(CPX * out, const CPX * in, double a, int size);
-
-	void multCPX(CPX * out, CPX * in, CPX *in2, int size);
-	void multCPX(CPX * out, const CPX * in, const CPX *in2, int size);
-
-	//out.re = mag, out.im = original out.re SIMD enabled
-	void magCPX(CPX *out, const CPX *in, int size);
-
-	//out.re = sqrMag, out.im = original out.reSIMD enabled
-	void sqrMagCPX(CPX *out, const CPX *in, int size);
-
-	//Copy every N samples from in to out
-	void decimateCPX(CPX *out, const CPX *in, int by, int size);
-
-	//Hypot version of norm
-	double normCPX(const CPX *in, int size);
-
-	//Squared version of norm
-	double normSqrCPX(const CPX *in, int size);
-
-	//Return max mag()
-	double peakCPX(const CPX *in, int size);
-	double peakPowerCPX(const CPX *in, int size);
-
-}
-
-using namespace CpxUtil;
 
 //Inline simple methods for performance
 class PEBBLELIBSHARED_EXPORT CPX
@@ -137,11 +93,10 @@ public:
 	inline double imag() const { return im; }
 	inline void imag(double I) {im=I;}
 
-    //For cases where we need consistent I/Q representation using complex
-	inline double i() const {return re;} //In phase is typically in real
-	inline double q() const {return im;} //Quad phase is typically in imag
+	//Regex syntax for replacement
+	// search: (\w+)\.clear\(\)
+	// replace: clearCpx(\1)
 
-	inline void clear() {re=0.0; im=0.0;}
 
     //Every operator should have ref (&) and normal version
 	// Assignment
@@ -317,6 +272,60 @@ public:
 
 //Tells Qt it can use memmove on this type instead of repeated copy constructors
 Q_DECLARE_TYPEINFO(CPX, Q_MOVABLE_TYPE);
+
+namespace CpxUtil {
+	//adds in + in2 and returns in out, SIMD enabled
+	void addCPX(CPX * out, CPX * in, CPX *in2, int size);
+	void addCPX(CPX * out, const CPX * in, const CPX *in2, int size);
+	//Allocates a block of 16byte aligned memory, optimal for FFT and SIMD
+	CPX *memalign(int _numCPX);
+	//Just copies in to out
+	void copyCPX(CPX *out, CPX *in, int size);
+	void copyCPX(CPX *out, const CPX *in, int size);
+
+	//Clears buffer to zeros, equiv to CPX(0,0)
+	void clearCPX(CPX *out, int size);
+
+	//scales in by a and returns in out, SIMD enabled
+	void scaleCPX(CPX * out, CPX * in, double a, int size);
+	void scaleCPX(CPX * out, const CPX * in, double a, int size);
+
+	void multCPX(CPX * out, CPX * in, CPX *in2, int size);
+	void multCPX(CPX * out, const CPX * in, const CPX *in2, int size);
+
+	//out.re = mag, out.im = original out.re SIMD enabled
+	void magCPX(CPX *out, const CPX *in, int size);
+
+	//out.re = sqrMag, out.im = original out.reSIMD enabled
+	void sqrMagCPX(CPX *out, const CPX *in, int size);
+
+	//Copy every N samples from in to out
+	void decimateCPX(CPX *out, const CPX *in, int by, int size);
+
+	//Hypot version of norm
+	double normCPX(const CPX *in, int size);
+
+	//Squared version of norm
+	double normSqrCPX(const CPX *in, int size);
+
+	//Return max mag()
+	double peakCPX(const CPX *in, int size);
+	double peakPowerCPX(const CPX *in, int size);
+
+	//CPX class methods moved
+	inline void clearCpx(CPX &cpx) {cpx.real(0); cpx.imag(0);}
+
+}
+
+using namespace CpxUtil;
+
+
+
+
+
+
+
+
 
 #if 0
 //Specializations of QT container classes

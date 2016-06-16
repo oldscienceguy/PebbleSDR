@@ -102,16 +102,16 @@ void CpxUtil::addCPX(CPX * out, CPX * in, CPX *in2, int size)
 void CpxUtil::magCPX(CPX *out, const CPX *in, int size)
 {
 	for (int i=0; i<size; i++){
-		out[i].re = in[i].mag();
-		out[i].im = in[i].re;
+		out[i].real(in[i].mag());
+		out[i].imag(in[i].real());
 	}
 }
 
 void CpxUtil::sqrMagCPX(CPX *out, const CPX *in, int size)
 {
 	for (int i = 0; i < size; i++) {
-		out[i].re = in[i].sqrMag();
-		out[i].im = in[i].re; //Keet this for ref?
+		out[i].real(in[i].sqrMag());
+		out[i].imag(in[i].real()); //Keet this for ref?
 	}
 }
 
