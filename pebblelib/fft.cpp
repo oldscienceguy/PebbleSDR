@@ -188,7 +188,7 @@ void FFT::m_unfoldInOrder(CPX *inBuf, CPX *outBuf)
 	// Bins 0 and N/2 both necessarily have zero phase, so in the packed format
 	// only the real values are output, and these are stuffed into the real/imag components
 	// of the first complex value (even though they are both in fact real values).
-	//bin.re = magnitude at 0
+	//bin.real() = magnitude at 0
 	//bin.im = magnitude at n/2 (instead of phase at 0)
 	//out[0] = in[0].re / windowFunction->coherentGain;
 	//out[0] /= maxBinPower;
@@ -260,7 +260,7 @@ void FFT::overlapAdd(CPX *out, int numSamples)
  The max power (maxPower) in any one sample is therefore cx.re^2 + cx.im^2 = 1^2 + 1^2 = 2;
  The max amplitude (maxAmp) in any one sample is therefore sqrt(maxPower) = 1.414213562
 
- Assume a pure sine wave input where each sample.re = maxAmp*cos(x) & sample.im = maxAmp*sin(x) and
+ Assume a pure sine wave input where each sample.real() = maxAmp*cos(x) & sample.im = maxAmp*sin(x) and
 	there are no other signals present, just the single sine wave.
 
  For maxAmp = 1, fullscale, and any value of x (ie any freq)

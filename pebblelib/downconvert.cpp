@@ -423,60 +423,60 @@ int CDownConvert::CHalfBand11TapDecimateBy2::DecBy2(int InLength, TYPECPX* pInDa
 //StartPerformance();
 	//first calculate beginning 10 samples using previous samples in delay buffer
 	TYPECPX tmpout[9];	//use temp buffer so outbuf can be same as inbuf
-	tmpout[0].re = H0*d0.re + H2*d2.re + H4*d4.re + H5*d5.re + H6*d6.re + H8*d8.re
-					 + H10*pInData[0].re;
-	tmpout[0].im = H0*d0.im + H2*d2.im + H4*d4.im + H5*d5.im + H6*d6.im + H8*d8.im
-					 + H10*pInData[0].im;
+	tmpout[0].real(H0*d0.re + H2*d2.re + H4*d4.re + H5*d5.re + H6*d6.re + H8*d8.re
+					 + H10*pInData[0].re);
+	tmpout[0].imag(H0*d0.im + H2*d2.im + H4*d4.im + H5*d5.im + H6*d6.im + H8*d8.im
+					 + H10*pInData[0].im);
 
-	tmpout[1].re = H0*d2.re + H2*d4.re + H4*d6.re + H5*d7.re + H6*d8.re
-					 + H8*pInData[0].re + H10*pInData[2].re;
-	tmpout[1].im = H0*d2.im + H2*d4.im + H4*d6.im + H5*d7.im + H6*d8.im
-					 + H8*pInData[0].im + H10*pInData[2].im;
+	tmpout[1].real(H0*d2.re + H2*d4.re + H4*d6.re + H5*d7.re + H6*d8.re
+					 + H8*pInData[0].re + H10*pInData[2].re);
+	tmpout[1].imag(H0*d2.im + H2*d4.im + H4*d6.im + H5*d7.im + H6*d8.im
+					 + H8*pInData[0].im + H10*pInData[2].im);
 
-	tmpout[2].re = H0*d4.re + H2*d6.re + H4*d8.re + H5*d9.re
-					 + H6*pInData[0].re + H8*pInData[2].re + H10*pInData[4].re;
-	tmpout[2].im = H0*d4.im + H2*d6.im + H4*d8.im + H5*d9.im
-					 + H6*pInData[0].im + H8*pInData[2].im + H10*pInData[4].im;
+	tmpout[2].real(H0*d4.re + H2*d6.re + H4*d8.re + H5*d9.re
+					 + H6*pInData[0].re + H8*pInData[2].re + H10*pInData[4].re);
+	tmpout[2].imag(H0*d4.im + H2*d6.im + H4*d8.im + H5*d9.im
+					 + H6*pInData[0].im + H8*pInData[2].im + H10*pInData[4].im);
 
-	tmpout[3].re = H0*d6.re + H2*d8.re + H4*pInData[0].re + H5*pInData[1].re
-					 + H6*pInData[2].re + H8*pInData[4].re + H10*pInData[6].re;
-	tmpout[3].im = H0*d6.im + H2*d8.im + H4*pInData[0].im + H5*pInData[1].im
-					 + H6*pInData[2].im + H8*pInData[4].im + H10*pInData[6].im;
+	tmpout[3].real(H0*d6.re + H2*d8.re + H4*pInData[0].re + H5*pInData[1].re
+					 + H6*pInData[2].re + H8*pInData[4].re + H10*pInData[6].re);
+	tmpout[3].imag(H0*d6.im + H2*d8.im + H4*pInData[0].im + H5*pInData[1].im
+					 + H6*pInData[2].im + H8*pInData[4].im + H10*pInData[6].im);
 
-	tmpout[4].re = H0*d8.re + H2*pInData[0].re + H4*pInData[2].re + H5*pInData[3].re
-					 + H6*pInData[4].re + H8*pInData[6].re + H10*pInData[8].re;
-	tmpout[4].im = H0*d8.im + H2*pInData[0].im + H4*pInData[2].im + H5*pInData[3].im
-					 + H6*pInData[4].im + H8*pInData[6].im + H10*pInData[8].im;
+	tmpout[4].real(H0*d8.re + H2*pInData[0].re + H4*pInData[2].re + H5*pInData[3].re
+					 + H6*pInData[4].re + H8*pInData[6].re + H10*pInData[8].re);
+	tmpout[4].imag(H0*d8.im + H2*pInData[0].im + H4*pInData[2].im + H5*pInData[3].im
+					 + H6*pInData[4].im + H8*pInData[6].im + H10*pInData[8].im);
 
-	tmpout[5].re = H0*pInData[0].re + H2*pInData[2].re + H4*pInData[4].re + H5*pInData[5].re
-					 + H6*pInData[6].re + H8*pInData[8].re + H10*pInData[10].re;
-	tmpout[5].im = H0*pInData[0].im + H2*pInData[2].im + H4*pInData[4].im + H5*pInData[5].im
-					 + H6*pInData[6].im + H8*pInData[8].im + H10*pInData[10].im;
+	tmpout[5].real(H0*pInData[0].re + H2*pInData[2].re + H4*pInData[4].re + H5*pInData[5].re
+					 + H6*pInData[6].re + H8*pInData[8].re + H10*pInData[10].re);
+	tmpout[5].imag(H0*pInData[0].im + H2*pInData[2].im + H4*pInData[4].im + H5*pInData[5].im
+					 + H6*pInData[6].im + H8*pInData[8].im + H10*pInData[10].im);
 
-	tmpout[6].re = H0*pInData[2].re + H2*pInData[4].re + H4*pInData[6].re + H5*pInData[7].re
-					 + H6*pInData[8].re + H8*pInData[10].re + H10*pInData[12].re;
-	tmpout[6].im = H0*pInData[2].im + H2*pInData[4].im + H4*pInData[6].im + H5*pInData[7].im
-					 + H6*pInData[8].im + H8*pInData[10].im + H10*pInData[12].im;
+	tmpout[6].real(H0*pInData[2].re + H2*pInData[4].re + H4*pInData[6].re + H5*pInData[7].re
+					 + H6*pInData[8].re + H8*pInData[10].re + H10*pInData[12].re);
+	tmpout[6].imag(H0*pInData[2].im + H2*pInData[4].im + H4*pInData[6].im + H5*pInData[7].im
+					 + H6*pInData[8].im + H8*pInData[10].im + H10*pInData[12].im);
 
-	tmpout[7].re = H0*pInData[4].re + H2*pInData[6].re + H4*pInData[8].re + H5*pInData[9].re
-					 + H6*pInData[10].re + H8*pInData[12].re + H10*pInData[14].re;
-	tmpout[7].im = H0*pInData[4].im + H2*pInData[6].im + H4*pInData[8].im + H5*pInData[9].im
-					 + H6*pInData[10].im + H8*pInData[12].im + H10*pInData[14].im;
+	tmpout[7].real(H0*pInData[4].re + H2*pInData[6].re + H4*pInData[8].re + H5*pInData[9].re
+					 + H6*pInData[10].re + H8*pInData[12].re + H10*pInData[14].re);
+	tmpout[7].imag(H0*pInData[4].im + H2*pInData[6].im + H4*pInData[8].im + H5*pInData[9].im
+					 + H6*pInData[10].im + H8*pInData[12].im + H10*pInData[14].im);
 
-	tmpout[8].re = H0*pInData[6].re + H2*pInData[8].re + H4*pInData[10].re + H5*pInData[11].re
-					 + H6*pInData[12].re + H8*pInData[14].re + H10*pInData[16].re;
-	tmpout[8].im = H0*pInData[6].im + H2*pInData[8].im + H4*pInData[10].im + H5*pInData[11].im
-					 + H6*pInData[12].im + H8*pInData[14].im + H10*pInData[16].im;
+	tmpout[8].real(H0*pInData[6].re + H2*pInData[8].re + H4*pInData[10].re + H5*pInData[11].re
+					 + H6*pInData[12].re + H8*pInData[14].re + H10*pInData[16].re);
+	tmpout[8].imag(H0*pInData[6].im + H2*pInData[8].im + H4*pInData[10].im + H5*pInData[11].im
+					 + H6*pInData[12].im + H8*pInData[14].im + H10*pInData[16].im);
 
 	//now loop through remaining input samples
 	TYPECPX* pIn = &pInData[8];
 	TYPECPX* pOut = &pOutData[9];
 	for(int i=0; i<(InLength-11-6 )/2; i++)
 	{
-		(*pOut).re   = H0*pIn[0].re + H2*pIn[2].re + H4*pIn[4].re + H5*pIn[5].re
-					  + H6*pIn[6].re + H8*pIn[8].re + H10*pIn[10].re;
-		(*pOut++).im = H0*pIn[0].im + H2*pIn[2].im + H4*pIn[4].im + H5*pIn[5].im
-					  + H6*pIn[6].im + H8*pIn[8].im + H10*pIn[10].im;
+		(*pOut).real(H0*pIn[0].re + H2*pIn[2].re + H4*pIn[4].re + H5*pIn[5].re
+					  + H6*pIn[6].re + H8*pIn[8].re + H10*pIn[10].re);
+		(*pOut++).imag(H0*pIn[0].im + H2*pIn[2].im + H4*pIn[4].im + H5*pIn[5].im
+					  + H6*pIn[6].im + H8*pIn[8].im + H10*pIn[10].im);
 		pIn += 2;
 	}
 	//copy first outputs back into output array so outbuf can be same as inbuf
