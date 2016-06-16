@@ -306,7 +306,7 @@ bool MatchedFilter::ProcessSample(CPX in)
     //up->qrig -= qbuf[iptr];
     out.im -= delay[delayPtr].im;
     //up->qrig += dtemp;
-    out.im += dtemp;
+	out.imag(out.imag() += dtemp);
 
     //qbuf[iptr] = dtemp;
     delay[delayPtr].imag(dtemp);

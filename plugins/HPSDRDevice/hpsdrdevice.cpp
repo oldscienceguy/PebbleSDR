@@ -535,9 +535,9 @@ bool HPSDRDevice::ProcessInputFrame(unsigned char *buf, int len)
 			cpx.real(cpx.real() / 8388607.0); //Convert to +/- float from 24bit int
 
 			cpx.imag((signed char)buf[b++]<<16);
-			cpx.im += (unsigned char)buf[b++]<<8;
-			cpx.im += (unsigned char)buf[b++];
-			cpx.im /= 8388607.0; //Convert to +/- float
+			cpx.imag(cpx.imag() + ((unsigned char)buf[b++]<<8));
+			cpx.imag(cpx.imag() + (unsigned char)buf[b++]);
+			cpx.imag(cpx.imag() / 8388607.0); //Convert to +/- float
 
 			//Skip mic-line sample for now
 			mic = (signed char)buf[b++]<<8;
