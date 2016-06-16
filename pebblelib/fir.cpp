@@ -121,8 +121,8 @@ TYPEREAL* HQptr;
 		acc.im = (*HQptr++ * (*Zptr++).im);
 		for(int j=1; j<m_NumTaps; j++)
 		{
-			acc.re += (*HIptr++ * (*Zptr).re);		//do the remaining MACs
-			acc.im += (*HQptr++ * (*Zptr++).im);
+			acc.real(acc.real() + (*HIptr++ * (*Zptr).re));		//do the remaining MACs
+			acc.imag(acc.imag() + (*HQptr++ * (*Zptr++).im));
 		}
 		if(--m_State < 0)
 			m_State += m_NumTaps;
@@ -159,8 +159,8 @@ TYPEREAL* HQptr;
 		acc.im = (*HQptr++ * (*Zptr++).im);
 		for(int j=1; j<m_NumTaps; j++)
 		{
-			acc.re += (*HIptr++ * (*Zptr).re);		//do the remaining MACs
-			acc.im += (*HQptr++ * (*Zptr++).im);
+			acc.real(acc.real() + (*HIptr++ * (*Zptr).re));		//do the remaining MACs
+			acc.imag(acc.imag() + (*HQptr++ * (*Zptr++).im));
 		}
 		if(--m_State < 0)
 			m_State += m_NumTaps;
@@ -610,12 +610,12 @@ qDebug()<<"InLength = "<<InLength;
 		acc.im = ( m_pHBFirCBuf[i].im * m_pCoef[0] );
 		for(j=2; j<m_FirLength; j+=2)	//only use even coefficients since odd are zero(except center point)
 		{
-			acc.re += ( m_pHBFirCBuf[i+j].re * m_pCoef[j] );
-			acc.im += ( m_pHBFirCBuf[i+j].im * m_pCoef[j] );
+			acc.real(acc.real() + ( m_pHBFirCBuf[i+j].re * m_pCoef[j] ));
+			acc.imag(acc.imag() + ( m_pHBFirCBuf[i+j].im * m_pCoef[j] ));
 		}
 		//now multiply the center coefficient
-		acc.re += ( m_pHBFirCBuf[i+(m_FirLength-1)/2].re * m_pCoef[(m_FirLength-1)/2] );
-		acc.im += ( m_pHBFirCBuf[i+(m_FirLength-1)/2].im * m_pCoef[(m_FirLength-1)/2] );
+		acc.real(acc.real() + ( m_pHBFirCBuf[i+(m_FirLength-1)/2].re * m_pCoef[(m_FirLength-1)/2] ));
+		acc.imag(acc.imag() + ( m_pHBFirCBuf[i+(m_FirLength-1)/2].im * m_pCoef[(m_FirLength-1)/2] ));
 		pOutData[numoutsamples++] = acc;	//put output buffer
 
 	}

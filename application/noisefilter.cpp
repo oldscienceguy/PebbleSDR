@@ -61,10 +61,10 @@ CPX * NoiseFilter::ProcessBlock(CPX *in)
 		{
 			nxtDelay = anfDelay->NextDelay(j);
 
-            sos.re += (nxtDelay.re * nxtDelay.re);
+			sos.real(sos.real() + (nxtDelay.re * nxtDelay.re));
             sos.im += (nxtDelay.im * nxtDelay.im);
             //dttsp doesn't accumulate sums, bug in dttsp?
-            accum.re += anfCoeff[j].re * nxtDelay.re;
+			accum.real(accum.real() + anfCoeff[j].re * nxtDelay.re);
             accum.im += anfCoeff[j].im * nxtDelay.im;
 
 		}
@@ -81,7 +81,7 @@ CPX * NoiseFilter::ProcessBlock(CPX *in)
         error = in[i] - accum;
 
         scl2.real((anfAdaptationRate / (sos.re + 1e-10))); //avoid divide by zero trick
-        error.re *= scl2.re;
+		error.real(error.real() * scl2.re);
 
         scl2.im = (anfAdaptationRate / (sos.im + 1e-10));
         error.im *= scl2.im;

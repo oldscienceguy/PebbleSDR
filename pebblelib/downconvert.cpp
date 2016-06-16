@@ -374,12 +374,12 @@ int numoutsamples = 0;
         //Fix from cuteSdr 1.10
         for(j=0; j<m_FirLength; j+=2)	//only use even coefficients since odd are zero(except center point)
 		{
-			acc.re += ( m_pHBFirBuf[i+j].re * m_pCoef[j] );
-			acc.im += ( m_pHBFirBuf[i+j].im * m_pCoef[j] );
+			acc.real(acc.real() + ( m_pHBFirBuf[i+j].re * m_pCoef[j] ));
+			acc.imag(acc.imag() + ( m_pHBFirBuf[i+j].im * m_pCoef[j] ));
 		}
 		//now multiply the center coefficient
-		acc.re += ( m_pHBFirBuf[i+(m_FirLength-1)/2].re * m_pCoef[(m_FirLength-1)/2] );
-		acc.im += ( m_pHBFirBuf[i+(m_FirLength-1)/2].im * m_pCoef[(m_FirLength-1)/2] );
+		acc.real(acc.real() + ( m_pHBFirBuf[i+(m_FirLength-1)/2].re * m_pCoef[(m_FirLength-1)/2] ));
+		acc.imag(acc.imag() + ( m_pHBFirBuf[i+(m_FirLength-1)/2].im * m_pCoef[(m_FirLength-1)/2] ));
 		pOutData[numoutsamples++] = acc;	//put output buffer
 
 	}

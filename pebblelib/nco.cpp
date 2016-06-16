@@ -67,11 +67,11 @@ void NCO::genSingle(CPX *_in, quint32 _numSamples, double _dbGain, bool _mix)
 	CPX cpx;
 	for (quint32 i = 0; i < _numSamples; i++) {
 		nextSample(cpx);
-		cpx.re *= _dbGain;
-		cpx.im *= _dbGain;
+		cpx.real(cpx.real() * _dbGain);
+		cpx.imag(cpx.imag() * _dbGain);
 		if (_mix) {
-			_in[i].re += cpx.re;
-			_in[i].im += cpx.im;
+			_in[i].real(_in[i].real() + cpx.re);
+			_in[i].imag(_in[i].imag() + cpx.im);
 		} else {
 			_in[i].real(cpx.re);
 			_in[i].im = cpx.im;
@@ -106,8 +106,8 @@ void NCO::genNoise(CPX *_in, quint32 _numSamples, double _dbGain, bool _mix)
 		x = _dbGain * u1 * rad;
 		y = _dbGain * u2 * rad;
 		if (_mix) {
-			_in[i].re += x;
-			_in[i].im += y;
+			_in[i].real(_in[i].real() + x);
+			_in[i].imag(_in[i].imag() + y);
 		} else {
 			_in[i].real(x);
 			_in[i].im = y;
@@ -169,8 +169,8 @@ if( (m_SweepFrequency>-31250) && (m_SweepFrequency<31250) )
 		//create complex sin/cos signal
 		if (_mix) {
 			//Add signal to incoming
-			_in[i].re += amp * cos(m_sweepAcc);
-			_in[i].im += amp * sin(m_sweepAcc);
+			_in[i].real(_in[i].real() + amp * cos(m_sweepAcc));
+			_in[i].imag(_in[i].imag() + amp * sin(m_sweepAcc));
 		} else {
 			//Replace incoming signal with generator
 			_in[i].real(amp * cos(m_sweepAcc));

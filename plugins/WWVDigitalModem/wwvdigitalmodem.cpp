@@ -175,8 +175,8 @@ void MatchedFilter::ProcessSamples(quint16 len, CPX *in, double *output)
     for (int i=0; i<len; i++) {
         //Filter coefficient table (pulse waveform) is in sync with delay table, so we can use delayPtr for both
 #if 1
-        in[i].re *= ncoTable[delayPtr].re / (msPerSample / 2 * detectedSignalMs);
-        in[i].im *= ncoTable[delayPtr].im / (msPerSample / 2 * detectedSignalMs);
+		in[i].real(in[i].real() * ncoTable[delayPtr].re / (msPerSample / 2 * detectedSignalMs));
+		in[i].imag(in[i].imag() * ncoTable[delayPtr].im / (msPerSample / 2 * detectedSignalMs));
 #else
         in[i] *= ncoTable[delayPtr];
 #endif
@@ -201,14 +201,14 @@ void MatchedFilter::ProcessSamples(quint16 len, CPX *in, double *output)
 bool MatchedFilter::ProcessSample(CPX in)
 {
     //Filter coefficient table (pulse waveform) is in sync with delay table, so we can use delayPtr for both
-    in.re *= ncoTable[delayPtr].re;// / (msPerSample / 2 * detectedSignalMs);
-    in.im *= ncoTable[delayPtr].im;// / (msPerSample / 2 * detectedSignalMs);
+	in.real(in.real() * ncoTable[delayPtr].re);// / (msPerSample / 2 * detectedSignalMs);
+	in.imag(in.imag() * ncoTable[delayPtr].im);// / (msPerSample / 2 * detectedSignalMs);
 
 #if 0
     //Next NCO value
     //Not convolution (mixing) so don't use CPX * operator
-    in.re *= cos(ncoPhase); // / (msPerSample / 2 * detectedSignalMs);
-    in.im *= sin(ncoPhase); // / (msPerSample / 2 * detectedSignalMs);
+	in.real(in.real() * cos(ncoPhase)); // / (msPerSample / 2 * detectedSignalMs);
+	in.imag(in.imag() * sin(ncoPhase)); // / (msPerSample / 2 * detectedSignalMs);
 
     ncoPhase += TWOPI * (double)detectedSignalFrequency / (double)sampleRate;
     //sin (0) to sin(PI) is positive, zero at 0 and PI
@@ -288,9 +288,9 @@ bool MatchedFilter::ProcessSample(CPX in)
     dtemp = sintab[prevNcoPtr] * in.re / (msPerSample / 2.0 * msDetectedSignal);
 
     //up->irig -= ibuf[iptr];
-    out.re -= delay[delayPtr].re;
+	out.real(out.real() - delay[delayPtr].re);
     //up->irig += dtemp;
-    out.re += dtemp;
+	out.real(out.real() + dtemp);
 
     //ibuf[iptr] = dtemp;
     delay[delayPtr].real(dtemp);

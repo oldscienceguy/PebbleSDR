@@ -46,8 +46,8 @@ CPX DelayLine::MAC(double *coeff, int numCoeff)
 	{
 		next = (last + delay + i) % size;
 		//This is a MAC operation and is NOT the same as cpx1 * cpx2 (see cpx.h)
-		mac.re += buffer[next].re * coeff[i];
-		mac.im += buffer[next].im * coeff[i];
+		mac.real(mac.real() + buffer[next].re * coeff[i]);
+		mac.imag(mac.imag() + buffer[next].im * coeff[i]);
 	}
 	//This can generate NaN results if coeff aren't initialized properly, easy technique to catch while we debug
 	if (mac.re != mac.re)
@@ -67,8 +67,8 @@ CPX DelayLine::MAC(CPX *coeff, int numCoeff)
 	{
 		next = (last + delay + i) % size;
 		//This is a MAC operation and is NOT the same as cpx1 * cpx2 (see cpx.h)
-		mac.re += buffer[next].re * coeff[i].re;
-		mac.im += buffer[next].im * coeff[i].im;
+		mac.real(mac.real() + buffer[next].re * coeff[i].re);
+		mac.imag(mac.imag() + buffer[next].im * coeff[i].im);
 	}
 	//This generates NaN results, easy technique to catch while we debug
 	if (mac.re != mac.re)

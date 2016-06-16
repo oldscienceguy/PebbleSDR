@@ -365,8 +365,8 @@ quint32 HalfbandFilter::convolveOS(const CPX *x, quint32 xLen, const double *h,
 		for (quint32 k = 0; k < hLen; k++) {
 			if (h[k] != 0) {
 				//Skip zero coefficients since they won't add anything to accumulator
-				y[yCnt].re += m_lastX[n+k].re * h[k];
-				y[yCnt].im += m_lastX[n+k].im * h[k];
+				y[yCnt].real(y[yCnt].real() + m_lastX[n+k].re * h[k]);
+				y[yCnt].imag(y[yCnt].imag() + m_lastX[n+k].im * h[k]);
 			}
 		}
 		yCnt++;
@@ -477,8 +477,8 @@ quint32 HalfbandFilter::convolveOA(const CPX *x, quint32 xLen, const double *h,
 
 			if (h[k] != 0) {
 				//Skip zero coefficients since they won't add anything to accumulator
-				yOut[yCnt].re += oldest[j].re * h[k];
-				yOut[yCnt].im += oldest[j].im * h[k];
+				yOut[yCnt].real(yOut[yCnt].real() + oldest[j].re * h[k]);
+				yOut[yCnt].imag(yOut[yCnt].imag() + oldest[j].im * h[k]);
 			}
 		}
 		yCnt++;
@@ -486,8 +486,8 @@ quint32 HalfbandFilter::convolveOA(const CPX *x, quint32 xLen, const double *h,
 
 	//Add overlap from last run
 	for (quint32 i=0; i<dLen; i++) {
-		yOut[i].re += m_lastX[i].re;
-		yOut[i].im += m_lastX[i].im;
+		yOut[i].real(yOut[i].real() + m_lastX[i].real());
+		yOut[i].imag(yOut[i].imag() + m_lastX[i].imag());
 	}
 
 	//Save last overlap results, remember we're decimated
@@ -568,8 +568,8 @@ quint32 HalfbandFilter::convolveVDsp1(const DSPDoubleSplitComplex *x, quint32 xL
 		CPX acc;
 		clearCpx(acc);
 		for (int i=0; i<hLen; i++) {
-			acc.re += tmpIn.realp[i] * coeff[i];
-			acc.im += tmpIn.imagp[i] * coeff[i];
+			acc.real(acc.real() + tmpIn.realp[i] * coeff[i]);
+			acc.imag(acc.imag() + tmpIn.imagp[i] * coeff[i]);
 		}
 		if (acc.re != tmpOut.realp[0])
 			qDebug()<<"RE"<<acc.re<<" "<<tmpOut.realp[0];

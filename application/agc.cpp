@@ -516,7 +516,7 @@ CPX * AGC::ProcessBlock2(CPX *in)
 	for (int i=0; i<numSamples; i++)
 	{
 		pol = in[i].CartToPolar();
-		pol.re *= 2; //Increase mag, Should get slightly louder, but no distortion
+		pol.real(pol.real() * 2); //Increase mag, Should get slightly louder, but no distortion
 		out[i] = pol.PolarToCart();
 	}
 	return out;
@@ -576,10 +576,10 @@ CPX * AGC::ProcessBlock2(CPX *in)
 		{
 			if (i<decaySamples)
 				//ramp down
-				out[i].re *= (gainPrev - (gainStep * (i+1)));
+				out[i].real(out[i].real() * (gainPrev - (gainStep * (i+1))));
 			else
 				//rest of buffer is flat
-				out[i].re *= gainNow;
+				out[i].real(out[i].real() * gainNow);
 		}
 	} else if (gainNow > gainPrev) {
 		//AGC gain is increasing, ramp up over attack time
@@ -587,15 +587,15 @@ CPX * AGC::ProcessBlock2(CPX *in)
 		for (int i=0; i<numSamples; i++)
 		{
 			if (i<attackSamples)
-				out[i].re *= (gainPrev + (gainStep * (i+1)));
+				out[i].real(out[i].real() * (gainPrev + (gainStep * (i+1))));
 			else
-				out[i].re *= gainNow;
+				out[i].real(out[i].real() * gainNow);
 		}
 
 	} else {
 		//Gain is unchanged, no ramp
 		for (int i=0; i<numSamples; i++)
-			out[i].re *= gainNow;
+			out[i].real(out[i].real() * gainNow);
 	}
 	
 	gainPrev = gainNow;
