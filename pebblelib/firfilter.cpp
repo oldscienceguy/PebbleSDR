@@ -190,9 +190,11 @@ CPX FIRFilter::Sinc2(float Fc, int i)
 	//float h;
 	CPX h;
 	if (i != 0) {
-		h.re = h.im = sin(TWOPI * Fc * i) / (ONEPI * i);
+		h.real(sin(TWOPI * Fc * i) / (ONEPI * i));
+		h.imag(h.real());
 	} else {
-		h.re = h.im = TWOPI * Fc; //Check this
+		h.real(TWOPI * Fc);
+		h.imag(h.real()); //Check this
 	}
 	return h;
 
@@ -210,13 +212,14 @@ CPX FIRFilter::Sinc(float Fc, int i)
 		//Note: TWOPI * Fc = angular frequency
 		//So this is basically stepping through points on generated sinewave at our cutoff freq
 		//Basic sinc is sin(a)/a, this is slightly modified
-		h.re = (sin(TWOPI * Fc * tmp) / tmp);
-		h.im = (sin(TWOPI * Fc * tmp) / tmp);
+		h.real((sin(TWOPI * Fc * tmp) / tmp));
+		h.imag(h.real());
 		//h.im = (cos(TWOPI * Fc * tmp) / tmp); //Why doesn't this work?
 
 	} else {
 		//Special case to avoid divide by zero at middle
-		h.re = h.im = TWOPI * Fc;
+		h.real(TWOPI * Fc);
+		h.imag(h.real());
 	}
 
 	return h;
@@ -276,13 +279,15 @@ void FIRFilter::SetBandPass2(float lo, float hi, WindowFunction::WINDOWTYPE w)
 	// 1.57 = HP (90deg * ONEPI / 180
 	float fcDeg = fAng(fc); //Center freq in degrees 0=LP 180=HP else BP
 	//int mid = M/2; //M is mid point in Lynn
-	taps[0].re = taps[0].im = fbDeg / ONEPI;
+	taps[0].real(fbDeg / ONEPI);
+	taps[0].imag(taps[0].real());
 	float coeff;
 	for (int i = 1; i <= M; i++) {
 		coeff = (1.0 / (((float)i) * ONEPI)) * 
 			sin(((float)i) * fbDeg) * 
 			cos(((float)i) * fcDeg); 
-		taps[i].re = taps[i].im = coeff * wf.window[i];
+		taps[i].real(coeff * wf.window[i]);
+		taps[i].imag(taps[i].real());
 	}
 }
 void FIRFilter::SetBandStop(float lo, float hi, WindowFunction::WINDOWTYPE w)
@@ -322,14 +327,14 @@ void FIRFilter::SetBandPass(float lo, float hi, WindowFunction::WINDOWTYPE w)
 	float reSumTaps = 0.0;
 	float imSumTaps = 0.0;
 	for(int i = 0; i < numTaps; i++) {
-		taps[i].re = (lp->taps[i].re + hp->taps[i].re);// * window[i];
+		taps[i].real(lp->taps[i].re + hp->taps[i].re);// * window[i]);
 		taps[i].im = (lp->taps[i].im + hp->taps[i].im);// * window[i];
 		reSumTaps += taps[i].re;
 		imSumTaps += taps[i].im;
 	}
 	SpectralInversion();
 	for (int i = 0; i < numTaps; i++){
-		taps[i].re = taps[i].re/reSumTaps;
+		taps[i].real(taps[i].re/reSumTaps);
 		taps[i].im = taps[i].im/imSumTaps;
 	}
 	delete lp;
@@ -374,7 +379,7 @@ void FIRFilter::SetLowPass(float cutoff, WindowFunction::WINDOWTYPE w)
 	//Normalize gain for unity gain at DC
 	//This is critical or else Spectral inversion and HP filters will not work
 	for (int i = 0; i < length; i++){
-		taps[i].re = taps[i].re / reSumTaps;
+		taps[i].real(taps[i].re / reSumTaps);
 		taps[i].im = taps[i].im / imSumTaps;
 	}
 }
@@ -386,10 +391,10 @@ void FIRFilter::SpectralInversion()
 	//dspguide chapt 14
 	int mid = M/2;
 	for (int i = 0; i < numTaps; i++) {
-		taps[i].re = -taps[i].re;
+		taps[i].real(-taps[i].re);
 		taps[i].im = -taps[i].im;
 	}
-	taps[mid].re = 1.0 + taps[mid].re;
+	taps[mid].real(1.0 + taps[mid].re);
 	taps[mid].im = 1.0 + taps[mid].im;
 }
 //Spectral Reversal flips the freq response
@@ -448,7 +453,7 @@ void FIRFilter::SetLoadable(float * coeff)
 	useFFT = true;  
     for (int i = 0; i < numSamples; i++)
     {
-        taps[i].re = coeff[i];
+        taps[i].real(coeff[i]);
         taps[i].im = coeff[i];
     }
 	MakeFFTTaps();
@@ -495,7 +500,7 @@ void FIRFilter::FFTSetBandPass(float lo, float hi, WindowFunction::WINDOWTYPE wt
         else
             temp = 2.0 * fc;
         temp *= 2.0;
-        taps[j].re = temp * (cos(phase));
+        taps[j].real(temp * (cos(phase)));
         taps[j].im = temp * (sin(phase));
     }
 }
@@ -518,14 +523,14 @@ void FIRFilter::FFTSetLowPass(float cutoff, WindowFunction::WINDOWTYPE wtype)
         int j = i - 1;
         if (i != midpoint)
         {
-			taps[j].re = (sin(TWOPI * (i - midpoint) * fc) / (ONEPI * (i - midpoint))) * wf.window[j];
+			taps[j].real((sin(TWOPI * (i - midpoint) * fc) / (ONEPI * (i - midpoint))) * wf.window[j]);
             //Setting im to cos(...) doesn't work, so just like normal FIR, we'll set em both to sin for now
 			//taps[j].im = (cos(TWOPI * (i - midpoint) * fc) / (ONEPI * (i - midpoint))) * window[j];
 			taps[j].im = (sin(TWOPI * (i - midpoint) * fc) / (ONEPI * (i - midpoint))) * wf.window[j];
         }
         else
         {
-            taps[midpoint - 1].re = 2.0 * fc;
+            taps[midpoint - 1].real(2.0 * fc);
             taps[midpoint - 1].im = 2.0 * fc;
         }
     }
@@ -559,13 +564,13 @@ void FIRFilter::FFTSetBandStop(float lo, float hi, WindowFunction::WINDOWTYPE wt
         if (i != midpoint)
         {
 			temp = ((sin(TWOPI * k * fc) / (ONEPI * k))) * wf.window[j];
-            taps[j].re = -2.0 * temp * (cos(phase));
+            taps[j].real(-2.0 * temp * (cos(phase)));
             taps[j].im = -2.0 * temp * (sin(phase));
         }
         else
         {
             temp = 4.0 * fc;
-            taps[midpoint - 1].re = 1.0 - taps[midpoint - 1].re;
+            taps[midpoint - 1].real(1.0 - taps[midpoint - 1].re);
             taps[midpoint - 1].im = 0.0 - taps[midpoint - 1].im;
         }
 

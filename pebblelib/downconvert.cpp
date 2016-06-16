@@ -74,7 +74,7 @@ int i;
 	m_MaxBW = 10000.0;
 	for(i=0; i<MAX_DECSTAGES; i++)
 		m_pDecimatorPtrs[i] = NULL;
-	m_Osc1.re = 1.0;	//initialize unit vector that will get rotated
+	m_Osc1.real(1.0);	//initialize unit vector that will get rotated
 	m_Osc1.im = 0.0;
 }
 
@@ -275,15 +275,15 @@ double*	pdSinAns  = &dASMSin;
 	{
 		dtmp = pInData[i];
 #if NCO_LIB
-		Osc.re = cos(m_NcoTime);
+		Osc.real(cos(m_NcoTime));
 		Osc.im = sin(m_NcoTime);
 		m_NcoTime += m_NcoInc;
 #elif NCO_OSC
 		TYPEREAL OscGn;
-		Osc.re = m_Osc1.re * m_OscCos - m_Osc1.im * m_OscSin;
+		Osc.real(m_Osc1.re * m_OscCos - m_Osc1.im * m_OscSin);
 		Osc.im = m_Osc1.im * m_OscCos + m_Osc1.re * m_OscSin;
 		OscGn = 1.95 - (m_Osc1.re*m_Osc1.re + m_Osc1.im*m_Osc1.im);
-		m_Osc1.re = OscGn * Osc.re;
+		m_Osc1.real(OscGn * Osc.re);
 		m_Osc1.im = OscGn * Osc.im;
 #elif NCO_VCASM
 		_asm
@@ -296,17 +296,17 @@ double*	pdSinAns  = &dASMSin;
 			fstp QWORD PTR [ebx]
 		}
 		dPhaseAcc += m_NcoInc;
-		Osc.re = dASMCos;
+		Osc.real(dASMCos);
 		Osc.im = dASMSin;
 #elif NCO_GCCASM
 		asm volatile ("fsincos" : "=%&t" (dASMCos), "=%&u" (dASMSin) : "0" (dPhaseAcc));
 		dPhaseAcc += m_NcoInc;
-		Osc.re = dASMCos;
+		Osc.real(dASMCos);
 		Osc.im = dASMSin;
 #endif
 
 		//Cpx multiply by shift frequency
-		pInData[i].re = ((dtmp.re * Osc.re) - (dtmp.im * Osc.im));
+		pInData[i].real(((dtmp.re * Osc.re) - (dtmp.im * Osc.im)));
 		pInData[i].im = ((dtmp.re * Osc.im) + (dtmp.im * Osc.re));
 	}
 #if (NCO_VCASM || NCO_GCCASM)
@@ -369,7 +369,7 @@ int numoutsamples = 0;
 	for(i=0; i<InLength; i+=2)
 	{
 		TYPECPX acc;
-		acc.re = ( m_pHBFirBuf[i].re * m_pCoef[0] );
+		acc.real(( m_pHBFirBuf[i].re * m_pCoef[0] ));
 		acc.im = ( m_pHBFirBuf[i].im * m_pCoef[0] );
         //Fix from cuteSdr 1.10
         for(j=0; j<m_FirLength; j+=2)	//only use even coefficients since odd are zero(except center point)
@@ -503,8 +503,10 @@ int CDownConvert::CHalfBand11TapDecimateBy2::DecBy2(int InLength, TYPECPX* pInDa
 //////////////////////////////////////////////////////////////////////
 CDownConvert::CCicN3DecimateBy2::CCicN3DecimateBy2()
 {
-	m_Xodd.re = 0.0; m_Xodd.im = 0.0;
-	m_Xeven.re = 0.0; m_Xeven.im = 0.0;
+	m_Xodd.real(0.0);
+	m_Xodd.imag(0.0);
+	m_Xeven.real(0.0);
+	m_Xeven.imag(0.0);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -523,7 +525,7 @@ TYPECPX even,odd;
 	{	//mag gn=8
 		even = pInData[i];
 		odd = pInData[i+1];
-		pOutData[j].re = .125*( odd.re + m_Xeven.re + 3.0*(m_Xodd.re + even.re) );
+		pOutData[j].real(.125*( odd.re + m_Xeven.re + 3.0*(m_Xodd.re + even.re) ));
 		pOutData[j].im = .125*( odd.im + m_Xeven.im + 3.0*(m_Xodd.im + even.im) );
 		m_Xodd = odd;
 		m_Xeven = even;

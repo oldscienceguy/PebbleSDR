@@ -149,7 +149,7 @@ MatchedFilter::MatchedFilter(quint16 _sampleRate, quint16 _detectedSignalMs, qui
     ncoTable = new CPX[lenFilter+1]; //1 to 1 match with sample buffer with 1 extra zero element
     ncoIncrement = TWOPI * (double)detectedSignalFrequency / (double)sampleRate;
     for (int i=0; i<lenFilter; i++) {
-        ncoTable[i].re = cos(ncoPhase);
+        ncoTable[i].real(cos(ncoPhase));
         ncoTable[i].im = sin(ncoPhase);
         ncoPhase += ncoIncrement;
         //sin (0) to sin(PI) is positive, zero at 0 and PI
@@ -293,7 +293,7 @@ bool MatchedFilter::ProcessSample(CPX in)
     out.re += dtemp;
 
     //ibuf[iptr] = dtemp;
-    delay[delayPtr].re = dtemp;
+    delay[delayPtr].real(dtemp);
 
 
     //NCO for the Quadrature (out of phase) frequency is 90deg or 20 4.5deg samples offset from In phase

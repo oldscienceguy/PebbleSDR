@@ -543,7 +543,7 @@ void Ghpsdr3Device::TCPSocketNewData()
 					//Samples are 8bit unsigned compressed data
 					decoded = alaw.ALawToLinear(audioBuffer[i]);
 					//qDebug()<<audioBuffer[i]<<" "<<decoded;
-					producerBuf[producerBufIndex].re = producerBuf[producerBufIndex].im = decoded / 32767.0;
+					producerBuf[producerBufIndex].real(producerBuf[producerBufIndex].im = decoded / 32767.0);
 					producerBufIndex++;
 					//Every time we get 512 bytes of audio data, release it to application
 					if (producerBufIndex >= AUDIO_OUTPUT_SIZE) {

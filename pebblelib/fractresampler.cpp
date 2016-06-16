@@ -97,7 +97,7 @@ TYPEREAL window;
 	m_pInputBuf = new TYPECPX[MaxInputSize];
 	for(i=0; i<MaxInputSize; i++)
 	{
-		m_pInputBuf[i].re = 0.0;
+		m_pInputBuf[i].real(0.0);
 		m_pInputBuf[i].im = 0.0;
 	}
 	for(i=0; i<SINC_LENGTH; i++)
@@ -163,7 +163,8 @@ TYPECPX acc;
 	while(IntegerTime < InLength )
 	{	//convolve sinc function with input samples where sinc
 		//function is centered at the output fractional time position
-		acc.re = 0.0; acc.im = 0.0;
+		acc.real(0.0);
+		acc.imag(0.0);
 		for(i=1; i<=SINC_PERIODS; i++)
 		{
 			j = IntegerTime + i;	//temp integer time position for convolution loop
@@ -215,7 +216,8 @@ TYPECPX acc;
 	while(IntegerTime < InLength )
 	{	//convolve sinc function with input samples where sinc
 		//function is centered at the output fractional time position
-		acc.re = 0.0; acc.im = 0.0;
+		acc.real(0.0);
+		acc.imag(0.0);
 		for(i=1; i<=SINC_PERIODS; i++)
 		{
 			j = IntegerTime + i;	//temp integer time position for convolution loop
@@ -224,17 +226,17 @@ TYPECPX acc;
 			acc.im += (m_pInputBuf[j].im * m_pSinc[sindx] );
 		}
 		TYPECPX tmp;
-		tmp.re = (acc.re * gain);;
-		tmp.im = (acc.im * gain);;
+		tmp.real(acc.re * gain);
+		tmp.imag(acc.im * gain);
 		if(tmp.re > MAX_SOUNDCARDVAL)
-			tmp.re = MAX_SOUNDCARDVAL;
+			tmp.real(MAX_SOUNDCARDVAL);
 		if(tmp.re < -MAX_SOUNDCARDVAL)
-			tmp.re = -MAX_SOUNDCARDVAL;
+			tmp.real(-MAX_SOUNDCARDVAL);
 		if(tmp.im>MAX_SOUNDCARDVAL)
 			tmp.im = MAX_SOUNDCARDVAL;
 		if(tmp.im < -MAX_SOUNDCARDVAL)
 			tmp.im = -MAX_SOUNDCARDVAL;
-		pOutBuf[outsamples].re = (qint16)tmp.re;
+		pOutBuf[outsamples].real((qint16)tmp.re);
 		pOutBuf[outsamples++].im = (qint16)tmp.im;
 
 		m_FloatTime += dt;	//inc floating pt output time step
@@ -269,7 +271,7 @@ TYPEREAL acc;
 	//copy input samples into buffer starting at position SINC_PERIODS
 	j = SINC_PERIODS;
 	for(i=0; i<InLength; i++)
-		m_pInputBuf[j++].re = pInBuf[i];
+		m_pInputBuf[j++].real(pInBuf[i]);
 	//now calculate output samples by looping until end of input buffer
 	// is reached.  The output position is incremented in fractional time
 	// of input sample time until all the possible input samples are
@@ -294,7 +296,7 @@ TYPEREAL acc;
 	// for FIR wrap around management. j points to last input sample processed
 	j = InLength;
 	for(i=0; i<SINC_PERIODS; i++)
-		m_pInputBuf[i].re = m_pInputBuf[j++].re;
+		m_pInputBuf[i].real(m_pInputBuf[j++].re);
 	return outsamples;
 }
 
@@ -317,7 +319,7 @@ TYPEREAL acc;
 	//copy input samples into buffer starting at position SINC_PERIODS
 	j = SINC_PERIODS;
 	for(i=0; i<InLength; i++)
-		m_pInputBuf[j++].re = pInBuf[i];
+		m_pInputBuf[j++].real(pInBuf[i]);
 	//now calculate output samples by looping until end of input buffer
 	// is reached.  The output position is incremented in fractional time
 	// of input sample time until all the possible input samples are
@@ -349,6 +351,6 @@ TYPEREAL acc;
 	// for FIR wrap around management. j points to last input sample processed
 	j = InLength;
 	for(i=0; i<SINC_PERIODS; i++)
-		m_pInputBuf[i].re = m_pInputBuf[j++].re;
+		m_pInputBuf[i].real(m_pInputBuf[j++].re);
 	return outsamples;
 }

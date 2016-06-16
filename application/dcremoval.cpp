@@ -27,7 +27,7 @@ CPX* DCRemoval::process(CPX* in, quint32 _numSamples) {
 	for (int i=0; i<numSamples; i++) {
 		w_nRE = in[i].re  + alpha * lastRE;
 		w_nIM = in[i].im  + alpha * lastIM;
-		in[i].re = w_nRE - lastRE;
+		in[i].real(w_nRE - lastRE);
 		in[i].im = w_nIM - lastIM;
 		lastRE = w_nRE;
 		lastIM = w_nIM;

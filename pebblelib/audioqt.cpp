@@ -191,9 +191,9 @@ void AudioQT::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
 	{
 		//Not sure if we need to clip, just in case
 		if (out[i].re > maxOutput)
-			out[i].re = maxOutput;
+			out[i].real(maxOutput);
 		else if (out[i].re < -maxOutput)
-			out[i].re = -maxOutput;
+			out[i].real(-maxOutput);
 
 		if (out[i].im > maxOutput)
 			out[i].im = maxOutput;

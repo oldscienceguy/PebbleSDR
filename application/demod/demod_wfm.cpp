@@ -214,7 +214,8 @@ int Demod_WFM::processDataMono(int InLength, TYPECPX* pInData, TYPECPX* pOutData
 	for(int i=0; i<InLength; i++)
 	{
 		m_D0 = pInData[i];
-        pOutData[i].re = pOutData[i].im = FMDEMOD_GAIN*atan2( (m_D1.re*m_D0.im - m_D0.re*m_D1.im), (m_D1.re*m_D0.re + m_D1.im*m_D0.im));
+		pOutData[i].real(FMDEMOD_GAIN*atan2( (m_D1.re*m_D0.im - m_D0.re*m_D1.im), (m_D1.re*m_D0.re + m_D1.im*m_D0.im)));
+		pOutData[i].imag(pOutData[i].real());
 		m_D1 = m_D0;
 	}
 
@@ -277,7 +278,7 @@ TYPEREAL LminusR;
 			//Left minus Right signal is created by multiplying by 38KHz recovered pilot
 			// scale by 2 since DSB amplitude is half of the Right plus Left signal
 			LminusR = 2.0 * in * sin( m_PilotPhase[i]*2.0);
-			pOutData[i].re = in + LminusR;		//extract left and right signals
+			pOutData[i].real(in + LminusR);		//extract left and right signals
 			pOutData[i].im = in - LminusR;
 		}
 		m_PilotLocked = true;
@@ -286,7 +287,7 @@ TYPEREAL LminusR;
 	{	//no pilot so is mono. Just copy real fm demod into both right and left channels
 		for(int i=0; i<InLength; i++)
 		{
-			pOutData[i].re = m_RawFm[i];
+			pOutData[i].real(m_RawFm[i]);
 			pOutData[i].im = m_RawFm[i];
 		}
 		m_PilotLocked = false;
@@ -330,12 +331,12 @@ TYPEREAL LminusR;
 			if(m_RdsLastData>=0)
 			{
 				bit = 1;
-m_RdsRaw[i].re = m_RdsLastData;
+m_RdsRaw[i].real(m_RdsLastData);
 			}
 			else
 			{
 				bit = 0;
-m_RdsRaw[i].re = m_RdsLastData;
+m_RdsRaw[i].real(m_RdsLastData);
 			}
 			//need to XOR with previous bit to get actual data bit value
 			processNewRdsBit(bit^m_RdsLastBit);		//go process new RDS Bit
@@ -343,7 +344,7 @@ m_RdsRaw[i].re = m_RdsLastData;
 		}
 		else
 		{
-m_RdsRaw[i].re = 0;
+m_RdsRaw[i].real(0);
 		}
 
 		m_RdsLastData = Data;		//keep last bit since is differential data
@@ -402,7 +403,7 @@ TYPECPX tmp;
 		Cos = cos(m_PilotNcoPhase);
 #endif
 		//complex multiply input sample by NCO's  sin and cos
-		tmp.re = Cos * pInData[i].re - Sin * pInData[i].im;
+		tmp.real(Cos * pInData[i].re - Sin * pInData[i].im);
 		tmp.im = Cos * pInData[i].im + Sin * pInData[i].re;
 		//find current sample phase after being shifted by NCO frequency
 		TYPEREAL phzerror = -arctan2(tmp.im, tmp.re);
@@ -478,7 +479,7 @@ void Demod_WFM::processDeemphasisFilter(int InLength, TYPECPX* InBuf, TYPECPX* O
 	{
 		m_DeemphasisAveRe = (1.0-m_DeemphasisAlpha)*m_DeemphasisAveRe + m_DeemphasisAlpha*InBuf[i].re;
 		m_DeemphasisAveIm = (1.0-m_DeemphasisAlpha)*m_DeemphasisAveIm + m_DeemphasisAlpha*InBuf[i].im;
-		OutBuf[i].re = m_DeemphasisAveRe*2.0;
+		OutBuf[i].real(m_DeemphasisAveRe*2.0);
 		OutBuf[i].im = m_DeemphasisAveIm*2.0;
 	}
 }
@@ -552,7 +553,7 @@ TYPECPX tmp;
 		Cos = cos(m_RdsNcoPhase);
 #endif
 		//complex multiply input sample by NCO's  sin and cos
-		tmp.re = Cos * pInData[i].re - Sin * pInData[i].im;
+		tmp.real(Cos * pInData[i].re - Sin * pInData[i].im);
 		tmp.im = Cos * pInData[i].im + Sin * pInData[i].re;
 		//find current sample phase after being shifted by NCO frequency
 		TYPEREAL phzerror = -arctan2(tmp.im, tmp.re);
@@ -836,7 +837,8 @@ void Demod_WFM::fmMono( CPX * in, CPX * out, int bufSize)
         //Condensed version of FM2 algorithm comparing sample with previous sample
         //Note: Have to divide by 100 to get signal in right range, different than CuteSDR
         d0 = in[i];
-        out[i].re = out[i].im = atan2( (d1.re*d0.im - d0.re*d1.im), (d1.re*d0.re + d1.im*d0.im))/100;
+		out[i].real(atan2( (d1.re*d0.im - d0.re*d1.im), (d1.re*d0.re + d1.im*d0.im))/100);
+		out[i].imag(out[i].real());
         d1 = d0;
     }
 #else
@@ -869,7 +871,7 @@ void Demod_WFM::fmDeemphasisFilter(int _bufSize, CPX *in, CPX *out)
     {
         avgRe = (1.0-m_fmDeemphasisAlpha)*avgRe + m_fmDeemphasisAlpha*in[i].re;
         avgIm = (1.0-m_fmDeemphasisAlpha)*avgIm + m_fmDeemphasisAlpha*in[i].im;
-        out[i].re = avgRe*2.0;
+        out[i].real(avgRe*2.0);
         out[i].im = avgIm*2.0;
     }
 }

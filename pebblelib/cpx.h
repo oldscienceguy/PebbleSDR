@@ -58,6 +58,10 @@ class CPX16 {
 public:
 	qint16 re;
 	qint16 im;
+	quint16 real() {return re;}
+	void real(quint16 r) {re = r;}
+	quint16 imag() {return im;}
+	void imag(quint16 i) {im = i;}
 };
 class CPXU16 {
 public:
@@ -179,7 +183,7 @@ public:
 
 	inline CPX operator%(const CPX& y) const {
         CPX z;
-        z.re = re * y.re + im * y.im;
+		z.real( re * y.re + im * y.im);
         z.im = re * y.im - im * y.re;
         return z;
     }
@@ -217,10 +221,10 @@ namespace CpxUtil {
 	void multCPX(CPX * out, CPX * in, CPX *in2, int size);
 	void multCPX(CPX * out, const CPX * in, const CPX *in2, int size);
 
-	//out.re = mag, out.im = original out.re SIMD enabled
+	//out.real( mag, out.im = original out.re SIMD enable)
 	void magCPX(CPX *out, CPX *in, int size);
 
-	//out.re = sqrMag, out.im = original out.reSIMD enabled
+	//out.real( sqrMag, out.im = original out.reSIMD enable)
 	void sqrMagCPX(CPX *out, CPX *in, int size);
 
 	//Copy every N samples from in to out
@@ -382,10 +386,10 @@ public:
     //SIMD enabled
     void Mult(CPX * out, CPX *in2);
 
-    //out.re = mag, out.im = original out.re SIMD enabled
+	//out.real( mag, out.im = original out.re SIMD enable)
     void Mag(CPX *out);
 
-    //out.re = sqrMag, out.im = original out.reSIMD enabled
+	//out.real( sqrMag, out.im = original out.reSIMD enable)
     void SqrMag(CPX *out);
 
     //Copy every N samples from in to out

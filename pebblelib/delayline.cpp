@@ -51,7 +51,7 @@ CPX DelayLine::MAC(double *coeff, int numCoeff)
 	}
 	//This can generate NaN results if coeff aren't initialized properly, easy technique to catch while we debug
 	if (mac.re != mac.re)
-		mac.re = 0;
+		mac.real(0);
 	if (mac.im != mac.im)
 		mac.im = 0;
 
@@ -72,7 +72,7 @@ CPX DelayLine::MAC(CPX *coeff, int numCoeff)
 	}
 	//This generates NaN results, easy technique to catch while we debug
 	if (mac.re != mac.re)
-		mac.re = 0;
+		mac.real(0);
 	if (mac.im != mac.im)
 		mac.im = 0;
 	mutex.unlock();

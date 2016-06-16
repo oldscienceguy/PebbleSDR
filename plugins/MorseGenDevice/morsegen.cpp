@@ -90,21 +90,21 @@ void MorseGen::setParams(double frequency, double dbAmplitude, quint32 wpm, quin
 	double amplitude = ampInc;
 	quint32 outIndex = 0;
 	for (quint32 i=0; i<m_numSamplesRise; i++, outIndex++) {
-		m_dotSampleBuf[outIndex].re = cos(acc) * amplitude;
+		m_dotSampleBuf[outIndex].real(cos(acc) * amplitude);
 		m_dotSampleBuf[outIndex].im = sin(acc) * amplitude;
 		amplitude += ampInc;
 		acc += phase;
 	}
 	//Steady signal
 	for (quint32 i=0; i< m_numSamplesDot; i++, outIndex++) {
-		m_dotSampleBuf[outIndex].re = cos(acc) * m_amplitude;
+		m_dotSampleBuf[outIndex].real(cos(acc) * m_amplitude);
 		m_dotSampleBuf[outIndex].im = sin(acc) * m_amplitude;
 		acc += phase;
 	}
 	//Decline amplitude during fall
 	amplitude = m_amplitude - ampInc;
 	for (quint32 i=0; i< m_numSamplesFall; i++, outIndex++) {
-		m_dotSampleBuf[outIndex].re = cos(acc) * amplitude;
+		m_dotSampleBuf[outIndex].real(cos(acc) * amplitude);
 		m_dotSampleBuf[outIndex].im = sin(acc) * amplitude;
 		amplitude -= ampInc;
 		acc += phase;
@@ -115,36 +115,36 @@ void MorseGen::setParams(double frequency, double dbAmplitude, quint32 wpm, quin
 	amplitude = ampInc;
 	outIndex = 0;
 	for (quint32 i=0; i<m_numSamplesRise; i++, outIndex++) {
-		m_dashSampleBuf[outIndex].re = cos(acc) * amplitude;
+		m_dashSampleBuf[outIndex].real(cos(acc) * amplitude);
 		m_dashSampleBuf[outIndex].im = sin(acc) * amplitude;
 		amplitude += ampInc;
 		acc += phase;
 	}
 	//Steady signal
 	for (quint32 i=0; i< m_numSamplesDash; i++, outIndex++) {
-		m_dashSampleBuf[outIndex].re = cos(acc) * m_amplitude;
+		m_dashSampleBuf[outIndex].real(cos(acc) * m_amplitude);
 		m_dashSampleBuf[outIndex].im = sin(acc) * m_amplitude;
 		acc += phase;
 	}
 	//Decline amplitude during fall
 	amplitude = m_amplitude - ampInc;
 	for (quint32 i= 0; i< m_numSamplesFall; i++, outIndex++) {
-		m_dashSampleBuf[outIndex].re = cos(acc) * amplitude;
+		m_dashSampleBuf[outIndex].real(cos(acc) * amplitude);
 		m_dashSampleBuf[outIndex].im = sin(acc) * amplitude;
 		amplitude -= ampInc;
 		acc += phase;
 	}
 
 	for (quint32 i=0; i<m_numSamplesElementBuf; i++) {
-		m_elementSampleBuf[i].re = 0;
+		m_elementSampleBuf[i].real(0);
 		m_elementSampleBuf[i].im = 0;
 	}
 	for (quint32 i=0; i<m_numSamplesCharBuf; i++) {
-		m_charSampleBuf[i].re = 0;
+		m_charSampleBuf[i].real(0);
 		m_charSampleBuf[i].im = 0;
 	}
 	for (quint32 i=0; i<m_numSamplesWordBuf; i++) {
-		m_wordSampleBuf[i].re = 0;
+		m_wordSampleBuf[i].real(0);
 		m_wordSampleBuf[i].im = 0;
 	}
 
@@ -252,7 +252,7 @@ quint32 MorseGen::genDot(CPX *out)
 		len = genElement(out);
 	}
 	for (quint32 i=0; i<m_numSamplesDotBuf; i++) {
-		out[len+i].re = m_dotSampleBuf[i].re;
+		out[len+i].real(m_dotSampleBuf[i].re);
 		out[len+i].im = m_dotSampleBuf[i].im;
 	}
 	m_lastSymbol = MorseCode::DOT;
@@ -267,7 +267,7 @@ quint32 MorseGen::genDash(CPX *out)
 		len = genElement(out);
 	}
 	for (quint32 i=0; i<m_numSamplesDashBuf; i++) {
-		out[len+i].re = m_dashSampleBuf[i].re;
+		out[len+i].real(m_dashSampleBuf[i].re);
 		out[len+i].im = m_dashSampleBuf[i].im;
 	}
 	m_lastSymbol = MorseCode::DASH;
@@ -277,7 +277,7 @@ quint32 MorseGen::genDash(CPX *out)
 quint32 MorseGen::genElement(CPX *out)
 {
 	for (quint32 i=0; i<m_numSamplesElementBuf; i++) {
-		out[i].re = m_elementSampleBuf[i].re;
+		out[i].real(m_elementSampleBuf[i].re);
 		out[i].im = m_elementSampleBuf[i].im;
 	}
 	m_lastSymbol = MorseCode::EL_SPACE;
@@ -287,7 +287,7 @@ quint32 MorseGen::genElement(CPX *out)
 quint32 MorseGen::genChar(CPX *out)
 {
 	for (quint32 i=0; i<m_numSamplesCharBuf; i++) {
-		out[i].re = m_charSampleBuf[i].re;
+		out[i].real(m_charSampleBuf[i].re);
 		out[i].im = m_charSampleBuf[i].im;
 	}
 	m_lastSymbol = MorseCode::CH_SPACE;
@@ -297,7 +297,7 @@ quint32 MorseGen::genChar(CPX *out)
 quint32 MorseGen::genWord(CPX *out)
 {
 	for (quint32 i=0; i<m_numSamplesWordBuf; i++) {
-		out[i].re = m_wordSampleBuf[i].re;
+		out[i].real(m_wordSampleBuf[i].re);
 		out[i].im = m_wordSampleBuf[i].im;
 	}
 	m_lastSymbol = MorseCode::WORD_SPACE;

@@ -34,7 +34,7 @@ void Mixer::setFrequency(double f)
 	m_oscInc = TWOPI * m_frequency / m_sampleRate;
 	m_oscCos = cos(m_oscInc);
 	m_oscSin = sin(m_oscInc);
-	m_lastOsc.re = 1.0;
+	m_lastOsc.real(1.0);
 	m_lastOsc.im = 0.0;
 
 }
@@ -58,16 +58,16 @@ CPX *Mixer::processBlock(CPX *in)
 		//nco->nextSample(osc);
 		//This is executed at the highest sample rate and every usec counts
 		//Pulled code from NCO for performance gain
-		osc.re = m_lastOsc.re * m_oscCos - m_lastOsc.im * m_oscSin;
+		osc.real(m_lastOsc.re * m_oscCos - m_lastOsc.im * m_oscSin);
 		osc.im = m_lastOsc.re * m_oscSin + m_lastOsc.im * m_oscCos;
 		//oscGn is used to account for variations in the amplitude output as time increases
 		//Since oscillator variables are not bounded as they are in alternate implementation (fmod(...))
 		oscGn = 1.95 - (m_lastOsc.re * m_lastOsc.re + m_lastOsc.im * m_lastOsc.im);
-		m_lastOsc.re = oscGn * osc.re;
+		m_lastOsc.real(oscGn * osc.re);
 		m_lastOsc.im = oscGn * osc.im;
 #else
 		//Putting sin in re works with standard unfold, cos doesn't.  why?
-		osc.re = cos(oscTime);
+		osc.real(cos(oscTime));
 		osc.im = sin(oscTime);
 		oscTime += oscInc;
 		oscTime = fmod(oscTime, TWOPI);	//Keep bounded

@@ -70,7 +70,7 @@ CPX * NoiseFilter::ProcessBlock(CPX *in)
 		}
         //This does the same as accum above, but requires an extra loop
         //Maybe we should update MAC to also return sum or squares result?
-        out[i].re = accum.re * 1.25; //Bit of gain to compensate for filter
+        out[i].real(accum.re * 1.25); //Bit of gain to compensate for filter
         out[i].im = accum.im * 1.25;
 
 		//This is the delta between the actual current sample, and MAC from delay line (reference signal)
@@ -80,7 +80,7 @@ CPX * NoiseFilter::ProcessBlock(CPX *in)
         //CPX error = in[i] - anfDelay->MAC(anfCoeff,anfAdaptiveFilterSize);
         error = in[i] - accum;
 
-        scl2.re = (anfAdaptationRate / (sos.re + 1e-10)); //avoid divide by zero trick
+        scl2.real((anfAdaptationRate / (sos.re + 1e-10))); //avoid divide by zero trick
         error.re *= scl2.re;
 
         scl2.im = (anfAdaptationRate / (sos.im + 1e-10));
@@ -98,7 +98,7 @@ CPX * NoiseFilter::ProcessBlock(CPX *in)
 			//Weighted average based on anfLeakage
 			//AdaptationRate is between 0 and 1 and determines how fast we stabilize filter
 			//anfCoeff[j] = anfCoeff[j-1] * anfLeakage + (1.0 - anfLeakage) * anfAdaptationRate * nxtDelay.re * errorSignal;
-            anfCoeff[j].re = anfCoeff[j].re * scl1 + error.re * nxtDelay.re;
+            anfCoeff[j].real(anfCoeff[j].re * scl1 + error.re * nxtDelay.re);
             anfCoeff[j].im = anfCoeff[j].im * scl1 + error.im * nxtDelay.im;
         }
 	}

@@ -46,7 +46,7 @@ CPX Demod_SAM::pll(CPX sig, float loLimit, float hiLimit)
 
     //Todo: See if we can use NCO here
     //This is the generated signal to sync with
-    z.re = cos(m_pllPhase);
+    z.real(cos(m_pllPhase));
     z.im = sin(m_pllPhase);
 
     //Complex mult of incoming signal and NCO
@@ -94,7 +94,7 @@ void Demod_SAM::processBlock(  CPX * in, CPX * out, int demodSamples )
         //Basic am demod but using delay instead of mag() for sample
         m_amDcRe = (DC_ALPHA * m_amDcReLast) + pllSample.re;
         m_amDcIm = (DC_ALPHA * m_amDcImLast) + pllSample.im;
-		out[i].re = (m_amDcRe - m_amDcReLast);
+		out[i].real((m_amDcRe - m_amDcReLast));
 		out[i].im = (m_amDcIm - m_amDcImLast);
         m_amDcReLast = m_amDcRe;
         m_amDcImLast = m_amDcIm;
@@ -107,6 +107,6 @@ void Demod_SAM::processBlock(  CPX * in, CPX * out, int demodSamples )
         tmp = out[i];
         //Monoaural sound
         out[i].im = tmp.re - tmp.im;	//send upper sideband to (right)channel
-        out[i].re = tmp.re + tmp.im;	//send lower sideband to (left)channel
+        out[i].real(tmp.re + tmp.im);	//send lower sideband to (left)channel
     }
 }

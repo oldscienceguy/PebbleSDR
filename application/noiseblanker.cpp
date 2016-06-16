@@ -64,7 +64,8 @@ CPX * NoiseBlanker::ProcessBlock(CPX *in)
 			nbSpikeCount = nbSpike;
 		if (nbSpikeCount > 0) {
 			//Blank noise
-			out[i].re = out[i].im = 0.0;
+			out[i].real(0.0);
+			out[i].imag(0.0);
 			nbSpikeCount --;
 		} else {
 			//Default delay is 2 samples, handled by DelayLine class.

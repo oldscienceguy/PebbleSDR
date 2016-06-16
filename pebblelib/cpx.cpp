@@ -205,7 +205,7 @@ void CPXBuf::Mag(CPX *out)
     if (SIMD)
         return SSEMagCPX(out, cpxBuffer, size);
     for (int i=0; i<size; i++){
-        out[i].re = cpxBuffer[i].mag();
+		out[i].real( cpxBuffer[i].mag();
         out[i].im = cpxBuffer[i].re;
     }
 
@@ -215,7 +215,7 @@ void CPXBuf::SqrMag(CPX *out)
     if (SIMD)
         return SSESqMagCPX(out, cpxBuffer, size);
     for (int i = 0; i < size; i++) {
-        out[i].re = cpxBuffer[i].sqrMag();
+		out[i].real( cpxBuffer[i].sqrMag();
         out[i].im = cpxBuffer[i].re; //Keet this for ref?
     }
 

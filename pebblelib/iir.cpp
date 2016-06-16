@@ -193,7 +193,7 @@ void CIir::ProcessFilter(int InLength, TYPECPX* InBuf, TYPECPX* OutBuf)
 	for(int i=0; i<InLength; i++)
 	{
         TYPEREAL w0a = InBuf[i].re - m_A1*m_w1a - m_A2*m_w2a;
-        OutBuf[i].re =m_B0*w0a + m_B1*m_w1a + m_B2*m_w2a;
+        OutBuf[i].real(m_B0*w0a + m_B1*m_w1a + m_B2*m_w2a);
 		m_w2a = m_w1a;
 		m_w1a = w0a;
 

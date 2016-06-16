@@ -332,7 +332,7 @@ quint32 HalfbandFilter::convolveOS(const CPX *x, quint32 xLen, const double *h,
 		//The last stage may only have 16 samples for a 35 tap filter
 		//Filter won't work, so simple decimate
 		for (quint32 i=0; i<xLen; i+=decimate) {
-			y[yCnt].re = x[i].re;
+			y[yCnt].real(x[i].re);
 			y[yCnt].im = x[i].im;
 			yCnt++;
 		}
@@ -341,10 +341,10 @@ quint32 HalfbandFilter::convolveOS(const CPX *x, quint32 xLen, const double *h,
 		quint32 saveSamples = dLen - xLen; //# x samples to save in lastX
 		for (quint32 i=0; i<hLen; i++) {
 			if (i < saveSamples) {
-				m_lastX[i].re = 0;
+				m_lastX[i].real(0);
 				m_lastX[i].im = 0;
 			} else {
-				m_lastX[i].re = x[i].re;
+				m_lastX[i].real(x[i].re);
 				m_lastX[i].im = x[i].im;
 			}
 		}
@@ -400,7 +400,7 @@ quint32 HalfbandFilter::convolveOA(const CPX *x, quint32 xLen, const double *h,
 		//The last stage may only have 16 samples for a 35 tap filter
 		//Filter won't work, so simple decimate
 		for (quint32 i=0; i<xLen; i+=decimate) {
-			y[yCnt].re = x[i].re;
+			y[yCnt].real(x[i].re);
 			y[yCnt].im = x[i].im;
 			yCnt++;
 		}
@@ -409,10 +409,10 @@ quint32 HalfbandFilter::convolveOA(const CPX *x, quint32 xLen, const double *h,
 		quint32 saveSamples = dLen - xLen; //# x samples to save in lastX
 		for (quint32 i=0; i<hLen; i++) {
 			if (i < saveSamples) {
-				m_lastX[i].re = 0;
+				m_lastX[i].real(0);
 				m_lastX[i].im = 0;
 			} else {
-				m_lastX[i].re = x[i].re;
+				m_lastX[i].real(x[i].re);
 				m_lastX[i].im = x[i].im;
 			}
 		}
@@ -705,7 +705,7 @@ quint32 HalfbandFilter::processCIC3(const CPX *_in, CPX *_out, quint32 _numInSam
 	{	//mag gn=8
 		even = inBuffer[i];
 		odd = inBuffer[i+1];
-		outBuffer[numOutSamples].re = .125*( odd.re + m_xEven.re + 3.0*(m_xOdd.re + even.re) );
+		outBuffer[numOutSamples].real(.125*( odd.re + m_xEven.re + 3.0*(m_xOdd.re + even.re) ));
 		outBuffer[numOutSamples].im = .125*( odd.im + m_xEven.im + 3.0*(m_xOdd.im + even.im) );
 		m_xOdd = odd;
 		m_xEven = even;
@@ -723,9 +723,9 @@ quint32 HalfbandFilter::processCIC3(const DSPDoubleSplitComplex *_in, DSPDoubleS
 	CPX even,odd;
 	for(quint32 i=0; i<_numInSamples; i += m_decimate)
 	{	//mag gn=8
-		even.re = _in->realp[i];
+		even.real(_in->realp[i]);
 		even.im = _in->imagp[i];
-		odd.re = _in->realp[i+1];
+		odd.real(_in->realp[i+1]);
 		odd.im = _in->imagp[i+1];
 		_out->realp[numOutSamples] = .125*( odd.re + m_xEven.re + 3.0*(m_xOdd.re + even.re) );
 		_out->imagp[numOutSamples] = .125*( odd.im + m_xEven.im + 3.0*(m_xOdd.im + even.im) );

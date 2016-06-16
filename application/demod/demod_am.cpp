@@ -28,7 +28,8 @@ void Demod_AM::processBlock(CPX *in, CPX *out, int demodSamples)
     {
         //Just return the magnitude of each sample
 		amOut = DB::amplitude(in[i]);
-        out[i].re = out[i].im = amOut;
+		out[i].real(amOut);
+		out[i].imag(amOut);
     }
 }
 //dttsp & cuteSDR algorithm with DC removal
@@ -53,7 +54,8 @@ void Demod_AM::processBlockFiltered(CPX *in, CPX *out, int demodSamples)
 		amOut = m_amDc - m_amDcLast;
 		m_amDcLast = m_amDc;
 
-		out[i].re = out[i].im = amOut;
+		out[i].real(amOut);
+		out[i].imag(amOut);
     }
 
     //post filter AM audio to limit high frequency noise

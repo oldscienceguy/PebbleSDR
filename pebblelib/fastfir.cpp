@@ -95,7 +95,7 @@ int i;
 	m_InBufInPos = (CONV_FIR_SIZE - 1);
 	for( i=0; i<CONV_FFT_SIZE; i++)
 	{
-		m_pFFTBuf[i].re = 0.0;
+		m_pFFTBuf[i].real(0.0);
 		m_pFFTBuf[i].im = 0.0;
 	}
 #if 1
@@ -106,7 +106,7 @@ int i;
 			- 0.4891775*cos( (TWOPI*i)/(CONV_FIR_SIZE-1) )
 			+ 0.1365995*cos( (2.0*TWOPI*i)/(CONV_FIR_SIZE-1) )
 			- 0.0106411*cos( (3.0*TWOPI*i)/(CONV_FIR_SIZE-1) ) );
-		m_pFFTOverlapBuf[i].re = 0.0;
+		m_pFFTOverlapBuf[i].real(0.0);
 		m_pFFTOverlapBuf[i].im = 0.0;
 	}
 #endif
@@ -118,7 +118,7 @@ int i;
 			- 0.48829*cos( (TWOPI*i)/(CONV_FIR_SIZE-1) )
 			+ 0.14128*cos( (2.0*TWOPI*i)/(CONV_FIR_SIZE-1) )
 			- 0.01168*cos( (3.0*TWOPI*i)/(CONV_FIR_SIZE-1) ) );
-		m_pFFTOverlapBuf[i].re = 0.0;
+		m_pFFTOverlapBuf[i].real(0.0);
 		m_pFFTOverlapBuf[i].im = 0.0;
 	}
 #endif
@@ -130,7 +130,7 @@ int i;
 			- 0.487396*cos( (TWOPI*i)/(CONV_FIR_SIZE-1) )
 			+ 0.144232*cos( (2.0*TWOPI*i)/(CONV_FIR_SIZE-1) )
 			- 0.012604*cos( (3.0*TWOPI*i)/(CONV_FIR_SIZE-1) ) );
-		m_pFFTOverlapBuf[i].re = 0.0;
+		m_pFFTOverlapBuf[i].real(0.0);
 		m_pFFTOverlapBuf[i].im = 0.0;
 	}
 #endif
@@ -225,7 +225,7 @@ int i;
 
 	for(i=0; i<CONV_FFT_SIZE; i++)		//zero pad entire coefficient buffer to FFT size
 	{
-		m_pFilterCoef[i].re = 0.0;
+		m_pFilterCoef[i].real(0.0);
 		m_pFilterCoef[i].im = 0.0;
 	}
 
@@ -241,7 +241,7 @@ int i;
 
 		//shift lowpass filter coefficients in frequency by (hicut+lowcut)/2 to form bandpass filter anywhere in range
 		// (also scales by 1/FFTsize since inverse FFT routine scales by FFTsize)
-		m_pFilterCoef[i].re  =  z * cos(nFs * x)/(TYPEREAL)CONV_FFT_SIZE;
+		m_pFilterCoef[i].real(z * cos(nFs * x)/(TYPEREAL)CONV_FFT_SIZE);
 		m_pFilterCoef[i].im = z * sin(nFs * x)/(TYPEREAL)CONV_FFT_SIZE;
 	}
 
@@ -328,7 +328,7 @@ void CFastFIR::CpxMpy(int N, TYPECPX* m, TYPECPX* src, TYPECPX* dest)
 	{
 		TYPEREAL sr = src[i].re;
 		TYPEREAL si = src[i].im;
-		dest[i].re = m[i].re * sr - m[i].im * si;
+		dest[i].real(m[i].re * sr - m[i].im * si);
 		dest[i].im = m[i].re * si + m[i].im * sr;
 	}
 }

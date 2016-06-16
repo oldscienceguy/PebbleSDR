@@ -30,16 +30,16 @@ public:
 		//More efficient code that doesn't recalc expensive sin/cos over and over
 		double oscGn;
 		//We could make osc complex and use CPX::convolution method with gain, same code
-		osc.re = m_lastOsc.re * m_oscCos - m_lastOsc.im * m_oscSin;
+		osc.real(m_lastOsc.re * m_oscCos - m_lastOsc.im * m_oscSin);
 		osc.im = m_lastOsc.im * m_oscCos + m_lastOsc.re * m_oscSin;
 		oscGn = 1.95 - (m_lastOsc.re * m_lastOsc.re + m_lastOsc.im * m_lastOsc.im);
-		m_lastOsc.re = oscGn * osc.re;
+		m_lastOsc.real(oscGn * osc.re);
 		m_lastOsc.im = oscGn * osc.im;
 	}
 
 	//Alternate implementation, much slower than quad oscillator because we recalc sin/cos every sample
 	inline void nextSampleAlt(CPX &osc) {
-		osc.re = cos(m_oscTime);
+		osc.real(cos(m_oscTime));
 		osc.im = sin(m_oscTime);
 		m_oscTime += m_oscInc;
 		m_oscTime = fmod(m_oscTime, TWOPI);	//Keep bounded

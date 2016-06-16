@@ -117,7 +117,7 @@ TYPEREAL* HQptr;
 		HIptr = m_ICoef + m_NumTaps - m_State;
 		HQptr = m_QCoef + m_NumTaps - m_State;
 		Zptr = m_cZBuf;
-		acc.re = (*HIptr++ * (*Zptr).re);		//do the first MAC
+		acc.real((*HIptr++ * (*Zptr).re));		//do the first MAC
 		acc.im = (*HQptr++ * (*Zptr++).im);
 		for(int j=1; j<m_NumTaps; j++)
 		{
@@ -150,12 +150,12 @@ TYPEREAL* HQptr;
 	m_Mutex.lock();
 	for(int i=0; i<InLength; i++)
 	{
-		m_cZBuf[m_State].re = InBuf[i];
+		m_cZBuf[m_State].real(InBuf[i]);
 		m_cZBuf[m_State].im = InBuf[i];
 		HIptr = m_ICoef + m_NumTaps - m_State;
 		HQptr = m_QCoef + m_NumTaps - m_State;
 		Zptr = m_cZBuf;
-		acc.re = (*HIptr++ * (*Zptr).re);		//do the first MAC
+		acc.real((*HIptr++ * (*Zptr).re));		//do the first MAC
 		acc.im = (*HQptr++ * (*Zptr++).im);
 		for(int j=1; j<m_NumTaps; j++)
 		{
@@ -189,7 +189,7 @@ void CFir::InitConstFir( int NumTaps, const double* pCoef, TYPEREAL Fsamprate)
 	for(int i=0; i<m_NumTaps; i++)
 	{	//zero input buffers
 		m_rZBuf[i] = 0.0;
-		m_cZBuf[i].re = 0.0;
+		m_cZBuf[i].real(0.0);
 		m_cZBuf[i].im = 0.0;
 	}
 	m_State = 0;	//zero filter state variable
@@ -218,7 +218,7 @@ void CFir::InitConstFir( int NumTaps, const double* pICoef, const double* pQCoef
 	for(int i=0; i<m_NumTaps; i++)
 	{	//zero input buffers
 		m_rZBuf[i] = 0.0;
-		m_cZBuf[i].re = 0.0;
+		m_cZBuf[i].real(0.0);
 		m_cZBuf[i].im = 0.0;
 	}
 	m_State = 0;	//zero filter state variable
@@ -305,7 +305,7 @@ TYPEREAL Beta;
 	for(int i=0; i<m_NumTaps; i++)
 	{
 		m_rZBuf[i] = 0.0;
-		m_cZBuf[i].re = 0.0;
+		m_cZBuf[i].real(0.0);
 		m_cZBuf[i].im = 0.0;
 	}
 	m_State = 0;
@@ -417,7 +417,7 @@ TYPEREAL Beta;
 	for(int i=0; i<m_NumTaps; i++)
 	{
 		m_rZBuf[i] = 0.0;
-		m_cZBuf[i].re = 0.0;
+		m_cZBuf[i].real(0.0);
 		m_cZBuf[i].im = 0.0;
 	}
 	m_State = 0;
@@ -606,7 +606,7 @@ qDebug()<<"InLength = "<<InLength;
 	for(i=0; i<InLength; i+=2)
 	{
 		TYPECPX acc;
-		acc.re = ( m_pHBFirCBuf[i].re * m_pCoef[0] );
+		acc.real(( m_pHBFirCBuf[i].re * m_pCoef[0] ));
 		acc.im = ( m_pHBFirCBuf[i].im * m_pCoef[0] );
 		for(j=2; j<m_FirLength; j+=2)	//only use even coefficients since odd are zero(except center point)
 		{

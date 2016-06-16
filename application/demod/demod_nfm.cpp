@@ -72,7 +72,8 @@ void Demod_NFM::simplePhase(CPX *in, CPX *out, int demodSamples)
     for (int i=0;i<demodSamples;i++)
     {
         tmp = tan(in[i].re  / in[i].im);
-        out[i].re = out[i].im = tmp;
+		out[i].real(tmp);
+		out[i].imag(tmp);
     }
 }
 
@@ -109,7 +110,8 @@ void Demod_NFM::processBlockFM1(CPX *in, CPX *out, int demodSamples)
         //tmp = (Q * Ip - I * Qp) / (I * I + Q * Q);
 
         //Output volume is very low, scaling by even 100 doesn't do anything?
-        out[i].re = out[i].im = tmp * .0005;
+		out[i].real(tmp * .0005);
+		out[i].imag(tmp * .0005);
         m_fmIPrev = I;
         m_fmQPrev = Q;
     }
@@ -131,7 +133,8 @@ void Demod_NFM::processBlockFM2(CPX *in, CPX *out, int demodSamples)
         //and then calculating the phase (arg() or atan()) of the complex product
 		prod = in[i] * conjCpx(lastCpx);
         //Scale demod output to match am, usb, etc range
-        out[i].re = out[i].im = phaseCpx(prod) *.0005;
+		out[i].real(phaseCpx(prod) *.0005);
+		out[i].imag(phaseCpx(prod) *.0005);
         lastCpx = in[i];
     }
 }
@@ -183,11 +186,11 @@ void Demod_NFM::pllFMN(  CPX * in, CPX * out, int demodSamples )
     for (int i = 0; i < ns; i++) {
         //Todo: See if we can use NCO here
         //This is the generated signal to sync with (NCO)
-        pllNCO.re = cos(m_pllPhase);
+        pllNCO.real(cos(m_pllPhase));
         pllNCO.im = sin(m_pllPhase);
 
         //Shift signal by PLL.  Should be same as CPX operator * ie pll * in[i]
-        delay.re = pllNCO.re * in[i].re - pllNCO.im * in[i].im;
+        delay.real(pllNCO.re * in[i].re - pllNCO.im * in[i].im);
         delay.im = pllNCO.re * in[i].im + pllNCO.im * in[i].re;
 
         // same as -atan2(tmp.im, tmp.re), but with special handling in cpx class
@@ -209,7 +212,8 @@ void Demod_NFM::pllFMN(  CPX * in, CPX * out, int demodSamples )
         //LP filter the NCO frequency term to get DC offset value
         m_pllFreqErrorDC = (1.0 - fmDcAlpha) * m_pllFreqErrorDC + fmDcAlpha * m_ncoFrequency;
         //Change in frequency - dc term is our demodulated output
-        out[i].re = out[i].im = (m_ncoFrequency - m_pllFreqErrorDC);
+		out[i].real(m_ncoFrequency - m_pllFreqErrorDC);
+		out[i].imag(m_ncoFrequency - m_pllFreqErrorDC);
 
     }
     //fmod will keep pllPhase <= TWOPI
@@ -228,7 +232,7 @@ void Demod_NFM::processBlockNCO(CPX* in, CPX* out, int demodSamples)
         double ncoSin = sin(m_pllPhase);
         double ncoCos = cos(m_pllPhase);
         //complex multiply input sample by NCO's  sin and cos
-        tmp.re = ncoCos * in[i].re - ncoSin * in[i].im;
+        tmp.real(ncoCos * in[i].re - ncoSin * in[i].im);
         tmp.im = ncoCos * in[i].im + ncoSin * in[i].re;
         //find current sample phase after being shifted by NCO frequency
         double phzerror = -atan2(tmp.im, tmp.re);

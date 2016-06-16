@@ -87,7 +87,7 @@ CPX* AGC::processBlock(CPX *pInData)
         //manual gain just multiply by m_ManualGain
         for(int i=0; i<numSamples; i++)
         {
-			out[i].re = m_manualIFGainAmp * pInData[i].re;
+			out[i].real(m_manualIFGainAmp * pInData[i].re);
 			out[i].im = m_manualIFGainAmp * pInData[i].im;
         }
         return out;
@@ -108,7 +108,7 @@ CPX* AGC::processBlock(CPX *pInData)
 			m_sigDelayPtr = 0;
 
         //double dmag = 0.5* log10(  (dsig.re*dsig.re+dsig.im*dsig.im)/(MAX_AMPLITUDE*MAX_AMPLITUDE) + 1e-16);	//clamped to -160dBfs
-        //pOutData[i].re = 3000*dmag;
+        //pOutData[i].real(3000*dmag);
 #if 1
         mag = fabs(in.re);
         double mim = fabs(in.im);
@@ -120,8 +120,8 @@ CPX* AGC::processBlock(CPX *pInData)
         //mag is power so 0.5 factor takes square root of power
         mag = 0.5* log10( mag/(MAX_AMPLITUDE*MAX_AMPLITUDE) + 1e-16);	//clamped to -160dBfs
 #endif
-        //pOutData[i].re = 3000*mag;
-        //pOutData[i].re = 1500*log10( ((delayedin.re*delayedin.re)+(delayedin.im*delayedin.im))/(MAX_AMPLITUDE*MAX_AMPLITUDE) + 1e-16);;
+        //pOutData[i].real(3000*mag);
+        //pOutData[i].real(1500*log10( ((delayedin.re*delayedin.re)+(delayedin.im*delayedin.im))/(MAX_AMPLITUDE*MAX_AMPLITUDE) + 1e-16););
 
         //create a sliding window of 'm_WindowSamples' magnitudes and output the peak value within the sliding window
 		double tmp = m_magBuf[m_magBufPos];	//get oldest mag sample from buffer into tmp
@@ -196,8 +196,8 @@ CPX* AGC::processBlock(CPX *pInData)
 			gain = m_fixedGain;
         else				//use variable gain if above knee
 			gain = AGC_OUTSCALE * pow(10.0, mag*(m_gainSlope - 1.0) );
-        //pOutData[i].re = .5*gain;
-        out[i].re = delayedin.re * gain;
+        //pOutData[i].real(.5*gain);
+        out[i].real(delayedin.re * gain);
         out[i].im = delayedin.im * gain;
     }
 
@@ -267,7 +267,7 @@ void AGC::setParameters(bool useHang, int threshold, int slopeFactor, int decay)
 		m_sampleRate = sampleRate;
         for(int i=0; i<MAX_DELAY_BUF; i++)
         {
-			m_sigDelayBuf[i].re = 0.0;
+			m_sigDelayBuf[i].real(0.0);
 			m_sigDelayBuf[i].im = 0.0;
 			m_magBuf[i] = -16.0;
         }
