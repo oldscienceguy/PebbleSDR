@@ -214,7 +214,7 @@ int Demod_WFM::processDataMono(int InLength, TYPECPX* pInData, TYPECPX* pOutData
 	for(int i=0; i<InLength; i++)
 	{
 		m_D0 = pInData[i];
-		pOutData[i].real(FMDEMOD_GAIN*atan2( (m_D1.re*m_D0.im - m_D0.re*m_D1.im), (m_D1.re*m_D0.re + m_D1.im*m_D0.im)));
+		pOutData[i].real(FMDEMOD_GAIN*atan2( (m_D1.real()*m_D0.im - m_D0.real()*m_D1.im), (m_D1.real()*m_D0.real() + m_D1.im*m_D0.im)));
 		pOutData[i].imag(pOutData[i].real());
 		m_D1 = m_D0;
 	}
@@ -259,7 +259,7 @@ TYPEREAL LminusR;
 	for(int i=0; i<InLength; i++)
 	{
 		m_D0 = pInData[i];
-		m_RawFm[i] = FMDEMOD_GAIN*atan2( (m_D1.re*m_D0.im - m_D0.re*m_D1.im), (m_D1.re*m_D0.re + m_D1.im*m_D0.im));//~266 nSec/sample
+		m_RawFm[i] = FMDEMOD_GAIN*atan2( (m_D1.real()*m_D0.im - m_D0.real()*m_D1.im), (m_D1.real()*m_D0.real() + m_D1.im*m_D0.im));//~266 nSec/sample
 		m_D1 = m_D0;
 	}
 //StopPerformance(InLength);
@@ -403,10 +403,10 @@ TYPECPX tmp;
 		Cos = cos(m_PilotNcoPhase);
 #endif
 		//complex multiply input sample by NCO's  sin and cos
-		tmp.real(Cos * pInData[i].re - Sin * pInData[i].im);
-		tmp.im = Cos * pInData[i].im + Sin * pInData[i].re;
+		tmp.real(Cos * pInData[i].real() - Sin * pInData[i].im);
+		tmp.im = Cos * pInData[i].im + Sin * pInData[i].real();
 		//find current sample phase after being shifted by NCO frequency
-		TYPEREAL phzerror = -arctan2(tmp.im, tmp.re);
+		TYPEREAL phzerror = -arctan2(tmp.im, tmp.real());
 
 		//create new NCO frequency term
 		m_PilotNcoFreq += (m_PilotPllBeta * phzerror);		//  radians per sampletime
@@ -477,7 +477,7 @@ void Demod_WFM::processDeemphasisFilter(int InLength, TYPECPX* InBuf, TYPECPX* O
 {
 	for(int i=0; i<InLength; i++)
 	{
-		m_DeemphasisAveRe = (1.0-m_DeemphasisAlpha)*m_DeemphasisAveRe + m_DeemphasisAlpha*InBuf[i].re;
+		m_DeemphasisAveRe = (1.0-m_DeemphasisAlpha)*m_DeemphasisAveRe + m_DeemphasisAlpha*InBuf[i].real();
 		m_DeemphasisAveIm = (1.0-m_DeemphasisAlpha)*m_DeemphasisAveIm + m_DeemphasisAlpha*InBuf[i].im;
 		OutBuf[i].real(m_DeemphasisAveRe*2.0);
 		OutBuf[i].im = m_DeemphasisAveIm*2.0;
@@ -553,10 +553,10 @@ TYPECPX tmp;
 		Cos = cos(m_RdsNcoPhase);
 #endif
 		//complex multiply input sample by NCO's  sin and cos
-		tmp.real(Cos * pInData[i].re - Sin * pInData[i].im);
-		tmp.im = Cos * pInData[i].im + Sin * pInData[i].re;
+		tmp.real(Cos * pInData[i].real() - Sin * pInData[i].im);
+		tmp.im = Cos * pInData[i].im + Sin * pInData[i].real();
 		//find current sample phase after being shifted by NCO frequency
-		TYPEREAL phzerror = -arctan2(tmp.im, tmp.re);
+		TYPEREAL phzerror = -arctan2(tmp.im, tmp.real());
 		//create new NCO frequency term
 		m_RdsNcoFreq += (m_RdsPllBeta * phzerror);		//  radians per sampletime
 		//clamp NCO frequency so doesn't get out of lock range
@@ -837,7 +837,7 @@ void Demod_WFM::fmMono( CPX * in, CPX * out, int bufSize)
         //Condensed version of FM2 algorithm comparing sample with previous sample
         //Note: Have to divide by 100 to get signal in right range, different than CuteSDR
         d0 = in[i];
-		out[i].real(atan2( (d1.re*d0.im - d0.re*d1.im), (d1.re*d0.re + d1.im*d0.im))/100);
+		out[i].real(atan2( (d1.real()*d0.im - d0.real()*d1.im), (d1.real()*d0.real() + d1.im*d0.im))/100);
 		out[i].imag(out[i].real());
         d1 = d0;
     }
@@ -869,7 +869,7 @@ void Demod_WFM::fmDeemphasisFilter(int _bufSize, CPX *in, CPX *out)
 
     for(int i=0; i<bufSize; i++)
     {
-        avgRe = (1.0-m_fmDeemphasisAlpha)*avgRe + m_fmDeemphasisAlpha*in[i].re;
+        avgRe = (1.0-m_fmDeemphasisAlpha)*avgRe + m_fmDeemphasisAlpha*in[i].real();
         avgIm = (1.0-m_fmDeemphasisAlpha)*avgIm + m_fmDeemphasisAlpha*in[i].im;
         out[i].real(avgRe*2.0);
         out[i].im = avgIm*2.0;

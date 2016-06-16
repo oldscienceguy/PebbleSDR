@@ -169,7 +169,7 @@ TYPECPX acc;
 		{
 			j = IntegerTime + i;	//temp integer time position for convolution loop
 			int sindx =  (int)(( (double)j - m_FloatTime) * (double)SINC_PERIOD_PTS );
-			acc.real(acc.real() + (m_pInputBuf[j].re * m_pSinc[sindx] ));
+			acc.real(acc.real() + (m_pInputBuf[j].real() * m_pSinc[sindx] ));
 			acc.imag(acc.imag() + (m_pInputBuf[j].im * m_pSinc[sindx] ));
 		}
 		pOutBuf[outsamples++] = acc;
@@ -222,21 +222,21 @@ TYPECPX acc;
 		{
 			j = IntegerTime + i;	//temp integer time position for convolution loop
 			int sindx =  (int)(( (double)j - m_FloatTime) * (double)SINC_PERIOD_PTS );
-			acc.real(acc.real() + (m_pInputBuf[j].re * m_pSinc[sindx] ));
+			acc.real(acc.real() + (m_pInputBuf[j].real() * m_pSinc[sindx] ));
 			acc.imag(acc.imag() + (m_pInputBuf[j].im * m_pSinc[sindx] ));
 		}
 		TYPECPX tmp;
-		tmp.real(acc.re * gain);
+		tmp.real(acc.real() * gain);
 		tmp.imag(acc.im * gain);
-		if(tmp.re > MAX_SOUNDCARDVAL)
+		if(tmp.real() > MAX_SOUNDCARDVAL)
 			tmp.real(MAX_SOUNDCARDVAL);
-		if(tmp.re < -MAX_SOUNDCARDVAL)
+		if(tmp.real() < -MAX_SOUNDCARDVAL)
 			tmp.real(-MAX_SOUNDCARDVAL);
 		if(tmp.im>MAX_SOUNDCARDVAL)
 			tmp.im = MAX_SOUNDCARDVAL;
 		if(tmp.im < -MAX_SOUNDCARDVAL)
 			tmp.im = -MAX_SOUNDCARDVAL;
-		pOutBuf[outsamples].real((qint16)tmp.re);
+		pOutBuf[outsamples].real((qint16)tmp.real());
 		pOutBuf[outsamples++].im = (qint16)tmp.im;
 
 		m_FloatTime += dt;	//inc floating pt output time step
@@ -284,7 +284,7 @@ TYPEREAL acc;
 		{
 			j = IntegerTime + i;	//temp integer time position for convolution loop
 			int sindx =  (int)(( (double)j - m_FloatTime) * (double)SINC_PERIOD_PTS );
-			acc += (m_pInputBuf[j].re * m_pSinc[sindx] );
+			acc += (m_pInputBuf[j].real() * m_pSinc[sindx] );
 		}
 		pOutBuf[outsamples++] = acc;
 		m_FloatTime += dt;
@@ -296,7 +296,7 @@ TYPEREAL acc;
 	// for FIR wrap around management. j points to last input sample processed
 	j = InLength;
 	for(i=0; i<SINC_PERIODS; i++)
-		m_pInputBuf[i].real(m_pInputBuf[j++].re);
+		m_pInputBuf[i].real(m_pInputBuf[j++].real());
 	return outsamples;
 }
 
@@ -332,7 +332,7 @@ TYPEREAL acc;
 		{
 			j = IntegerTime + i;	//temp integer time position for convolution loop
 			int sindx =  (int)(( (double)j - m_FloatTime) * (double)SINC_PERIOD_PTS );
-			acc += (m_pInputBuf[j].re * m_pSinc[sindx] );
+			acc += (m_pInputBuf[j].real() * m_pSinc[sindx] );
 		}
 		TYPEREAL tmp;
 		tmp = (acc * gain);;
@@ -351,6 +351,6 @@ TYPEREAL acc;
 	// for FIR wrap around management. j points to last input sample processed
 	j = InLength;
 	for(i=0; i<SINC_PERIODS; i++)
-		m_pInputBuf[i].real(m_pInputBuf[j++].re);
+		m_pInputBuf[i].real(m_pInputBuf[j++].real());
 	return outsamples;
 }

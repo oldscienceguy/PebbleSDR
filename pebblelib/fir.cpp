@@ -117,11 +117,11 @@ TYPEREAL* HQptr;
 		HIptr = m_ICoef + m_NumTaps - m_State;
 		HQptr = m_QCoef + m_NumTaps - m_State;
 		Zptr = m_cZBuf;
-		acc.real((*HIptr++ * (*Zptr).re));		//do the first MAC
+		acc.real((*HIptr++ * (*Zptr).real()));		//do the first MAC
 		acc.im = (*HQptr++ * (*Zptr++).im);
 		for(int j=1; j<m_NumTaps; j++)
 		{
-			acc.real(acc.real() + (*HIptr++ * (*Zptr).re));		//do the remaining MACs
+			acc.real(acc.real() + (*HIptr++ * (*Zptr).real()));		//do the remaining MACs
 			acc.imag(acc.imag() + (*HQptr++ * (*Zptr++).im));
 		}
 		if(--m_State < 0)
@@ -155,11 +155,11 @@ TYPEREAL* HQptr;
 		HIptr = m_ICoef + m_NumTaps - m_State;
 		HQptr = m_QCoef + m_NumTaps - m_State;
 		Zptr = m_cZBuf;
-		acc.real((*HIptr++ * (*Zptr).re));		//do the first MAC
+		acc.real((*HIptr++ * (*Zptr).real()));		//do the first MAC
 		acc.im = (*HQptr++ * (*Zptr++).im);
 		for(int j=1; j<m_NumTaps; j++)
 		{
-			acc.real(acc.real() + (*HIptr++ * (*Zptr).re));		//do the remaining MACs
+			acc.real(acc.real() + (*HIptr++ * (*Zptr).real()));		//do the remaining MACs
 			acc.imag(acc.imag() + (*HQptr++ * (*Zptr++).im));
 		}
 		if(--m_State < 0)
@@ -606,15 +606,15 @@ qDebug()<<"InLength = "<<InLength;
 	for(i=0; i<InLength; i+=2)
 	{
 		TYPECPX acc;
-		acc.real(( m_pHBFirCBuf[i].re * m_pCoef[0] ));
+		acc.real(( m_pHBFirCBuf[i].real() * m_pCoef[0] ));
 		acc.im = ( m_pHBFirCBuf[i].im * m_pCoef[0] );
 		for(j=2; j<m_FirLength; j+=2)	//only use even coefficients since odd are zero(except center point)
 		{
-			acc.real(acc.real() + ( m_pHBFirCBuf[i+j].re * m_pCoef[j] ));
+			acc.real(acc.real() + ( m_pHBFirCBuf[i+j].real() * m_pCoef[j] ));
 			acc.imag(acc.imag() + ( m_pHBFirCBuf[i+j].im * m_pCoef[j] ));
 		}
 		//now multiply the center coefficient
-		acc.real(acc.real() + ( m_pHBFirCBuf[i+(m_FirLength-1)/2].re * m_pCoef[(m_FirLength-1)/2] ));
+		acc.real(acc.real() + ( m_pHBFirCBuf[i+(m_FirLength-1)/2].real() * m_pCoef[(m_FirLength-1)/2] ));
 		acc.imag(acc.imag() + ( m_pHBFirCBuf[i+(m_FirLength-1)/2].im * m_pCoef[(m_FirLength-1)/2] ));
 		pOutData[numoutsamples++] = acc;	//put output buffer
 

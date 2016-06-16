@@ -195,7 +195,7 @@ void CFft::fftForward(CPX * in, CPX * out, int numSamples)
 		//11/14 Spectrum is reversed compared to FFTW, so IQ swap is necessary
 		double tmp;
 		for (int i=0; i<m_fftSize; i++) {
-			tmp = m_timeDomain[i].re;
+			tmp = m_timeDomain[i].real();
 			m_timeDomain[i].real(m_timeDomain[i].im);
 			m_timeDomain[i].im = tmp;
 		}

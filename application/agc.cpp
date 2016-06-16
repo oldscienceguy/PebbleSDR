@@ -87,7 +87,7 @@ CPX* AGC::processBlock(CPX *pInData)
         //manual gain just multiply by m_ManualGain
         for(int i=0; i<numSamples; i++)
         {
-			out[i].real(m_manualIFGainAmp * pInData[i].re);
+			out[i].real(m_manualIFGainAmp * pInData[i].real());
 			out[i].im = m_manualIFGainAmp * pInData[i].im;
         }
         return out;
@@ -110,7 +110,7 @@ CPX* AGC::processBlock(CPX *pInData)
         //double dmag = 0.5* log10(  (dsig.re*dsig.re+dsig.im*dsig.im)/(MAX_AMPLITUDE*MAX_AMPLITUDE) + 1e-16);	//clamped to -160dBfs
         //pOutData[i].real(3000*dmag);
 #if 1
-        mag = fabs(in.re);
+        mag = fabs(in.real());
         double mim = fabs(in.im);
         if(mim>mag)
             mag = mim;
@@ -197,7 +197,7 @@ CPX* AGC::processBlock(CPX *pInData)
         else				//use variable gain if above knee
 			gain = AGC_OUTSCALE * pow(10.0, mag*(m_gainSlope - 1.0) );
         //pOutData[i].real(.5*gain);
-        out[i].real(delayedin.re * gain);
+        out[i].real(delayedin.real() * gain);
         out[i].im = delayedin.im * gain;
     }
 

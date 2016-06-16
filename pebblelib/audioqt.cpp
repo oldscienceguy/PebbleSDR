@@ -190,9 +190,9 @@ void AudioQT::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
     for (int i=0, j=0;i<outSamples;i++, j+=2)
 	{
 		//Not sure if we need to clip, just in case
-		if (out[i].re > maxOutput)
+		if (out[i].real() > maxOutput)
 			out[i].real(maxOutput);
-		else if (out[i].re < -maxOutput)
+		else if (out[i].real() < -maxOutput)
 			out[i].real(-maxOutput);
 
 		if (out[i].im > maxOutput)
@@ -205,7 +205,7 @@ void AudioQT::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
         //right = Float2Int(out[i].im);
 
         //No conversion necessary from cpx
-		outStreamBuffer[j] = out[i].re;
+		outStreamBuffer[j] = out[i].real();
 		outStreamBuffer[j+1] = out[i].im;
 	}
 	quint32 bytesToWrite = outSamples*sizeof(float)*2;

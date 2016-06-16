@@ -327,14 +327,14 @@ void FIRFilter::SetBandPass(float lo, float hi, WindowFunction::WINDOWTYPE w)
 	float reSumTaps = 0.0;
 	float imSumTaps = 0.0;
 	for(int i = 0; i < numTaps; i++) {
-		taps[i].real(lp->taps[i].re + hp->taps[i].re);// * window[i]);
+		taps[i].real(lp->taps[i].real() + hp->taps[i].real());// * window[i]);
 		taps[i].im = (lp->taps[i].im + hp->taps[i].im);// * window[i];
-		reSumTaps += taps[i].re;
+		reSumTaps += taps[i].real();
 		imSumTaps += taps[i].im;
 	}
 	SpectralInversion();
 	for (int i = 0; i < numTaps; i++){
-		taps[i].real(taps[i].re/reSumTaps);
+		taps[i].real(taps[i].real()/reSumTaps);
 		taps[i].im = taps[i].im/imSumTaps;
 	}
 	delete lp;
@@ -372,14 +372,14 @@ void FIRFilter::SetLowPass(float cutoff, WindowFunction::WINDOWTYPE w)
 	for (int i = 0; i < length; i++)
     {
 		taps[i] = Sinc(fc,i) * wf.window[i];
-		reSumTaps += taps[i].re;
+		reSumTaps += taps[i].real();
 		imSumTaps += taps[i].im;
     }
 
 	//Normalize gain for unity gain at DC
 	//This is critical or else Spectral inversion and HP filters will not work
 	for (int i = 0; i < length; i++){
-		taps[i].real(taps[i].re / reSumTaps);
+		taps[i].real(taps[i].real() / reSumTaps);
 		taps[i].im = taps[i].im / imSumTaps;
 	}
 }
@@ -391,10 +391,10 @@ void FIRFilter::SpectralInversion()
 	//dspguide chapt 14
 	int mid = M/2;
 	for (int i = 0; i < numTaps; i++) {
-		taps[i].real(-taps[i].re);
+		taps[i].real(-taps[i].real());
 		taps[i].im = -taps[i].im;
 	}
-	taps[mid].real(1.0 + taps[mid].re);
+	taps[mid].real(1.0 + taps[mid].real());
 	taps[mid].im = 1.0 + taps[mid].im;
 }
 //Spectral Reversal flips the freq response
@@ -570,7 +570,7 @@ void FIRFilter::FFTSetBandStop(float lo, float hi, WindowFunction::WINDOWTYPE wt
         else
         {
             temp = 4.0 * fc;
-            taps[midpoint - 1].real(1.0 - taps[midpoint - 1].re);
+            taps[midpoint - 1].real(1.0 - taps[midpoint - 1].real());
             taps[midpoint - 1].im = 0.0 - taps[midpoint - 1].im;
         }
 

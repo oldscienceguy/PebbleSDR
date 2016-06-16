@@ -542,12 +542,12 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, float I, float Q)
 			//No change, this is the default order
 			break;
 		case DeviceInterface::IQO_QI:
-			tmp = cpx->re;
+			tmp = cpx->real();
 			cpx->real(cpx->im);
 			cpx->im = tmp;
 			break;
 		case DeviceInterface::IQO_IONLY:
-			cpx->im = cpx->re;
+			cpx->im = cpx->real();
 			break;
 		case DeviceInterface::IQO_QONLY:
 			cpx->real(cpx->im);
@@ -569,12 +569,12 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, qint16 I, qint16 Q)
 			//No change, this is the default order
 			break;
 		case DeviceInterface::IQO_QI:
-			tmp = cpx->re;
+			tmp = cpx->real();
 			cpx->real(cpx->im);
 			cpx->im = tmp;
 			break;
 		case DeviceInterface::IQO_IONLY:
-			cpx->im = cpx->re;
+			cpx->im = cpx->real();
 			break;
 		case DeviceInterface::IQO_QONLY:
 			cpx->real(cpx->im);
@@ -600,12 +600,12 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, quint8 I, quint8 Q)
 			//No change, this is the default order
 			break;
 		case DeviceInterface::IQO_QI:
-			tmp = cpx->re;
+			tmp = cpx->real();
 			cpx->real(cpx->im);
 			cpx->im = tmp;
 			break;
 		case DeviceInterface::IQO_IONLY:
-			cpx->im = cpx->re;
+			cpx->im = cpx->real();
 			break;
 		case DeviceInterface::IQO_QONLY:
 			cpx->real(cpx->im);
@@ -631,12 +631,12 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, qint8 I, qint8 Q)
 			//No change, this is the default order
 			break;
 		case DeviceInterface::IQO_QI:
-			tmp = cpx->re;
+			tmp = cpx->real();
 			cpx->real(cpx->im);
 			cpx->im = tmp;
 			break;
 		case DeviceInterface::IQO_IONLY:
-			cpx->im = cpx->re;
+			cpx->im = cpx->real();
 			break;
 		case DeviceInterface::IQO_QONLY:
 			cpx->real(cpx->im);
@@ -671,7 +671,7 @@ void DeviceInterfaceBase::normalizeIQ(CPX* _out, CPX8* _in, quint32 _numSamples,
 		case DeviceInterface::IQO_IONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].real(_in[i].re * scale);
-				_out[i].im = _out[i].re;
+				_out[i].im = _out[i].real();
 			}
 			break;
 		case DeviceInterface::IQO_QONLY:
@@ -711,7 +711,7 @@ void DeviceInterfaceBase::normalizeIQ(CPX* _out, CPXU8* _in, quint32 _numSamples
 		case DeviceInterface::IQO_IONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].real((_in[i].re - 128.0) * scale);
-				_out[i].im = _out[i].re;
+				_out[i].im = _out[i].real();
 			}
 			break;
 		case DeviceInterface::IQO_QONLY:
@@ -749,7 +749,7 @@ void DeviceInterfaceBase::normalizeIQ(CPX *_out, CPX16 *_in, quint32 _numSamples
 		case DeviceInterface::IQO_IONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].real(_in[i].re * scale);
-				_out[i].im = _out[i].re;
+				_out[i].im = _out[i].real();
 			}
 			break;
 		case DeviceInterface::IQO_QONLY:
@@ -774,20 +774,20 @@ void DeviceInterfaceBase::normalizeIQ(CPX *_out, CPX *_in, quint32 _numSamples, 
 	switch(tmpOrder) {
 		case DeviceInterface::IQO_IQ:
 			for (quint32 i=0; i < _numSamples; i++) {
-				_out[i].real(_in[i].re * scale);
+				_out[i].real(_in[i].real() * scale);
 				_out[i].im = _in[i].im * scale;
 			}
 			break;
 		case DeviceInterface::IQO_QI:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].real(_in[i].im * scale);
-				_out[i].im = _in[i].re * scale;
+				_out[i].im = _in[i].real() * scale;
 			}
 			break;
 		case DeviceInterface::IQO_IONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
-				_out[i].real(_in[i].re * scale);
-				_out[i].im = _out[i].re;
+				_out[i].real(_in[i].real() * scale);
+				_out[i].im = _out[i].real();
 			}
 			break;
 		case DeviceInterface::IQO_QONLY:
@@ -825,7 +825,7 @@ void DeviceInterfaceBase::normalizeIQ(CPX *_out, CPXFLOAT *_in, quint32 _numSamp
 		case DeviceInterface::IQO_IONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].real(_in[i].re * scale);
-				_out[i].im = _out[i].re;
+				_out[i].im = _out[i].real();
 			}
 			break;
 		case DeviceInterface::IQO_QONLY:
@@ -864,7 +864,7 @@ void DeviceInterfaceBase::normalizeIQ(CPX *_out, short *_inI, short *_inQ, quint
 		case DeviceInterface::IQO_IONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].real(_inI[i] * scale);
-				_out[i].im = _out[i].re;
+				_out[i].im = _out[i].real();
 			}
 			break;
 		case DeviceInterface::IQO_QONLY:
@@ -881,7 +881,7 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, CPX iq)
 {
 	double tmp;
 	//Normalize and apply gain
-	cpx->real(iq.re * m_userIQGain * m_normalizeIQGain);
+	cpx->real(iq.real() * m_userIQGain * m_normalizeIQGain);
 	cpx->im = iq.im * m_userIQGain * m_normalizeIQGain;
 
 	//Configure IQ order if not default
@@ -890,12 +890,12 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, CPX iq)
 			//No change, this is the default order
 			break;
 		case DeviceInterface::IQO_QI:
-			tmp = cpx->re;
+			tmp = cpx->real();
 			cpx->real(cpx->im);
 			cpx->im = tmp;
 			break;
 		case DeviceInterface::IQO_IONLY:
-			cpx->im = cpx->re;
+			cpx->im = cpx->real();
 			break;
 		case DeviceInterface::IQO_QONLY:
 			cpx->real(cpx->im);

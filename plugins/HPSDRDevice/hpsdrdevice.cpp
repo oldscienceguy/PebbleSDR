@@ -532,7 +532,7 @@ bool HPSDRDevice::ProcessInputFrame(unsigned char *buf, int len)
 			cpx.real((signed char)buf[b++]<<16);
 			cpx.real(cpx.real() + ((unsigned char)buf[b++]<<8));
 			cpx.real(cpx.real() + (unsigned char)buf[b++]);
-			cpx.re /= 8388607.0; //Convert to +/- float from 24bit int
+			cpx.real(cpx.real() / 8388607.0); //Convert to +/- float from 24bit int
 
 			cpx.im = (signed char)buf[b++]<<16;
 			cpx.im += (unsigned char)buf[b++]<<8;

@@ -61,16 +61,16 @@ CPX * NoiseFilter::ProcessBlock(CPX *in)
 		{
 			nxtDelay = anfDelay->NextDelay(j);
 
-			sos.real(sos.real() + (nxtDelay.re * nxtDelay.re));
+			sos.real(sos.real() + (nxtDelay.real() * nxtDelay.real()));
             sos.im += (nxtDelay.im * nxtDelay.im);
             //dttsp doesn't accumulate sums, bug in dttsp?
-			accum.real(accum.real() + anfCoeff[j].re * nxtDelay.re);
+			accum.real(accum.real() + anfCoeff[j].real() * nxtDelay.real());
             accum.im += anfCoeff[j].im * nxtDelay.im;
 
 		}
         //This does the same as accum above, but requires an extra loop
         //Maybe we should update MAC to also return sum or squares result?
-        out[i].real(accum.re * 1.25); //Bit of gain to compensate for filter
+        out[i].real(accum.real() * 1.25); //Bit of gain to compensate for filter
         out[i].im = accum.im * 1.25;
 
 		//This is the delta between the actual current sample, and MAC from delay line (reference signal)
@@ -80,8 +80,8 @@ CPX * NoiseFilter::ProcessBlock(CPX *in)
         //CPX error = in[i] - anfDelay->MAC(anfCoeff,anfAdaptiveFilterSize);
         error = in[i] - accum;
 
-        scl2.real((anfAdaptationRate / (sos.re + 1e-10))); //avoid divide by zero trick
-		error.real(error.real() * scl2.re);
+        scl2.real((anfAdaptationRate / (sos.real() + 1e-10))); //avoid divide by zero trick
+		error.real(error.real() * scl2.real());
 
         scl2.im = (anfAdaptationRate / (sos.im + 1e-10));
         error.im *= scl2.im;
@@ -98,7 +98,7 @@ CPX * NoiseFilter::ProcessBlock(CPX *in)
 			//Weighted average based on anfLeakage
 			//AdaptationRate is between 0 and 1 and determines how fast we stabilize filter
 			//anfCoeff[j] = anfCoeff[j-1] * anfLeakage + (1.0 - anfLeakage) * anfAdaptationRate * nxtDelay.re * errorSignal;
-            anfCoeff[j].real(anfCoeff[j].re * scl1 + error.re * nxtDelay.re);
+            anfCoeff[j].real(anfCoeff[j].real() * scl1 + error.real() * nxtDelay.real());
             anfCoeff[j].im = anfCoeff[j].im * scl1 + error.im * nxtDelay.im;
         }
 	}

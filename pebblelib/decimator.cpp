@@ -332,7 +332,7 @@ quint32 HalfbandFilter::convolveOS(const CPX *x, quint32 xLen, const double *h,
 		//The last stage may only have 16 samples for a 35 tap filter
 		//Filter won't work, so simple decimate
 		for (quint32 i=0; i<xLen; i+=decimate) {
-			y[yCnt].real(x[i].re);
+			y[yCnt].real(x[i].real());
 			y[yCnt].im = x[i].im;
 			yCnt++;
 		}
@@ -344,7 +344,7 @@ quint32 HalfbandFilter::convolveOS(const CPX *x, quint32 xLen, const double *h,
 				m_lastX[i].real(0);
 				m_lastX[i].im = 0;
 			} else {
-				m_lastX[i].real(x[i].re);
+				m_lastX[i].real(x[i].real());
 				m_lastX[i].im = x[i].im;
 			}
 		}
@@ -365,7 +365,7 @@ quint32 HalfbandFilter::convolveOS(const CPX *x, quint32 xLen, const double *h,
 		for (quint32 k = 0; k < hLen; k++) {
 			if (h[k] != 0) {
 				//Skip zero coefficients since they won't add anything to accumulator
-				y[yCnt].real(y[yCnt].real() + m_lastX[n+k].re * h[k]);
+				y[yCnt].real(y[yCnt].real() + m_lastX[n+k].real() * h[k]);
 				y[yCnt].imag(y[yCnt].imag() + m_lastX[n+k].im * h[k]);
 			}
 		}
@@ -400,7 +400,7 @@ quint32 HalfbandFilter::convolveOA(const CPX *x, quint32 xLen, const double *h,
 		//The last stage may only have 16 samples for a 35 tap filter
 		//Filter won't work, so simple decimate
 		for (quint32 i=0; i<xLen; i+=decimate) {
-			y[yCnt].real(x[i].re);
+			y[yCnt].real(x[i].real());
 			y[yCnt].im = x[i].im;
 			yCnt++;
 		}
@@ -412,7 +412,7 @@ quint32 HalfbandFilter::convolveOA(const CPX *x, quint32 xLen, const double *h,
 				m_lastX[i].real(0);
 				m_lastX[i].im = 0;
 			} else {
-				m_lastX[i].real(x[i].re);
+				m_lastX[i].real(x[i].real());
 				m_lastX[i].im = x[i].im;
 			}
 		}
@@ -477,7 +477,7 @@ quint32 HalfbandFilter::convolveOA(const CPX *x, quint32 xLen, const double *h,
 
 			if (h[k] != 0) {
 				//Skip zero coefficients since they won't add anything to accumulator
-				yOut[yCnt].real(yOut[yCnt].real() + oldest[j].re * h[k]);
+				yOut[yCnt].real(yOut[yCnt].real() + oldest[j].real() * h[k]);
 				yOut[yCnt].imag(yOut[yCnt].imag() + oldest[j].im * h[k]);
 			}
 		}
@@ -705,7 +705,7 @@ quint32 HalfbandFilter::processCIC3(const CPX *_in, CPX *_out, quint32 _numInSam
 	{	//mag gn=8
 		even = inBuffer[i];
 		odd = inBuffer[i+1];
-		outBuffer[numOutSamples].real(.125*( odd.re + m_xEven.re + 3.0*(m_xOdd.re + even.re) ));
+		outBuffer[numOutSamples].real(.125*( odd.real() + m_xEven.real() + 3.0*(m_xOdd.real() + even.real()) ));
 		outBuffer[numOutSamples].im = .125*( odd.im + m_xEven.im + 3.0*(m_xOdd.im + even.im) );
 		m_xOdd = odd;
 		m_xEven = even;
@@ -727,7 +727,7 @@ quint32 HalfbandFilter::processCIC3(const DSPDoubleSplitComplex *_in, DSPDoubleS
 		even.im = _in->imagp[i];
 		odd.real(_in->realp[i+1]);
 		odd.im = _in->imagp[i+1];
-		_out->realp[numOutSamples] = .125*( odd.re + m_xEven.re + 3.0*(m_xOdd.re + even.re) );
+		_out->realp[numOutSamples] = .125*( odd.real() + m_xEven.real() + 3.0*(m_xOdd.real() + even.real()) );
 		_out->imagp[numOutSamples] = .125*( odd.im + m_xEven.im + 3.0*(m_xOdd.im + even.im) );
 		m_xOdd = odd;
 		m_xEven = even;

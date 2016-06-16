@@ -133,7 +133,7 @@ double DB::rms(CPX *in, quint32 numSamples)
 	double totalSquared = 0;
 	double rms = 0;
 	for (quint32 i=0; i<numSamples; i++) {
-		totalSquared += in[i].re*in[i].re + in[i].im*in[i].im;
+		totalSquared += in[i].real()*in[i].real() + in[i].im*in[i].im;
 	}
 	rms = sqrt(totalSquared / numSamples);
 	return rms;
@@ -194,12 +194,12 @@ void DB::analyzeCPX(CPX* in, quint32 numSamples, const char* label, bool isFftOu
 	Q_UNUSED(medianPower);
 
 	for( quint32 i = 0; i < numSamples; i++){
-		if (in[i].re > maxRe) {
-			maxRe = in[i].re;
+		if (in[i].real() > maxRe) {
+			maxRe = in[i].real();
 			maxReIndex = i;
 		}
-		if (in[i].re < minRe) {
-			minRe = in[i].re;
+		if (in[i].real() < minRe) {
+			minRe = in[i].real();
 			minReIndex = i;
 		}
 		if (in[i].im > maxIm) {

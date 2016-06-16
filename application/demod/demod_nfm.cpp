@@ -71,7 +71,7 @@ void Demod_NFM::simplePhase(CPX *in, CPX *out, int demodSamples)
 
     for (int i=0;i<demodSamples;i++)
     {
-        tmp = tan(in[i].re  / in[i].im);
+        tmp = tan(in[i].real()  / in[i].im);
 		out[i].real(tmp);
 		out[i].imag(tmp);
     }
@@ -103,7 +103,7 @@ void Demod_NFM::processBlockFM1(CPX *in, CPX *out, int demodSamples)
 
     for (int i=0;i<demodSamples;i++)
     {
-        I = in[i].re;
+        I = in[i].real();
         Q = in[i].im;
 
         tmp = (Q * m_fmIPrev - I * m_fmQPrev) / (I * m_fmIPrev + Q * m_fmQPrev); //This seems to work better, less static, better audio
@@ -190,8 +190,8 @@ void Demod_NFM::pllFMN(  CPX * in, CPX * out, int demodSamples )
         pllNCO.im = sin(m_pllPhase);
 
         //Shift signal by PLL.  Should be same as CPX operator * ie pll * in[i]
-        delay.real(pllNCO.re * in[i].re - pllNCO.im * in[i].im);
-        delay.im = pllNCO.re * in[i].im + pllNCO.im * in[i].re;
+        delay.real(pllNCO.real() * in[i].real() - pllNCO.im * in[i].im);
+        delay.im = pllNCO.real() * in[i].im + pllNCO.im * in[i].real();
 
         // same as -atan2(tmp.im, tmp.re), but with special handling in cpx class
         phaseError = -phaseCpx(delay);
@@ -232,10 +232,10 @@ void Demod_NFM::processBlockNCO(CPX* in, CPX* out, int demodSamples)
         double ncoSin = sin(m_pllPhase);
         double ncoCos = cos(m_pllPhase);
         //complex multiply input sample by NCO's  sin and cos
-        tmp.real(ncoCos * in[i].re - ncoSin * in[i].im);
-        tmp.im = ncoCos * in[i].im + ncoSin * in[i].re;
+        tmp.real(ncoCos * in[i].real() - ncoSin * in[i].im);
+        tmp.im = ncoCos * in[i].im + ncoSin * in[i].real();
         //find current sample phase after being shifted by NCO frequency
-        double phzerror = -atan2(tmp.im, tmp.re);
+        double phzerror = -atan2(tmp.im, tmp.real());
 
         m_ncoFrequency += (m_pllBeta * phzerror);		//  radians per sampletime
         //clamp NCO frequency so doesn't drift out of lock range
