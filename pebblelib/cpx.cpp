@@ -413,8 +413,8 @@ void SSEMagCPX(CPX * c, CPX * a, int size) {
 		aa += 2;
 	}
 	if (size%2) {
-		cc->re = (*aa).sqrMag();
-		cc->im = cc->re;
+		cc->real((*aa).sqrMag());
+		cc->imag(cc->re);
 	}
 }
 
@@ -443,7 +443,7 @@ void SSESqMagCPX(CPX * c, CPX * a, int size) {
 		aa += 2;
 	}
 	if (size%2) {
-		cc->re = (*aa).mag();
+		cc->real((*aa).mag());
 		cc->im = cc->re;
 	}
 }
