@@ -193,9 +193,9 @@ void Demod_NFM::pllFMN(  CPX * in, CPX * out, int demodSamples )
         delay.real(pllNCO.real() * in[i].real() - pllNCO.im * in[i].im);
         delay.im = pllNCO.real() * in[i].im + pllNCO.im * in[i].real();
 
-        // same as -atan2(tmp.im, tmp.re), but with special handling in cpx class
+        // same as -atan2(tmp.im, tmp.real()), but with special handling in cpx class
         phaseError = -phaseCpx(delay);
-        //phaseError = -atan2(delay.im,delay.re);
+        //phaseError = -atan2(delay.im,delay.real());
 
         //phaseError is the delta from last sample, ie demod value.  Rest is cleanup
         m_ncoFrequency += fmPllBeta * phaseError / 100;  //Scale down to avoid overlaod

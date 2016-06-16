@@ -137,7 +137,7 @@ void C_FIR_filter::init_hilbert (int len, int dec) {
 //=====================================================================
 
 int C_FIR_filter::run (const CPX &in, CPX &out) {
-    ibuffer[pointer] = in.re;
+	ibuffer[pointer] = in.real();
     qbuffer[pointer] = in.im;
     counter++;
     if (counter == decimateratio)
@@ -406,7 +406,7 @@ sfft::~sfft()
 void sfft::run(const CPX& input, CPX * __restrict__ result, int stride )
 {
     CPX & de = delay[ptr];
-    const CPX z( input.re - k2 * de.re, input.im - k2 * de.im);
+	const CPX z( input.real() - k2 * de.real(), input.im - k2 * de.im);
     de = input;
 
     ++ptr ;

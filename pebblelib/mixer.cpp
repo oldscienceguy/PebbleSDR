@@ -58,12 +58,12 @@ CPX *Mixer::processBlock(CPX *in)
 		//nco->nextSample(osc);
 		//This is executed at the highest sample rate and every usec counts
 		//Pulled code from NCO for performance gain
-		osc.real(m_lastOsc.re * m_oscCos - m_lastOsc.im * m_oscSin);
-		osc.im = m_lastOsc.re * m_oscSin + m_lastOsc.im * m_oscCos;
+		osc.real(m_lastOsc.real() * m_oscCos - m_lastOsc.im * m_oscSin);
+		osc.im = m_lastOsc.real() * m_oscSin + m_lastOsc.im * m_oscCos;
 		//oscGn is used to account for variations in the amplitude output as time increases
 		//Since oscillator variables are not bounded as they are in alternate implementation (fmod(...))
-		oscGn = 1.95 - (m_lastOsc.re * m_lastOsc.re + m_lastOsc.im * m_lastOsc.im);
-		m_lastOsc.real(oscGn * osc.re);
+		oscGn = 1.95 - (m_lastOsc.real() * m_lastOsc.real() + m_lastOsc.im * m_lastOsc.im);
+		m_lastOsc.real(oscGn * osc.real());
 		m_lastOsc.im = oscGn * osc.im;
 #else
 		//Putting sin in re works with standard unfold, cos doesn't.  why?

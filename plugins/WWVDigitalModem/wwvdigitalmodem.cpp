@@ -285,7 +285,7 @@ bool MatchedFilter::ProcessSample(CPX in)
     ncoPtr = (ncoPtr + (detectedSignalFrequency * NUM_SINES / sampleRate)) % NUM_SINES;
 
     //dtemp = sintab[i] * data / (MS / 2. * DATCYC);
-    dtemp = sintab[prevNcoPtr] * in.re / (msPerSample / 2.0 * msDetectedSignal);
+    dtemp = sintab[prevNcoPtr] * in.real() / (msPerSample / 2.0 * msDetectedSignal);
 
     //up->irig -= ibuf[iptr];
 	out.real(out.real() - delay[delayPtr].re);

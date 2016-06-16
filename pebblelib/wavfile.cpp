@@ -367,7 +367,7 @@ CPX WavFile::ReadSample()
         //Samples already float32
         sample.real(floatData.left);
         sample.im = floatData.right;
-        //qDebug()<<sample.re<<"/"<<sample.im;
+        //qDebug()<<sample.real()<<"/"<<sample.im;
     }
 
     return sample;

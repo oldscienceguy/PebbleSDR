@@ -571,8 +571,8 @@ quint32 HalfbandFilter::convolveVDsp1(const DSPDoubleSplitComplex *x, quint32 xL
 			acc.real(acc.real() + tmpIn.realp[i] * coeff[i]);
 			acc.imag(acc.imag() + tmpIn.imagp[i] * coeff[i]);
 		}
-		if (acc.re != tmpOut.realp[0])
-			qDebug()<<"RE"<<acc.re<<" "<<tmpOut.realp[0];
+		if (acc.real() != tmpOut.realp[0])
+			qDebug()<<"RE"<<acc.real()<<" "<<tmpOut.realp[0];
 		if (acc.im != tmpOut.imagp[0])
 			qDebug()<<"IM"<<acc.im<<" "<<tmpOut.imagp[0];
 #endif

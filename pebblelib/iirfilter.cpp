@@ -400,7 +400,7 @@ void IIRFilter::locatePolesAndZeros(){
   {
 	  if (!ready)
 		  return;
-	  c.real(filter(c.re,xv1,yv1));
+	  c.real(filter(c.real(),xv1,yv1));
 	  c.im = filter(c.im,xv2,yv2);
   }
   float IIRFilter::filter(float input, float *xv, float*yv)

@@ -257,7 +257,7 @@ void FFT::overlapAdd(CPX *out, int numSamples)
 	x in any sample is 1 and the min value is -1.
  The largest theoretical CPX is therefore CPX(1,1)
 
- The max power (maxPower) in any one sample is therefore cx.re^2 + cx.im^2 = 1^2 + 1^2 = 2;
+ The max power (maxPower) in any one sample is therefore cx.real()^2 + cx.im^2 = 1^2 + 1^2 = 2;
  The max amplitude (maxAmp) in any one sample is therefore sqrt(maxPower) = 1.414213562
 
  Assume a pure sine wave input where each sample.real() = maxAmp*cos(x) & sample.im = maxAmp*sin(x) and

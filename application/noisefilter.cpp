@@ -97,7 +97,7 @@ CPX * NoiseFilter::ProcessBlock(CPX *in)
 			nxtDelay = anfDelay->NextDelay(j);
 			//Weighted average based on anfLeakage
 			//AdaptationRate is between 0 and 1 and determines how fast we stabilize filter
-			//anfCoeff[j] = anfCoeff[j-1] * anfLeakage + (1.0 - anfLeakage) * anfAdaptationRate * nxtDelay.re * errorSignal;
+			//anfCoeff[j] = anfCoeff[j-1] * anfLeakage + (1.0 - anfLeakage) * anfAdaptationRate * nxtDelay.real() * errorSignal;
             anfCoeff[j].real(anfCoeff[j].real() * scl1 + error.real() * nxtDelay.real());
             anfCoeff[j].im = anfCoeff[j].im * scl1 + error.im * nxtDelay.im;
         }
