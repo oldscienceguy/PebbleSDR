@@ -75,7 +75,7 @@ int i;
 	for(i=0; i<MAX_DECSTAGES; i++)
 		m_pDecimatorPtrs[i] = NULL;
 	m_Osc1.real(1.0);	//initialize unit vector that will get rotated
-	m_Osc1.im = 0.0;
+	m_Osc1.imag(0.0);
 }
 
 CDownConvert::~CDownConvert()
@@ -276,15 +276,15 @@ double*	pdSinAns  = &dASMSin;
 		dtmp = pInData[i];
 #if NCO_LIB
 		Osc.real(cos(m_NcoTime));
-		Osc.im = sin(m_NcoTime);
+		Osc.imag(sin(m_NcoTime));
 		m_NcoTime += m_NcoInc;
 #elif NCO_OSC
 		TYPEREAL OscGn;
 		Osc.real(m_Osc1.real() * m_OscCos - m_Osc1.im * m_OscSin);
-		Osc.im = m_Osc1.im * m_OscCos + m_Osc1.real() * m_OscSin;
+		Osc.imag(m_Osc1.im * m_OscCos + m_Osc1.real() * m_OscSin);
 		OscGn = 1.95 - (m_Osc1.real()*m_Osc1.real() + m_Osc1.im*m_Osc1.im);
 		m_Osc1.real(OscGn * Osc.real());
-		m_Osc1.im = OscGn * Osc.im;
+		m_Osc1.imag(OscGn * Osc.im);
 #elif NCO_VCASM
 		_asm
 		{
@@ -297,17 +297,17 @@ double*	pdSinAns  = &dASMSin;
 		}
 		dPhaseAcc += m_NcoInc;
 		Osc.real(dASMCos);
-		Osc.im = dASMSin;
+		Osc.imag(dASMSin);
 #elif NCO_GCCASM
 		asm volatile ("fsincos" : "=%&t" (dASMCos), "=%&u" (dASMSin) : "0" (dPhaseAcc));
 		dPhaseAcc += m_NcoInc;
 		Osc.real(dASMCos);
-		Osc.im = dASMSin;
+		Osc.imag(dASMSin);
 #endif
 
 		//Cpx multiply by shift frequency
 		pInData[i].real(((dtmp.real() * Osc.real()) - (dtmp.im * Osc.im)));
-		pInData[i].im = ((dtmp.real() * Osc.im) + (dtmp.im * Osc.real()));
+		pInData[i].imag(((dtmp.real() * Osc.im) + (dtmp.im * Osc.real())));
 	}
 #if (NCO_VCASM || NCO_GCCASM)
 	m_NcoTime = dPhaseAcc;
@@ -370,7 +370,7 @@ int numoutsamples = 0;
 	{
 		TYPECPX acc;
 		acc.real(( m_pHBFirBuf[i].real() * m_pCoef[0] ));
-		acc.im = ( m_pHBFirBuf[i].im * m_pCoef[0] );
+		acc.imag(( m_pHBFirBuf[i].im * m_pCoef[0] ));
         //Fix from cuteSdr 1.10
         for(j=0; j<m_FirLength; j+=2)	//only use even coefficients since odd are zero(except center point)
 		{
@@ -526,7 +526,7 @@ TYPECPX even,odd;
 		even = pInData[i];
 		odd = pInData[i+1];
 		pOutData[j].real(.125*( odd.real() + m_Xeven.real() + 3.0*(m_Xodd.real() + even.real()) ));
-		pOutData[j].im = .125*( odd.im + m_Xeven.im + 3.0*(m_Xodd.im + even.im) );
+		pOutData[j].imag(.125*( odd.im + m_Xeven.im + 3.0*(m_Xodd.im + even.im) ));
 		m_Xodd = odd;
 		m_Xeven = even;
 	}

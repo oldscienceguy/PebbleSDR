@@ -84,7 +84,7 @@ void FFTOoura::fftForward(CPX *in, CPX *out, int numSamples)
 		for (int i=0; i<m_fftSize; i++) {
 			tmp = m_timeDomain[i].real();
 			m_timeDomain[i].real(m_timeDomain[i].im);
-			m_timeDomain[i].im = tmp;
+			m_timeDomain[i].imag(tmp);
 		}
 
 	}

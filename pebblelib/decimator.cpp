@@ -333,7 +333,7 @@ quint32 HalfbandFilter::convolveOS(const CPX *x, quint32 xLen, const double *h,
 		//Filter won't work, so simple decimate
 		for (quint32 i=0; i<xLen; i+=decimate) {
 			y[yCnt].real(x[i].real());
-			y[yCnt].im = x[i].im;
+			y[yCnt].imag(x[i].im);
 			yCnt++;
 		}
 		//We don't have enough samples to fill all of lastX
@@ -342,10 +342,10 @@ quint32 HalfbandFilter::convolveOS(const CPX *x, quint32 xLen, const double *h,
 		for (quint32 i=0; i<hLen; i++) {
 			if (i < saveSamples) {
 				m_lastX[i].real(0);
-				m_lastX[i].im = 0;
+				m_lastX[i].imag(0);
 			} else {
 				m_lastX[i].real(x[i].real());
-				m_lastX[i].im = x[i].im;
+				m_lastX[i].imag(x[i].im);
 			}
 		}
 		return yCnt;
@@ -401,7 +401,7 @@ quint32 HalfbandFilter::convolveOA(const CPX *x, quint32 xLen, const double *h,
 		//Filter won't work, so simple decimate
 		for (quint32 i=0; i<xLen; i+=decimate) {
 			y[yCnt].real(x[i].real());
-			y[yCnt].im = x[i].im;
+			y[yCnt].imag(x[i].im);
 			yCnt++;
 		}
 		//We don't have enough samples to fill all of lastX
@@ -410,10 +410,10 @@ quint32 HalfbandFilter::convolveOA(const CPX *x, quint32 xLen, const double *h,
 		for (quint32 i=0; i<hLen; i++) {
 			if (i < saveSamples) {
 				m_lastX[i].real(0);
-				m_lastX[i].im = 0;
+				m_lastX[i].imag(0);
 			} else {
 				m_lastX[i].real(x[i].real());
-				m_lastX[i].im = x[i].im;
+				m_lastX[i].imag(x[i].im);
 			}
 		}
 		return yCnt;
@@ -706,7 +706,7 @@ quint32 HalfbandFilter::processCIC3(const CPX *_in, CPX *_out, quint32 _numInSam
 		even = inBuffer[i];
 		odd = inBuffer[i+1];
 		outBuffer[numOutSamples].real(.125*( odd.real() + m_xEven.real() + 3.0*(m_xOdd.real() + even.real()) ));
-		outBuffer[numOutSamples].im = .125*( odd.im + m_xEven.im + 3.0*(m_xOdd.im + even.im) );
+		outBuffer[numOutSamples].imag(.125*( odd.im + m_xEven.im + 3.0*(m_xOdd.im + even.im) ));
 		m_xOdd = odd;
 		m_xEven = even;
 		numOutSamples++;
@@ -724,9 +724,9 @@ quint32 HalfbandFilter::processCIC3(const DSPDoubleSplitComplex *_in, DSPDoubleS
 	for(quint32 i=0; i<_numInSamples; i += m_decimate)
 	{	//mag gn=8
 		even.real(_in->realp[i]);
-		even.im = _in->imagp[i];
+		even.imag(_in->imagp[i]);
 		odd.real(_in->realp[i+1]);
-		odd.im = _in->imagp[i+1];
+		odd.imag(_in->imagp[i+1]);
 		_out->realp[numOutSamples] = .125*( odd.real() + m_xEven.real() + 3.0*(m_xOdd.real() + even.real()) );
 		_out->imagp[numOutSamples] = .125*( odd.im + m_xEven.im + 3.0*(m_xOdd.im + even.im) );
 		m_xOdd = odd;

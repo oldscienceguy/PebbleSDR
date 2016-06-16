@@ -150,7 +150,7 @@ MatchedFilter::MatchedFilter(quint16 _sampleRate, quint16 _detectedSignalMs, qui
     ncoIncrement = TWOPI * (double)detectedSignalFrequency / (double)sampleRate;
     for (int i=0; i<lenFilter; i++) {
         ncoTable[i].real(cos(ncoPhase));
-        ncoTable[i].im = sin(ncoPhase);
+        ncoTable[i].imag(sin(ncoPhase));
         ncoPhase += ncoIncrement;
         //sin (0) to sin(PI) is positive, zero at 0 and PI
         //sin (PI) to sin(TWOPI) is neg, zero at PI and TWOPI
@@ -309,7 +309,7 @@ bool MatchedFilter::ProcessSample(CPX in)
     out.im += dtemp;
 
     //qbuf[iptr] = dtemp;
-    delay[delayPtr].im = dtemp;
+    delay[delayPtr].imag(dtemp);
 
 
     //iptr = (iptr + 1) % DATSIZ;

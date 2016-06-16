@@ -444,7 +444,7 @@ void SSESqMagCPX(CPX * c, CPX * a, int size) {
 	}
 	if (size%2) {
 		cc->real((*aa).mag());
-		cc->im = cc->real();
+		cc->imag(cc->real());
 	}
 }
 #endif

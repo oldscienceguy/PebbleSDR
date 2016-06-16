@@ -71,7 +71,7 @@ CPX * NoiseFilter::ProcessBlock(CPX *in)
         //This does the same as accum above, but requires an extra loop
         //Maybe we should update MAC to also return sum or squares result?
         out[i].real(accum.real() * 1.25); //Bit of gain to compensate for filter
-        out[i].im = accum.im * 1.25;
+        out[i].imag(accum.im * 1.25);
 
 		//This is the delta between the actual current sample, and MAC from delay line (reference signal)
 		//or if we're comparing to a desired CW sine wave, the diff from that
@@ -83,7 +83,7 @@ CPX * NoiseFilter::ProcessBlock(CPX *in)
         scl2.real((anfAdaptationRate / (sos.real() + 1e-10))); //avoid divide by zero trick
 		error.real(error.real() * scl2.real());
 
-        scl2.im = (anfAdaptationRate / (sos.im + 1e-10));
+        scl2.imag((anfAdaptationRate / (sos.im + 1e-10)));
         error.im *= scl2.im;
 
 		//And calculate tne new coefficients for next sample
@@ -99,7 +99,7 @@ CPX * NoiseFilter::ProcessBlock(CPX *in)
 			//AdaptationRate is between 0 and 1 and determines how fast we stabilize filter
 			//anfCoeff[j] = anfCoeff[j-1] * anfLeakage + (1.0 - anfLeakage) * anfAdaptationRate * nxtDelay.real() * errorSignal;
             anfCoeff[j].real(anfCoeff[j].real() * scl1 + error.real() * nxtDelay.real());
-            anfCoeff[j].im = anfCoeff[j].im * scl1 + error.im * nxtDelay.im;
+            anfCoeff[j].imag(anfCoeff[j].im * scl1 + error.im * nxtDelay.im);
         }
 	}
 	return out;

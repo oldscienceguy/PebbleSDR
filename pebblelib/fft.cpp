@@ -196,7 +196,7 @@ void FFT::m_unfoldInOrder(CPX *inBuf, CPX *outBuf)
 #if 0
 	if (inBuf[0].im != 0) {
 		//qDebug()<<inBuf[0].re<<" "<<inBuf[0].im<<" "<<inBuf[fftMid].re<<" "<<inBuf[fftMid].im;
-		inBuf[0].im = 0;
+		inBuf[0].imag(0);
 	}
 #endif
 

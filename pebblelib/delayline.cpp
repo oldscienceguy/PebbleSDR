@@ -53,7 +53,7 @@ CPX DelayLine::MAC(double *coeff, int numCoeff)
 	if (mac.real() != mac.real())
 		mac.real(0);
 	if (mac.im != mac.im)
-		mac.im = 0;
+		mac.imag(0);
 
 	mutex.unlock();
 	return mac;
@@ -74,7 +74,7 @@ CPX DelayLine::MAC(CPX *coeff, int numCoeff)
 	if (mac.real() != mac.real())
 		mac.real(0);
 	if (mac.im != mac.im)
-		mac.im = 0;
+		mac.imag(0);
 	mutex.unlock();
 	return mac;
 }

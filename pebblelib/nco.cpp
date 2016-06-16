@@ -39,7 +39,7 @@ void NCO::setFrequency(double f)
 	m_oscCos = cos(m_oscInc);
 	m_oscSin = sin(m_oscInc);
 	m_lastOsc.real(1.0);
-	m_lastOsc.im = 0.0;
+	m_lastOsc.imag(0.0);
 	m_oscTime = 0.0;
 	m_mutex.unlock();
 }
@@ -74,7 +74,7 @@ void NCO::genSingle(CPX *_in, quint32 _numSamples, double _dbGain, bool _mix)
 			_in[i].imag(_in[i].imag() + cpx.im);
 		} else {
 			_in[i].real(cpx.real());
-			_in[i].im = cpx.im;
+			_in[i].imag(cpx.im);
 		}
 	}
 
@@ -110,7 +110,7 @@ void NCO::genNoise(CPX *_in, quint32 _numSamples, double _dbGain, bool _mix)
 			_in[i].imag(_in[i].imag() + y);
 		} else {
 			_in[i].real(x);
-			_in[i].im = y;
+			_in[i].imag(y);
 		}
 	}
 }
@@ -174,7 +174,7 @@ if( (m_SweepFrequency>-31250) && (m_SweepFrequency<31250) )
 		} else {
 			//Replace incoming signal with generator
 			_in[i].real(amp * cos(m_sweepAcc));
-			_in[i].im = amp * sin(m_sweepAcc);
+			_in[i].imag(amp * sin(m_sweepAcc));
 		}
 		//inc phase accummulator with normalized freqeuency step
 		m_sweepAcc += ( m_sweepFreq * m_sweepFreqNorm );

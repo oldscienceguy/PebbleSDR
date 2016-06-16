@@ -162,7 +162,7 @@ qint32 CFft::PutInDisplayFFT(qint32 n, TYPECPX* InBuf)
 		dtmp1 = m_pWindowTbl[i];
 		//NOTE: For some reason I and Q are swapped(demod I/Q does not apear to be swapped)
 		//possibly an issue with the FFT ?
-		((TYPECPX*)m_pFFTInBuf)[i].im =  dtmp1 * (InBuf[i].re);//window the I data
+		((TYPECPX*)m_pFFTInBuf)[i].imag(dtmp1 * (InBuf[i].re));//window the I data
 		((TYPECPX*)m_pFFTInBuf)[i].real(dtmp1 * (InBuf[i].im));	//window the Q data
 	}
 	//Calculate the complex FFT
@@ -197,7 +197,7 @@ void CFft::fftForward(CPX * in, CPX * out, int numSamples)
 		for (int i=0; i<m_fftSize; i++) {
 			tmp = m_timeDomain[i].real();
 			m_timeDomain[i].real(m_timeDomain[i].im);
-			m_timeDomain[i].im = tmp;
+			m_timeDomain[i].imag(tmp);
 		}
 
 	}

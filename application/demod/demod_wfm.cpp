@@ -279,7 +279,7 @@ TYPEREAL LminusR;
 			// scale by 2 since DSB amplitude is half of the Right plus Left signal
 			LminusR = 2.0 * in * sin( m_PilotPhase[i]*2.0);
 			pOutData[i].real(in + LminusR);		//extract left and right signals
-			pOutData[i].im = in - LminusR;
+			pOutData[i].imag(in - LminusR);
 		}
 		m_PilotLocked = true;
 	}
@@ -288,7 +288,7 @@ TYPEREAL LminusR;
 		for(int i=0; i<InLength; i++)
 		{
 			pOutData[i].real(m_RawFm[i]);
-			pOutData[i].im = m_RawFm[i];
+			pOutData[i].imag(m_RawFm[i]);
 		}
 		m_PilotLocked = false;
 	}
@@ -349,7 +349,7 @@ m_RdsRaw[i].real(0);
 
 		m_RdsLastData = Data;		//keep last bit since is differential data
 		m_RdsLastSyncSlope = Slope;
-m_RdsRaw[i].im = Data;
+m_RdsRaw[i].imag(Data);
 	}
 //g_pTestBench->DisplayData(length, m_RdsRaw, m_RdsOutputRate, PROFILE_3);	//display rds data and sample point
 
@@ -404,7 +404,7 @@ TYPECPX tmp;
 #endif
 		//complex multiply input sample by NCO's  sin and cos
 		tmp.real(Cos * pInData[i].real() - Sin * pInData[i].im);
-		tmp.im = Cos * pInData[i].im + Sin * pInData[i].real();
+		tmp.imag(Cos * pInData[i].im + Sin * pInData[i].real());
 		//find current sample phase after being shifted by NCO frequency
 		TYPEREAL phzerror = -arctan2(tmp.im, tmp.real());
 
@@ -480,7 +480,7 @@ void Demod_WFM::processDeemphasisFilter(int InLength, TYPECPX* InBuf, TYPECPX* O
 		m_DeemphasisAveRe = (1.0-m_DeemphasisAlpha)*m_DeemphasisAveRe + m_DeemphasisAlpha*InBuf[i].real();
 		m_DeemphasisAveIm = (1.0-m_DeemphasisAlpha)*m_DeemphasisAveIm + m_DeemphasisAlpha*InBuf[i].im;
 		OutBuf[i].real(m_DeemphasisAveRe*2.0);
-		OutBuf[i].im = m_DeemphasisAveIm*2.0;
+		OutBuf[i].imag(m_DeemphasisAveIm*2.0);
 	}
 }
 
@@ -554,7 +554,7 @@ TYPECPX tmp;
 #endif
 		//complex multiply input sample by NCO's  sin and cos
 		tmp.real(Cos * pInData[i].real() - Sin * pInData[i].im);
-		tmp.im = Cos * pInData[i].im + Sin * pInData[i].real();
+		tmp.imag(Cos * pInData[i].im + Sin * pInData[i].real());
 		//find current sample phase after being shifted by NCO frequency
 		TYPEREAL phzerror = -arctan2(tmp.im, tmp.real());
 		//create new NCO frequency term
@@ -872,6 +872,6 @@ void Demod_WFM::fmDeemphasisFilter(int _bufSize, CPX *in, CPX *out)
         avgRe = (1.0-m_fmDeemphasisAlpha)*avgRe + m_fmDeemphasisAlpha*in[i].real();
         avgIm = (1.0-m_fmDeemphasisAlpha)*avgIm + m_fmDeemphasisAlpha*in[i].im;
         out[i].real(avgRe*2.0);
-        out[i].im = avgIm*2.0;
+        out[i].imag(avgIm*2.0);
     }
 }

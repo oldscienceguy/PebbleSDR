@@ -196,9 +196,9 @@ void AudioQT::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
 			out[i].real(-maxOutput);
 
 		if (out[i].im > maxOutput)
-			out[i].im = maxOutput;
+			out[i].imag(maxOutput);
 		else if (out[i].im < -maxOutput)
-			out[i].im = -maxOutput;
+			out[i].imag(-maxOutput);
 
         //If we use Int 16
         //left = Float2Int(out[i].re);

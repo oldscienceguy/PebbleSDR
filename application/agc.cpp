@@ -88,7 +88,7 @@ CPX* AGC::processBlock(CPX *pInData)
         for(int i=0; i<numSamples; i++)
         {
 			out[i].real(m_manualIFGainAmp * pInData[i].real());
-			out[i].im = m_manualIFGainAmp * pInData[i].im;
+			out[i].imag(m_manualIFGainAmp * pInData[i].im);
         }
         return out;
     }
@@ -147,7 +147,7 @@ CPX* AGC::processBlock(CPX *pInData)
             }
         }
 
-        //pOutData[i].im = 3000*m_Peak;
+        //pOutData[i].imag(3000*m_Peak);
 
 		if(m_useHang)
         {	//using hang timer mode
@@ -177,12 +177,12 @@ CPX* AGC::processBlock(CPX *pInData)
             else					//else magnitude is falling (use  m_AttackFallAlpha time constant)
 				m_attackAvg = (1.0-m_attackFallAlpha)*m_attackAvg + m_attackFallAlpha*m_peak;
 
-            //pOutData[i].im = 3000*m_AttackAve;
+            //pOutData[i].imag(3000*m_AttackAve);
 			if(m_peak>m_decayAvg)	//if magnitude is rising (use m_DecayRiseAlpha time constant)
 				m_decayAvg = (1.0-m_decayRiseAlpha)*m_decayAvg + m_decayRiseAlpha*(m_peak);
             else					//else magnitude is falling (use m_DecayFallAlpha time constant)
 				m_decayAvg = (1.0-m_decayFallAlpha)*m_decayAvg + m_decayFallAlpha*(m_peak);
-            //pOutData[i].im = 3000*m_DecayAve;
+            //pOutData[i].imag(3000*m_DecayAve);
         }
         //use greater magnitude of attack or Decay Averager
 		if(m_attackAvg>m_decayAvg)
@@ -190,7 +190,7 @@ CPX* AGC::processBlock(CPX *pInData)
         else
 			mag = m_decayAvg;
 
-        //pOutData[i].im = 3000*mag;
+        //pOutData[i].imag(3000*mag);
         //calc gain depending on which side of knee the magnitude is on
 		if(mag<=m_knee)		//use fixed gain if below knee
 			gain = m_fixedGain;
@@ -198,7 +198,7 @@ CPX* AGC::processBlock(CPX *pInData)
 			gain = AGC_OUTSCALE * pow(10.0, mag*(m_gainSlope - 1.0) );
         //pOutData[i].real(.5*gain);
         out[i].real(delayedin.real() * gain);
-        out[i].im = delayedin.im * gain;
+        out[i].imag(delayedin.im * gain);
     }
 
         //m_Mutex.unlock();
@@ -268,7 +268,7 @@ void AGC::setParameters(bool useHang, int threshold, int slopeFactor, int decay)
         for(int i=0; i<MAX_DELAY_BUF; i++)
         {
 			m_sigDelayBuf[i].real(0.0);
-			m_sigDelayBuf[i].im = 0.0;
+			m_sigDelayBuf[i].imag(0.0);
 			m_magBuf[i] = -16.0;
         }
 		m_sigDelayPtr = 0;

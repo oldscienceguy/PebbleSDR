@@ -96,7 +96,7 @@ int i;
 	for( i=0; i<CONV_FFT_SIZE; i++)
 	{
 		m_pFFTBuf[i].real(0.0);
-		m_pFFTBuf[i].im = 0.0;
+		m_pFFTBuf[i].imag(0.0);
 	}
 #if 1
 	//create Blackman-Nuttall window function for windowed sinc low pass filter design
@@ -107,7 +107,7 @@ int i;
 			+ 0.1365995*cos( (2.0*TWOPI*i)/(CONV_FIR_SIZE-1) )
 			- 0.0106411*cos( (3.0*TWOPI*i)/(CONV_FIR_SIZE-1) ) );
 		m_pFFTOverlapBuf[i].real(0.0);
-		m_pFFTOverlapBuf[i].im = 0.0;
+		m_pFFTOverlapBuf[i].imag(0.0);
 	}
 #endif
 #if 0
@@ -119,7 +119,7 @@ int i;
 			+ 0.14128*cos( (2.0*TWOPI*i)/(CONV_FIR_SIZE-1) )
 			- 0.01168*cos( (3.0*TWOPI*i)/(CONV_FIR_SIZE-1) ) );
 		m_pFFTOverlapBuf[i].real(0.0);
-		m_pFFTOverlapBuf[i].im = 0.0;
+		m_pFFTOverlapBuf[i].imag(0.0);
 	}
 #endif
 #if 0
@@ -131,7 +131,7 @@ int i;
 			+ 0.144232*cos( (2.0*TWOPI*i)/(CONV_FIR_SIZE-1) )
 			- 0.012604*cos( (3.0*TWOPI*i)/(CONV_FIR_SIZE-1) ) );
 		m_pFFTOverlapBuf[i].real(0.0);
-		m_pFFTOverlapBuf[i].im = 0.0;
+		m_pFFTOverlapBuf[i].imag(0.0);
 	}
 #endif
 	//m_Fft->FFTParams(CONV_FFT_SIZE, false, 0.0, 1.0);
@@ -226,7 +226,7 @@ int i;
 	for(i=0; i<CONV_FFT_SIZE; i++)		//zero pad entire coefficient buffer to FFT size
 	{
 		m_pFilterCoef[i].real(0.0);
-		m_pFilterCoef[i].im = 0.0;
+		m_pFilterCoef[i].imag(0.0);
 	}
 
 	//create LP FIR windowed sinc, sin(x)/x complex LP filter coefficients
@@ -242,7 +242,7 @@ int i;
 		//shift lowpass filter coefficients in frequency by (hicut+lowcut)/2 to form bandpass filter anywhere in range
 		// (also scales by 1/FFTsize since inverse FFT routine scales by FFTsize)
 		m_pFilterCoef[i].real(z * cos(nFs * x)/(TYPEREAL)CONV_FFT_SIZE);
-		m_pFilterCoef[i].im = z * sin(nFs * x)/(TYPEREAL)CONV_FFT_SIZE;
+		m_pFilterCoef[i].imag(z * sin(nFs * x)/(TYPEREAL)CONV_FFT_SIZE);
 	}
 
 #if 0		//debug hack to write m_pFilterCoef to a file for analysis
@@ -329,7 +329,7 @@ void CFastFIR::CpxMpy(int N, TYPECPX* m, TYPECPX* src, TYPECPX* dest)
 		TYPEREAL sr = src[i].real();
 		TYPEREAL si = src[i].im;
 		dest[i].real(m[i].real() * sr - m[i].im * si);
-		dest[i].im = m[i].real() * si + m[i].im * sr;
+		dest[i].imag(m[i].real() * si + m[i].im * sr);
 	}
 }
 

@@ -187,11 +187,11 @@ void Demod_NFM::pllFMN(  CPX * in, CPX * out, int demodSamples )
         //Todo: See if we can use NCO here
         //This is the generated signal to sync with (NCO)
         pllNCO.real(cos(m_pllPhase));
-        pllNCO.im = sin(m_pllPhase);
+        pllNCO.imag(sin(m_pllPhase));
 
         //Shift signal by PLL.  Should be same as CPX operator * ie pll * in[i]
         delay.real(pllNCO.real() * in[i].real() - pllNCO.im * in[i].im);
-        delay.im = pllNCO.real() * in[i].im + pllNCO.im * in[i].real();
+        delay.imag(pllNCO.real() * in[i].im + pllNCO.im * in[i].real());
 
         // same as -atan2(tmp.im, tmp.real()), but with special handling in cpx class
         phaseError = -phaseCpx(delay);
@@ -233,7 +233,7 @@ void Demod_NFM::processBlockNCO(CPX* in, CPX* out, int demodSamples)
         double ncoCos = cos(m_pllPhase);
         //complex multiply input sample by NCO's  sin and cos
         tmp.real(ncoCos * in[i].real() - ncoSin * in[i].im);
-        tmp.im = ncoCos * in[i].im + ncoSin * in[i].real();
+        tmp.imag(ncoCos * in[i].im + ncoSin * in[i].real());
         //find current sample phase after being shifted by NCO frequency
         double phzerror = -atan2(tmp.im, tmp.real());
 

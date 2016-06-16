@@ -582,7 +582,7 @@ void TestBench::reset()
 	for(i=0; i<TEST_FFTSIZE; i++)
 	{
 		m_fftInBuf[i].real(0.0);
-		m_fftInBuf[i].im = 0.0;
+		m_fftInBuf[i].imag(0.0);
 	}
 	for( i=0; i<TB_MAX_SCREENSIZE; i++)
 	{
@@ -695,7 +695,7 @@ void TestBench::displayData(int length, TYPEREAL* pBuf, double samplerate, int p
 		for(int i=0; i<length; i++)
 		{
 			m_fftInBuf[m_fftBufPos].real(pBuf[i]);
-			m_fftInBuf[m_fftBufPos++].im = 0.0;
+			m_fftInBuf[m_fftBufPos++].imag(0.0);
 			if(m_fftBufPos >= TEST_FFTSIZE )
 			{
 				m_fftBufPos = 0;
@@ -755,7 +755,7 @@ void TestBench::displayData(int length, TYPEMONO16* pBuf, double samplerate, int
 		for(int i=0; i<length; i++)
 		{
 			m_fftInBuf[m_fftBufPos].real((TYPEREAL)pBuf[i]);
-			m_fftInBuf[m_fftBufPos++].im = (TYPEREAL)pBuf[i];
+			m_fftInBuf[m_fftBufPos++].imag((TYPEREAL)pBuf[i]);
 			if(m_fftBufPos >= TEST_FFTSIZE )
 			{
 				m_fftBufPos = 0;
@@ -815,7 +815,7 @@ void TestBench::displayData(int length, TYPESTEREO16* pBuf, double samplerate, i
 		for(int i=0; i<length; i++)
 		{
 			m_fftInBuf[m_fftBufPos].real((TYPEREAL)pBuf[i].re);
-			m_fftInBuf[m_fftBufPos++].im = (TYPEREAL)pBuf[i].im;
+			m_fftInBuf[m_fftBufPos++].imag((TYPEREAL)pBuf[i].im);
 			if(m_fftBufPos >= TEST_FFTSIZE )
 			{
 				m_fftBufPos = 0;

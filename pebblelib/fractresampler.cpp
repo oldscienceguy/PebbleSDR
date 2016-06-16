@@ -98,7 +98,7 @@ TYPEREAL window;
 	for(i=0; i<MaxInputSize; i++)
 	{
 		m_pInputBuf[i].real(0.0);
-		m_pInputBuf[i].im = 0.0;
+		m_pInputBuf[i].imag(0.0);
 	}
 	for(i=0; i<SINC_LENGTH; i++)
 	{	//calc Blackman-Harris window points
@@ -233,11 +233,11 @@ TYPECPX acc;
 		if(tmp.real() < -MAX_SOUNDCARDVAL)
 			tmp.real(-MAX_SOUNDCARDVAL);
 		if(tmp.im>MAX_SOUNDCARDVAL)
-			tmp.im = MAX_SOUNDCARDVAL;
+			tmp.imag(MAX_SOUNDCARDVAL);
 		if(tmp.im < -MAX_SOUNDCARDVAL)
-			tmp.im = -MAX_SOUNDCARDVAL;
+			tmp.imag(-MAX_SOUNDCARDVAL);
 		pOutBuf[outsamples].real((qint16)tmp.real());
-		pOutBuf[outsamples++].im = (qint16)tmp.im;
+		pOutBuf[outsamples++].imag((qint16)tmp.im);
 
 		m_FloatTime += dt;	//inc floating pt output time step
 		IntegerTime = (int)m_FloatTime;	//truncate to integer

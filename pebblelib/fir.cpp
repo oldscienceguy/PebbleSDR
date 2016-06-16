@@ -118,7 +118,7 @@ TYPEREAL* HQptr;
 		HQptr = m_QCoef + m_NumTaps - m_State;
 		Zptr = m_cZBuf;
 		acc.real((*HIptr++ * (*Zptr).real()));		//do the first MAC
-		acc.im = (*HQptr++ * (*Zptr++).im);
+		acc.imag((*HQptr++ * (*Zptr++).im));
 		for(int j=1; j<m_NumTaps; j++)
 		{
 			acc.real(acc.real() + (*HIptr++ * (*Zptr).real()));		//do the remaining MACs
@@ -151,12 +151,12 @@ TYPEREAL* HQptr;
 	for(int i=0; i<InLength; i++)
 	{
 		m_cZBuf[m_State].real(InBuf[i]);
-		m_cZBuf[m_State].im = InBuf[i];
+		m_cZBuf[m_State].imag(InBuf[i]);
 		HIptr = m_ICoef + m_NumTaps - m_State;
 		HQptr = m_QCoef + m_NumTaps - m_State;
 		Zptr = m_cZBuf;
 		acc.real((*HIptr++ * (*Zptr).real()));		//do the first MAC
-		acc.im = (*HQptr++ * (*Zptr++).im);
+		acc.imag((*HQptr++ * (*Zptr++).im));
 		for(int j=1; j<m_NumTaps; j++)
 		{
 			acc.real(acc.real() + (*HIptr++ * (*Zptr).real()));		//do the remaining MACs
@@ -190,7 +190,7 @@ void CFir::InitConstFir( int NumTaps, const double* pCoef, TYPEREAL Fsamprate)
 	{	//zero input buffers
 		m_rZBuf[i] = 0.0;
 		m_cZBuf[i].real(0.0);
-		m_cZBuf[i].im = 0.0;
+		m_cZBuf[i].imag(0.0);
 	}
 	m_State = 0;	//zero filter state variable
 	m_Mutex.unlock();
@@ -219,7 +219,7 @@ void CFir::InitConstFir( int NumTaps, const double* pICoef, const double* pQCoef
 	{	//zero input buffers
 		m_rZBuf[i] = 0.0;
 		m_cZBuf[i].real(0.0);
-		m_cZBuf[i].im = 0.0;
+		m_cZBuf[i].imag(0.0);
 	}
 	m_State = 0;	//zero filter state variable
 	m_Mutex.unlock();
@@ -306,7 +306,7 @@ TYPEREAL Beta;
 	{
 		m_rZBuf[i] = 0.0;
 		m_cZBuf[i].real(0.0);
-		m_cZBuf[i].im = 0.0;
+		m_cZBuf[i].imag(0.0);
 	}
 	m_State = 0;
 
@@ -418,7 +418,7 @@ TYPEREAL Beta;
 	{
 		m_rZBuf[i] = 0.0;
 		m_cZBuf[i].real(0.0);
-		m_cZBuf[i].im = 0.0;
+		m_cZBuf[i].imag(0.0);
 	}
 	m_State = 0;
 
@@ -607,7 +607,7 @@ qDebug()<<"InLength = "<<InLength;
 	{
 		TYPECPX acc;
 		acc.real(( m_pHBFirCBuf[i].real() * m_pCoef[0] ));
-		acc.im = ( m_pHBFirCBuf[i].im * m_pCoef[0] );
+		acc.imag(( m_pHBFirCBuf[i].im * m_pCoef[0] ));
 		for(j=2; j<m_FirLength; j+=2)	//only use even coefficients since odd are zero(except center point)
 		{
 			acc.real(acc.real() + ( m_pHBFirCBuf[i+j].real() * m_pCoef[j] ));

@@ -297,7 +297,7 @@ int WavFile::ReadSamples(CPX *buf, int numSamples)
 
             for (int i=0; i<samplesRead; i++) {
                 buf[i].real(pcmBuf[i].left/32767.0);
-                buf[i].im = pcmBuf[i].right/32767.0;
+                buf[i].imag(pcmBuf[i].right/32767.0);
             }
 
         } else if (fmtChannels == 1) {
@@ -313,7 +313,7 @@ int WavFile::ReadSamples(CPX *buf, int numSamples)
             for (int i =0; i<samplesRead; i++) {
                 //Testing with arrl cw files, have to reduce gain significantly
                 buf[i].real(monoPcmBuf[i] / 32767.0 * .005);
-                buf[i].im = 0; //This gives us mirror images pos and neg
+                buf[i].imag(0); //This gives us mirror images pos and neg
                 //Steps afer this to get back to just positive spectrum are basically hilbert transformation
                 //Todo: Look at using hilbert transoformation here to get a more accurate real to cpx conversion
             }
@@ -328,7 +328,7 @@ int WavFile::ReadSamples(CPX *buf, int numSamples)
             samplesRead = bytesRead / sizeof(FLOAT_DATA);
         for (int i=0; i<samplesRead; i++) {
             buf[i].real(floatBuf[i].left);
-            buf[i].im = floatBuf[i].right;
+            buf[i].imag(floatBuf[i].right);
         }
 
     }
@@ -362,11 +362,11 @@ CPX WavFile::ReadSample()
 	if (fmtSubChunk.format == PCM_FORMAT) {
         //Convert wav 16 bit (-32767 to +32767) int to sound card float32.  Values are -1 to +1
         sample.real(pcmData.left/32767.0);
-        sample.im = pcmData.right/32767.0;
+        sample.imag(pcmData.right/32767.0);
     } else {
         //Samples already float32
         sample.real(floatData.left);
-        sample.im = floatData.right;
+        sample.imag(floatData.right);
         //qDebug()<<sample.real()<<"/"<<sample.im;
     }
 
