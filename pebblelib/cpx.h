@@ -206,11 +206,6 @@ public:
         return (re * re + im * im);
     }
 
-    //Squared version of magnitudeMagnitude = re^2 + im^2
-	inline double sqrMag() const {
-        return re * re + im * im;
-    }
-
     // Z = x + jy
     // Z = |Z|exp(jP)
     // arg returns P
@@ -241,33 +236,6 @@ public:
         return CPX(re,-im);
     }
 
-	//In Polar notation, signals are represented by magnitude and phase (angle)
-	//Complex and Polar notation are interchangable.  See Steve Smith pg 162
-	//Convert to Polar mag()
-    // n = |Z|
-    inline double mag() const {
-		return sqrt(sqrMag());
-    }
-
-	//Used in GNURadio and some texts
-	inline double abs() const {
-		return sqrt(re*re + im*im);
-	}
-
-	double phase() const;
-
-	//Convert Cartesion to Polar
-	//WARNING: CPX IS USED TO KEEP POLAR, BUT VALUES ARE NOT REAL/IMAGINARY, THEY ARE MAG/PHASE
-	//NAME VARS cpx... and pol... TO AVOID CONFUSION
-	inline CPX CartToPolar() const {
-		return CPX(mag(),phase());
-	}
-
-	//re has Mag, im has Phase
-	inline CPX PolarToCart() const {
-		return CPX(re * cos(im), re * sin(im));
-	}
-
 };
 
 //Tells Qt it can use memmove on this type instead of repeated copy constructors
@@ -294,26 +262,61 @@ namespace CpxUtil {
 	void multCPX(CPX * out, const CPX * in, const CPX *in2, int size);
 
 	//out.re = mag, out.im = original out.re SIMD enabled
-	void magCPX(CPX *out, const CPX *in, int size);
+	void magCPX(CPX *out, CPX *in, int size);
 
 	//out.re = sqrMag, out.im = original out.reSIMD enabled
-	void sqrMagCPX(CPX *out, const CPX *in, int size);
+	void sqrMagCPX(CPX *out, CPX *in, int size);
 
 	//Copy every N samples from in to out
 	void decimateCPX(CPX *out, const CPX *in, int by, int size);
 
 	//Hypot version of norm
-	double normCPX(const CPX *in, int size);
+	double normCPX(CPX *in, int size);
 
 	//Squared version of norm
-	double normSqrCPX(const CPX *in, int size);
+	double normSqrCPX(CPX *in, int size);
 
 	//Return max mag()
-	double peakCPX(const CPX *in, int size);
-	double peakPowerCPX(const CPX *in, int size);
+	double peakCPX(CPX *in, int size);
+	double peakPowerCPX(CPX *in, int size);
 
 	//CPX class methods moved
 	inline void clearCpx(CPX &cpx) {cpx.real(0); cpx.imag(0);}
+
+
+	//Squared version of magnitudeMagnitude = re^2 + im^2
+	inline double sqrMagCpx(CPX &cpx){
+		return cpx.real() * cpx.real() + cpx.imag() * cpx.imag();
+	}
+
+	//In Polar notation, signals are represented by magnitude and phase (angle)
+	//Complex and Polar notation are interchangable.  See Steve Smith pg 162
+	//Convert to Polar mag()
+	// n = |Z|
+	inline double magCpx(CPX &cpx){
+		return sqrt(sqrMagCpx(cpx));
+	}
+
+	//Used in GNURadio and some texts
+	inline double absCpx(CPX &cpx){
+		return sqrt(cpx.real()*cpx.real() + cpx.imag()*cpx.imag());
+	}
+
+
+	double phaseCpx(CPX &cpx);
+
+	//Convert Cartesion to Polar
+	//WARNING: CPX IS USED TO KEEP POLAR, BUT VALUES ARE NOT REAL/IMAGINARY, THEY ARE MAG/PHASE
+	//NAME VARS cpx... and pol... TO AVOID CONFUSION
+	inline CPX cartToPolarCpx(CPX &cpx){
+		return CPX(magCpx(cpx),phaseCpx(cpx));
+	}
+
+	//re has Mag, im has Phase
+	inline CPX polarToCartCpx(CPX &cpx){
+		return CPX(cpx.real() * cos(cpx.imag()), cpx.real() * sin(cpx.imag()));
+	}
+
 
 }
 

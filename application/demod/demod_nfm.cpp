@@ -131,7 +131,7 @@ void Demod_NFM::processBlockFM2(CPX *in, CPX *out, int demodSamples)
         //and then calculating the phase (arg() or atan()) of the complex product
         prod = in[i] * lastCpx.conj();
         //Scale demod output to match am, usb, etc range
-        out[i].re = out[i].im = prod.phase() *.0005;
+        out[i].re = out[i].im = phaseCpx(prod) *.0005;
         lastCpx = in[i];
     }
 }
@@ -191,7 +191,7 @@ void Demod_NFM::pllFMN(  CPX * in, CPX * out, int demodSamples )
         delay.im = pllNCO.re * in[i].im + pllNCO.im * in[i].re;
 
         // same as -atan2(tmp.im, tmp.re), but with special handling in cpx class
-        phaseError = -delay.phase();
+        phaseError = -phaseCpx(delay);
         //phaseError = -atan2(delay.im,delay.re);
 
         //phaseError is the delta from last sample, ie demod value.  Rest is cleanup

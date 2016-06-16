@@ -14,18 +14,18 @@ extern void SSEMagCPX(CPX * c, CPX * a, int size);
 extern void SSESqMagCPX(CPX * c, CPX * a, int size);
 
 
-double CPX::phase() const
+double CpxUtil::phaseCpx(CPX &cpx)
 {
     double tmp;
 	//Special handling to avoid divide by 0
 	//Alternative is to set re = tiny amount and continue to use atan()
-	tmp = atan(im / ((re==0) ? ALMOSTZERO : re));
+	tmp = atan(cpx.imag() / ((cpx.real()==0) ? ALMOSTZERO : cpx.real()));
     //double tmp1 = atan(im/re);
 
 	//Correct for errors if re and im are negative
-	if (re < 0 && im < 0)
+	if (cpx.real() < 0 && cpx.imag() < 0)
 		tmp -= M_PI; //Subtract 180deg
-	else if (re < 0 && im >= 0)
+	else if (cpx.real() < 0 && cpx.imag() >= 0)
 		tmp += M_PI;
 
 	return tmp;
@@ -99,18 +99,18 @@ void CpxUtil::addCPX(CPX * out, CPX * in, CPX *in2, int size)
 		out[i] = in[i] + in2[i];
 }
 
-void CpxUtil::magCPX(CPX *out, const CPX *in, int size)
+void CpxUtil::magCPX(CPX *out, CPX *in, int size)
 {
 	for (int i=0; i<size; i++){
-		out[i].real(in[i].mag());
+		out[i].real(magCpx(in[i]));
 		out[i].imag(in[i].real());
 	}
 }
 
-void CpxUtil::sqrMagCPX(CPX *out, const CPX *in, int size)
+void CpxUtil::sqrMagCPX(CPX *out, CPX *in, int size)
 {
 	for (int i = 0; i < size; i++) {
-		out[i].real(in[i].sqrMag());
+		out[i].real(sqrMagCpx(in[i]));
 		out[i].imag(in[i].real()); //Keet this for ref?
 	}
 }
@@ -132,35 +132,35 @@ void CpxUtil::decimateCPX(CPX *out, const CPX *in, int by, int size)
     }  
 }
 //
-double CpxUtil::normSqrCPX(const CPX *in, int size)
+double CpxUtil::normSqrCPX(CPX *in, int size)
 {
     double sum = 0.0;
 	for (int i=0; i<size; i++)
-		sum += in[i].sqrMag();
+		sum += sqrMagCpx(in[i]);
 	return sum;
 }
 
-double CpxUtil::normCPX(const CPX *in, int size)
+double CpxUtil::normCPX(CPX *in, int size)
 {
     double sum = 0.0;
 	for (int i=0; i<size; i++)
-		sum += in[i].sqrMag();
+		sum += sqrMagCpx(in[i]);
 	return sqrt(sum/size);
 }
 
 //Returns max mag() in buffer
-double CpxUtil::peakCPX(const CPX *in, int size)
+double CpxUtil::peakCPX(CPX *in, int size)
 {
 	double maxMag=0.0;
 	for (int i=0; i<size; i++)
-		maxMag = std::max(in[i].mag(),maxMag);
+		maxMag = std::max(magCpx(in[i]),maxMag);
 	return maxMag;
 }
-double CpxUtil::peakPowerCPX(const CPX *in, int size)
+double CpxUtil::peakPowerCPX(CPX *in, int size)
 {
 	double maxPower = 0.0;
 	for (int i=0; i<size; i++)
-		maxPower = std::max(in[i].sqrMag(),maxPower);
+		maxPower = std::max(sqrMagCpx(in[i]),maxPower);
 	return maxPower;
 }
 

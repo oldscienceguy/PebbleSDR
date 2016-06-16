@@ -51,7 +51,7 @@ CPX * NoiseBlanker::ProcessBlock(CPX *in)
 	float mag = 0.0;
 	for (int i =0; i < size; i++)
 	{
-		mag = in[i].mag();
+		mag = magCpx(in[i]);
 		//Insert current sample at head of delay line
 		nbDelay->NewSample(in[i]);
 
@@ -84,7 +84,7 @@ CPX * NoiseBlanker::ProcessBlock2(CPX *in)
 	float mag = 0.0;
 	for (int i = 0; i < size; i++)
 	{
-		mag = in[i].mag();
+		mag = magCpx(in[i]);
 		//Weighted average 75/25
 		nb2AverageCPX = nb2AverageCPX.scale(0.75) + in[i].scale(0.25);	
 		nb2AverageMag = 0.999 * nb2AverageMag + 0.001 * mag;

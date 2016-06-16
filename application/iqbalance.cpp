@@ -117,7 +117,7 @@ void IQBalance::CalcNoise(CPX *inFreqDomain)
 	double noise;
 	for (int i = 0; i < numSamples; i++) {
 		//Magnitude squared (power at ith frequency bin)
-		snrSquared[i] = medianBuf[i] = inFreqDomain[i].sqrMag();
+		snrSquared[i] = medianBuf[i] = sqrMagCpx(inFreqDomain[i]);
 	}
 	//Update median, which is our noise figure.  Half the bins have lower and half have higher power levels
 	std::nth_element(medianBuf.begin(), medianBuf.begin() + medianBuf.size()/2, medianBuf.end());

@@ -187,7 +187,7 @@ void MatchedFilter::ProcessSamples(quint16 len, CPX *in, double *output)
         //And add newest
         out += in[i]; //Mixed value
 
-        output[i] = out.mag();
+		output[i] = magCpx(out);
 
         //Replace the oldest mixed sample in ring buffer with current and increment circular ptr for next call
         delay[delayPtr] = in[i];
@@ -243,7 +243,7 @@ bool MatchedFilter::ProcessSample(CPX in)
     delayPtr = (delayPtr + 1) % lenFilter;
 
     //Slope detection
-    double mag = out.mag();
+	double mag = magCpx(out);
     if (mag > lastMag) {
         //Slope up
         slopeUpCounter++;

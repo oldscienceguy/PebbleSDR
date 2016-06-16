@@ -16,7 +16,7 @@ public:
     MatchedFilter(quint16 _sampleRate, quint16 _detectedSignalMs, quint32 _detectedSignalFrequency);
 
     //Running results
-    double mag() {return out.mag();} //Energy in filter sqrt(sum of squares)
+	double mag() {return magCpx(out);} //Energy in filter sqrt(sum of squares)
 
     CPX out;
     double phase;

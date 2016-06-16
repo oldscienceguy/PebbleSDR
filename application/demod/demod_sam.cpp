@@ -54,8 +54,8 @@ CPX Demod_SAM::pll(CPX sig, float loLimit, float hiLimit)
 
     // For SAM we need the magnitude (hypot)
     // For FM we need the freq difference
-    difference = sig.mag() * pllSample.phase();
-    //difference = pllSample.phase();
+	difference = magCpx(sig) * phaseCpx(pllSample);
+    //difference = phaseCpx(pllSample);
 
     m_pllFrequency += m_pllBeta * difference;
 
