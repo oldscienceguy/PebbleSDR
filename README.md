@@ -1,5 +1,5 @@
 #Pebble II SDR (Mac) 
-June 1, 2016  
+July 1, 2016  
 Copyright 2010 ... 2016  
 Richard Landsman N1DDY <PebbleSDR@gmail.com>  
 Licensed under GPL, see gpl.h for details, attribution, and references  
@@ -29,7 +29,7 @@ In addition to being extensible by virtue of being open source, I wanted to be a
 The source code for this project represents incremental, "drive-by" coding, with numerous experiments, re-writes, re-factoring, re-everything.  Little attempt has been made to pretty up the code and clean up comments.  In fact, in many places I have deliberately left alternative implementations and detailed comments in the code for future reference.  DSP comments in the source code should be taken with a grain of salt, especially older comments.  This has been a learning experience for me and many times I thought I understood something, only to come back later and realize I didn't have a clue!  Finally, if you have questions, want me to fix some bugs, etc , please be patient for a response from me.
 
 * ####Credits
-I knew nothing about DSP algorithms when I started writing Pebble.  Although I've collected quite a library of DSP books and articles, I learned by looking at the work of others who were kind enough to make their projects open source.  I've included all of the key projects I referenced and in some cases, derived code from, in the gpl.h file you can find in the source tree.  But I especially wanted to thank Moe Wheatley for his outstanding work in making CuteSDR <http://sourceforge.net/projects/cutesdr/> available with source.  While I had working code, Moe's code demonstrated what a professionally written DSP program should look like.
+I knew nothing about DSP algorithms when I started writing Pebble.  Although I've collected quite a library of DSP books and articles, I learned by looking at the work of others who were kind enough to make their projects open source.  I've included all of the key projects I referenced and in some cases, derived code from, in the gpl.h file you can find in the source tree.  But I especially wanted to thank Moe Wheatley for his outstanding work in making CuteSDR <http://sourceforge.net/projects/cutesdr/> available with source.  While I had working code, Moe's code demonstrated what a professionally written DSP program should look like.  I would also like to thank Michael Ossman for his ongoing work in SDR hardware and education.  HackRF One is one of my favorite devices and Michael's SDR video tutorial <https://greatscottgadgets.com/sdr/> is worth its weight in gold - even if you don't have a HackRF.
 	 
 
 ##Installation
@@ -241,6 +241,8 @@ This is a 'Hello World' plugin for testing
 * ####Morse Modem (WIP)
 Make sure you are in the correct CWU or CWL mode and tune until you get maximum levels in the bar graph.  Detected WPM is dynamically updated and displayed.  WPM can be locked by checking the box.  Output can be temporarily turned off and on to 'freeze' the display if needed.  Just because, you can select character only display, dot-dash only display, or mixed.  Reset button puts everything back to defaults in case internal tracking algorithms get confused.
 
+See MorseGenDevice for generating test and practice code samples.
+
 Mac Tip: If you are using the phone out on your rig to get audio into a program like fldigi, you won't be able to hear the audio because the rigs speaker is cut out when you plug the cable in.  A very handy utility from RogueAmobea called LineIn solves this problem nicely.  https://www.rogueamoeba.com/freebies/
 
 * ####RTTY Modem
@@ -416,6 +418,43 @@ This is a high speed, wide band SDR.  Supported sample rates for the device are 
 
 (From HackRF wiki <https://github.com/mossmann/hackrf/wiki/FAQ>)  
 A good default setting to start with is RF=0 (off), IF=16, baseband=16. Increase or decrease the IF and baseband gain controls roughly equally to find the best settings for your situation. Turn on the RF amp if you need help picking up weak signals. If your gain settings are too low, your signal may be buried in the noise. If one or more of your gain settings is too high, you may see distortion (look for unexpected frequencies that pop up when you increase the gain) or the noise floor may be amplified more than your signal is.
+
+###Morse Generator  
+This device simulates incoming morse code and can be used for testing the Morse Code plugin or for practice.  It took on a life of its own ...
+
+There are five generators that can be enabled, each generator output a signal on the specified frequency with the specified options.  You can tune to a signal by using the Mixer (LO is locked and can't be changed) to simulate changing between different stations.  You can also turn on the Pebble Recorder to generate an IQ .wav file that can be used in other programs if desired.
+
+Typical uses  
+
+*  Morse code practice the old fashioned way
+*  Testing decoder with different wpm options to see how it adapts to changing signals
+*  Testing decoder with close or overlapping signals to see how it distinguishes each one
+*  Testing decoder with fading or fist generated signals to see how adaptable timing is
+*  Testing decoder with selectable noise levels
+
+Options  
+Options are changed in real-time if Pebble is On.  You can open the SDR options page and change any of the below and see the instant result.
+
+* Enable: Turns the generator on/off.  You will see the signal pop-up or disappear.
+* Source:
+	* Sample1: Canned text
+	* Sample2: Canned text
+	* Sample3: Canned text
+	* File: Load user selectable file.  Several example files can be found in the PebbleData directory.
+	* Words: Canned list of common Morse words
+	* Abbreviations: Canned list of common Morse abbreviations
+	* Table: Dumps the internal Morse table for testing
+* Filename: Displays the selected file to be used if Source:File chosen
+* File Browse: Displays a file selection dialog
+* Frequency: Sets the RF frequency of the generator, plus or minus from zero center.  1000 will generate a sigal 1k up from center. -1000 will generate a signal 1k down from center.
+* WPM: Selectable from 5 to 80
+* dB: Output level of the signal
+* Fade: The output signal level is varied +/- 10db from the selected output level
+* Fist: Not implemented yet.  Will introduce variable timing like a typical hand sent Morse signal.
+* Noise: Allows selectable level of Gausian noise to be added to the signal.
+* Presets: Up to 5 presets can be saved (based on current options) or loaded.  Allows quick changes between common sets of options.	
+
+The sample morse files (300USAqso-1,-2,-3) are courtesy of Jim Weir via G4FON's excellent CW trainer site <http://www.g4fon.net/CW%20Trainer.htm>.
 
 ###AirSpy  
 WIP  
