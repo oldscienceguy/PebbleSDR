@@ -4,9 +4,6 @@
 #include "gpl.h"
 #include "device_interfaces.h"
 
-//Ignore warnings about OS X version unsupported (QT 5.1 bug)
-#pragma clang diagnostic ignored "-W#warnings"
-
 #include <QObject>
 #include <QstringList>
 #include "cpx.h"

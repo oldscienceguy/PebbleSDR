@@ -29,11 +29,6 @@
 //Equivalent to ((A - 1) % B)
 #define DECMOD(A,B) ((A+B) & B)
 
-//Ignore warnings about C++ 11 features
-#pragma clang diagnostic ignored "-Wc++11-extensions"
-//Ignore warnings about OS X version unsupported (QT 5.1 bug)
-#pragma clang diagnostic ignored "-W#warnings"
-
 //If SIMD is true, then all CPX arrays are byte aligned for use with fftw
 //and SIMD platform routines are used wherever possible.
 //Just use normal CPX functions, SIMD will then be automatic

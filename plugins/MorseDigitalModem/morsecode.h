@@ -4,7 +4,6 @@
 #include "gpl.h"
 
 #include "global.h"
-#pragma clang diagnostic ignored "-Wc++11-extensions"
 
 struct MorseSymbol {
 	quint8 ascii;			//ASCII character used to send
