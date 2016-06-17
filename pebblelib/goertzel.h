@@ -43,26 +43,6 @@ public:
 	int m_nCount; //# samples processed
 
 	//6/14/16: New CPX Goertzel algorithm supporting non-integer 'k'
-	//Note: std::literals (only if _LIBCPP_STD_VER > 14) defines i, il operators as simply {0.0, arg}
-	//	This allows the use of complex notation like '4i' or 'i(4)' or {0.0, 4}
-
-	//Using std::complex to make sure we get the complex math right
-	//Eventually we will switch to std::complex, but it will result in many changes
-	//class CPX: public std::complex<double> {
-	//		//Add old CPX:: statics
-	//		//Rename .re to .real(), which is declared inline
-	//		//Rename .im to .imag()
-	//};
-
-
-	//Using 'j' as it appears in DSP math and matlab, move to CPX as constant eventually
-	//std::complex<double> c_j = -1; // {-1, 0} {re,im}
-	//Just doing sqrt(-1) will result in a complex number with Nan, which is invalid
-	//c_j = sqrt(c_j); //Ensure we get sqrt(cpx) {6.123233995736766e-17,1}
-	//square it and we get a value really close to original {-1, 0}
-	//c_j = c_j * c_j; //{-1, 1.2246467991473532e-16}
-	//Conclusion, just define c_j without doing all the math
-	const CPX c_j = {6.123233995736766e-17,1};
 
 	//Using terminology from article http://asp.eurasipjournals.springeropen.com/articles/10.1186/1687-6180-2012-56
 	//Constants

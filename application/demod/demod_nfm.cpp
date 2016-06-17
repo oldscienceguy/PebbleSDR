@@ -131,7 +131,7 @@ void Demod_NFM::processBlockFM2(CPX *in, CPX *out, int demodSamples)
     {
         //The angle between to subsequent samples can be calculated by multiplying one by the complex conjugate of the other
         //and then calculating the phase (arg() or atan()) of the complex product
-		prod = in[i] * conjCpx(lastCpx);
+		prod = in[i] * conj(lastCpx);
         //Scale demod output to match am, usb, etc range
 		out[i].real(phaseCpx(prod) *.0005);
 		out[i].imag(phaseCpx(prod) *.0005);

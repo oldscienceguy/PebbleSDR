@@ -91,144 +91,76 @@ private:
 	float im;
 };
 
+
 //C++ Alias syntax
 using CPX = std::complex<double>;
 
 #if 0
-//Inline simple methods for performance
-class PEBBLELIBSHARED_EXPORT CPX
-{
-public:
+	Functions declared in std::complex
+	abs(...) The absolute value of a complex number is its magnitude
+	arg(...) Returns the phase angle (or angular component) of the complex number x, expressed in radians
+	norm(...) The norm value of a complex number is its squared magnitude.  same as abs()^2
+	conj(...) The conjugate of a complex number (real,imag) is (real,-imag)
+	proj(...) Returns the projection of the complex number x onto the Riemann sphere
+	polar(...) Returns a complex number defined by its polar components rho (mag) and theta(angle)
 
-    inline CPX(double r=0.0, double i=0.0) : re(r), im(i) { }
+	// 26.3.8 transcendentals:
+	acos(...);
+	asin(...);
+	atan(...);
+	acosh(...);
+	asinh(...);
+	atanh(...);
+	cos (...);
+	cosh (...);
+	exp (...);
+	log (...);
+	log10(...);
+	pow(...);
+	sin (...);
+	sinh (...);
+	sqrt (...);
+	tan (...);
+	tanh (...);
 
-	inline CPX(const CPX &cx) : re(cx.re), im(cx.im) {}
-
-	inline CPX(double r) : re(r), im(0){}
-
-    ~CPX(void){}
-private:
-	double re;
-	double im;
-public:
-
-	//Static methods that work on CPX* buffers, was in CPXBuf
-
-	inline double real() const { return re; }
-	inline void real(double R) {re=R;}
-	inline double imag() const { return im; }
-	inline void imag(double I) {im=I;}
-
-	//Regex syntax for replacement
-	// search: (\w+)\.clear\(\)
-	// replace: clearCpx(\1)
-
-
-    //Every operator should have ref (&) and normal version
-	// Assignment
-	inline CPX& operator= (const double r) {
-		re = r;
-		im = 0.;
-		return *this;
-	}
-
-    //cpx1 = cpx2 + cpx3
-	inline CPX operator +(const CPX a) const {
-        return CPX (re + a.re ,im + a.im);}
-
-    inline CPX& operator+=(const CPX& a) {
-        re += a.re;
-        im += a.im;
-        return *this;
-        }
-
-    //cpx1 = cpx2 - cpx3
-	inline CPX operator -(const CPX &a) const {
-        return CPX (re - a.re, im - a.im);}
-
-    inline CPX& operator-=(const CPX& a) {
-        re -= a.re;
-        im -= a.im;
-        return *this;
-    }
-
-	inline CPX& operator*= (const CPX& a) {
-        double temp = re * a.re - im * a.im;
-        im = re * a.im + im * a.re;
-        re = temp;
-        return *this;
-    }
-
-	inline CPX operator* (const CPX& a) const {
-        return CPX(re * a.re - im * a.im,  re * a.im + im * a.re);
-    }
-
-    //cpx1 = cpx2 * double (Same as scale)
-	inline CPX operator* (double a) const {
-        return CPX(re * a, im * a);
-    }
-
-    inline CPX& operator*=(double a) {
-        re *= a;
-        im *= a;
-        return *this;
-    }
-
-    //cpx1 = cpx2 / cpx3
-    inline CPX& operator/=(const CPX& y) {
-        double temp, denom = y.re*y.re + y.im*y.im;
-        if (denom == 0.0) denom = 1e-10;
-        temp = (re * y.re + im * y.im) / denom;
-        im = (im * y.re - re * y.im) / denom;
-        re = temp;
-        return *this;
-    }
-
-    inline CPX operator/(const CPX& y) const {
-        double denom = y.re*y.re + y.im*y.im;
-        if (denom == 0.0) denom = 1e-10;
-        return CPX((re * y.re + im * y.im) / denom,  (im * y.re - re * y.im) / denom);
-    }
-
-    //fldigi uses
-    // Z = (complex conjugate of X) * Y
-    // Z1 = x1 + jy1, or Z1 = |Z1|exp(jP1)
-    // Z2 = x2 + jy2, or Z2 = |Z2|exp(jP2)
-    // Z = (x1 - jy1) * (x2 + jy2)
-    // or Z = |Z1|*|Z2| exp (j (P2 - P1))
-    inline CPX& operator%=(const CPX& y) {
-        double temp = re * y.re + im * y.im;
-        im = re * y.im - im * y.re;
-        re = temp;
-        return *this;
-    }
-
-	inline CPX operator%(const CPX& y) const {
-        CPX z;
-		z.real( re * y.re + im * y.im);
-        z.im = re * y.im - im * y.re;
-        return z;
-    }
-
-	inline bool operator ==(CPX a) const {
-		return re == a.re && im == a.im;
-	}
-
-	inline bool operator !=(CPX a) const {
-		return re != a.re || im != a.im;
-	}
-	
-};
 #endif
 
-//Tells Qt it can use memmove on this type instead of repeated copy constructors
-Q_DECLARE_TYPEINFO(CPX, Q_MOVABLE_TYPE);
+#if 0
+	Regex syntax used for major change from CPX (.re & .im) to std::complex
+	//Doesn't catch continued lines with no ';', check with .\re\s*= after for stragglers
+	\.re\s*=\s*(.+)(;)  replace with .real(\1);
+	\->re\s*=\s*(.+)(;)
+	\.re\s*\+=\s*(.+)(;) manual replace with foo.real(foo.real() + \1)
+	\->re\s*\+=\s*(.+)(;)
+	\.re\s*\*=\s*(.+)(;)
+	\->re\s*\*=\s*(.+)(;)
+	\.re\s*\-=\s*(.+)(;)
+	\->re\s*\-=\s*(.+)(;)
+	\.re\s*\\=\s*(.+)(;)
+	\->re\s*\\=\s*(.+)(;)
+	//Do this last after all '='. Don't replace within cpx.h class
+	\.re replace with .real()  WholeWord, CaseSens, RegExp
+	or just look for remaining usage on .re in cpx.h.  Doesn't find all usage!!!
+
+#endif
 
 namespace CpxUtil {
-	//adds in + in2 and returns in out, SIMD enabled
+	//Note: std::literals (only if _LIBCPP_STD_VER > 14) defines i, il operators as simply {0.0, arg}
+	//	This allows the use of complex notation like '4i' or 'i(4)' or {0.0, 4}
+
+	//Using 'j' as it appears in DSP math and matlab, move to CPX as constant eventually
+	//std::complex<double> c_j = -1; // {-1, 0} {re,im}
+	//Just doing sqrt(-1) will result in a complex number with Nan, which is invalid
+	//c_j = sqrt(c_j); //Ensure we get sqrt(cpx) {6.123233995736766e-17,1}
+	//square it and we get a value really close to original {-1, 0}
+	//c_j = c_j * c_j; //{-1, 1.2246467991473532e-16}
+	//Conclusion, just define c_j without doing all the math
+	const CPX c_j = {6.123233995736766e-17,1};
+
+	//adds in + in2 and returns in out
 	void addCPX(CPX * out, CPX * in, CPX *in2, int size);
 	void addCPX(CPX * out, const CPX * in, const CPX *in2, int size);
-	//Allocates a block of 16byte aligned memory, optimal for FFT and SIMD
+	//Allocates a block of 16byte aligned memory, optimal for FFT
 	CPX *memalign(int _numCPX);
 	//Just copies in to out
 	void copyCPX(CPX *out, CPX *in, int size);
@@ -237,17 +169,17 @@ namespace CpxUtil {
 	//Clears buffer to zeros, equiv to CPX(0,0)
 	void clearCPX(CPX *out, int size);
 
-	//scales in by a and returns in out, SIMD enabled
+	//scales in by a and returns in out
 	void scaleCPX(CPX * out, CPX * in, double a, int size);
 	void scaleCPX(CPX * out, const CPX * in, double a, int size);
 
 	void multCPX(CPX * out, CPX * in, CPX *in2, int size);
 	void multCPX(CPX * out, const CPX * in, const CPX *in2, int size);
 
-	//out.real( mag, out.im = original out.re SIMD enable)
+	//out.real( mag, out.im = original out.re )
 	void magCPX(CPX *out, CPX *in, int size);
 
-	//out.real( sqrMag, out.im = original out.reSIMD enable)
+	//out.real( sqrMag, out.im = original out.re)
 	void sqrMagCPX(CPX *out, CPX *in, int size);
 
 	//Copy every N samples from in to out
@@ -283,18 +215,6 @@ namespace CpxUtil {
 		return cpx * a;
 	}
 
-	// n = |Z| * |Z|
-	inline double normCpx(CPX &cpx) {
-		return (cpx.real() * cpx.real() + cpx.imag() * cpx.imag());
-	}
-
-	// Z = x + jy
-	// Z = |Z|exp(jP)
-	// arg returns P
-	inline double argCpx(CPX &cpx) {
-		return atan2(cpx.imag(), cpx.real());
-	}
-
 	//Alternative implementation from Pebble
 	//Convert to Polar phase()
 	//This is also the arg() function (see wikipedia)
@@ -303,11 +223,6 @@ namespace CpxUtil {
 		return phaseCpx(cpx);
 	}
 	*/
-
-	//Complex conjugate (see wikipedia).  im has opposite sign of original
-	inline CPX conjCpx(CPX &cpx) {
-		return CPX(cpx.real(),-cpx.imag());
-	}
 
 	//Squared version of magnitudeMagnitude = re^2 + im^2
 	inline double sqrMagCpx(CPX &cpx){
@@ -320,11 +235,6 @@ namespace CpxUtil {
 	// n = |Z|
 	inline double magCpx(CPX &cpx){
 		return sqrt(sqrMagCpx(cpx));
-	}
-
-	//Used in GNURadio and some texts
-	inline double absCpx(CPX &cpx){
-		return sqrt(cpx.real()*cpx.real() + cpx.imag()*cpx.imag());
 	}
 
 
@@ -347,94 +257,6 @@ namespace CpxUtil {
 
 using namespace CpxUtil;
 
-
-
-
-
-
-
-
-
-#if 0
-//Specializations of QT container classes
-//Problem with QVector is that we can't replace its allocator with a 16byte aligned one
-//See std::vector for alternative
-//Could add additional methods if useful
-class CPXVector : public QVector<CPX>
-{
-public:
-	CPXVector(int _size) : QVector(_size) {}
-};
-#endif
-#if 0
-//QCircularBuffer could not be resolved in QT5.5. #include <Qt3D> not found even with Qt+=3dcore
-class CPXCircularBuffer : public QCircularBuffer<CPX>
-{
-	CPXCircularBuffer(int _size) : QCircularBuffer(_size) {}
-};
-#endif
-
-#if 0
-//Never used as intended and deprecated, use CPX:: static methods for array operations instead
-//Methods for operating on an array of CPX
-class CPXBuf
-{
-public:
-    CPXBuf(int _size);
-    ~CPXBuf(void);
-    void Clear();
-    CPX * Ptr() {return cpxBuffer;}
-    //Returning a reference allows these to be used as lvalues (assignment) or rvalues (data)
-    inline CPX & Cpx(int i) {return cpxBuffer[i];}
-    inline double & Re(int i) {return cpxBuffer[i].re;}
-    inline double & Im(int i) {return cpxBuffer[i].im;}
-
-    //Conversion operators
-    //Explicit converter allows CPXBuf to be use anywhere we need a CPX*
-    explicit operator const CPX* () const {return cpxBuffer;}
-
-    //Array operators don't work on pointers, ie CPXBuf *, use Cpx() instead
-    inline CPX & operator [](int i) {return cpxBuffer[i];}
-
-    inline void Copy(CPX *out)
-        {memcpy(out,cpxBuffer,sizeof(CPX) * size);}
-
-    //scales in by a and returns in out, SIMD enabled
-    void Scale(CPX * out, double a);
-
-    //adds in + in2 and returns in out, SIMD enabled
-    void Add(CPX * out, CPX *in2);
-    inline CPXBuf &operator + (CPXBuf a);
-
-    //SIMD enabled
-    void Mult(CPX * out, CPX *in2);
-
-	//out.real( mag, out.im = original out.re SIMD enable)
-    void Mag(CPX *out);
-
-	//out.real( sqrMag, out.im = original out.reSIMD enable)
-    void SqrMag(CPX *out);
-
-    //Copy every N samples from in to out
-    void Decimate(CPX *out, int by);
-
-    //Hypot version of norm
-    double Norm();
-
-    //Squared version of norm
-    double NormSqr();
-
-    //Return max mag()
-    double Peak();
-    double PeakPower();
-
-private:
-    CPX *cpxBuffer;
-    int size;
-
-
-};
-#endif
 
 // MinGW doesn't have a aligned_malloc???
 
