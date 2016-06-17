@@ -304,7 +304,7 @@ bool MatchedFilter::ProcessSample(CPX in)
     dtemp = sintab[prevNcoPtr] * in.im / (msPerSample / 2 * msDetectedSignal);
 
     //up->qrig -= qbuf[iptr];
-    out.im -= delay[delayPtr].im;
+	out.imag(out.imag() - delay[delayPtr].im);
     //up->qrig += dtemp;
 	out.imag(out.imag() += dtemp);
 

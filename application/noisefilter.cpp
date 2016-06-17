@@ -84,7 +84,7 @@ CPX * NoiseFilter::ProcessBlock(CPX *in)
 		error.real(error.real() * scl2.real());
 
         scl2.imag((anfAdaptationRate / (sos.im + 1e-10)));
-        error.im *= scl2.im;
+		error.imag(error.imag() * scl2.im);
 
 		//And calculate tne new coefficients for next sample
 		/*
