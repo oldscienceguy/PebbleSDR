@@ -71,10 +71,10 @@ void NCO::genSingle(CPX *_in, quint32 _numSamples, double _dbGain, bool _mix)
 		cpx.imag(cpx.imag() * _dbGain);
 		if (_mix) {
 			_in[i].real(_in[i].real() + cpx.real());
-			_in[i].imag(_in[i].imag() + cpx.im);
+			_in[i].imag(_in[i].imag() + cpx.imag());
 		} else {
 			_in[i].real(cpx.real());
-			_in[i].imag(cpx.im);
+			_in[i].imag(cpx.imag());
 		}
 	}
 

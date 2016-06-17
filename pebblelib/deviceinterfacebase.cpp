@@ -543,14 +543,14 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, float I, float Q)
 			break;
 		case DeviceInterface::IQO_QI:
 			tmp = cpx->real();
-			cpx->real(cpx->im);
+			cpx->real(cpx->imag());
 			cpx->imag(tmp);
 			break;
 		case DeviceInterface::IQO_IONLY:
 			cpx->imag(cpx->real());
 			break;
 		case DeviceInterface::IQO_QONLY:
-			cpx->real(cpx->im);
+			cpx->real(cpx->imag());
 			break;
 	}
 }
@@ -570,14 +570,14 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, qint16 I, qint16 Q)
 			break;
 		case DeviceInterface::IQO_QI:
 			tmp = cpx->real();
-			cpx->real(cpx->im);
+			cpx->real(cpx->imag());
 			cpx->imag(tmp);
 			break;
 		case DeviceInterface::IQO_IONLY:
 			cpx->imag(cpx->real());
 			break;
 		case DeviceInterface::IQO_QONLY:
-			cpx->real(cpx->im);
+			cpx->real(cpx->imag());
 			break;
 	}
 
@@ -601,14 +601,14 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, quint8 I, quint8 Q)
 			break;
 		case DeviceInterface::IQO_QI:
 			tmp = cpx->real();
-			cpx->real(cpx->im);
+			cpx->real(cpx->imag());
 			cpx->imag(tmp);
 			break;
 		case DeviceInterface::IQO_IONLY:
 			cpx->imag(cpx->real());
 			break;
 		case DeviceInterface::IQO_QONLY:
-			cpx->real(cpx->im);
+			cpx->real(cpx->imag());
 			break;
 	}
 }
@@ -632,14 +632,14 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, qint8 I, qint8 Q)
 			break;
 		case DeviceInterface::IQO_QI:
 			tmp = cpx->real();
-			cpx->real(cpx->im);
+			cpx->real(cpx->imag());
 			cpx->imag(tmp);
 			break;
 		case DeviceInterface::IQO_IONLY:
 			cpx->imag(cpx->real());
 			break;
 		case DeviceInterface::IQO_QONLY:
-			cpx->real(cpx->im);
+			cpx->real(cpx->imag());
 			break;
 	}
 
@@ -882,7 +882,7 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, CPX iq)
 	double tmp;
 	//Normalize and apply gain
 	cpx->real(iq.real() * m_userIQGain * m_normalizeIQGain);
-	cpx->imag(iq.im * m_userIQGain * m_normalizeIQGain);
+	cpx->imag(iq.imag() * m_userIQGain * m_normalizeIQGain);
 
 	//Configure IQ order if not default
 	switch(m_iqOrder) {
@@ -891,14 +891,14 @@ void DeviceInterfaceBase::normalizeIQ(CPX *cpx, CPX iq)
 			break;
 		case DeviceInterface::IQO_QI:
 			tmp = cpx->real();
-			cpx->real(cpx->im);
+			cpx->real(cpx->imag());
 			cpx->imag(tmp);
 			break;
 		case DeviceInterface::IQO_IONLY:
 			cpx->imag(cpx->real());
 			break;
 		case DeviceInterface::IQO_QONLY:
-			cpx->real(cpx->im);
+			cpx->real(cpx->imag());
 			break;
 	}
 

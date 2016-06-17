@@ -227,17 +227,17 @@ TYPECPX acc;
 		}
 		TYPECPX tmp;
 		tmp.real(acc.real() * gain);
-		tmp.imag(acc.im * gain);
+		tmp.imag(acc.imag() * gain);
 		if(tmp.real() > MAX_SOUNDCARDVAL)
 			tmp.real(MAX_SOUNDCARDVAL);
 		if(tmp.real() < -MAX_SOUNDCARDVAL)
 			tmp.real(-MAX_SOUNDCARDVAL);
-		if(tmp.im>MAX_SOUNDCARDVAL)
+		if(tmp.imag()>MAX_SOUNDCARDVAL)
 			tmp.imag(MAX_SOUNDCARDVAL);
-		if(tmp.im < -MAX_SOUNDCARDVAL)
+		if(tmp.imag() < -MAX_SOUNDCARDVAL)
 			tmp.imag(-MAX_SOUNDCARDVAL);
 		pOutBuf[outsamples].real((qint16)tmp.real());
-		pOutBuf[outsamples++].imag((qint16)tmp.im);
+		pOutBuf[outsamples++].imag((qint16)tmp.imag());
 
 		m_FloatTime += dt;	//inc floating pt output time step
 		IntegerTime = (int)m_FloatTime;	//truncate to integer

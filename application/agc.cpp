@@ -107,21 +107,21 @@ CPX* AGC::processBlock(CPX *pInData)
 		if( m_sigDelayPtr >= m_delaySamples)	//deal with delay buffer wrap around
 			m_sigDelayPtr = 0;
 
-        //double dmag = 0.5* log10(  (dsig.real()*dsig.real()+dsig.im*dsig.im)/(MAX_AMPLITUDE*MAX_AMPLITUDE) + 1e-16);	//clamped to -160dBfs
+        //double dmag = 0.5* log10(  (dsig.real()*dsig.real()+dsig.imag()*dsig.imag())/(MAX_AMPLITUDE*MAX_AMPLITUDE) + 1e-16);	//clamped to -160dBfs
         //pOutData[i].real(3000*dmag);
 #if 1
         mag = fabs(in.real());
-        double mim = fabs(in.im);
+        double mim = fabs(in.imag());
         if(mim>mag)
             mag = mim;
         mag = log10( mag + MIN_CONSTANT ) - log10(MAX_AMPLITUDE);		//0==max  -8 is min==-160dB
 #else
-        mag = in.real()*in.real()+in.im*in.im;
+        mag = in.real()*in.real()+in.imag()*in.imag();
         //mag is power so 0.5 factor takes square root of power
         mag = 0.5* log10( mag/(MAX_AMPLITUDE*MAX_AMPLITUDE) + 1e-16);	//clamped to -160dBfs
 #endif
         //pOutData[i].real(3000*mag);
-        //pOutData[i].real(1500*log10( ((delayedin.real()*delayedin.real())+(delayedin.im*delayedin.im))/(MAX_AMPLITUDE*MAX_AMPLITUDE) + 1e-16););
+        //pOutData[i].real(1500*log10( ((delayedin.real()*delayedin.real())+(delayedin.imag()*delayedin.imag()))/(MAX_AMPLITUDE*MAX_AMPLITUDE) + 1e-16););
 
         //create a sliding window of 'm_WindowSamples' magnitudes and output the peak value within the sliding window
 		double tmp = m_magBuf[m_magBufPos];	//get oldest mag sample from buffer into tmp
@@ -198,7 +198,7 @@ CPX* AGC::processBlock(CPX *pInData)
 			gain = AGC_OUTSCALE * pow(10.0, mag*(m_gainSlope - 1.0) );
         //pOutData[i].real(.5*gain);
         out[i].real(delayedin.real() * gain);
-        out[i].imag(delayedin.im * gain);
+        out[i].imag(delayedin.imag() * gain);
     }
 
         //m_Mutex.unlock();

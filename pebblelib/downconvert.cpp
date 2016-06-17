@@ -280,11 +280,11 @@ double*	pdSinAns  = &dASMSin;
 		m_NcoTime += m_NcoInc;
 #elif NCO_OSC
 		TYPEREAL OscGn;
-		Osc.real(m_Osc1.real() * m_OscCos - m_Osc1.im * m_OscSin);
-		Osc.imag(m_Osc1.im * m_OscCos + m_Osc1.real() * m_OscSin);
-		OscGn = 1.95 - (m_Osc1.real()*m_Osc1.real() + m_Osc1.im*m_Osc1.im);
+		Osc.real(m_Osc1.real() * m_OscCos - m_Osc1.imag() * m_OscSin);
+		Osc.imag(m_Osc1.imag() * m_OscCos + m_Osc1.real() * m_OscSin);
+		OscGn = 1.95 - (m_Osc1.real()*m_Osc1.real() + m_Osc1.imag()*m_Osc1.imag());
 		m_Osc1.real(OscGn * Osc.real());
-		m_Osc1.imag(OscGn * Osc.im);
+		m_Osc1.imag(OscGn * Osc.imag());
 #elif NCO_VCASM
 		_asm
 		{
@@ -306,8 +306,8 @@ double*	pdSinAns  = &dASMSin;
 #endif
 
 		//Cpx multiply by shift frequency
-		pInData[i].real(((dtmp.real() * Osc.real()) - (dtmp.im * Osc.im)));
-		pInData[i].imag(((dtmp.real() * Osc.im) + (dtmp.im * Osc.real())));
+		pInData[i].real(((dtmp.real() * Osc.real()) - (dtmp.imag() * Osc.imag())));
+		pInData[i].imag(((dtmp.real() * Osc.imag()) + (dtmp.imag() * Osc.real())));
 	}
 #if (NCO_VCASM || NCO_GCCASM)
 	m_NcoTime = dPhaseAcc;
@@ -425,27 +425,27 @@ int CDownConvert::CHalfBand11TapDecimateBy2::DecBy2(int InLength, TYPECPX* pInDa
 	TYPECPX tmpout[9];	//use temp buffer so outbuf can be same as inbuf
 	tmpout[0].real(H0*d0.real() + H2*d2.real() + H4*d4.real() + H5*d5.real() + H6*d6.real() + H8*d8.real()
 					 + H10*pInData[0].real());
-	tmpout[0].imag(H0*d0.im + H2*d2.im + H4*d4.im + H5*d5.im + H6*d6.im + H8*d8.im
+	tmpout[0].imag(H0*d0.imag() + H2*d2.imag() + H4*d4.imag() + H5*d5.imag() + H6*d6.imag() + H8*d8.imag()
 					 + H10*pInData[0].im);
 
 	tmpout[1].real(H0*d2.real() + H2*d4.real() + H4*d6.real() + H5*d7.real() + H6*d8.real()
 					 + H8*pInData[0].real() + H10*pInData[2].real());
-	tmpout[1].imag(H0*d2.im + H2*d4.im + H4*d6.im + H5*d7.im + H6*d8.im
+	tmpout[1].imag(H0*d2.imag() + H2*d4.imag() + H4*d6.imag() + H5*d7.imag() + H6*d8.imag()
 					 + H8*pInData[0].im + H10*pInData[2].im);
 
 	tmpout[2].real(H0*d4.real() + H2*d6.real() + H4*d8.real() + H5*d9.real()
 					 + H6*pInData[0].real() + H8*pInData[2].real() + H10*pInData[4].real());
-	tmpout[2].imag(H0*d4.im + H2*d6.im + H4*d8.im + H5*d9.im
+	tmpout[2].imag(H0*d4.imag() + H2*d6.imag() + H4*d8.imag() + H5*d9.imag()
 					 + H6*pInData[0].im + H8*pInData[2].im + H10*pInData[4].im);
 
 	tmpout[3].real(H0*d6.real() + H2*d8.real() + H4*pInData[0].real() + H5*pInData[1].real()
 					 + H6*pInData[2].real() + H8*pInData[4].real() + H10*pInData[6].real());
-	tmpout[3].imag(H0*d6.im + H2*d8.im + H4*pInData[0].im + H5*pInData[1].im
+	tmpout[3].imag(H0*d6.imag() + H2*d8.imag() + H4*pInData[0].im + H5*pInData[1].im
 					 + H6*pInData[2].im + H8*pInData[4].im + H10*pInData[6].im);
 
 	tmpout[4].real(H0*d8.real() + H2*pInData[0].real() + H4*pInData[2].real() + H5*pInData[3].real()
 					 + H6*pInData[4].real() + H8*pInData[6].real() + H10*pInData[8].real());
-	tmpout[4].imag(H0*d8.im + H2*pInData[0].im + H4*pInData[2].im + H5*pInData[3].im
+	tmpout[4].imag(H0*d8.imag() + H2*pInData[0].im + H4*pInData[2].im + H5*pInData[3].im
 					 + H6*pInData[4].im + H8*pInData[6].im + H10*pInData[8].im);
 
 	tmpout[5].real(H0*pInData[0].real() + H2*pInData[2].real() + H4*pInData[4].real() + H5*pInData[5].real()
@@ -526,7 +526,7 @@ TYPECPX even,odd;
 		even = pInData[i];
 		odd = pInData[i+1];
 		pOutData[j].real(.125*( odd.real() + m_Xeven.real() + 3.0*(m_Xodd.real() + even.real()) ));
-		pOutData[j].imag(.125*( odd.im + m_Xeven.im + 3.0*(m_Xodd.im + even.im) ));
+		pOutData[j].imag(.125*( odd.imag() + m_Xeven.imag() + 3.0*(m_Xodd.imag() + even.imag()) ));
 		m_Xodd = odd;
 		m_Xeven = even;
 	}

@@ -214,7 +214,7 @@ int Demod_WFM::processDataMono(int InLength, TYPECPX* pInData, TYPECPX* pOutData
 	for(int i=0; i<InLength; i++)
 	{
 		m_D0 = pInData[i];
-		pOutData[i].real(FMDEMOD_GAIN*atan2( (m_D1.real()*m_D0.im - m_D0.real()*m_D1.im), (m_D1.real()*m_D0.real() + m_D1.im*m_D0.im)));
+		pOutData[i].real(FMDEMOD_GAIN*atan2( (m_D1.real()*m_D0.imag() - m_D0.real()*m_D1.imag()), (m_D1.real()*m_D0.real() + m_D1.imag()*m_D0.imag())));
 		pOutData[i].imag(pOutData[i].real());
 		m_D1 = m_D0;
 	}
@@ -259,7 +259,7 @@ TYPEREAL LminusR;
 	for(int i=0; i<InLength; i++)
 	{
 		m_D0 = pInData[i];
-		m_RawFm[i] = FMDEMOD_GAIN*atan2( (m_D1.real()*m_D0.im - m_D0.real()*m_D1.im), (m_D1.real()*m_D0.real() + m_D1.im*m_D0.im));//~266 nSec/sample
+		m_RawFm[i] = FMDEMOD_GAIN*atan2( (m_D1.real()*m_D0.imag() - m_D0.real()*m_D1.imag()), (m_D1.real()*m_D0.real() + m_D1.imag()*m_D0.imag()));//~266 nSec/sample
 		m_D1 = m_D0;
 	}
 //StopPerformance(InLength);
@@ -406,7 +406,7 @@ TYPECPX tmp;
 		tmp.real(Cos * pInData[i].real() - Sin * pInData[i].im);
 		tmp.imag(Cos * pInData[i].im + Sin * pInData[i].real());
 		//find current sample phase after being shifted by NCO frequency
-		TYPEREAL phzerror = -arctan2(tmp.im, tmp.real());
+		TYPEREAL phzerror = -arctan2(tmp.imag(), tmp.real());
 
 		//create new NCO frequency term
 		m_PilotNcoFreq += (m_PilotPllBeta * phzerror);		//  radians per sampletime
@@ -556,7 +556,7 @@ TYPECPX tmp;
 		tmp.real(Cos * pInData[i].real() - Sin * pInData[i].im);
 		tmp.imag(Cos * pInData[i].im + Sin * pInData[i].real());
 		//find current sample phase after being shifted by NCO frequency
-		TYPEREAL phzerror = -arctan2(tmp.im, tmp.real());
+		TYPEREAL phzerror = -arctan2(tmp.imag(), tmp.real());
 		//create new NCO frequency term
 		m_RdsNcoFreq += (m_RdsPllBeta * phzerror);		//  radians per sampletime
 		//clamp NCO frequency so doesn't get out of lock range
@@ -566,7 +566,7 @@ TYPECPX tmp;
 			m_RdsNcoFreq = m_RdsNcoLLimit;
 		//update NCO phase with new value
 		m_RdsNcoPhase += (m_RdsNcoFreq + m_RdsPllAlpha * phzerror);
-		pOutData[i] = tmp.im;
+		pOutData[i] = tmp.imag();
 	}
     m_RdsNcoPhase = fmod(m_RdsNcoPhase, TWOPI);	//keep radian counter bounded
 //g_pTestBench->DisplayData(InLength, m_RdsData, m_RdsOutputRate, PROFILE_6);
@@ -837,7 +837,7 @@ void Demod_WFM::fmMono( CPX * in, CPX * out, int bufSize)
         //Condensed version of FM2 algorithm comparing sample with previous sample
         //Note: Have to divide by 100 to get signal in right range, different than CuteSDR
         d0 = in[i];
-		out[i].real(atan2( (d1.real()*d0.im - d0.real()*d1.im), (d1.real()*d0.real() + d1.im*d0.im))/100);
+		out[i].real(atan2( (d1.real()*d0.imag() - d0.real()*d1.imag()), (d1.real()*d0.real() + d1.imag()*d0.imag()))/100);
 		out[i].imag(out[i].real());
         d1 = d0;
     }

@@ -93,7 +93,7 @@ void Demod_SAM::processBlock(  CPX * in, CPX * out, int demodSamples )
 
         //Basic am demod but using delay instead of mag() for sample
         m_amDcRe = (DC_ALPHA * m_amDcReLast) + pllSample.real();
-        m_amDcIm = (DC_ALPHA * m_amDcImLast) + pllSample.im;
+        m_amDcIm = (DC_ALPHA * m_amDcImLast) + pllSample.imag();
 		out[i].real((m_amDcRe - m_amDcReLast));
 		out[i].imag((m_amDcIm - m_amDcImLast));
         m_amDcReLast = m_amDcRe;
@@ -106,7 +106,7 @@ void Demod_SAM::processBlock(  CPX * in, CPX * out, int demodSamples )
     {
         tmp = out[i];
         //Monoaural sound
-        out[i].imag(tmp.real() - tmp.im);	//send upper sideband to (right)channel
-        out[i].real(tmp.real() + tmp.im);	//send lower sideband to (left)channel
+        out[i].imag(tmp.real() - tmp.imag());	//send upper sideband to (right)channel
+        out[i].real(tmp.real() + tmp.imag());	//send lower sideband to (left)channel
     }
 }

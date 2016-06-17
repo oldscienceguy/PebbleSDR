@@ -190,12 +190,12 @@ void Demod_NFM::pllFMN(  CPX * in, CPX * out, int demodSamples )
         pllNCO.imag(sin(m_pllPhase));
 
         //Shift signal by PLL.  Should be same as CPX operator * ie pll * in[i]
-        delay.real(pllNCO.real() * in[i].real() - pllNCO.im * in[i].im);
-        delay.imag(pllNCO.real() * in[i].im + pllNCO.im * in[i].real());
+        delay.real(pllNCO.real() * in[i].real() - pllNCO.imag() * in[i].im);
+        delay.imag(pllNCO.real() * in[i].im + pllNCO.imag() * in[i].real());
 
-        // same as -atan2(tmp.im, tmp.real()), but with special handling in cpx class
+        // same as -atan2(tmp.imag(), tmp.real()), but with special handling in cpx class
         phaseError = -phaseCpx(delay);
-        //phaseError = -atan2(delay.im,delay.real());
+        //phaseError = -atan2(delay.imag(),delay.real());
 
         //phaseError is the delta from last sample, ie demod value.  Rest is cleanup
         m_ncoFrequency += fmPllBeta * phaseError / 100;  //Scale down to avoid overlaod
@@ -235,7 +235,7 @@ void Demod_NFM::processBlockNCO(CPX* in, CPX* out, int demodSamples)
         tmp.real(ncoCos * in[i].real() - ncoSin * in[i].im);
         tmp.imag(ncoCos * in[i].im + ncoSin * in[i].real());
         //find current sample phase after being shifted by NCO frequency
-        double phzerror = -atan2(tmp.im, tmp.real());
+        double phzerror = -atan2(tmp.imag(), tmp.real());
 
         m_ncoFrequency += (m_pllBeta * phzerror);		//  radians per sampletime
         //clamp NCO frequency so doesn't drift out of lock range

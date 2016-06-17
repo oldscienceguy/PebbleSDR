@@ -573,8 +573,8 @@ quint32 HalfbandFilter::convolveVDsp1(const DSPDoubleSplitComplex *x, quint32 xL
 		}
 		if (acc.real() != tmpOut.realp[0])
 			qDebug()<<"RE"<<acc.real()<<" "<<tmpOut.realp[0];
-		if (acc.im != tmpOut.imagp[0])
-			qDebug()<<"IM"<<acc.im<<" "<<tmpOut.imagp[0];
+		if (acc.imag() != tmpOut.imagp[0])
+			qDebug()<<"IM"<<acc.imag()<<" "<<tmpOut.imagp[0];
 #endif
 		yCnt++;
 	}
@@ -706,7 +706,7 @@ quint32 HalfbandFilter::processCIC3(const CPX *_in, CPX *_out, quint32 _numInSam
 		even = inBuffer[i];
 		odd = inBuffer[i+1];
 		outBuffer[numOutSamples].real(.125*( odd.real() + m_xEven.real() + 3.0*(m_xOdd.real() + even.real()) ));
-		outBuffer[numOutSamples].imag(.125*( odd.im + m_xEven.im + 3.0*(m_xOdd.im + even.im) ));
+		outBuffer[numOutSamples].imag(.125*( odd.imag() + m_xEven.imag() + 3.0*(m_xOdd.imag() + even.imag()) ));
 		m_xOdd = odd;
 		m_xEven = even;
 		numOutSamples++;
@@ -728,7 +728,7 @@ quint32 HalfbandFilter::processCIC3(const DSPDoubleSplitComplex *_in, DSPDoubleS
 		odd.real(_in->realp[i+1]);
 		odd.imag(_in->imagp[i+1]);
 		_out->realp[numOutSamples] = .125*( odd.real() + m_xEven.real() + 3.0*(m_xOdd.real() + even.real()) );
-		_out->imagp[numOutSamples] = .125*( odd.im + m_xEven.im + 3.0*(m_xOdd.im + even.im) );
+		_out->imagp[numOutSamples] = .125*( odd.imag() + m_xEven.imag() + 3.0*(m_xOdd.imag() + even.imag()) );
 		m_xOdd = odd;
 		m_xEven = even;
 		numOutSamples++;

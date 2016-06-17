@@ -219,7 +219,7 @@ bool ToneBit::processSample(CPX x_n)
 	//Computes single DFT bin at specified frequency
 
 	if (m_calcRunningMean) {
-		double power = x_n.real()*x_n.real() + x_n.im*x_n.im;
+		double power = x_n.real()*x_n.real() + x_n.imag()*x_n.imag();
 		//See Knuth TAOCP vol 2, 3rd edition, page 232
 		//for each incoming sample x:
 		//    prev_mean = m;
@@ -239,7 +239,7 @@ bool ToneBit::processSample(CPX x_n)
 	}
 
 	//Convert arg to StdCpx
-	StdCpx samp(x_n.real(), x_n.im);
+	StdCpx samp(x_n.real(), x_n.imag());
 
 	// one iteration less than traditionally, so one less that num samples needed for result
 	if (m_nCount < m_bitSamples - 1) {

@@ -26,12 +26,12 @@ public:
 	}
 
 	static inline double amplitude(CPX cx){
-		return sqrt(cx.real()*cx.real() + cx.im*cx.im);
+		return sqrt(cx.real()*cx.real() + cx.imag()*cx.imag());
 	}
 
 	//Power same as cpx.mag(), use this for clarity
 	static inline double power(CPX cx) {
-		return cx.real()*cx.real() + cx.im*cx.im;
+		return cx.real()*cx.real() + cx.imag()*cx.imag();
 	}
 
 	//Steven Smith pg 264
@@ -108,11 +108,11 @@ public:
 
 	//microvolts == amplitude
 	static inline double uv(CPX cx) {
-		return sqrt(cx.real()*cx.real() + cx.im*cx.im);
+		return sqrt(cx.real()*cx.real() + cx.imag()*cx.imag());
 	}
 
 	static inline double mw(CPX cx) {
-		return cx.real()*cx.real() + cx.im*cx.im;
+		return cx.real()*cx.real() + cx.imag()*cx.imag();
 	}
 
 	static inline double uvTodBuv(double uv) {
