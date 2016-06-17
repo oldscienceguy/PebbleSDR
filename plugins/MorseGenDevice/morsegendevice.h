@@ -43,6 +43,11 @@ private slots:
 	void updateNoiseFields();
 	void updatePresetName();
 
+	void gen1BrowseClicked();
+	void gen2BrowseClicked();
+	void gen3BrowseClicked();
+	void gen4BrowseClicked();
+	void gen5BrowseClicked();
 private:
 	enum SampleTextChoices {
 		ST_SAMPLE1, //Sample1 text from ini file
@@ -96,15 +101,16 @@ private:
 
 	//Do not change order without update default initializers below
 	struct GenSettings {
+		//Don't change order without changing initializers below
 		bool enabled;
+		quint32 text;
+		QString fileName;
 		double freq;
 		double amp;
 		quint32 wpm;
 		quint32 rise;
-		quint32 text;
 		bool fade;
 		bool fist;
-
 	};
 
 	GenSettings m_gs1;
@@ -112,11 +118,11 @@ private:
 	GenSettings m_gs3;
 	GenSettings m_gs4;
 	GenSettings m_gs5;
-	GenSettings m_gs1Default = {true, 1000, -40, 10, 5, 0, false, false};
-	GenSettings m_gs2Default = {true, 2000, -40, 20, 5, 1, false, false};
-	GenSettings m_gs3Default = {true, 3000, -40, 30, 5, 2, false, false};
-	GenSettings m_gs4Default = {true, 4000, -40, 40, 5, 3, false, false};
-	GenSettings m_gs5Default = {true, 5000, -40, 50, 5, 4, false, false};
+	GenSettings m_gs1Default = {true, 0, "", 1000, -40, 10, 5, false, false};
+	GenSettings m_gs2Default = {true, 1, "", 2000, -40, 20, 5, false, false};
+	GenSettings m_gs3Default = {true, 2, "", 3000, -40, 30, 5, false, false};
+	GenSettings m_gs4Default = {true, 3, "", 4000, -40, 40, 5, false, false};
+	GenSettings m_gs5Default = {true, 4, "", 5000, -40, 50, 5, false, false};
 
 	static const quint32 c_numPresets = 5;
 	QString m_preset1Name;
@@ -147,5 +153,6 @@ private:
 	void writeGenSettings(quint32 genNum, GenSettings *gs);
 
 	QString m_morseFileName;
+	QString getSampleText(GenSettings gs);
 };
 #endif // MORSEGENDEVICE_H

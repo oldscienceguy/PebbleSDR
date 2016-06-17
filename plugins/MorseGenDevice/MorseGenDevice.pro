@@ -38,7 +38,10 @@ HEADERS += morsegendevice.h \
 LIBS += -L$${PWD}/../../pebblelib/$${LIB_DIR} -lpebblelib
 
 #Copy sample file(s) to PebbleData
-sampleFiles.files = morsesample.txt
+sampleFiles.files += morsesample.txt
+sampleFiles.files += 300USAqso-1.txt
+sampleFiles.files += 300USAqso-2.txt
+sampleFiles.files += 300USAqso-3.txt
 sampleFiles.path = $${DESTDIR}/../PebbleData
 INSTALLS += sampleFiles
 

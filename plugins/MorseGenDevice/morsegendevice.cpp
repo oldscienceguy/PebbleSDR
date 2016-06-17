@@ -1,5 +1,6 @@
 #include "morsegendevice.h"
 #include "db.h"
+#include <QFileDialog>
 
 //Plugin constructors are called indirectly when the plugin is loaded in Receiver
 //Be careful not to access objects that are not initialized yet, do that in Initialize()
@@ -82,11 +83,12 @@ void MorseGenDevice::readGenSettings(quint32 genNum, GenSettings *gs)
 
 	m_settings->beginGroup(group);
 	gs->enabled = m_settings->value("Enabled", gsd.enabled).toBool();
+	gs->text = m_settings->value("Text", gsd.text).toUInt();
+	gs->fileName = m_settings->value("FileName",pebbleLibGlobal->appDirPath+"/PebbleData/300USAqso-1.txt").toString();
 	gs->freq = m_settings->value("Freq", gsd.freq).toDouble();
 	gs->amp = m_settings->value("Amp", gsd.amp).toDouble();
 	gs->wpm = m_settings->value("Wpm", gsd.wpm).toUInt();
 	gs->rise = m_settings->value("Rise", gsd.rise).toUInt();
-	gs->text = m_settings->value("Text", gsd.text).toUInt();
 	gs->fade = m_settings->value("Fade", gsd.fade).toBool();
 	gs->fist = m_settings->value("Fist", gsd.fist).toBool();
 	m_settings->endGroup();
@@ -160,40 +162,12 @@ void MorseGenDevice::readSettings()
 	QString str1 = "\nThe quick brown fox jumped over the lazy dog 1,2,3,4,5,6,7,8,9,0 times.";
 	QString str2 = "\nNow is the time for all good men to come to the aid of their country.";
 
-	QString appDirPath = QCoreApplication::applicationDirPath();
-	QDir appDir = QDir(appDirPath);
-#if defined(Q_OS_MAC)
-	if (appDir.dirName() == "MacOS") {
-		//We're in the mac package and need to get back to the package to access relative directories
-		appDir.cdUp();
-		appDir.cdUp();
-		appDir.cdUp(); //Root dir where app is located
-		appDirPath = appDir.absolutePath();
-	}
-#endif
-
-	QString pebbleDataPath = appDirPath + "/PebbleData/";
-
-	m_morseFileName = m_settings->value("MorseFileName","morsesample.txt").toString();
-
-	m_sampleText[ST_FILE] = "\n";
-	QFile file(pebbleDataPath + m_morseFileName);
-	 if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-		 QTextStream in(&file);
-		 QString line;
-		 while (!in.atEnd()) {
-			 line = in.readLine();
-			 m_sampleText[ST_FILE].append(line);
-			 m_sampleText[ST_FILE].append('\n');
-		 }
-	 } else {
-		 m_sampleText[ST_FILE] = "=morsesample.txt not found.";
-	 }
 
 
 	m_sampleText[ST_SAMPLE1] = m_settings->value("Sample1",str1).toString();
 	m_sampleText[ST_SAMPLE2] = m_settings->value("Sample2",str2).toString();
 	m_sampleText[ST_SAMPLE3] = m_settings->value("Sample3",str2).toString();
+	m_sampleText[ST_FILE] = "No longer used";
 }
 
 void MorseGenDevice::writeGenSettings(quint32 genNum, GenSettings *gs)
@@ -201,11 +175,12 @@ void MorseGenDevice::writeGenSettings(quint32 genNum, GenSettings *gs)
 	QString group = "Gen"+QString::number(genNum);
 	m_settings->beginGroup(group);
 	m_settings->setValue("Enabled", gs->enabled);
+	m_settings->setValue("Text",gs->text);
+	m_settings->setValue("FileName",gs->fileName);
 	m_settings->setValue("Freq",gs->freq);
 	m_settings->setValue("Amp",gs->amp);
 	m_settings->setValue("Wpm",gs->wpm);
 	m_settings->setValue("Rise",gs->rise);
-	m_settings->setValue("Text",gs->text);
 	m_settings->setValue("Fade",gs->fade);
 	m_settings->setValue("Fist",gs->fist);
 	m_settings->endGroup();
@@ -279,19 +254,115 @@ void MorseGenDevice::updateGenerators()
 	if (!m_running)
 		return;
 	m_morseGen1->setParams(m_gs1.freq,m_gs1.amp,m_gs1.wpm,m_gs1.rise);
-	m_morseGen1->setTextOut(m_sampleText[m_gs1.text]);
+	m_morseGen1->setTextOut(getSampleText(m_gs1));
 	m_morseGen2->setParams(m_gs2.freq,m_gs2.amp,m_gs2.wpm,m_gs2.rise);
-	m_morseGen2->setTextOut(m_sampleText[m_gs2.text]);
+	m_morseGen2->setTextOut(getSampleText(m_gs2));
 	m_morseGen3->setParams(m_gs3.freq,m_gs3.amp,m_gs3.wpm,m_gs3.rise);
-	m_morseGen3->setTextOut(m_sampleText[m_gs3.text]);
+	m_morseGen3->setTextOut(getSampleText(m_gs3));
 	m_morseGen4->setParams(m_gs4.freq,m_gs4.amp,m_gs4.wpm,m_gs4.rise);
-	m_morseGen4->setTextOut(m_sampleText[m_gs4.text]);
+	m_morseGen4->setTextOut(getSampleText(m_gs4));
 	m_morseGen5->setParams(m_gs5.freq,m_gs5.amp,m_gs5.wpm,m_gs5.rise);
-	m_morseGen5->setTextOut(m_sampleText[m_gs5.text]);
+	m_morseGen5->setTextOut(getSampleText(m_gs5));
 	//Because noise is averaged, fudget +30db so it matches with generator values
 	//ie -30db gen and -30db noise should be 0snr
 	m_noiseAmp = DB::dBToAmplitude(m_dbNoiseAmp+20);
 
+}
+
+//Returns a string based on settings and filename
+QString MorseGenDevice::getSampleText(GenSettings gs)
+{
+	switch(gs.text) {
+		case ST_SAMPLE1: //Sample1 text from ini file
+			return m_sampleText[ST_SAMPLE1];
+			break;
+		case ST_SAMPLE2: //Sample2 text from ini file
+			return m_sampleText[ST_SAMPLE2];
+			break;
+		case ST_SAMPLE3: //Sample3 text from ini file
+			return m_sampleText[ST_SAMPLE3];
+			break;
+		case ST_FILE: {
+			QString text;
+			text = "\n";
+			QFile file(gs.fileName);
+			 if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+				 QTextStream in(&file);
+				 QString line;
+				 while (!in.atEnd()) {
+					 line = in.readLine();
+					 text.append(line);
+					 text.append('\n');
+				 }
+				 file.close();
+			 } else {
+				 text = "=Error: Morse file not found.";
+			 }
+			return text;
+			}
+			break;
+		case ST_WORDS:	//Random words from table
+			return m_sampleText[ST_WORDS];
+			break;
+		case ST_ABBREV:	//Random morse abbeviations
+			return m_sampleText[ST_ABBREV];
+			break;
+		case ST_TABLE:	//All characters in morse table
+			return m_sampleText[ST_TABLE];
+			break;
+	}
+	return "";
+}
+
+void MorseGenDevice::gen1BrowseClicked()
+{
+	QString pebbleDataPath = pebbleLibGlobal->appDirPath + "/PebbleData/";
+	QString fileName = QFileDialog::getOpenFileName(NULL,tr("Open Morse Text File"), pebbleDataPath, tr("Text (*.txt)"));
+	if (!fileName.isNull()) {
+		QFileInfo info(fileName);
+		m_gs1.fileName = fileName;
+		m_optionUi->filename_1->setText(info.baseName());
+	}
+}
+void MorseGenDevice::gen2BrowseClicked()
+{
+	QString pebbleDataPath = pebbleLibGlobal->appDirPath + "/PebbleData/";
+	QString fileName = QFileDialog::getOpenFileName(NULL,tr("Open Morse Text File"), pebbleDataPath, tr("Text (*.txt)"));
+	if (!fileName.isNull()) {
+		QFileInfo info(fileName);
+		m_gs2.fileName = fileName;
+		m_optionUi->filename_2->setText(info.baseName());
+	}
+}
+void MorseGenDevice::gen3BrowseClicked()
+{
+	QString pebbleDataPath = pebbleLibGlobal->appDirPath + "/PebbleData/";
+	QString fileName = QFileDialog::getOpenFileName(NULL,tr("Open Morse Text File"), pebbleDataPath, tr("Text (*.txt)"));
+	if (!fileName.isNull()) {
+		QFileInfo info(fileName);
+		m_gs3.fileName = fileName;
+		m_optionUi->filename_3->setText(info.baseName());
+	}
+}
+void MorseGenDevice::gen4BrowseClicked()
+{
+	QString pebbleDataPath = pebbleLibGlobal->appDirPath + "/PebbleData/";
+	QString fileName = QFileDialog::getOpenFileName(NULL,tr("Open Morse Text File"), pebbleDataPath, tr("Text (*.txt)"));
+	if (!fileName.isNull()) {
+		QFileInfo info(fileName);
+		m_gs4.fileName = fileName;
+		m_optionUi->filename_4->setText(info.baseName());
+	}
+}
+void MorseGenDevice::gen5BrowseClicked()
+{
+	QString pebbleDataPath = pebbleLibGlobal->appDirPath + "/PebbleData/";
+	QString fileName = QFileDialog::getOpenFileName(NULL,tr("Open Morse Text File"), pebbleDataPath, tr("Text (*.txt)"));
+	if (!fileName.isNull()) {
+		QFileInfo info(fileName);
+		m_gs5.fileName = fileName;
+		m_optionUi->filename_5->setText(info.baseName());
+	}
 }
 
 void MorseGenDevice::updateAllFields()
@@ -308,7 +379,7 @@ void MorseGenDevice::updateGen1Fields()
 	m_gs1.text = m_optionUi->sourceBox_1->currentData().toUInt();
 	if (m_running) {
 		m_morseGen1->setParams(m_gs1.freq,m_gs1.amp,m_gs1.wpm,m_gs1.rise);
-		m_morseGen1->setTextOut(m_sampleText[m_gs1.text]);
+		m_morseGen1->setTextOut(getSampleText(m_gs1));
 	}
 	m_mutex.unlock();
 }
@@ -323,7 +394,7 @@ void MorseGenDevice::updateGen2Fields()
 	m_gs2.text = m_optionUi->sourceBox_2->currentData().toUInt();
 	if (m_running) {
 		m_morseGen2->setParams(m_gs2.freq,m_gs2.amp,m_gs2.wpm,m_gs2.rise);
-		m_morseGen2->setTextOut(m_sampleText[m_gs2.text]);
+		m_morseGen2->setTextOut(getSampleText(m_gs2));
 	}
 	m_mutex.unlock();
 }
@@ -338,7 +409,7 @@ void MorseGenDevice::updateGen3Fields()
 	m_gs3.text = m_optionUi->sourceBox_3->currentData().toUInt();
 	if (m_running) {
 		m_morseGen3->setParams(m_gs3.freq,m_gs3.amp,m_gs3.wpm,m_gs3.rise);
-		m_morseGen3->setTextOut(m_sampleText[m_gs3.text]);
+		m_morseGen3->setTextOut(getSampleText(m_gs3));
 	}
 	m_mutex.unlock();
 }
@@ -353,7 +424,7 @@ void MorseGenDevice::updateGen4Fields()
 	m_gs4.text = m_optionUi->sourceBox_4->currentData().toUInt();
 	if (m_running) {
 		m_morseGen4->setParams(m_gs4.freq,m_gs4.amp,m_gs4.wpm,m_gs4.rise);
-		m_morseGen4->setTextOut(m_sampleText[m_gs4.text]);
+		m_morseGen4->setTextOut(getSampleText(m_gs4));
 	}
 	m_mutex.unlock();
 }
@@ -368,7 +439,7 @@ void MorseGenDevice::updateGen5Fields()
 	m_gs5.text = m_optionUi->sourceBox_5->currentData().toUInt();
 	if (m_running) {
 		m_morseGen5->setParams(m_gs5.freq,m_gs5.amp,m_gs5.wpm,m_gs5.rise);
-		m_morseGen5->setTextOut(m_sampleText[m_gs5.text]);
+		m_morseGen5->setTextOut(getSampleText(m_gs5));
 	}
 	m_mutex.unlock();
 }
@@ -607,26 +678,26 @@ void MorseGenDevice::initSourceBox(QComboBox *box)
 }
 void MorseGenDevice::initWpmBox(QComboBox * box)
 {
-	box->addItem("5 wpm", 5);
-	box->addItem("10 wpm", 10);
-	box->addItem("15 wpm", 15);
-	box->addItem("20 wpm", 20);
-	box->addItem("30 wpm", 30);
-	box->addItem("40 wpm", 40);
-	box->addItem("50 wpm", 50);
-	box->addItem("60 wpm", 60);
-	box->addItem("70 wpm", 70);
-	box->addItem("80 wpm", 80);
+	box->addItem("5", 5);
+	box->addItem("10", 10);
+	box->addItem("15", 15);
+	box->addItem("20", 20);
+	box->addItem("30", 30);
+	box->addItem("40", 40);
+	box->addItem("50", 50);
+	box->addItem("60", 60);
+	box->addItem("70", 70);
+	box->addItem("80", 80);
 }
 void MorseGenDevice::initDbBox(QComboBox * box)
 {
-	box->addItem("-30db", -30);
-	box->addItem("-35db", -35);
-	box->addItem("-40db", -40);
-	box->addItem("-45db", -45);
-	box->addItem("-50db", -50);
-	box->addItem("-55db", -55);
-	box->addItem("-60db", -60);
+	box->addItem("-30", -30);
+	box->addItem("-35", -35);
+	box->addItem("-40", -40);
+	box->addItem("-45", -45);
+	box->addItem("-50", -50);
+	box->addItem("-55", -55);
+	box->addItem("-60", -60);
 }
 
 void MorseGenDevice::setupOptionUi(QWidget *parent)
@@ -668,6 +739,7 @@ void MorseGenDevice::setupOptionUi(QWidget *parent)
 
 	connect(m_optionUi->enabledBox_1,SIGNAL(clicked(bool)),this,SLOT(updateGen1Fields()));
 	connect(m_optionUi->sourceBox_1,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen1Fields()));
+	connect(m_optionUi->browseButton_1,SIGNAL(clicked(bool)),this,SLOT(gen1BrowseClicked()));
 	connect(m_optionUi->freqencyEdit_1,SIGNAL(textChanged(QString)),this,SLOT(updateGen1Fields()));
 	connect(m_optionUi->wpmBox_1,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen1Fields()));
 	connect(m_optionUi->dbBox_1,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen1Fields()));
@@ -683,6 +755,7 @@ void MorseGenDevice::setupOptionUi(QWidget *parent)
 
 	connect(m_optionUi->enabledBox_2,SIGNAL(clicked(bool)),this,SLOT(updateGen2Fields()));
 	connect(m_optionUi->sourceBox_2,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen2Fields()));
+	connect(m_optionUi->browseButton_2,SIGNAL(clicked(bool)),this,SLOT(gen2BrowseClicked()));
 	connect(m_optionUi->freqencyEdit_2,SIGNAL(textChanged(QString)),this,SLOT(updateGen2Fields()));
 	connect(m_optionUi->wpmBox_2,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen2Fields()));
 	connect(m_optionUi->dbBox_2,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen2Fields()));
@@ -698,6 +771,7 @@ void MorseGenDevice::setupOptionUi(QWidget *parent)
 
 	connect(m_optionUi->enabledBox_3,SIGNAL(clicked(bool)),this,SLOT(updateGen3Fields()));
 	connect(m_optionUi->sourceBox_3,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen3Fields()));
+	connect(m_optionUi->browseButton_3,SIGNAL(clicked(bool)),this,SLOT(gen3BrowseClicked()));
 	connect(m_optionUi->freqencyEdit_3,SIGNAL(textChanged(QString)),this,SLOT(updateGen3Fields()));
 	connect(m_optionUi->wpmBox_3,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen3Fields()));
 	connect(m_optionUi->dbBox_3,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen3Fields()));
@@ -713,6 +787,7 @@ void MorseGenDevice::setupOptionUi(QWidget *parent)
 
 	connect(m_optionUi->enabledBox_4,SIGNAL(clicked(bool)),this,SLOT(updateGen4Fields()));
 	connect(m_optionUi->sourceBox_4,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen4Fields()));
+	connect(m_optionUi->browseButton_4,SIGNAL(clicked(bool)),this,SLOT(gen4BrowseClicked()));
 	connect(m_optionUi->freqencyEdit_4,SIGNAL(textChanged(QString)),this,SLOT(updateGen4Fields()));
 	connect(m_optionUi->wpmBox_4,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen4Fields()));
 	connect(m_optionUi->dbBox_4,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen4Fields()));
@@ -728,6 +803,7 @@ void MorseGenDevice::setupOptionUi(QWidget *parent)
 
 	connect(m_optionUi->enabledBox_5,SIGNAL(clicked(bool)),this,SLOT(updateGen5Fields()));
 	connect(m_optionUi->sourceBox_5,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen5Fields()));
+	connect(m_optionUi->browseButton_5,SIGNAL(clicked(bool)),this,SLOT(gen5BrowseClicked()));
 	connect(m_optionUi->freqencyEdit_5,SIGNAL(textChanged(QString)),this,SLOT(updateGen5Fields()));
 	connect(m_optionUi->wpmBox_5,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen5Fields()));
 	connect(m_optionUi->dbBox_5,SIGNAL(currentIndexChanged(int)),this,SLOT(updateGen5Fields()));
@@ -745,6 +821,9 @@ void MorseGenDevice::setGen1Ui(GenSettings gs)
 	m_optionUi->enabledBox_1->setChecked(gs.enabled);
 	index = m_optionUi->sourceBox_1->findData(gs.text);
 	m_optionUi->sourceBox_1->setCurrentIndex(index);
+	m_optionUi->filename_1->setReadOnly(true);
+	QFileInfo info(gs.fileName);
+	m_optionUi->filename_1->setText(info.baseName());
 	m_optionUi->freqencyEdit_1->setText(QString::number(gs.freq,'f',0));
 	index = m_optionUi->wpmBox_1->findData(gs.wpm);
 	m_optionUi->wpmBox_1->setCurrentIndex(index);
@@ -760,6 +839,9 @@ void MorseGenDevice::setGen2Ui(MorseGenDevice::GenSettings gs)
 	m_optionUi->enabledBox_2->setChecked(gs.enabled);
 	index = m_optionUi->sourceBox_2->findData(gs.text);
 	m_optionUi->sourceBox_2->setCurrentIndex(index);
+	m_optionUi->filename_2->setReadOnly(true);
+	QFileInfo info(gs.fileName);
+	m_optionUi->filename_2->setText(info.baseName());
 	m_optionUi->freqencyEdit_2->setText(QString::number(gs.freq,'f',0));
 	index = m_optionUi->wpmBox_2->findData(gs.wpm);
 	m_optionUi->wpmBox_2->setCurrentIndex(index);
@@ -775,6 +857,9 @@ void MorseGenDevice::setGen3Ui(MorseGenDevice::GenSettings gs)
 	m_optionUi->enabledBox_3->setChecked(gs.enabled);
 	index = m_optionUi->sourceBox_3->findData(gs.text);
 	m_optionUi->sourceBox_3->setCurrentIndex(index);
+	m_optionUi->filename_3->setReadOnly(true);
+	QFileInfo info(gs.fileName);
+	m_optionUi->filename_3->setText(info.baseName());
 	m_optionUi->freqencyEdit_3->setText(QString::number(gs.freq,'f',0));
 	index = m_optionUi->wpmBox_3->findData(gs.wpm);
 	m_optionUi->wpmBox_3->setCurrentIndex(index);
@@ -790,6 +875,9 @@ void MorseGenDevice::setGen4Ui(MorseGenDevice::GenSettings gs)
 	m_optionUi->enabledBox_4->setChecked(gs.enabled);
 	index = m_optionUi->sourceBox_4->findData(gs.text);
 	m_optionUi->sourceBox_4->setCurrentIndex(index);
+	m_optionUi->filename_4->setReadOnly(true);
+	QFileInfo info(gs.fileName);
+	m_optionUi->filename_4->setText(info.baseName());
 	m_optionUi->freqencyEdit_4->setText(QString::number(gs.freq,'f',0));
 	index = m_optionUi->wpmBox_4->findData(gs.wpm);
 	m_optionUi->wpmBox_4->setCurrentIndex(index);
@@ -805,6 +893,9 @@ void MorseGenDevice::setGen5Ui(MorseGenDevice::GenSettings gs)
 	m_optionUi->enabledBox_5->setChecked(gs.enabled);
 	index = m_optionUi->sourceBox_5->findData(gs.text);
 	m_optionUi->sourceBox_5->setCurrentIndex(index);
+	m_optionUi->filename_5->setReadOnly(true);
+	QFileInfo info(gs.fileName);
+	m_optionUi->filename_5->setText(info.baseName());
 	m_optionUi->freqencyEdit_5->setText(QString::number(gs.freq,'f',0));
 	index = m_optionUi->wpmBox_5->findData(gs.wpm);
 	m_optionUi->wpmBox_5->setCurrentIndex(index);
