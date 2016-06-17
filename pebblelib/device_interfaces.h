@@ -2,7 +2,7 @@
 #define DEVICE_INTERFACES_H
 //GPL license and attributions are in gpl.h and terms are included in this file by reference
 #include "gpl.h"
-
+#include "cpx.h"
 /*
  * This defines the public interface for all Pebble compatable device plugins.
  * See ExampleSDRDevice in Pebble source tree for a template example that can be re-used
@@ -23,8 +23,6 @@
 #else
 #  define PEBBLELIBSHARED_EXPORT Q_DECL_IMPORT
 #endif
-
-class CPX;
 
 //using std::placeholders;
 //Used by audio devices to call back to device with new sample data

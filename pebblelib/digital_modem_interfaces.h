@@ -5,8 +5,8 @@
 #include <QWidget>
 #include "device_interfaces.h"
 #include "pebblelib_global.h"
+#include "cpx.h"
 
-class CPX;
 class PEBBLELIBSHARED_EXPORT DigitalModemInterface
 {
 public:

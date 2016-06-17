@@ -441,7 +441,7 @@ void WWVDigitalModem::Process100Hz(CPX in)
      */
 
     //100Hz is transmitted 10db below carrier, adjust gain. 10db is a factor of 10 gain (see db conversion)
-    if (ms170->ProcessSample(in * 10)) {
+	if (ms170->ProcessSample(in * 10.0)) {
         qDebug()<<modemClock; //Peak
     }
 

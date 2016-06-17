@@ -5,6 +5,7 @@
 #include <string.h>
 #define _USE_MATH_DEFINES
 #include "math.h"
+#include <complex>
 
 //Moved from defs.h
 //Very small number that is used in place of zero in cases where we want to avoid divide by zero error
@@ -95,7 +96,10 @@ private:
 	float im;
 };
 
+//C++ Alias syntax
+using CPX = std::complex<double>;
 
+#if 0
 //Inline simple methods for performance
 class PEBBLELIBSHARED_EXPORT CPX
 {
@@ -220,6 +224,7 @@ public:
 	}
 	
 };
+#endif
 
 //Tells Qt it can use memmove on this type instead of repeated copy constructors
 Q_DECLARE_TYPEINFO(CPX, Q_MOVABLE_TYPE);

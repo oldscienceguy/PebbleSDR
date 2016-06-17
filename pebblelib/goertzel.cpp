@@ -238,22 +238,19 @@ bool ToneBit::processSample(CPX x_n)
 		//Not tested, here for future use
 	}
 
-	//Convert arg to StdCpx
-	StdCpx samp(x_n.real(), x_n.imag());
-
 	// one iteration less than traditionally, so one less that num samples needed for result
 	if (m_nCount < m_bitSamples - 1) {
-		m_s0 = samp + c_B * m_s1 - m_s2;
+		m_s0 = x_n + c_B * m_s1 - m_s2;
 		m_s2 = m_s1;
 		m_s1 = m_s0;
 		m_nCount++;
 	} else {
 		//Process the last sample needed for result
-		StdCpx y0;
+		CPX y0;
 		//double normalize = m_bitSamples / 2;
 
 		// Finalizing calculations
-		m_s0 = samp + c_B * m_s1 - m_s2;
+		m_s0 = x_n + c_B * m_s1 - m_s2;
 		y0 = m_s0 - m_s1 * c_C; // resultant complex coefficient
 		y0 = y0 * c_D; // constant substituting the iteration N-1, and correcting the phase at the same
 		m_nCount = 0;

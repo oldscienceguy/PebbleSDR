@@ -62,20 +62,18 @@ public:
 	//square it and we get a value really close to original {-1, 0}
 	//c_j = c_j * c_j; //{-1, 1.2246467991473532e-16}
 	//Conclusion, just define c_j without doing all the math
-	//C++ Alias syntax
-	using StdCpx = std::complex<double>;
-	const StdCpx c_j = {6.123233995736766e-17,1};
+	const CPX c_j = {6.123233995736766e-17,1};
 
 	//Using terminology from article http://asp.eurasipjournals.springeropen.com/articles/10.1186/1687-6180-2012-56
 	//Constants
 	double c_A;
 	double c_B;
-	StdCpx c_C;
-	StdCpx c_D;
+	CPX c_C;
+	CPX c_D;
 	//State variables (delay line)
-	StdCpx m_s0;
-	StdCpx m_s1;
-	StdCpx m_s2;
+	CPX m_s0;
+	CPX m_s1;
+	CPX m_s2;
 
 	//Used for runningMean and StdDev calculations
 	bool m_calcRunningMean;

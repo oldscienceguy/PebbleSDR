@@ -403,8 +403,10 @@ void FIRFilter::SpectralInversion()
 void FIRFilter::SpectralReversal()
 {
 	//Invert sign for every other sample
-	for (int i = 0; i < numTaps; i+=2)
-		taps[i] = taps[i] * -1;
+	for (int i = 0; i < numTaps; i+=2) {
+		taps[i].real(taps[i].real() * -1);
+		taps[i].imag(taps[i].imag() * -1);
+	}
 }
 //HighPass taps are same as LowPass, but with neg coefficients
 //"Digital Filters", Hamming pg124

@@ -123,7 +123,7 @@ private:
 //=====================================================================
 
 class sfft {
-#define K1 0.99999999999L
+#define K1 0.99999999999
 public:
     sfft(int len, int first, int last);
     ~sfft();
