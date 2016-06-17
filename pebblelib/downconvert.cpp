@@ -370,16 +370,16 @@ int numoutsamples = 0;
 	{
 		TYPECPX acc;
 		acc.real(( m_pHBFirBuf[i].real() * m_pCoef[0] ));
-		acc.imag(( m_pHBFirBuf[i].im * m_pCoef[0] ));
+		acc.imag(( m_pHBFirBuf[i].imag() * m_pCoef[0] ));
         //Fix from cuteSdr 1.10
         for(j=0; j<m_FirLength; j+=2)	//only use even coefficients since odd are zero(except center point)
 		{
 			acc.real(acc.real() + ( m_pHBFirBuf[i+j].real() * m_pCoef[j] ));
-			acc.imag(acc.imag() + ( m_pHBFirBuf[i+j].im * m_pCoef[j] ));
+			acc.imag(acc.imag() + ( m_pHBFirBuf[i+j].imag() * m_pCoef[j] ));
 		}
 		//now multiply the center coefficient
 		acc.real(acc.real() + ( m_pHBFirBuf[i+(m_FirLength-1)/2].real() * m_pCoef[(m_FirLength-1)/2] ));
-		acc.imag(acc.imag() + ( m_pHBFirBuf[i+(m_FirLength-1)/2].im * m_pCoef[(m_FirLength-1)/2] ));
+		acc.imag(acc.imag() + ( m_pHBFirBuf[i+(m_FirLength-1)/2].imag() * m_pCoef[(m_FirLength-1)/2] ));
 		pOutData[numoutsamples++] = acc;	//put output buffer
 
 	}
@@ -426,47 +426,47 @@ int CDownConvert::CHalfBand11TapDecimateBy2::DecBy2(int InLength, TYPECPX* pInDa
 	tmpout[0].real(H0*d0.real() + H2*d2.real() + H4*d4.real() + H5*d5.real() + H6*d6.real() + H8*d8.real()
 					 + H10*pInData[0].real());
 	tmpout[0].imag(H0*d0.imag() + H2*d2.imag() + H4*d4.imag() + H5*d5.imag() + H6*d6.imag() + H8*d8.imag()
-					 + H10*pInData[0].im);
+					 + H10*pInData[0].imag());
 
 	tmpout[1].real(H0*d2.real() + H2*d4.real() + H4*d6.real() + H5*d7.real() + H6*d8.real()
 					 + H8*pInData[0].real() + H10*pInData[2].real());
 	tmpout[1].imag(H0*d2.imag() + H2*d4.imag() + H4*d6.imag() + H5*d7.imag() + H6*d8.imag()
-					 + H8*pInData[0].im + H10*pInData[2].im);
+					 + H8*pInData[0].imag() + H10*pInData[2].imag());
 
 	tmpout[2].real(H0*d4.real() + H2*d6.real() + H4*d8.real() + H5*d9.real()
 					 + H6*pInData[0].real() + H8*pInData[2].real() + H10*pInData[4].real());
 	tmpout[2].imag(H0*d4.imag() + H2*d6.imag() + H4*d8.imag() + H5*d9.imag()
-					 + H6*pInData[0].im + H8*pInData[2].im + H10*pInData[4].im);
+					 + H6*pInData[0].imag() + H8*pInData[2].imag() + H10*pInData[4].imag());
 
 	tmpout[3].real(H0*d6.real() + H2*d8.real() + H4*pInData[0].real() + H5*pInData[1].real()
 					 + H6*pInData[2].real() + H8*pInData[4].real() + H10*pInData[6].real());
-	tmpout[3].imag(H0*d6.imag() + H2*d8.imag() + H4*pInData[0].im + H5*pInData[1].im
-					 + H6*pInData[2].im + H8*pInData[4].im + H10*pInData[6].im);
+	tmpout[3].imag(H0*d6.imag() + H2*d8.imag() + H4*pInData[0].imag() + H5*pInData[1].imag()
+					 + H6*pInData[2].imag() + H8*pInData[4].imag() + H10*pInData[6].imag());
 
 	tmpout[4].real(H0*d8.real() + H2*pInData[0].real() + H4*pInData[2].real() + H5*pInData[3].real()
 					 + H6*pInData[4].real() + H8*pInData[6].real() + H10*pInData[8].real());
-	tmpout[4].imag(H0*d8.imag() + H2*pInData[0].im + H4*pInData[2].im + H5*pInData[3].im
-					 + H6*pInData[4].im + H8*pInData[6].im + H10*pInData[8].im);
+	tmpout[4].imag(H0*d8.imag() + H2*pInData[0].imag() + H4*pInData[2].imag() + H5*pInData[3].imag()
+					 + H6*pInData[4].imag() + H8*pInData[6].imag() + H10*pInData[8].imag());
 
 	tmpout[5].real(H0*pInData[0].real() + H2*pInData[2].real() + H4*pInData[4].real() + H5*pInData[5].real()
 					 + H6*pInData[6].real() + H8*pInData[8].real() + H10*pInData[10].real());
-	tmpout[5].imag(H0*pInData[0].im + H2*pInData[2].im + H4*pInData[4].im + H5*pInData[5].im
-					 + H6*pInData[6].im + H8*pInData[8].im + H10*pInData[10].im);
+	tmpout[5].imag(H0*pInData[0].imag() + H2*pInData[2].imag() + H4*pInData[4].imag() + H5*pInData[5].imag()
+					 + H6*pInData[6].imag() + H8*pInData[8].imag() + H10*pInData[10].imag());
 
 	tmpout[6].real(H0*pInData[2].real() + H2*pInData[4].real() + H4*pInData[6].real() + H5*pInData[7].real()
 					 + H6*pInData[8].real() + H8*pInData[10].real() + H10*pInData[12].real());
-	tmpout[6].imag(H0*pInData[2].im + H2*pInData[4].im + H4*pInData[6].im + H5*pInData[7].im
-					 + H6*pInData[8].im + H8*pInData[10].im + H10*pInData[12].im);
+	tmpout[6].imag(H0*pInData[2].imag() + H2*pInData[4].imag() + H4*pInData[6].imag() + H5*pInData[7].imag()
+					 + H6*pInData[8].imag() + H8*pInData[10].imag() + H10*pInData[12].imag());
 
 	tmpout[7].real(H0*pInData[4].real() + H2*pInData[6].real() + H4*pInData[8].real() + H5*pInData[9].real()
 					 + H6*pInData[10].real() + H8*pInData[12].real() + H10*pInData[14].real());
-	tmpout[7].imag(H0*pInData[4].im + H2*pInData[6].im + H4*pInData[8].im + H5*pInData[9].im
-					 + H6*pInData[10].im + H8*pInData[12].im + H10*pInData[14].im);
+	tmpout[7].imag(H0*pInData[4].imag() + H2*pInData[6].imag() + H4*pInData[8].imag() + H5*pInData[9].imag()
+					 + H6*pInData[10].imag() + H8*pInData[12].imag() + H10*pInData[14].imag());
 
 	tmpout[8].real(H0*pInData[6].real() + H2*pInData[8].real() + H4*pInData[10].real() + H5*pInData[11].real()
 					 + H6*pInData[12].real() + H8*pInData[14].real() + H10*pInData[16].real());
-	tmpout[8].imag(H0*pInData[6].im + H2*pInData[8].im + H4*pInData[10].im + H5*pInData[11].im
-					 + H6*pInData[12].im + H8*pInData[14].im + H10*pInData[16].im);
+	tmpout[8].imag(H0*pInData[6].imag() + H2*pInData[8].imag() + H4*pInData[10].imag() + H5*pInData[11].imag()
+					 + H6*pInData[12].imag() + H8*pInData[14].imag() + H10*pInData[16].imag());
 
 	//now loop through remaining input samples
 	TYPECPX* pIn = &pInData[8];
@@ -475,8 +475,8 @@ int CDownConvert::CHalfBand11TapDecimateBy2::DecBy2(int InLength, TYPECPX* pInDa
 	{
 		(*pOut).real(H0*pIn[0].real() + H2*pIn[2].real() + H4*pIn[4].real() + H5*pIn[5].real()
 					  + H6*pIn[6].real() + H8*pIn[8].real() + H10*pIn[10].real());
-		(*pOut++).imag(H0*pIn[0].im + H2*pIn[2].im + H4*pIn[4].im + H5*pIn[5].im
-					  + H6*pIn[6].im + H8*pIn[8].im + H10*pIn[10].im);
+		(*pOut++).imag(H0*pIn[0].imag() + H2*pIn[2].imag() + H4*pIn[4].imag() + H5*pIn[5].imag()
+					  + H6*pIn[6].imag() + H8*pIn[8].imag() + H10*pIn[10].imag());
 		pIn += 2;
 	}
 	//copy first outputs back into output array so outbuf can be same as inbuf

@@ -176,7 +176,7 @@ void MatchedFilter::ProcessSamples(quint16 len, CPX *in, double *output)
         //Filter coefficient table (pulse waveform) is in sync with delay table, so we can use delayPtr for both
 #if 1
 		in[i].real(in[i].real() * ncoTable[delayPtr].real() / (msPerSample / 2 * detectedSignalMs));
-		in[i].imag(in[i].imag() * ncoTable[delayPtr].im / (msPerSample / 2 * detectedSignalMs));
+		in[i].imag(in[i].imag() * ncoTable[delayPtr].imag() / (msPerSample / 2 * detectedSignalMs));
 #else
         in[i] *= ncoTable[delayPtr];
 #endif
@@ -202,7 +202,7 @@ bool MatchedFilter::ProcessSample(CPX in)
 {
     //Filter coefficient table (pulse waveform) is in sync with delay table, so we can use delayPtr for both
 	in.real(in.real() * ncoTable[delayPtr].real());// / (msPerSample / 2 * detectedSignalMs);
-	in.imag(in.imag() * ncoTable[delayPtr].im);// / (msPerSample / 2 * detectedSignalMs);
+	in.imag(in.imag() * ncoTable[delayPtr].imag());// / (msPerSample / 2 * detectedSignalMs);
 
 #if 0
     //Next NCO value

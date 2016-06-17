@@ -327,9 +327,9 @@ void CFastFIR::CpxMpy(int N, TYPECPX* m, TYPECPX* src, TYPECPX* dest)
 	for(int i=0; i<N; i++)
 	{
 		TYPEREAL sr = src[i].real();
-		TYPEREAL si = src[i].im;
-		dest[i].real(m[i].real() * sr - m[i].im * si);
-		dest[i].imag(m[i].real() * si + m[i].im * sr);
+		TYPEREAL si = src[i].imag();
+		dest[i].real(m[i].real() * sr - m[i].imag() * si);
+		dest[i].imag(m[i].real() * si + m[i].imag() * sr);
 	}
 }
 

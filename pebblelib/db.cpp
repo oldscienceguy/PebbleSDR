@@ -133,7 +133,7 @@ double DB::rms(CPX *in, quint32 numSamples)
 	double totalSquared = 0;
 	double rms = 0;
 	for (quint32 i=0; i<numSamples; i++) {
-		totalSquared += in[i].real()*in[i].real() + in[i].im*in[i].im;
+		totalSquared += in[i].real()*in[i].real() + in[i].imag() * in[i].imag();
 	}
 	rms = sqrt(totalSquared / numSamples);
 	return rms;
@@ -202,12 +202,12 @@ void DB::analyzeCPX(CPX* in, quint32 numSamples, const char* label, bool isFftOu
 			minRe = in[i].real();
 			minReIndex = i;
 		}
-		if (in[i].im > maxIm) {
-			maxIm = in[i].im;
+		if (in[i].imag() > maxIm) {
+			maxIm = in[i].imag();
 			maxImIndex = i;
 		}
-		if (in[i].im < minIm) {
-			minIm = in[i].im;
+		if (in[i].imag() < minIm) {
+			minIm = in[i].imag();
 			minImIndex = i;
 		}
 

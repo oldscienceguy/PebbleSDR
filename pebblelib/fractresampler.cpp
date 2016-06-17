@@ -170,7 +170,7 @@ TYPECPX acc;
 			j = IntegerTime + i;	//temp integer time position for convolution loop
 			int sindx =  (int)(( (double)j - m_FloatTime) * (double)SINC_PERIOD_PTS );
 			acc.real(acc.real() + (m_pInputBuf[j].real() * m_pSinc[sindx] ));
-			acc.imag(acc.imag() + (m_pInputBuf[j].im * m_pSinc[sindx] ));
+			acc.imag(acc.imag() + (m_pInputBuf[j].imag() * m_pSinc[sindx] ));
 		}
 		pOutBuf[outsamples++] = acc;
 		m_FloatTime += dt;		//inc floating pt output time step
@@ -223,7 +223,7 @@ TYPECPX acc;
 			j = IntegerTime + i;	//temp integer time position for convolution loop
 			int sindx =  (int)(( (double)j - m_FloatTime) * (double)SINC_PERIOD_PTS );
 			acc.real(acc.real() + (m_pInputBuf[j].real() * m_pSinc[sindx] ));
-			acc.imag(acc.imag() + (m_pInputBuf[j].im * m_pSinc[sindx] ));
+			acc.imag(acc.imag() + (m_pInputBuf[j].imag() * m_pSinc[sindx] ));
 		}
 		TYPECPX tmp;
 		tmp.real(acc.real() * gain);

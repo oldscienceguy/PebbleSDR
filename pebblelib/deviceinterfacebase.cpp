@@ -658,26 +658,26 @@ void DeviceInterfaceBase::normalizeIQ(CPX* _out, CPX8* _in, quint32 _numSamples,
 	switch(tmpOrder) {
 		case DeviceInterface::IQO_IQ:
 			for (quint32 i=0; i < _numSamples; i++) {
-				_out[i].real(_in[i].re * scale);
-				_out[i].imag(_in[i].im * scale);
+				_out[i].real(_in[i].real() * scale);
+				_out[i].imag(_in[i].imag() * scale);
 			}
 			break;
 		case DeviceInterface::IQO_QI:
 			for (quint32 i=0; i < _numSamples; i++) {
-				_out[i].real(_in[i].im * scale);
-				_out[i].imag(_in[i].re * scale);
+				_out[i].real(_in[i].imag() * scale);
+				_out[i].imag(_in[i].real() * scale);
 			}
 			break;
 		case DeviceInterface::IQO_IONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
-				_out[i].real(_in[i].re * scale);
+				_out[i].real(_in[i].real() * scale);
 				_out[i].imag(_out[i].real());
 			}
 			break;
 		case DeviceInterface::IQO_QONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
-				_out[i].imag(_in[i].im * scale);
-				_out[i].real(_out[i].im);
+				_out[i].imag(_in[i].imag() * scale);
+				_out[i].real(_out[i].imag());
 			}
 			break;
 	}
@@ -698,26 +698,26 @@ void DeviceInterfaceBase::normalizeIQ(CPX* _out, CPXU8* _in, quint32 _numSamples
 	switch(tmpOrder) {
 		case DeviceInterface::IQO_IQ:
 			for (quint32 i=0; i < _numSamples; i++) {
-				_out[i].real((_in[i].re - 128.0) * scale);
-				_out[i].imag((_in[i].im - 128.0) * scale);
+				_out[i].real((_in[i].real() - 128.0) * scale);
+				_out[i].imag((_in[i].imag() - 128.0) * scale);
 			}
 			break;
 		case DeviceInterface::IQO_QI:
 			for (quint32 i=0; i < _numSamples; i++) {
-				_out[i].real((_in[i].im - 128.0) * scale);
-				_out[i].imag((_in[i].re - 128.0) * scale);
+				_out[i].real((_in[i].imag() - 128.0) * scale);
+				_out[i].imag((_in[i].real() - 128.0) * scale);
 			}
 			break;
 		case DeviceInterface::IQO_IONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
-				_out[i].real((_in[i].re - 128.0) * scale);
+				_out[i].real((_in[i].real() - 128.0) * scale);
 				_out[i].imag(_out[i].real());
 			}
 			break;
 		case DeviceInterface::IQO_QONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
-				_out[i].imag((_in[i].im - 128.0) * scale);
-				_out[i].real(_out[i].im);
+				_out[i].imag((_in[i].imag() - 128.0) * scale);
+				_out[i].real(_out[i].imag());
 			}
 			break;
 	}
@@ -736,26 +736,26 @@ void DeviceInterfaceBase::normalizeIQ(CPX *_out, CPX16 *_in, quint32 _numSamples
 	switch(tmpOrder) {
 		case DeviceInterface::IQO_IQ:
 			for (quint32 i=0; i < _numSamples; i++) {
-				_out[i].real(_in[i].re * scale);
-				_out[i].imag(_in[i].im * scale);
+				_out[i].real(_in[i].real() * scale);
+				_out[i].imag(_in[i].imag() * scale);
 			}
 			break;
 		case DeviceInterface::IQO_QI:
 			for (quint32 i=0; i < _numSamples; i++) {
-				_out[i].real(_in[i].im * scale);
-				_out[i].imag(_in[i].re * scale);
+				_out[i].real(_in[i].imag() * scale);
+				_out[i].imag(_in[i].real() * scale);
 			}
 			break;
 		case DeviceInterface::IQO_IONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
-				_out[i].real(_in[i].re * scale);
+				_out[i].real(_in[i].real() * scale);
 				_out[i].imag(_out[i].real());
 			}
 			break;
 		case DeviceInterface::IQO_QONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
-				_out[i].imag(_in[i].im * scale);
-				_out[i].real(_out[i].im);
+				_out[i].imag(_in[i].imag() * scale);
+				_out[i].real(_out[i].imag());
 			}
 			break;
 	}
@@ -775,12 +775,12 @@ void DeviceInterfaceBase::normalizeIQ(CPX *_out, CPX *_in, quint32 _numSamples, 
 		case DeviceInterface::IQO_IQ:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].real(_in[i].real() * scale);
-				_out[i].imag(_in[i].im * scale);
+				_out[i].imag(_in[i].imag() * scale);
 			}
 			break;
 		case DeviceInterface::IQO_QI:
 			for (quint32 i=0; i < _numSamples; i++) {
-				_out[i].real(_in[i].im * scale);
+				_out[i].real(_in[i].imag() * scale);
 				_out[i].imag(_in[i].real() * scale);
 			}
 			break;
@@ -792,8 +792,8 @@ void DeviceInterfaceBase::normalizeIQ(CPX *_out, CPX *_in, quint32 _numSamples, 
 			break;
 		case DeviceInterface::IQO_QONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
-				_out[i].imag(_in[i].im * scale);
-				_out[i].real(_out[i].im);
+				_out[i].imag(_in[i].imag() * scale);
+				_out[i].real(_out[i].imag());
 			}
 			break;
 	}
@@ -812,26 +812,26 @@ void DeviceInterfaceBase::normalizeIQ(CPX *_out, CPXFLOAT *_in, quint32 _numSamp
 	switch(tmpOrder) {
 		case DeviceInterface::IQO_IQ:
 			for (quint32 i=0; i < _numSamples; i++) {
-				_out[i].real(_in[i].re * scale);
-				_out[i].imag(_in[i].im * scale);
+				_out[i].real(_in[i].real() * scale);
+				_out[i].imag(_in[i].imag() * scale);
 			}
 			break;
 		case DeviceInterface::IQO_QI:
 			for (quint32 i=0; i < _numSamples; i++) {
-				_out[i].real(_in[i].im * scale);
-				_out[i].imag(_in[i].re * scale);
+				_out[i].real(_in[i].imag() * scale);
+				_out[i].imag(_in[i].real() * scale);
 			}
 			break;
 		case DeviceInterface::IQO_IONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
-				_out[i].real(_in[i].re * scale);
+				_out[i].real(_in[i].real() * scale);
 				_out[i].imag(_out[i].real());
 			}
 			break;
 		case DeviceInterface::IQO_QONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
-				_out[i].imag(_in[i].im * scale);
-				_out[i].real(_out[i].im);
+				_out[i].imag(_in[i].imag() * scale);
+				_out[i].real(_out[i].imag());
 			}
 			break;
 	}
@@ -870,7 +870,7 @@ void DeviceInterfaceBase::normalizeIQ(CPX *_out, short *_inI, short *_inQ, quint
 		case DeviceInterface::IQO_QONLY:
 			for (quint32 i=0; i < _numSamples; i++) {
 				_out[i].imag(_inQ[i] * scale);
-				_out[i].real(_out[i].im);
+				_out[i].real(_out[i].imag());
 			}
 			break;
 	}

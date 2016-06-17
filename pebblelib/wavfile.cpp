@@ -385,7 +385,7 @@ bool WavFile::WriteSamples(CPX* buf, int numSamples)
     for (int i=0; i<numSamples; i++) {
         //Convert float to +/- 32767
         pcmData.left = buf[i].real() * 32767;
-        pcmData.right = buf[i].im * 32767;
+		pcmData.right = buf[i].imag() * 32767;
         bytesWritten = wavFile->write((const char*) &pcmData, bufLen);
         if (bytesWritten != bufLen)
             return false;

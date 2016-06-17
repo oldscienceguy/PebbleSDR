@@ -197,7 +197,7 @@ void CIir::ProcessFilter(int InLength, TYPECPX* InBuf, TYPECPX* OutBuf)
 		m_w2a = m_w1a;
 		m_w1a = w0a;
 
-		TYPEREAL w0b = InBuf[i].im - m_A1*m_w1b - m_A2*m_w2b;
+		TYPEREAL w0b = InBuf[i].imag() - m_A1*m_w1b - m_A2*m_w2b;
 		OutBuf[i].imag(m_B0*w0b + m_B1*m_w1b + m_B2*m_w2b);
 		m_w2b = m_w1b;
 		m_w1b = w0b;

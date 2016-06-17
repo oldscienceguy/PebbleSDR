@@ -46,30 +46,51 @@
 //HackRF format
 class CPX8 {
 public:
+	qint8 real() {return re;}
+	void real(qint8 r) {re = r;}
+	qint8 imag() {return im;}
+	void imag(qint8 i) {im = i;}
+private:
 	qint8 re;
 	qint8 im;
 };
 class CPXU8 {
 public:
+	quint8 real() {return re;}
+	void real(quint8 r) {re = r;}
+	quint8 imag() {return im;}
+	void imag(quint8 i) {im = i;}
+private:
 	quint8 re;
 	quint8 im;
 };
 class CPX16 {
 public:
+	qint16 real() {return re;}
+	void real(qint16 r) {re = r;}
+	qint16 imag() {return im;}
+	void imag(qint16 i) {im = i;}
+private:
 	qint16 re;
 	qint16 im;
+};
+class CPXU16 {
+public:
 	quint16 real() {return re;}
 	void real(quint16 r) {re = r;}
 	quint16 imag() {return im;}
 	void imag(quint16 i) {im = i;}
-};
-class CPXU16 {
-public:
+private:
 	quint16 re;
 	quint16 im;
 };
 class CPXFLOAT {
 public:
+	float real() {return re;}
+	void real(float r) {re = r;}
+	float imag() {return im;}
+	void imag(float i) {im = i;}
+private:
 	float re;
 	float im;
 };
@@ -89,8 +110,8 @@ public:
     ~CPX(void){}
 private:
 	double re;
-public:
 	double im;
+public:
 
 	//Static methods that work on CPX* buffers, was in CPXBuf
 

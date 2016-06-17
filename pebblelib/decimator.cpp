@@ -333,7 +333,7 @@ quint32 HalfbandFilter::convolveOS(const CPX *x, quint32 xLen, const double *h,
 		//Filter won't work, so simple decimate
 		for (quint32 i=0; i<xLen; i+=decimate) {
 			y[yCnt].real(x[i].real());
-			y[yCnt].imag(x[i].im);
+			y[yCnt].imag(x[i].imag());
 			yCnt++;
 		}
 		//We don't have enough samples to fill all of lastX
@@ -345,7 +345,7 @@ quint32 HalfbandFilter::convolveOS(const CPX *x, quint32 xLen, const double *h,
 				m_lastX[i].imag(0);
 			} else {
 				m_lastX[i].real(x[i].real());
-				m_lastX[i].imag(x[i].im);
+				m_lastX[i].imag(x[i].imag());
 			}
 		}
 		return yCnt;
@@ -366,7 +366,7 @@ quint32 HalfbandFilter::convolveOS(const CPX *x, quint32 xLen, const double *h,
 			if (h[k] != 0) {
 				//Skip zero coefficients since they won't add anything to accumulator
 				y[yCnt].real(y[yCnt].real() + m_lastX[n+k].real() * h[k]);
-				y[yCnt].imag(y[yCnt].imag() + m_lastX[n+k].im * h[k]);
+				y[yCnt].imag(y[yCnt].imag() + m_lastX[n+k].imag() * h[k]);
 			}
 		}
 		yCnt++;
@@ -401,7 +401,7 @@ quint32 HalfbandFilter::convolveOA(const CPX *x, quint32 xLen, const double *h,
 		//Filter won't work, so simple decimate
 		for (quint32 i=0; i<xLen; i+=decimate) {
 			y[yCnt].real(x[i].real());
-			y[yCnt].imag(x[i].im);
+			y[yCnt].imag(x[i].imag());
 			yCnt++;
 		}
 		//We don't have enough samples to fill all of lastX
@@ -413,7 +413,7 @@ quint32 HalfbandFilter::convolveOA(const CPX *x, quint32 xLen, const double *h,
 				m_lastX[i].imag(0);
 			} else {
 				m_lastX[i].real(x[i].real());
-				m_lastX[i].imag(x[i].im);
+				m_lastX[i].imag(x[i].imag());
 			}
 		}
 		return yCnt;
@@ -478,7 +478,7 @@ quint32 HalfbandFilter::convolveOA(const CPX *x, quint32 xLen, const double *h,
 			if (h[k] != 0) {
 				//Skip zero coefficients since they won't add anything to accumulator
 				yOut[yCnt].real(yOut[yCnt].real() + oldest[j].real() * h[k]);
-				yOut[yCnt].imag(yOut[yCnt].imag() + oldest[j].im * h[k]);
+				yOut[yCnt].imag(yOut[yCnt].imag() + oldest[j].imag() * h[k]);
 			}
 		}
 		yCnt++;

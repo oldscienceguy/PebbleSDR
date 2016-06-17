@@ -135,7 +135,7 @@ bool FFT::m_applyWindow(const CPX *in, int numSamples)
 			m_isOverload = false;
 			//multCPX(timeDomain, in, windowFunction->windowCpx, samplesPerBuffer);
 			for (int i=0; i<m_samplesPerBuffer; i++) {
-				if (fabs(in[i].real()) > m_overLimit || fabs(in[i].im) > m_overLimit) {
+				if (fabs(in[i].real()) > m_overLimit || fabs(in[i].imag()) > m_overLimit) {
 					m_isOverload = true;
 					//Don't do anything, just flag that we're in the danger zone so UI can display it
 				}

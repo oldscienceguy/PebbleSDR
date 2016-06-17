@@ -403,8 +403,8 @@ TYPECPX tmp;
 		Cos = cos(m_PilotNcoPhase);
 #endif
 		//complex multiply input sample by NCO's  sin and cos
-		tmp.real(Cos * pInData[i].real() - Sin * pInData[i].im);
-		tmp.imag(Cos * pInData[i].im + Sin * pInData[i].real());
+		tmp.real(Cos * pInData[i].real() - Sin * pInData[i].imag());
+		tmp.imag(Cos * pInData[i].imag() + Sin * pInData[i].real());
 		//find current sample phase after being shifted by NCO frequency
 		TYPEREAL phzerror = -arctan2(tmp.imag(), tmp.real());
 
@@ -478,7 +478,7 @@ void Demod_WFM::processDeemphasisFilter(int InLength, TYPECPX* InBuf, TYPECPX* O
 	for(int i=0; i<InLength; i++)
 	{
 		m_DeemphasisAveRe = (1.0-m_DeemphasisAlpha)*m_DeemphasisAveRe + m_DeemphasisAlpha*InBuf[i].real();
-		m_DeemphasisAveIm = (1.0-m_DeemphasisAlpha)*m_DeemphasisAveIm + m_DeemphasisAlpha*InBuf[i].im;
+		m_DeemphasisAveIm = (1.0-m_DeemphasisAlpha)*m_DeemphasisAveIm + m_DeemphasisAlpha*InBuf[i].imag();
 		OutBuf[i].real(m_DeemphasisAveRe*2.0);
 		OutBuf[i].imag(m_DeemphasisAveIm*2.0);
 	}
@@ -553,8 +553,8 @@ TYPECPX tmp;
 		Cos = cos(m_RdsNcoPhase);
 #endif
 		//complex multiply input sample by NCO's  sin and cos
-		tmp.real(Cos * pInData[i].real() - Sin * pInData[i].im);
-		tmp.imag(Cos * pInData[i].im + Sin * pInData[i].real());
+		tmp.real(Cos * pInData[i].real() - Sin * pInData[i].imag());
+		tmp.imag(Cos * pInData[i].imag() + Sin * pInData[i].real());
 		//find current sample phase after being shifted by NCO frequency
 		TYPEREAL phzerror = -arctan2(tmp.imag(), tmp.real());
 		//create new NCO frequency term
@@ -870,7 +870,7 @@ void Demod_WFM::fmDeemphasisFilter(int _bufSize, CPX *in, CPX *out)
     for(int i=0; i<bufSize; i++)
     {
         avgRe = (1.0-m_fmDeemphasisAlpha)*avgRe + m_fmDeemphasisAlpha*in[i].real();
-        avgIm = (1.0-m_fmDeemphasisAlpha)*avgIm + m_fmDeemphasisAlpha*in[i].im;
+		avgIm = (1.0-m_fmDeemphasisAlpha)*avgIm + m_fmDeemphasisAlpha*in[i].imag();
         out[i].real(avgRe*2.0);
         out[i].imag(avgIm*2.0);
     }

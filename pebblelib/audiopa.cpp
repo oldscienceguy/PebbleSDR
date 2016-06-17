@@ -329,7 +329,7 @@ void AudioPA::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
 		else if (temp < -maxOutput)
 			temp = -maxOutput;
         *outPtr++ = temp;
-        temp = out[i].im;
+		temp = out[i].imag();
         //Cap at -1 to +1 to make sure we don't overdrive
 		if (temp > maxOutput)
 			temp = maxOutput;

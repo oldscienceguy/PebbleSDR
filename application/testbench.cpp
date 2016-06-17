@@ -659,7 +659,7 @@ void TestBench::displayData(int length, TYPECPX* pBuf, double samplerate, int pr
                 //Pebble -1 to +1 FP - TestBench -32767 to +32767
 				chkForTrigger(pBuf[i].real() * 32767);
 				m_timeBuf1[m_timeScrnPos] = pBuf[i].real() * 32767;
-				m_timeBuf2[m_timeScrnPos++] = pBuf[i].im * 32767;
+				m_timeBuf2[m_timeScrnPos++] = pBuf[i].imag() * 32767;
 				scrntime = (double)m_timeScrnPos*m_timeScrnPixel;
 				if( m_timeScrnPos >= m_rect.width() )
 				{
@@ -814,8 +814,8 @@ void TestBench::displayData(int length, TYPESTEREO16* pBuf, double samplerate, i
 		//accumulate samples into m_FftInBuf until have enough to perform an FFT
 		for(int i=0; i<length; i++)
 		{
-			m_fftInBuf[m_fftBufPos].real((TYPEREAL)pBuf[i].re);
-			m_fftInBuf[m_fftBufPos++].imag((TYPEREAL)pBuf[i].im);
+			m_fftInBuf[m_fftBufPos].real((TYPEREAL)pBuf[i].real());
+			m_fftInBuf[m_fftBufPos++].imag((TYPEREAL)pBuf[i].imag());
 			if(m_fftBufPos >= TEST_FFTSIZE )
 			{
 				m_fftBufPos = 0;
@@ -838,9 +838,9 @@ void TestBench::displayData(int length, TYPESTEREO16* pBuf, double samplerate, i
 			m_timeInPos++;
 			while(intime >= scrntime)
 			{
-				chkForTrigger( (int)pBuf[i].re );
-				m_timeBuf1[m_timeScrnPos] = pBuf[i].re;
-				m_timeBuf2[m_timeScrnPos++] = pBuf[i].im;
+				chkForTrigger( (int)pBuf[i].real() );
+				m_timeBuf1[m_timeScrnPos] = pBuf[i].real();
+				m_timeBuf2[m_timeScrnPos++] = pBuf[i].imag();
 				scrntime = (double)m_timeScrnPos*m_timeScrnPixel;
 				if( m_timeScrnPos >= m_rect.width() )
 				{

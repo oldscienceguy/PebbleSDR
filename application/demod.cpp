@@ -147,7 +147,7 @@ void Demod::simpleUSB(CPX *in, CPX *out, int _numSamples)
 
     for (int i=0;i<ns;i++)
 	{
-		tmp = in[i].real()  + in[i].im;
+		tmp = in[i].real()  + in[i].imag();
 		out[i].real(tmp);
 		out[i].imag(tmp);
 	}
@@ -159,7 +159,7 @@ void Demod::simpleLSB(CPX *in, CPX *out, int _numSamples)
 
     for (int i=0;i<ns;i++)
 	{
-		tmp = in[i].real()  - in[i].im;
+		tmp = in[i].real()  - in[i].imag();
 		out[i].real(tmp);
 		out[i].imag(tmp);
 	}

@@ -65,7 +65,7 @@ CPX * NoiseFilter::ProcessBlock(CPX *in)
 			sos.imag(sos.imag() + (nxtDelay.imag() * nxtDelay.imag()));
             //dttsp doesn't accumulate sums, bug in dttsp?
 			accum.real(accum.real() + anfCoeff[j].real() * nxtDelay.real());
-			accum.imag(accum.imag() + anfCoeff[j].im * nxtDelay.imag());
+			accum.imag(accum.imag() + anfCoeff[j].imag() * nxtDelay.imag());
 
 		}
         //This does the same as accum above, but requires an extra loop
@@ -99,7 +99,7 @@ CPX * NoiseFilter::ProcessBlock(CPX *in)
 			//AdaptationRate is between 0 and 1 and determines how fast we stabilize filter
 			//anfCoeff[j] = anfCoeff[j-1] * anfLeakage + (1.0 - anfLeakage) * anfAdaptationRate * nxtDelay.real() * errorSignal;
             anfCoeff[j].real(anfCoeff[j].real() * scl1 + error.real() * nxtDelay.real());
-			anfCoeff[j].imag(anfCoeff[j].im * scl1 + error.imag() * nxtDelay.imag());
+			anfCoeff[j].imag(anfCoeff[j].imag() * scl1 + error.imag() * nxtDelay.imag());
         }
 	}
 	return out;

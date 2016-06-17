@@ -195,9 +195,9 @@ void AudioQT::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
 		else if (out[i].real() < -maxOutput)
 			out[i].real(-maxOutput);
 
-		if (out[i].im > maxOutput)
+		if (out[i].imag() > maxOutput)
 			out[i].imag(maxOutput);
-		else if (out[i].im < -maxOutput)
+		else if (out[i].imag() < -maxOutput)
 			out[i].imag(-maxOutput);
 
         //If we use Int 16
@@ -206,7 +206,7 @@ void AudioQT::SendToOutput(CPX *out, int outSamples, float gain, bool mute)
 
         //No conversion necessary from cpx
 		outStreamBuffer[j] = out[i].real();
-		outStreamBuffer[j+1] = out[i].im;
+		outStreamBuffer[j+1] = out[i].imag();
 	}
 	quint32 bytesToWrite = outSamples*sizeof(float)*2;
 

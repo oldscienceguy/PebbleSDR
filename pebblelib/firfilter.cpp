@@ -328,14 +328,14 @@ void FIRFilter::SetBandPass(float lo, float hi, WindowFunction::WINDOWTYPE w)
 	float imSumTaps = 0.0;
 	for(int i = 0; i < numTaps; i++) {
 		taps[i].real(lp->taps[i].real() + hp->taps[i].real()); // * window[i]);
-		taps[i].imag(lp->taps[i].im + hp->taps[i].im); // * window[i]);
+		taps[i].imag(lp->taps[i].imag() + hp->taps[i].imag()); // * window[i]);
 		reSumTaps += taps[i].real();
-		imSumTaps += taps[i].im;
+		imSumTaps += taps[i].imag();
 	}
 	SpectralInversion();
 	for (int i = 0; i < numTaps; i++){
 		taps[i].real(taps[i].real()/reSumTaps);
-		taps[i].imag(taps[i].im/imSumTaps);
+		taps[i].imag(taps[i].imag()/imSumTaps);
 	}
 	delete lp;
 	delete hp;
@@ -373,14 +373,14 @@ void FIRFilter::SetLowPass(float cutoff, WindowFunction::WINDOWTYPE w)
     {
 		taps[i] = Sinc(fc,i) * wf.window[i];
 		reSumTaps += taps[i].real();
-		imSumTaps += taps[i].im;
+		imSumTaps += taps[i].imag();
     }
 
 	//Normalize gain for unity gain at DC
 	//This is critical or else Spectral inversion and HP filters will not work
 	for (int i = 0; i < length; i++){
 		taps[i].real(taps[i].real() / reSumTaps);
-		taps[i].imag(taps[i].im / imSumTaps);
+		taps[i].imag(taps[i].imag() / imSumTaps);
 	}
 }
 
@@ -392,10 +392,10 @@ void FIRFilter::SpectralInversion()
 	int mid = M/2;
 	for (int i = 0; i < numTaps; i++) {
 		taps[i].real(-taps[i].real());
-		taps[i].imag(-taps[i].im);
+		taps[i].imag(-taps[i].imag());
 	}
 	taps[mid].real(1.0 + taps[mid].real());
-	taps[mid].imag(1.0 + taps[mid].im);
+	taps[mid].imag(1.0 + taps[mid].imag());
 }
 //Spectral Reversal flips the freq response
 //So what was a 3k LP becomes a 21K HP (assuming 48K sample rate, 48/2 = 24 - 3 = 21
@@ -571,7 +571,7 @@ void FIRFilter::FFTSetBandStop(float lo, float hi, WindowFunction::WINDOWTYPE wt
         {
             temp = 4.0 * fc;
             taps[midpoint - 1].real(1.0 - taps[midpoint - 1].real());
-            taps[midpoint - 1].imag(0.0 - taps[midpoint - 1].im);
+			taps[midpoint - 1].imag(0.0 - taps[midpoint - 1].imag());
         }
 
     }

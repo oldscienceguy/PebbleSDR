@@ -88,7 +88,7 @@ CPX* AGC::processBlock(CPX *pInData)
         for(int i=0; i<numSamples; i++)
         {
 			out[i].real(m_manualIFGainAmp * pInData[i].real());
-			out[i].imag(m_manualIFGainAmp * pInData[i].im);
+			out[i].imag(m_manualIFGainAmp * pInData[i].imag());
         }
         return out;
     }

@@ -253,7 +253,7 @@ quint32 MorseGen::genDot(CPX *out)
 	}
 	for (quint32 i=0; i<m_numSamplesDotBuf; i++) {
 		out[len+i].real(m_dotSampleBuf[i].real());
-		out[len+i].imag(m_dotSampleBuf[i].im);
+		out[len+i].imag(m_dotSampleBuf[i].imag());
 	}
 	m_lastSymbol = MorseCode::DOT;
 	return len + m_numSamplesDotBuf;
@@ -268,7 +268,7 @@ quint32 MorseGen::genDash(CPX *out)
 	}
 	for (quint32 i=0; i<m_numSamplesDashBuf; i++) {
 		out[len+i].real(m_dashSampleBuf[i].real());
-		out[len+i].imag(m_dashSampleBuf[i].im);
+		out[len+i].imag(m_dashSampleBuf[i].imag());
 	}
 	m_lastSymbol = MorseCode::DASH;
 	return len + m_numSamplesDashBuf;
@@ -278,7 +278,7 @@ quint32 MorseGen::genElement(CPX *out)
 {
 	for (quint32 i=0; i<m_numSamplesElementBuf; i++) {
 		out[i].real(m_elementSampleBuf[i].real());
-		out[i].imag(m_elementSampleBuf[i].im);
+		out[i].imag(m_elementSampleBuf[i].imag());
 	}
 	m_lastSymbol = MorseCode::EL_SPACE;
 	return m_numSamplesElementBuf;
@@ -288,7 +288,7 @@ quint32 MorseGen::genChar(CPX *out)
 {
 	for (quint32 i=0; i<m_numSamplesCharBuf; i++) {
 		out[i].real(m_charSampleBuf[i].real());
-		out[i].imag(m_charSampleBuf[i].im);
+		out[i].imag(m_charSampleBuf[i].imag());
 	}
 	m_lastSymbol = MorseCode::CH_SPACE;
 	return m_numSamplesCharBuf;
@@ -298,7 +298,7 @@ quint32 MorseGen::genWord(CPX *out)
 {
 	for (quint32 i=0; i<m_numSamplesWordBuf; i++) {
 		out[i].real(m_wordSampleBuf[i].real());
-		out[i].imag(m_wordSampleBuf[i].im);
+		out[i].imag(m_wordSampleBuf[i].imag());
 	}
 	m_lastSymbol = MorseCode::WORD_SPACE;
 	return m_numSamplesWordBuf;
