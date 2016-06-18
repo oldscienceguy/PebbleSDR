@@ -2,7 +2,7 @@
 
 #We need to set where pebblelib is expected (app frameworks) to be found so it doesn't have to be installed on mac
 pebblelib.path += $${DESTDIR}
-pebblelib.commands += install_name_tool -change libpebblelib.1.dylib @rpath/libpebblelib.1.dylib $${DESTDIR}/lib$${TARGET}.dylib
+pebblelib.commands += install_name_tool -change libpebblelib.1.dylib @rpath/libpebblelib.1.0.0.dylib $${DESTDIR}/lib$${TARGET}.dylib
 INSTALLS += pebblelib
 
 #In 5.2, Qt plugins that reference a different library than application cause errors (Application must be defined before widget)

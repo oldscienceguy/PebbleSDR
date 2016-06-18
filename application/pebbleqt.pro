@@ -106,7 +106,8 @@ macx {
         #Uncomment for debugging dependencies
         #pebblefix.commands += otool -L $${DESTDIR}/Pebble.app/contents/macos/pebble > temp.txt;
         #Use install_name_tool because macdeployqt occasionally can't find pebblelib
-        pebblefix.commands += install_name_tool -change libpebblelib.1.dylib @executable_path/../Frameworks/libpebblelib.1.dylib $${DESTDIR}/Pebble.app/contents/macos/pebble;
+        #6/18/16: QT 5.6.1 stopped accepting libpebblelib.1.dylib, which was an alias.  Switched to full dylib name
+        pebblefix.commands += install_name_tool -change libpebblelib.1.dylib @executable_path/../Frameworks/libpebblelib.1.0.0.dylib $${DESTDIR}/Pebble.app/contents/macos/pebble;
 
         #macdeployqt should pick up any fixups we missed and copy QT libraries to app Frameworks directory
         #pebblefix.commands += dsymutil $${DESTDIR}/Pebble.app/Contents/MacOS/Pebble;
@@ -124,7 +125,8 @@ macx {
         #Copy pebblelib and it's dependencies
         #Keep in sync with pebblelib.pro
         plib.files += $${PWD}/../D2XX/bin/10.5-10.7/libftd2xx.1.2.2.dylib
-        plib.files += $${PWD}/../pebblelib/$${LIB_DIR}/libpebblelib.1.dylib
+        #6/18/16: QT 5.6.1 stopped accepting libpebblelib.1.dylib, which was an alias.  Switched to full dylib name
+        plib.files += $${PWD}/../pebblelib/$${LIB_DIR}/libpebblelib.1.0.0.dylib
         plib.path = $${DESTDIR}/Pebble.app/Contents/Frameworks
         INSTALLS += plib
 
