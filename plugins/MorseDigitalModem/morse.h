@@ -52,9 +52,9 @@ public slots:
     void squelchChanged(int v);
     void refreshOutput();
     void resetOutput();
-    void onBoxChecked(bool b);
     void outputOptionChanged(int s);
-    void lockWPMChanged(bool b);
+	void freezeButtonPressed(bool b);
+	void wpmBoxChanged(int s);
 
 signals:
     void newOutput();
@@ -72,6 +72,9 @@ private:
 	static const quint32 c_uSecDotMagic = 1200000; //units are micro-seconts
 	static const quint32 c_mSecDotMagic = 1200; //units are milli-seconds
 	static constexpr double c_secDotMagic = 1.2; //units are seconds
+
+	//1 = auto, 2 = ... > 5 is fixed WPM
+	int m_wpmOption;
 
     //From SignalProcessing
 	int m_numSamples;
@@ -104,7 +107,7 @@ private:
 
 	double m_agc_peak; // threshold for tone detection
 
-    void init();
+	void init(quint32 wpm);
 
     //Fldigi samplerate is 8x
     //Filter does MAC every DEC_RATIO samples
@@ -131,10 +134,17 @@ private:
 	MovingAvgFilter *m_thresholdFilter;
 	void updateDotDashThreshold(quint32 idotUsec, quint32 idashUsec);
 
-	const int c_trackingWPMRange = 10; //Tracking range for CWTRACK (WPM)
-	const int c_lowerWPMLimit = 5; //Lower RX limit (WPM)
-	const int c_upperWPMLimit = 80; // Upper RX limit (WPM)
+	const int c_wpmRange = 5; // +/- wpm tracking range for fixed ranges
+	const int c_wpmLower = 5; //Lower RX limit (WPM)
+	const int c_wpmUpper = 80; // Upper RX limit (WPM)
 
+	//Current fixed speed if m_isAutoSpeed = false
+	int m_wpmFixed;
+
+	//Fastest we can handle at current auto or fixed speed
+	quint32 m_usecLongestMark;
+	quint32 m_usecShortestMark;
+	void setMinMaxMark(int wpmLow, int wpmHigh);
 
 
     // Receive buffering
@@ -192,9 +202,6 @@ private:
 	const bool c_useLowercase = false; //Print Rx in lowercase for CW, RTTY, CONTESTIA and THROB
 
 
-    //Fastest we can handle at sample rate
-	quint32 m_usecLongestMark;
-	quint32 m_usecShortestMark;
     // Receiving parameters:
 
 	quint32 m_usecDotDashThreshold;		// 2-dot threshold for adaptive speed

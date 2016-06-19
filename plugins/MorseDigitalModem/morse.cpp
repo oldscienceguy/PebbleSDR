@@ -202,11 +202,7 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 	m_sampleClock = new SampleClock(m_modemSampleRate);
 	m_sampleClock->reset(); //Start timer over
 
-	//Todo: Should this be for slowest/fastest we support, or +/- tracking speed from current wpm setting?
-	//Shortest mark we can time.  Dot time at upper wpm limit
-	m_usecShortestMark =  c_uSecDotMagic / (c_upperWPMLimit*1.10); //Slightly faster than highest speed we support
-	//Longest mark we can time. Dash time at slowest wpm limit
-	m_usecLongestMark = 3 * (c_uSecDotMagic / (c_lowerWPMLimit*0.90)); //SLightly longer than slowest speed we support 5wpm
+	setMinMaxMark(c_wpmLower, c_wpmUpper); //Default for full auto
 
 	m_modemFrequency = 1000; //global->settings->modeOffset;
 
@@ -264,7 +260,7 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 
     syncTiming();
 	m_demodMode = DeviceInterface::dmCWL;
-    init();
+	init(c_wpmSpeedInit);
 
 	m_outputOn = true;
 
@@ -325,11 +321,9 @@ void Morse::setupDataUi(QWidget *parent)
 		m_dataUi->dataEdit->setReadOnly(true);
 		m_dataUi->dataEdit->setUndoRedoEnabled(false);
 		m_dataUi->dataEdit->setWordWrapMode(QTextOption::WordWrap);
+		m_dataUi->dataEdit->ensureCursorVisible(); //Auto scrolls so cursor is always visible
 
 		connect(m_dataUi->resetButton,SIGNAL(clicked()),this,SLOT(resetOutput()));
-
-		m_dataUi->onBox->setChecked(true);
-		connect(m_dataUi->onBox,SIGNAL(toggled(bool)), this, SLOT(onBoxChecked(bool)));
 
 		m_dataUi->outputOptionBox->addItem("Character",CHAR_ONLY);
 		m_dataUi->outputOptionBox->addItem("DotDash",DOTDASH);
@@ -338,8 +332,25 @@ void Morse::setupDataUi(QWidget *parent)
 		m_outputMode = CHAR_ONLY;
 		connect(m_dataUi->outputOptionBox,SIGNAL(currentIndexChanged(int)),this,SLOT(outputOptionChanged(int)));
 
+		//1-4 reserved for special flags
+		m_dataUi->wpmBox->addItem("Auto", 1);
+		m_dataUi->wpmBox->addItem("Lock", 2);
+		//5 and up actual wpm
+		m_dataUi->wpmBox->addItem("5 wpm", 5);
+		m_dataUi->wpmBox->addItem("10 wpm", 10);
+		m_dataUi->wpmBox->addItem("20 wpm", 20);
+		m_dataUi->wpmBox->addItem("30 wpm", 30);
+		m_dataUi->wpmBox->addItem("40 wpm", 40);
+		m_dataUi->wpmBox->addItem("50 wpm", 50);
+		m_dataUi->wpmBox->addItem("60 wpm", 60);
+		m_dataUi->wpmBox->addItem("70 wpm", 70);
+		m_dataUi->wpmBox->addItem("80 wpm", 80);
+		connect(m_dataUi->wpmBox,SIGNAL(currentIndexChanged(int)),this,SLOT(wpmBoxChanged(int)));
+
 		m_lockWPM = false;
-		connect(m_dataUi->lockWPMBox,SIGNAL(toggled(bool)),this,SLOT(lockWPMChanged(bool)));
+		m_dataUi->freezeButton->setCheckable(true);
+		m_dataUi->freezeButton->setChecked(false); //Off
+		connect(m_dataUi->freezeButton,SIGNAL(clicked(bool)),this,SLOT(freezeButtonPressed(bool)));
 
 		m_outputOn = true;
     }
@@ -362,9 +373,13 @@ void Morse::setDemodMode(DeviceInterface::DemodMode _demodMode)
 	m_demodMode = _demodMode;
 }
 
-void Morse::onBoxChecked(bool b)
+
+void Morse::setMinMaxMark(int wpmLow, int wpmHigh)
 {
-	m_outputOn = b;
+	//Shortest mark we can time.  Dot time at upper wpm limit
+	m_usecShortestMark =  c_uSecDotMagic / (wpmHigh * 1.10); //Slightly faster than highest speed
+	//Longest mark we can time. Dash time at slowest wpm limit
+	m_usecLongestMark = 3 * (c_uSecDotMagic / (wpmLow * 0.90)); //SLightly longer than slowest speed
 }
 
 void Morse::outputOptionChanged(int s)
@@ -372,17 +387,42 @@ void Morse::outputOptionChanged(int s)
 	m_outputMode = (OUTPUT_MODE)m_dataUi->outputOptionBox->itemData(s).toInt();
 }
 
-void Morse::lockWPMChanged(bool b)
+void Morse::freezeButtonPressed(bool b)
 {
-	m_lockWPM = b;
-    //Anything else?
+	Q_UNUSED(b);
+
+	m_outputOn = !m_outputOn;
 }
 
-//Called from reset button
+void Morse::wpmBoxChanged(int s)
+{
+	Q_UNUSED(s);
+
+	int wpm = m_dataUi->wpmBox->currentData().toInt();
+	if (wpm == 1) {
+		//Auto - Free range for timing
+		m_lockWPM = false;
+		setMinMaxMark(c_wpmLower, c_wpmUpper); //Default for full auto
+		init(c_wpmSpeedInit); //Reset all data
+	} else if (wpm == 2) {
+		//Fixed - Timing changes limited to plus/minus current
+		wpm = m_wpmSpeedCurrent;
+		m_wpmFixed = wpm;
+		setMinMaxMark(wpm - c_wpmRange, wpm + c_wpmRange);
+		init(wpm);
+	} else {
+		//Fixed - Timing changes limited to plus/minus selected
+		//Higher speeds also adjust parameters like rise/fall time
+		m_wpmFixed = wpm;
+		setMinMaxMark(wpm - c_wpmRange, wpm + c_wpmRange);
+		init(wpm);
+	}
+}
+
+//Called from clear button
 void Morse::resetOutput()
 {
 	m_dataUi->dataEdit->clear();
-    init(); //Reset all data
     refreshOutput();
 }
 
@@ -393,11 +433,10 @@ void Morse::refreshOutput()
         return;
 
 	m_outputBufMutex.lock();
-	m_dataUi->wpmLabel->setText(QString().sprintf("%d WPM",m_wpmSpeedCurrent));
-
+	m_dataUi->wpmBox->setCurrentText(QString().sprintf("%d WPM",m_wpmSpeedCurrent));
 	m_dataUi->dataEdit->insertPlainText(m_output); //At cursor
 	m_dataUi->dataEdit->moveCursor(QTextCursor::End); //Scrolls window so new text is always visible
-
+	m_output.clear();
 	m_outputBufMutex.unlock();
 }
 
@@ -407,7 +446,7 @@ void Morse::outputData(const char* d)
         return;
 
 	m_dataUi->dataEdit->insertPlainText(d); //At cursor
-	m_dataUi->dataEdit->moveCursor(QTextCursor::End);
+	//m_dataUi->dataEdit->moveCursor(QTextCursor::End);
 }
 void Morse::outputData(const char c)
 {
@@ -484,9 +523,10 @@ void Morse::syncFilterWithWpm()
     }
 }
 
-void Morse::init()
+void Morse::init(quint32 wpm)
 {
-	m_wpmSpeedCurrent = c_wpmSpeedInit;
+	m_output.clear(); //Clear any text that hasn't been output
+	m_wpmSpeedCurrent = wpm;
 	m_usecDotDashThreshold = 2 * c_uSecDotMagic / m_wpmSpeedCurrent;
     syncTiming(); //Based on wpmSpeedCurrent & adaptive threshold
 
@@ -526,35 +566,40 @@ void Morse::calcDotDashLength(int _speed, quint32 & _usecDot, quint32 & _usecDas
 //This should be only place where adaptiveThreshold and wpmSpeedCurrent are changed
 void Morse::updateDotDashThreshold(quint32 idotUsec, quint32 idashUsec)
 {
+	//If we're locked, we don't tweak thresholds at all.
+	//Typically for machine to machine morse
+	if (m_lockWPM)
+		return;
+
+	//Ignore if too short or too long
     quint32 dotUsec, dashUsec;
 	if (idotUsec > m_usecShortestMark && idotUsec < m_usecLongestMark)
         dotUsec = idotUsec;
     else
-		dotUsec = m_usecDotInit;
+		//dotUsec = m_usecDotInit;
+		return; //Too short or too long for current mode
 	if (idashUsec > m_usecShortestMark && idashUsec < m_usecLongestMark)
         dashUsec = idashUsec;
     else
-		dashUsec = m_usecDashInit;
+		//dashUsec = m_usecDashInit;
+		return; //Too short or too long for current mode
 
     //Current speed estimate
-	if (!m_lockWPM) {
-		//Only update if delta greater then 5wpm to avoid 'adaptive jitter'
-		//Result is midway between last short and long mark, assumed to be dot and dash
-		int newAdaptiveThreshold = (quint32)m_thresholdFilter->newSample((dashUsec + dotUsec) / 2);
-		int newWpm = c_uSecDotMagic / (newAdaptiveThreshold / 2);
+	//Only update if delta greater then 5wpm to avoid 'adaptive jitter'
+	//Result is midway between last short and long mark, assumed to be dot and dash
+	int newAdaptiveThreshold = (quint32)m_thresholdFilter->newSample((dashUsec + dotUsec) / 2);
+	int newWpm = c_uSecDotMagic / (newAdaptiveThreshold / 2);
 #if 0
-		//Round up or down
-		newWpm = ((newWpm+2) / 5) * 5;  //Increment in units of 5wpm
-		if (abs(m_wpmSpeedCurrent - newWpm) >= 5) {
-			m_usecAdaptiveThreshold = newAdaptiveThreshold;
-			m_wpmSpeedCurrent = newWpm;
-		}
-#else
-		m_usecDotDashThreshold = newAdaptiveThreshold;
+	//Round up or down
+	newWpm = ((newWpm+2) / 5) * 5;  //Increment in units of 5wpm
+	if (abs(m_wpmSpeedCurrent - newWpm) >= 5) {
+		m_usecAdaptiveThreshold = newAdaptiveThreshold;
 		m_wpmSpeedCurrent = newWpm;
-#endif
-
 	}
+#else
+	m_usecDotDashThreshold = newAdaptiveThreshold;
+	m_wpmSpeedCurrent = newWpm;
+#endif
 
 }
 
@@ -1006,17 +1051,16 @@ void Morse::addMarkToDotDash()
 }
 
 void Morse::outputString(QString outStr) {
-	if (!m_outputOn)
-        return;
-
 	if (!outStr.isEmpty()) {
 
         //Display can be accessing at same time, so we need to lock
 		m_outputBufMutex.lock();
+		//Append to m_output in case display is frozen or behind
+		//refreshOutput() will clear it
 		if (c_useLowercase) {
-			m_output = outStr.toLower();
+			m_output.append(outStr.toLower());
 		} else {
-			m_output = outStr;
+			m_output.append(outStr);
 		}
 		m_outputBufMutex.unlock();
         emit newOutput();
