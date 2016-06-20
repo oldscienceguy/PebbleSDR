@@ -128,7 +128,8 @@ SOURCES += pebblelib.cpp \
     movingavgfilter.cpp \
     nco.cpp \
     mixer.cpp \
-    sampleclock.cpp
+    sampleclock.cpp \
+    dspswissarmyknife.cpp
 
 HEADERS += pebblelib.h\
     pebblelib_global.h \
@@ -170,7 +171,8 @@ HEADERS += pebblelib.h\
     movingavgfilter.h \
     nco.h \
     mixer.h \
-    sampleclock.h
+    sampleclock.h \
+    dspswissarmyknife.h
 
 DISTFILES += \
     gpl.html
