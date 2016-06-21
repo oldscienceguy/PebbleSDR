@@ -55,6 +55,7 @@ public slots:
     void outputOptionChanged(int s);
 	void freezeButtonPressed(bool b);
 	void wpmBoxChanged(int s);
+	void thresholdOptionChanged(int s);
 
 signals:
     void newOutput();
@@ -73,8 +74,18 @@ private:
 	static const quint32 c_mSecDotMagic = 1200; //units are milli-seconds
 	static constexpr double c_secDotMagic = 1.2; //units are seconds
 
+	enum THRESHOLD_OPTIONS {TH_AUTO, TH_TONE, TH_DASH, TH_WORD, TH_SQUELCH};
+	//Configurable thresholds
+	quint32 m_usecDotDashThreshold; //Determines whether mark is dot or dash
+	quint32 m_usecElementThreshold = 0; //Space between dot/dash in char
+	double m_squelchThreshold; //If squelch is on, this is compared to metric
+
 	//1 = auto, 2 = ... > 5 is fixed WPM
 	int m_wpmOption;
+	//Used to restrict auto tracking to a specified range
+	quint32 m_wpmLimitLow;
+	quint32 m_wpmLimitHigh;
+	bool m_wpmOutsideRange; //True if auto speed calc results are below or above limits
 
     //From SignalProcessing
 	int m_numSamples;
@@ -132,11 +143,11 @@ private:
 	//Used for moving average thresholdFilter, why isn't just always the same as m_bitSamples?
 	const static int c_thresholdFilterSize = 16;
 	MovingAvgFilter *m_thresholdFilter;
-	void updateDotDashThreshold(quint32 idotUsec, quint32 idashUsec);
+	void updateThresholds(quint32 usecNewMark);
 
 	const int c_wpmRange = 5; // +/- wpm tracking range for fixed ranges
-	const int c_wpmLower = 5; //Lower RX limit (WPM)
-	const int c_wpmUpper = 80; // Upper RX limit (WPM)
+	const int c_wpmAutoLower = 5; //Lower RX limit (WPM)
+	const int c_wpmAutoUpper = 80; // Upper RX limit (WPM)
 
 	//Current fixed speed if m_isAutoSpeed = false
 	int m_wpmFixed;
@@ -170,7 +181,6 @@ private:
 	quint32 m_usecLastSpace = 0;	// length of last dot
 	quint32 m_usecMark = 0;		// Time difference in usecs
 	quint32 m_usecSpace = 0;
-	quint32 m_usecElementThreshold = 0; //Space between dot/dash in char
     void calcDotDashLength(int _speed, quint32 & _usecDot, quint32 & _usecDash);
 
     void syncTiming();
@@ -183,11 +193,9 @@ private:
 	DECODE_STATE		m_lastReceiveState;
 	CW_EVENT		m_cwEvent;			// functions used by cw process routine
 
-    // user configurable data - local copy passed in from gui
-	double	m_squelchMetric;
 	double m_squelchIncrement; //Slider increments
-	double m_squelchValue; //If squelch is on, this is compared to metric
 	bool m_squelchEnabled;
+	double	m_squelchMetric;
 
     //Fixed speed or computed speed based on actual dot/dash timing
 	int m_wpmSpeedCurrent;				// Initially 20 WPM
@@ -200,11 +208,6 @@ private:
 	quint32 m_usecDashInit;
 
 	const bool c_useLowercase = false; //Print Rx in lowercase for CW, RTTY, CONTESTIA and THROB
-
-
-    // Receiving parameters:
-
-	quint32 m_usecDotDashThreshold;		// 2-dot threshold for adaptive speed
 
 	QString spaceTiming(bool lookingForChar);
 	void outputString(QString outStr);
