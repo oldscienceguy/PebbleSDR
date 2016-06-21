@@ -70,6 +70,8 @@ private:
 	quint32 m_numSamplesOutBuf;
 	CPX* m_outSampleBuf;
 	quint32 m_outSampleBufIndex;
+
+	QMutex m_mutex;
 };
 
 #endif // MORSEGEN_H

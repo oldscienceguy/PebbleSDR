@@ -11,6 +11,7 @@ MorseGen::MorseGen(double sampleRate)
 	m_elementSampleBuf = NULL;
 	m_charSampleBuf = NULL;
 	m_wordSampleBuf = NULL;
+	m_outSampleBuf = NULL;
 }
 
 MorseGen::~MorseGen()
@@ -25,10 +26,15 @@ MorseGen::~MorseGen()
 		delete m_charSampleBuf;
 	if (m_wordSampleBuf != NULL)
 		delete m_wordSampleBuf;
+	if (m_outSampleBuf != NULL)
+		delete m_outSampleBuf;
 }
 
 void MorseGen::setParams(double frequency, double dbAmplitude, quint32 wpm, quint32 msRise)
 {
+	//This can get called from UI while another thread is calling generate to output something
+	m_mutex.lock(); //Don't process changes if we're in the middle of generating output
+
 	m_frequency = frequency;
 	m_dbAmplitude = dbAmplitude;
 	m_amplitude = DB::dBToAmplitude(dbAmplitude);
@@ -149,18 +155,28 @@ void MorseGen::setParams(double frequency, double dbAmplitude, quint32 wpm, quin
 	}
 
 	m_lastSymbol = MorseCode::WORD_SPACE;
+
+	m_mutex.unlock();
 }
 
 
 void MorseGen::setTextOut(QString textOut)
 {
+	m_mutex.lock();
 	m_textOut = textOut;
-	//Todo: Calc and limit
-	m_outSampleBufLen = 128000; //Long enough for highest WPM at highest SR
+	//Long enough for longest token at current WPM at current SR
+	quint32 usecLongestToken = MorseCode::c_maxTcwPerSymbol * MorseCode::wpmToTcwUsec(m_wpm);
+	quint32 usecPerSample = 1e6 / m_sampleRate;
+	m_outSampleBufLen = usecLongestToken / usecPerSample;
+
+	if (m_outSampleBuf != NULL)
+		delete m_outSampleBuf;
+
 	m_outSampleBuf = memalign(m_outSampleBufLen);
 	m_outSampleBufIndex = 0;
 	m_numSamplesOutBuf = 0;
 	m_textOutIndex = 0;
+	m_mutex.unlock();
 }
 
 bool MorseGen::hasOutputSamples()
@@ -177,6 +193,9 @@ CPX MorseGen::nextOutputSample()
 	if (m_textOut.length() == 0)
 		return CPX();
 
+	//This can get called by background producer thread at the same time UI is updating settings
+	m_mutex.lock();
+
 	//If no samples in CPX buf
 	if (m_numSamplesOutBuf == 0) {
 		//No more samples, fill buffer with next char
@@ -188,14 +207,17 @@ CPX MorseGen::nextOutputSample()
 		}
 		nextSymbol = m_textOut[m_textOutIndex++];
 		m_numSamplesOutBuf = genText(m_outSampleBuf, nextSymbol.toLatin1());
+		Q_ASSERT(m_numSamplesOutBuf < m_outSampleBufLen);
 		if (m_numSamplesOutBuf == 0) {
 			//Error
 			qDebug()<<"Symbol not found "<<nextSymbol;
+			m_mutex.unlock();
 			return CPX();
 		}
 		m_outSampleBufIndex = 0;
 	}
 	m_numSamplesOutBuf--;
+	m_mutex.unlock();
 	return m_outSampleBuf[m_outSampleBufIndex++];
 }
 

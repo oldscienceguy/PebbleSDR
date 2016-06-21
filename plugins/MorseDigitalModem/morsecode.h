@@ -50,8 +50,8 @@ public:
 	//Max dots and dashes in a morse symbol
 	static const int c_maxMorseLen = 8;
 	//Max number of Tcw's we can see in a symbol
-	// 7 dashes (21), with 7 interelement spaces(7), with 1 char space(7)
-	static const quint32 c_maxTcwPerSymbol = 35;
+	// 8 dashes (24), with 7 interelement spaces(7), with 1 char space(7)
+	static const quint32 c_maxTcwPerSymbol = 38;
 
 	//Use DOT_MAGIC to convert WPM to/from usec is 1,200,000
 	//c_uSecDotMagic / WPM = usec per TCW
