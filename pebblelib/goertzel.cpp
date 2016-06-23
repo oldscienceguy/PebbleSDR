@@ -155,6 +155,7 @@ ToneBit::ToneBit()
 */
 
 //Call setTargetSampleRate before setToneFreq
+//This can be called on a running filter to change any of the parameters, usually tone or N
 void ToneBit::setFreq(quint32 freq, quint32 N, quint32 sampleRate)
 {
 	m_freq = freq;
@@ -174,7 +175,8 @@ void ToneBit::setFreq(quint32 freq, quint32 N, quint32 sampleRate)
 	//So for binwidth = 200hz, bin1=0-199, bin2=200-399, bin3=400-599, bin4=600-799
 	//If we're looking for 700hz in this example, it would be in the middle of bin 4, perfect!
 	//k represents the fft bin that would contain the frequency of interest
-	m_k = (float)(m_samplesPerBin * m_freqHz)/(float)(m_gSampleRate) + 0.5; // + 0.5 rounds up
+	m_k = (float)(m_samplesPerBin * m_freqHz)/(float)(m_gSampleRate);
+	m_k += 0.5; // + 0.5 bin puts it in the center of the bin instead of the beginning
 
 	m_w = TWOPI * m_k / m_samplesPerBin;
 
@@ -184,15 +186,15 @@ void ToneBit::setFreq(quint32 freq, quint32 N, quint32 sampleRate)
 #endif
 
 	//Goertzel algorithm for non-integer frequency index (complex input)
-	//k represents the fft bin that would contain the frequency of interest
-	//In this algorithm is does NOT have to be an integer and can therefor put our freq in the exact center of a bin
+	//k represents the fft bin with the frequency of interest in the center (perfect Goertzel)
+	//In this algorithm 'k' does NOT have to be an integer and can therefor put our freq in the exact center of a bin
 	//In an FFT, the width of each bin would be (sampleRate / FFT size), here its (sampleRate / N ). ie 8000/80 = 100
 	//To find which bin our freq is in, (freq / binWidth), ie 1000hz / 100 = bin 10
-	//Combining, k = freq / (sampleRate / N);
-	double k = (float)m_freq / (sampleRate / N);
+	//Combining, k = freq / (sampleRate / N) which is the beginning of the bin
+	//+0.5 bin gives us the exact center of the bin (see Kevin Banks original paper)
+	double k = (float)m_freq / (sampleRate / N) + 0.5;
 
-	std::complex<double> c_j(6.123233995736766e-17,1);
-	c_A = TWOPI * k/N;
+	c_A = TWOPI * k / N;
 	c_B = 2 * cos(c_A);
 	c_C = exp(-c_j * c_A);
 	c_D = exp(-c_j * c_A * ((double)N-1.0));
@@ -454,6 +456,7 @@ void Goertzel::setTargetSampleRate(quint32 targetSampleRate)
 	m_sampleRate = targetSampleRate;
 }
 
+//This can be called on a running filter to change freq, N or jitter
 void Goertzel::setFreq(quint32 freq, quint32 N, quint32 jitterCount)
 {
 	m_attackCount = jitterCount;
@@ -464,8 +467,14 @@ void Goertzel::setFreq(quint32 freq, quint32 N, quint32 jitterCount)
 
 	// bit filter based on 10 msec rise time of CW waveform
 	//int bfv = (int)(m_sampleRate * .010 / N); //8k*.01/16 = 5
+	if (m_mainJitterFilter != NULL)
+		delete m_mainJitterFilter;
 	m_mainJitterFilter = new MovingAvgFilter(m_jitterCount);
+	if (m_lowJitterFilter != NULL)
+		delete m_lowJitterFilter;
 	m_lowJitterFilter = new MovingAvgFilter(m_jitterCount);
+	if (m_highJitterFilter != NULL)
+		delete m_highJitterFilter;
 	m_highJitterFilter = new MovingAvgFilter(m_jitterCount);
 
 	/*
