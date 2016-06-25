@@ -688,6 +688,12 @@ void MorseGenDevice::initWpmBox(QComboBox * box)
 	box->addItem("60", 60);
 	box->addItem("70", 70);
 	box->addItem("80", 80);
+	box->addItem("100", 100);
+	box->addItem("120", 120);
+	box->addItem("140", 140);
+	box->addItem("160", 160);
+	box->addItem("180", 180);
+	box->addItem("200", 200);
 }
 void MorseGenDevice::initDbBox(QComboBox * box)
 {
