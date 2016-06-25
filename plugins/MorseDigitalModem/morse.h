@@ -238,7 +238,7 @@ private:
 	bool m_useGoertzel;
 	Goertzel *m_goertzel;
 	void updateGoertzel(int modemFreq, int samplesPerResult);
-	quint32 findBestGoertzelN(quint32 wpm);
+	quint32 findBestGoertzelN(quint32 wpmLow, quint32 wpmHigh);
 };
 
 #endif // MORSE_H

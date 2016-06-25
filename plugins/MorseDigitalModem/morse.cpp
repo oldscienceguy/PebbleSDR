@@ -397,22 +397,42 @@ void Morse::freezeButtonPressed(bool b)
 }
 
 //Finds the optimum N that results in a bandwidth of 100-300 and N of 12 to 4
-quint32 Morse::findBestGoertzelN(quint32 wpm)
+quint32 Morse::findBestGoertzelN(quint32 wpmLow, quint32 wpmHigh)
 {
-	//Calc best N for 8 results per Tcw
-	quint32 samplesPerResult;
-	quint32 bandwidth;
+	//Optimize for middle and verify with low and high
+	quint32 wpmMid = (wpmLow + wpmHigh) / 2;
+	quint32 nMid, nLow, nHigh;
+	quint32 bwMid, bwLow, bwHigh; //Bandwidth
 	quint32 resPerTcw; //Results per Tcw
+	quint32 resPerTcwLow, resPerTcwHigh;
+	quint32 usecWpmLow, usecWpmMid,usecWpmHigh;
+	usecWpmLow = MorseCode::wpmToTcwUsec(wpmLow);
+	usecWpmMid = MorseCode::wpmToTcwUsec(wpmMid);
+	usecWpmHigh = MorseCode::wpmToTcwUsec(wpmHigh);
+	quint32 usecPerSample = 1.0e6 / m_modemSampleRate;
 	//Find N with largest resPerTcw and smallest bandwidth
-	for (resPerTcw = 12; resPerTcw>=4; resPerTcw--) {
-		samplesPerResult = (MorseCode::wpmToTcwUsec(wpm) / resPerTcw) / (1.0e6 / m_modemSampleRate);
-		bandwidth = m_modemSampleRate / samplesPerResult;
-		if (bandwidth >= 100 && bandwidth <= 300)
+	for (resPerTcw = 4; resPerTcw<40; resPerTcw++) {
+		nLow = (usecWpmLow/resPerTcw) / usecPerSample;
+		nMid = (usecWpmMid/resPerTcw) / usecPerSample;
+		nHigh = (usecWpmHigh/resPerTcw) / usecPerSample;
+		//If we chose nMid, how many results at low and high
+		resPerTcwLow = usecWpmLow / (nMid * usecPerSample);
+		resPerTcwHigh = usecWpmHigh / (nMid * usecPerSample);
+		bwLow = m_modemSampleRate / nMid;
+		bwMid = m_modemSampleRate / nMid;
+		bwHigh = m_modemSampleRate / nMid;
+		if (bwLow >= 100 && bwLow <= 750 && bwMid >= 100 && bwMid <= 750 &&bwHigh >= 100 && bwHigh <= 750 &&
+			//We can tolerate fewer results per Tcw at high end of range
+			resPerTcwLow >= 4 && resPerTcwHigh >= 3) {
+
 			break;
+		}
 		//Otherwise bandwidth is the best it will be at 4 results per Tcw
 	}
-	qDebug()<<"WPM:"<<wpm<<"resPerTcw:"<<resPerTcw<<" samplesPerResult:"<<samplesPerResult<<" bandWidth: "<<bandwidth;
-	return samplesPerResult;
+	qDebug()<<"WPM:"<<wpmLow<<"resPerTcw:"<<resPerTcw<<" samplesPerResult:"<<nLow<<" bandWidth: "<<bwLow;
+	qDebug()<<"WPM:"<<wpmMid<<"resPerTcw:"<<resPerTcw<<" samplesPerResult:"<<nMid<<" bandWidth: "<<bwMid;
+	qDebug()<<"WPM:"<<wpmHigh<<"resPerTcw:"<<resPerTcw<<" samplesPerResult:"<<nHigh<<" bandWidth: "<<bwHigh;
+	return nMid;
 }
 
 void Morse::wpmBoxChanged(int s)
@@ -426,7 +446,7 @@ void Morse::wpmBoxChanged(int s)
 	int wpm = (m_wpmLimitLow + m_wpmLimitHigh) / 2;
 	m_wpmFixed = wpm;
 	m_wpmSpeedCurrent = wpm;
-	quint32 samplesPerResult = findBestGoertzelN(wpm);
+	quint32 samplesPerResult = findBestGoertzelN(m_wpmLimitLow, m_wpmLimitHigh);
 	updateGoertzel(c_defaultModemFrequency, samplesPerResult);
 	setMinMaxMark(m_wpmLimitLow, m_wpmLimitHigh);
 	init(wpm);
