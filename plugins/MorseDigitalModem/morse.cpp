@@ -139,7 +139,7 @@ Morse::Morse()
 	m_workingBuf = NULL;
 	m_toneFilter = NULL;
 	m_jitterFilter = NULL;
-	m_thresholdFilter = NULL;
+	m_dotDashThresholdFilter = NULL;
 	m_decimate = NULL;
 	m_mixer = NULL;
 	m_sampleClock = NULL;
@@ -148,7 +148,6 @@ Morse::Morse()
 	m_sampleRate = 0;
 	m_numSamples = 0;
 	m_filterSamplesPerResult = 16;
-	m_goertzelSamplesPerResult = 20;
 	m_out = NULL;
 
 	//Used to update display from main thread.
@@ -202,25 +201,10 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 	m_sampleClock = new SampleClock(m_modemSampleRate);
 	m_sampleClock->reset(); //Start timer over
 
-	setMinMaxMark(c_wpmAutoLower, c_wpmAutoUpper); //Default for full auto
-
-	m_modemFrequency = 1000; //global->settings->modeOffset;
-
-
     //fldigi constructors
 	m_squelchIncrement = 0.5;
 	m_squelchThreshold = 0;
 	m_squelchEnabled = false;
-
-	m_wpmSpeedCurrent = m_wpmSpeedFilter = c_wpmSpeedInit;
-	calcDotDashLength(c_wpmSpeedInit, m_usecDotInit, m_usecDashInit);
-
-    //2 x usecDot
-	m_usecDotDashThreshold = 2 * c_uSecDotMagic / m_wpmSpeedCurrent;
-	m_usecNoiseSpike = m_usecDotDashThreshold / 4;
-
-	m_agc_peak = 1.0;
-
 
 	if (!m_useGoertzel) {
 		if (m_toneFilter != NULL)
@@ -244,26 +228,20 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 			delete m_goertzel;
 		m_goertzel = new Goertzel(_sampleRate, _sampleCount);
 		m_goertzel->setTargetSampleRate(m_modemSampleRate);
-		// bit filter based on 10 msec rise time of CW waveform
-		int jitterCount = (int)(m_modemSampleRate * m_secRiseFall / m_goertzelSamplesPerResult);
-		if (m_jitterFilter != NULL)
-			delete m_jitterFilter;
-		m_jitterFilter = new MovingAvgFilter(jitterCount);
-
-		m_goertzel->setFreq(m_modemFrequency, m_goertzelSamplesPerResult, jitterCount);
+		updateGoertzel(c_defaultModemFrequency, c_goertzelDefaultSamplesPerResult);
 	}
 
 
-	if (m_thresholdFilter != NULL)
-		delete m_thresholdFilter;
-	m_thresholdFilter = new MovingAvgFilter(c_thresholdFilterSize);
+	if (m_dotDashThresholdFilter != NULL)
+		delete m_dotDashThresholdFilter;
+	m_dotDashThresholdFilter = new MovingAvgFilter(c_thresholdFilterSize);
 
-    syncTiming();
+	wpmBoxChanged(0); //Setup default wpm ranges, also calls init()
+	m_wpmSpeedFilter = m_wpmSpeedCurrent;
+
+	m_agc_peak = 1.0;
+
 	m_demodMode = DeviceInterface::dmCWL;
-	init(c_wpmSpeedInit);
-	m_wpmLimitLow = c_wpmAutoLower;
-	m_wpmLimitHigh = c_wpmAutoUpper;
-
 
 	m_outputOn = true;
 
@@ -282,7 +260,7 @@ Morse::~Morse()
 	if (m_toneFilter != NULL) delete m_toneFilter;
     //if (cw_FFT_filter) delete cw_FFT_filter;
 	if (m_jitterFilter != NULL) delete m_jitterFilter;
-	if (m_thresholdFilter != NULL) delete m_thresholdFilter;
+	if (m_dotDashThresholdFilter != NULL) delete m_dotDashThresholdFilter;
 	if (m_decimate != NULL) delete m_decimate;
 	if (m_mixer != NULL) delete m_mixer;
 	if (m_sampleClock != NULL) delete m_sampleClock;
@@ -336,19 +314,10 @@ void Morse::setupDataUi(QWidget *parent)
 		m_outputMode = CHAR_ONLY;
 		connect(m_dataUi->outputOptionBox,SIGNAL(currentIndexChanged(int)),this,SLOT(outputOptionChanged(int)));
 
-		//1-4 reserved for special flags
-		m_dataUi->wpmBox->addItem("5-80 wpm", 1);
-		//5 and up actual wpm in center of range
-		m_dataUi->wpmBox->addItem("5-15 wpm", 10);
-		m_dataUi->wpmBox->addItem("15-25 wpm", 20);
-		m_dataUi->wpmBox->addItem("25-35 wpm", 30);
-		m_dataUi->wpmBox->addItem("35-45 wpm", 40);
-		m_dataUi->wpmBox->addItem("45-55 wpm", 50);
-		m_dataUi->wpmBox->addItem("55-65 wpm", 60);
-		//Special values above 100 indicate fixed, no variability
-		m_dataUi->wpmBox->addItem("60 wpm", 600);
-		m_dataUi->wpmBox->addItem("70 wpm", 700);
-		m_dataUi->wpmBox->addItem("80 wpm", 800);
+		//data is index to m_minMaxTable.  Keep in sync
+		m_dataUi->wpmBox->addItem("5-50 wpm");
+		m_dataUi->wpmBox->addItem("50-100 wpm");
+		m_dataUi->wpmBox->addItem("100-200 wpm");
 		connect(m_dataUi->wpmBox,SIGNAL(currentIndexChanged(int)),this,SLOT(wpmBoxChanged(int)));
 
 		//Threshold selection
@@ -389,6 +358,23 @@ void Morse::setDemodMode(DeviceInterface::DemodMode _demodMode)
 	m_demodMode = _demodMode;
 }
 
+//Called initially and whenever we need to change goretzel tone or 'N'
+void Morse::updateGoertzel(int modemFreq, int samplesPerResult)
+{
+	if (!m_useGoertzel)
+		return;
+
+	m_goertzelSamplesPerResult = samplesPerResult;
+	m_modemFrequency = modemFreq;
+	// bit filter based on 10 msec rise time of CW waveform
+	int jitterCount = (int)(m_modemSampleRate * m_secRiseFall / m_goertzelSamplesPerResult);
+	if (m_jitterFilter != NULL)
+		delete m_jitterFilter;
+	m_jitterFilter = new MovingAvgFilter(jitterCount);
+
+	m_goertzel->setFreq(m_modemFrequency, m_goertzelSamplesPerResult, jitterCount);
+
+}
 
 void Morse::setMinMaxMark(int wpmLow, int wpmHigh)
 {
@@ -410,42 +396,40 @@ void Morse::freezeButtonPressed(bool b)
 	m_outputOn = !m_outputOn;
 }
 
+//Finds the optimum N that results in a bandwidth of 100-300 and N of 12 to 4
+quint32 Morse::findBestGoertzelN(quint32 wpm)
+{
+	//Calc best N for 8 results per Tcw
+	quint32 samplesPerResult;
+	quint32 bandwidth;
+	quint32 resPerTcw; //Results per Tcw
+	//Find N with largest resPerTcw and smallest bandwidth
+	for (resPerTcw = 12; resPerTcw>=4; resPerTcw--) {
+		samplesPerResult = (MorseCode::wpmToTcwUsec(wpm) / resPerTcw) / (1.0e6 / m_modemSampleRate);
+		bandwidth = m_modemSampleRate / samplesPerResult;
+		if (bandwidth >= 100 && bandwidth <= 300)
+			break;
+		//Otherwise bandwidth is the best it will be at 4 results per Tcw
+	}
+	qDebug()<<"WPM:"<<wpm<<"resPerTcw:"<<resPerTcw<<" samplesPerResult:"<<samplesPerResult<<" bandWidth: "<<bandwidth;
+	return samplesPerResult;
+}
+
 void Morse::wpmBoxChanged(int s)
 {
-	Q_UNUSED(s);
-
-	int wpm = m_dataUi->wpmBox->currentData().toInt();
-	if (wpm == 1) {
-		//Auto - Free range for timing
-		m_lockWPM = false;
-		m_wpmOutsideRange = false;
-		m_wpmLimitLow = c_wpmAutoLower;
-		m_wpmLimitHigh = c_wpmAutoUpper;
-		setMinMaxMark(m_wpmLimitLow, m_wpmLimitHigh);
-		init(c_wpmSpeedInit); //Reset all data
-	} else if (wpm >= 5 and wpm <=60) {
-		//Fixed - Timing changes limited to plus/minus selected
-		//Higher speeds also adjust parameters like rise/fall time
-		m_wpmFixed = wpm;
-		m_wpmSpeedCurrent = wpm;
-		m_lockWPM = false;
-		m_wpmOutsideRange = false;
-		m_wpmLimitLow = wpm - c_wpmRange;
-		m_wpmLimitHigh = wpm + c_wpmRange;
-		setMinMaxMark(m_wpmLimitLow, m_wpmLimitHigh);
-		init(wpm);
-	} else if (wpm > 100) {
-		//Fixed options, no variability in timing
-		wpm /= 10; //Get actual fixed wpm
-		m_wpmFixed = wpm;
-		m_wpmSpeedCurrent = wpm;
-		m_wpmOutsideRange = false;
-		m_lockWPM = true;
-		m_wpmLimitLow = wpm - 2;
-		m_wpmLimitHigh = wpm + 2;
-		setMinMaxMark(m_wpmLimitLow, m_wpmLimitHigh);
-		init(wpm);
-	}
+	int index = s; //m_dataUi->wpmBox->currentData().toInt();
+	m_lockWPM = false;
+	m_aboveWpmRange = false;
+	m_belowWpmRange = false;
+	m_wpmLimitLow = m_minMaxTable[index].wpmLow;
+	m_wpmLimitHigh = m_minMaxTable[index].wpmHigh;
+	int wpm = (m_wpmLimitLow + m_wpmLimitHigh) / 2;
+	m_wpmFixed = wpm;
+	m_wpmSpeedCurrent = wpm;
+	quint32 samplesPerResult = findBestGoertzelN(wpm);
+	updateGoertzel(c_defaultModemFrequency, samplesPerResult);
+	setMinMaxMark(m_wpmLimitLow, m_wpmLimitHigh);
+	init(wpm);
 }
 
 void Morse::thresholdOptionChanged(int s)
@@ -493,11 +477,13 @@ void Morse::refreshOutput()
 
 	m_outputBufMutex.lock();
 	if (m_lockWPM)
-		m_dataUi->wpmBox->setCurrentText(QString().sprintf("%d WPM fixed", m_wpmFixed));
-	else if (m_wpmOutsideRange)
-		m_dataUi->wpmBox->setCurrentText(QString().sprintf("Outside range"));
+		m_dataUi->wpmBox->setCurrentText(QString().sprintf("%d wpm fixed", m_wpmFixed));
+	else if (m_aboveWpmRange)
+		m_dataUi->wpmBox->setCurrentText(QString().sprintf(">%d wpm",m_wpmLimitHigh-m_wpmVar));
+	else if (m_belowWpmRange)
+		m_dataUi->wpmBox->setCurrentText(QString().sprintf("<%d wpm",m_wpmLimitLow+m_wpmVar));
 	else
-		m_dataUi->wpmBox->setCurrentText(QString().sprintf("%d WPM est", m_wpmSpeedCurrent));
+		m_dataUi->wpmBox->setCurrentText(QString().sprintf("%d wpm", m_wpmSpeedCurrent));
 
 	m_dataUi->dataEdit->insertPlainText(m_output); //At cursor
 	m_dataUi->dataEdit->moveCursor(QTextCursor::End); //Scrolls window so new text is always visible
@@ -592,34 +578,18 @@ void Morse::init(quint32 wpm)
 {
 	m_output.clear(); //Clear any text that hasn't been output
 	m_wpmSpeedCurrent = wpm;
-	m_wpmOutsideRange = false;
-	m_usecDotDashThreshold = 2 * c_uSecDotMagic / m_wpmSpeedCurrent;
-    syncTiming(); //Based on wpmSpeedCurrent & adaptive threshold
+	updateThresholds(c_uSecDotMagic / wpm, true); //Assume 1st mark is a dot
 
 	m_useNormalizingThreshold = true; //Fldigi mode
 	m_agc_peak = 0;
 	m_outputMode = CHAR_ONLY;
-	m_thresholdFilter->reset();
+	m_dotDashThresholdFilter->reset();
     resetModemClock();
     resetDotDashBuf(); //So reset can refresh immediately
 	m_lastReceiveState = m_receiveState;
 	m_receiveState = IDLE; //Will reset clock and dot dash
 }
 
-//Recalcs all values that are speed related
-//Called in constructor, reset_rx_filter, synctiming
-//Init values should never change, so this should only be called once with wpmSpeedInit as arg
-void Morse::calcDotDashLength(int _speed, quint32 & _usecDot, quint32 & _usecDash)
-{
-    //Special case where _speed is zero
-    if (_speed > 0)
-		_usecDot = c_uSecDotMagic / _speed;
-    else
-		_usecDot = c_uSecDotMagic / 5;
-
-    _usecDash = 3 * _usecDot;
-
-}
 
 // Set up to track speed on dot-dash or dash-dot pairs for this test to work, we need a dot dash pair or a
 // dash dot pair to validate timing from and force the speed tracking in the right direction. This method
@@ -630,111 +600,115 @@ void Morse::calcDotDashLength(int _speed, quint32 & _usecDot, quint32 & _usecDas
 // quite variable, but with most faster cw sent with electronic keyers, this is one relationship that is
 // quite reliable. Lawrence Glaister (ve7it@shaw.ca)
 
-//Called on every mark mark sequence to update thresholds
+//Called on every mark mark/elementSpace sequence to update thresholds
 //This should be only place where thresholds are changed
-void Morse::updateThresholds(quint32 usecNewMark)
+//If forceUpdate is true, then we assume newMark is a dot and update everything.  Used for reset
+void Morse::updateThresholds(quint32 usecNewMark, bool forceUpdate)
 {
-	//If we're locked, we don't tweak thresholds at all.
-	//Typically for machine to machine morse
-	if (m_lockWPM)
-		return;
+	quint32 usecDot=0, usecDash=0;
 
-	quint32 usecDot, usecDash;
-
-	if (m_usecLastMark == 0)
-		return; //1st time called
-
-#if 0
-	//Do we still need this since we're checking for wpm low/high range now?
-	//Ignore if too short or too long
-	if (usecNewMark < m_usecShortestMark ||
-		usecNewMark > m_usecLongestMark)
-		return;
-#endif
-
-	double ratio = usecNewMark / m_usecLastMark;
-
-	//Determine if new mark can be assumed to be dot, dash, or indeterminate (???)
-	//There several options we have to check for
-	//dot followed by dash: Update timing
-	//dot followed by dot: Don't do anything
-	//dot followed by something out of range: Could be speed change
-	//dash followed by dot: Update timing
-	//dash followed by dash: Don't do anything
-	//dash followed by something out of range: Could be speed change
-
-	//There has to be at least a 2x difference between lastMark and newMark for us to make any assumption about
-	//which one is a dot and which one a dash
-	//If difference is greater than 4x, then there's too much difference for us to make any assumptions
-	//Otherwise could just be normal variations
-	//      newMark < lastMark  |  newMark > lastMark
-	//  ------------------------|-----------------------
-	//        0.25   0.50       1.0        2.0    4.0      newMark / lastMark ratio
-	//	  ---->4<---->2<---->lastMark<---->2<---->4<----
-	//  |  ??? |  dot |  ???    |     ???  | dash | ???  |
-
-	if (ratio >=2 && ratio <= 4) {
-		//newMark is greater than lastMark and long enough to be a dash
-		usecDot = m_usecLastMark;
-		usecDash = usecNewMark;
-	} else if (ratio >= 0.25 && ratio <= 0.50) {
-		//newMark is less than lastMark and short enough to be a dot
+	if (forceUpdate) {
 		usecDot = usecNewMark;
-		usecDash = m_usecLastMark;
-	} else if (ratio > 4 || ratio < 0.25) {
-		//either newMark or lastMark is too long
-		//We could have a new signal at a slower speed or it could be an error
-		return;
+		usecDash = usecDot * 3;
+		m_usecLastMark = usecDot;
 	} else {
-		//either newMark or lastMark is too short
-		//We could have a new signal at a higher speed, or it could be an error
-		return;
-	}
+		//If we're locked, we don't tweak thresholds at all.
+		//Typically for machine to machine morse
+		if (m_lockWPM)
+			return;
+
+
+		if (m_usecLastMark == 0)
+			return; //1st time called
+
+	#if 0
+		//Do we still need this since we're checking for wpm low/high range now?
+		//Ignore if too short or too long
+		if (usecNewMark < m_usecShortestMark ||
+			usecNewMark > m_usecLongestMark)
+			return;
+	#endif
+
+		double ratio = (float)usecNewMark / (float)m_usecLastMark;
+
+		//Determine if new mark can be assumed to be dot, dash, or indeterminate (???)
+		//There several options we have to check for
+		//dot followed by dash: Update timing
+		//dot followed by dot: Don't do anything
+		//dot followed by something out of range: Could be speed change
+		//dash followed by dot: Update timing
+		//dash followed by dash: Don't do anything
+		//dash followed by something out of range: Could be speed change
+
+		//There has to be at least a 2x difference between lastMark and newMark for us to make any assumption about
+		//which one is a dot and which one a dash
+		//If difference is greater than 4x, then there's too much difference for us to make any assumptions
+		//Otherwise could just be normal variations
+		//      newMark < lastMark  |  newMark > lastMark
+		//  ------------------------|-----------------------
+		//       0.25    0.50       1.0        2.0    4.0      newMark / lastMark ratio
+		//	  ---->|<---->|<---->lastMark<---->|<---->|<----
+		//  |  ??? |  dot |  ???    |     ???  | dash | ???  |
+		//Perfect morse will return ratios of .333 (dot/dash), 3.0 (dash/dot), or 1.0 (dot/dot or dash/dash)
+
+		//Perfect ratio of 3 is in the middle
+		if (ratio >=2 && ratio <= 4) {
+			//newMark is greater than lastMark and long enough to be a dash
+			usecDot = m_usecLastMark;
+			usecDash = usecNewMark;
+		//Perfect ration of .333 is in the middle
+		} else if (ratio >= 0.25 && ratio <= 0.50) {
+			//newMark is less than lastMark and short enough to be a dot
+			usecDot = usecNewMark;
+			usecDash = m_usecLastMark;
+		} else if (ratio > 0.5 && ratio < 2.0) {
+			//Accepted variation within current thresholds
+			return;
+		} else {
+			//either newMark or lastMark is out of range, wait till in range
+			return;
+		}
+	} //End if forceUpdate
 
     //Current speed estimate
 	//Result is midway between last short and long mark, assumed to be dot and dash
-	quint32 newDotDashThreshold = (quint32)m_thresholdFilter->newSample((usecDash + usecDot) / 2);
-	quint32 newWpm = c_uSecDotMagic / (newDotDashThreshold / 2);
-#if 0
-	//Only update if delta greater then 5wpm to avoid 'adaptive jitter'
-	//Round up or down
-	newWpm = ((newWpm+2) / 5) * 5;  //Increment in units of 5wpm
-	if (abs(m_wpmSpeedCurrent - newWpm) >= 5) {
-		m_usecAdaptiveThreshold = newAdaptiveThreshold;
-		m_wpmSpeedCurrent = newWpm;
-	}
-#else
-	if (newWpm >= m_wpmLimitLow && newWpm < m_wpmLimitHigh) {
-		m_usecDotDashThreshold = newDotDashThreshold;
-		m_wpmSpeedCurrent = newWpm;
-		m_wpmOutsideRange = false;
+	quint32 newDotDashThreshold = (quint32)m_dotDashThresholdFilter->newSample((usecDash + usecDot) / 2);
+	usecDot = newDotDashThreshold / 2; //Filtered dot length
+	quint32 newWpm = c_uSecDotMagic / usecDot;
+	if (!forceUpdate && newWpm < m_wpmLimitLow) {
+		m_belowWpmRange = true;
+		m_aboveWpmRange = false;
+	} else if (!forceUpdate && newWpm > m_wpmLimitHigh) {
+		m_belowWpmRange = false;
+		m_aboveWpmRange = true;
 	} else {
-		m_wpmOutsideRange = true;
-	}
+		//forceUpdate is true or we're within range
+		m_belowWpmRange = false;
+		m_aboveWpmRange = false;
+		//Keep wpm within range, taking into account variance
+		if (newWpm > (m_wpmLimitHigh - m_wpmVar)) //In the grey zone between displayed range and var
+			newWpm -= m_wpmVar;
+		else if (newWpm < m_wpmLimitLow + m_wpmVar)
+			newWpm += m_wpmVar;
+
+		m_usecDotDashThreshold = newDotDashThreshold;
+#if 0
+		//dotDash threshold is roughly 2 TCW, so midway between dot and dash
+		m_usecNoiseSpike = m_usecDotDashThreshold / 4;
+		//Make this zero to accept any inter mark space as valid
+		//Adaptive threshold is typically 2TCW so /8 = .25TCW
+		m_usecElementThreshold = m_usecDotDashThreshold / 8;
+#else
+		//Based on usecDot
+		m_usecNoiseSpike = usecDot * 0.50; //1/2 Tcw
+		m_usecElementThreshold = usecDot * 0.25; //1/4 Tcw
 #endif
-
+		m_wpmSpeedCurrent = newWpm;
+		m_usecDotCurrent = usecDot;
+		m_usecDashCurrent = usecDash;
+	}
 }
 
-// sync_parameters()
-// Synchronize the dot, dash, end of element, end of character, and end
-// of word timings and ranges to new values of Morse speed, or receive tolerance.
-// Changes
-// usecNoiseSpike
-// useUpperLimit and usecLowerLimit based on wpm
-
-//Called once per buffer to update timings that we don't want to change every mark/space
-//UpdateAdaptiveThreshold called every dot/dash for timings that need to change faster
-void Morse::syncTiming()
-{
-    //CalcDotDash handles special case where speed is zero
-	calcDotDashLength(m_wpmSpeedCurrent, m_usecDotCurrent, m_usecDashCurrent);
-    //Adaptive threshold is roughly 2 TCW, so midway between dot and dash
-	m_usecNoiseSpike = m_usecDotDashThreshold / 4;
-    //Make this zero to accept any inter mark space as valid
-    //Adaptive threshold is typically 2TCW so /8 = .25TCW
-	m_usecElementThreshold = m_usecDotDashThreshold / 8;
-
-}
 
 //All the things we need to do to start a new char
 void Morse::resetDotDashBuf()
@@ -1000,8 +974,15 @@ bool Morse::stateMachine(CW_EVENT event)
 					m_toneEnd = m_sampleClock->clock();
 					m_usecMark = m_sampleClock->uSecDelta(m_toneStart, m_toneEnd);
 					//qDebug()<<"Mark:"<<m_usecMark;
-                    // If the tone length is shorter than any noise cancelling
-                    // threshold that has been set, then ignore this tone.
+
+					// make sure our timing values are up to date after every tone
+					//This allows us to adapt to changing wpm speeds that existing thresholds could filter
+					//at the risk of occasionally picking up a false mark.  But dotDashThreshold filter should
+					//deal with this.
+					updateThresholds(m_usecMark, false);
+					m_usecLastMark = m_usecMark; //Save for next check
+
+					// If the tone length is shorter than any noiseThreshold, no_tone a noise dropout
 					if (m_usecNoiseSpike > 0
 						&& m_usecMark < m_usecNoiseSpike) {
                         break; //Still in mark timing state
@@ -1044,6 +1025,7 @@ bool Morse::stateMachine(CW_EVENT event)
 
                 case NO_TONE_EVENT:
 					m_usecSpace = m_sampleClock->uSecToCurrent(m_toneEnd); //Time from tone end to now
+
 					if (!m_markHandled && m_usecSpace > m_usecElementThreshold) {
                         addMarkToDotDash();
 						m_markHandled = true;
@@ -1111,13 +1093,6 @@ void Morse::addMarkToDotDash()
 		return;
 	}
     //Process last mark element
-    //uSecMark has timing
-    // make sure our timing values are up to date after every tone
-    syncTiming();
-
-	updateThresholds(m_usecMark);
-	m_usecLastMark = m_usecMark; //Save for next check
-
 	if (m_usecMark <= m_usecDotDashThreshold) {
 		m_dotDashBuf[m_dotDashBufIndex++] = MorseCode::c_dotChar;
     } else {

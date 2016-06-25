@@ -70,9 +70,9 @@ private:
 	//c_uSecDotMagic / WPM = usec per TCW
 	//c_mSecDotMagic / WPM = msec per TCW
 	//c_secDotMagic / WPM = sec per TCW
-	static const quint32 c_uSecDotMagic = 1200000; //units are micro-seconts
-	static const quint32 c_mSecDotMagic = 1200; //units are milli-seconds
-	static constexpr double c_secDotMagic = 1.2; //units are seconds
+	const quint32 c_uSecDotMagic = 1200000; //units are micro-seconts
+	const quint32 c_mSecDotMagic = 1200; //units are milli-seconds
+	const double c_secDotMagic = 1.2; //units are seconds
 
 	enum THRESHOLD_OPTIONS {TH_AUTO, TH_TONE, TH_DASH, TH_WORD, TH_SQUELCH};
 	//Configurable thresholds
@@ -85,7 +85,8 @@ private:
 	//Used to restrict auto tracking to a specified range
 	quint32 m_wpmLimitLow;
 	quint32 m_wpmLimitHigh;
-	bool m_wpmOutsideRange; //True if auto speed calc results are below or above limits
+	bool m_aboveWpmRange;
+	bool m_belowWpmRange;
 
     //From SignalProcessing
 	int m_numSamples;
@@ -126,10 +127,12 @@ private:
 
     //Filters
 	//
-	const static int c_lpFilterLen = 512;
+	const int c_lpFilterLen = 512;
 	//N = binWidth = #samples per bin
 	int m_filterSamplesPerResult; //For Fldigi algorithm
 	int m_goertzelSamplesPerResult; //For Goertzel algorithm
+	const int c_goertzelDefaultSamplesPerResult = 20;
+	const int c_defaultModemFrequency = 1000;
 
 	C_FIR_filter	*m_toneFilter; // linear phase finite impulse response filter
 
@@ -140,17 +143,30 @@ private:
 
     //Received CW speed can be fixed (set by user) or track actual dot/dash lengths being received
 	//Smooths changes in threshold between dot and dash
-	//Used for moving average thresholdFilter, why isn't just always the same as m_bitSamples?
-	const static int c_thresholdFilterSize = 16;
-	MovingAvgFilter *m_thresholdFilter;
-	void updateThresholds(quint32 usecNewMark);
-
-	const int c_wpmRange = 5; // +/- wpm tracking range for fixed ranges
-	const int c_wpmAutoLower = 5; //Lower RX limit (WPM)
-	const int c_wpmAutoUpper = 80; // Upper RX limit (WPM)
+	//Too long and adapting to slower speeds takes a long time. Max 16
+	//Too short and errors due to jitter increase. Min 8
+	//Todo: Do we need to change this based on selected wpm range? <40 8 >40 16?
+	const int c_thresholdFilterSize = 8;
+	MovingAvgFilter *m_dotDashThresholdFilter;
+	void updateThresholds(quint32 usecNewMark, bool forceUpdate);
 
 	//Current fixed speed if m_isAutoSpeed = false
 	int m_wpmFixed;
+
+	struct wpmMinMax {
+		quint32 wpmLow;
+		quint32 wpmHigh;
+	};
+	const quint32 m_wpmVar = 2;
+	//Low and High should be slightly below and above displayed range to allow for minor wpm variance
+	//We only really need 3 ranges, each with a wpm low/high factor of 2
+	//For example all of the speeds between 50 and 100 can be handled by the same goertzel filter settings
+	//Same for 100-200
+	wpmMinMax m_minMaxTable[3] {
+		{5-m_wpmVar,50+m_wpmVar},
+		{50-m_wpmVar,100+m_wpmVar},
+		{100-m_wpmVar,200+m_wpmVar}
+	};
 
 	//Fastest we can handle at current auto or fixed speed
 	quint32 m_usecLongestMark;
@@ -159,9 +175,9 @@ private:
 
 
     // Receive buffering
-	const static int c_dotDashBufLen = 256;
+	const int c_dotDashBufLen = 256;
     //This holds dots and dashes as they are received, way longer than any letter or phrase
-	char m_dotDashBuf[c_dotDashBufLen];
+	char m_dotDashBuf[256];
 
     // dotDash buffer current location
 	int m_dotDashBufIndex;
@@ -181,10 +197,6 @@ private:
 	quint32 m_usecLastSpace = 0;	// length of last dot
 	quint32 m_usecMark = 0;		// Time difference in usecs
 	quint32 m_usecSpace = 0;
-    void calcDotDashLength(int _speed, quint32 & _usecDot, quint32 & _usecDash);
-
-    void syncTiming();
-
 
     enum CW_EVENT {TONE_EVENT, NO_TONE_EVENT};
     enum DECODE_STATE {IDLE, MARK_TIMING, INTER_ELEMENT_TIMING, WORD_SPACE_TIMING};
@@ -225,6 +237,8 @@ private:
 
 	bool m_useGoertzel;
 	Goertzel *m_goertzel;
+	void updateGoertzel(int modemFreq, int samplesPerResult);
+	quint32 findBestGoertzelN(quint32 wpm);
 };
 
 #endif // MORSE_H
