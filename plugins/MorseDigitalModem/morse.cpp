@@ -429,9 +429,11 @@ quint32 Morse::findBestGoertzelN(quint32 wpmLow, quint32 wpmHigh)
 		}
 		//Otherwise bandwidth is the best it will be at 4 results per Tcw
 	}
+#if 0
 	qDebug()<<"WPM:"<<wpmLow<<"resPerTcw:"<<resPerTcw<<" samplesPerResult:"<<nLow<<" bandWidth: "<<bwLow;
 	qDebug()<<"WPM:"<<wpmMid<<"resPerTcw:"<<resPerTcw<<" samplesPerResult:"<<nMid<<" bandWidth: "<<bwMid;
 	qDebug()<<"WPM:"<<wpmHigh<<"resPerTcw:"<<resPerTcw<<" samplesPerResult:"<<nHigh<<" bandWidth: "<<bwHigh;
+#endif
 	return nMid;
 }
 
@@ -720,12 +722,31 @@ void Morse::updateThresholds(quint32 usecNewMark, bool forceUpdate)
 		m_usecElementThreshold = m_usecDotDashThreshold / 8;
 #else
 		//Based on usecDot
-		m_usecNoiseSpike = usecDot * 0.50; //1/2 Tcw
-		m_usecElementThreshold = usecDot * 0.25; //1/4 Tcw
+		//If we're timing space, ignore marks shorter than this which could be a noise spike
+		m_usecSpikeThreshold = usecDot * 0.50; //
+		//If we're timing mark, ignore space shorter than this which could be fadeing
+		m_usecFadeThreshold = usecDot * 0.50; // Ignore space less than this as possible fading
+		//I think elementThreshold should be midway between dotDashThreshold
+		m_usecElementThreshold = usecDot * 0.25; // Greater than this is an element space
 #endif
+		//Perfect timing based on Tcw
+		// Mark:  |-dot(1)-|-----dash(3)-----|
+		// Space: |-el(1)--|--character(3)---|-----------------------------------|-- word space(7)
+		// Tcw:   0 | |    1        2        3        4        5        6        7
+		// Thresholds
+		// Mark:  |                 |----dotDashThreshold
+		// Mark:  | |fadeThreshold
+		// Space: |   |elementThreshold
+		// Space: |                 |----characterThreshold
+		// Space: |                                   |----wordThreshold
+		// Space: | |spikeThreshold
+
 		m_wpmSpeedCurrent = newWpm;
 		m_usecDotCurrent = usecDot;
 		m_usecDashCurrent = usecDash;
+		m_usecCharThreshold = usecDot * 2; //Greater than this is a character space
+		//Between is a character space
+		m_usecWordThreshold = usecDot * 4; //Greater than this is a word space
 	}
 }
 
@@ -1003,8 +1024,8 @@ bool Morse::stateMachine(CW_EVENT event)
 					m_usecLastMark = m_usecMark; //Save for next check
 
 					// If the tone length is shorter than any noiseThreshold, no_tone a noise dropout
-					if (m_usecNoiseSpike > 0
-						&& m_usecMark < m_usecNoiseSpike) {
+					if (m_usecSpikeThreshold > 0
+						&& m_usecMark < m_usecSpikeThreshold) {
                         break; //Still in mark timing state
                     }
 
@@ -1025,7 +1046,7 @@ bool Morse::stateMachine(CW_EVENT event)
                     //If enough time has gone by we've already handled in NO_TONE_EVENT
 					if (!m_markHandled) {
                         //Too short
-						if (m_usecSpace < m_usecNoiseSpike) {
+						if (m_usecSpace < m_usecFadeThreshold) {
                         //Just continue as if space never happened
                             //Don't reset clock, we're still timing mark
 							m_lastReceiveState = m_receiveState;
@@ -1152,11 +1173,11 @@ QString Morse::spaceTiming(bool lookingForChar)
     if (lookingForChar) {
         // SHORT time since keyup... nothing to do yet
         //Could be inter-element space (1 TCW)
-		if (m_usecSpace < (2 * m_usecDotCurrent)) {
+		if (m_usecSpace < m_usecCharThreshold) {
 			return outStr; //Keep timing silence
 
-		} else if (m_usecSpace >= (2 * m_usecDotCurrent) &&
-			m_usecSpace <= (4 * m_usecDotCurrent)) {
+		} else if (m_usecSpace >= m_usecCharThreshold &&
+			m_usecSpace <= m_usecWordThreshold) {
             // MEDIUM time since keyup... check for character space
             // one shot through this code via receive state logic
             // FARNSWOTH MOD HERE -->
@@ -1185,7 +1206,7 @@ QString Morse::spaceTiming(bool lookingForChar)
         }
     } else {
         //Word space is 7TCW, accept anything greater than 4 or 5
-		if ((m_usecSpace > (4 * m_usecDotCurrent))) {
+		if ((m_usecSpace > m_usecWordThreshold)) {
             //We only get here if we've already output a char
             // LONG time since keyup... check for a word space
             // FARNSWOTH MOD HERE -->

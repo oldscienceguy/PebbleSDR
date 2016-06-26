@@ -77,8 +77,13 @@ private:
 	enum THRESHOLD_OPTIONS {TH_AUTO, TH_TONE, TH_DASH, TH_WORD, TH_SQUELCH};
 	//Configurable thresholds
 	quint32 m_usecDotDashThreshold; //Determines whether mark is dot or dash
-	quint32 m_usecElementThreshold = 0; //Space between dot/dash in char
 	double m_squelchThreshold; //If squelch is on, this is compared to metric
+	quint32 m_usecSpikeThreshold; // Initially ignore any tone shorter than this
+	quint32 m_usecFadeThreshold; //Ignore any space shorter than this as possible fading
+	quint32 m_usecElementThreshold; //Space between dot/dash in char
+	quint32 m_usecCharThreshold;
+	quint32 m_usecWordThreshold;
+
 
 	//1 = auto, 2 = ... > 5 is fixed WPM
 	int m_wpmOption;
@@ -192,7 +197,6 @@ private:
 
 	quint32 m_toneStart;		// Tone start timestamp
 	quint32 m_toneEnd;		// Tone end timestamp
-	quint32 m_usecNoiseSpike;		// Initially ignore any tone < 10mS
 	quint32 m_usecLastMark = 0;	// length of last dot
 	quint32 m_usecLastSpace = 0;	// length of last dot
 	quint32 m_usecMark = 0;		// Time difference in usecs
