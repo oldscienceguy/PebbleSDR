@@ -201,6 +201,9 @@ private:
 	quint32 m_usecLastSpace = 0;	// length of last dot
 	quint32 m_usecMark = 0;		// Time difference in usecs
 	quint32 m_usecSpace = 0;
+	//How many usec the detection algorithm (Goertzel, Filter, etc) takes to return a result
+	//In some cases we may only have 3 or 4 results per Tcw and need this to keep accurate timing
+	quint32 m_usecPerResult;
 
     enum CW_EVENT {TONE_EVENT, NO_TONE_EVENT};
     enum DECODE_STATE {IDLE, MARK_TIMING, INTER_ELEMENT_TIMING, WORD_SPACE_TIMING};
@@ -225,9 +228,7 @@ private:
 
 	const bool c_useLowercase = false; //Print Rx in lowercase for CW, RTTY, CONTESTIA and THROB
 
-	QString spaceTiming(bool lookingForChar);
 	void outputString(QString outStr);
-    void addMarkToDotDash();
 	bool m_markHandled;
 
     enum OUTPUT_MODE{CHAR_ONLY,CHAR_AND_DOTDASH,DOTDASH};

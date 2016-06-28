@@ -222,6 +222,7 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 		if (m_jitterFilter != NULL)
 			delete m_jitterFilter;
 		m_jitterFilter = new MovingAvgFilter(jitterCount);
+		m_usecPerResult = m_filterSamplesPerResult * (1e6/m_modemSampleRate);
 
 	} else {
 		if (m_goertzel != NULL)
@@ -373,6 +374,7 @@ void Morse::updateGoertzel(int modemFreq, int samplesPerResult)
 	m_jitterFilter = new MovingAvgFilter(jitterCount);
 
 	m_goertzel->setFreq(m_modemFrequency, m_goertzelSamplesPerResult, jitterCount);
+	m_usecPerResult = m_goertzelSamplesPerResult * (1e6/m_modemSampleRate);
 
 }
 
@@ -429,11 +431,14 @@ quint32 Morse::findBestGoertzelN(quint32 wpmLow, quint32 wpmHigh)
 		}
 		//Otherwise bandwidth is the best it will be at 4 results per Tcw
 	}
-#if 0
-	qDebug()<<"WPM:"<<wpmLow<<"resPerTcw:"<<resPerTcw<<" samplesPerResult:"<<nLow<<" bandWidth: "<<bwLow;
-	qDebug()<<"WPM:"<<wpmMid<<"resPerTcw:"<<resPerTcw<<" samplesPerResult:"<<nMid<<" bandWidth: "<<bwMid;
-	qDebug()<<"WPM:"<<wpmHigh<<"resPerTcw:"<<resPerTcw<<" samplesPerResult:"<<nHigh<<" bandWidth: "<<bwHigh;
-#endif
+
+	//Bug: Goertzel is supposed to work for any N, but the non-integer k algorithm doesn't work if N is odd
+	//6/27/16
+	nMid = (nMid / 2) * 2;
+	//qDebug()<<"WPM:"<<wpmLow<<"resPerTcw:"<<resPerTcw<<" samplesPerResult:"<<nLow<<" bandWidth: "<<bwLow;
+	//qDebug()<<"WPM:"<<wpmMid<<"resPerTcw:"<<resPerTcw<<" samplesPerResult:"<<nMid<<" bandWidth: "<<bwMid;
+	//qDebug()<<"WPM:"<<wpmHigh<<"resPerTcw:"<<resPerTcw<<" samplesPerResult:"<<nHigh<<" bandWidth: "<<bwHigh;
+
 	return nMid;
 }
 
@@ -991,14 +996,23 @@ bool Morse::stateMachine(CW_EVENT event)
                 //Tone filter output is trending up
                 case TONE_EVENT:
                     resetDotDashBuf();
-                    resetModemClock(); //Start timer over
-					m_lastReceiveState = m_receiveState;
+					resetModemClock();
+					//The time for this 1st tone will be included when we detect the end of the tone
+					// Res Res Res Res Res Res Res Res Res Res
+					//     ___ ___ ___           ___ ___ ___
+					// ___             ___ ___ ___
+					//        | Tone detected after 1 mark result
+					//                    | End of tone detected after 1 space result
+					//        | usecMark  | usecMark correctly returns timing
+					m_lastReceiveState = IDLE;
 					m_receiveState = MARK_TIMING;
                     break;
 
                 //Tone filter output is trending down
                 case NO_TONE_EVENT:
                     //Don't care about silence in idle state
+					m_lastReceiveState = IDLE;
+					m_receiveState = IDLE;
                     break;
             }
             break;
@@ -1007,6 +1021,8 @@ bool Morse::stateMachine(CW_EVENT event)
                 case TONE_EVENT:
                     //Keep timing
                     //Check for long tuning tone and ignore ??
+					m_lastReceiveState = MARK_TIMING;
+					m_receiveState = MARK_TIMING;
                     break;
 
                 case NO_TONE_EVENT:
@@ -1026,14 +1042,18 @@ bool Morse::stateMachine(CW_EVENT event)
 					// If the tone length is shorter than any noiseThreshold, no_tone a noise dropout
 					if (m_usecSpikeThreshold > 0
 						&& m_usecMark < m_usecSpikeThreshold) {
-                        break; //Still in mark timing state
+						//Noise spike, go back to idle, element or word timing mode
+						//so don't reset modemClock so we keep timing
+						m_receiveState = m_lastReceiveState;
+						//This doesn't help with general noise,just spikes
+						break;
                     }
 
                     //dumpStateMachine("KEYUP_EVENT enter");
 					m_usecSpace = 0;
                     //Could be valid tone or could just be a short signal drop
 					m_markHandled = false; //Defer to space timing
-					m_lastReceiveState = m_receiveState;
+					m_lastReceiveState = MARK_TIMING;
 					m_receiveState = INTER_ELEMENT_TIMING;
                     break;
             }
@@ -1042,106 +1062,139 @@ bool Morse::stateMachine(CW_EVENT event)
         case INTER_ELEMENT_TIMING:
             switch (event) {
                 case TONE_EVENT:
-                    //Looking for inter-element space
-                    //If enough time has gone by we've already handled in NO_TONE_EVENT
+					//If usecSpace > elementThreshold, then we've processed the element, char, or word space
+					//and can start mark timing
 					if (!m_markHandled) {
-                        //Too short
+#if 0
+						//Checking for noise pulses doesn't work or doesn't improve anything, revisit logic
+						//usecSpace was less than elementThreshold
 						if (m_usecSpace < m_usecFadeThreshold) {
-                        //Just continue as if space never happened
+							//Just continue as if tone never happened
                             //Don't reset clock, we're still timing mark
-							m_lastReceiveState = m_receiveState;
-							m_receiveState = MARK_TIMING;
+							m_lastReceiveState = INTER_ELEMENT_TIMING;
+							m_receiveState = INTER_ELEMENT_TIMING;
                         } else {
-                        //Throw it away and start over
-							m_lastReceiveState = m_receiveState;
+							//Throw it away and start over
+							m_lastReceiveState = INTER_ELEMENT_TIMING;
 							m_receiveState = IDLE;
                         }
+#endif
                     } else {
-                        //If there was enough time for char out we wouldn't get here
+						//usecSpace was > elementThreshold and we are starting a new mark
                         resetModemClock();
-						m_lastReceiveState = m_receiveState;
+						m_lastReceiveState = INTER_ELEMENT_TIMING;
 						m_receiveState = MARK_TIMING;
                     }
                     break;
 
                 case NO_TONE_EVENT:
+					//Timing inter-element or character space
 					m_usecSpace = m_sampleClock->uSecToCurrent(m_toneEnd); //Time from tone end to now
 
 					if (!m_markHandled && m_usecSpace > m_usecElementThreshold) {
-                        addMarkToDotDash();
+						//inter-element space (1 TCW), process mark
+						//If we already have max bits in dotDash buf, then trigger error
+						if (m_dotDashBufIndex >= MorseCode::c_maxMorseLen) {
+							m_lastReceiveState = m_receiveState;
+							m_receiveState = IDLE;
+							return true;
+						}
+						//Process last mark element
+						if (m_usecMark <= m_usecDotDashThreshold) {
+							m_dotDashBuf[m_dotDashBufIndex++] = MorseCode::c_dotChar;
+						} else {
+							m_dotDashBuf[m_dotDashBufIndex++] = MorseCode::c_dashChar;
+						}
+
+						// zero terminate representation so we can handle as char* string
+						m_dotDashBuf[m_dotDashBufIndex] = 0;
 						m_markHandled = true;
                     }
-                    //Anything waiting for output?
-					outStr = spaceTiming(true); //Looking for char
-					if (!outStr.isEmpty()) {
-                        //We will only get a char between 2 and 4 TCW of space
-                        outputString(outStr);
-                        //dumpStateMachine(outStr);
-						m_usecLastSpace = m_usecSpace; //Almost always fixed because we start looking for char at 2x usecDot
-                        resetDotDashBuf(); //Ready for new char
-						m_lastReceiveState = m_receiveState; //We don't use lastReceiveState, here for completeness
-						m_receiveState = WORD_SPACE_TIMING;
-                    }
+					if (m_usecSpace < m_usecCharThreshold) {
+						// SHORT time since keyup... nothing to do yet
+						//Keep timing
+						m_lastReceiveState = INTER_ELEMENT_TIMING;
+						m_receiveState = INTER_ELEMENT_TIMING;
+					} else if (m_usecSpace >= m_usecCharThreshold &&
+						m_usecSpace <= m_usecWordThreshold) {
+						// MEDIUM time since keyup... check for character space
+						// one shot through this code via receive state logic
+						// FARNSWOTH MOD HERE -->
+
+						// Look up the representation if there is a character waiting in dotDashBuf
+						if (*m_dotDashBuf != 0x00 && m_dotDashBufIndex > 0) {
+							MorseSymbol *cw = m_morseCode.tokenLookup(m_dotDashBuf);
+							if (cw != NULL) {
+								if (m_outputMode == CHAR_ONLY)
+									outStr = cw->display;
+								else if (m_outputMode == CHAR_AND_DOTDASH)
+									outStr = QString("%1 [ %2 ] ").arg(cw->display).arg(cw->dotDash);
+								else if (m_outputMode == DOTDASH)
+									outStr = QString(" [ %1 ] ").arg(cw->dotDash);
+							} else {
+								// invalid decode... let user see error
+								outStr = "*";
+							}
+							//Display char
+							outputString(outStr);
+							m_usecLastSpace = m_usecSpace; //Almost always fixed because we start looking for char at 2x usecDot
+							resetDotDashBuf(); //Ready for new char See if we should inline this
+							m_lastReceiveState = INTER_ELEMENT_TIMING;
+							m_receiveState = WORD_SPACE_TIMING;
+						} else {
+							//Nothing to output
+							m_lastReceiveState = INTER_ELEMENT_TIMING;
+							m_receiveState = IDLE;
+						}
+
+					} else {
+						//usecSpace is > wordThreshold
+						//Restart state machine
+						m_lastReceiveState = INTER_ELEMENT_TIMING;
+						m_receiveState = IDLE;
+					}
+
                     break;
-            }
+			} //End switch(event)
             break;
         case WORD_SPACE_TIMING:
             switch (event) {
                 case TONE_EVENT:
-                    //Any char has already been output, just start timing tond
-#if 0
-                    //Anything waiting for output?
-                    outStr = spaceTiming(false);
-					if (!outStr.isEmpty()) {
-                        outputChar(outStr);
-                        //dumpStateMachine(*outStr);
-                    }
-#endif
+					//Any char has already been output, just start timing tone
 					m_usecLastSpace = m_usecSpace;
                     resetDotDashBuf(); //Ready for new char
                     resetModemClock();
-					m_lastReceiveState = m_receiveState; //We don't use lastReceiveState, here for completeness
+					m_lastReceiveState = WORD_SPACE_TIMING;
 					m_receiveState = MARK_TIMING;
                     break;
 
                 case NO_TONE_EVENT:
 					m_usecSpace = m_sampleClock->uSecToCurrent(m_toneEnd); //Time from tone end to now
-                    //Anything waiting for output?
-					outStr = spaceTiming(false);
-					if (!outStr.isEmpty()) {
-                        outputString(outStr);
+					if (m_usecSpace < m_usecWordThreshold) {
+						//Not long enough for word space, keep timing
+						m_lastReceiveState = WORD_SPACE_TIMING;
+						m_receiveState = WORD_SPACE_TIMING;
+					} else {
+						//We only get here if we've already output a char
+						// LONG time since keyup... check for a word space
+						// FARNSWOTH MOD HERE -->
+
+						outStr = " "; //End of word
+						//dumpStateMachine("Word Space");
+						outputString(outStr);
 						m_usecLastSpace = m_usecSpace;
 
-                        //dumpStateMachine(*outStr);
-						m_lastReceiveState = m_receiveState;
+						//dumpStateMachine(*outStr);
+						m_lastReceiveState = WORD_SPACE_TIMING;
 						m_receiveState = IDLE; //Takes care of resets
-                    }
+					}
+
                     break;
             }
             break;
     }
-    // should never get here... catch all
+	//
     return false;
-}
-
-//Got a tone that was long enough with a post tone space that was long enough
-void Morse::addMarkToDotDash()
-{
-	//If we already have max bits in dotDash buf, then trigger error
-	if (m_dotDashBufIndex >= MorseCode::c_maxMorseLen) {
-		m_lastReceiveState = m_receiveState;
-		m_receiveState = IDLE;
-		return;
-	}
-    //Process last mark element
-	if (m_usecMark <= m_usecDotDashThreshold) {
-		m_dotDashBuf[m_dotDashBufIndex++] = MorseCode::c_dotChar;
-    } else {
-		m_dotDashBuf[m_dotDashBufIndex++] = MorseCode::c_dashChar;
-    }
-
-	// zero terminate representation so we can handle as char* string
-	m_dotDashBuf[m_dotDashBufIndex] = 0;
 }
 
 void Morse::outputString(QString outStr) {
@@ -1162,67 +1215,6 @@ void Morse::outputString(QString outStr) {
     }
 }
 
-//Processes post tone space timing
-//Returns non-empty QString if space was long enough to output something
-//Uses dotDashBuf, could use usec silence
-QString Morse::spaceTiming(bool lookingForChar)
-{
-	MorseSymbol *cw;
-	QString outStr;
-
-    if (lookingForChar) {
-        // SHORT time since keyup... nothing to do yet
-        //Could be inter-element space (1 TCW)
-		if (m_usecSpace < m_usecCharThreshold) {
-			return outStr; //Keep timing silence
-
-		} else if (m_usecSpace >= m_usecCharThreshold &&
-			m_usecSpace <= m_usecWordThreshold) {
-            // MEDIUM time since keyup... check for character space
-            // one shot through this code via receive state logic
-            // FARNSWOTH MOD HERE -->
-
-            //Char space is 3 TCW per spec, but accept 2 to 4
-
-            // Look up the representation
-			if (*m_dotDashBuf != 0x00) {
-				cw = m_morseCode.tokenLookup(m_dotDashBuf);
-                if (cw != NULL) {
-					if (m_outputMode == CHAR_ONLY)
-                        outStr = cw->display;
-					else if (m_outputMode == CHAR_AND_DOTDASH)
-						outStr = QString("%1 [ %2 ] ").arg(cw->display).arg(cw->dotDash);
-					else if (m_outputMode == DOTDASH)
-						outStr = QString(" [ %1 ] ").arg(cw->dotDash);
-                } else {
-                    // invalid decode... let user see error
-                    outStr = "*";
-                }
-            }
-            return outStr; //Something output
-        } else {
-            //Should never get here looking for char
-            dumpStateMachine("Invalid character timing");
-        }
-    } else {
-        //Word space is 7TCW, accept anything greater than 4 or 5
-		if ((m_usecSpace > m_usecWordThreshold)) {
-            //We only get here if we've already output a char
-            // LONG time since keyup... check for a word space
-            // FARNSWOTH MOD HERE -->
-
-            outStr = " ";
-            //dumpStateMachine("Word Space");
-            return outStr;
-        } else {
-            //Do nothing, char output and not long enough for word space
-			return outStr;
-        }
-    }
-    //If we get here it means that usecSilence wasn't reset properly, should be impossible
-    dumpStateMachine("Impossible space Timing");
-    return NULL;
-}
 
 QString Morse::stateToString(DECODE_STATE state)
 {
