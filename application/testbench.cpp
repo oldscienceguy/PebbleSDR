@@ -647,6 +647,13 @@ void TestBench::displayData(int length, TYPECPX* pBuf, double samplerate, int pr
 	}
 	else
 	{	//if displaying time domain data
+		//Notes:
+		//m_timeScrnPos is the x value of the pixel being output.  It starts at 0 to goes to the pixmap width.
+		//chkForTrigger will emit a signal whenever m_timeScrnPos is zero and update interval has passed
+		//So there is no display until we set all the pixels.
+		//
+		//timeBuf1 and timeBuf2 provide 2 signals, typically for complex data, but could be used to display
+		//analog or binary data if the values are set by caller.  See morse modem for example.
 		for(int i=0; i<length; i++)
 		{
 			//calc to time variables, one in sample time units and
