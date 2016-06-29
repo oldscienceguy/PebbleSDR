@@ -192,7 +192,7 @@ void ToneBit::setFreq(quint32 freq, quint32 N, quint32 sampleRate)
 	//To find which bin our freq is in, (freq / binWidth), ie 1000hz / 100 = bin 10
 	//Combining, k = freq / (sampleRate / N) which is the beginning of the bin
 	//+0.5 bin gives us the exact center of the bin (see Kevin Banks original paper)
-	double k = normalizedFreq / N + 0.5;
+	double k = normalizedFreq * N + 0.5;
 
 	c_A = TWOPI * k / N;
 	c_B = 2 * cos(c_A);
