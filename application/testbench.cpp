@@ -164,6 +164,8 @@ TestBench::TestBench(QWidget *parent) :
 	ui->spinBoxVertRange->setMinimum(128); // .000001 1e-6
 	ui->spinBoxVertRange->setSingleStep(1024);
 
+	ui->spinBoxHorzSpan->setMaximum(5000); //5 seconds for slow morse analysis
+
 	//in khz
 	ui->spinBoxStart->setMaximum(1000); //1000khz
 	ui->spinBoxStart->setMinimum(-1000); //-1000
