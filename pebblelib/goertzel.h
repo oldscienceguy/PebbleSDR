@@ -29,14 +29,14 @@ public:
 
 	quint32 m_freq;
 	quint32 m_bandwidth;
-	quint32 m_msPerBit;
+	quint32 m_usecPerResult;
 	double m_power; //Power of last bin
 	double m_phase; //Phase of last bin
 
 	//Using Lyons terminology (pg 740)
 	double m_coeff; //For power
 	double m_coeff2; //For phase if needed
-	int m_bitSamples; //N = binWidth = #samples per bin
+	int m_samplesPerResult; //N = binWidth = #samples per bin
 	double m_wn; //Lyons w(n), Wikipedia s
 	double m_wn1; //Lyons w(n-1), Wikipedia s_prev
 	double m_wn2; //Lyons w(n-2), Wikipedia s_prev2

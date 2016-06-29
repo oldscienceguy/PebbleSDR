@@ -120,7 +120,7 @@ The results are the real and imaginary parts of the DFT transform for frequency 
 ToneBit::ToneBit()
 {
 	m_freq = 0;
-	m_bitSamples = 0;
+	m_samplesPerResult = 0;
 	m_bandwidth = 0;
 	m_wn = 0;
 	m_wn1 = 0;
@@ -159,15 +159,15 @@ ToneBit::ToneBit()
 void ToneBit::setFreq(quint32 freq, quint32 N, quint32 sampleRate)
 {
 	m_freq = freq;
-	m_bitSamples = N;
-	m_bandwidth = sampleRate / m_bitSamples;
-	//time, in ms, that each bin represents
-	m_msPerBit = 1.0/sampleRate * m_bitSamples * 1000;
-
+	m_samplesPerResult = N;
+	m_bandwidth = sampleRate / m_samplesPerResult;
+	//time, in used, that each result represents
+	m_usecPerResult = 1.0/sampleRate * m_samplesPerResult * 1e6;
+	double normalizedFreq = (double)freq/(double)sampleRate;
 #if 1
 	//Lyons coeff same result as Wikipedia coeff, but Wikipedia not dependent on N
-	m_coeff = 2 * cos(TWOPI * m_freq / sampleRate); //Wikipedia
-	m_coeff2 = sin(TWOPI * m_freq / sampleRate);
+	m_coeff = 2 * cos(TWOPI * normalizedFreq); //Wikipedia
+	m_coeff2 = sin(TWOPI * normalizedFreq);
 #else
 	//Alternate, should be same results
 	//Think of the goertzel as 1 bin of an N bin FFT
@@ -192,7 +192,7 @@ void ToneBit::setFreq(quint32 freq, quint32 N, quint32 sampleRate)
 	//To find which bin our freq is in, (freq / binWidth), ie 1000hz / 100 = bin 10
 	//Combining, k = freq / (sampleRate / N) which is the beginning of the bin
 	//+0.5 bin gives us the exact center of the bin (see Kevin Banks original paper)
-	double k = (float)m_freq / (sampleRate / N) + 0.5;
+	double k = normalizedFreq / N + 0.5;
 
 	c_A = TWOPI * k / N;
 	c_B = 2 * cos(c_A);
@@ -240,8 +240,8 @@ bool ToneBit::processSample(CPX x_n)
 		//Not tested, here for future use
 	}
 
-	// one iteration less than traditionally, so one less that num samples needed for result
-	if (m_nCount < m_bitSamples - 1) {
+	// one iteration less than traditionally, we process last sample differently
+	if (m_nCount < m_samplesPerResult - 1) {
 		m_s0 = x_n + c_B * m_s1 - m_s2;
 		m_s2 = m_s1;
 		m_s1 = m_s0;
@@ -249,7 +249,6 @@ bool ToneBit::processSample(CPX x_n)
 	} else {
 		//Process the last sample needed for result
 		CPX y0;
-		//double normalize = m_bitSamples / 2;
 
 		// Finalizing calculations
 		m_s0 = x_n + c_B * m_s1 - m_s2;
@@ -258,11 +257,9 @@ bool ToneBit::processSample(CPX x_n)
 		m_nCount = 0;
 		m_s1 = 0;
 		m_s2 = 0;
-		m_power = y0.real()*y0.real() + y0.imag()*y0.imag();
-		//m_power = y0.real(); //This or above?
-		//m_phase = y0.imag(); //???
-		//m_power /= normalize; //Do we need this?
 
+		m_power = y0.real()*y0.real() + y0.imag()*y0.imag();
+		m_power = m_power / m_samplesPerResult; //Normalize so results across different N's are comparable
 		return true;
 	}
 	return false;
@@ -340,9 +337,9 @@ bool ToneBit::processSample(double x_n)
 	m_wn2 = m_wn1;
 	m_wn1 = m_wn;
 
-	double normalize = m_bitSamples / 2;
+	double normalize = m_samplesPerResult / 2;
 
-	if (m_nCount++ >= m_bitSamples) {
+	if (m_nCount++ >= m_samplesPerResult) {
 		//We have enough samples to calculate a result
 		if (m_usePhaseAlgorithm) {
 			//Full algorithm with phase
@@ -637,10 +634,11 @@ bool Goertzel::processSample(double x_n, double &retPower, bool &aboveThreshold)
 	m_highCompareTone.processSample(x_n);
 	m_lowCompareTone.processSample(x_n);
 	m_mainTone.m_isValid = false;
-	if (result)
+	if (result) {
 		return processResult(retPower,aboveThreshold);
-	else
+	} else {
 		return false;
+	}
 }
 
 bool Goertzel::processSample(CPX x_n, double &retPower, bool &aboveThreshold)
@@ -652,10 +650,11 @@ bool Goertzel::processSample(CPX x_n, double &retPower, bool &aboveThreshold)
 	m_highCompareTone.processSample(x_n);
 	m_lowCompareTone.processSample(x_n);
 	m_mainTone.m_isValid = false;
-	if (result)
+	if (result) {
 		return processResult(retPower,aboveThreshold);
-	else
+	} else {
 		return false;
+	}
 }
 //Checks the results from the ToneBit to see if greater than threshold
 bool Goertzel::processResult(double &retPower, bool &aboveThreshold)
