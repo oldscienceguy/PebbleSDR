@@ -277,12 +277,17 @@ void Morse::setupDataUi(QWidget *parent)
 		if (m_dataUi != NULL) {
 			delete m_dataUi;
         }
+		emit removeProfile(MorseModem);
+
 		m_dataUi = NULL;
         return;
 	} else if (m_dataUi == NULL) {
         //Create new one
 		m_dataUi = new Ui::dataMorse();
 		m_dataUi->setupUi(parent);
+
+		//Add option to display data in testBench
+		emit addProfile("Morse Modem", MorseModem);
 
 		m_dataUi->dataBar->setValue(DB::minDb);
 		m_dataUi->dataBar->setMin(DB::minDb);
@@ -416,6 +421,9 @@ quint32 Morse::findBestGoertzelN(quint32 wpmLow, quint32 wpmHigh)
 	for (resPerTcw = 4; resPerTcw<40; resPerTcw++) {
 		nLow = (usecWpmLow/resPerTcw) / usecPerSample;
 		nMid = (usecWpmMid/resPerTcw) / usecPerSample;
+		//Bug: Goertzel is supposed to work for any N, but the non-integer k algorithm doesn't work if N is odd
+		//6/27/16
+		nMid = (nMid / 2) * 2;
 		nHigh = (usecWpmHigh/resPerTcw) / usecPerSample;
 		//If we chose nMid, how many results at low and high
 		resPerTcwLow = usecWpmLow / (nMid * usecPerSample);
@@ -432,11 +440,8 @@ quint32 Morse::findBestGoertzelN(quint32 wpmLow, quint32 wpmHigh)
 		//Otherwise bandwidth is the best it will be at 4 results per Tcw
 	}
 
-	//Bug: Goertzel is supposed to work for any N, but the non-integer k algorithm doesn't work if N is odd
-	//6/27/16
-	nMid = (nMid / 2) * 2;
 	//qDebug()<<"WPM:"<<wpmLow<<"resPerTcw:"<<resPerTcw<<" samplesPerResult:"<<nLow<<" bandWidth: "<<bwLow;
-	//qDebug()<<"WPM:"<<wpmMid<<"resPerTcw:"<<resPerTcw<<" samplesPerResult:"<<nMid<<" bandWidth: "<<bwMid;
+	qDebug()<<"WPM:"<<wpmMid<<"resPerTcw:"<<resPerTcw<<" samplesPerResult:"<<nMid<<" bandWidth: "<<bwMid;
 	//qDebug()<<"WPM:"<<wpmHigh<<"resPerTcw:"<<resPerTcw<<" samplesPerResult:"<<nHigh<<" bandWidth: "<<bwHigh;
 
 	return nMid;
@@ -924,14 +929,29 @@ CPX * Morse::processBlock(CPX *in)
 			if (result) {
 				//Goertzel handles debounce and threshold
 				meterValue = DB::powerTodB(tonePower);
+				meterValue = DB::clip(meterValue); //limit 0 to -120
 				if (aboveThreshold) {
 					stateMachine (TONE_EVENT);
 				} else {
 					stateMachine(NO_TONE_EVENT);
 				}
+				//Only update testbench result when we have a goertzel result
+				//m_testBenchValue.real(tonePower);
+				//Convert from -120 to 0, to 0 to 120, and scale to 0..1 for testbench
+				m_testBenchValue.real((meterValue+120) / 1200);
+				if (aboveThreshold)
+					m_testBenchValue.imag(.05);
+				else
+					m_testBenchValue.imag(0);
+
 			}
 		}
-
+		//To view goertzel power and on/off train, set testBench to display time data and select MorseModem as input
+		//Adj vert range as needed and use trigger and single shot to capture and freeze
+		//Update on every sample, but testBenchValue will only change every result
+		emit testbench(1, &m_testBenchValue, m_modemSampleRate, MorseModem);
+		//Raw incoming data
+		//emit testbench(1, &nextBuf[i], m_modemSampleRate, MorseModem);
 
         //Its possible we get called right after dataUi has been been instantiated
         //since receive loop is running when CW window is opened

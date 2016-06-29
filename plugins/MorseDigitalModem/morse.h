@@ -66,6 +66,12 @@ signals:
 
 
 private:
+	//Allows us to output data to testBench UI
+	enum TestBenchProfiles {
+		MorseModem = 100
+	};
+	CPX m_testBenchValue; //+/- 32767 full scale
+
 	//Use DOT_MAGIC to convert WPM to/from usec is 1,200,000
 	//c_uSecDotMagic / WPM = usec per TCW
 	//c_mSecDotMagic / WPM = msec per TCW
