@@ -156,14 +156,14 @@ ToneBit::ToneBit()
 
 //Call setTargetSampleRate before setToneFreq
 //This can be called on a running filter to change any of the parameters, usually tone or N
-void ToneBit::setFreq(quint32 freq, quint32 N, quint32 sampleRate)
+void ToneBit::setFreq(qint32 freq, quint32 N, quint32 sampleRate)
 {
 	m_freq = freq;
 	m_samplesPerResult = N;
 	m_bandwidth = sampleRate / m_samplesPerResult;
 	//time, in used, that each result represents
 	m_usecPerResult = 1.0/sampleRate * m_samplesPerResult * 1e6;
-	double normalizedFreq = (double)freq/(double)sampleRate;
+	double normalizedFreq = (double)m_freq/(double)sampleRate;
 #if 1
 	//Lyons coeff same result as Wikipedia coeff, but Wikipedia not dependent on N
 	m_coeff = 2 * cos(TWOPI * normalizedFreq); //Wikipedia
@@ -192,7 +192,9 @@ void ToneBit::setFreq(quint32 freq, quint32 N, quint32 sampleRate)
 	//To find which bin our freq is in, (freq / binWidth), ie 1000hz / 100 = bin 10
 	//Combining, k = freq / (sampleRate / N) which is the beginning of the bin
 	//+0.5 bin gives us the exact center of the bin (see Kevin Banks original paper)
-	double k = normalizedFreq * N + 0.5;
+	//But testBench results show that +.5 doesn't put us in the center of the bin, and peak freq is off.  Stick with test results
+	double k = normalizedFreq * N;
+	//double k = normalizedFreq * N + 0.5;
 
 	c_A = TWOPI * k / N;
 	c_B = 2 * cos(c_A);
@@ -667,6 +669,12 @@ bool Goertzel::processResult(double &retPower, bool &aboveThreshold)
 	double bufMean = 0;
 	double bufDev = 0;
 	double snr = 0;
+	// Fast attack and slow decay.
+	//Todo: Goertzel agc options: off, fast, slow
+	quint16 attackWeight = 20;
+	quint16 decayWeight = 3 * attackWeight;
+
+
 	//If we have a detectable tone, it should be strong in the main bin compared with surrounding bins
 
 	//Handle jitter
@@ -713,11 +721,11 @@ bool Goertzel::processResult(double &retPower, bool &aboveThreshold)
 		case TH_PEAK:
 			//Uses percentage of peak power for comparison
 			// Compute a variable threshold value for tone detection
-			// Fast attack and slow decay.
 			if (mainPower > m_peakPower)
-				m_peakPower = MovingAvgFilter::weightedAvg(m_peakPower, mainPower, 20); //Input has more weight on increasing signal than decreasing
+				m_peakPower = MovingAvgFilter::weightedAvg(m_peakPower, mainPower, attackWeight); //Input has more weight on increasing signal than decreasing
 			else
-				m_peakPower = MovingAvgFilter::weightedAvg(m_peakPower, mainPower, 800);
+				//Original value of 800 on decay seems way too high, means we need 800 space results before agc reflects
+				m_peakPower = MovingAvgFilter::weightedAvg(m_peakPower, mainPower, decayWeight);
 
 			//Super-Ratt and JSDR technique
 			//Divide agc_peak in thirds,  upper is rising, lower is falling, middle is stable
@@ -726,9 +734,9 @@ bool Goertzel::processResult(double &retPower, bool &aboveThreshold)
 
 			//Todo: Consider running mean from tone to set a lower floor to avoid random noise results
 			//or user slider to set squelch level
-			if (mainPower > m_thresholdUp) {
+			if (mainPower >= m_thresholdUp) {
 				aboveThreshold = true;
-			} else if (mainPower < m_thresholdDown) {
+			} else if (mainPower <= m_thresholdDown) {
 				aboveThreshold = false;
 			} else if (m_lastTone && mainPower > m_thresholdDown){
 				//Last result was a tone and we're in between thresholdUp and thresholdDown

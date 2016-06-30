@@ -17,7 +17,7 @@ class ToneBit
 {
 public:
 	ToneBit();
-	void setFreq(quint32 freq, quint32 N, quint32 sampleRate);
+	void setFreq(qint32 freq, quint32 N, quint32 sampleRate);
 	bool processSample (double x_n); //For audio data
 	bool processSample (CPX x_n); //For IQ data - Not implemented yet
 
@@ -27,7 +27,7 @@ public:
 	//Is the result valid, ie processed enough samples
 	bool m_isValid;
 
-	quint32 m_freq;
+	qint32 m_freq;
 	quint32 m_bandwidth;
 	quint32 m_usecPerResult;
 	double m_power; //Power of last bin
