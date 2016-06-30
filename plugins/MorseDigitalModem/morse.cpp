@@ -290,8 +290,8 @@ void Morse::setupDataUi(QWidget *parent)
 		emit addProfile("Morse Modem", MorseModem);
 
 		m_dataUi->dataBar->setValue(DB::minDb);
-		m_dataUi->dataBar->setMin(DB::minDb);
-		m_dataUi->dataBar->setMax(DB::maxDb);
+		m_dataUi->dataBar->setMin(-60); //1/2 normal range, see processBlock meterValue to stay in sync
+		m_dataUi->dataBar->setMax(0);
 		m_dataUi->dataBar->setNumTicks(10);
 		m_dataUi->dataBar->start();
 
@@ -360,8 +360,28 @@ QString Morse::getPluginDescription()
 
 void Morse::setDemodMode(DeviceInterface::DemodMode _demodMode)
 {
-	//If demodMode changes, mixer freq will also change in processBlock()
+	//If demodMode changes, change mixer or goertzel center frequency
 	m_demodMode = _demodMode;
+	//We need to account for modemOffset in ReceiverWidget added so we hear tone but freq display is correct
+	//Actual freq for CWU will be freq + modemFrequency for CWL will be freq -modemFrequency.
+	//And we want actual freq to be at baseband
+	if (m_demodMode == DeviceInterface::dmCWL || m_demodMode == DeviceInterface::dmLSB) {
+		if (m_useGoertzel)
+			updateGoertzel( -c_defaultModemFrequency,m_goertzelSamplesPerResult);
+		else
+			m_mixer->setFrequency(-m_modemFrequency);
+
+	} else if (m_demodMode == DeviceInterface::dmCWU || m_demodMode == DeviceInterface::dmUSB) {
+		if (m_useGoertzel)
+			updateGoertzel( c_defaultModemFrequency,m_goertzelSamplesPerResult);
+		else
+			m_mixer->setFrequency(m_modemFrequency);
+	} else {
+		//Other modes, like DIGU and DIGL will still work with cursor on signal, but we won't hear tones.  Feature?
+		updateGoertzel(0, m_goertzelSamplesPerResult);
+		m_mixer->setFrequency(0);
+	}
+
 }
 
 //Called initially and whenever we need to change goretzel tone or 'N'
@@ -809,17 +829,6 @@ CPX * Morse::processBlock(CPX *in)
     //Downconverter first mixes in place, ie changes in!  So we have to work with a copy
 	copyCPX(m_workingBuf,in,m_numSamples);
 
-    //We need to account for modemOffset in ReceiverWidget added so we hear tone but freq display is correct
-    //Actual freq for CWU will be freq + modemFrequency for CWL will be freq -modemFrequency.
-    //And we want actual freq to be at baseband
-	if (m_demodMode == DeviceInterface::dmCWL || m_demodMode == DeviceInterface::dmLSB)
-		m_mixer->setFrequency(-m_modemFrequency);
-	else if (m_demodMode == DeviceInterface::dmCWU || m_demodMode == DeviceInterface::dmUSB)
-		m_mixer->setFrequency(m_modemFrequency);
-    else
-        //Other modes, like DIGU and DIGL will still work with cursor on signal, but we won't hear tones.  Feature?
-		m_mixer->setFrequency(0);
-
 	int numModemSamples = m_numSamples;
 	CPX *nextBuf;
 	if (!m_useGoertzel) {
@@ -929,7 +938,9 @@ CPX * Morse::processBlock(CPX *in)
 			if (result) {
 				//Goertzel handles debounce and threshold
 				meterValue = DB::powerTodB(tonePower);
-				meterValue = DB::clip(meterValue); //limit 0 to -120
+				meterValue = DB::clip(meterValue); //limit -120 to 0
+				//Set bargraph range to match
+				meterValue /= 2; //Range is now -60 to 0 so we get more variance at higher end
 				if (aboveThreshold) {
 					stateMachine (TONE_EVENT);
 				} else {
