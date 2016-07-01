@@ -384,20 +384,11 @@ Goertzel::Goertzel(quint32 sampleRate, quint32 numSamples)
 	m_decayCounter = 0;
 
 	m_lastTone = false;
-	m_mainJitterFilter = NULL;
-	m_highJitterFilter = NULL;
-	m_lowJitterFilter = NULL;
 	m_peakPower = 0;
 }
 
 Goertzel::~Goertzel()
 {
-	if (m_mainJitterFilter != NULL)
-		delete m_mainJitterFilter;
-	if (m_lowJitterFilter != NULL)
-		delete m_lowJitterFilter;
-	if (m_highJitterFilter != NULL)
-		delete m_highJitterFilter;
 }
 
 void Goertzel::setThresholdType(Goertzel::ThresholdType t)
@@ -464,17 +455,6 @@ void Goertzel::setFreq(quint32 freq, quint32 N, quint32 jitterCount)
 	m_decayCounter = 0;
 	m_jitterCount = jitterCount;
 
-	// bit filter based on 10 msec rise time of CW waveform
-	//int bfv = (int)(m_sampleRate * .010 / N); //8k*.01/16 = 5
-	if (m_mainJitterFilter != NULL)
-		delete m_mainJitterFilter;
-	m_mainJitterFilter = new MovingAvgFilter(m_jitterCount);
-	if (m_lowJitterFilter != NULL)
-		delete m_lowJitterFilter;
-	m_lowJitterFilter = new MovingAvgFilter(m_jitterCount);
-	if (m_highJitterFilter != NULL)
-		delete m_highJitterFilter;
-	m_highJitterFilter = new MovingAvgFilter(m_jitterCount);
 
 	/*
 
@@ -677,13 +657,9 @@ bool Goertzel::processResult(double &retPower, bool &aboveThreshold)
 
 	//If we have a detectable tone, it should be strong in the main bin compared with surrounding bins
 
-	//Handle jitter
-	//Todo: move jitter process to ToneBit?
-	mainPower = m_mainJitterFilter->newSample(m_mainTone.m_power);
-	lowPower = m_lowJitterFilter->newSample(m_lowCompareTone.m_power);
-	highPower = m_highJitterFilter->newSample(m_highCompareTone.m_power);
-	//lowPower = m_lowCompareTone.m_power;
-	//highPower = m_highCompareTone.m_power;
+	mainPower = m_mainTone.m_power;
+	lowPower = m_lowCompareTone.m_power;
+	highPower = m_highCompareTone.m_power;
 	bufDev = m_mainTone.m_stdDev;
 	bufMean = m_mainTone.m_runningMean;
 	snr = mainPower/bufMean;

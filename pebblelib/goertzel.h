@@ -104,14 +104,8 @@ private:
 	bool processResult(double &retPower, bool &aboveThreshold);
 
 	ToneBit m_mainTone;
-	MovingAvgFilter *m_mainJitterFilter;
-
 	ToneBit m_lowCompareTone;
-	MovingAvgFilter *m_lowJitterFilter;
-
 	ToneBit m_highCompareTone;
-	MovingAvgFilter *m_highJitterFilter;
-
 	quint32 m_jitterCount; //Size of moving average filter
 
 	quint32 m_sampleRate;
