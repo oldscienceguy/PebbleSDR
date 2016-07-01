@@ -974,18 +974,14 @@ void Receiver::processIQData(CPX *in, quint16 numSamples)
 		nextStep = m_noiseFilter->ProcessBlock(nextStep);
 		//global->perform.StopPerformance(100);
 
-		//global->perform.StartPerformance("AGC");
-		nextStep = m_agc->processBlock(nextStep);
-		//global->perform.StopPerformance(100);
-
 		//Test giving data plugins full post mixer buffer, with TD and FD buffers
-		//Todo: Should agc and noise filter come before or after demod?
-		//Todo: Should data plugin only get post bandpass data?  Post bandpass has same bin resolution so
-		//what's the advantage?
+		//Before AGC so levels are stable
 		if (m_iDigitalModem != NULL)
 			nextStep = m_iDigitalModem->processBlock(nextStep);
 
-
+		//global->perform.StartPerformance("AGC");
+		nextStep = m_agc->processBlock(nextStep);
+		//global->perform.StopPerformance(100);
 
 		//global->perform.StartPerformance("Demod");
 		nextStep = m_demod->processBlock(nextStep, numStepSamples);
