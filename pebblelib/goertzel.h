@@ -10,13 +10,11 @@
 #include "movingavgfilter.h"
 #include <complex>
 
-//All of the internal data needed to decode a tone
-//Allows us to specify multiple tones that can be decoded at the same time
-//1 or more ToneBits make up a tone, this is the smallest unit we can detect
-class ToneBit
+//Core Goertzel to process a tone or FFT bin
+class Goertzel
 {
 public:
-	ToneBit();
+	Goertzel();
 	void setFreq(qint32 freq, quint32 N, quint32 sampleRate);
 	bool processSample (double x_n); //For audio data
 	bool processSample (CPX x_n); //For IQ data - Not implemented yet
@@ -65,12 +63,12 @@ public:
 
 };
 
-//Testing, 1 or 2 tone goertzel with updated model
-class Goertzel
+//Goertzel class for on/off keying like morse
+class GoertzelOOK
 {
 public:
-	Goertzel(quint32 sampleRate, quint32 numSamples);
-	~Goertzel();
+	GoertzelOOK(quint32 sampleRate, quint32 numSamples);
+	~GoertzelOOK();
 
 	//Threshold determines the boundary between 'present' and 'not present' tones
 	//TH_COMPARE uses 2 extra bins, above and below the target freq
@@ -103,9 +101,9 @@ public:
 private:
 	bool processResult(double &retPower, bool &aboveThreshold);
 
-	ToneBit m_mainTone;
-	ToneBit m_lowCompareTone;
-	ToneBit m_highCompareTone;
+	Goertzel m_mainTone;
+	Goertzel m_lowCompareTone;
+	Goertzel m_highCompareTone;
 
 	quint32 m_sampleRate;
 
@@ -185,14 +183,14 @@ public:
 	};
 	//Look for all tone bits in parallel
 	//Strongest two that are above threshold are DTMF
-	ToneBit m_697;
-	ToneBit m_770;
-	ToneBit m_852;
-	ToneBit m_941;
-	ToneBit m_1209;
-	ToneBit m_1336;
-	ToneBit m_1477;
-	ToneBit m_1633;
+	Goertzel m_697;
+	Goertzel m_770;
+	Goertzel m_852;
+	Goertzel m_941;
+	Goertzel m_1209;
+	Goertzel m_1336;
+	Goertzel m_1477;
+	Goertzel m_1633;
 
 	Tone DTMF_0;
 	Tone DTMF_1;

@@ -247,7 +247,7 @@ private:
     void dumpStateMachine(QString why);
 
 	bool m_useGoertzel;
-	Goertzel *m_goertzel;
+	GoertzelOOK *m_goertzel;
 	void updateGoertzel(int modemFreq, int samplesPerResult);
 	quint32 findBestGoertzelN(quint32 wpmLow, quint32 wpmHigh);
 };

@@ -230,7 +230,7 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 	} else {
 		if (m_goertzel != NULL)
 			delete m_goertzel;
-		m_goertzel = new Goertzel(_sampleRate, _sampleCount);
+		m_goertzel = new GoertzelOOK(_sampleRate, _sampleCount);
 		m_goertzel->setTargetSampleRate(m_modemSampleRate);
 		updateGoertzel(c_defaultModemFrequency, c_goertzelDefaultSamplesPerResult);
 	}

@@ -117,7 +117,7 @@ The results are the real and imaginary parts of the DFT transform for frequency 
 
 */
 
-ToneBit::ToneBit()
+Goertzel::Goertzel()
 {
 	m_freq = 0;
 	m_samplesPerResult = 0;
@@ -157,7 +157,7 @@ ToneBit::ToneBit()
 //Call setTargetSampleRate before setToneFreq
 //This can be called on a running filter to change any of the parameters, usually tone or N
 // freq  <  sr
-void ToneBit::setFreq(qint32 freq, quint32 N, quint32 sampleRate)
+void Goertzel::setFreq(qint32 freq, quint32 N, quint32 sampleRate)
 {
 	//If freq is negative, convert FFT format
 	//http://www.gaussianwaves.com/2015/11/interpreting-fft-results-complex-dft-frequency-bins-and-fftshift/
@@ -228,7 +228,7 @@ y_i(n). After that, the two complex-valued partial results can be recombined:
 
 //Goertzel algorithm is defined for complex inputs as well as floats, same algorithm
 //We just need CPX delay variables
-bool ToneBit::processSample(CPX x_n)
+bool Goertzel::processSample(CPX x_n)
 {
 	//Goertzel algorithm for non-integer frequency index (complex input)
 	//http://asp.eurasipjournals.springeropen.com/articles/10.1186/1687-6180-2012-56
@@ -321,7 +321,7 @@ bool ToneBit::processSample(CPX x_n)
 	Todo: Test SNR threshold for Goertzel
 */
 //Process a single sample, return true if we've processed enough for a result
-bool ToneBit::processSample(double x_n)
+bool Goertzel::processSample(double x_n)
 {
 	if (m_calcRunningMean) {
 		double power = x_n*x_n;
@@ -381,7 +381,7 @@ bool ToneBit::processSample(double x_n)
 	return false;
 }
 
-Goertzel::Goertzel(quint32 sampleRate, quint32 numSamples)
+GoertzelOOK::GoertzelOOK(quint32 sampleRate, quint32 numSamples)
 {
 	m_sampleRate  = sampleRate;
 	m_numSamples = numSamples;
@@ -400,16 +400,16 @@ Goertzel::Goertzel(quint32 sampleRate, quint32 numSamples)
 	m_peakPower = 0;
 }
 
-Goertzel::~Goertzel()
+GoertzelOOK::~GoertzelOOK()
 {
 }
 
-void Goertzel::setThresholdType(Goertzel::ThresholdType t)
+void GoertzelOOK::setThresholdType(GoertzelOOK::ThresholdType t)
 {
 	m_thresholdType = t;
 }
 
-void Goertzel::setThreshold(double threshold)
+void GoertzelOOK::setThreshold(double threshold)
 {
 	m_compareThreshold = threshold;
 }
@@ -434,7 +434,7 @@ void Goertzel::setThreshold(double threshold)
 */
 
 //Returns an estimated N based on shortest bit length
-quint32 Goertzel::estNForShortestBit(double msShortestBit)
+quint32 GoertzelOOK::estNForShortestBit(double msShortestBit)
 {
 	//How many ms does each sample represent?
 	//ie for 8k sample rate and 2048 buffer, each sample is .125ms
@@ -445,7 +445,7 @@ quint32 Goertzel::estNForShortestBit(double msShortestBit)
 }
 
 //Returns an estimated N based on bin bandwidth
-quint32 Goertzel::estNForBinBandwidth(quint32 bandwidth)
+quint32 GoertzelOOK::estNForBinBandwidth(quint32 bandwidth)
 {
 	//N has to be large enough for desired bandwidth
 	//ie minN for bandwidth of 100 = 100 / 3.90 = 25.6
@@ -453,14 +453,14 @@ quint32 Goertzel::estNForBinBandwidth(quint32 bandwidth)
 	return bandwidth / binWidth;
 }
 
-void Goertzel::setTargetSampleRate(quint32 targetSampleRate)
+void GoertzelOOK::setTargetSampleRate(quint32 targetSampleRate)
 {
 	//Testing without decimation, caller decimates
 	m_sampleRate = targetSampleRate;
 }
 
 //This can be called on a running filter to change freq, N or jitter
-void Goertzel::setFreq(quint32 freq, quint32 N, quint32 jitterCount)
+void GoertzelOOK::setFreq(quint32 freq, quint32 N, quint32 jitterCount)
 {
 	m_attackCount = jitterCount;
 	m_attackCounter = 0;
@@ -546,7 +546,7 @@ void Goertzel::setFreq(quint32 freq, quint32 N, quint32 jitterCount)
 	T: 0 0 1 1  1 1 1 1  0 0 1 1  1 1 0 0 Last tone is 1 bit longer than decayCount = 2
 */
 //Replaced with moving average filter, here for reference during testing
-bool Goertzel::debounce(bool aboveThreshold)
+bool GoertzelOOK::debounce(bool aboveThreshold)
 {
 	bool isTone = false;
 	if (aboveThreshold) {
@@ -619,7 +619,7 @@ bool Goertzel::debounce(bool aboveThreshold)
 */
 //Process one sample at a time
 //3 states: Not enough samples for result, result below threshold, result above threshold
-bool Goertzel::processSample(double x_n, double &retPower, bool &aboveThreshold)
+bool GoertzelOOK::processSample(double x_n, double &retPower, bool &aboveThreshold)
 {
 	//Caller is responsible for decimation, if needed
 
@@ -635,7 +635,7 @@ bool Goertzel::processSample(double x_n, double &retPower, bool &aboveThreshold)
 	}
 }
 
-bool Goertzel::processSample(CPX x_n, double &retPower, bool &aboveThreshold)
+bool GoertzelOOK::processSample(CPX x_n, double &retPower, bool &aboveThreshold)
 {
 	//Caller is responsible for decimation, if needed
 
@@ -651,7 +651,7 @@ bool Goertzel::processSample(CPX x_n, double &retPower, bool &aboveThreshold)
 	}
 }
 //Checks the results from the ToneBit to see if greater than threshold
-bool Goertzel::processResult(double &retPower, bool &aboveThreshold)
+bool GoertzelOOK::processResult(double &retPower, bool &aboveThreshold)
 {
 	retPower = 0;
 	aboveThreshold = false;
@@ -768,7 +768,7 @@ bool Goertzel::processResult(double &retPower, bool &aboveThreshold)
   Note: Tried comparison with 1 other filter value and could not achieve consistent results
 */
 
-void Goertzel::updateToneThreshold()
+void GoertzelOOK::updateToneThreshold()
 {
 	switch (m_thresholdType) {
 		case TH_COMPARE:
@@ -867,7 +867,7 @@ void Goertzel::updateToneThreshold()
 	}
 }
 
-void Goertzel::updateBitDetection()
+void GoertzelOOK::updateBitDetection()
 {
 
 }
