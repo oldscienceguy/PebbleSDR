@@ -193,7 +193,7 @@ void ToneBit::setFreq(qint32 freq, quint32 N, quint32 sampleRate)
 	//Combining, k = freq / (sampleRate / N) which is the beginning of the bin
 	//+0.5 bin gives us the exact center of the bin (see Kevin Banks original paper)
 	//But testBench results show that +.5 doesn't put us in the center of the bin, and peak freq is off.  Stick with test results
-	double k = normalizedFreq * N;
+	double k = normalizedFreq * N; // (1000/6000) * 44 = 7.333 for example
 	//double k = normalizedFreq * N + 0.5;
 
 	c_A = TWOPI * k / N;
