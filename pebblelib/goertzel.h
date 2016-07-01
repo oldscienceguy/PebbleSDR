@@ -97,7 +97,7 @@ public:
 	quint32 estNForBinBandwidth(quint32 bandwidth);
 
 	bool processSample(double x_n, double &power, bool &aboveThreshold);
-	bool processSample(CPX x_n, double &retPower, bool &aboveThreshold);
+	bool processSample(CPX x_n, double &retPower, bool &aboveThreshold, double &peakPower);
 private:
 	bool processResult(double &retPower, bool &aboveThreshold);
 

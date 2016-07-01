@@ -273,7 +273,7 @@ bool Goertzel::processSample(CPX x_n)
 		m_s1 = 0;
 		m_s2 = 0;
 
-		m_power = y0.real()*y0.real() + y0.imag()*y0.imag();
+		m_power = DB::power(y0);
 		m_power = m_power / m_samplesPerResult; //Normalize so results across different N's are comparable
 		return true;
 	}
@@ -635,7 +635,7 @@ bool GoertzelOOK::processSample(double x_n, double &retPower, bool &aboveThresho
 	}
 }
 
-bool GoertzelOOK::processSample(CPX x_n, double &retPower, bool &aboveThreshold)
+bool GoertzelOOK::processSample(CPX x_n, double &retPower, bool &aboveThreshold, double &peakPower)
 {
 	//Caller is responsible for decimation, if needed
 
@@ -645,10 +645,13 @@ bool GoertzelOOK::processSample(CPX x_n, double &retPower, bool &aboveThreshold)
 	m_lowCompareTone.processSample(x_n);
 	m_mainTone.m_isValid = false;
 	if (result) {
-		return processResult(retPower,aboveThreshold);
-	} else {
-		return false;
+		result = processResult(retPower,aboveThreshold);
+		if (result) {
+			peakPower = m_peakPower;
+			return true;
+		}
 	}
+	return false;
 }
 //Checks the results from the ToneBit to see if greater than threshold
 bool GoertzelOOK::processResult(double &retPower, bool &aboveThreshold)
