@@ -175,6 +175,9 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 		delete m_mixer;
 	m_mixer = new Mixer(_sampleRate, _sampleCount);
 
+	//demodMode gets used later, init early
+	m_demodMode = DeviceInterface::dmCWL;
+
 	//ms rise/fall Adjust for WPM?
 	m_secRiseFall = .005;
 
@@ -241,8 +244,6 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 	m_wpmSpeedFilter = m_wpmSpeedCurrent;
 
 	m_agc_peak = 1.0;
-
-	m_demodMode = DeviceInterface::dmCWL;
 
 	m_outputOn = true;
 
@@ -362,43 +363,36 @@ void Morse::setDemodMode(DeviceInterface::DemodMode _demodMode)
 {
 	//If demodMode changes, change mixer or goertzel center frequency
 	m_demodMode = _demodMode;
-	//We need to account for modemOffset in ReceiverWidget added so we hear tone but freq display is correct
-	//Actual freq for CWU will be freq + modemFrequency for CWL will be freq -modemFrequency.
-	//And we want actual freq to be at baseband
-	if (m_demodMode == DeviceInterface::dmCWL || m_demodMode == DeviceInterface::dmLSB) {
-		if (m_useGoertzel)
-			updateGoertzel( -c_defaultModemFrequency,m_goertzelSamplesPerResult);
-		else
-			m_mixer->setFrequency(-m_modemFrequency);
-
-	} else if (m_demodMode == DeviceInterface::dmCWU || m_demodMode == DeviceInterface::dmUSB) {
-		if (m_useGoertzel)
-			updateGoertzel( c_defaultModemFrequency,m_goertzelSamplesPerResult);
-		else
-			m_mixer->setFrequency(m_modemFrequency);
-	} else {
-		//Other modes, like DIGU and DIGL will still work with cursor on signal, but we won't hear tones.  Feature?
-		updateGoertzel(0, m_goertzelSamplesPerResult);
-		m_mixer->setFrequency(0);
-	}
-
+	updateGoertzel(c_defaultModemFrequency, m_goertzelSamplesPerResult);
 }
 
 //Called initially and whenever we need to change goretzel tone or 'N'
 void Morse::updateGoertzel(int modemFreq, int samplesPerResult)
 {
-	if (!m_useGoertzel)
-		return;
-
 	m_goertzelSamplesPerResult = samplesPerResult;
-	m_modemFrequency = modemFreq;
+
+	//We need to account for modemOffset in ReceiverWidget added so we hear tone but freq display is correct
+	//Actual freq for CWU will be freq + modemFrequency for CWL will be freq -modemFrequency.
+	//And we want actual freq to be at baseband
+	if (m_demodMode == DeviceInterface::dmCWL || m_demodMode == DeviceInterface::dmLSB) {
+		m_modemFrequency = -modemFreq;
+	} else if (m_demodMode == DeviceInterface::dmCWU || m_demodMode == DeviceInterface::dmUSB) {
+		m_modemFrequency = modemFreq;
+	} else {
+		m_modemFrequency = modemFreq;
+	}
+
 	// bit filter based on 10 msec rise time of CW waveform
 	int jitterCount = (int)(m_modemSampleRate * m_secRiseFall / m_goertzelSamplesPerResult);
 	if (m_jitterFilter != NULL)
 		delete m_jitterFilter;
 	m_jitterFilter = new MovingAvgFilter(jitterCount);
 
-	m_goertzel->setFreq(m_modemFrequency, m_goertzelSamplesPerResult, jitterCount);
+	if (m_useGoertzel)
+		m_goertzel->setFreq(m_modemFrequency, m_goertzelSamplesPerResult, jitterCount);
+	else
+		m_mixer->setFrequency(m_modemFrequency);
+
 	m_usecPerResult = m_goertzelSamplesPerResult * (1e6/m_modemSampleRate);
 
 }
@@ -934,10 +928,11 @@ CPX * Morse::processBlock(CPX *in)
 			result = m_goertzel->processSample(nextBuf[i], tonePower, aboveThreshold);
 			if (result) {
 				//Goertzel handles debounce and threshold
-				meterValue = DB::powerTodB(tonePower);
-				meterValue = DB::clip(meterValue); //limit -120 to 0
+				m_meterValue = DB::powerTodB(tonePower);
+				m_meterValue = DB::clip(m_meterValue); //limit -120 to 0
 				//Set bargraph range to match
-				meterValue /= 2; //Range is now -60 to 0 so we get more variance at higher end
+				m_meterValue /= 2; //Range is now -60 to 0 so we get more variance at higher end
+
 				if (aboveThreshold) {
 					stateMachine (TONE_EVENT);
 				} else {
@@ -964,7 +959,7 @@ CPX * Morse::processBlock(CPX *in)
         //Its possible we get called right after dataUi has been been instantiated
         //since receive loop is running when CW window is opened
 		if (m_dataUi != NULL && m_dataUi->dataBar!=NULL) {
-			m_dataUi->dataBar->setValue(meterValue); //Tuning bar
+			m_dataUi->dataBar->setValue(m_meterValue); //Tuning bar
 		}
 	} //End for(...numSamples...)
 
