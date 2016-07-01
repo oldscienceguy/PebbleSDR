@@ -928,10 +928,10 @@ CPX * Morse::processBlock(CPX *in)
 			result = m_goertzel->processSample(nextBuf[i], tonePower, aboveThreshold);
 			if (result) {
 				//Goertzel handles debounce and threshold
-				m_meterValue = DB::powerTodB(tonePower);
-				m_meterValue = DB::clip(m_meterValue); //limit -120 to 0
+				meterValue = DB::powerTodB(tonePower);
+				meterValue = DB::clip(meterValue); //limit -120 to 0
 				//Set bargraph range to match
-				m_meterValue /= 2; //Range is now -60 to 0 so we get more variance at higher end
+				meterValue /= 2; //Range is now -60 to 0 so we get more variance at higher end
 
 				if (aboveThreshold) {
 					stateMachine (TONE_EVENT);
@@ -959,7 +959,7 @@ CPX * Morse::processBlock(CPX *in)
         //Its possible we get called right after dataUi has been been instantiated
         //since receive loop is running when CW window is opened
 		if (m_dataUi != NULL && m_dataUi->dataBar!=NULL) {
-			m_dataUi->dataBar->setValue(m_meterValue); //Tuning bar
+			m_dataUi->dataBar->setValue(meterValue); //Tuning bar
 		}
 	} //End for(...numSamples...)
 
