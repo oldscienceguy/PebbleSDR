@@ -106,7 +106,6 @@ private:
 	ToneBit m_mainTone;
 	ToneBit m_lowCompareTone;
 	ToneBit m_highCompareTone;
-	quint32 m_jitterCount; //Size of moving average filter
 
 	quint32 m_sampleRate;
 

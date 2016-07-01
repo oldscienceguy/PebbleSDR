@@ -156,8 +156,20 @@ ToneBit::ToneBit()
 
 //Call setTargetSampleRate before setToneFreq
 //This can be called on a running filter to change any of the parameters, usually tone or N
+// freq  <  sr
 void ToneBit::setFreq(qint32 freq, quint32 N, quint32 sampleRate)
 {
+	//If freq is negative, convert FFT format
+	//http://www.gaussianwaves.com/2015/11/interpreting-fft-results-complex-dft-frequency-bins-and-fftshift/
+	//ie for SR = 6000, SR/2 = 3000, SR/2 - 1 = 2999
+	// FFT order:   0            3000   3001            5999
+	// Spectrum:    0            3000  -2999            -1
+	//              0            n/2    n/2+1           n-1
+	if (freq < 0) {
+		//ie shift -1000 to +5000
+		freq = freq + sampleRate;
+	}
+
 	m_freq = freq;
 	m_samplesPerResult = N;
 	m_bandwidth = sampleRate / m_samplesPerResult;
@@ -186,6 +198,7 @@ void ToneBit::setFreq(qint32 freq, quint32 N, quint32 sampleRate)
 #endif
 
 	//Goertzel algorithm for non-integer frequency index (complex input)
+	//Computes the kth bin of a DTFT
 	//k represents the fft bin with the frequency of interest in the center (perfect Goertzel)
 	//In this algorithm 'k' does NOT have to be an integer and can therefor put our freq in the exact center of a bin
 	//In an FFT, the width of each bin would be (sampleRate / FFT size), here its (sampleRate / N ). ie 8000/80 = 100
@@ -220,7 +233,7 @@ bool ToneBit::processSample(CPX x_n)
 	//Goertzel algorithm for non-integer frequency index (complex input)
 	//http://asp.eurasipjournals.springeropen.com/articles/10.1186/1687-6180-2012-56
 	//https://www.dsprelated.com/showarticle/495.php
-	//Computes single DFT bin at specified frequency
+	//Computes single DTFT (Discrete Time Fourier Transform) bin at specified frequency
 
 	if (m_calcRunningMean) {
 		double power = x_n.real()*x_n.real() + x_n.imag()*x_n.imag();
@@ -453,7 +466,6 @@ void Goertzel::setFreq(quint32 freq, quint32 N, quint32 jitterCount)
 	m_attackCounter = 0;
 	m_decayCount = jitterCount;
 	m_decayCounter = 0;
-	m_jitterCount = jitterCount;
 
 
 	/*
