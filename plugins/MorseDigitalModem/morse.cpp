@@ -441,9 +441,6 @@ quint32 Morse::findBestGoertzelN(quint32 wpmLow, quint32 wpmHigh)
 	for (resPerTcw = 4; resPerTcw<40; resPerTcw++) {
 		nLow = (usecWpmLow/resPerTcw) / usecPerSample;
 		nMid = (usecWpmMid/resPerTcw) / usecPerSample;
-		//Bug: Goertzel is supposed to work for any N, but the non-integer k algorithm doesn't work if N is odd
-		//6/27/16
-		nMid = (nMid / 2) * 2;
 		nHigh = (usecWpmHigh/resPerTcw) / usecPerSample;
 		//If we chose nMid, how many results at low and high
 		resPerTcwLow = usecWpmLow / (nMid * usecPerSample);
