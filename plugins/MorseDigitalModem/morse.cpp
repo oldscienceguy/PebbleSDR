@@ -322,8 +322,8 @@ void Morse::setupDataUi(QWidget *parent)
 		connect(m_dataUi->outputOptionBox,SIGNAL(currentIndexChanged(int)),this,SLOT(outputOptionChanged(int)));
 
 		//data is index to m_minMaxTable.  Keep in sync
-		m_dataUi->wpmBox->addItem("5-50 wpm");
-		m_dataUi->wpmBox->addItem("50-100 wpm");
+		m_dataUi->wpmBox->addItem("5-60 wpm");
+		m_dataUi->wpmBox->addItem("40-120 wpm");
 		m_dataUi->wpmBox->addItem("100-200 wpm");
 		connect(m_dataUi->wpmBox,SIGNAL(currentIndexChanged(int)),this,SLOT(wpmBoxChanged(int)));
 

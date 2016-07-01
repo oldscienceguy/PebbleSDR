@@ -174,8 +174,8 @@ private:
 	//For example all of the speeds between 50 and 100 can be handled by the same goertzel filter settings
 	//Same for 100-200
 	wpmMinMax m_minMaxTable[3] {
-		{5-m_wpmVar,50+m_wpmVar},
-		{50-m_wpmVar,100+m_wpmVar},
+		{5-m_wpmVar,60+m_wpmVar},
+		{40-m_wpmVar,120+m_wpmVar},
 		{100-m_wpmVar,200+m_wpmVar}
 	};
 
