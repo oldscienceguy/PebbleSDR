@@ -290,12 +290,6 @@ void Morse::setupDataUi(QWidget *parent)
 		//Add option to display data in testBench
 		emit addProfile("Morse Modem", MorseModem);
 
-		m_dataUi->dataBar->setValue(DB::minDb);
-		m_dataUi->dataBar->setMin(-60); //1/2 normal range, see processBlock meterValue to stay in sync
-		m_dataUi->dataBar->setMax(0);
-		m_dataUi->dataBar->setNumTicks(10);
-		m_dataUi->dataBar->start();
-
 		m_squelchThreshold = 0;
 		m_squelchEnabled = false;
 		m_dataUi->squelchSlider->setMinimum(0);
@@ -812,6 +806,7 @@ CPX * Morse::processBlock(CPX *in)
 {
 	CPX cpxFilter;
 	double tonePower;
+	double peakPower;
 	double meterValue = -120;
 
     //If WPM changed in last block, dynamicall or by user, update filter with new speed
@@ -925,28 +920,26 @@ CPX * Morse::processBlock(CPX *in)
 			//FP works
 			//result = m_goertzel->processSample(nextBuf[i].re, tonePower, aboveThreshold);
 			//CPX with non-integer k Goertzel works
-			result = m_goertzel->processSample(nextBuf[i], tonePower, aboveThreshold);
+			result = m_goertzel->processSample(nextBuf[i], tonePower, aboveThreshold, peakPower);
 			if (result) {
 				//Goertzel handles debounce and threshold
-				meterValue = DB::powerTodB(tonePower);
-				meterValue = DB::clip(meterValue); //limit -120 to 0
-				//Set bargraph range to match
-				meterValue /= 2; //Range is now -60 to 0 so we get more variance at higher end
 
 				if (aboveThreshold) {
 					stateMachine (TONE_EVENT);
 				} else {
 					stateMachine(NO_TONE_EVENT);
 				}
+
 				//Only update testbench result when we have a goertzel result
 				//m_testBenchValue.real(tonePower);
 				//Convert from -120 to 0, to 0 to 120, and scale to 0..1 for testbench
-				m_testBenchValue.real((meterValue+120) / 1200);
+				m_testBenchValue.real(tonePower * 100);
 				if (aboveThreshold)
 					m_testBenchValue.imag(.05);
 				else
 					m_testBenchValue.imag(0);
 
+				//Removed tuning bar because it wasn't a useful as just looking at the spectrum
 			}
 		}
 		//To view goertzel power and on/off train, set testBench to display time data and select MorseModem as input
@@ -956,11 +949,6 @@ CPX * Morse::processBlock(CPX *in)
 		//Raw incoming data
 		//emit testbench(1, &nextBuf[i], m_modemSampleRate, MorseModem);
 
-        //Its possible we get called right after dataUi has been been instantiated
-        //since receive loop is running when CW window is opened
-		if (m_dataUi != NULL && m_dataUi->dataBar!=NULL) {
-			m_dataUi->dataBar->setValue(meterValue); //Tuning bar
-		}
 	} //End for(...numSamples...)
 
     return in;

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>516</width>
+    <width>545</width>
     <height>275</height>
    </rect>
   </property>
@@ -194,29 +194,6 @@
        </spacer>
       </item>
       <item>
-       <widget class="BargraphMeter" name="dataBar" native="true">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>100</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>80</width>
-          <height>18</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <zorder>squelchSlider</zorder>
-       </widget>
-      </item>
-      <item>
        <widget class="QComboBox" name="thresholdOptionBox"/>
       </item>
       <item>
@@ -318,14 +295,6 @@
    </item>
   </layout>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>BargraphMeter</class>
-   <extends>QWidget</extends>
-   <header location="global">bargraphmeter.h</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>
