@@ -16,7 +16,7 @@
 class MovingAvgFilter
 {
 public:
-	MovingAvgFilter(quint32 filterLen);
+	MovingAvgFilter(quint32 filterLen, bool useRunningMean = false);
 	~MovingAvgFilter();
 
 	//Puts new sample into delay buffer and returns new moving average
@@ -30,6 +30,10 @@ public:
 	//Weight=800: (input * 1/800) + average * (799/800) - Long average, stead input would take 800 to == average
 	static double weightedAvg(double prevAvg, double sample, quint32 weight);
 
+	double movingAvg() {return m_movingAvg;}
+	double variance() {return m_variance;}
+	double stdDev() {return m_stdDev;}
+	double runningMean() {return m_runningMean;}
 private:
 	bool m_primed; //Flag for special handling of first samples
 	quint32 m_filterLen; //Number of samples to average
@@ -37,6 +41,15 @@ private:
 	quint32 m_ringIndex; //Points to oldest sample in buffer
 	double m_delayBufSum; //Sum of all the entries in the delay buffer
 	double m_movingAvg; //Last average returned
+
+	//For running mean
+	bool m_useRunningMean;
+	double m_runningMean;
+	quint32 m_runningMeanCount;
+	double m_S;
+	double m_stdDev;
+	double m_variance;
+
 };
 
 #endif // MOVINGAVGFILTER_H
