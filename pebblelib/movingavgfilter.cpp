@@ -69,7 +69,7 @@ void MovingAvgFilter::reset()
 
 	//Running mean
 	m_runningMean = 0;
-	m_runningMeanCount = 0;
+	m_runningMeanCount = 1; //Avoid div by zero error
 	m_S = 0;
 	m_stdDev = 0;
 	m_variance = 0;
