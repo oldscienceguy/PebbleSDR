@@ -12,11 +12,21 @@
 	Useful for on/off keying like CW or RTTY where there is a sharp transition on the rising signal
 	The size of the filter is based on the estimated rise or fall time of the signal, ie 10ms for CW
 	m_filterLen = sampleRate * msRiseTime -> 8000sps * .010 = 80
+
+	See https://en.wikipedia.org/wiki/Moving_average for different variations
+	Simple Moving Average (SMA)
+	Cumulative Moving Average (CMA)
+	Weighted Moving Average (WMA)
+
+	See http://www.analog.com/media/en/technical-documentation/dsp-book/dsp_book_Ch15.pdf
+	Optimal filter for removing white noise from a sample
 */
 class MovingAvgFilter
 {
 public:
-	MovingAvgFilter(quint32 filterLen, bool useRunningMean = false);
+	enum MOVING_AVG_TYPE {SimpleMovingAverage, CumulativeMovingAverage, WeightedMovingAverage};
+
+	MovingAvgFilter(quint32 filterLen, MOVING_AVG_TYPE movingAverageType = SimpleMovingAverage);
 	~MovingAvgFilter();
 
 	//Puts new sample into delay buffer and returns new moving average
@@ -30,23 +40,29 @@ public:
 	//Weight=800: (input * 1/800) + average * (799/800) - Long average, stead input would take 800 to == average
 	static double weightedAvg(double prevAvg, double sample, quint32 weight);
 
-	double movingAvg() {return m_movingAvg;}
+	double simpleMovingAvg() {return m_simpleMovingAvg;}
 	double variance() {return m_variance;}
 	double stdDev() {return m_stdDev;}
-	double runningMean() {return m_runningMean;}
+	double cumulativeMovingAverage() {return m_cumulativeMovingAverage;}
 private:
+	MOVING_AVG_TYPE m_movingAverageType;
+
+	//For simple moving average
 	bool m_primed; //Flag for special handling of first samples
 	quint32 m_filterLen; //Number of samples to average
-	double *m_delayBuf; //Ring buffer
+	double *m_sampleBuf; //Ring buffer for samples
+	double *m_prodBuf; //Ring buffer for products
 	quint32 m_ringIndex; //Points to oldest sample in buffer
-	double m_delayBufSum; //Sum of all the entries in the delay buffer
-	double m_movingAvg; //Last average returned
+	double m_sampleBufSum; //Sum of all the entries in the delay buffer
+	double m_prodBufSum; //mac
+	double m_simpleMovingAvg; //Last average returned
 
-	//For running mean
-	bool m_useRunningMean;
-	double m_runningMean;
-	quint32 m_runningMeanCount;
+	//For cumulative moving average
+	double m_cumulativeMovingAverage;
+	quint32 m_cumulativeMovingAverageCount;
 	double m_S;
+
+	//Common
 	double m_stdDev;
 	double m_variance;
 
