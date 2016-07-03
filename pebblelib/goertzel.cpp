@@ -129,12 +129,6 @@ Goertzel::Goertzel()
 	m_usePhaseAlgorithm = false;
 	m_isValid = false;
 
-	m_calcRunningMean = true;
-	m_runningMean = 0;
-	m_runningMeanCount = 1; //Avoid div by zero error
-	m_S = 0;
-	m_stdDev = 0;
-	m_variance = 0;
 }
 
 /*
@@ -169,6 +163,10 @@ void Goertzel::setFreq(qint32 freq, quint32 N, quint32 sampleRate)
 		//ie shift -1000 to +5000
 		freq = freq + sampleRate;
 	}
+
+	//N represents the shortest interval the caller is interested in.  So set the filter to the same length
+	//so we don't lose precision
+	m_avgFilter = new MovingAvgFilter(N);
 
 	m_freq = freq;
 	m_samplesPerResult = N;
@@ -235,25 +233,9 @@ bool Goertzel::processSample(CPX x_n)
 	//https://www.dsprelated.com/showarticle/495.php
 	//Computes single DTFT (Discrete Time Fourier Transform) bin at specified frequency
 
-	if (m_calcRunningMean) {
-		double power = x_n.real()*x_n.real() + x_n.imag()*x_n.imag();
-		//See Knuth TAOCP vol 2, 3rd edition, page 232
-		//for each incoming sample x:
-		//    prev_mean = m;
-		//    n = n + 1;
-		//    m = m + (x-m)/n;
-		//    S = S + (x-m)*(x-prev_mean);
-		//	standardDev = sqrt(S/n) or sqrt(S/n-1) depending on who you listen to
-		double prevMean = 0;
-		prevMean = m_runningMean;
-		m_runningMean += (power - m_runningMean) / m_runningMeanCount;
-		m_S += (power - m_runningMean) * (power - prevMean);
-		//Dividing by N-1 (Bessel's correction) returns unbiased variance, dividing by N returns variance across the entire sample set
-		m_variance = m_S / (m_runningMeanCount - 1);
-		m_stdDev = sqrt(m_variance);
-		m_runningMeanCount++;
-		//Not tested, here for future use
-	}
+	m_avgPower = m_avgFilter->newSample(DB::power(x_n));
+	m_variance = m_avgFilter->variance();
+	m_stdDeviation = m_avgFilter->stdDev();
 
 	// one iteration less than traditionally, we process last sample differently
 	if (m_nCount < m_samplesPerResult - 1) {
@@ -323,25 +305,7 @@ bool Goertzel::processSample(CPX x_n)
 //Process a single sample, return true if we've processed enough for a result
 bool Goertzel::processSample(double x_n)
 {
-	if (m_calcRunningMean) {
-		double power = x_n*x_n;
-		//See Knuth TAOCP vol 2, 3rd edition, page 232
-		//for each incoming sample x:
-		//    prev_mean = m;
-		//    n = n + 1;
-		//    m = m + (x-m)/n;
-		//    S = S + (x-m)*(x-prev_mean);
-		//	standardDev = sqrt(S/n) or sqrt(S/n-1) depending on who you listen to
-		double prevMean = 0;
-		prevMean = m_runningMean;
-		m_runningMean += (power - m_runningMean) / m_runningMeanCount;
-		m_S += (power - m_runningMean) * (power - prevMean);
-		//Dividing by N-1 (Bessel's correction) returns unbiased variance, dividing by N returns variance across the entire sample set
-		m_variance = m_S / (m_runningMeanCount - 1);
-		m_stdDev = sqrt(m_variance);
-		m_runningMeanCount++;
-		//Not tested, here for future use
-	}
+	m_avgPower = m_avgFilter->newSample(DB::power(x_n));
 
 	//m_wn = x_n + m_wn1 * (2 * cos((TWOPI * m_m )/ N)) - m_wn2; //Lyons 13-80 re-arranged
 	//Same as m_wn = x+n + m_coeff * w_wn1 - m_wn2;
@@ -398,10 +362,13 @@ GoertzelOOK::GoertzelOOK(quint32 sampleRate, quint32 numSamples)
 
 	m_lastTone = false;
 	m_peakPower = 0;
+	m_peakFilter = new MovingAvgFilter(0, NULL); //Decay moving average
 }
 
 GoertzelOOK::~GoertzelOOK()
 {
+	if (m_peakFilter != NULL)
+		delete m_peakFilter;
 }
 
 void GoertzelOOK::setThresholdType(GoertzelOOK::ThresholdType t)
@@ -666,17 +633,16 @@ bool GoertzelOOK::processResult(double &retPower, bool &aboveThreshold)
 	double snr = 0;
 	// Fast attack and slow decay.
 	//Todo: Goertzel agc options: off, fast, slow
-	quint16 attackWeight = 20;
-	quint16 decayWeight = 3 * attackWeight;
-
+	const double attackWeight = 1.0/20.0;
+	const double decayWeight = attackWeight / 3.0;
 
 	//If we have a detectable tone, it should be strong in the main bin compared with surrounding bins
 
 	mainPower = m_mainTone.m_power;
 	lowPower = m_lowCompareTone.m_power;
 	highPower = m_highCompareTone.m_power;
-	bufDev = m_mainTone.m_stdDev;
-	bufMean = m_mainTone.m_runningMean;
+	bufDev = m_mainTone.m_avgFilter->stdDev();
+	bufMean = m_mainTone.m_avgFilter->cumulativeMovingAverage();
 	snr = mainPower/bufMean;
 	retPower = mainPower;
 
@@ -712,24 +678,23 @@ bool GoertzelOOK::processResult(double &retPower, bool &aboveThreshold)
 		case TH_PEAK:
 			//Uses percentage of peak power for comparison
 			// Compute a variable threshold value for tone detection
-			if (mainPower > m_peakPower)
-				m_peakPower = MovingAvgFilter::weightedAvg(m_peakPower, mainPower, attackWeight); //Input has more weight on increasing signal than decreasing
-			else
+			if (mainPower > m_peakPower) {
+				m_peakPower = m_peakFilter->newSample(mainPower, attackWeight);
+			} else {
 				//Original value of 800 on decay seems way too high, means we need 800 space results before agc reflects
-				m_peakPower = MovingAvgFilter::weightedAvg(m_peakPower, mainPower, decayWeight);
+				m_peakPower = m_peakFilter->newSample(mainPower, decayWeight);
+			}
 
 			//Super-Ratt and JSDR technique
 			//Divide agc_peak in thirds,  upper is rising, lower is falling, middle is stable
 			m_thresholdUp = m_peakPower * 0.67; //fldigi uses 0.60
 			m_thresholdDown = m_peakPower * 0.33; //fldigi uses 0.40
 
-			//Todo: Consider running mean from tone to set a lower floor to avoid random noise results
-			//or user slider to set squelch level
 			if (mainPower >= m_thresholdUp) {
 				aboveThreshold = true;
 			} else if (mainPower <= m_thresholdDown) {
 				aboveThreshold = false;
-			} else if (m_lastTone && mainPower > m_thresholdDown){
+			} else if (m_lastTone) {
 				//Last result was a tone and we're in between thresholdUp and thresholdDown
 				aboveThreshold = true;
 			}

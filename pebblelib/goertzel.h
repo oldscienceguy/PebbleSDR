@@ -53,13 +53,10 @@ public:
 	CPX m_s1;
 	CPX m_s2;
 
-	//Used for runningMean and StdDev calculations
-	bool m_calcRunningMean;
-	double m_runningMean;
-	quint32 m_runningMeanCount;
-	double m_S;
-	double m_stdDev;
+	MovingAvgFilter *m_avgFilter;
+	double m_avgPower;
 	double m_variance;
+	double m_stdDeviation;
 
 };
 
@@ -122,6 +119,8 @@ private:
 
 	quint32 m_debounceCounter;
 	bool debounce(bool aboveThreshold);
+
+	MovingAvgFilter *m_peakFilter;
 
 };
 
