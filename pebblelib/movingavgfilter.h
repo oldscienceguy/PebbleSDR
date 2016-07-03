@@ -24,26 +24,31 @@
 class MovingAvgFilter
 {
 public:
-	enum MOVING_AVG_TYPE {SimpleMovingAverage, CumulativeMovingAverage, WeightedMovingAverage};
+	enum MOVING_AVG_TYPE {SimpleMovingAverage, CumulativeMovingAverage, WeightedMovingAverage, DecayMovingAverage};
 
-	MovingAvgFilter(quint32 filterLen, MOVING_AVG_TYPE movingAverageType = SimpleMovingAverage);
+	MovingAvgFilter(); //Cumulative moving average
+	MovingAvgFilter(quint32 filterLen); //Simple moving average
+	MovingAvgFilter(quint32 filterLen, double coeff[]); //Weighted moving average
 	~MovingAvgFilter();
 
 	//Puts new sample into delay buffer and returns new moving average
 	double newSample(double sample);
-	//Clears moving average and starts over
-	void reset();
 
+	//Special call for decay average where len==0.  Allows 1st coeff to be specified on each sample
 	//Simple 2 element weighted average, used in multiple places
 	//Weight is the factor to weight the input when calculating the average
 	//Weight=20: (input * 1/20) + average * (19/20) - Short average, only 20 loops to make average == steady input
 	//Weight=800: (input * 1/800) + average * (799/800) - Long average, stead input would take 800 to == average
-	static double weightedAvg(double prevAvg, double sample, quint32 weight);
+	double newSample(double sample, double weight);
+
+	//Clears moving average and starts over
+	void reset();
 
 	double simpleMovingAvg() {return m_simpleMovingAvg;}
 	double variance() {return m_variance;}
 	double stdDev() {return m_stdDev;}
 	double cumulativeMovingAverage() {return m_cumulativeMovingAverage;}
+	double weightedMovingAverage() {return m_weightedMovingAverage;}
 private:
 	MOVING_AVG_TYPE m_movingAverageType;
 
@@ -52,6 +57,7 @@ private:
 	quint32 m_filterLen; //Number of samples to average
 	double *m_sampleBuf; //Ring buffer for samples
 	double *m_prodBuf; //Ring buffer for products
+	double *m_coeffBuf; //For weighted averages
 	quint32 m_ringIndex; //Points to oldest sample in buffer
 	double m_sampleBufSum; //Sum of all the entries in the delay buffer
 	double m_prodBufSum; //mac
@@ -61,6 +67,8 @@ private:
 	double m_cumulativeMovingAverage;
 	quint32 m_cumulativeMovingAverageCount;
 	double m_S;
+
+	double m_weightedMovingAverage;
 
 	//Common
 	double m_stdDev;
