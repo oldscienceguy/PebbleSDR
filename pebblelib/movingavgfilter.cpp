@@ -8,7 +8,6 @@ MovingAvgFilter::MovingAvgFilter()
 	m_movingAverageType = CumulativeMovingAverage;
 	m_filterLen = 0; //Not used
 	m_sampleBuf = NULL;
-	m_prodBuf = NULL;
 	m_coeffBuf = NULL;
 	reset();
 }
@@ -25,7 +24,6 @@ MovingAvgFilter::MovingAvgFilter(quint32 filterLen)
 		filterLen = 1;
 	m_filterLen = filterLen;
 	m_sampleBuf = new double[filterLen];
-	m_prodBuf = new double[filterLen];
 	m_coeffBuf = NULL; //Not used
 	reset();
 }
@@ -37,12 +35,10 @@ MovingAvgFilter::MovingAvgFilter(quint32 filterLen, double coeff[])
 		//Special case for decay moving average
 		m_movingAverageType = DecayMovingAverage;
 		m_sampleBuf = NULL;
-		m_prodBuf = NULL;
 		m_coeffBuf = NULL;
 	} else {
 		m_movingAverageType = WeightedMovingAverage;
 		m_sampleBuf = new double[filterLen];
-		m_prodBuf = NULL; //Not used
 		m_coeffBuf = new double[filterLen];
 		for (quint32 i=0; i<filterLen; i++)
 			m_coeffBuf[i] = coeff[i]; //Local copy
@@ -54,8 +50,6 @@ MovingAvgFilter::~MovingAvgFilter()
 {
 	if (m_sampleBuf != NULL)
 		delete[] m_sampleBuf;
-	if (m_prodBuf != NULL)
-		delete[] m_prodBuf;
 	if (m_coeffBuf != NULL)
 		delete[] m_coeffBuf;
 }
@@ -71,8 +65,6 @@ double MovingAvgFilter::newSample(double sample, double weight)
 
 double MovingAvgFilter::newSample(double sample)
 {
-	double sampleX2 = sample * sample;
-
 	if (m_movingAverageType == CumulativeMovingAverage) {
 		//See Knuth TAOCP vol 2, 3rd edition, page 232
 		//for each incoming sample x:
@@ -95,27 +87,52 @@ double MovingAvgFilter::newSample(double sample)
 		if (!m_primed) {
 			for (quint32 i =  0; i<m_filterLen; i++) {
 				m_sampleBuf[i] = sample;
-				m_prodBuf[i] = sampleX2;
 			}
 			m_primed = true;
 			m_sampleBufSum = sample * m_filterLen;
-			m_prodBufSum = sampleX2 * m_filterLen;
+			m_varianceSum = 0;
+			m_variance = 0;
 		} else {
 			//New moving average = (oldMovingAverage - oldestSample + newSample) / filterLength
-			m_sampleBufSum = m_sampleBufSum - m_sampleBuf[m_ringIndex] + sample;
-			//new sum of the products for variance and stdDev
-			m_prodBufSum = m_prodBufSum - m_prodBuf[m_ringIndex] + sampleX2;
+			double oldestSample = m_sampleBuf[m_ringIndex];
+			double oldAvg = m_simpleMovingAvg;
+			m_sampleBufSum = m_sampleBufSum - oldestSample + sample;
+			double newAvg = m_sampleBufSum / m_filterLen;
+
+			//Variance is the average of the squared difference from the mean
+			//https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#On-line_algorithm
+			//If variance is ever negative, we have an error in formula and stdDev will be nan
+			//Lots of discussion about how to calculate variance for moving average
+			//This came from Dan S at http://stackoverflow.com/questions/5147378/rolling-variance-algorithm
+			/*
+				Mean is simple to compute iteratively, but you need to keep the complete history of values in a circular buffer.
+
+				next_index = (index + 1)/window_size;    // oldest x value is at next_index.
+
+				new_mean = mean + (x_new - xs[next_index])/window_size;
+				I have adapted Welford's algorithm and it works for all the values that I have tested with.
+
+				varSum = var_sum + (x_new - mean) * (x_new - new_mean) - (xs[next_index] - mean) * (xs[next_index] - new_mean);
+
+				xs[next_index] = x_new;
+				index = next_index;
+				To get the current variance just divide varSum by the window size: variance = varSum / window_size;
+			  */
+			m_varianceSum += (sample - oldAvg) * (sample - newAvg) - (oldestSample - oldAvg) * (oldestSample - newAvg);
+			m_variance = m_varianceSum / m_filterLen;
+			//Variance can still be a verrrrrry small negative number in some extreme cases, correct
+			//Don't allow it to go to zero, or we'll get divide by zero errors for snr (mean / stdDev)
+			if (m_variance <= 0)
+				m_variance = ALMOSTZERO; //Defined in cpx.h
 
 			//Replace oldestSample with new sample
 			m_sampleBuf[m_ringIndex] = sample;
-			m_prodBuf[m_ringIndex] = sampleX2;
 
 			//Update ring buffer and wrap
 			m_ringIndex = ++m_ringIndex % m_filterLen;
 		}
 
 		m_simpleMovingAvg = m_sampleBufSum / m_filterLen;
-		m_variance = (m_filterLen * m_prodBufSum - (m_sampleBufSum * m_sampleBufSum)) / (m_filterLen * (m_filterLen -1));
 		m_stdDev = sqrt(m_variance);
 
 		return m_simpleMovingAvg;
@@ -124,12 +141,10 @@ double MovingAvgFilter::newSample(double sample)
 		double weightedSample;
 		if (!m_primed) {
 			m_sampleBufSum = 0;
-			m_prodBufSum = 0;
 			for (quint32 i =  0; i<m_filterLen; i++) {
 				m_sampleBuf[i] = sample;
 				weightedSample = sample * m_coeffBuf[i];
 				m_sampleBufSum += weightedSample;
-				m_prodBufSum += weightedSample * weightedSample;
 			}
 			m_primed = true;
 		} else {
@@ -142,7 +157,6 @@ double MovingAvgFilter::newSample(double sample)
 			for (quint32 i=0; i<m_filterLen; i++) {
 				weightedSample = m_sampleBuf[index] * m_coeffBuf[i]; //Weighted
 				m_sampleBufSum += weightedSample;
-				m_prodBufSum += weightedSample * weightedSample;
 				index = ++index % m_filterLen;
 			}
 
@@ -151,8 +165,7 @@ double MovingAvgFilter::newSample(double sample)
 		}
 
 		m_weightedMovingAverage = m_sampleBufSum / m_filterLen;
-		m_variance = (m_filterLen * m_prodBufSum - (m_sampleBufSum * m_sampleBufSum)) / (m_filterLen * (m_filterLen -1));
-		m_stdDev = sqrt(m_variance);
+		//Todo: Update to use var and stdDev algorithm from simple moving avg
 
 		return m_weightedMovingAverage;
 

@@ -56,11 +56,10 @@ private:
 	bool m_primed; //Flag for special handling of first samples
 	quint32 m_filterLen; //Number of samples to average
 	double *m_sampleBuf; //Ring buffer for samples
-	double *m_prodBuf; //Ring buffer for products
 	double *m_coeffBuf; //For weighted averages
 	quint32 m_ringIndex; //Points to oldest sample in buffer
 	double m_sampleBufSum; //Sum of all the entries in the delay buffer
-	double m_prodBufSum; //mac
+	double m_varianceSum; //for var
 	double m_simpleMovingAvg; //Last average returned
 
 	//For cumulative moving average
