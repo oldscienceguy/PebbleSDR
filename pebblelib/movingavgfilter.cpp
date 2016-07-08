@@ -59,8 +59,8 @@ double MovingAvgFilter::newSample(double sample, double weight)
 {
 	if (m_movingAverageType != DecayMovingAverage)
 		return sample;
-	m_weightedMovingAverage = sample * weight + m_weightedMovingAverage * (1-weight);
-	return m_weightedMovingAverage;
+	m_movingAvg = sample * weight + m_movingAvg * (1-weight);
+	return m_movingAvg;
 }
 
 double MovingAvgFilter::newSample(double sample)
@@ -73,14 +73,14 @@ double MovingAvgFilter::newSample(double sample)
 		//    m = m + (x-m)/n;
 		//    S = S + (x-m)*(x-prev_mean);
 		//	standardDev = sqrt(S/n) or sqrt(S/n-1) depending on who you listen to
-		double prevCumulativeMovingAverage = m_cumulativeMovingAverage;
+		double prevCumulativeMovingAverage = m_movingAvg;
 		m_cumulativeMovingAverageCount++;
-		m_cumulativeMovingAverage += (sample - m_cumulativeMovingAverage) / m_cumulativeMovingAverageCount;
-		m_S += (sample - m_cumulativeMovingAverage) * (sample - prevCumulativeMovingAverage);
+		m_movingAvg += (sample - m_movingAvg) / m_cumulativeMovingAverageCount;
+		m_varianceSum += (sample - m_movingAvg) * (sample - prevCumulativeMovingAverage);
 		//Dividing by N-1 (Bessel's correction) returns unbiased variance, dividing by N returns variance across the entire sample set
-		m_variance = m_S / (m_cumulativeMovingAverageCount - 1);
-		m_stdDev = sqrt(m_variance);
-		return m_cumulativeMovingAverage;
+		//m_variance = m_varianceSum / (m_cumulativeMovingAverageCount - 1); //Defer to caller requests
+		//m_stdDev = sqrt(m_variance); //Defer to caller requests it
+		return m_movingAvg;
 
 	} else if (m_movingAverageType == SimpleMovingAverage){
 		//Special handling for first sample.  Otherwise average will not be correct
@@ -90,14 +90,15 @@ double MovingAvgFilter::newSample(double sample)
 			}
 			m_primed = true;
 			m_sampleBufSum = sample * m_filterLen;
+			m_movingAvg = sample;
 			m_varianceSum = 0;
 			m_variance = 0;
 		} else {
 			//New moving average = (oldMovingAverage - oldestSample + newSample) / filterLength
 			double oldestSample = m_sampleBuf[m_ringIndex];
-			double oldAvg = m_simpleMovingAvg;
+			double oldAvg = m_movingAvg;
 			m_sampleBufSum = m_sampleBufSum - oldestSample + sample;
-			double newAvg = m_sampleBufSum / m_filterLen;
+			m_movingAvg = m_sampleBufSum / m_filterLen;
 
 			//Variance is the average of the squared difference from the mean
 			//https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#On-line_algorithm
@@ -118,13 +119,15 @@ double MovingAvgFilter::newSample(double sample)
 				index = next_index;
 				To get the current variance just divide varSum by the window size: variance = varSum / window_size;
 			  */
-			m_varianceSum += (sample - oldAvg) * (sample - newAvg) - (oldestSample - oldAvg) * (oldestSample - newAvg);
+			m_varianceSum += (sample - oldAvg) * (sample - m_movingAvg) - (oldestSample - oldAvg) * (oldestSample - m_movingAvg);
+#if 0
+			//Only calculate variance and stdDev when caller asks for it, not every sample, for efficiency
 			m_variance = m_varianceSum / m_filterLen;
 			//Variance can still be a verrrrrry small negative number in some extreme cases, correct
 			//Don't allow it to go to zero, or we'll get divide by zero errors for snr (mean / stdDev)
 			if (m_variance <= 0)
 				m_variance = ALMOSTZERO; //Defined in cpx.h
-
+#endif
 			//Replace oldestSample with new sample
 			m_sampleBuf[m_ringIndex] = sample;
 
@@ -132,10 +135,7 @@ double MovingAvgFilter::newSample(double sample)
 			m_ringIndex = ++m_ringIndex % m_filterLen;
 		}
 
-		m_simpleMovingAvg = m_sampleBufSum / m_filterLen;
-		m_stdDev = sqrt(m_variance);
-
-		return m_simpleMovingAvg;
+		return m_movingAvg;
 	} else if (m_movingAverageType == WeightedMovingAverage){
 		//Special handling for first sample.  Otherwise average will not be correct
 		double weightedSample;
@@ -164,10 +164,10 @@ double MovingAvgFilter::newSample(double sample)
 			m_ringIndex = ++m_ringIndex % m_filterLen;
 		}
 
-		m_weightedMovingAverage = m_sampleBufSum / m_filterLen;
+		m_movingAvg = m_sampleBufSum / m_filterLen;
 		//Todo: Update to use var and stdDev algorithm from simple moving avg
 
-		return m_weightedMovingAverage;
+		return m_movingAvg;
 
 	}
 	return 0; //Error condition, should never get here
@@ -177,15 +177,34 @@ void MovingAvgFilter::reset()
 {
 	m_ringIndex = 0;
 	m_sampleBufSum = 0;
-	m_simpleMovingAvg = 0;
+	m_movingAvg = 0;
 	m_primed = false;
-
-	//Running mean
-	m_cumulativeMovingAverage = 0;
-	m_cumulativeMovingAverageCount = 0;
-	m_S = 0;
 	m_stdDev = 0;
 	m_variance = 0;
 
-	m_weightedMovingAverage = 0;
+	//Running mean
+	m_cumulativeMovingAverageCount = 0;
+}
+
+//Only calculate variance on demand for efficiency
+double MovingAvgFilter::variance()
+{
+	//Dividing by N-1 (Bessel's correction) returns unbiased variance, dividing by N returns variance across the entire sample set
+	if (m_movingAverageType == CumulativeMovingAverage)
+		m_variance = m_varianceSum / (m_cumulativeMovingAverageCount - 1);
+	else
+		m_variance = m_varianceSum / m_filterLen;
+	//Variance can still be a verrrrrry small negative number in some extreme cases, correct
+	//Don't allow it to go to zero, or we'll get divide by zero errors for snr (mean / stdDev)
+	if (m_variance <= 0)
+		m_variance = ALMOSTZERO; //Defined in cpx.h
+	return m_variance;
+}
+
+//Only calc stdDev on demand for efficiency
+double MovingAvgFilter::stdDev()
+{
+	m_stdDev = sqrt(m_variance);
+
+	return m_stdDev;
 }

@@ -44,11 +44,9 @@ public:
 	//Clears moving average and starts over
 	void reset();
 
-	double simpleMovingAvg() {return m_simpleMovingAvg;}
-	double variance() {return m_variance;}
-	double stdDev() {return m_stdDev;}
-	double cumulativeMovingAverage() {return m_cumulativeMovingAverage;}
-	double weightedMovingAverage() {return m_weightedMovingAverage;}
+	double variance();
+	double stdDev();
+	double movingAverage() {return m_movingAvg;}
 private:
 	MOVING_AVG_TYPE m_movingAverageType;
 
@@ -60,14 +58,9 @@ private:
 	quint32 m_ringIndex; //Points to oldest sample in buffer
 	double m_sampleBufSum; //Sum of all the entries in the delay buffer
 	double m_varianceSum; //for var
-	double m_simpleMovingAvg; //Last average returned
+	double m_movingAvg; //Last average returned
 
-	//For cumulative moving average
-	double m_cumulativeMovingAverage;
 	quint32 m_cumulativeMovingAverageCount;
-	double m_S;
-
-	double m_weightedMovingAverage;
 
 	//Common
 	double m_stdDev;
