@@ -53,11 +53,21 @@ public:
 	CPX m_s1;
 	CPX m_s2;
 
+	double avgPower() {return m_avgPower;}
+	double variance() {return m_avgFilter->variance();}
+	double stdDev() {return m_avgFilter->stdDev();}
+private:
 	MovingAvgFilter *m_avgFilter;
 	double m_avgPower;
-	double m_variance;
-	double m_stdDeviation;
 
+};
+
+//TBD, should have better time resolution and noise rejection
+class SlidingGoertzel
+{
+public:
+	SlidingGoertzel();
+	~SlidingGoertzel();
 };
 
 //Goertzel class for on/off keying like morse
@@ -71,10 +81,10 @@ public:
 	//TH_COMPARE uses 2 extra bins, above and below the target freq
 	//TH_AVERAGE uses the average power in the buffer
 	//TH_MANUAL uses specific target
-	enum ThresholdType {TH_COMPARE, TH_AVERAGE, TH_PEAK, TH_MIN_MAX, TH_MANUAL};
+	enum ThresholdType {TH_COMPARE, TH_AVERAGE, TH_PEAK, TH_MIN_MAX, TH_MANUAL, TH_NOISE, TH_UP, TH_DOWN};
 	void setThresholdType(ThresholdType t);
 	ThresholdType thresholdType() {return m_thresholdType;}
-	void setThreshold(double threshold);
+	void setThreshold(double threshold, ThresholdType thType);
 	double threshold(){return m_compareThreshold;}
 
 	void setTargetSampleRate(quint32 targetSampleRate);
@@ -106,7 +116,9 @@ private:
 
 	int m_numSamples;
 	ThresholdType m_thresholdType;
+	double m_noiseThreshold; //Used to squelch signals below a specified SNR
 	double m_compareThreshold;
+	double m_avgThreshold;
 	double m_thresholdUp;
 	double m_thresholdDown;
 	double m_peakPower;

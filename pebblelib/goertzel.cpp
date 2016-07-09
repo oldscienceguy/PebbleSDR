@@ -164,9 +164,10 @@ void Goertzel::setFreq(qint32 freq, quint32 N, quint32 sampleRate)
 		freq = freq + sampleRate;
 	}
 
-	//N represents the shortest interval the caller is interested in.  So set the filter to the same length
-	//so we don't lose precision
-	m_avgFilter = new MovingAvgFilter(N);
+	//We use avgFilter to calculate avg signal and stdDev for SNR comparison
+	//It needs to be larger than N for the results to mean anything, otherwise it's just the avg and stdDev for N samples
+	//Too long, and it won't reflect changes fast enough for snr squelch to work
+	m_avgFilter = new MovingAvgFilter(N*4);
 
 	m_freq = freq;
 	m_samplesPerResult = N;
@@ -234,8 +235,6 @@ bool Goertzel::processSample(CPX x_n)
 	//Computes single DTFT (Discrete Time Fourier Transform) bin at specified frequency
 
 	m_avgPower = m_avgFilter->newSample(DB::power(x_n));
-	m_variance = m_avgFilter->variance();
-	m_stdDeviation = m_avgFilter->stdDev();
 
 	// one iteration less than traditionally, we process last sample differently
 	if (m_nCount < m_samplesPerResult - 1) {
@@ -363,6 +362,8 @@ GoertzelOOK::GoertzelOOK(quint32 sampleRate, quint32 numSamples)
 	m_lastTone = false;
 	m_peakPower = 0;
 	m_peakFilter = new MovingAvgFilter(0, NULL); //Decay moving average
+
+	m_noiseThreshold = 0; //Off
 }
 
 GoertzelOOK::~GoertzelOOK()
@@ -376,8 +377,33 @@ void GoertzelOOK::setThresholdType(GoertzelOOK::ThresholdType t)
 	m_thresholdType = t;
 }
 
-void GoertzelOOK::setThreshold(double threshold)
+void GoertzelOOK::setThreshold(double threshold, ThresholdType thType)
 {
+	switch (thType) {
+		case TH_COMPARE:
+			m_compareThreshold = threshold;
+			break;
+		case TH_AVERAGE:
+			m_avgThreshold = threshold;
+			break;
+		case TH_PEAK:
+			break;
+		case TH_MIN_MAX:
+			break;
+		case TH_MANUAL:
+			break;
+		case TH_NOISE:
+			//0 == Off
+			m_noiseThreshold = threshold;
+			break;
+		case TH_UP:
+			//m_thresholdUp = threshold; //Not used, set by agc
+			break;
+		case TH_DOWN:
+			//m_thresholdDown = threshold; //Not used, set by agc for now
+			break;
+	}
+
 	m_compareThreshold = threshold;
 }
 
@@ -466,8 +492,10 @@ void GoertzelOOK::setFreq(quint32 freq, quint32 N, quint32 jitterCount)
 	*/
 	m_mainTone.setFreq(freq, N, m_sampleRate);
 	quint32 bwDelta = m_mainTone.m_bandwidth *.75;
-	m_highCompareTone.setFreq(freq + bwDelta, N, m_sampleRate);
-	m_lowCompareTone.setFreq(freq - bwDelta, N, m_sampleRate);
+	if (m_thresholdType == TH_COMPARE) {
+		m_highCompareTone.setFreq(freq + bwDelta, N, m_sampleRate);
+		m_lowCompareTone.setFreq(freq - bwDelta, N, m_sampleRate);
+	}
 	//KA7OEI differential goertzel algorithm compares 5% below and 4% above bins
 	//m_lowCompareTone.setFreq(freq * 0.95, N, m_internalSampleRate);
 	//m_highCompareTone.setFreq(freq * 1.04, N, m_internalSampleRate);
@@ -592,8 +620,10 @@ bool GoertzelOOK::processSample(double x_n, double &retPower, bool &aboveThresho
 
 	//All the tones have the same N, just check the result of the main
 	bool result = m_mainTone.processSample(x_n);
-	m_highCompareTone.processSample(x_n);
-	m_lowCompareTone.processSample(x_n);
+	if (m_thresholdType == TH_COMPARE) {
+		m_highCompareTone.processSample(x_n);
+		m_lowCompareTone.processSample(x_n);
+	}
 	m_mainTone.m_isValid = false;
 	if (result) {
 		return processResult(retPower,aboveThreshold);
@@ -608,8 +638,10 @@ bool GoertzelOOK::processSample(CPX x_n, double &retPower, bool &aboveThreshold,
 
 	//All the tones have the same N, just check the result of the main
 	bool result = m_mainTone.processSample(x_n);
-	m_highCompareTone.processSample(x_n);
-	m_lowCompareTone.processSample(x_n);
+	if (m_thresholdType == TH_COMPARE) {
+		m_highCompareTone.processSample(x_n);
+		m_lowCompareTone.processSample(x_n);
+	}
 	m_mainTone.m_isValid = false;
 	if (result) {
 		result = processResult(retPower,aboveThreshold);
@@ -630,7 +662,6 @@ bool GoertzelOOK::processResult(double &retPower, bool &aboveThreshold)
 	double lowPower = 0;
 	double bufMean = 0;
 	double bufDev = 0;
-	double snr = 0;
 	// Fast attack and slow decay.
 	//Todo: Goertzel agc options: off, fast, slow
 	const double attackWeight = 1.0/20.0;
@@ -639,16 +670,15 @@ bool GoertzelOOK::processResult(double &retPower, bool &aboveThreshold)
 	//If we have a detectable tone, it should be strong in the main bin compared with surrounding bins
 
 	mainPower = m_mainTone.m_power;
-	lowPower = m_lowCompareTone.m_power;
-	highPower = m_highCompareTone.m_power;
-	bufDev = m_mainTone.m_avgFilter->stdDev();
-	bufMean = m_mainTone.m_avgFilter->cumulativeMovingAverage();
-	snr = mainPower/bufMean;
+	bufDev = m_mainTone.stdDev();
+	bufMean = m_mainTone.avgPower();
 	retPower = mainPower;
 
 	switch (m_thresholdType) {
 		case TH_COMPARE:{
 			//Compares high/low tone poser
+			lowPower = m_lowCompareTone.m_power;
+			highPower = m_highCompareTone.m_power;
 			double avgComparePower = (highPower + lowPower) / 2;
 			retPower = mainPower;
 
@@ -710,7 +740,8 @@ bool GoertzelOOK::processResult(double &retPower, bool &aboveThreshold)
 						  DB::powerTodB(mainPower)<<" Mean:"<<
 						  DB::powerTodB(bufMean)<<" Dev:"<<
 						  DB::powerTodB(bufDev);
-			if (snr > 5 ) {
+			//If average power is less than threshold
+			if (m_mainTone.avgPower() < m_avgThreshold) {
 				aboveThreshold = true;
 			} else {
 				aboveThreshold = false;
