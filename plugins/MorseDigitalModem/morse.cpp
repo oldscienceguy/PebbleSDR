@@ -150,6 +150,8 @@ Morse::Morse()
 	m_filterSamplesPerResult = 16;
 	m_out = NULL;
 
+	m_peakFilter = new MovingAvgFilter(0,NULL); //Decay average
+
 	//Used to update display from main thread.
 	connect(this, SIGNAL(newOutput()), this, SLOT(refreshOutput()));
 }
@@ -203,11 +205,6 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 		delete m_sampleClock;
 	m_sampleClock = new SampleClock(m_modemSampleRate);
 	m_sampleClock->reset(); //Start timer over
-
-    //fldigi constructors
-	m_squelchIncrement = 0.5;
-	m_squelchThreshold = 0;
-	m_squelchEnabled = false;
 
 	if (!m_useGoertzel) {
 		if (m_toneFilter != NULL)
@@ -267,6 +264,7 @@ Morse::~Morse()
 	if (m_mixer != NULL) delete m_mixer;
 	if (m_sampleClock != NULL) delete m_sampleClock;
 	if (m_goertzel != NULL) delete m_goertzel;
+	if (m_peakFilter != NULL) delete m_peakFilter;
 }
 
 void Morse::setupDataUi(QWidget *parent)
@@ -290,14 +288,6 @@ void Morse::setupDataUi(QWidget *parent)
 		//Add option to display data in testBench
 		emit addProfile("Morse Modem", MorseModem);
 
-		m_squelchThreshold = 0;
-		m_squelchEnabled = false;
-		m_dataUi->squelchSlider->setMinimum(0);
-		m_dataUi->squelchSlider->setMaximum(10 / m_squelchIncrement);
-		m_dataUi->squelchSlider->setSingleStep(1);
-		m_dataUi->squelchSlider->setValue(m_squelchThreshold);
-		connect(m_dataUi->squelchSlider,SIGNAL(valueChanged(int)),this,SLOT(squelchChanged(int)));
-
 		m_dataUi->dataEdit->setAutoFormatting(QTextEdit::AutoNone);
 		m_dataUi->dataEdit->setAcceptRichText(true); //For international characters
 		m_dataUi->dataEdit->setReadOnly(true);
@@ -320,18 +310,6 @@ void Morse::setupDataUi(QWidget *parent)
 		m_dataUi->wpmBox->addItem("40-120 wpm");
 		m_dataUi->wpmBox->addItem("100-200 wpm");
 		connect(m_dataUi->wpmBox,SIGNAL(currentIndexChanged(int)),this,SLOT(wpmBoxChanged(int)));
-
-		//Threshold selection
-		//Changes display and meaning of threshold slider
-		m_dataUi->thresholdOptionBox->addItem("Auto", TH_AUTO); //All threshold are automatically set
-		m_dataUi->thresholdOptionBox->addItem("Tone",TH_TONE); //Threshold between tone/no-tone
-		m_dataUi->thresholdOptionBox->addItem("Dot/Dash",TH_DASH); //Sets dot/dash threshold
-		m_dataUi->thresholdOptionBox->addItem("Char/Word",TH_WORD); //Sets char/word threshold
-		m_dataUi->thresholdOptionBox->addItem("Squelch",TH_SQUELCH); //Sets noise level, no detection below this level
-		connect(m_dataUi->thresholdOptionBox,SIGNAL(currentIndexChanged(int)),this,SLOT(thresholdOptionChanged(int)));
-		//Todo: Save/Restore threshold settings
-
-
 
 		m_lockWPM = false;
 		m_dataUi->freezeButton->setCheckable(true);
@@ -469,35 +447,6 @@ void Morse::wpmBoxChanged(int s)
 	init(wpm);
 }
 
-void Morse::thresholdOptionChanged(int s)
-{
-	Q_UNUSED(s);
-
-	//Todo
-	THRESHOLD_OPTIONS th = (THRESHOLD_OPTIONS)m_dataUi->thresholdOptionBox->currentData().toInt();
-	switch (th) {
-		case TH_AUTO:
-			break;
-		//Power threshold between tone/no-tone in Goertzel
-		case TH_TONE:
-			break;
-		//Timing threshold between dot and dash
-		//m_usecDotDashThreshold
-		case TH_DASH:
-			break;
-		//Timing threshold between char and word
-		//m_usecCharThreshold
-		//m_usecWord Threshold
-		case TH_WORD:
-			break;
-		//Power threshold for data squelch
-		//m_squelchThreshold
-		case TH_SQUELCH:
-			break;
-		//Timing threshold between for interval between dots and dashes
-		//m_usecElementThreshold
-	}
-}
 
 //Called from clear button
 void Morse::resetOutput()
@@ -545,26 +494,6 @@ void Morse::outputData(const char c)
 
     return;
 }
-
-void Morse::squelchChanged(int v)
-{
-    if (v == 0) {
-		m_squelchEnabled = false;
-    } else {
-		m_squelchThreshold = v * m_squelchIncrement; //Slider is in .5 increments so 2 inc = 1 squelch value
-		m_squelchEnabled = true;
-    }
-}
-
-
-//Early experiment with Goertzel abandoned in favor of fldigi style filter
-//But we may go back and test Goertzel vs fldigi at some point in the future
-//fldigi has it's own goertzel algorithm, choose one or the other
-//We also experiemented with processing the entire sample buffer and turning it into a tone buffer
-//Then process the tone buffer looking for characters.
-//Advantage is that we an look back and look ahead to make a decision about anomolies
-//Disadvantage is we have to carry tone buffer across sample buffers so we don't loose anything
-
 
 
 /*
@@ -862,9 +791,9 @@ CPX * Morse::processBlock(CPX *in)
 				// Compute a variable threshold value for tone detection
 				// Fast attack and slow decay.
 				if (tonePower > m_agc_peak)
-					m_agc_peak = MovingAvgFilter::weightedAvg(m_agc_peak, tonePower, 20); //Input has more weight on increasing signal than decreasing
+					m_agc_peak = m_peakFilter->newSample(tonePower, 1.0 / 20.0); //Input has more weight on increasing signal than decreasing
 				else
-					m_agc_peak = MovingAvgFilter::weightedAvg(m_agc_peak, tonePower, 800);
+					m_agc_peak = m_peakFilter->newSample(tonePower, 1.0 / 800.0);
 
 				//metric is what we use to determine whether to squelch or not
 				//Also what could be displayed on 0-100 tuning bar
@@ -887,31 +816,17 @@ CPX * Morse::processBlock(CPX *in)
 					thresholdDown = m_agc_peak * 0.33;
 				}
 
-				//Check squelch to avoid noise errors
+				//State machine handles all transitions and decisions
+				//We just determine if value indicated key down or up status
 
-				if (!m_squelchEnabled || m_squelchMetric > m_squelchThreshold ) {
-					//State machine handles all transitions and decisions
-					//We just determine if value indicated key down or up status
-
-					// Power detection using hysterisis detector
-					// upward trend means tone starting
-					if (tonePower > thresholdUp) {
-						meterValue = DB::powerTodB(tonePower);
-						stateMachine(TONE_EVENT);
-					} else {
-						meterValue = -120;
-						stateMachine(NO_TONE_EVENT);
-					}
-
-					//Don't do anything if in the middle?  Prevents jitter that would occur if just compare with single value
-
-					// downward trend means tone stopping
-
-
+				// Power detection using hysterisis detector
+				// upward trend means tone starting
+				if (tonePower > thresholdUp) {
+					meterValue = DB::powerTodB(tonePower);
+					stateMachine(TONE_EVENT);
 				} else {
-					//Light in-squelch indicator (TBD)
-					//Keep timing
-					qDebug()<<"In squelch";
+					meterValue = -120;
+					stateMachine(NO_TONE_EVENT);
 				}
 
 			} //End if (result)
@@ -922,8 +837,6 @@ CPX * Morse::processBlock(CPX *in)
 			//CPX with non-integer k Goertzel works
 			result = m_goertzel->processSample(nextBuf[i], tonePower, aboveThreshold, peakPower);
 			if (result) {
-				//Goertzel handles debounce and threshold
-
 				if (aboveThreshold) {
 					stateMachine (TONE_EVENT);
 				} else {
@@ -932,7 +845,6 @@ CPX * Morse::processBlock(CPX *in)
 
 				//Only update testbench result when we have a goertzel result
 				//m_testBenchValue.real(tonePower);
-				//Convert from -120 to 0, to 0 to 120, and scale to 0..1 for testbench
 				m_testBenchValue.real(tonePower * 100);
 				if (aboveThreshold)
 					m_testBenchValue.imag(.05);

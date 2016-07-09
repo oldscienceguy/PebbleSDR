@@ -49,13 +49,11 @@ public:
 	void outputData(const char c);
 
 public slots:
-    void squelchChanged(int v);
     void refreshOutput();
     void resetOutput();
     void outputOptionChanged(int s);
 	void freezeButtonPressed(bool b);
 	void wpmBoxChanged(int s);
-	void thresholdOptionChanged(int s);
 
 signals:
     void newOutput();
@@ -80,10 +78,8 @@ private:
 	const quint32 c_mSecDotMagic = 1200; //units are milli-seconds
 	const double c_secDotMagic = 1.2; //units are seconds
 
-	enum THRESHOLD_OPTIONS {TH_AUTO, TH_TONE, TH_DASH, TH_WORD, TH_SQUELCH};
 	//Configurable thresholds
 	quint32 m_usecDotDashThreshold; //Determines whether mark is dot or dash
-	double m_squelchThreshold; //If squelch is on, this is compared to metric
 	quint32 m_usecSpikeThreshold; // Initially ignore any tone shorter than this
 	quint32 m_usecFadeThreshold; //Ignore any space shorter than this as possible fading
 	quint32 m_usecElementThreshold; //Space between dot/dash in char
@@ -151,6 +147,7 @@ private:
 	double m_secRiseFall; //Adjust to sync with low and high speed WPM .005, .010, .020
 
 	MovingAvgFilter	*m_jitterFilter;
+	MovingAvgFilter *m_peakFilter;
 
     //Received CW speed can be fixed (set by user) or track actual dot/dash lengths being received
 	//Smooths changes in threshold between dot and dash
@@ -218,7 +215,6 @@ private:
 	DECODE_STATE		m_lastReceiveState;
 	CW_EVENT		m_cwEvent;			// functions used by cw process routine
 
-	double m_squelchIncrement; //Slider increments
 	bool m_squelchEnabled;
 	double	m_squelchMetric;
 
