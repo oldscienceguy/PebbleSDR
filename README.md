@@ -8,7 +8,7 @@ Dedicated to SuperRatt, my first program (c 1980) for the Apple II with support 
 
 ---
 AFEDRI showing full 2mHz bandwidth from 150kHz to 2150kHz and HiRes zoom at 850 kHz  
-<img src=https://raw.github.com/oldscienceguy/PebbleSDR/master/screen_shots/AFEDRI%20150kHz%20to%202150kHz.png width=500> 
+<img src=https://raw.github.com/oldscienceguy/PebbleSDR/master/screen_shots/Pebble%207-9-16.png width=500> 
 ---
 ##Introduction
 
@@ -229,6 +229,8 @@ Clicking the Hi-Res button switches the upper window to use a different FFT with
 ###Data Modems (WIP)
 Pebble support plugin data modems.  This feature is under development and only the Morse modem is currently functional.  Data modems can be independently developed and distributed without requiring new builds of Pebble.  Pebble looks in the 'plugins' directory on startup to build the menu.
 
+A Data Modem opens a new panel, below the spectrum, which is controlled by the plugin.  The panel can be resized by grabbing and dragging the horizontal divider - same as the spectrum divider.
+
 * ####No Data
 This collapses the modem display if previously open
 
@@ -239,9 +241,18 @@ This is a special modem (not in plugins) that will be used to display extended b
 This is a 'Hello World' plugin for testing
 
 * ####Morse Modem (WIP)
-Make sure you are in the correct CWU or CWL mode and tune until you get maximum levels in the bar graph.  Detected WPM is dynamically updated and displayed.  WPM can be locked by checking the box.  Output can be temporarily turned off and on to 'freeze' the display if needed.  Just because, you can select character only display, dot-dash only display, or mixed.  Reset button puts everything back to defaults in case internal tracking algorithms get confused.
+This is still a work in process and has problems in high noise environments.
 
-See MorseGenDevice for generating test and practice code samples.
+Make sure you are in the correct CWU or CWL mode.  Detected WPM is dynamically updated and displayed, within selected ranges.  
+	* 5 to 60 wpm
+	* 40 to 120 wpm
+	* 100 to 200 wpm
+
+Output can be temporarily turned off and on to 'freeze' the display if needed.  You can select character only display, dot-dash only display, or mixed.  The Clear button will erase everything in the display.  
+
+If you want to save text, press Freeze, select and copy what you want to save, then press Freeze again to display any text that was received while you were copying.
+
+See MorseGenDevice for generating test and practice code samples up to 200wpm.
 
 Mac Tip: If you are using the phone out on your rig to get audio into a program like fldigi, you won't be able to hear the audio because the rigs speaker is cut out when you plug the cable in.  A very handy utility from RogueAmobea called LineIn solves this problem nicely.  https://www.rogueamoeba.com/freebies/
 

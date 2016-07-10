@@ -158,9 +158,9 @@ sup {
 <body>
 <h1>Pebble II SDR (Mac)</h1>
 
-<p>Jan 1, 2016<br/>
-Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016<br/>
-Richard Landsman N1DDY <a href="&#x6d;&#97;&#x69;&#108;&#x74;&#x6f;&#x3a;&#x50;&#x65;&#x62;&#98;&#108;&#x65;&#x53;&#x44;&#82;&#x40;&#x67;&#109;&#x61;&#x69;&#108;&#x2e;&#99;&#111;&#x6d;">&#x50;&#x65;&#x62;&#x62;&#108;&#101;&#x53;&#x44;&#82;&#64;&#x67;&#x6d;&#x61;&#105;&#108;&#x2e;&#99;&#111;&#x6d;</a><br/>
+<p>July 1, 2016<br/>
+Copyright 2010 ... 2016<br/>
+Richard Landsman N1DDY <a href="&#x6d;&#97;&#x69;&#108;&#x74;&#111;&#58;&#80;&#101;&#x62;&#98;&#108;&#101;&#83;&#x44;&#x52;&#64;&#x67;&#109;&#97;&#105;&#108;&#46;&#x63;&#111;&#109;">&#x50;&#101;&#98;&#x62;&#108;&#101;&#x53;&#x44;&#82;&#x40;&#103;&#x6d;&#x61;&#105;&#108;&#46;&#99;&#111;&#109;</a><br/>
 Licensed under GPL, see gpl.h for details, attribution, and references<br/>
 <a href="https://github.com/oldscienceguy/PebbleSDR">https://github.com/oldscienceguy/PebbleSDR</a><br/>
 Dedicated to SuperRatt, my first program (c 1980) for the Apple II with support for RTTY, CW, and special modes.</p>
@@ -169,7 +169,7 @@ Dedicated to SuperRatt, my first program (c 1980) for the Apple II with support 
 
 <p>AFEDRI showing full 2mHz bandwidth from 150kHz to 2150kHz and HiRes zoom at 850 kHz</p>
 
-<h2><img src=https://raw.github.com/oldscienceguy/PebbleSDR/master/screen_shots/AFEDRI%20150kHz%20to%202150kHz.png width=500> </h2>
+<h2><img src=https://raw.github.com/oldscienceguy/PebbleSDR/master/screen_shots/Pebble%207-9-16.png width=500> </h2>
 
 <h2>Introduction</h2>
 
@@ -195,11 +195,10 @@ Dedicated to SuperRatt, my first program (c 1980) for the Apple II with support 
 <p>In addition to being extensible by virtue of being open source, I wanted to be able to keep the core functionality intact, while exploring new data modes and options.  This led to the modem plug-in architecture and eventually will include cross platform extio-like device support.</p></li>
 <li><h4>Disclaimer</h4>
 
-<p>The source code for this project represents incremental, "drive-by" coding, with numerous experiments, re-writes, re-factoring, re-everything.  No attempt has been made to pretty up the code or clean up comments.  In fact, in many places I have deliberately left alternative implementations and detailed comments in the code for future reference.<br/>
-I have not advertised this for broad distribution because of health issues that could cause me to not be able to support it, answer questions, fix bugs, etc.  If you get this, please be patient for a response from me.</p></li>
+<p>The source code for this project represents incremental, "drive-by" coding, with numerous experiments, re-writes, re-factoring, re-everything.  Little attempt has been made to pretty up the code and clean up comments.  In fact, in many places I have deliberately left alternative implementations and detailed comments in the code for future reference.  DSP comments in the source code should be taken with a grain of salt, especially older comments.  This has been a learning experience for me and many times I thought I understood something, only to come back later and realize I didn't have a clue!  Finally, if you have questions, want me to fix some bugs, etc , please be patient for a response from me.</p></li>
 <li><h4>Credits</h4>
 
-<p>I knew nothing about DSP algorithms when I started writing Pebble.  Although I've collected quite a library of DSP books and articles, I learned by looking at the work of others who were kind enough to make their projects open source.  I've included all of the key projects I referenced and in some cases, derived code from, in the gpl.h file you can find in the source tree.  But I especially wanted to thank Moe Wheatley for his outstanding work in making CuteSDR <a href="http://sourceforge.net/projects/cutesdr/">http://sourceforge.net/projects/cutesdr/</a> available with source.  While I had working code, Moe's code demonstrated what a professionally written DSP program should look like.</p></li>
+<p>I knew nothing about DSP algorithms when I started writing Pebble.  Although I've collected quite a library of DSP books and articles, I learned by looking at the work of others who were kind enough to make their projects open source.  I've included all of the key projects I referenced and in some cases, derived code from, in the gpl.h file you can find in the source tree.  But I especially wanted to thank Moe Wheatley for his outstanding work in making CuteSDR <a href="http://sourceforge.net/projects/cutesdr/">http://sourceforge.net/projects/cutesdr/</a> available with source.  While I had working code, Moe's code demonstrated what a professionally written DSP program should look like.  I would also like to thank Michael Ossman for his ongoing work in SDR hardware and education.  HackRF One is one of my favorite devices and Michael's SDR video tutorial <a href="https://greatscottgadgets.com/sdr/">https://greatscottgadgets.com/sdr/</a> is worth its weight in gold - even if you don't have a HackRF.</p></li>
 </ul>
 
 
@@ -230,6 +229,10 @@ I have not advertised this for broad distribution because of health issues that 
 </ol>
 
 
+<p>Tip: Always used shielded usb cables with ferrite cores whenever possible to reduce noise.  Some inexpensive usb cables do not have the shield connected, so check with ohm meter.</p>
+
+<p>Tip: If no audio on Pebble 2.02 and earlier, using newer OSX - edit pebble.ini and make sure Audio output is set to core audio:built-in output</p>
+
 <h2>Details (Top left to Bottom right)</h2>
 
 <h3>Menu</h3>
@@ -246,7 +249,7 @@ I have not advertised this for broad distribution because of health issues that 
 <p>Displays device freq range etc</p></li>
 <li><h4>Help|ReadMe</h4>
 
-<p>Display readme.html in PebbleData folder</p></li>
+<p>Display readme.html (this file) in PebbleData folder</p></li>
 <li><h4>Help|Credits</h4>
 
 <p>Display GPL and other credits</p></li>
@@ -268,9 +271,21 @@ I have not advertised this for broad distribution because of health issues that 
 
 <p>Note: If you enter a frequency above or below the range of the device, you will hear a beep and the frequency will not change.  You can over-ride the hi/lo range in the specific device .ini file.</p>
 
-<h3>S-Meter</h3>
+<h3>Signal Strength</h3>
 
-<p>The S-Meter can be set to Instaneous or Average using the buttons to the right of the bar graph.</p>
+<p>Signal strength is calculated in the frequency domain and should sync with the spectrum display.  The power for each fft bin within the selected bandpass filter is checked to find the peak and average within the bandpass.  Noise is estimated by looking at the fft bins on either side of the bandpass.
+Options are:</p>
+
+<ul>
+<li>Peak: The peak power within the bandpass in dB</li>
+<li>Average: The average power within bandpass in dB</li>
+<li>Floor: The average signal outside the bandpass (noise) in dB</li>
+<li>SNR: The Signal to Noise ratio = Peak / Floor</li>
+<li>S-Units: The average power in S-Units (approx)</li>
+<li>Ext: For future use to display somthing else</li>
+<li>None: Disables the meter</li>
+</ul>
+
 
 <h3>Clock</h3>
 
@@ -405,16 +420,16 @@ memory.csv: Stores user defined station information
 <li>Spectrum/Waterfall: Spectrum on top, waterfall on bottom</li>
 <li>Waterfall/Waterfall: Waterfall on top, waterfall on bottom</li>
 <li><p>No Display: This turns off the spectrum and collapses the display to save room.  This can be used when running on a system that does not have enough CPU to keep everything updated.</p></li>
-<li><h4>Spectrum db Full Scale (FS)spinner</h4>
+<li><h4>Spectrum Max db (FS)</h4>
 
-<p>This can be used to set the full scale value of the spectrum display, effectively increasing or decreasing the resolution.  The default range is -120db (waterfall black) to -50db (waterfall red).  If the Waterfall is washed out, increase the FS db displayed to -30.  If no signals are visible, decrease the FS db displayed to -70.  Easier to see when you try it than to explain</p></li>
-<li><h4>Spectum db Base Scale (BS) spiner</h4>
+<p>This sets the full scale value of the spectrum display, effectively increasing or decreasing the db resolution.  The default is 'auto' which looks at the peak signal in the spectrum and sets the maximum to 10db above the peak.  You can also select specific values from 0 to -50db.</p></li>
+<li><h4>Spectum Min db (BS)</h4>
 
-<p>This can be used to set the base value for the spectrum display.  It is usually used to 'hide' the noise floor so that just the signals that are greater than the BS value are shown.</p></li>
-<li><h4>Spectrum Updates Per Second (x/sec) spinner</h4>
+<p>This can be used to set the base or floor value for the spectrum display.  The default is 'auto' which looks at the average signal in the spectrum and sets the minimum db to 10db below the average.  You can also select specific values from -70 to -120db.</p></li>
+<li><h4>Spectrum Refresh (x/sec) spinner</h4>
 
 <p>This can be used to speed up or slow down the spectrum display to match your preferences or the band being monitored.  The range is 0 to 30, but 10 is usually a good default.  Faster updates == more CPU, so if your computer is running 'hot' try slowing down the update rate.
-Note: If set to zero, the spectrum display is temporarily frozen and won't update again until you set a rate greater than zero.</p></li>
+Note: If set to Frz, the spectrum display is temporarily frozen and won't update again until you change to another rate.</p></li>
 <li><h4>Spectrum Zoom (only in split window display)</h4>
 
 <p>This is one of my favorite features and makes devices that support large bandwidth, like the rtl-sdr and AFEDRI, more useful.  The problem with large bandwidths is that it can be difficult or impossible to see close signals.  This can always be addressed by powering off the device, changing to a lower sample rate, and restarting, but that's very inconvenient.  The Zoom control lets you smoothly zoom on the selected frequency and see a second Waterfall or Spectrum display with the smaller bandwidth and higher resolution in the top display.</p></li>
@@ -429,6 +444,8 @@ Note: If set to zero, the spectrum display is temporarily frozen and won't updat
 
 <p>Pebble support plugin data modems.  This feature is under development and only the Morse modem is currently functional.  Data modems can be independently developed and distributed without requiring new builds of Pebble.  Pebble looks in the 'plugins' directory on startup to build the menu.</p>
 
+<p>A Data Modem opens a new panel, below the spectrum, which is controlled by the plugin.  The panel can be resized by grabbing and dragging the horizontal divider - same as the spectrum divider.</p>
+
 <ul>
 <li><h4>No Data</h4>
 
@@ -441,7 +458,24 @@ Note: If set to zero, the spectrum display is temporarily frozen and won't updat
 <p>This is a 'Hello World' plugin for testing</p></li>
 <li><h4>Morse Modem (WIP)</h4>
 
-<p>Make sure you are in the correct CWU or CWL mode and tune until you get maximum levels in the bar graph.  Detected WPM is dynamically updated and displayed.  WPM can be locked by checking the box.  Output can be temporarily turned off and on to 'freeze' the display if needed.  Just because, you can select character only display, dot-dash only display, or mixed.  Reset button puts everything back to defaults in case internal tracking algorithms get confused.</p></li>
+<p>This is still a work in process and has problems in high noise environments.</p></li>
+</ul>
+
+
+<p>Make sure you are in the correct CWU or CWL mode.  Detected WPM is dynamically updated and displayed, within selected ranges.<br/>
+    * 5 to 60 wpm
+    * 40 to 120 wpm
+    * 100 to 200 wpm</p>
+
+<p>Output can be temporarily turned off and on to 'freeze' the display if needed.  You can select character only display, dot-dash only display, or mixed.  The Clear button will erase everything in the display.</p>
+
+<p>If you want to save text, press Freeze, select and copy what you want to save, then press Freeze again to display any text that was received while you were copying.</p>
+
+<p>See MorseGenDevice for generating test and practice code samples up to 200wpm.</p>
+
+<p>Mac Tip: If you are using the phone out on your rig to get audio into a program like fldigi, you won't be able to hear the audio because the rigs speaker is cut out when you plug the cable in.  A very handy utility from RogueAmobea called LineIn solves this problem nicely.  https://www.rogueamoeba.com/freebies/</p>
+
+<ul>
 <li><h4>RTTY Modem</h4>
 
 <p>Not functional</p></li>
@@ -453,19 +487,19 @@ Note: If set to zero, the spectrum display is temporarily frozen and won't updat
 
 <h3>AGC</h3>
 
-<p>Fast, Medium, Slow, Long, Off.  Level can be adjusted with slider next to drop down.  Acts as a kind of RF gain if needed.</p>
+<p>Fast, Medium, Slow, Long, Off.  The AGC threshold level can be adjusted with the slider next to drop down.  When AGC is OFF, this acts as an IF gain.</p>
 
 <h3>Squelch</h3>
 
-<p>Non-sophisticated based on volume levels.</p>
+<p>Based on relative signal strength.</p>
 
 <h3>Volume / Mute</h3>
 
-<p>As expected</p>
+<p>Adjusts local volume from zero to whatever the computer volume is set to.  This does not change the computer volume level.</p>
 
 <h3>Power</h3>
 
-<p>As expected</p>
+<p>Toggle 'power' on/off.</p>
 
 <h3>Record</h3>
 
@@ -521,7 +555,15 @@ Note: If set to zero, the spectrum display is temporarily frozen and won't updat
 
 <h3>RFSpace SDR-IQ</h3>
 
-<p>Note there is a conflict with FTDI driver that Pebble uses (D2XX) and the built in FTDI driver that is included with OSX 10.9 (Mavericks).  There is a way to temporarily disable the Mavericks driver (sudo kextunload -b com.apple.driver.AppleUSBFTDI), but it has to be re-done after every startup.</p>
+<p>Note there is a conflict with FTDI driver that Pebble uses (D2XX) and the built in FTDI driver that is included with OSX 10.9 (Mavericks).  There is a way to temporarily disable the Mavericks driver</p>
+
+<pre><code>Open a terminal window and type
+    sudo kextunload -b com.apple.driver.AppleUSBFTDI
+or run this Mac ScriptEditor in the PebbleData folder
+    unload_osx_ftdi_driver.scpt
+</code></pre>
+
+<p>but it has to be re-done after every startup.</p>
 
 <p>Minimum firmware is 1.05</p>
 
@@ -638,7 +680,7 @@ This is for devices like the HF Direct Sampling mod from KNOCK (http://www.easy-
 
 <p>SDRPlay BandWidth and IF mode are restricted by sample rate.  Every time you change the sample rate, these selections are checked and reset if necessary.  Like all devices, you must re-start the device for the new sample rate to take effect.</p>
 
-<p>AGC</p>
+<p>AGC is WIP</p>
 
 <p>Total Gain Reduction</p>
 
@@ -650,10 +692,58 @@ This is for devices like the HF Direct Sampling mod from KNOCK (http://www.easy-
 
 <h3>HackRF One</h3>
 
-<p>This is a high speed, wide band SDR.  Supported sample rates for the device are from 8msps to 20msps, but Pebble can't keep up much beyond 2-3msps.  The sample rate selector shows sample rates below the 8msps supported rate.  These seem to work ok.</p>
+<p>This is a high speed, wide band SDR.  Supported sample rates for the device are documented as 8msps to 20msps, but blogs and other sources indicate 2msps and up is supported  A decimate factor can be set which reduces the sample rate to something that Pebble can handle.</p>
 
 <p>(From HackRF wiki <a href="https://github.com/mossmann/hackrf/wiki/FAQ">https://github.com/mossmann/hackrf/wiki/FAQ</a>)<br/>
 A good default setting to start with is RF=0 (off), IF=16, baseband=16. Increase or decrease the IF and baseband gain controls roughly equally to find the best settings for your situation. Turn on the RF amp if you need help picking up weak signals. If your gain settings are too low, your signal may be buried in the noise. If one or more of your gain settings is too high, you may see distortion (look for unexpected frequencies that pop up when you increase the gain) or the noise floor may be amplified more than your signal is.</p>
+
+<h3>Morse Generator</h3>
+
+<p>This device simulates incoming morse code and can be used for testing the Morse Code plugin or for practice.  It took on a life of its own ...</p>
+
+<p>There are five generators that can be enabled, each generator output a signal on the specified frequency with the specified options.  You can tune to a signal by using the Mixer (LO is locked and can't be changed) to simulate changing between different stations.  You can also turn on the Pebble Recorder to generate an IQ .wav file that can be used in other programs if desired.</p>
+
+<p>Typical uses</p>
+
+<ul>
+<li>Morse code practice the old fashioned way</li>
+<li>Testing decoder with different wpm options to see how it adapts to changing signals</li>
+<li>Testing decoder with close or overlapping signals to see how it distinguishes each one</li>
+<li>Testing decoder with fading or fist generated signals to see how adaptable timing is</li>
+<li>Testing decoder with selectable noise levels</li>
+</ul>
+
+
+<p>Options<br/>
+Options are changed in real-time if Pebble is On.  You can open the SDR options page and change any of the below and see the instant result.</p>
+
+<ul>
+<li>Enable: Turns the generator on/off.  You will see the signal pop-up or disappear.</li>
+<li>Source:
+
+<ul>
+<li>Sample1: Canned text</li>
+<li>Sample2: Canned text</li>
+<li>Sample3: Canned text</li>
+<li>File: Load user selectable file.  Several example files can be found in the PebbleData directory.</li>
+<li>Words: Canned list of common Morse words</li>
+<li>Abbreviations: Canned list of common Morse abbreviations</li>
+<li>Table: Dumps the internal Morse table for testing</li>
+</ul>
+</li>
+<li>Filename: Displays the selected file to be used if Source:File chosen</li>
+<li>File Browse: Displays a file selection dialog</li>
+<li>Frequency: Sets the RF frequency of the generator, plus or minus from zero center.  1000 will generate a sigal 1k up from center. -1000 will generate a signal 1k down from center.</li>
+<li>WPM: Selectable from 5 to 80</li>
+<li>dB: Output level of the signal</li>
+<li>Fade: The output signal level is varied +/- 10db from the selected output level</li>
+<li>Fist: Not implemented yet.  Will introduce variable timing like a typical hand sent Morse signal.</li>
+<li>Noise: Allows selectable level of Gausian noise to be added to the signal.</li>
+<li>Presets: Up to 5 presets can be saved (based on current options) or loaded.  Allows quick changes between common sets of options.</li>
+</ul>
+
+
+<p>The sample morse files (300USAqso-1,-2,-3) are courtesy of Jim Weir via G4FON's excellent CW trainer site <a href="http://www.g4fon.net/CW%20Trainer.htm">http://www.g4fon.net/CW%20Trainer.htm</a>.</p>
 
 <h3>AirSpy</h3>
 
@@ -756,7 +846,7 @@ Exit code 0x0c0000315 if "Release DLLs" not copied to Debug and Release dirs</p>
 
 <p>Install the latest .so and .h files from sdrplay.com, then copy to the plugins/sdrplay/miricsapi directory.  Files are in /usr/local/include and lib</p>
 
-<p>Source code for API library: <a href="https://github.com/airspy/host">https://github.com/airspy/host</a></p>
+<p>Source code for API library:</p>
 
 <h4>HackRF Plugin Build</h4>
 
@@ -791,6 +881,269 @@ make
 sudo make install
 sudo ldconfig
 </code></pre>
+
+<h4>PulseAudio 8.0 Build (testing)</h4>
+
+<p>See: <a href="https://www.freedesktop.org/wiki/Software/PulseAudio/">https://www.freedesktop.org/wiki/Software/PulseAudio/</a></p>
+
+<p><a href="http://stackoverflow.com/questions/11912815/compiling-pulseaudio-on-mac-os-x-with-coreservices-h">http://stackoverflow.com/questions/11912815/compiling-pulseaudio-on-mac-os-x-with-coreservices-h</a></p>
+
+<p>Clone git from git://cgit.freedesktop.org/pulseaudio/pulseaudio/</p>
+
+<p>Testing for use with fldigi</p>
+
+<pre><code>sudo port selfupdate  
+
+sudo port install autoconf automake intltool libtool libsndfile speex-devel gdbm liboil json-c
+
+#missing ltdl.h
+export CFLAGS="-I/usr/local/include"
+
+#Make sure --with-mac-sysroot points to installed SDK
+./autogen.sh --prefix=/usr/local --disable-jack --disable-hal --disable-bluez --disable-avahi --with-mac-sysroot=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/ --with-mac-version-min=10.7 --disable-dbus  
+
+make
+
+#Alternative (not tested) to get 'official' version
+sudo port install PulseAudio
+</code></pre>
+
+<h4>GNU Radio (testing)</h4>
+
+<p><a href="http://gnuradio.org/redmine/projects/gnuradio/wiki">http://gnuradio.org/redmine/projects/gnuradio/wiki</a>
+<a href="http://gnuradio.org/redmine/projects/gnuradio/wiki/GNURadioLiveDVD">http://gnuradio.org/redmine/projects/gnuradio/wiki/GNURadioLiveDVD</a><br/>
+Best installed in a Parallels VM for quick access</p>
+
+<pre><code>sudo port install gnuradio
+</code></pre>
+
+<p>gnuradio-companion</p>
+
+<p>Hardware installation <a href="https://gnuradio.org/redmine/projects/gnuradio/wiki/Hardware">https://gnuradio.org/redmine/projects/gnuradio/wiki/Hardware</a><br/>
+Osmocom has all the sdr hardware source blocks of interest.
+Edit /opt/local/etc/gnuradio/conf.d/grc.conf<br/>
+Add :/usr/local/share/gnuradio/grc/blocks to global_blocks_path</p>
+
+<pre><code>gnuradio-config-info #check status
+</code></pre>
+
+<p><a href="http://sdr.osmocom.org/trac/wiki/GrOsmoSDR">http://sdr.osmocom.org/trac/wiki/GrOsmoSDR</a></p>
+
+<pre><code>port install gr-osmosdr
+</code></pre>
+
+<p>or<br/>
+To build (This almost works, but I get osmosdr module not found errors in GNURadio)</p>
+
+<pre><code>mkdir build
+cd build/
+cmake ../ -DCMAKE_INSTALL_PREFIX=/opt/local -DENABLE_NONFREE=TRUE -DENABLE_SOAPY=OFF
+
+#Examine cmake output and check for enabled/disabled modules
+
+make
+sudo make install
+sudo ldconfig
+
+sudo make uninstall #To remove all components
+
+#To build API documentation
+cd build/
+cmake ../ -DENABLE_DOXYGEN=1
+make -C docs
+</code></pre>
+
+<p>Osmocom Reference (here for convenience)
+--   * Python support
+--   * Osmocom IQ Imbalance Correction
+--   * sysmocom OsmoSDR
+--   * FUNcube Dongle
+--   * FUNcube Dongle Pro+
+--   * IQ File Source
+--   * Osmocom RTLSDR
+--   * RTLSDR TCP Client
+--   * Ettus USRP Devices
+--   * Osmocom MiriSDR (SDRPlay)
+--   * HackRF Jawbreaker
+--   * nuand bladeRF
+--   * RFSPACE Receivers
+FCD Source</p>
+
+<p>Argument    Notes
+fcd=&lt;device-index>  0-based device identifier, optional
+device=hw:2 overrides the audio device
+type=2  selects the dongle type, 1 for Classic, 2 for Pro+
+The "device" argument overrides the audio device used by the underlying driver to access the dongle's IQ sample stream.</p>
+
+<p>The "type" argument selects the dongle type, 1 for Classic, 2 for Pro+.</p>
+
+<p>IQ File Source</p>
+
+<p>Argument    Notes
+file=&lt;path-to-file-name>  <br/>
+freq=<frequency>    Center frequency in Hz, accepts scientific notation
+rate=&lt;sampling-rate>    Mandatory, in samples/s, accepts scientific notation
+repeat=true|false   Default is true
+throttle=true|false Throttle flow of samples, default is true
+OsmoSDR Source</p>
+
+<p>Argument    Notes
+osmosdr=&lt;device-index>  0-based device identifier
+buffers=&lt;number-of-buffers> Default is 32
+buflen=&lt;length-of-buffer>   Default is 256kB, must be multiple of 512
+RTL-SDR Source</p>
+
+<p>Argument    Notes
+rtl=&lt;device-index>  0-based device identifier OR serial number
+rtl_xtal=<frequency>    Frequency (Hz) used for the RTL chip, accepts scientific notation
+tuner_xtal=<frequency>  Frequency (Hz) used for the tuner chip, accepts scientific notation
+buffers=&lt;number-of-buffers> Default is 32
+buflen=&lt;length-of-buffer>   Default is 256kB, must be multiple of 512
+direct_samp=0|1|2   Enable direct sampling mode on the RTL chip. 0: Disable, 1: use I channel, 2: use Q channel
+offset_tune=0|1 Enable offset tune mode for E4000 tuners
+NOTE: use rtl_eeprom -s to program your own serial number to the device</p>
+
+<p>NOTE: if you don't specify rtl_xtal/tuner_xtal, the underlying driver will use 28.0MHz</p>
+
+<p>RTL-SDR TCP Source</p>
+
+<p>Argument    Notes
+rtl_tcp=<hostname>:<port>   hostname defaults to "localhost", port to "1234"
+psize=&lt;payload-size>    Default is 16384 bytes
+direct_samp=0|1|2   Enable direct sampling mode on the RTL chip 0=Off, 1=I-ADC input enabled, 2=Q-ADC input enabled
+offset_tune=0|1 Enable offset tune mode for E4000 tuners
+Miri Source</p>
+
+<p>Argument    Notes
+miri=&lt;device-index> 0-based device identifier
+buffers=&lt;number-of-buffers> Default is 32
+SDRplay Source</p>
+
+<p>The sdrplay source uses a precompiled (closed source) library available from ​http://www.sdrplay.com/api_drivers.html to interface with the hardware. To enable this nonfree driver you have to call cmake with the additional parameter -DENABLE_NONFREE=TRUE</p>
+
+<p>sdrplay Use this argument without a value
+UHD Source / Sink</p>
+
+<p>Argument    Notes
+uhd Use this argument without a value
+nchan=&lt;channel-count>   For multichannel USRP configurations use the subdev parameter to specify stream mapping
+subdev=&lt;subdev-spec>    Examples: "A:0", "B:0", "A:0 B:0" when nchan=2. Refer original ettus documentation on this
+lo_offset=<frequency>   Offset frequency in Hz, must be within daughterboard bandwidth. Accepts scientific notation
+Additional argument/value pairs will be passed to the underlying driver, for more information see ​specifying the subdevice and ​common device identifiers in the Ettus documentation.</p>
+
+<p>bladeRF Source / Sink</p>
+
+<p>Arguments that affect both the source &amp; sink (i.e., the underlying device), when applied to either are marked bold.</p>
+
+<p>Argument    Notes
+bladerf[=instance|serial]   Selects the specified bladeRF device by a 0-indexed "device instance" count or by the device's serial number. 3 or more characters from the serial number are required. If 'instance' or 'serial' are not specified, the first available device is used.
+fpga=&lt;'/path/to/the/bitstream.rbf'> Load the FPGA bitstream from the specified file. This is required only once after powering the bladeRF on. If the FPGA is already loaded, this argument is ignored, unless 'fpga-reload=1' is specified.
+fpga-reload=1   Force the FPGA to be reloaded. Requires fpga=<bitrstream> to be provided to have any effect.
+buffers=<count> Number of sample buffers to use. Increasing this value may alleviate transient timeouts, with the trade-off of added latency. This must be greater than the 'transfers' parameter. Default=32
+buflen=<count>  Length of a sample buffer, in <em>samples</em> (not bytes). This must be a multiple of 1024. Default=4096
+transfers=<count>   Number of in-flight sample buffer transfers. Defaults to one half of the 'buffers' count.
+stream_timeout_ms=<timeout> Specifies the timeout for the underlying sample stream. Default=3000.
+loopback=<mode> Configure the device for the specified loopback mode (disabled, baseband, or RF). See the libbladeRF documentation for descriptions of these available options: none, bb_txlpf_rxvga2, bb_txlpf_rxlpf, bb_txvga1_rxvga2, bb_txvga1_rxlpf, rf_lna1, rf_lna2, rf_lna3. The default mode is 'none'.
+verbosity=<level>   Controls the verbosity of output written to stderr from libbladeRF. The available options, from least to most verbose are: silent, critical, error, warning, info, debug, verbose. The default level is determined by libbladeRF.
+xb200[=filter]  Automatic filter selection will be enabled if no value is given to the xb200 parameter. Otherwise, a specific filter may be selected per the list presented below.
+The following values are valid for the xb200 parameter:
+"custom"  : custom band
+"50M"     :  50MHz band
+"144M"    : 144MHz band
+"222M"    : 222MHz band
+"auto3db" : Select fiterbank based on -3dB filter points
+"auto"    : Select filerbank based on -1dB filter points (default)</p>
+
+<p>gr-osmosdr &lt;-> bladeRF gain mappings</p>
+
+<p>Sink:
+BB Gain: TX VGA1 [-35, -4]
+IF Gain: N/A
+RF Gain: TX VGA2 [0, 25]</p>
+
+<p>Source:
+RF Gain: LNA Gain {0, 3, 6}
+IF Gain: N/A
+BB Gain: : RX VGA1 + RX VGA2 [5, 60]
+HackRF Source / Sink</p>
+
+<p>Argument    Notes
+hackrf=&lt;device-index>   0-based device identifier OR serial number
+bias=0|1    Disable or enable antenna bias voltage in receive mode (source)
+bias_tx=0|1 Disable or enable antenna bias voltage in transmit mode (sink)
+buffers=&lt;number-of-buffers> Default is 32
+You can specify either hackrf=0 and hackrf=1 to select by a device index, or the serial number (or an unique suffix of a serial number), hackrf=f00d and hackrf=1234abba. hackrf_info lists multiple devices and their serial numbers. Device selection by serial number tail ("hackrf=beeff00d") requires updated hackrf firmware. The firmware changes have been in the hackrf git master, but there's no official firmware binary published yet (02.06.2015).</p>
+
+<p>Beware of a little catch, there are some examples floating on the net with "hackrf=1" as the device argument. Device index numbers are 0-based (like with rtlsdr and other drivers), so you'll have to use hackrf=0 if you only have a single device attached, hackrf=1 would be the second device. Before this patch the hackrf gr-osmosdr driver did not care about the parameter at all.</p>
+
+<p>Transmit support has been verified by using the crc-mmbTools DAB sdr transmitter.</p>
+
+<p>RFSPACE Source</p>
+
+<p>Argument    Notes
+sdr-iq[=&lt;serial-port>]  Optional parameter, serial-port defaults to the serial port (like /dev/ttyUSB0) used by first detected SDR-IQ
+sdr-ip[=<hostname>][:<port>]    Optional parameters, hostname defaults to "localhost", port to "50000" or the first detected SDR-IP
+netsdr[=<hostname>][:<port>]    Optional parameters, hostname defaults to "localhost", port to "50000" or the first detected NetSDR
+nchan=&lt;channel-count>   Optional parameter for NetSDR, must be 1 or 2
+The SDR-IP/NetSDR discovery protocol (UDP broadcast) is implemented, thus specifying the ip &amp; port should not be neccessary. Note: for the receiver to operate properly it is required that the UDP packets (port 50000) carrying the sample data can reach your PC, therefore configure your firewall/router/etc. accordingly...</p>
+
+<p>The ftdi_sio driver is being used for SDR-IQ. It creates a character device of the form:</p>
+
+<p>crw-rw---- 1 root dialout 188, 0 Dec 19 22:14 /dev/ttyUSB0</p>
+
+<p>To be able to open the device without root permissions add yourself to the "dialout" group or do a "chmod 666 /dev/ttyUSB0" after pluggin in.</p>
+
+<p>AirSpy? Source</p>
+
+<p>airspy  Use this argument without a value
+bias=1|0    Enable or disable DC bias at the antenna input</p>
+
+<p>Apps
+osmocom_fft
+osmocom_siggen</p>
+
+<h4>Inspectrum (testing)</h4>
+
+<p><a href="http://github.com/miek/inspectrum">http://github.com/miek/inspectrum</a><br/>
+IQ file analysis.  Supports .cf32, .cfile, .cs32, .cu32</p>
+
+<pre><code>sudo port install fftw-3-single cmake pkgconfig qt5
+mkdir build
+cd build
+cmake ..
+make
+sudo make install #Optional
+./inspectrum
+</code></pre>
+
+<h3>Device Calibration</h3>
+
+<p>SDR devices are calibrated to normalize the output and IQ order, making it easy to switch between them.  As of 3/1/16, the following technique is used</p>
+
+<ol>
+<li>A Red Pitya is used as a signal generator to produce a 10mhz sine wave signal at .0005vpp and fed to the device under test.</li>
+<li>normalizeIQGain is set to 1.0 in the device code</li>
+<li>ProcessIQ in receiver.cpp has the signalSpectrum.analyze() call uncommented</li>
+<li>Tune LO to 10mhz and observe debug output to see what the max db in the spectrum is.  This will correspond to the signal generator output.</li>
+<li>Compare the db with a target db of -60</li>
+<li><p>Change normalizeIQGain in the device code to reflect the necessary adjustment.  For example, to reduce by 10db</p>
+
+<p> normalizeIQGain = DB::dbToAmplitude(-10);</p></li>
+</ol>
+
+
+<h3>How to publish a release</h3>
+
+<ol>
+<li>Create a new local tag using Tower, ie Pebble_2_0_3</li>
+<li>Publish the tag to github using Tower</li>
+<li>In github, create a new release and select the tag just created.  This will create source downloads
+ automatically</li>
+<li>Create a zip file from the local release directory and upload it to github in the release edit form</li>
+<li>Edit any other comments in the github release edit form</li>
+<li>In github, publish the release.</li>
+</ol>
+
 
 <h3>Keyboard Shortcuts</h3>
 
@@ -897,6 +1250,124 @@ sudo ldconfig
 
 <p><strong>RecieverWidget</strong>: Responsible for all UI, SDR device listing and selection (updates global->sdr).  Communicates to Receiver and Device (sdr*) when UI changes</p>
 
-<p><strong>DeviceInterface Plugins</strong>:  All device specific interaction.  Device specific settings.  Uses Receiver call-backs to process IQ and audio.  Uses DeviceInterface Get/Set function to get or set functionality.</p>
+<p><strong>DeviceInterface Plugins</strong>:  All device specific interaction.  Device specific settings.  Uses Receiver call-backs to process IQ and audio.  Uses DeviceInterface Get/Set function to get or set
+functionality.</p>
+
+<h2>References</h2>
+
+<h4>GNU Licences</h4>
+
+<p><a href="http://www.gnu.org/licenses">http://www.gnu.org/licenses</a></p>
+
+<h4>Dttsp - GPL License</h4>
+
+<p>Frank Brikle(ab2kt@arrl.net) &amp; Bob McGwier (rwmcgwier@gmail.com)
+DTTS Microwave Society, 6 Kathleen Place, Bridgewater, NJ 08807<br/>
+<a href="http://dttsp.sourceforge.net">http://dttsp.sourceforge.net</a></p>
+
+<h4>PowerSDR - GPL License</h4>
+
+<p>Flex Radio
+sales@flex-radio.com.
+FlexRadio Systems, 8900 Marybank Dr., Austin, TX 78750<br/>
+<a href="http://www.flexradio.com">http://www.flexradio.com</a></p>
+
+<h4>SDRMax - GPL License</h4>
+
+<p>Philip A Covington
+p.covington@gmail.com<br/>
+<a href="http://www.srl-llc.com/qs1r_latest/">http://www.srl-llc.com/qs1r_latest/</a></p>
+
+<h4>FFTW - See fftw3.h for details</h4>
+
+<p>Matteo Frigo, Massachusetts Institute of Technology<br/>
+<a href="http://www.fftw.org/">http://www.fftw.org/</a></p>
+
+<h4>PortAudio - See portaudio.h for details</h4>
+
+<p>Ross Bencina, Phil Burk<br/>
+<a href="http://http://www.portaudio.com">http://http://www.portaudio.com</a></p>
+
+<h4>QT Framework (4.63, 5.2, 5.6 ...)</h4>
+
+<p>dll's distributed under GPL and LPGL license from qt.io<br/>
+Source code and license details available at<br/>
+<a href="http://qt.io">http://qt.io</a></p>
+
+<h4>HIDAPI - Cross platform HIDAPI source code</h4>
+
+<p>HIDAPI cross platform source files from<br/>
+<a href="http://www.signal11.us/oss/hidapi/">http://www.signal11.us/oss/hidapi/</a></p>
+
+<h4>FTDI - Cross platform USB lib for ftdi and libusb</h4>
+
+<p><a href="http://www.ftdichip.com/Drivers/D2XX.htm">http://www.ftdichip.com/Drivers/D2XX.htm</a></p>
+
+<h4>NUE-PSK</h4>
+
+<p>Source code examples for Goertzel and CW decoding David M.Collins, AD7JT George Heron, N2APB<br/>
+<a href="http://www.nue-psk.com">http://www.nue-psk.com</a></p>
+
+<h4>RTL-SDR</h4>
+
+<p>rtl-sdr is developed by Steve Markgraf, Dimitri Stolnikov, and Hoernchen, with contributions by Kyle Keen, Christian Vogel and Harald Welte.<br/>
+Latest rtl-sdr source: git clone git://git.osmocom.org/rtl-sdr.git<br/>
+<a href="http://sdr.osmocom.org">http://sdr.osmocom.org</a>  <br/>
+<a href="http://www.rtl-sdr.com">http://www.rtl-sdr.com</a></p>
+
+<h4>CuteSDR</h4>
+
+<p>Many of the new and updated algorithms in Pebble 2.0 are taken or derived from this code.
+I can not say enough good things about how much I learned and how much it helped!
+Thank you Moe.
+<a href="http://http://cutesdr.sourceforge.net/">http://http://cutesdr.sourceforge.net/</a></p>
+
+<h4>FLDigi</h4>
+
+<p><a href="http://www.w1hkj.com/Fldigi.html">http://www.w1hkj.com/Fldigi.html</a></p>
+
+<h4>CocoaModem</h4>
+
+<p><a href="http://www.w7ay.net/site/Applications/cocoaModem/">http://www.w7ay.net/site/Applications/cocoaModem/</a></p>
+
+<h4>AG1LE Blog</h4>
+
+<p><a href="http://ag1le.blogspot.com/">http://ag1le.blogspot.com/</a></p>
+
+<h4>Sound Effects</h4>
+
+<p><a href="http://www.soundjay.com/beep-sounds-1.html">http://www.soundjay.com/beep-sounds-1.html</a></p>
+
+<h4>HIDAPI</h4>
+
+<p>Mac and win functions for accessing HID devices
+<a href="http://www.signal11.us/oss/hidapi/">http://www.signal11.us/oss/hidapi/</a></p>
+
+<h4>SDRPlay</h4>
+
+<p><a href="http://www.sdrplay.com">http://www.sdrplay.com</a></p>
+
+<h4>HackRF One</h4>
+
+<p><a href="https://github.com/mossmann/hackrf">https://github.com/mossmann/hackrf</a></p>
+
+<h4>Good article on FFT with source code</h4>
+
+<p><a href="http://librow.com/articles/article-10">http://librow.com/articles/article-10</a></p>
+
+<h4>Other Books and Articles</h4>
+
+<ul>
+<li>"Digital Signal Processing Technology", Doug Smith KF6DX, ARRL</li>
+<li>"Computers, Microcontrollers and DSP for the Radio Amateur", Andy Talbot G4JNT, RSGB</li>
+<li>"A Software Defined Radio for the Masses", Gerald Youngblood AC5OG, QEX 7/2002 - 3/2003</li>
+<li>"Signals, Samples and Stuff, a DSP Tutorial", Doug Smith KF6DX, QEX 1998</li>
+<li>"Scientists and Engineers Guide to Digital Signal Processing" Steven Smith</li>
+<li>"An Introduction to HF Software Defined Radio" Andrew Barron</li>
+<li>"Software Receiver Design" C Richard Johnson ...</li>
+<li>"Modern Communications Receiver Design and Technology" Cornell Drentea</li>
+<li>Other as noted in comments</li>
+</ul>
+
 </body>
 </html>
