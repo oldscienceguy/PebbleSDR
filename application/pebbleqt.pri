@@ -38,6 +38,13 @@ macx {
 		UI_DIR = $${_PRO_FILE_PWD_}/UIMacRelease
 		RCC_DIR = $${_PRO_FILE_PWD_}/UIMacRelease
                 LIB_DIR = LibMacRelease
+                #Undocumented work around for problem that started in 5.6.1
+                #symbols referenced ... can't be stripped ...
+                #can't process non-object and non-archive file ... ozyfw-sdr1k.hex
+                #Not sure what this does or what the side effects are
+                #QMAKE_STRIP = strip -x #Remove all local symbols (saving only global symbols)
+                QMAKE_STRIP = echo #disables strip for release mode
+
 	}
         # This adds to the list of files that are deleted when make clean is executed by QTCreator
         # Not sure what '*=' does, but on Mac '+=' doesn't work
