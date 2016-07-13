@@ -92,7 +92,6 @@ double MovingAvgFilter::newSample(double sample)
 			m_sampleBufSum = sample * m_filterLen;
 			m_movingAvg = sample;
 			m_varianceSum = 0;
-			m_variance = 0;
 		} else {
 			//New moving average = (oldMovingAverage - oldestSample + newSample) / filterLength
 			double oldestSample = m_sampleBuf[m_ringIndex];
@@ -179,8 +178,6 @@ void MovingAvgFilter::reset()
 	m_sampleBufSum = 0;
 	m_movingAvg = 0;
 	m_primed = false;
-	m_stdDev = 0;
-	m_variance = 0;
 
 	//Running mean
 	m_cumulativeMovingAverageCount = 0;
@@ -189,22 +186,21 @@ void MovingAvgFilter::reset()
 //Only calculate variance on demand for efficiency
 double MovingAvgFilter::variance()
 {
+	double variance;
 	//Dividing by N-1 (Bessel's correction) returns unbiased variance, dividing by N returns variance across the entire sample set
 	if (m_movingAverageType == CumulativeMovingAverage)
-		m_variance = m_varianceSum / (m_cumulativeMovingAverageCount - 1);
+		variance = m_varianceSum / (m_cumulativeMovingAverageCount - 1);
 	else
-		m_variance = m_varianceSum / m_filterLen;
+		variance = m_varianceSum / m_filterLen;
 	//Variance can still be a verrrrrry small negative number in some extreme cases, correct
 	//Don't allow it to go to zero, or we'll get divide by zero errors for snr (mean / stdDev)
-	if (m_variance <= 0)
-		m_variance = ALMOSTZERO; //Defined in cpx.h
-	return m_variance;
+	if (variance <= 0)
+		variance = ALMOSTZERO; //Defined in cpx.h
+	return variance;
 }
 
 //Only calc stdDev on demand for efficiency
 double MovingAvgFilter::stdDev()
 {
-	m_stdDev = sqrt(m_variance);
-
-	return m_stdDev;
+	return sqrt(variance());
 }

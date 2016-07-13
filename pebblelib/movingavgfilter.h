@@ -62,10 +62,6 @@ private:
 
 	quint32 m_cumulativeMovingAverageCount;
 
-	//Common
-	double m_stdDev;
-	double m_variance;
-
 };
 
 #endif // MOVINGAVGFILTER_H
