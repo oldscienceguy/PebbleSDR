@@ -254,8 +254,12 @@ bool Goertzel::processSample(CPX x_n)
 		m_s1 = 0;
 		m_s2 = 0;
 
+		//Normalize before taking power
+		y0 /=  (m_samplesPerResult);
 		m_power = DB::power(y0);
-		m_power = m_power / m_samplesPerResult; //Normalize so results across different N's are comparable
+
+		//Test with TestBench test tone to make sure than average power and power are returning the same result
+		//Shows that Goertzel normalize and power math is correct
 		return true;
 	}
 	return false;
