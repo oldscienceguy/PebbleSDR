@@ -14,12 +14,17 @@
 #include <QProxyStyle>
 #include <QPainter>
 
+
+//Todo: clicking in slider sets slider1 pos, but is not defined for slider2.  Disable?
+//Todo: option to designate slider1 high and slider2 low.  UI to not allow them to cross
+//Each slider is independent and can move over the full range of values from min to max
+
 //See qstyle.h for style options
 class SliderProxy : public QProxyStyle
 {
 public:
-  int pixelMetric ( PixelMetric metric, const QStyleOption * option = 0, const QWidget * widget = 0 ) const
-  {
+int pixelMetric ( PixelMetric metric, const QStyleOption * option = 0, const QWidget * widget = 0 ) const
+{
 	switch(metric) {
 	//case PM_SliderThickness  : return 25;
 	//case PM_SliderLength     : return 25;
@@ -31,136 +36,139 @@ public:
 DoubleSlider::DoubleSlider(QWidget *parent)
   : QSlider(parent)
 {
-  //styling
-  setOrientation(Qt::Horizontal);
-  setAcceptDrops(true);
-  SliderProxy *aSliderProxy = new SliderProxy();
+	//styling
+	setOrientation(Qt::Horizontal);
+	setAcceptDrops(true);
+	SliderProxy *aSliderProxy = new SliderProxy();
 
 #if 0
-  //If we want to use image as slider
-  QString path = QDir::fromNativeSeparators(ImagesPath("handle.png"));
-  setStyleSheet("QSlider::handle { image: url(" + path + "); }");
+	//If we want to use image as slider
+	QString path = QDir::fromNativeSeparators(ImagesPath("handle.png"));
+	setStyleSheet("QSlider::handle { image: url(" + path + "); }");
 #endif
-  setStyle(aSliderProxy); //All style requests go to our proxy so we pick up QSlider styles
+	setStyle(aSliderProxy); //All style requests go to our proxy so we pick up QSlider styles
 
-  //setting up the alternate handle
-  alt_handle = new DoubleSliderHandle(this);
-  addAction(new QWidgetAction(alt_handle));
-  alt_handle->move(this->pos().x() + this->width()- alt_handle->width(), this->pos().y() );
+	//setting up the alternate handle
+	m_handle2 = new DoubleSliderHandle(this);
+	addAction(new QWidgetAction(m_handle2));
+	m_handle2->move(this->pos().x() + this->width()- m_handle2->width(), this->pos().y() );
 
 }
 
 DoubleSliderHandle::DoubleSliderHandle(DoubleSlider *_parent)
   : QLabel(_parent)
 {
-  parent = _parent;
-  filter = new DoubleSliderEventFilter(parent);
+	m_parent = _parent;
+	m_filter = new DoubleSliderEventFilter(m_parent);
 
-  //styling
-  setAcceptDrops(true);
+	//styling
+	setAcceptDrops(true);
 #if 0
-  //hard coded path to image :/ sorry
-  QPixmap pix = QPixmap(ImagesPath("handle.png"));
-  pix =  pix.scaled(25, 25, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+	//hard coded path to image :/ sorry
+	QPixmap pix = QPixmap(ImagesPath("handle.png"));
+	pix =  pix.scaled(25, 25, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 #else
-  //We won't pick up pebble.qss styles here, so hard code equivalent for now
-  //Width is 3px + 1 px border
-  //Height is control height minus margin
-  quint32 h = this->height(); //typically 30px
-  QPixmap pix(5,h-12);
-  QRect rect = pix.rect();
-  QPainter painter(&pix);
-  painter.fillRect(rect, QColor(0x708090)); //From pebble.qss darkSteelGrey
-  painter.setPen(QColor(0x5c5c5c));
-  painter.drawRect(rect);
-
+	//We won't pick up pebble.qss styles here, so hard code equivalent for now
+	//Width is 3px + 1 px border
+	//Height is control height minus margin
+	quint32 h = this->height(); //typically 30px
+	QPixmap pix(5,h-12);
+	QRect rect = pix.rect();
+	QPainter painter(&pix);
+	painter.fillRect(rect, QColor(0x708090)); //From pebble.qss darkSteelGrey
+	painter.setPen(QColor(0x5c5c5c));
+	painter.drawRect(rect);
 #endif
-  setPixmap(pix);
+	setPixmap(pix);
 
 }
 
-int DoubleSlider::alt_value()
+int DoubleSlider::value2()
 {
-  return alt_handle->value();
+	return m_handle2->value();
 }
 
-void DoubleSlider::alt_setValue(int value)
+void DoubleSlider::setValue2(int value)
 {
-  alt_handle->setValue(value);
+	m_handle2->setValue(value);
 }
 
 void DoubleSlider::mouseReleaseEvent(QMouseEvent *mouseEvent)
 {
-  if (mouseEvent->button() == Qt::LeftButton)
-  {
-	alt_handle->show();
-	alt_handle->handleActivated = false;
-  }
-  mouseEvent->accept();
+	if (mouseEvent->button() == Qt::LeftButton) {
+		m_handle2->show();
+		m_handle2->setActivated(false);
+	}
+	mouseEvent->accept();
 }
 
-void DoubleSlider::alt_update()
+void DoubleSlider::update2()
 {
-  QPoint posCursor(QCursor::pos());
-  QPoint posParent(mapToParent(mapToGlobal(pos())));
-  QPoint point(alt_handle->mapToParent(alt_handle->mapFromGlobal(QCursor::pos())).x(),alt_handle->y());
-  int horBuffer = (alt_handle->width());
-  bool lessThanMax = mapToParent(point).x() < pos().x()+ width() - horBuffer;
-  bool greaterThanMin = mapToParent(point).x() > pos().x();
-  if(lessThanMax && greaterThanMin)
-	alt_handle->move(point);
-  emit alt_valueChanged(alt_value());
+	//QPoint posCursor(QCursor::pos());
+	//QPoint posParent(mapToParent(mapToGlobal(pos())));
+	QPoint point(m_handle2->mapToParent(m_handle2->mapFromGlobal(QCursor::pos())).x(),m_handle2->y());
+	int horBuffer = (m_handle2->width());
+	bool lessThanMax = mapToParent(point).x() < pos().x()+ width() - horBuffer;
+	bool greaterThanMin = mapToParent(point).x() > pos().x();
+	if(lessThanMax && greaterThanMin)
+		m_handle2->move(point);
+	emit value2Changed(value2());
 }
 
 void DoubleSliderHandle::mousePressEvent(QMouseEvent *mouseEvent)
 {
-  qGuiApp->installEventFilter(filter);
-  parent->clearFocus();
+	Q_UNUSED(mouseEvent);
+	qGuiApp->installEventFilter(m_filter);
+	m_parent->clearFocus();
+}
+
+DoubleSliderEventFilter::DoubleSliderEventFilter(DoubleSlider *_grandParent)
+{
+	m_grandParent = _grandParent;
 }
 
 bool DoubleSliderEventFilter::eventFilter(QObject* obj, QEvent* event)
 {
-  switch(event->type())
-  {
-  case QEvent::MouseButtonRelease:
-	qGuiApp->removeEventFilter(this);
-	return true;
-	break;
-  case QEvent::MouseMove:
-	grandParent->alt_update();
-	return true;
-	break;
-  default:
-	return QObject::eventFilter(obj, event);
-  }
+	switch(event->type()) {
+		case QEvent::MouseButtonRelease:
+			qGuiApp->removeEventFilter(this);
+			return true;
+			break;
+		case QEvent::MouseMove:
+			m_grandParent->update2();
+			return true;
+			break;
+		default:
+			return QObject::eventFilter(obj, event);
+	}
   return false;
 }
 
 void DoubleSliderHandle::setValue(double value)
 {
-  double width = parent->width(), position = pos().x();
-  double range = parent->maximum() - parent->minimum();
-  int location = (value - parent->minimum())/range;
-  location = location *width;
-  move(y(),location);
+	double width = m_parent->width();
+	//double position = pos().x();
+	double range = m_parent->maximum() - m_parent->minimum();
+	int location = (value - m_parent->minimum())/range;
+	location = location *width;
+	move(y(),location);
 }
 
 int DoubleSliderHandle::value()
 {
-  double width = parent->width(), position = pos().x();
-  double value = position/width;
-  double range = parent->maximum() - parent->minimum();
-  return parent->minimum() + (value * range);
+	double width = m_parent->width(), position = pos().x();
+	double value = position/width;
+	double range = m_parent->maximum() - m_parent->minimum();
+	return m_parent->minimum() + (value * range);
 }
-void DoubleSlider::Reset()
+void DoubleSlider::reset()
 {
-  int horBuffer = (alt_handle->width());
-  QPoint myPos = mapToGlobal(pos());
-  QPoint point(myPos.x() + width() - horBuffer, myPos.y()- alt_handle->height());
-  point = alt_handle->mapFromParent(point);
+	int horBuffer = (m_handle2->width());
+	QPoint myPos = mapToGlobal(pos());
+	QPoint point(myPos.x() + width() - horBuffer, myPos.y()- m_handle2->height());
+	point = m_handle2->mapFromParent(point);
 
-  alt_handle->move(point);
-  alt_handle->show();
-  alt_handle->raise();
-
+	m_handle2->move(point);
+	m_handle2->show();
+	m_handle2->raise();
 }

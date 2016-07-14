@@ -14,79 +14,75 @@ class DoubleSliderHandle;
 
 class DoubleSlider: public QSlider
 {
-  Q_OBJECT
+	Q_OBJECT
 public:
-  /** Constructor */
-  DoubleSlider(QWidget *parent = 0);
+	DoubleSlider(QWidget *parent = 0);
 
-  /** Store the alternate handle for this slider*/
-  DoubleSliderHandle *alt_handle;
+	//Overloaded
+	void mouseReleaseEvent(QMouseEvent *event);
 
-  /** Overridden mouse release event */
-  void mouseReleaseEvent(QMouseEvent *event);
+	//Equivalent to QSlider methods, just with 2 added
+	int value2();
 
-  /** Returns the slider value for the alternate handle */
-  int alt_value();
+	void setValue2(int value);
 
-  /** Convenience function for setting the value of the alternate handle */
-  void alt_setValue(int value);
+	void reset();
 
-  /** Resets the alternate handle to the right side of the slider */
-  void Reset();
+	//Used to update the position of the alternate handle through the use of an event filter
+	void update2();
 
-  /** Used to update the position of the alternate handle through the use of an event filter */
-  void alt_update();
 signals:
-  /** Constructor */
-  void alt_valueChanged(int);
+	void value2Changed(int);
+
+private:
+	DoubleSliderHandle *m_handle2; //2nd slider handle
+
 };
 
 class DoubleSliderEventFilter : public QObject
 {
 public:
-  /** Constructor */
-  DoubleSliderEventFilter(DoubleSlider *_grandParent)
-  {grandParent = _grandParent;}
+	DoubleSliderEventFilter(DoubleSlider *_grandParent);
 
 protected:
-  /*
-  *	overloaded functions for object that inherit from this class
-  */
-  bool eventFilter(QObject* obj, QEvent* event);
+	//Overloaded function from QSlider
+	bool eventFilter(QObject* obj, QEvent* event);
 
 private:
-  /** Store the SuperSlider that this event filter is used within. */
-  DoubleSlider *grandParent;
+	DoubleSlider *m_grandParent;
 };
 
 class DoubleSliderHandle: public QLabel
 {
-  Q_OBJECT
+	Q_OBJECT
 public:
-  /** Constructor */
-  DoubleSliderHandle(DoubleSlider *parent = 0);
+	DoubleSliderHandle(DoubleSlider *m_parent = 0);
 
-  /** An overloaded mousePressevent so that we can start grabbing the cursor and using it's position for the value */
-  void mousePressEvent(QMouseEvent *event);
+	//An overloaded mousePressevent so that we can start grabbing the cursor and using it's position for the value
+	void mousePressEvent(QMouseEvent *event);
 
-  /** Returns the value of this handle with respect to the slider */
-  int value();
+	//Returns the value of this handle with respect to the slider
+	int value();
 
-  /** Maps mouse coordinates to slider values */
-  int mapValue();
+	// Maps mouse coordinates to slider values
+	int mapValue();
 
-  /** Store the parent as a slider so that you don't have to keep casting it  */
-  DoubleSlider *parent;
+	bool activated() {return m_handleActivated;}
+	void setActivated(bool b) {m_handleActivated = b;}
 
-  /** Store a bool to determine if the alternate handle has been activated  */
-  bool handleActivated;
+public slots:
+   //Sets the value of the handle with respect to the slider
+   void setValue(double value);
 
 private:
-  /** Store the filter for installation on the qguiapp */
-  DoubleSliderEventFilter *filter;
+	//Store the filter for installation on the qguiapp
+	DoubleSliderEventFilter *m_filter;
 
-  public slots:
-	/** Sets the value of the handle with respect to the slider */
-	void setValue(double value);
+	//Store the parent as a slider so that you don't have to keep casting it
+	DoubleSlider *m_parent;
+
+	//Store a bool to determine if the alternate handle has been activated
+	bool m_handleActivated;
+
 };
 #endif // DOUBLESLIDER_H
