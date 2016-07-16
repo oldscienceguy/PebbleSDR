@@ -15,16 +15,20 @@ class DoubleSliderHandle;
 class DoubleSlider: public QSlider
 {
 	Q_OBJECT
+	friend class DoubleSliderHandle; //So handle can emit signals directly
 public:
 	DoubleSlider(QWidget *parent = 0);
 
 	//Overloaded
-	void mouseReleaseEvent(QMouseEvent *event);
+	void mousePressEvent(QMouseEvent *event);
+	void mouseReleaseEvent(QMouseEvent *event); //Not used
 
 	//Equivalent to QSlider methods, just with 2 added
 	int value2();
-
 	void setValue2(int value);
+
+	void setTracking2(bool b);
+	bool tracking2() {return m_tracking2Enabled;}
 
 	void reset();
 
@@ -32,10 +36,16 @@ public:
 	void update2();
 
 signals:
+	//Same signals as QSlider
+	//Use setTracking2(bool) to enable/disable valueChanged signals while slider is moving
 	void value2Changed(int);
+	void slider2Pressed();
+	void slider2Released();
+	void slider2Moved();
 
 private:
 	DoubleSliderHandle *m_handle2; //2nd slider handle
+	bool m_tracking2Enabled;
 
 };
 
@@ -58,8 +68,10 @@ class DoubleSliderHandle: public QLabel
 public:
 	DoubleSliderHandle(DoubleSlider *m_parent = 0);
 
-	//An overloaded mousePressevent so that we can start grabbing the cursor and using it's position for the value
+	//An overloaded mousePressEvent so that we can start grabbing the cursor and using it's position for the value
 	void mousePressEvent(QMouseEvent *event);
+	void mouseReleaseEvent(QMouseEvent *event);
+	void mouseMoveEvent(QMouseEvent *event);
 
 	//Returns the value of this handle with respect to the slider
 	int value();
