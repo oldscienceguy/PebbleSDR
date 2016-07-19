@@ -14,6 +14,7 @@
 #include <QProxyStyle>
 #include <QPainter>
 #include <QStyleOptionSlider>
+#include <QDebug>
 
 
 //Todo: clicking in slider sets slider1 pos, but is not defined for slider2.  Disable?
@@ -63,7 +64,7 @@ DoubleSlider::DoubleSlider(QWidget *parent)
 	//m_handle2->setValue(maximum()); //Doesn't work here
 
 	m_tracking2Enabled = true; //Emit value changed while slider is moving
-
+	m_value2 = 0;
 }
 
 void DoubleSlider::mousePressEvent(QMouseEvent *ev)
@@ -76,48 +77,78 @@ void DoubleSlider::mousePressEvent(QMouseEvent *ev)
 	pressedControl = style()->hitTestComplexControl(QStyle::CC_Slider, &opt, ev->pos(), this);
 
 	if (pressedControl == QStyle::SC_SliderGroove) {
+		//Don't allow clicks in SliderGroove, ambiguous as to high/low
 		ev->accept(); //Eat it
 		return;
 	}
+	//Let base class handle everything else
 	QSlider::mousePressEvent(ev);
 }
 
-DoubleSliderHandle::DoubleSliderHandle(DoubleSlider *_parent)
-  : QLabel(_parent)
+void DoubleSlider::mouseReleaseEvent(QMouseEvent *ev)
 {
-	m_parent = _parent;
-	m_filter = new DoubleSliderEventFilter(m_parent);
+	QStyle::SubControl pressedControl;
+	//Derived from QSlider source code
+	QStyleOptionSlider opt;
+	initStyleOption(&opt);
+	//Returns the sub control at the given position, matching style
+	pressedControl = style()->hitTestComplexControl(QStyle::CC_Slider, &opt, ev->pos(), this);
 
-	//styling
-	setAcceptDrops(true);
+	if (pressedControl == QStyle::SC_SliderGroove) {
+		//Don't allow clicks in SliderGroove, ambiguous as to high/low
+		ev->accept(); //Eat it
+		return;
+	}
+	//Let base class handle everything else
+	QSlider::mouseReleaseEvent(ev);
+}
+
+void DoubleSlider::mouseMoveEvent(QMouseEvent *ev)
+{
 #if 0
-	//hard coded path to image :/ sorry
-	QPixmap pix = QPixmap(ImagesPath("handle.png"));
-	pix =  pix.scaled(25, 25, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-#else
-	//We won't pick up pebble.qss styles here, so hard code equivalent for now
-	//Width is 3px + 1 px border
-	//Height is control height minus margin
-	quint32 h = this->height(); //typically 30px
-	QPixmap pix(5,h-12);
-	QRect rect = pix.rect();
-	QPainter painter(&pix);
-	painter.fillRect(rect, QColor(0x708090)); //From pebble.qss darkSteelGrey
-	painter.setPen(QColor(0x5c5c5c));
-	painter.drawRect(rect);
+	QStyle::SubControl pressedControl;
+	//Derived from QSlider source code
+	QStyleOptionSlider opt;
+	initStyleOption(&opt);
+	//Returns the sub control at the given position, matching style
+	pressedControl = style()->hitTestComplexControl(QStyle::CC_Slider, &opt, ev->pos(), this);
+
+	if (pressedControl == QStyle::SC_SliderGroove) {
+		//Don't allow clicks and moves in SliderGroove, ambiguous as to high/low
+		ev->accept(); //Eat it
+		return;
+	}
 #endif
-	setPixmap(pix); //We subclass Label to make it easy to use Pixmaps
+	//Let base class handle everything else
+	QSlider::mouseMoveEvent(ev);
 
 }
 
 int DoubleSlider::value2()
 {
-	return m_handle2->value();
+	return m_value2; //value is continually updated during mouse moves
 }
 
 void DoubleSlider::setValue2(int value)
 {
-	m_handle2->setValue(value);
+	if (value < minimum() || value > maximum())
+		return;
+	m_value2 = value;
+	//Position handle
+	int handleWidth = (m_handle2->width());
+	double effectiveSlotWidth = width() - handleWidth;
+	double range = maximum() - minimum();
+	QPoint newHandleLoc = m_handle2->pos(); //Keep y same, just change x
+	if (m_value2 == minimum()) {
+		newHandleLoc.setX(0);
+	} else if (m_value2 == maximum()) {
+		newHandleLoc.setX(width() - handleWidth);
+	} else {
+		value = value - minimum();
+		double percentage = value / range;
+		newHandleLoc.setX(effectiveSlotWidth * percentage);
+	}
+	m_handle2->move(newHandleLoc);
 }
 
 void DoubleSlider::setTracking2(bool b)
@@ -125,95 +156,47 @@ void DoubleSlider::setTracking2(bool b)
 	m_tracking2Enabled = b;
 }
 
-void DoubleSlider::mouseReleaseEvent(QMouseEvent *mouseEvent)
-{
-	if (mouseEvent->button() == Qt::LeftButton) {
-		m_handle2->show();
-		m_handle2->setActivated(false);
-	}
-	mouseEvent->accept();
-}
-
 //Updates handle2, should just set flag and move to overloaded paint()
-void DoubleSlider::update2()
-{
-	//QPoint posCursor(QCursor::pos());
-	//QPoint posParent(mapToParent(mapToGlobal(pos())));
-	QPoint point(m_handle2->mapToParent(m_handle2->mapFromGlobal(QCursor::pos())).x(),m_handle2->y());
-	int horBuffer = (m_handle2->width());
-	bool lessThanMax = mapToParent(point).x() < pos().x()+ width() - horBuffer;
-	bool greaterThanMin = mapToParent(point).x() > pos().x();
-	if(lessThanMax && greaterThanMin)
-		m_handle2->move(point);
-	//emit value2Changed(value2());
-}
 
-void DoubleSliderHandle::mousePressEvent(QMouseEvent *event)
-{
-	m_parent->mousePressEvent(event);
-	//User clicked on our handle, track movement until handle is released
-	//qGuiApp->installEventFilter(m_filter);
-	//m_parent->clearFocus();
-	event->accept();
-}
+// The center of each handle is the indicator, ie handleWidth / 2
+// Center of handle is positioned on cursor after move
+// |   |-|           Handle width                    |-|
+// |   |-------------Groove width----------------------|
+// |-----------------Control width--------------------------|
 
-void DoubleSliderHandle::mouseReleaseEvent(QMouseEvent *event)
+void DoubleSlider::update2(bool emitSignal)
 {
-	m_parent->update2();
-	//If tracking is off, then we emit the update signal when mouse is releases
-	if (!m_parent->tracking2())
-		m_parent->value2Changed(value());
-	event->accept();
-}
-
-void DoubleSliderHandle::mouseMoveEvent(QMouseEvent *event)
-{
-	m_parent->update2();
-	//Emit signals if tracking2 is on
-	if (m_parent->tracking2())
-		m_parent->value2Changed(value());
-	event->accept();
-}
-
-DoubleSliderEventFilter::DoubleSliderEventFilter(DoubleSlider *_grandParent)
-{
-	m_grandParent = _grandParent;
-}
-
-bool DoubleSliderEventFilter::eventFilter(QObject* obj, QEvent* event)
-{
-	switch(event->type()) {
-		case QEvent::MouseButtonRelease:
-			qGuiApp->removeEventFilter(this);
-			return true;
-			break;
-		case QEvent::MouseMove:
-			m_grandParent->update2(); //If trackin is on, we emit signal on move
-			return true;
-			break;
-		default:
-			return QObject::eventFilter(obj, event);
+	QPoint cursor(QCursor::pos()); //Global coordinates
+	QPoint widgetCursor = mapFromGlobal(cursor); //Widget coordinates
+	int handleWidth = (m_handle2->width());
+	QPoint newHandleLoc(widgetCursor.x(), m_handle2->y());
+	//Not taking into account slot borders yet
+	int xSlotLow = 0; //x coord of beginning of slot
+	int xSlotHigh = xSlotLow + width() - handleWidth; //x coord of end of slot
+	if (newHandleLoc.x() < xSlotLow) {
+		//Off left end of scale
+		newHandleLoc.setX(xSlotLow);
+		m_value2 = minimum();
+	} else if (newHandleLoc.x() > xSlotHigh) {
+		//Off the right end of scale
+		newHandleLoc.setX(xSlotHigh);
+		m_value2 = maximum();
+	} else {
+		//Calc new value2
+		//Handle doesn't move over entire width of slot due to handle width
+		//Left side of handle can go to zero at low end
+		//but only width - handleWidth at the high end
+		double effectiveSlotWidth = width() - handleWidth;
+		double percentage = newHandleLoc.x() / effectiveSlotWidth;
+		double range = maximum() - minimum();
+		m_value2 = minimum() + (range * percentage);
 	}
-  return false;
+	m_handle2->move(newHandleLoc);
+	if (m_tracking2Enabled || emitSignal) {
+		emit value2Changed(m_value2);
+	}
 }
 
-void DoubleSliderHandle::setValue(double value)
-{
-	double width = m_parent->width(); //Slider width
-	//double position = pos().x();
-	double range = m_parent->maximum() - m_parent->minimum();
-	double percentage = (value - m_parent->minimum())/range;
-	int location = percentage * width;
-	move(location, y());
-}
-
-int DoubleSliderHandle::value()
-{
-	double width = m_parent->width(), position = pos().x();
-	double value = position/width;
-	double range = m_parent->maximum() - m_parent->minimum();
-	return m_parent->minimum() + (value * range);
-}
 void DoubleSlider::reset()
 {
 	int horBuffer = (m_handle2->width());
@@ -225,3 +208,52 @@ void DoubleSlider::reset()
 	m_handle2->show();
 	m_handle2->raise();
 }
+
+DoubleSliderHandle::DoubleSliderHandle(DoubleSlider *_parent)
+  : QLabel(_parent)
+{
+	m_parent = _parent;
+
+	//styling
+	setAcceptDrops(true);
+#if 0
+	//hard coded path to image :/ sorry
+	QPixmap pix = QPixmap(ImagesPath("handle.png"));
+	pix =  pix.scaled(25, 25, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+#else
+	//We won't pick up pebble.qss styles here, so hard code equivalent for now
+	//Width is 3px + 1 px border
+	//Height is control height minus margin
+	quint32 width = 5;
+	setMinimumWidth(width);
+	setMaximumWidth(width);
+	quint32 h = this->height(); //typically 30px
+	QPixmap pix(width, h-12); //Fudge
+	QRect rect = pix.rect();
+	QPainter painter(&pix);
+	painter.fillRect(rect, QColor(0x708090)); //From pebble.qss darkSteelGrey
+	painter.setPen(QColor(0x5c5c5c));
+	painter.drawRect(rect);
+#endif
+	setPixmap(pix); //We subclass Label to make it easy to use Pixmaps
+
+}
+
+void DoubleSliderHandle::mousePressEvent(QMouseEvent *event)
+{
+	m_parent->mousePressEvent(event);
+	event->accept();
+}
+
+void DoubleSliderHandle::mouseReleaseEvent(QMouseEvent *event)
+{
+	m_parent->update2(true); //always emits changed signal
+	event->accept();
+}
+
+void DoubleSliderHandle::mouseMoveEvent(QMouseEvent *event)
+{
+	m_parent->update2(false); //only emits changed signal if tracking is enabled
+	event->accept();
+}
+
