@@ -133,6 +133,9 @@ void DoubleSlider::setValue2(int value)
 {
 	if (value < minimum() || value > maximum())
 		return;
+	if (value <= this->value())
+		//High value can't be same or lower than low value
+		return;
 	m_value2 = value;
 	//Position handle
 	int handleWidth = (m_handle2->width());
@@ -169,31 +172,39 @@ void DoubleSlider::update2(bool emitSignal)
 	QPoint cursor(QCursor::pos()); //Global coordinates
 	QPoint widgetCursor = mapFromGlobal(cursor); //Widget coordinates
 	int handleWidth = (m_handle2->width());
+	double effectiveSlotWidth = width() - handleWidth;
+	double range = maximum() - minimum();
 	QPoint newHandleLoc(widgetCursor.x(), m_handle2->y());
 	//Not taking into account slot borders yet
 	int xSlotLow = 0; //x coord of beginning of slot
 	int xSlotHigh = xSlotLow + width() - handleWidth; //x coord of end of slot
+	double newValue;
 	if (newHandleLoc.x() < xSlotLow) {
 		//Off left end of scale
 		newHandleLoc.setX(xSlotLow);
-		m_value2 = minimum();
+		newValue = minimum();
 	} else if (newHandleLoc.x() > xSlotHigh) {
 		//Off the right end of scale
 		newHandleLoc.setX(xSlotHigh);
-		m_value2 = maximum();
+		newValue = maximum();
 	} else {
 		//Calc new value2
 		//Handle doesn't move over entire width of slot due to handle width
 		//Left side of handle can go to zero at low end
 		//but only width - handleWidth at the high end
-		double effectiveSlotWidth = width() - handleWidth;
 		double percentage = newHandleLoc.x() / effectiveSlotWidth;
-		double range = maximum() - minimum();
-		m_value2 = minimum() + (range * percentage);
+		newValue = minimum() + (range * percentage);
 	}
-	m_handle2->move(newHandleLoc);
-	if (m_tracking2Enabled || emitSignal) {
-		emit value2Changed(m_value2);
+	//handles can touch but not overlap
+	//limit high slider to low value + whatever value handlewidth represents
+	int minValue = this->value() + ((handleWidth / effectiveSlotWidth) * range);
+	if (newValue > minValue) {
+		//Don't let high value be lower than low value
+		m_value2 = newValue;
+		m_handle2->move(newHandleLoc);
+		if (m_tracking2Enabled || emitSignal) {
+			emit value2Changed(m_value2);
+		}
 	}
 }
 
