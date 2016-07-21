@@ -81,6 +81,25 @@ void DoubleSlider::mousePressEvent(QMouseEvent *ev)
 		ev->accept(); //Eat it
 		return;
 	}
+	//Default behavior of slider is a click on the handle is a single step, disable
+	if (pressedControl == QStyle::SC_SliderHandle ||
+		pressedControl == QStyle::SC_ScrollBarAddLine ||
+		pressedControl == QStyle::SC_ScrollBarSubLine ) {
+		int handleWidth = m_handle2->width(); //Assume handles are same width
+		double effectiveSlotWidth = width() - handleWidth;
+		double range = maximum() - minimum();
+		int maxValue = m_value2 - ((handleWidth / effectiveSlotWidth) * range);
+		double percentage = ev->pos().x() / effectiveSlotWidth;
+		int newValue = minimum() + (range * percentage);
+		if (newValue > maxValue) {
+			ev->accept();
+			return;
+		} else {
+			QSlider::mousePressEvent(ev);
+			return;
+		}
+	}
+
 	//Let base class handle everything else
 	QSlider::mousePressEvent(ev);
 }
@@ -105,7 +124,7 @@ void DoubleSlider::mouseReleaseEvent(QMouseEvent *ev)
 
 void DoubleSlider::mouseMoveEvent(QMouseEvent *ev)
 {
-#if 0
+
 	QStyle::SubControl pressedControl;
 	//Derived from QSlider source code
 	QStyleOptionSlider opt;
@@ -113,6 +132,29 @@ void DoubleSlider::mouseMoveEvent(QMouseEvent *ev)
 	//Returns the sub control at the given position, matching style
 	pressedControl = style()->hitTestComplexControl(QStyle::CC_Slider, &opt, ev->pos(), this);
 
+	//ScrollBarAddLine and ScrollBarSubLine are the actual sub controls that handle
+	//up/down movement of the handle.  SliderHandle doesn't seem to make any difference
+	if (pressedControl == QStyle::SC_SliderHandle ||
+		pressedControl == QStyle::SC_ScrollBarAddLine ||
+		pressedControl == QStyle::SC_ScrollBarSubLine ) {
+		//Don't let low handle go above high handle
+		//handles can touch but not overlap
+		//limit low slider to high value - whatever value handlewidth represents
+		int handleWidth = m_handle2->width(); //Assume handles are same width
+		double effectiveSlotWidth = width() - handleWidth;
+		double range = maximum() - minimum();
+		int maxValue = m_value2 - ((handleWidth / effectiveSlotWidth) * range);
+		double percentage = ev->pos().x() / effectiveSlotWidth;
+		int newValue = minimum() + (range * percentage);
+		if (newValue > maxValue) {
+			ev->accept();
+			return;
+		} else {
+			QSlider::mouseMoveEvent(ev);
+			return;
+		}
+	}
+#if 0
 	if (pressedControl == QStyle::SC_SliderGroove) {
 		//Don't allow clicks and moves in SliderGroove, ambiguous as to high/low
 		ev->accept(); //Eat it
@@ -198,7 +240,7 @@ void DoubleSlider::update2(bool emitSignal)
 	//handles can touch but not overlap
 	//limit high slider to low value + whatever value handlewidth represents
 	int minValue = this->value() + ((handleWidth / effectiveSlotWidth) * range);
-	if (newValue > minValue) {
+	if (newValue > minValue +1) {
 		//Don't let high value be lower than low value
 		m_value2 = newValue;
 		m_handle2->move(newHandleLoc);
