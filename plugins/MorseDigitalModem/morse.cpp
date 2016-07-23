@@ -237,7 +237,8 @@ void Morse::setSampleRate(int _sampleRate, int _sampleCount)
 		delete m_dotDashThresholdFilter;
 	m_dotDashThresholdFilter = new MovingAvgFilter(c_thresholdFilterSize);
 
-	wpmBoxChanged(0); //Setup default wpm ranges, also calls init()
+	init(m_wpmSpeedCurrent);
+
 	m_wpmSpeedFilter = m_wpmSpeedCurrent;
 
 	m_agc_peak = 1.0;
@@ -305,17 +306,19 @@ void Morse::setupDataUi(QWidget *parent)
 		m_outputMode = CHAR_ONLY;
 		connect(m_dataUi->outputOptionBox,SIGNAL(currentIndexChanged(int)),this,SLOT(outputOptionChanged(int)));
 
-		//data is index to m_minMaxTable.  Keep in sync
-		m_dataUi->wpmBox->addItem("5-60 wpm");
-		m_dataUi->wpmBox->addItem("40-120 wpm");
-		m_dataUi->wpmBox->addItem("100-200 wpm");
-		connect(m_dataUi->wpmBox,SIGNAL(currentIndexChanged(int)),this,SLOT(wpmBoxChanged(int)));
-
-		m_lockWPM = false;
 		m_dataUi->freezeButton->setCheckable(true);
 		m_dataUi->freezeButton->setChecked(false); //Off
 		connect(m_dataUi->freezeButton,SIGNAL(clicked(bool)),this,SLOT(freezeButtonPressed(bool)));
 
+
+		m_dataUi->wpmSlider->setMinimum(5);
+		m_dataUi->wpmSlider->setMaximum(100);
+		m_dataUi->wpmLow->setText(QString::number(c_wpmLowDefault));
+		m_dataUi->wpmSlider->setValue(c_wpmLowDefault); //Low
+		m_dataUi->wpmHigh->setText(QString::number(c_wpmHighDefault));
+		m_dataUi->wpmSlider->setValue2(c_wpmHighDefault); //High
+		connect(m_dataUi->wpmSlider,SIGNAL(valueChanged(int)),this,SLOT(wpmSliderValueChanged(int)));
+		connect(m_dataUi->wpmSlider,SIGNAL(value2Changed(int)),this,SLOT(wpmSliderValue2Changed(int)));
 		m_outputOn = true;
     }
 
@@ -403,6 +406,7 @@ quint32 Morse::findBestGoertzelN(quint32 wpmLow, quint32 wpmHigh)
 	usecWpmMid = MorseCode::wpmToTcwUsec(wpmMid);
 	usecWpmHigh = MorseCode::wpmToTcwUsec(wpmHigh);
 	quint32 usecPerSample = 1.0e6 / m_modemSampleRate;
+#if 0
 	//Find N with largest resPerTcw and smallest bandwidth
 	for (resPerTcw = 4; resPerTcw<40; resPerTcw++) {
 		nLow = (usecWpmLow/resPerTcw) / usecPerSample;
@@ -422,6 +426,15 @@ quint32 Morse::findBestGoertzelN(quint32 wpmLow, quint32 wpmHigh)
 		}
 		//Otherwise bandwidth is the best it will be at 4 results per Tcw
 	}
+#else
+	//Find largest N with at least 3 results per TCW
+	resPerTcw = 4;
+	nLow = (usecWpmLow/resPerTcw) / usecPerSample;
+	nMid = (usecWpmMid/resPerTcw) / usecPerSample;
+	nHigh = (usecWpmHigh/resPerTcw) / usecPerSample;
+	bwMid = m_modemSampleRate / nMid;
+
+#endif
 
 	//qDebug()<<"WPM:"<<wpmLow<<"resPerTcw:"<<resPerTcw<<" samplesPerResult:"<<nLow<<" bandWidth: "<<bwLow;
 	qDebug()<<"WPM:"<<wpmMid<<"resPerTcw:"<<resPerTcw<<" samplesPerResult:"<<nMid<<" bandWidth: "<<bwMid;
@@ -430,21 +443,24 @@ quint32 Morse::findBestGoertzelN(quint32 wpmLow, quint32 wpmHigh)
 	return nMid;
 }
 
-void Morse::wpmBoxChanged(int s)
+void Morse::wpmSliderValueChanged(int v)
 {
-	int index = s; //m_dataUi->wpmBox->currentData().toInt();
-	m_lockWPM = false;
-	m_aboveWpmRange = false;
-	m_belowWpmRange = false;
-	m_wpmLimitLow = m_minMaxTable[index].wpmLow;
-	m_wpmLimitHigh = m_minMaxTable[index].wpmHigh;
-	int wpm = (m_wpmLimitLow + m_wpmLimitHigh) / 2;
-	m_wpmFixed = wpm;
-	m_wpmSpeedCurrent = wpm;
+	m_dataUi->wpmLow->setText(QString::number(v));
+	m_wpmLimitLow = v;
+	//Adjust N for best match to high/low rate
+	quint32 samplesPerResult = findBestGoertzelN(m_wpmLimitLow, m_wpmLimitHigh);
+	updateGoertzel(c_defaultModemFrequency, samplesPerResult);
+	//Update min/max for better noise/spike rejection
+	setMinMaxMark(m_wpmLimitLow, m_wpmLimitHigh);
+}
+
+void Morse::wpmSliderValue2Changed(int v)
+{
+	m_dataUi->wpmHigh->setText(QString::number(v));
+	m_wpmLimitHigh = v;
 	quint32 samplesPerResult = findBestGoertzelN(m_wpmLimitLow, m_wpmLimitHigh);
 	updateGoertzel(c_defaultModemFrequency, samplesPerResult);
 	setMinMaxMark(m_wpmLimitLow, m_wpmLimitHigh);
-	init(wpm);
 }
 
 
@@ -462,14 +478,19 @@ void Morse::refreshOutput()
         return;
 
 	m_outputBufMutex.lock();
-	if (m_lockWPM)
-		m_dataUi->wpmBox->setCurrentText(QString().sprintf("%d wpm fixed", m_wpmFixed));
-	else if (m_aboveWpmRange)
-		m_dataUi->wpmBox->setCurrentText(QString().sprintf(">%d wpm",m_wpmLimitHigh-m_wpmVar));
-	else if (m_belowWpmRange)
-		m_dataUi->wpmBox->setCurrentText(QString().sprintf("<%d wpm",m_wpmLimitLow+m_wpmVar));
-	else
-		m_dataUi->wpmBox->setCurrentText(QString().sprintf("%d wpm", m_wpmSpeedCurrent));
+	if (m_aboveWpmRange) {
+		m_dataUi->wpmHigh->setStyleSheet("QLabel { color : red; }");
+		m_dataUi->wpmLow->setStyleSheet("QLabel { color : white; }");
+		m_dataUi->wpmCurrent->setText(QString().sprintf("?? est"));
+	} else if (m_belowWpmRange) {
+		m_dataUi->wpmHigh->setStyleSheet("QLabel { color : white; }");
+		m_dataUi->wpmLow->setStyleSheet("QLabel { color : red; }");
+		m_dataUi->wpmCurrent->setText(QString().sprintf("?? est"));
+	} else {
+		m_dataUi->wpmHigh->setStyleSheet("QLabel { color : white; }");
+		m_dataUi->wpmLow->setStyleSheet("QLabel { color : white; }");
+		m_dataUi->wpmCurrent->setText(QString().sprintf("%d est", m_wpmSpeedCurrent));
+	}
 
 	m_dataUi->dataEdit->insertPlainText(m_output); //At cursor
 	m_dataUi->dataEdit->moveCursor(QTextCursor::End); //Scrolls window so new text is always visible
@@ -542,9 +563,14 @@ void Morse::syncFilterWithWpm()
 
 void Morse::init(quint32 wpm)
 {
+	if (wpm < 5)
+		wpm = 5;
 	m_output.clear(); //Clear any text that hasn't been output
 	m_wpmSpeedCurrent = wpm;
 	updateThresholds(c_uSecDotMagic / wpm, true); //Assume 1st mark is a dot
+
+	m_wpmLimitHigh = c_wpmHighDefault;
+	m_wpmLimitLow = c_wpmLowDefault;
 
 	m_useNormalizingThreshold = true; //Fldigi mode
 	m_agc_peak = 0;
@@ -578,12 +604,6 @@ void Morse::updateThresholds(quint32 usecNewMark, bool forceUpdate)
 		usecDash = usecDot * 3;
 		m_usecLastMark = usecDot;
 	} else {
-		//If we're locked, we don't tweak thresholds at all.
-		//Typically for machine to machine morse
-		if (m_lockWPM)
-			return;
-
-
 		if (m_usecLastMark == 0)
 			return; //1st time called
 

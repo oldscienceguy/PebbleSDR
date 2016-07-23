@@ -53,7 +53,8 @@ public slots:
     void resetOutput();
     void outputOptionChanged(int s);
 	void freezeButtonPressed(bool b);
-	void wpmBoxChanged(int s);
+	void wpmSliderValueChanged(int v);
+	void wpmSliderValue2Changed(int v);
 
 signals:
     void newOutput();
@@ -77,6 +78,9 @@ private:
 	const quint32 c_uSecDotMagic = 1200000; //units are micro-seconts
 	const quint32 c_mSecDotMagic = 1200; //units are milli-seconds
 	const double c_secDotMagic = 1.2; //units are seconds
+
+	const quint32 c_wpmLowDefault = 10;
+	const quint32 c_wpmHighDefault = 50;
 
 	//Configurable thresholds
 	quint32 m_usecDotDashThreshold; //Determines whether mark is dot or dash
@@ -158,9 +162,6 @@ private:
 	MovingAvgFilter *m_dotDashThresholdFilter;
 	void updateThresholds(quint32 usecNewMark, bool forceUpdate);
 
-	//Current fixed speed if m_isAutoSpeed = false
-	int m_wpmFixed;
-
 	struct wpmMinMax {
 		quint32 wpmLow;
 		quint32 wpmHigh;
@@ -235,9 +236,6 @@ private:
 
     enum OUTPUT_MODE{CHAR_ONLY,CHAR_AND_DOTDASH,DOTDASH};
 	OUTPUT_MODE m_outputMode; //What we display in output
-
-    //Replaces tracking variables
-	bool m_lockWPM; //Locks the current WPM and disables tracking
 
     QString stateToString(DECODE_STATE state);
     void dumpStateMachine(QString why);

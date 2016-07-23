@@ -19,9 +19,11 @@ VERSION = 1.0.0
 #Plugins are independent of main application.  If we need code, we have to explicitly reference it
 SOURCES += morse.cpp morsecode.cpp \
     ../../application/bargraphmeter.cpp \
+    ../../application/doubleslider.cpp
 
 HEADERS += morse.h morsecode.h \
     ../../application/bargraphmeter.h \
+    ../../application/doubleslider.h
 
 FORMS += data-morse.ui \
     ../../application/bargraphmeter.ui \
