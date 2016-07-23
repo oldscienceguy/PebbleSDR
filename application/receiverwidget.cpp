@@ -702,6 +702,14 @@ void ReceiverWidget::powerToggled(bool on)
 		//We have to make sure that widgets are stopped before cleaning up supporting objects
 		m_receiver->togglePower(false);
 
+		//Remove any data ui
+		m_receiver->setDigitalModem(NULL,NULL);
+		//Delete all children
+		foreach (QObject *obj, ui.dataFrame->children()) {
+			//Normally we get a grid layout object, uiFrame, dataFrame
+			delete obj;
+		}
+
 		ui.dataFrame->hide();
 
 	}

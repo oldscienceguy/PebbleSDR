@@ -427,7 +427,7 @@ bool Receiver::turnPowerOff()
 	if (m_audioOutput != NULL)
 		m_audioOutput->Stop();
 
-	m_iDigitalModem = NULL;
+	//m_iDigitalModem = NULL;
 
 	//Now clean up rest
 	if (m_sdr != NULL){
