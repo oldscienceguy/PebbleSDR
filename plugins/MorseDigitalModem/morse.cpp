@@ -977,6 +977,18 @@ bool Morse::stateMachine(CW_EVENT event)
 					m_usecMark = m_sampleClock->uSecDelta(m_toneStart, m_toneEnd);
 					//qDebug()<<"Mark:"<<m_usecMark;
 
+					// If the tone length is too short,
+					// could be a noise dropout while we are timing a mark, or
+					// a noise spike while we are timing a space
+					// Note: Checking this before updateThresholds limits are wpm adaptability to whatever wpmHigh is set to
+					// but eliminates thresholds going all over the place in noisy ennvironments
+					if (m_usecMark < m_usecShortestMark) {
+						//Don't reset modemClock so we keep timing
+						//Last state could be MARK_TIMING or INTER_ELEMENT_TIMING
+						m_receiveState = m_lastReceiveState;
+						break;
+					}
+
 					// make sure our timing values are up to date after every tone
 					//This allows us to adapt to changing wpm speeds that existing thresholds could filter
 					//at the risk of occasionally picking up a false mark.  But dotDashThreshold filter should
@@ -984,16 +996,6 @@ bool Morse::stateMachine(CW_EVENT event)
 					updateThresholds(m_usecMark, false);
 					m_usecLastMark = m_usecMark; //Save for next check
 
-					// If the tone length is too short,
-					// could be a noise dropout while we are timing a mark, or
-					// a noise spike while we are timing a space
-					if (m_usecSpikeThreshold > 0
-						&& m_usecMark < m_usecSpikeThreshold) {
-						//Don't reset modemClock so we keep timing
-						//Last state could be MARK_TIMING or INTER_ELEMENT_TIMING
-						m_receiveState = m_lastReceiveState;
-						break;
-                    }
 
                     //dumpStateMachine("KEYUP_EVENT enter");
 					m_usecSpace = 0;
