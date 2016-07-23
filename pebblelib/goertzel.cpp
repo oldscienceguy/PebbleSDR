@@ -728,11 +728,11 @@ bool GoertzelOOK::processResult(double &retPower, bool &aboveThreshold)
 				aboveThreshold = true;
 			} else if (mainPower <= m_thresholdDown) {
 				aboveThreshold = false;
-			} else if (m_lastTone) {
+			} else {
 				//Last result was a tone and we're in between thresholdUp and thresholdDown
-				aboveThreshold = true;
+				//Assume we're stable and return last result
+				aboveThreshold = m_lastTone;
 			}
-
 			break;
 		case TH_MANUAL:
 			//Uses manual threshold
