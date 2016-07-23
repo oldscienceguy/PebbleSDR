@@ -400,13 +400,13 @@ quint32 Morse::findBestGoertzelN(quint32 wpmLow, quint32 wpmHigh)
 	quint32 nMid, nLow, nHigh;
 	quint32 bwMid, bwLow, bwHigh; //Bandwidth
 	quint32 resPerTcw; //Results per Tcw
-	quint32 resPerTcwLow, resPerTcwHigh;
 	quint32 usecWpmLow, usecWpmMid,usecWpmHigh;
 	usecWpmLow = MorseCode::wpmToTcwUsec(wpmLow);
 	usecWpmMid = MorseCode::wpmToTcwUsec(wpmMid);
 	usecWpmHigh = MorseCode::wpmToTcwUsec(wpmHigh);
 	quint32 usecPerSample = 1.0e6 / m_modemSampleRate;
 #if 0
+	quint32 resPerTcwLow, resPerTcwHigh;
 	//Find N with largest resPerTcw and smallest bandwidth
 	for (resPerTcw = 4; resPerTcw<40; resPerTcw++) {
 		nLow = (usecWpmLow/resPerTcw) / usecPerSample;
@@ -432,7 +432,9 @@ quint32 Morse::findBestGoertzelN(quint32 wpmLow, quint32 wpmHigh)
 	nLow = (usecWpmLow/resPerTcw) / usecPerSample;
 	nMid = (usecWpmMid/resPerTcw) / usecPerSample;
 	nHigh = (usecWpmHigh/resPerTcw) / usecPerSample;
+	bwLow = m_modemSampleRate / nMid;
 	bwMid = m_modemSampleRate / nMid;
+	bwHigh = m_modemSampleRate / nMid;
 
 #endif
 
@@ -982,13 +984,14 @@ bool Morse::stateMachine(CW_EVENT event)
 					updateThresholds(m_usecMark, false);
 					m_usecLastMark = m_usecMark; //Save for next check
 
-					// If the tone length is shorter than any noiseThreshold, no_tone a noise dropout
+					// If the tone length is too short,
+					// could be a noise dropout while we are timing a mark, or
+					// a noise spike while we are timing a space
 					if (m_usecSpikeThreshold > 0
 						&& m_usecMark < m_usecSpikeThreshold) {
-						//Noise spike, go back to idle, element or word timing mode
-						//so don't reset modemClock so we keep timing
+						//Don't reset modemClock so we keep timing
+						//Last state could be MARK_TIMING or INTER_ELEMENT_TIMING
 						m_receiveState = m_lastReceiveState;
-						//This doesn't help with general noise,just spikes
 						break;
                     }
 
@@ -1008,21 +1011,10 @@ bool Morse::stateMachine(CW_EVENT event)
 					//If usecSpace > elementThreshold, then we've processed the element, char, or word space
 					//and can start mark timing
 					if (!m_markHandled) {
-#if 0
-						//Checking for noise pulses doesn't work or doesn't improve anything, revisit logic
-						//usecSpace was less than elementThreshold
-						if (m_usecSpace < m_usecFadeThreshold) {
-							//Just continue as if tone never happened
-                            //Don't reset clock, we're still timing mark
-							m_lastReceiveState = INTER_ELEMENT_TIMING;
-							m_receiveState = INTER_ELEMENT_TIMING;
-                        } else {
-							//Throw it away and start over
-							m_lastReceiveState = INTER_ELEMENT_TIMING;
-							m_receiveState = IDLE;
-                        }
-#endif
-                    } else {
+						//usecSpace wasn't long enough and there's a mark pending
+						//Ignore it as a possible noise spike and just keep timing space
+						//Changing this has noticable effect on high noise performance
+					} else {
 						//usecSpace was > elementThreshold and we are starting a new mark
                         resetModemClock();
 						m_lastReceiveState = INTER_ELEMENT_TIMING;
