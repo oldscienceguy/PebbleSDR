@@ -573,6 +573,11 @@ void Morse::init(quint32 wpm)
 
 	m_wpmLimitHigh = c_wpmHighDefault;
 	m_wpmLimitLow = c_wpmLowDefault;
+	//Adjust N for best match to high/low rate
+	quint32 samplesPerResult = findBestGoertzelN(m_wpmLimitLow, m_wpmLimitHigh);
+	updateGoertzel(c_defaultModemFrequency, samplesPerResult);
+	//Update min/max for better noise/spike rejection
+	setMinMaxMark(m_wpmLimitLow, m_wpmLimitHigh);
 
 	m_useNormalizingThreshold = true; //Fldigi mode
 	m_agc_peak = 0;
