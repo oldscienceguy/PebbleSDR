@@ -122,6 +122,7 @@ private:
 	double m_thresholdUp;
 	double m_thresholdDown;
 	double m_peakPower;
+	double m_minPower;
 
 	bool m_lastTone; //For debounce counting
 	quint32 m_attackCount;
@@ -133,6 +134,14 @@ private:
 	bool debounce(bool aboveThreshold);
 
 	MovingAvgFilter *m_peakFilter;
+	MovingAvgFilter *m_minFilter;
+
+	//Todo: Goertzel agc options: off, fast, slow
+	//Increasing signal raises agc fast (20 results)
+	const double m_attackWeight = 1.0 / 20.0;
+	//Decreasing signal lowers agc slow (100 results
+	//Original value of 800 on decay seems way too high, means we need 800 space results before agc reflects
+	const double m_decayWeight = 1.0 / 500.0;
 
 };
 

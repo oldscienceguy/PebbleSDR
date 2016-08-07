@@ -167,7 +167,7 @@ void Goertzel::setFreq(qint32 freq, quint32 N, quint32 sampleRate)
 	//We use avgFilter to calculate avg signal and stdDev for SNR comparison
 	//It needs to be larger than N for the results to mean anything, otherwise it's just the avg and stdDev for N samples
 	//Too long, and it won't reflect changes fast enough for snr squelch to work
-	m_avgFilter = new MovingAvgFilter(N*4);
+	m_avgFilter = new MovingAvgFilter(800);
 
 	m_freq = freq;
 	m_samplesPerResult = N;
@@ -365,7 +365,9 @@ GoertzelOOK::GoertzelOOK(quint32 sampleRate, quint32 numSamples)
 
 	m_lastTone = false;
 	m_peakPower = 0;
+	m_minPower = 1.0;
 	m_peakFilter = new MovingAvgFilter(0, NULL); //Decay moving average
+	m_minFilter = new MovingAvgFilter(0, NULL); //Decay moving average
 
 	m_noiseThreshold = 0; //Off
 }
@@ -374,6 +376,8 @@ GoertzelOOK::~GoertzelOOK()
 {
 	if (m_peakFilter != NULL)
 		delete m_peakFilter;
+	if (m_minFilter != NULL)
+		delete m_minFilter;
 }
 
 void GoertzelOOK::setThresholdType(GoertzelOOK::ThresholdType t)
@@ -666,10 +670,8 @@ bool GoertzelOOK::processResult(double &retPower, bool &aboveThreshold)
 	double lowPower = 0;
 	double bufMean = 0;
 	double bufDev = 0;
-	// Fast attack and slow decay.
-	//Todo: Goertzel agc options: off, fast, slow
-	const double attackWeight = 1.0/20.0;
-	const double decayWeight = attackWeight / 3.0;
+
+	double delta;
 
 	//If we have a detectable tone, it should be strong in the main bin compared with surrounding bins
 
@@ -713,17 +715,31 @@ bool GoertzelOOK::processResult(double &retPower, bool &aboveThreshold)
 			//Uses percentage of peak power for comparison
 			// Compute a variable threshold value for tone detection
 			if (mainPower > m_peakPower) {
-				m_peakPower = m_peakFilter->newSample(mainPower, attackWeight);
+				m_peakPower = m_peakFilter->newSample(mainPower, m_attackWeight);
 			} else {
-				//Original value of 800 on decay seems way too high, means we need 800 space results before agc reflects
-				m_peakPower = m_peakFilter->newSample(mainPower, decayWeight);
+				m_peakPower = m_peakFilter->newSample(mainPower, m_decayWeight);
 			}
 
+#if 0
 			//Super-Ratt and JSDR technique
 			//Divide agc_peak in thirds,  upper is rising, lower is falling, middle is stable
 			m_thresholdUp = m_peakPower * 0.67; //fldigi uses 0.60
 			m_thresholdDown = m_peakPower * 0.33; //fldigi uses 0.40
+#else
+			//Just looking at peak power doesn't take into account the average signal, including noise
+			//We could set a threshold at or below noise leve
+			//So look at setting threshold between noise and peak
+			if (mainPower < m_minPower) {
+				m_minPower = m_minFilter->newSample(mainPower, m_attackWeight);
+			} else {
+				//Original value of 800 on decay seems way too high, means we need 800 space results before agc reflects
+				m_minPower = m_minFilter->newSample(mainPower, m_decayWeight);
+			}
+			delta = m_peakPower - m_minPower;
+			m_thresholdUp = m_minPower + (delta * 0.67); //fldigi uses 0.60
+			m_thresholdDown = m_minPower + (delta * 0.33); //fldigi uses 0.40
 
+#endif
 			if (mainPower >= m_thresholdUp) {
 				aboveThreshold = true;
 			} else if (mainPower <= m_thresholdDown) {
